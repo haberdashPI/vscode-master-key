@@ -1,0 +1,32 @@
+// See https://go.microsoft.com/fwlink/?LinkId=733558
+// for the documentation about the tasks.json format
+// TODO: make use of my `npm-run.sh` script here
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "npm: compile-web",
+			"type": "shell",
+			"command": "bash ./npm-run.sh compile-web",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"problemMatcher": [
+				"$ts-webpack",
+				"$tslint-webpack"
+			]
+		},
+		{
+			"label": "npm: watch-web",
+			"type": "shell",
+			"command": "bash ./npm-run.sh watch-web",
+			"group": "build",
+			"isBackground": true,
+			"problemMatcher": [
+				"$ts-webpack-watch",
+				"$tslint-webpack-watch"
+			]
+		}
+	]
+}
