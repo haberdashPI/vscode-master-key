@@ -1,6 +1,6 @@
 [header]
 version = "1.0"
-required_extensions = [
+requiredExtensions = [
     "dbankier.vscode-quick-select",
     "haberdashPI.vscode-select-by-indent",
     "haberdashPI.selection-utilities",

@@ -32,10 +32,26 @@ const AUTOMATED_COMMENT_END = `
 
 function findText(doc: vscode.TextDocument, text: string) {
     let matches = searchMatches(doc, new vscode.Position(0, 0), undefined, text, {});
-    let first_match_result = matches.next();
-    if (first_match_result.done) { return undefined; }
+    let firstMatchResult = matches.next();
+    if (firstMatchResult.done) { return undefined; }
 
-    return first_match_result.value;
+    return firstMatchResult.value;
+}
+
+function replaceAll(str: string, regex: RegExp, replacement: string): string {
+    let result = "";
+    if(!/g/.test(regex.flags)){
+        throw(Error(`Expected a 'g' flag for regex ${regex}`));
+    }
+    let m = regex.exec(str);
+    let offset = 0;
+    while(m !== null){
+        result += str.slice(offset, m.index);
+        result += replacement;
+        offset += m[0].length;
+        m = regex.exec(str);
+    }
+    return result + str.slice(offset, -1);
 }
 
 function formatBindings(file: vscode.Uri, items: BindingItem[]){
@@ -50,9 +66,9 @@ function formatBindings(file: vscode.Uri, items: BindingItem[]){
             comment += item.description;
         }
 
-        json += comment.replaceAll(/^\s*(?=\S+)/mg, "    // ")+"\n";
-        json += JSON.stringify(pick(item, ['key', 'when', 'command', 'args']), 
-            null, 4).replaceAll(/^/mg, "    ");
+        json += replaceAll(comment, /^\s*(?=\S+)/mg, "    // ")+"\n";
+        json += replaceAll(JSON.stringify(pick(item, ['key', 'when', 'command', 'args']), 
+            null, 4), /^/mg, "    ");
         json += ",\n\n";
     }
     return (
@@ -75,33 +91,33 @@ async function insertKeybindingsIntoConfig(file: vscode.Uri, config: any) {
                 "proplery formatted.");
             return;
         } else {
-            let insert_at = bracket.end;
-            let bindings_to_insert = formatBindings(file, config);
+            let insertAt = bracket.end;
+            let bindingsToInsert = formatBindings(file, config);
 
             // try and replace the old bindings
-            let old_bindings_start = findText(ed.document, "AUTOMATED BINDINGS START");
-            let old_bindings_end = findText(ed.document, "AUTOMATED BINDINGS END");
-            ed.document.getText(old_bindings_start);
-            if (old_bindings_start && old_bindings_end) {
+            let oldBindingsStart = findText(ed.document, "AUTOMATED BINDINGS START");
+            let oldBindingsEnd = findText(ed.document, "AUTOMATED BINDINGS END");
+            ed.document.getText(oldBindingsStart);
+            if (oldBindingsStart && oldBindingsEnd) {
                 let range = new vscode.Range(
-                    new vscode.Position(old_bindings_start.start.line-1, 
-                                        ed.document.lineAt(old_bindings_start.start.line-1).range.end.character),
-                    new vscode.Position(old_bindings_end.end.line + 4, 0));
+                    new vscode.Position(oldBindingsStart.start.line-1, 
+                                        ed.document.lineAt(oldBindingsStart.start.line-1).range.end.character),
+                    new vscode.Position(oldBindingsEnd.end.line + 4, 0));
                 await ed.edit(builder => {
-                    builder.replace(range, bindings_to_insert);
+                    builder.replace(range, bindingsToInsert);
                 });
                 // TODO: uncomment after debugging
                 // vscode.commands.executeCommand('workbench.action.files.save');
                 vscode.window.showInformationMessage(`Your modal key bindings have
                     been updated in \`keybindings.json\`.`);
-            } else if (old_bindings_end || old_bindings_start){
+            } else if (oldBindingsEnd || oldBindingsStart){
                 vscode.window.showErrorMessage(`You appear to have altered the comments
                     around the automated bindings. Please delete the old, automated
                     bindings manually and then re-run this command.`);
             }else {
                 // if there are no old bindings, insert new ones
                 await ed.edit(builder => {
-                    builder.insert(insert_at, "\n" + bindings_to_insert);
+                    builder.insert(insertAt, "\n" + bindingsToInsert);
                 });
                 // TODO: uncomment after debugging 
                 // TODO: also have the cursor moved to the start of the 
@@ -123,6 +139,7 @@ async function queryBindingFile() {
     // can add your own to the list (these can get saved using globalStorageUri)
     let file = await vscode.window.showOpenDialog({
         openLabel: "Import Modal-Key-Binding Spec",
+        // eslint-disable-next-line @typescript-eslint/naming-convention
         filters: { Preset: ["json", "toml"] },
         canSelectFiles: true,
         canSelectFolders: false,
@@ -152,7 +169,7 @@ async function importBindings() {
 }
 
 // TODO: we also evenutally want to have a way to customize presets
-// without having to modify it (for small tweaks)
+// replacementout having to modify it (for small tweaks)
 // TODO: we want to be able to export a preset to a file
 // TODO: we should be able to delete user defined presets
 

@@ -35,9 +35,9 @@ export class EvalContext {
         let result = "";
         let r = /\{.*?key.*?\}/g;
         let match = r.exec(str);
-        let start_i = 0;
+        let startIndex = 0;
         while (match !== null) {
-            let prefix = str.slice(start_i, match.index);
+            let prefix = str.slice(startIndex, match.index);
             let evaled;
             try {
                 // slice to remove `{` and `}`
@@ -51,10 +51,10 @@ export class EvalContext {
                 evaled = match[0];
             }
             result += prefix + evaled;
-            start_i += prefix.length + match[0].length;
-            match = r.exec(str.slice(start_i));
+            startIndex += prefix.length + match[0].length;
+            match = r.exec(str.slice(startIndex));
         }
-        result += str.slice(start_i);
+        result += str.slice(startIndex);
         return result;
     }
 

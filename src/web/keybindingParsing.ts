@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import * as TOML from 'js-toml'; // TODO: find another toml parser
+const TOML = require("smol-toml");
 import * as semver from 'semver';
 import { TextDecoder } from 'util';
 import { ZodIssue, preprocess, z } from "zod";
@@ -12,7 +12,7 @@ const bindingHeader = z.object({
         refine(x => semver.coerce(x), { message: "header.version is not a valid version number" }).
         refine(x => semver.satisfies(semver.coerce(x)!, '1'), 
                { message: "header.version is not a supported version number (must a compatible with 1.0)"}),
-    required_extensions: z.string().array()
+    requiredExtensions: z.string().array()
 });
 type BindingHeader = z.infer<typeof bindingHeader>;
 
@@ -50,12 +50,12 @@ function fullMatch(x: string, ex: RegExp){
 
 function isAllowedKeybinding(key: string){
     for(let press of key.split(/\s+/)){
-        let mods_and_press = press.split("+");
-        for(let mod of mods_and_press.slice(0, -1)){
+        let modsAndPress = press.split("+");
+        for(let mod of modsAndPress.slice(0, -1)){
             if(!ALLOWED_MODIFIERS.test(mod)){ return false; }
         }
-        let unmod_press = mods_and_press[mods_and_press.length-1];
-        if(ALLOWED_KEYS.every(a => !fullMatch(unmod_press, a))){ return false; }
+        let unmodPress = modsAndPress[modsAndPress.length-1];
+        if(ALLOWED_KEYS.every(a => !fullMatch(unmodPress, a))){ return false; }
     }
     return true;
 }
@@ -109,9 +109,9 @@ export const bindingItem = z.object({
     key: z.union([bindingKey, bindingKey.array()]).optional(),
     when: z.union([z.string(), z.string().array()]).optional(),
     mode: z.union([z.string(), z.string().array()]).optional(),
-    allowed_prefixes: z.union([
+    allowedPrefixes: z.union([
         z.string().refine(x => {
-            return x === "<all-prefixes>"
+            return x === "<all-prefixes>";
         }, prefixError), 
         z.union([bindingKey, z.string().max(0)]).array()
     ]).optional(),
@@ -180,11 +180,11 @@ export const bindingSpec = z.object({
 export type BindingSpec = z.infer<typeof bindingSpec>;
 
 export async function parseBindingFile(file: vscode.Uri){
-    let file_data = await vscode.workspace.fs.readFile(file);
-    let file_text = decoder.decode(file_data);
+    let fileData = await vscode.workspace.fs.readFile(file);
+    let fileText = decoder.decode(fileData);
     if(file.fsPath.endsWith(".json")){
-        return bindingSpec.safeParse(JSON.parse(file_text));
+        return bindingSpec.safeParse(JSON.parse(fileText));
     }else{
-        return bindingSpec.safeParse(TOML.load(file_text));
+        return bindingSpec.safeParse(TOML.load(fileText));
     }
 }

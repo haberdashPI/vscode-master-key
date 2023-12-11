@@ -244,11 +244,11 @@ function moveModeToWhenClause(binding: StrictBindingItem){
 }
 
 function expandAllowedPrefixes(when: string[], item: BindingItem){
-    if(Array.isArray(item.allowed_prefixes)){
-        let allowed = item.allowed_prefixes.map(a => `modalkeys.prefix == '${a}'`).join(' || ');
+    if(Array.isArray(item.allowedPrefixes)){
+        let allowed = item.allowedPrefixes.map(a => `modalkeys.prefix == '${a}'`).join(' || ');
         when.push(allowed);
     }
-    if(item.allowed_prefixes !== "<all-prefixes>"){
+    if(item.allowedPrefixes !== "<all-prefixes>"){
         when.push("modalkeys.prefix == ''");
     }
     return when;
