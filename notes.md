@@ -6,7 +6,8 @@ current issue I'm working on:
     these look different, and a treated as two separate 
     bindings
 
-    we need to support multiple flags on prefix 
+    working on code in keybindingProcessing.ts, but we need
+    to deal with a clear error message that uses the prefix
 - more context information available to computedArgs
 
 Next up
