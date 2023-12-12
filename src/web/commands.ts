@@ -31,9 +31,19 @@ const keyContext = z.object({
     search: z.string(),
     validModes: validModes
 }).passthrough();
-type KeyContext = z.infer<typeof keyContext> & { [key: string]: any };
+type KeyContext = z.infer<typeof keyContext> & { [key: string]: any } & {
+    editorHasSelection: boolean,
+    editorHasMultipleSelections: boolean,
+    editorLangId: undefined | string,
+};
 
 const keyContextKey = z.string().regex(/[a-zA-Z_]+[0-9a-zA-Z_]*/);
+
+// TODO: we will need to implement API equivalent flags
+// for each 'when' clause context variable we want to use
+
+// TODO: we should make a task to make it possible
+// to register new variables here that extensions can hook into
 
 class CommandState {
     values: KeyContext = {
@@ -41,22 +51,25 @@ class CommandState {
         count: 0,
         mode: 'insert',
         search: '',
-        validModes: ['insert']
+        validModes: ['insert'],
+        editorHasSelection: false,
+        editorHasMultipleSelections: false,
+        editorLangId: undefined,
     };
-    transientValues: string[] = [];
+    transientValues: Record<string, any> = {};
     constructor(){ 
         for(let [k, v] of Object.entries(this.values)){
-            vscode.commands.executeCommand('setContext', 'modalkeys.'+k, v);
+            vscode.commands.executeCommand('setContext', 'master-key.'+k, v);
         }
         updateStatusBar();
     }
     setKeyContext(key: string, value: any){
         // key validation
-        validateInput('modalkeys.set', { key }, z.object({key: keyContextKey}));
+        validateInput('master-key.set', { key }, z.object({key: keyContextKey}));
 
         // value validation
         if((<any>keyContext.shape)[key]){
-            validateInput('modalkeys.set', value, (<any>keyContext.shape)[key]);
+            validateInput('master-key.set', value, (<any>keyContext.shape)[key]);
         }
         if(key === 'mode'){
             if(!this.values.validModes.some(m => m === value)){
@@ -66,7 +79,7 @@ class CommandState {
 
         // assignment
         this.values[key] = value;
-        vscode.commands.executeCommand('setContext', 'modalkeys.'+key, value);
+        vscode.commands.executeCommand('setContext', 'master-key.'+key, value);
         updateStatusBar();
     }
 }
@@ -92,7 +105,7 @@ const runCommandArgs = z.object({
 type RunCommandsArgs = z.infer<typeof runCommandArgs>;
 
 async function runCommandsCmd(args_: unknown){
-    let args = validateInput('modalkeys.do', args_, runCommandArgs);
+    let args = validateInput('master-key.do', args_, runCommandArgs);
     if(args){ return await runCommands(args); }
 }
 export async function runCommands(args: RunCommandsArgs){
@@ -109,19 +122,19 @@ export async function runCommands(args: RunCommandsArgs){
     }
     evalContext.reportErrors();
 }
-commands['modalkeys.do'] = runCommandsCmd;
+commands['master-key.do'] = runCommandsCmd;
 
 const updateCountArgs = z.object({
     value: z.coerce.number()
 });
 
 function updateCount(args_: unknown){
-    let args = validateInput('modalkeys.updateCount', args_, updateCountArgs);
+    let args = validateInput('master-key.updateCount', args_, updateCountArgs);
     if(args !== undefined){
         state.setKeyContext('count', state.values.count*10 + args.value);
     }
 }
-commands['modalkeys.updateCount'] = updateCount;
+commands['master-key.updateCount'] = updateCount;
 
 const prefixArgs = z.object({
     key: z.string(),
@@ -129,7 +142,7 @@ const prefixArgs = z.object({
 });
 
 function prefix(args_: unknown){
-    let args = validateInput('modalkeys.prefix', args_, prefixArgs);
+    let args = validateInput('master-key.prefix', args_, prefixArgs);
     if(args !== undefined){
         if(state.values.prefix.length > 0){
             state.setKeyContext('prefix', state.values.prefix + " " + args.key);
@@ -137,12 +150,13 @@ function prefix(args_: unknown){
             state.setKeyContext('prefix', args.key);
         }
         if(args.flag){
+            let oldValue = state.values[args.flag];
             state.setKeyContext(args.flag, true);
-            state.transientValues.push(args.flag);
+            state.transientValues[args.flag] = oldValue;
         }
     }
 }
-commands['modalkeys.prefix'] = prefix;
+commands['master-key.prefix'] = prefix;
 
 // TODO: there needs to be more data validation for the standard state values; only
 // arbitrary values should be free to be any value
@@ -154,36 +168,35 @@ const setArgs = z.object({
 type SetArgs = z.infer<typeof setArgs>;
 
 function setCmd(args_: unknown){
-    let args = validateInput('modalkeys.set', args_, setArgs);
+    let args = validateInput('master-key.set', args_, setArgs);
     if(args){ setKeyContext(args); }
 }
 export function setKeyContext(args: SetArgs){
+    let oldValue = state.values[args.name];
     state.setKeyContext(args.name, args.value);
-    if(args.transient){ state.transientValues.push(args.name); }
+    if(args.transient){ state.transientValues[args.name] = oldValue; }
 }
-commands['modalkeys.set'] = setCmd;
-commands['modalkeys.setMode'] = (x) => setKeyContext({name: 'mode', value: 'insert', transient: false});
-commands['modalkeys.enterInsert'] = (x) => setKeyContext({name: 'mode', value: 'insert', transient: false});
-commands['modalkeys.enterNormal'] = (x) => setKeyContext({name: 'mode', value: 'normal', transient: false});
+commands['master-key.set'] = setCmd;
+commands['master-key.setMode'] = (x) => setKeyContext({name: 'mode', value: 'insert', transient: false});
+commands['master-key.enterInsert'] = (x) => setKeyContext({name: 'mode', value: 'insert', transient: false});
+commands['master-key.enterNormal'] = (x) => setKeyContext({name: 'mode', value: 'normal', transient: false});
 
 function reset(){
     // clear any relevant state
     state.setKeyContext('count', 0);
     state.setKeyContext('prefix', '');
-    for (let k in state.transientValues) {
-        state.setKeyContext(k, undefined);
-    }
-    state.transientValues = [];
+    for (let [k, v] of Object.entries(state.transientValues)) { state.setKeyContext(k, v); }
+    state.transientValues = {};
 }
-commands['modalkeys.reset'] = reset;
+commands['master-key.reset'] = reset;
 
-commands['modalkeys.ignore'] = () => undefined;
+commands['master-key.ignore'] = () => undefined;
 
-function updateValidModes(event?: vscode.ConfigurationChangeEvent){
-    if(!event || event.affectsConfiguration('modalkeys')){
-        let config = vscode.workspace.getConfiguration('modalkeys');
-        let validModes = config.get<string[]>('validModes');
-        state.setKeyContext('validModes', validModes);
+function updateDefinitions(event?: vscode.ConfigurationChangeEvent){
+    if(!event || event.affectsConfiguration('master-key')){
+        let config = vscode.workspace.getConfiguration('master-key');
+        let definitions = config.get<object[]>('definitions');
+        for(let [k, v] of Object.entries(definitions || {})){ state.setKeyContext(k, v); }
     }
 }
 
@@ -204,8 +217,22 @@ export function activate(context: vscode.ExtensionContext) {
     searchStatusBar.accessibilityInformation = { label: "Search Text" };
     searchStatusBar.show();
 
-    updateValidModes();
-    vscode.workspace.onDidChangeConfiguration(updateValidModes);
+    updateDefinitions();
+    vscode.workspace.onDidChangeConfiguration(updateDefinitions);
+
+    vscode.window.onDidChangeTextEditorSelection(e => {
+        let selCount = 0;
+        for(let sel of e.selections){
+            if(!sel.isEmpty){ selCount += 1; }
+            if(selCount > 1){ break; }
+        }
+        state.values.editorHasSelection = selCount > 0;
+        state.values.editorHasMultipleSelections = selCount > 1;
+    });
+
+    vscode.window.onDidChangeActiveTextEditor(e => {
+        state.values.editorLangId = e?.document?.languageId;
+    });
 
     for (let [name, fn] of Object.entries(commands)) {
         context.subscriptions.push(vscode.commands.registerCommand(name, fn));

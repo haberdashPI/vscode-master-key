@@ -7,11 +7,11 @@
 	"configurations": [
 		{
 			"name": "Run Web Extension ",
-			"type": "pwa-extensionHost",
+			"type": "extensionHost",
 			"debugWebWorkerHost": true,
 			"request": "launch",
 			"args": [
-				"--profile-temp",
+				"--profile=debug-profile",
 				"--extensionDevelopmentPath=${workspaceFolder}",
 				"--extensionDevelopmentKind=web"
 			],
@@ -21,12 +21,12 @@
 			"preLaunchTask": "npm: watch-web"
 		},
 		{
-			"name": "Extension Tests",
+		"name": "Extension Tests",
 			"type": "extensionHost",
 			"debugWebWorkerHost": true,
 			"request": "launch",
 			"args": [
-				"--profile-temp",
+				"--profile=debug-profile",
 				"--extensionDevelopmentPath=${workspaceFolder}",
 				"--extensionDevelopmentKind=web",
 				"--extensionTestsPath=${workspaceFolder}/dist/web/test/suite/index"

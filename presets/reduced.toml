@@ -23,7 +23,7 @@ description = """
 This set of keybindings provides a comprehensive and well tested set of
 bindings that I use in my daily work. It serves as an example of a fully
 customized set of keybindings, and demonstrates the full capabilities of
-ModalKeys.
+master-key.
 
 The basic logic of these commands follow that of Kakoune: motions generally
 cause some region of text to be selected, and then actions modify these
@@ -52,19 +52,19 @@ return to insert mode.
 name = "normal"
 description = "Enter normal mode"
 key = ["escape", "ctrl+["]
-do = ["modalkeys.enterNormal", "modalkeys.reset"]
+do = ["master-key.enterNormal", "master-key.reset"]
 
 [[bind.modes.items]]
 key = ["escape", "ctrl+["]
 when = "suggsetWidgetVisible && textInuptFocus"
-do = ["modalkeys.enterNormal", "modalkeys.reset"]
+do = ["master-key.enterNormal", "master-key.reset"]
 
 # [[bind.modes.items]]
 # # by default typing keys in a mode other than insert is simply ignored
 # name = "ignore"
 # description = "this key does nothing"
 # key = "<all-keys>"
-# do.command = "modalkeys.ignore"
+# do.command = "master-key.ignore"
 # mode = "!insert"
 # when = "editorTextFocus"
 

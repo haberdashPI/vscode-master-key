@@ -23,7 +23,7 @@ description = """
 This set of keybindings provides a comprehensive and well tested set of
 bindings that I use in my daily work. It serves as an example of a fully
 customized set of keybindings, and demonstrates the full capabilities of
-ModalKeys.
+master-key.
 
 The basic logic of these commands follow that of Kakoune: motions generally
 cause some region of text to be selected, and then actions modify these
@@ -35,7 +35,9 @@ These bindings are named after the middle name of my first child.
 """
 
 [define]
-validModes = ["insert", "normal", "syminsert"]
+validModes = ["insert", "search", "normal", "syminsert"]
+select_on = false
+around_on = false
 
 [bind.modes]
 name = "Modes"
@@ -55,14 +57,14 @@ return to insert mode.
 name = "normal"
 description = "Enter normal mode"
 key = ["escape", "ctrl+["]
-do = ["modalkeys.enterNormal", "modalkeys.reset"]
+do = ["master-key.enterNormal", "master-key.reset"]
 when = "!findWidgetVisible"
 allowedPrefixes = "<all-prefixes>"
 
 [[bind.modes.items]]
 key = ["escape", "ctrl+["]
 when = "suggsetWidgetVisible && editorTextFocus && !findWidgetVisible"
-do = ["modalkeys.enterNormal", "modalkeys.reset"]
+do = ["master-key.enterNormal", "master-key.reset"]
 allowedPrefixes = "<all-prefixes>"
 
 [[bind.modes.items]]
@@ -70,7 +72,7 @@ allowedPrefixes = "<all-prefixes>"
 name = "ignore"
 description = "this key does nothing"
 key = ["<all-keys>", "shift+<all-keys>"]
-do.command = "modalkeys.ignore"
+do.command = "master-key.ignore"
 allowedPrefixes = "<all-prefixes>"
 mode = ["!insert", "!search"]
 when = "editorTextFocus"
@@ -94,7 +96,7 @@ command is repeated, when relevant.
 [[bind.edit.count.items]]
 name = "Update number with {key}"
 key = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
-do.command = "modalkeys.updateCount"
+do.command = "master-key.updateCount"
 do.args.value = "{key}"
 resetTransient = false
 mode = "!insert" # number keys apply in all modes but insert
@@ -164,7 +166,7 @@ selection commands are changed to both move start and end of a selection to surr
 entire object (rather than extending to specified start/end point)
 """
 resetTransient = false
-do.command = "modalkeys.prefix"
+do.command = "master-key.prefix"
 do.args = { key = "u", flag = "around_on" }
 
 [[bind.edit.motion.mod.items]]
@@ -173,7 +175,7 @@ name = "hold selection"
 description = """
 selection commands extend the selection
 """
-do.command = "modalkeys.set"
+do.command = "master-key.set"
 do.args.name = "select_on"
 do.args.value = true
 
@@ -201,7 +203,7 @@ key = "w"
 name = "subwrd →"
 description = "next subword (camel/snake case)"
 do.args.unit = "subword"
-do.computedArgs.value = "count"
+do.computedArgs.value = "count || 1"
 
 [[bind.edit.motion.obj.items]]
 key = "e"
@@ -209,14 +211,14 @@ name = "subwrd end"
 description = "next subword (camel/snake case) end"
 do.args.unit = "subword"
 do.computedArgs.boundary = "around_on ? 'both' : 'end'"
-do.computedArgs.value = "count"
+do.computedArgs.value = "count || 1"
 
 [[bind.edit.motion.obj.items]]
 key = "shift+w"
 name = "word →"
 description = "next word"
 do.args.unit = "word"
-do.computedArgs.value = "count"
+do.computedArgs.value = "count || 1"
 
 [[bind.edit.motion.obj.items]]
 key = "shift+e"
@@ -224,32 +226,32 @@ name = "word end"
 description = "next word end"
 do.args.unit = "word"
 do.computedArgs.boundary = "around_on ? 'both' : 'end'"
-do.computedArgs.value = "count"
+do.computedArgs.value = "count || 1"
 
 [[bind.edit.motion.obj.items]]
 key = "b"
 name = "subwrd ←"
 description = "previous subword (camel/snake case)"
 do.args.unit = "subword"
-do.computedArgs.value = "-count"
+do.computedArgs.value = "-count || -1"
 
 [[bind.edit.motion.obj.items]]
 key = "shift+b"
 name = "word ←"
 description = "previous word"
 do.args.unit = "word"
-do.computedArgs.value = "-count"
+do.computedArgs.value = "-count || -1"
 
 [[bind.edit.motion.obj.items]]
 key = "u u"
 name = "smart expand"
 description = "Use VSCode's built-in smart expansion command"
-do.command = "editor.action.smartSelect.expand"
+do = "editor.action.smartSelect.expand"
 
 [bind.edit.motion.search]
 name = "Search Related Motions"
 description = "Motions related to searching for text in a document"
-default.do.command = "modalkeys.search"
+default.do.command = "master-key.search"
 default.do.args.caseSensitive = true
 default.do.args.backwards = false
 default.do.args.selectTillMatch = true
@@ -271,14 +273,14 @@ do.args.register = "search"
 key = "n"
 name = "→ search"
 description = "Go to the next match of the search query"
-do.command = "modalkeys.nextMatch"
+do.command = "master-key.nextMatch"
 do.args.register = "search"
 
 [[bind.edit.motion.search.items]]
 key = "shift+n"
 name = "← search"
 description = "Go to the previous match of the search query"
-do.command = "modalkeys.previousMatch"
+do.command = "master-key.previousMatch"
 do.args.register = "search"
 
 [[bind.edit.motion.search.items]]
@@ -331,14 +333,14 @@ do.args.offset = "start"
 key = ";"
 name = "→ match"
 description = "Repeat search motion forwards"
-do.command = "modalkeys.nextMatch"
+do.command = "master-key.nextMatch"
 do.computedArgs.repeat = "count"
 
 [[bind.edit.motion.search.items]]
 key = "shift+;"
 name = "← match"
 description = "Repeat search motion backwards"
-do.command = "modalkeys.previousMatch"
+do.command = "master-key.previousMatch"
 do.computedArgs.repeat = "count"
 
 [bind.edit.motion.syntax]
@@ -374,18 +376,18 @@ description = "Essential actions required to edit text"
 key = "i"
 name = "insert"
 description = "Switch to insert mode (right before character)"
-do = ["selection-utilities.shrinkToActive", "modalkeys.enterInsert"]
+do = ["selection-utilities.shrinkToActive", "master-key.enterInsert"]
 
 [[bind.edit.action.basic.items]]
 key = "a"
 name = "append"
 description = "Switch to insert mode (right after character)"
-do = ["selection-utilities.shrinkToActive", "modalkeys.enterInsert"]
+do = ["selection-utilities.shrinkToActive", "master-key.enterInsert"]
 when = "editorHasSelection"
 
 [[bind.edit.action.basic.items]]
 key = "a"
-do = ["selection-utilities.shrinkToActive", "cursorRight", "modalkeys.enterInsert"]
+do = ["selection-utilities.shrinkToActive", "cursorRight", "master-key.enterInsert"]
 when = "!editorHasSelection"
 
 [[bind.edit.action.basic.items]]
@@ -396,26 +398,26 @@ Without a count: change selected region of text. With a count:
 change up to `count` lines.
 """
 when = "editorHasMultilineSelection"
-do = ["deleteRight", "editor.action.insertLineBefore", "modalkeys.enterInsert"]
+do = ["deleteRight", "editor.action.insertLineBefore", "master-key.enterInsert"]
 
 [[bind.edit.action.basic.items]]
 key = "c"
 when = "!editorHasMultilineSelection && editorHasSelection"
-do = ["deleteRight", "modalkeys.enterInsert"]
+do = ["deleteRight", "master-key.enterInsert"]
 
 [[bind.edit.action.basic.items]]
 key = "c"
-when = "!editorHasSelection && modalkeys.count <= 1"
+when = "!editorHasSelection && master-key.count <= 1"
 do = ["expandLineSelection", "deleteRight", "editor.action.insertLineBefore", 
-            "modalkeys.enterInsert" ]
+            "master-key.enterInsert" ]
 
 [[bind.edit.action.basic.items]]
 key = "c"
-when = "!editorHasSelection && modalkeys.count > 1"
-do = [{command = "modalkeys.selectLines", computedArgs = {value = "count"}},
+when = "!editorHasSelection && master-key.count > 1"
+do = [{command = "master-key.selectLines", computedArgs = {value = "count"}},
             "deleteRight",
             "editor.action.insertLineBefore",
-            "modalkeys.enterInsert"]
+            "master-key.enterInsert"]
 
 [[bind.edit.action.basic.items]]
 key = "shift+c"
@@ -423,15 +425,15 @@ name = "change to/back"
 description = """Without a count: change from current char to end of line. With a count: 
 change the previous `count` lines.
 """
-when = "!modalkeys.count <= 1"
-do = ["selection-utilities.shrinkToActive", "deleteAllRight", "modalkeys.enterInsert"]
+when = "!master-key.count <= 1"
+do = ["selection-utilities.shrinkToActive", "deleteAllRight", "master-key.enterInsert"]
 
 [[bind.edit.action.basic.items]]
 key = "shift+c"
-when = "!modalkeys.count > 1"
+when = "!master-key.count > 1"
 
 [[bind.edit.action.basic.items.do]]
-command = "modalkeys.selectLines"
+command = "master-key.selectLines"
 computedArgs.value = "count"
 args.dir = "up"
 
@@ -442,7 +444,7 @@ command = "deleteRight"
 command = "editor.actions.insertLineBefore"
 
 [[bind.edit.action.basic.items.do]]
-command = "modalkeys.enterInsert"
+command = "master-key.enterInsert"
 
 [[bind.edit.action.basic.items]]
 key = "d"
@@ -452,15 +454,15 @@ Without a count: delete selected text (and store to clipboard). With a
 count, delete up to the next `count` lines and store to clipboard.
 """
 when = "!editorHasSelection"
-do = [{command = "modalkeys.selectLines", computedArgs = {value = "count"}},
+do = [{command = "master-key.selectLines", computedArgs = {value = "count"}},
              "editor.action.clipboardCutAction",
-            {command = "modalkeys.enterMode", args = {value = "normal"}}]
+            {command = "master-key.enterMode", args = {value = "normal"}}]
 
 [[bind.edit.action.basic.items]]
 key = "d"
 when = "editorHasSelection"
 do = ["editor.action.clipboardCutAction",
-            {command = "modalkeys.enterMode", args = {value = "normal"}}]
+            {command = "master-key.enterMode", args = {value = "normal"}}]
 
 [bind.edit.action.symmetric]
 name = "Symmetric Operations"
@@ -476,14 +478,14 @@ the selection
 """
 mode = "normal"
 key = "g '"
-do.command = "modalkeys.enterMode"
+do.command = "master-key.enterMode"
 do.args.mode = "syminsert"
 
 [[bind.edit.action.symmetric.items]]
 name = "Normal"
 description = "Return to normal model"
 key = ["enter", "g '"]
-do.command = "modalkeys.enterMode"
+do.command = "master-key.enterMode"
 do.args.mode = "normal"
 
 [define.symmetric_key_map]

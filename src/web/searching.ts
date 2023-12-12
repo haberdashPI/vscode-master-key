@@ -22,7 +22,7 @@ export type SearchArgs = z.infer<typeof searchArgs>;
 
 export function* searchMatches(doc: vscode.TextDocument, start: vscode.Position, 
     end: vscode.Position | undefined, target: string, args_: unknown) {
-    let parsedArgs = validateInput('modalkeys.search', args_, searchArgs);
+    let parsedArgs = validateInput('master-key.search', args_, searchArgs);
     if(!parsedArgs){ return; }
     let args = parsedArgs!;
 
@@ -147,7 +147,7 @@ async function onType(event: {text: string}){
 }
 
 async function search(editor: vscode.TextEditor, edit: vscode.TextEditorEdit, args_: any[]){
-    let args = validateInput('modalkeys.search', args_, searchArgs);
+    let args = validateInput('master-key.search', args_, searchArgs);
     if(!args){ return; }
 
     currentSearch = args.register;
@@ -214,13 +214,13 @@ async function acceptSearch(editor: vscode.TextEditor, edit: vscode.TextEditorEd
 }
 
 export function activate(context: vscode.ExtensionContext){
-    context.subscriptions.push(vscode.commands.registerTextEditorCommand('modalkeys.search', search));
-    context.subscriptions.push(vscode.commands.registerTextEditorCommand('modalkeys.acceptSearch', acceptSearch));
-    context.subscriptions.push(vscode.commands.registerTextEditorCommand('modalkeys.cancelSearch', cancelSearch));
-    context.subscriptions.push(vscode.commands.registerTextEditorCommand('modalkeys.deleteLastSearchChar', deleteLastSearchCharacter));
-    context.subscriptions.push(vscode.commands.registerTextEditorCommand('modalkeys.nextMatch', nextMatch));
-    context.subscriptions.push(vscode.commands.registerTextEditorCommand('modalkeys.previousMatch', previousMatch));
-    context.subscriptions.push(vscode.commands.registerTextEditorCommand('modalkeys.clearSearchDecorations', clearSearchDecorations));
+    context.subscriptions.push(vscode.commands.registerTextEditorCommand('master-key.search', search));
+    context.subscriptions.push(vscode.commands.registerTextEditorCommand('master-key.acceptSearch', acceptSearch));
+    context.subscriptions.push(vscode.commands.registerTextEditorCommand('master-key.cancelSearch', cancelSearch));
+    context.subscriptions.push(vscode.commands.registerTextEditorCommand('master-key.deleteLastSearchChar', deleteLastSearchCharacter));
+    context.subscriptions.push(vscode.commands.registerTextEditorCommand('master-key.nextMatch', nextMatch));
+    context.subscriptions.push(vscode.commands.registerTextEditorCommand('master-key.previousMatch', previousMatch));
+    context.subscriptions.push(vscode.commands.registerTextEditorCommand('master-key.clearSearchDecorations', clearSearchDecorations));
     updateSearchHighlights();
     vscode.workspace.onDidChangeConfiguration(updateSearchHighlights);
 }
@@ -255,7 +255,7 @@ export function revealActive(editor: vscode.TextEditor){
 
 const matchStepArgs = z.object({register: z.string().default("default")});
 async function nextMatch(editor: vscode.TextEditor, edit: vscode.TextEditorEdit, args_: unknown){
-    let args = validateInput('modalkeys.nextMatch', args_, matchStepArgs);
+    let args = validateInput('master-key.nextMatch', args_, matchStepArgs);
     if(!args) { return; }
     let state = getSearchState(editor, args!.register);
     if (state.text) {
@@ -265,7 +265,7 @@ async function nextMatch(editor: vscode.TextEditor, edit: vscode.TextEditorEdit,
 }
 
 async function previousMatch(editor: vscode.TextEditor, edit: vscode.TextEditorEdit, args_: unknown){
-    let args = validateInput('modalkeys.previousMatch', args_, matchStepArgs);
+    let args = validateInput('master-key.previousMatch', args_, matchStepArgs);
     if(!args) { return; }
     let state = getSearchState(editor, args!.register);
     if (state.text) {
@@ -380,8 +380,8 @@ function navigateTo(state: SearchState, editor: vscode.TextEditor, updateSearchF
  * built-in search commands.
  */
 function updateSearchHighlights(event?: vscode.ConfigurationChangeEvent){
-    if(!event || event.affectsConfiguration('modalkeys')){
-        let config = vscode.workspace.getConfiguration('modalkeys');
+    if(!event || event.affectsConfiguration('master-key')){
+        let config = vscode.workspace.getConfiguration('master-key');
         let matchBackground = config.get<string>('searchMatchBackground');
         let matchBorder = config.get<string>('searchMatchBorder');
         let highlightBackground = config.get<string>('searchOtherMatchesBackground');

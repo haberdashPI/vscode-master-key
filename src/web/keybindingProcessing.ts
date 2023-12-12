@@ -27,15 +27,15 @@ function expandWhenClauseByConcatenation(obj_: any, src_: any, key: string){
     return obj.concat(src);
 }
 
-function expandDefaults(bindings: BindingTree, prefix: string = "bind", default_item: BindingItem = {}): StrictBindingTree {
+function expandDefaults(bindings: BindingTree, prefix: string = "bind", defaultItem: BindingItem = {}): StrictBindingTree {
     if (bindings.default !== undefined) {
-        default_item = { ...default_item, ...<BindingItem>bindings.default };
+        defaultItem = { ...defaultItem, ...<BindingItem>bindings.default };
     }
 
     let items: StrictBindingItem[] | undefined = undefined;
     if (bindings.items !== undefined) {
-        let validated_items = bindings.items.map((item: BindingItem, i: number) => {
-            let expandedItem = mergeWith(cloneDeep(default_item), item,
+        let validatedItems = bindings.items.map((item: BindingItem, i: number) => {
+            let expandedItem = mergeWith(cloneDeep(defaultItem), item,
                 expandWhenClauseByConcatenation);
             let parsing = strictBindingItem.safeParse(expandedItem);
             if(!parsing.success){
@@ -47,11 +47,11 @@ function expandDefaults(bindings: BindingTree, prefix: string = "bind", default_
                 return parsing.data;
             }
         });
-        items = <StrictBindingItem[]>validated_items.filter(x => x !== undefined);
+        items = <StrictBindingItem[]>validatedItems.filter(x => x !== undefined);
     }
 
-    let non_items = Object.entries(omit(bindings, ['name', 'description', 'kind', 'items', 'default']));
-    let result: { [key: string]: BindingTree } = Object.fromEntries(non_items.map(([k, v]) => {
+    let nonItems = Object.entries(omit(bindings, ['name', 'description', 'kind', 'items', 'default']));
+    let result: { [key: string]: BindingTree } = Object.fromEntries(nonItems.map(([k, v]) => {
         let entry = (prefix === "" ? "" : prefix+".")+k;
         if(typeof v !== 'object'){
             vscode.window.showErrorMessage(`binding.${prefix} has unexpected field ${k}`);
@@ -60,7 +60,7 @@ function expandDefaults(bindings: BindingTree, prefix: string = "bind", default_
         if(v.name !== undefined){
             // though type script can't enforce it statically, if v has a `name`
             // it is a binding tree
-            return [k, expandDefaults(<BindingTree>v, entry, default_item)];
+            return [k, expandDefaults(<BindingTree>v, entry, defaultItem)];
         }else{
             vscode.window.showErrorMessage(`binding.${entry} has no "name" field.`);
             return [];
@@ -131,7 +131,7 @@ function listBindings(bindings: StrictBindingTree): StrictBindingItem[] {
 
 interface IConfigKeyBinding {
     key: string,
-    command: "modalkeys.do" | "modalkeys.prefix"
+    command: "master-key.do" | "master-key.prefix"
     name?: string,
     description?: string,
     mode?: string[],
@@ -149,7 +149,7 @@ function itemToConfigBinding(item: StrictBindingItem): IConfigKeyBinding {
               Array.isArray(item.mode) ? item.mode : 
               [item.mode],
         when: Array.isArray(item.when) ? "(" + item.when.join(") && (") + ")" : item.when,
-        command: "modalkeys.do",
+        command: "master-key.do",
         args: { do: item.do, resetTransient: item.resetTransient }
     };
 }
@@ -182,7 +182,7 @@ function validateUniqueForBinding(vals: (string | undefined)[], name: string, it
 function expandBindingDocsAcrossWhenClauses(items: StrictBindingItem[]): StrictBindingItem[] {
     let sharedBindings: { [key: string]: any[] } = {};
     for (let item of items) {
-        if(item.do === "modalkeys.ignore" || (<{command?: string}>item.do)?.command === "modalkeys.ignore"){ continue; }
+        if(item.do === "master-key.ignore" || (<{command?: string}>item.do)?.command === "master-key.ignore"){ continue; }
         let k = hash({ key: item.key, mode: item.mode });
         if (sharedBindings[k] === undefined) {
             sharedBindings[k] = [item];
@@ -226,9 +226,9 @@ function moveModeToWhenClause(binding: StrictBindingItem){
         let whenClause = modes.map(m => {
             if(m.startsWith("!")){
                 negative = true;
-                return `(modalkeys.mode != '${m.slice(1)}')`;
+                return `(master-key.mode != '${m.slice(1)}')`;
             }else{
-                return `(modalkeys.mode == '${m}')`;
+                return `(master-key.mode == '${m}')`;
             }
         });
         // NOTE: parsing validation should ensure that only negative or only
@@ -245,11 +245,11 @@ function moveModeToWhenClause(binding: StrictBindingItem){
 
 function expandAllowedPrefixes(when: string[], item: BindingItem){
     if(Array.isArray(item.allowedPrefixes)){
-        let allowed = item.allowedPrefixes.map(a => `modalkeys.prefix == '${a}'`).join(' || ');
+        let allowed = item.allowedPrefixes.map(a => `master-key.prefix == '${a}'`).join(' || ');
         when.push(allowed);
     }
     if(item.allowedPrefixes !== "<all-prefixes>"){
-        when.push("modalkeys.prefix == ''");
+        when.push("master-key.prefix == ''");
     }
     return when;
 }
@@ -260,7 +260,7 @@ function expandWhenPrefixes(when_: string[] | string | undefined, prefix: string
     let when = when_ ? (Array.isArray(when_) ? when_ : [when_]) : [];
     when = cloneDeep(when);
     if(prefix === ""){ when = expandAllowedPrefixes(when, item);
-    }else{ when.push(`(modalkeys.prefix == '${prefix}')`); }
+    }else{ when.push(`(master-key.prefix == '${prefix}')`); }
     return when;
 }
 
@@ -269,9 +269,9 @@ function extractPrefixBindings(item: StrictBindingItem, prefixItems: BindingMap 
     let prefix = "";
 
     if(item.key !== undefined && !Array.isArray(item.key)){
-        let key_seq = item.key.trim().split(/\s+/);
+        let keySeq = item.key.trim().split(/\s+/);
 
-        for(let key of key_seq.slice(0, -1)){
+        for(let key of keySeq.slice(0, -1)){
             let expandedWhen = expandWhenPrefixes(item.when, prefix, item);
             
             // track the current prefix for the next iteration of `map`
@@ -280,7 +280,7 @@ function extractPrefixBindings(item: StrictBindingItem, prefixItems: BindingMap 
 
             let prefixItem: StrictBindingItem = {
                 key, 
-                do: {command: "modalkeys.prefix", args: {key}},
+                do: {command: "master-key.prefix", args: {key}},
                 when: expandedWhen, 
                 resetTransient: false
             }; 
@@ -294,7 +294,7 @@ function extractPrefixBindings(item: StrictBindingItem, prefixItems: BindingMap 
         return {
             ...item, 
             when: expandWhenPrefixes(item.when, prefix, item), 
-            key: key_seq[key_seq.length-1]
+            key: keySeq[keySeq.length-1]
         };
     }
     return item;

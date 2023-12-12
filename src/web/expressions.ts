@@ -64,7 +64,7 @@ export class EvalContext {
             if (str.match(/(?<!=)=(?!=)/)) {
                 this.errors.push(`Found an isolated "=" in this expression.
                 Your expressions are not permitted to set any values. You should
-                use 'modalkeys.set' to do that.`);
+                use 'master-key.set' to do that.`);
                 return undefined;
             }
             this.cache[str] = exec = buildEvaled(str);

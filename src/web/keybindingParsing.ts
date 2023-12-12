@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 const TOML = require("smol-toml");
 import * as semver from 'semver';
-import { TextDecoder } from 'util';
-import { ZodIssue, preprocess, z } from "zod";
+import { TextDecoder } from 'text-encoding';
+import { ZodIssue, z } from "zod";
 import { ZodError, fromZodError, fromZodIssue } from 'zod-validation-error';
 
 let decoder = new TextDecoder("utf-8");
@@ -166,10 +166,14 @@ export type StrictBindingTree = z.infer<typeof strictBindingTree> & OtherKeys;
 // TODO: unit test - verify that zod recursively validates all 
 // elements of the binding tree
 
-export const validModes = z.string().array().refine((ms: string[]) => ms.some(m => m === 'insert'),
-    ms => {
+function contains(xs: string[], el: string){
+    return xs.some(x => x === el);
+}
+export const validModes = z.string().array().
+    refine(x => contains(x, 'insert') && contains(x, 'search'), ms => {
         let modes = ms.join(', ');
-        return { message: "The 'insert' mode is required, but the only modes were: " + modes };
+        return { message: `The modes 'insert' and 'search' are required, but the 
+                 only valid modes listed modes were: ` + modes };
     });
 
 export const bindingSpec = z.object({
@@ -185,6 +189,6 @@ export async function parseBindingFile(file: vscode.Uri){
     if(file.fsPath.endsWith(".json")){
         return bindingSpec.safeParse(JSON.parse(fileText));
     }else{
-        return bindingSpec.safeParse(TOML.load(fileText));
+        return bindingSpec.safeParse(TOML.parse(fileText));
     }
 }

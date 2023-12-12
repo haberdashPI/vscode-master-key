@@ -3,6 +3,7 @@ import { searchMatches } from './searching';
 import { BindingItem, parseBindingFile, showParseError } from './keybindingParsing';
 import { processBindings } from './keybindingProcessing';
 import { pick } from 'lodash';
+import replaceAll from 'string.prototype.replaceall';
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 // Keybinding Generation
@@ -10,7 +11,7 @@ import { pick } from 'lodash';
 const AUTOMATED_COMMENT_START_PREFIX = `
     // AUTOMATED BINDINGS START: ModalKey Bindings 
     //
-    // These bindings were automatically inserted by the ModalKeys extension from the
+    // These bindings were automatically inserted by the master-key extension from the
     // following file: 
     //
 `;
@@ -38,21 +39,26 @@ function findText(doc: vscode.TextDocument, text: string) {
     return firstMatchResult.value;
 }
 
-function replaceAll(str: string, regex: RegExp, replacement: string): string {
-    let result = "";
-    if(!/g/.test(regex.flags)){
-        throw(Error(`Expected a 'g' flag for regex ${regex}`));
-    }
-    let m = regex.exec(str);
-    let offset = 0;
-    while(m !== null){
-        result += str.slice(offset, m.index);
-        result += replacement;
-        offset += m[0].length;
-        m = regex.exec(str);
-    }
-    return result + str.slice(offset, -1);
-}
+// function replaceAll(str: string, regex: RegExp, replacement: string): string {
+//     let result = "";
+//     if(!/g/.test(regex.flags)){
+//         throw(Error(`Expected a 'g' flag for regex ${regex}`));
+//     }
+//     let m = regex.exec(str);
+//     let offset = 0;
+//     let oldIndex = 0;
+//     while(m !== null){
+//         result += str.slice(offset, m.index);
+//         result += replacement;
+//         offset += m[0].length;
+//         m = regex.exec(str);
+//         if(m && m.index === oldIndex){
+//             str = str.slice(oldIndex+1, -1);
+//             offset -= oldIndex+1;
+//         }
+//     }
+//     return result + str.slice(offset, -1);
+// }
 
 function formatBindings(file: vscode.Uri, items: BindingItem[]){
     let json = "";
@@ -156,10 +162,10 @@ async function importBindings() {
     if(parsedBindings.success){
         let bindings = processBindings(parsedBindings.data);
         insertKeybindingsIntoConfig(file, bindings);
-        let newValidModes = parsedBindings.data.define?.validModes;
-        if(newValidModes){
-            let config = vscode.workspace.getConfiguration('modalkeys');
-            config.update('validModes', newValidModes, vscode.ConfigurationTarget.Global);
+        let definitions = parsedBindings.data.define;
+        if(definitions){
+            let config = vscode.workspace.getConfiguration('master-key');
+            config.update('definitions', definitions, vscode.ConfigurationTarget.Global);
         }
     }else{
         for (let issue of parsedBindings.error.issues.slice(0, 3)) {
@@ -175,7 +181,7 @@ async function importBindings() {
 
 export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(vscode.commands.registerCommand(
-        'modalkeys.importBindings',
+        'master-key.importBindings',
         importBindings
     ));
 }
