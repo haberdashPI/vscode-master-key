@@ -1,9 +1,9 @@
 import hash from 'object-hash';
 import jsep from 'jsep';
 import { BindingSpec, BindingTree, StrictBindingTree, BindingItem, StrictBindingItem, 
-    strictBindingItem } from "./keybindingParsing";
+         strictBindingItem, StrictDoArgs } from "./keybindingParsing";
 import * as vscode from 'vscode';
-import { uniq, omit, mergeWith, cloneDeep, flatMap, values, entries } from 'lodash';
+import { isEqual, uniq, omit, mergeWith, cloneDeep, flatMap, values, entries } from 'lodash';
 import { reifyStrings, EvalContext } from './expressions';
 
 
@@ -17,7 +17,7 @@ export function processBindings(spec: BindingSpec){
     items = items.map(i => extractPrefixBindings(i, prefixItems));
     let bindings = items.map(itemToConfigBinding);
     let prefixBindings = values(prefixItems).map(itemToConfigBinding);
-    return bindings.concat(prefixBindings);
+    return resolveDuplicateBindings(bindings.concat(prefixBindings));
 }
 
 function expandWhenClauseByConcatenation(obj_: any, src_: any, key: string){
@@ -244,11 +244,14 @@ function moveModeToWhenClause(binding: StrictBindingItem){
 }
 
 function expandAllowedPrefixes(when: string[], item: BindingItem){
-    if(Array.isArray(item.allowedPrefixes)){
-        let allowed = item.allowedPrefixes.map(a => `master-key.prefix == '${a}'`).join(' || ');
-        when.push(allowed);
-    }
-    if(item.allowedPrefixes !== "<all-prefixes>"){
+    if(item.allowedPrefixes){
+        if(Array.isArray(item.allowedPrefixes)){
+            let allowed = item.allowedPrefixes.map(a => `master-key.prefix == '${a}'`).join(' || ');
+            when.push(allowed);
+        }
+        // else: item.allowedPrefixes === "<all-prefixes>" since this is validated during
+        // parsing in this case we don't want to add any clause about prefixes
+    }else{
         when.push("master-key.prefix == ''");
     }
     return when;
@@ -287,6 +290,8 @@ function extractPrefixBindings(item: StrictBindingItem, prefixItems: BindingMap 
             // we parse the `when` expression so that there is a better chance
             // that equivalent conditiosn hash to the same value
             let parsedWhen = expandedWhen.map(jsep);
+            // TODO: if there is some manual prefix specification
+            // it won't be picked up here, how do we deal with that
             let prefixKey = hash({key, mode: item.mode, when: parsedWhen});
             prefixItems[prefixKey] = prefixItem;
         }
@@ -298,4 +303,46 @@ function extractPrefixBindings(item: StrictBindingItem, prefixItems: BindingMap 
         };
     }
     return item;
+}
+
+function isSingleCommand(x: StrictDoArgs, cmd: string){
+    if(!Array.isArray(x)){
+        if(typeof x === 'string'){ return x === cmd; }
+        else{ return x.command === cmd; }
+    }
+    return false;
+}
+
+function resolveDuplicateBindings(items: StrictBindingItem[]){
+    let resolved: BindingMap = {};
+    for(let item of items){
+        let parsedWhen = item.when?.map(jsep);
+        let key = hash({key: item.key, mode: item.mode, when: parsedWhen});
+        let existingItem = resolved[key];
+        if(existingItem){
+            if(isEqual(item, existingItem)){
+                continue; // we're all good, no need to repeat ourselves
+            }else if(isSingleCommand(item.do, "master-key.ignore")){
+                continue; // we don't need to keep ignore'ed bindings that are redundant
+            }else if(isSingleCommand(existingItem.do, "master-key.ignore")){
+                resolved[key] = item;
+            }else if(isSingleCommand(item.do, "master-key.prefix") && 
+                     isSingleCommand(existingItem.do, "master-key.prefix")){
+                try{
+                    let mergedItem = mergeWith(item, existingItem, (newval, oldval, prop) => {
+                        if(prop === 'flag' && newval === undefined || oldval === undefined){
+                            return newval || oldval;
+                        }else if(newval !== oldval){
+                            throw(Error(prop));
+                        }   
+                    });
+                }catch(e){
+                    if(e instanceof Error){
+                        // TODO: somehow deal with the prefix issue
+                        vscode.window.showErrorMessage(`Multiple definitions for bindings ${key} 
+                    }
+                }
+            }
+        }
+    }
 }

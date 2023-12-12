@@ -1,6 +1,13 @@
 current issue I'm working on:
 
-make vscode context available to eval context
+- fix bug when merging prefixes:
+    sometimes there are additional arguments to prefix 
+    so when we create the automatic prefix definitions
+    these look different, and a treated as two separate 
+    bindings
+
+    we need to support multiple flags on prefix 
+- more context information available to computedArgs
 
 Next up
 - implement a few more of the bindings from modalbindings.js
