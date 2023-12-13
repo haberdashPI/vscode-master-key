@@ -1,7 +1,6 @@
 import hash from 'object-hash';
-import jsep from 'jsep';
 import { BindingSpec, BindingTree, StrictBindingTree, BindingItem, StrictBindingItem, 
-         strictBindingItem, StrictDoArgs } from "./keybindingParsing";
+         strictBindingItem, StrictDoArgs, parseWhen, StrictDoArg, BindingCommand } from "./keybindingParsing";
 import * as vscode from 'vscode';
 import { isEqual, uniq, omit, mergeWith, cloneDeep, flatMap, values, entries } from 'lodash';
 import { reifyStrings, EvalContext } from './expressions';
@@ -12,12 +11,12 @@ export function processBindings(spec: BindingSpec){
     let items: StrictBindingItem[] = listBindings(expandedSpec);
     items = expandBindingKeys(items, spec.define);
     items = expandBindingDocsAcrossWhenClauses(items);
-    items = items.map(moveModeToWhenClause);
     let prefixItems: BindingMap = {};
-    items = items.map(i => extractPrefixBindings(i, prefixItems));
-    let bindings = items.map(itemToConfigBinding);
-    let prefixBindings = values(prefixItems).map(itemToConfigBinding);
-    return resolveDuplicateBindings(bindings.concat(prefixBindings));
+    items = items.map(i => expandPrefixBindings(i, prefixItems));
+    items = resolveDuplicateBindings(items, prefixItems);
+    items = items.map(moveModeToWhenClause);
+    items = items.map(movePrefixesToWhenClause);
+    return items.map(itemToConfigBinding);
 }
 
 function expandWhenClauseByConcatenation(obj_: any, src_: any, key: string){
@@ -27,7 +26,7 @@ function expandWhenClauseByConcatenation(obj_: any, src_: any, key: string){
     return obj.concat(src);
 }
 
-function expandDefaults(bindings: BindingTree, prefix: string = "bind", defaultItem: BindingItem = {}): StrictBindingTree {
+function expandDefaults(bindings: BindingTree, prefix: string = "bind", defaultItem: BindingItem = {when: [], prefixes: [""]}): StrictBindingTree {
     if (bindings.default !== undefined) {
         defaultItem = { ...defaultItem, ...<BindingItem>bindings.default };
     }
@@ -134,21 +133,18 @@ interface IConfigKeyBinding {
     command: "master-key.do" | "master-key.prefix"
     name?: string,
     description?: string,
-    mode?: string[],
     when?: string,
     args: { do: string | object | (string | object)[], resetTransient?: boolean } | 
-        { key: string }
+          { key: string }
 }
 
 function itemToConfigBinding(item: StrictBindingItem): IConfigKeyBinding {
     return {
-        key: <string>item.key,
+        key: <string>item.key, // we've expanded all array keys, so we know its a string
         name: item.name,
         description: item.description,
-        mode: item.mode === undefined ? item.mode : 
-              Array.isArray(item.mode) ? item.mode : 
-              [item.mode],
-        when: Array.isArray(item.when) ? "(" + item.when.join(") && (") + ")" : item.when,
+        when: Array.isArray(item.when) ? 
+            "(" + item.when.map(w => w.str).join(") && (") + ")" : undefined,
         command: "master-key.do",
         args: { do: item.do, resetTransient: item.resetTransient }
     };
@@ -234,71 +230,52 @@ function moveModeToWhenClause(binding: StrictBindingItem){
         // NOTE: parsing validation should ensure that only negative or only
         // positive mode specifications occur in one list
         if(negative){
-            when = when.concat("("+whenClause.join(') && (')+")");
+            when = when.concat(parseWhen("("+whenClause.join(') && (')+")"));
         }else{
-            when = when.concat("("+whenClause.join(') || (')+")");
+            when = when.concat(parseWhen("("+whenClause.join(') || (')+")"));
         }
     }
 
     return {...binding, when};
 }
 
-function expandAllowedPrefixes(when: string[], item: BindingItem){
-    if(item.allowedPrefixes){
-        if(Array.isArray(item.allowedPrefixes)){
-            let allowed = item.allowedPrefixes.map(a => `master-key.prefix == '${a}'`).join(' || ');
-            when.push(allowed);
-        }
-        // else: item.allowedPrefixes === "<all-prefixes>" since this is validated during
-        // parsing in this case we don't want to add any clause about prefixes
-    }else{
-        when.push("master-key.prefix == ''");
-    }
-    return when;
-}
-
-function expandWhenPrefixes(when_: string[] | string | undefined, prefix: string, item: BindingItem){
-    // TODO: this doesn't properly handle the default of just a single `[""]` allowed
-    // prefix
-    let when = when_ ? (Array.isArray(when_) ? when_ : [when_]) : [];
-    when = cloneDeep(when);
-    if(prefix === ""){ when = expandAllowedPrefixes(when, item);
-    }else{ when.push(`(master-key.prefix == '${prefix}')`); }
-    return when;
+function movePrefixesToWhenClause(item: StrictBindingItem){
+    let when = item.when || [];
+    let allowed = item.prefixes.map(a => `master-key.prefix == '${a}'`).join(' || ');
+    when = when.concat(parseWhen(allowed));
+    return {...item, when};
 }
 
 type BindingMap = { [key: string]: StrictBindingItem };
-function extractPrefixBindings(item: StrictBindingItem, prefixItems: BindingMap = {}): StrictBindingItem{
-    let prefix = "";
+function expandPrefixBindings(item: StrictBindingItem, prefixItems: BindingMap = {}): StrictBindingItem{
+    let prefixes = item.prefixes || [];
 
     if(item.key !== undefined && !Array.isArray(item.key)){
         let keySeq = item.key.trim().split(/\s+/);
 
         for(let key of keySeq.slice(0, -1)){
-            let expandedWhen = expandWhenPrefixes(item.when, prefix, item);
-            
-            // track the current prefix for the next iteration of `map`
-            if(prefix.length > 0){ prefix += " "; }
-            prefix += key;
-
             let prefixItem: StrictBindingItem = {
                 key, 
-                do: {command: "master-key.prefix", args: {key}},
-                when: expandedWhen, 
+                do: {command: "master-key.prefix", args: {key, automated: true}},
+                when: item.when, 
+                prefixes,
+                mode: item.mode,
                 resetTransient: false
             }; 
-            // we parse the `when` expression so that there is a better chance
-            // that equivalent conditiosn hash to the same value
-            let parsedWhen = expandedWhen.map(jsep);
-            // TODO: if there is some manual prefix specification
-            // it won't be picked up here, how do we deal with that
-            let prefixKey = hash({key, mode: item.mode, when: parsedWhen});
-            prefixItems[prefixKey] = prefixItem;
+
+            // track the current prefix for the next iteration of `map`
+            prefixes = prefixes.map((prefix: string) => {
+                if(prefix.length > 0){ prefix += " "; }
+                prefix += key;
+                return prefix;
+            });
+
+            addWithoutDuplicating(prefixItems, prefixItem);
         }
 
         return {
             ...item, 
-            when: expandWhenPrefixes(item.when, prefix, item), 
+            prefixes,
             key: keySeq[keySeq.length-1]
         };
     }
@@ -313,36 +290,64 @@ function isSingleCommand(x: StrictDoArgs, cmd: string){
     return false;
 }
 
-function resolveDuplicateBindings(items: StrictBindingItem[]){
-    let resolved: BindingMap = {};
+function coerceSingleCommand(x_: StrictDoArgs){
+    let x = <StrictDoArg>x_; // we always check for `isSingleCommand` before using this coerce method
+    if(typeof x === 'string'){
+        return {command: x};
+    }else{
+        return x;
+    }
+}
+
+function resolveDuplicateBindings(items: StrictBindingItem[], prefixBindings: BindingMap){
+    let resolved: BindingMap = prefixBindings;
     for(let item of items){
-        let parsedWhen = item.when?.map(jsep);
-        let key = hash({key: item.key, mode: item.mode, when: parsedWhen});
-        let existingItem = resolved[key];
-        if(existingItem){
-            if(isEqual(item, existingItem)){
-                continue; // we're all good, no need to repeat ourselves
-            }else if(isSingleCommand(item.do, "master-key.ignore")){
-                continue; // we don't need to keep ignore'ed bindings that are redundant
-            }else if(isSingleCommand(existingItem.do, "master-key.ignore")){
-                resolved[key] = item;
-            }else if(isSingleCommand(item.do, "master-key.prefix") && 
-                     isSingleCommand(existingItem.do, "master-key.prefix")){
-                try{
-                    let mergedItem = mergeWith(item, existingItem, (newval, oldval, prop) => {
-                        if(prop === 'flag' && newval === undefined || oldval === undefined){
-                            return newval || oldval;
-                        }else if(newval !== oldval){
-                            throw(Error(prop));
-                        }   
-                    });
-                }catch(e){
-                    if(e instanceof Error){
-                        // TODO: somehow deal with the prefix issue
-                        vscode.window.showErrorMessage(`Multiple definitions for bindings ${key} 
-                    }
-                }
+        addWithoutDuplicating(resolved, item);
+    }
+    return Object.values(resolved);
+}
+
+function addWithoutDuplicating(map: BindingMap, newItem: StrictBindingItem){
+    let key = hash({
+        newItem: newItem.key, 
+        mode: newItem.mode, 
+        when: newItem.when?.map(w => w.id)?.sort(),
+        prefixes: newItem.prefixes
+    });
+
+    let existingItem = map[key];
+    if(existingItem){
+        if(isEqual(newItem, existingItem)){
+            // use the existing newItem
+            return map; 
+        }else if(isSingleCommand(newItem.do, "master-key.ignore")){
+            // use the existing newItem
+            return map; 
+        }else if(isSingleCommand(existingItem.do, "master-key.ignore")){
+            map[key] = newItem;
+            return map;
+        }else if(isSingleCommand(newItem.do, "master-key.prefix") && 
+                 isSingleCommand(existingItem.do, "master-key.prefix")){
+            let newItemDo = coerceSingleCommand(newItem.do);
+            let existingItemDo = coerceSingleCommand(existingItem.do);
+            if(newItemDo.args?.automated){
+                // use the existing newItem
+                return map; 
+            }else if(existingItemDo.args?.automated){
+                map[key] = newItem;
+                return map;
             }
         }
+
+        // else: we have two conflicting items
+        let binding = newItem.key;
+        if(newItem.prefixes.length > 0 && newItem.prefixes.every(x => x.length > 0)){
+            binding = newItem.prefixes[0] + " " + binding;
+        }
+        vscode.window.showErrorMessage(`Duplicate bindings for '${binding}' in mode 
+            '${newItem.mode}'`);
+    }else{
+        map[key] = newItem;
     }
+    return map;
 }

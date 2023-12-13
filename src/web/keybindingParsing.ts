@@ -1,4 +1,6 @@
+import hash from 'object-hash';
 import * as vscode from 'vscode';
+import jsep, { Expression as jsepExpression } from 'jsep';
 const TOML = require("smol-toml");
 import * as semver from 'semver';
 import { TextDecoder } from 'text-encoding';
@@ -21,6 +23,7 @@ const bindingCommand = z.object({
     args: z.object({}).passthrough().optional(),
     computedArgs: z.object({}).passthrough().optional(),
 }).strict();
+export type BindingCommand = z.infer<typeof bindingCommand>;
 
 const ALLOWED_MODIFIERS = /Ctrl|Shift|Alt|Cmd|Win|Meta/i;
 const ALLOWED_KEYS = [
@@ -103,32 +106,37 @@ function prefixError(arg: string){
     };
 }
 
+const parsedWhen = z.object({
+    str: z.string(),
+    id: z.string()
+});
+export type ParsedWhen = z.infer<typeof parsedWhen>;
+
+export function parseWhen(when_: string | string[] | undefined): ParsedWhen[] {
+    let when = when_ === undefined ? [] : !Array.isArray(when_) ? [when_] : when_;
+    return when.map(w => {
+        let p = jsep(w);
+        return { str: w, parsed: p, id: hash(p) };
+    });
+}
+
 export const bindingItem = z.object({
     name: z.string().optional(),
     description: z.string().optional(),
     key: z.union([bindingKey, bindingKey.array()]).optional(),
-    when: z.union([z.string(), z.string().array()]).optional(),
+    when: z.union([z.string(), z.string().array()]).optional().
+        transform(parseWhen).
+        pipe(parsedWhen.array()),
     mode: z.union([z.string(), z.string().array()]).optional(),
-    allowedPrefixes: z.union([
-        z.string().refine(x => {
-            return x === "<all-prefixes>";
-        }, prefixError), 
-        z.union([bindingKey, z.string().max(0)]).array()
-    ]).optional(),
+    prefixes: z.preprocess(x => x === "<all-prefixes>" ? [] : x,
+        z.string().array()).default([""]),
     do: doArgs.optional(),
     resetTransient: z.boolean().default(true).optional()
 }).strict();
-export type BindingItem = z.infer<typeof bindingItem>;
+export type BindingItem = z.output<typeof bindingItem>;
 
 // a strictBindingItem is satisfied after expanding all default fields
 const strictBindingCommand = bindingCommand.required({command: true});
-
-function preprocessWhen(x: unknown): string[] | undefined {
-    if(x === undefined){ return x; }
-    else if(Array.isArray(x)){ return x; }
-    else if(typeof x === 'string'){ return [x]; }
-    else{ return undefined; }
-}
 
 const strictDoArg = z.union([z.string(), strictBindingCommand]);
 export const strictDoArgs = z.union([strictDoArg, strictDoArg.array()]);
@@ -136,8 +144,9 @@ export const strictBindingItem = bindingItem.required({
     key: true,
 }).extend({
     // do now requires `command` to be present when using the object form
+    when: parsedWhen.array(),
+    prefixes: z.string().array(),
     do: strictDoArgs,
-    when: z.preprocess(preprocessWhen, z.string().array().optional())
 });
 export type StrictBindingItem = z.infer<typeof strictBindingItem>;
 export type StrictDoArg = z.infer<typeof strictDoArg>;
@@ -150,13 +159,18 @@ const bindingTreeBase = z.object({
     default: bindingItem.optional(),
     items: bindingItem.array().optional()
 });
-// BindingTree is a recursive type, keys that aren't defined above are
-// nested BindingTree objects
+// BindingTree is a recursive type, keys that aren't defined above are nested BindingTree
+// objects; this requires some special care since `z.infer` on its own will not work; we
+// need to do a bit of manual work
 type OtherKeys = {
-    [key: string]: BindingTree | BindingItem | BindingItem | string | undefined
+    // we can't mark the keys as strictingly BindingTree objects because of the way that
+    // indexed fields work (they have to be a union of unnamed and named field types)
+    [key: string]: any 
 };
-export type BindingTree = z.infer<typeof bindingTreeBase> & OtherKeys;
-export const bindingTree: z.ZodType<BindingTree> = bindingTreeBase.catchall(z.lazy(() => bindingTree));
+export type BindingTree = z.output<typeof bindingTreeBase> & OtherKeys;
+type BindingTreeInput = z.input<typeof bindingTreeBase> & OtherKeys;
+export const bindingTree: z.ZodType<BindingTree, z.ZodTypeDef, BindingTreeInput> = 
+    bindingTreeBase.catchall(z.lazy(() => bindingTree));
 
 export const strictBindingTree = bindingTreeBase.extend({
     items: strictBindingItem.array().optional()

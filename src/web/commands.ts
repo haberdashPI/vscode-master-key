@@ -101,7 +101,7 @@ async function runCommand(command: StrictDoArg){
 const runCommandArgs = z.object({ 
     do: strictDoArgs, 
     resetTransient: z.boolean().default(true) 
-});
+}).strict();
 type RunCommandsArgs = z.infer<typeof runCommandArgs>;
 
 async function runCommandsCmd(args_: unknown){
@@ -126,7 +126,7 @@ commands['master-key.do'] = runCommandsCmd;
 
 const updateCountArgs = z.object({
     value: z.coerce.number()
-});
+}).strict();
 
 function updateCount(args_: unknown){
     let args = validateInput('master-key.updateCount', args_, updateCountArgs);
@@ -138,8 +138,10 @@ commands['master-key.updateCount'] = updateCount;
 
 const prefixArgs = z.object({
     key: z.string(),
-    flag: z.string().min(1).optional()
-});
+    flag: z.string().min(1).optional(),
+    // `automated` is used during keybinding preprocessing and is not normally used otherwise
+    automated: z.boolean().optional() 
+}).strict();
 
 function prefix(args_: unknown){
     let args = validateInput('master-key.prefix', args_, prefixArgs);
@@ -164,7 +166,7 @@ const setArgs = z.object({
     name: z.string(),
     value: z.any(),
     transient: z.boolean().default(false)
-});
+}).strict();
 type SetArgs = z.infer<typeof setArgs>;
 
 function setCmd(args_: unknown){

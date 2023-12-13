@@ -11,6 +11,7 @@ current issue I'm working on:
 - more context information available to computedArgs
 
 Next up
+- require parsing to validate modes to be all negations or all positive mode specifications
 - implement a few more of the bindings from modalbindings.js
 
 - start implementing event recording / replay for
