@@ -1,13 +1,14 @@
 import hash from 'object-hash';
 import { BindingSpec, BindingTree, StrictBindingTree, BindingItem, StrictBindingItem, 
-         strictBindingItem, StrictDoArgs, parseWhen, StrictDoArg, BindingCommand } from "./keybindingParsing";
+         strictBindingItem, StrictDoArgs, parseWhen, StrictDoArg, DoArg, 
+         DefinedCommand } from "./keybindingParsing";
 import * as vscode from 'vscode';
 import { isEqual, uniq, omit, mergeWith, cloneDeep, flatMap, values, entries } from 'lodash';
 import { reifyStrings, EvalContext } from './expressions';
 
 
 export function processBindings(spec: BindingSpec){
-    let expandedSpec = expandDefaults(spec.bind);
+    let expandedSpec = expandDefaultsAndDefinedCommands(spec.bind, spec.define);
     let items: StrictBindingItem[] = listBindings(expandedSpec);
     items = expandBindingKeys(items, spec.define);
     items = expandBindingDocsAcrossWhenClauses(items);
@@ -26,7 +27,33 @@ function expandWhenClauseByConcatenation(obj_: any, src_: any, key: string){
     return obj.concat(src);
 }
 
-function expandDefaults(bindings: BindingTree, prefix: string = "bind", defaultItem: BindingItem = {when: [], prefixes: [""]}): StrictBindingTree {
+function expandDefinedCommands(item: BindingItem, definitions: any){
+    if(item.do && Array.isArray(item.do)){
+        let itemDo = item.do.flatMap((cmd: DoArg) => {
+            if(typeof cmd === 'string'){
+                return [cmd];
+            }else if((<any>cmd).command){
+                return [cmd];
+            }else{
+                let definedCommand = <DefinedCommand>cmd;
+                let commands = definitions[definedCommand.defined];
+                if(!commands){ 
+                    vscode.window.showErrorMessage(`Command definition missing under 
+                        'define.${definedCommand.defined}`);
+                    return [cmd];
+                }
+                return commands;
+            }
+        });
+        return {...item, do: itemDo};
+    }
+    return item;
+}
+
+function expandDefaultsAndDefinedCommands(bindings: BindingTree, definitions: any, 
+    prefix: string = "bind", 
+    defaultItem: BindingItem = {when: [], prefixes: [""]}): StrictBindingTree {
+
     if (bindings.default !== undefined) {
         defaultItem = { ...defaultItem, ...<BindingItem>bindings.default };
     }
@@ -36,6 +63,7 @@ function expandDefaults(bindings: BindingTree, prefix: string = "bind", defaultI
         let validatedItems = bindings.items.map((item: BindingItem, i: number) => {
             let expandedItem = mergeWith(cloneDeep(defaultItem), item,
                 expandWhenClauseByConcatenation);
+            expandedItem = expandDefinedCommands(expandedItem, definitions);
             let parsing = strictBindingItem.safeParse(expandedItem);
             if(!parsing.success){
                 let issue = parsing.error.issues[0];
@@ -59,7 +87,7 @@ function expandDefaults(bindings: BindingTree, prefix: string = "bind", defaultI
         if(v.name !== undefined){
             // though type script can't enforce it statically, if v has a `name`
             // it is a binding tree
-            return [k, expandDefaults(<BindingTree>v, entry, defaultItem)];
+            return [k, expandDefaultsAndDefinedCommands(<BindingTree>v, definitions, entry, defaultItem)];
         }else{
             vscode.window.showErrorMessage(`binding.${entry} has no "name" field.`);
             return [];

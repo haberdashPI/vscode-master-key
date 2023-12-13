@@ -25,6 +25,9 @@ const bindingCommand = z.object({
 }).strict();
 export type BindingCommand = z.infer<typeof bindingCommand>;
 
+const definedCommand = z.object({ defined: z.string() }).strict();
+export type DefinedCommand = z.infer<typeof definedCommand>;
+
 const ALLOWED_MODIFIERS = /Ctrl|Shift|Alt|Cmd|Win|Meta/i;
 const ALLOWED_KEYS = [
     /<all-keys>/, /(f[1-9])|(f1[0-9])/i, /[a-z]/, /[0-9]/,
@@ -96,8 +99,9 @@ function keybindingError(arg: string){
 const bindingKey = z.string().refine(isAllowedKeybinding, keybindingError).
     transform((x: string) => x.toLowerCase());
 
-const doArg = z.union([z.string(), bindingCommand]);
+const doArg = z.union([z.string(), bindingCommand, definedCommand]);
 const doArgs = z.union([doArg, doArg.array()]);
+export type DoArg = z.infer<typeof doArg>;
 
 function prefixError(arg: string){
     return { 

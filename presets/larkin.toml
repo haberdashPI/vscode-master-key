@@ -39,6 +39,29 @@ validModes = ["insert", "search", "normal", "syminsert"]
 select_on = false
 around_on = false
 
+[[define.selectLinesDown]]
+command = "selection-utilities.shrinkToActive"
+
+[[define.selectLinesDown]]
+command = "cursorMove"
+args = {to = "down", by = "wrappedLine", select = true}
+computedArgs = {value = "count"}
+
+[[define.selectLinesDown]]
+command = "expandLineSelection"
+
+[[define.selectLinesUp]]
+command = "selection-utilities.shrinkToActive"
+
+[[define.selectLinesUp]]
+command = "cursorMove"
+args = {to = "up", by = "wrappedLine", select = true}
+computedArgs = {value = "count"}
+
+[[define.selectLinesUp]]
+command = "expandLineSelection"
+
+
 [bind.modes]
 name = "Modes"
 description = """
@@ -417,10 +440,10 @@ do = ["expandLineSelection", "deleteRight", "editor.action.insertLineBefore",
 [[bind.edit.action.basic.items]]
 key = "c"
 when = "!editorHasSelection && master-key.count > 1"
-do = [{command = "master-key.selectLines", computedArgs = {value = "count"}},
-            "deleteRight",
-            "editor.action.insertLineBefore",
-            "master-key.enterInsert"]
+do = [{defined = "selectLinesDown"},
+      "deleteRight",
+      "editor.action.insertLineBefore",
+      "master-key.enterInsert"]
 
 [[bind.edit.action.basic.items]]
 key = "shift+c"
@@ -434,24 +457,8 @@ do = ["selection-utilities.shrinkToActive", "deleteAllRight", "master-key.enterI
 [[bind.edit.action.basic.items]]
 key = "shift+c"
 when = "master-key.count > 1"
-do = [{command = "master-key.selectLines", computedArgs = {value = "-count"}},
-       "deleteRight",
-       "editor.action.insertLineBefore",
+do = [{defined = "selectLinesUp"}, "deleteRight", "editor.action.insertLineBefore",
        "master-key.enterInsert"]
-
-[[bind.edit.action.basic.items.do]]
-command = "master-key.selectLines"
-computedArgs.value = "count"
-args.dir = "up"
-
-[[bind.edit.action.basic.items.do]]
-command = "deleteRight"
-
-[[bind.edit.action.basic.items.do]]
-command = "editor.actions.insertLineBefore"
-
-[[bind.edit.action.basic.items.do]]
-command = "master-key.enterInsert"
 
 [[bind.edit.action.basic.items]]
 key = "d"
@@ -461,9 +468,9 @@ Without a count: delete selected text (and store to clipboard). With a
 count, delete up to the next `count` lines and store to clipboard.
 """
 when = "!editorHasSelection"
-do = [{command = "master-key.selectLines", computedArgs = {value = "count"}},
-             "editor.action.clipboardCutAction",
-            {command = "master-key.enterMode", args = {value = "normal"}}]
+do = [{defined = "selectLinesDown"},
+      "editor.action.clipboardCutAction",
+      {command = "master-key.enterMode", args = {value = "normal"}}]
 
 [[bind.edit.action.basic.items]]
 key = "d"

@@ -1,6 +1,7 @@
 current issue I'm working on:
 
-- make it possible to reference commands defined under `define`
+- undo steps through individual steps of `do` commands: 
+    can we use the new feature that commands can be a list of things?
 
 Next up
 - require parsing to validate modes to be all negations or all positive mode specifications
@@ -27,3 +28,8 @@ unit tests: expected display of state
 unit tests: macro replay
 
 NOTE: ages from now I want to make config import work for both global and workspace settings
+
+wishlist:
+
+let modes change the cursor
+let modes change line numbering
