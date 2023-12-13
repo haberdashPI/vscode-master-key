@@ -127,6 +127,7 @@ export function parseWhen(when_: string | string[] | undefined): ParsedWhen[] {
 export const bindingItem = z.object({
     name: z.string().optional(),
     description: z.string().optional(),
+    kind: z.string().optional(),
     key: z.union([bindingKey, bindingKey.array()]).optional(),
     when: z.union([z.string(), z.string().array()]).optional().
         transform(parseWhen).
@@ -146,6 +147,7 @@ const strictDoArg = z.union([z.string(), strictBindingCommand]);
 export const strictDoArgs = z.union([strictDoArg, strictDoArg.array()]);
 export const strictBindingItem = bindingItem.required({
     key: true,
+    kind: true,
 }).extend({
     // do now requires `command` to be present when using the object form
     when: parsedWhen.array(),
@@ -158,7 +160,6 @@ export type StrictDoArgs = z.infer<typeof strictDoArgs>;
 
 const bindingTreeBase = z.object({
     name: z.string(),
-    kind: z.string().optional(),
     description: z.string(),
     default: bindingItem.optional(),
     items: bindingItem.array().optional()

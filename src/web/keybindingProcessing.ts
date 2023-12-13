@@ -286,6 +286,7 @@ function expandPrefixBindings(item: StrictBindingItem, prefixItems: BindingMap =
                 key, 
                 do: {command: "master-key.prefix", args: {key, automated: true}},
                 when: item.when, 
+                kind: "prefix", 
                 prefixes,
                 mode: item.mode,
                 resetTransient: false

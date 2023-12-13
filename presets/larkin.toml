@@ -127,7 +127,7 @@ mode = "!insert" # number keys apply in all modes but insert
 [bind.edit.motion]
 name = "Motions"
 description = "Commands that move the cursors and/or selections"
-kind = "select"
+default.kind = "select"
 default.mode = "normal"
 
 [bind.edit.motion.prim]
@@ -176,6 +176,94 @@ description = "up unwrapped line"
 do.args.to = "down" 
 do.args.by = "line"
 
+[[bind.edit.motion.prim.items]]
+key = "shift+h"
+name = "start"
+description = "start of line (alternates between first non-white and first)"
+do = "cursorHomeSelect"
+
+[[bind.edit.motion.prim.items]]
+key = "shift+l"
+name = "end"
+description = "end of line"
+do.command = "cursorMove"
+do.args.to = "wrappedLineEnd"
+do.args.select = true
+
+[[bind.edit.motion.prim.items]]
+key = "shift+g"
+name = "exapnd"
+description = "expand selections to full lines"
+do = "expandLineSelection"
+
+[[bind.edit.motion.prim.items]]
+key = "shift+k"
+name = "sel ↑"
+description = "select lines upwards"
+
+[[bind.edit.motion.prim.items.do]]
+command = "selection-utilities.shrinkToActive"
+
+[[bind.edit.motion.prim.items.do]]
+command = "cursorMove"
+args = {to = "up", by="wrappedLine", select= true}
+computedArgs = {value = "count"}
+
+[[bind.edit.motion.prim.items.do]]
+command ="expandLineSelections"
+
+[[bind.edit.motion.prim.items]]
+key = "shift+j"
+name = "sel ↓"
+description = "select lines downwards"
+
+[[bind.edit.motion.prim.items.do]]
+command = "selection-utilities.shrinkToActive"
+
+[[bind.edit.motion.prim.items.do]]
+command = "cursorMove"
+args = {to = "down", by="wrappedLine", select= true}
+computedArgs = {value = "count"}
+
+[[bind.edit.motion.prim.items.do]]
+command ="expandLineSelections"
+
+[[bind.edit.motion.prim.items]]
+key = "g shift+k"
+name = "unwrp sel ↑"
+description = "select unwrapped lines upwards"
+
+[[bind.edit.motion.prim.items.do]]
+command = "selection-utilities.shrinkToActive"
+
+[[bind.edit.motion.prim.items.do]]
+command = "cursorMove"
+args = {to = "up", by="line", select= true}
+computedArgs = {value = "count"}
+
+[[bind.edit.motion.prim.items.do]]
+command ="expandLineSelections"
+
+[[bind.edit.motion.prim.items]]
+key = "g shift+j"
+name = "sel ↓"
+description = "select unwrapped lines downwards"
+
+[[bind.edit.motion.prim.items.do]]
+command = "selection-utilities.shrinkToActive"
+
+[[bind.edit.motion.prim.items.do]]
+command = "cursorMove"
+args = {to = "down", by="line", select= true}
+computedArgs = {value = "count"}
+
+[[bind.edit.motion.prim.items.do]]
+command ="expandLineSelections"
+
+[[bind.edit.motion.prim]]
+key = '\'
+name = "→ sel"
+
 [bind.edit.motion.mod]
 name = "Modify Motion Effects"
 description = "Keys that change how other motions work"
@@ -188,6 +276,7 @@ description = """
 selection commands are changed to both move start and end of a selection to surround the 
 entire object (rather than extending to specified start/end point)
 """
+kind = "prefix"
 resetTransient = false
 do.command = "master-key.prefix"
 do.args = { key = "u", flag = "around_on" }
@@ -390,7 +479,7 @@ do.command = "selection-utilities.expandInBrackets"
 [bind.edit.action]
 name = "Actions"
 description = "Commands that modify the document or UI"
-kind = "action"
+default.kind = "action"
 default.mode = "normal"
 
 [bind.edit.action.basic]
@@ -481,7 +570,7 @@ do = ["editor.action.clipboardCutAction",
 [bind.edit.action.symmetric]
 name = "Symmetric Operations"
 description = "Operations that occur at both ends of a selection"
-kind = "select"
+default.kind = "select"
 default.mode = "syminsert"
 
 [[bind.edit.action.symmetric.items]]
