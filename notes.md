@@ -1,25 +1,16 @@
 current issue I'm working on:
 
-- fix bug when merging prefixes:
-    sometimes there are additional arguments to prefix 
-    so when we create the automatic prefix definitions
-    these look different, and a treated as two separate 
-    bindings
-
-    working on code in keybindingProcessing.ts, but we need
-    to deal with a clear error message that uses the prefix
-- more context information available to computedArgs
+- make it possible to reference commands defined under `define`
 
 Next up
 - require parsing to validate modes to be all negations or all positive mode specifications
-- implement a few more of the bindings from modalbindings.js
+- implement some more of the bindings from modalbindings.js
 
 - start implementing event recording / replay for
-
+    record macro
     repeat action
     repeat last pre-action selection
     repeat last selection/action pair
-    record macro
 
 - move modalkeys.selectbetween to selection-utilities.selectBetween
 - expand to the full keybindings and start dogfooding the current setup

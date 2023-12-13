@@ -198,7 +198,7 @@ selection commands that move by a predefined syntactic object (e.g. word, paragr
 default.do.command = "selection-utilities.moveBy"
 default.do.args.boundary = "start"
 default.prefixes = ["", "u"]
-default.do.computedArgs.select = "(select_on || editorHasSelection)"
+default.do.args.select = "!around_on"
 default.do.computedArgs.selectWhole = "around_on"
 
 [[bind.edit.motion.obj.items]]
@@ -428,12 +428,16 @@ name = "change to/back"
 description = """Without a count: change from current char to end of line. With a count: 
 change the previous `count` lines.
 """
-when = "!master-key.count <= 1"
+when = "master-key.count <= 1"
 do = ["selection-utilities.shrinkToActive", "deleteAllRight", "master-key.enterInsert"]
 
 [[bind.edit.action.basic.items]]
 key = "shift+c"
-when = "!master-key.count > 1"
+when = "master-key.count > 1"
+do = [{command = "master-key.selectLines", computedArgs = {value = "-count"}},
+       "deleteRight",
+       "editor.action.insertLineBefore",
+       "master-key.enterInsert"]
 
 [[bind.edit.action.basic.items.do]]
 command = "master-key.selectLines"
