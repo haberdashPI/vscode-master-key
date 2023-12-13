@@ -1,11 +1,8 @@
 current issue I'm working on:
 
-- undo steps through individual steps of `do` commands: 
-    can we use the new feature that commands can be a list of things?
-
 Next up
-- require parsing to validate modes to be all negations or all positive mode specifications
 - implement some more of the bindings from modalbindings.js
+- start dogfooding
 
 - start implementing event recording / replay for
     record macro
@@ -13,6 +10,7 @@ Next up
     repeat last pre-action selection
     repeat last selection/action pair
 
+- require parsing to validate modes to be all negations or all positive mode specifications
 - move modalkeys.selectbetween to selection-utilities.selectBetween
 - expand to the full keybindings and start dogfooding the current setup
 
