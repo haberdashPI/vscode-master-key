@@ -1,5 +1,7 @@
 current issue I'm working on:
 
+- there's a TODO in processBindings about how to handle expanding documentation values
+
 Next up
 - implement some more of the bindings from modalbindings.js
 - start dogfooding (we need to answer the question: is this working well enough for this implementation to be viable)

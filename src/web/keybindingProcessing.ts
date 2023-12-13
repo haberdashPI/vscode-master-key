@@ -5,12 +5,16 @@ import { BindingSpec, BindingTree, StrictBindingTree, BindingItem, StrictBinding
 import * as vscode from 'vscode';
 import { isEqual, uniq, omit, mergeWith, cloneDeep, flatMap, values, entries } from 'lodash';
 import { reifyStrings, EvalContext } from './expressions';
+import replaceAll from 'string.prototype.replaceall';
 
 
 export function processBindings(spec: BindingSpec){
     let expandedSpec = expandDefaultsAndDefinedCommands(spec.bind, spec.define);
     let items: StrictBindingItem[] = listBindings(expandedSpec);
     items = expandBindingKeys(items, spec.define);
+    // TODO: move expand bindings docs to be after `resolveDuplicateBindings`
+    // that should be a much easier representation to work with and
+    // will allow us to accurate represent the mode
     items = expandBindingDocsAcrossWhenClauses(items);
     let prefixItems: BindingMap = {};
     items = items.map(i => expandPrefixBindings(i, prefixItems));
@@ -178,11 +182,13 @@ function itemToConfigBinding(item: StrictBindingItem): IConfigKeyBinding {
     };
 }
 
-function validateUniqueForBinding(vals: (string | undefined)[], name: string, item: any): string | undefined {
+function validateUniqueForBinding(vals: (string | undefined)[], name: string, item: StrictBindingItem): string | undefined {
     let uvals = uniq(vals.filter(v => v !== undefined));
+    let modestr = item.mode ? "any" : !Array.isArray(item.mode) ? item.mode : item.mode[0];
+
     if(uvals.length > 1){
         vscode.window.showErrorMessage(`Multiple values of \`${name}\` for idenictal 
-            binding \`${item.key}\` in mode "${item.mode.join(' or ')}". Update the bindings file
+            binding \`${item.key}\` in mode "${modestr}". Update the bindings file
             to use only one name for this binding regardless of its \`when\` clause
             You can also safely leave all but one of these bindings with a \`${name}\`
             field.`);
@@ -190,7 +196,7 @@ function validateUniqueForBinding(vals: (string | undefined)[], name: string, it
     }
     if(uvals.length === 0){
         vscode.window.showErrorMessage(`No \`${name}\` provided for binding \`${item.key}\`
-            in mode "${item.mode.join(' or ')}".`);
+            in mode "${modestr}".`);
         return;
     }
     return uvals[0];
@@ -204,14 +210,14 @@ function validateUniqueForBinding(vals: (string | undefined)[], name: string, it
 // and blank documentation for some when clauses
 
 function expandBindingDocsAcrossWhenClauses(items: StrictBindingItem[]): StrictBindingItem[] {
-    let sharedBindings: { [key: string]: any[] } = {};
+    let sharedBindings: { [key: string]: StrictBindingItem[] } = {};
     for (let item of items) {
         if(item.do === "master-key.ignore" || (<{command?: string}>item.do)?.command === "master-key.ignore"){ continue; }
         let k = hash({ key: item.key, mode: item.mode });
         if (sharedBindings[k] === undefined) {
             sharedBindings[k] = [item];
         } else {
-            sharedBindings[k] = [...sharedBindings[k], item];
+            sharedBindings[k].push(item);
         }
     }
 
@@ -223,9 +229,9 @@ function expandBindingDocsAcrossWhenClauses(items: StrictBindingItem[]): StrictB
     } = {};
     for (let [key, item] of entries(sharedBindings)) {
         if (item.length <= 1) { continue; }
-        let name = validateUniqueForBinding(item.map(i => (<string | undefined>i.name)),
+        let name = validateUniqueForBinding(item.map(i => i.name),
             "name", item[0]);
-        let description = validateUniqueForBinding(item.map(i => (<string | undefined>i.description)),
+        let description = validateUniqueForBinding(item.map(i => i.description),
             "description", item[0]);
 
         sharedDocs[key] = { name, description };
@@ -269,7 +275,10 @@ function moveModeToWhenClause(binding: StrictBindingItem){
 
 function movePrefixesToWhenClause(item: StrictBindingItem){
     let when = item.when || [];
-    let allowed = item.prefixes.map(a => `master-key.prefix == '${a}'`).join(' || ');
+    let allowed = item.prefixes.map(a => {
+        // we need to proplery escape quotes
+        return `master-key.prefix == '${replaceAll(a, /'/g, "\\'")}'`;
+    }).join(' || ');
     when = when.concat(parseWhen(allowed));
     return {...item, when};
 }

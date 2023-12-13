@@ -35,6 +35,7 @@ type KeyContext = z.infer<typeof keyContext> & { [key: string]: any } & {
     editorHasSelection: boolean,
     editorHasMultipleSelections: boolean,
     editorLangId: undefined | string,
+    firstSelectionOrWord: string
 };
 
 const keyContextKey = z.string().regex(/[a-zA-Z_]+[0-9a-zA-Z_]*/);
@@ -55,6 +56,7 @@ class CommandState {
         editorHasSelection: false,
         editorHasMultipleSelections: false,
         editorLangId: undefined,
+        firstSelectionOrWord: ""
     };
     transientValues: Record<string, any> = {};
     constructor(){ 
@@ -230,6 +232,15 @@ export function activate(context: vscode.ExtensionContext) {
         }
         state.values.editorHasSelection = selCount > 0;
         state.values.editorHasMultipleSelections = selCount > 1;
+        let doc = e.textEditor.document;
+        if(selCount === 0){
+            state.values.firstSelectionOrWord = "";
+        }else if(e.selections[0].isEmpty){
+            let wordRange = doc.getWordRangeAtPosition(e.selections[0].start);
+            state.values.firstSelectionOrWord = doc.getText(wordRange);
+        }else{
+            state.values.firstSelectionOrWord = doc.getText(e.selections[0]);
+        }
     });
 
     vscode.window.onDidChangeActiveTextEditor(e => {

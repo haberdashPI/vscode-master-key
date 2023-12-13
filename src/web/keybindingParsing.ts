@@ -118,10 +118,19 @@ export type ParsedWhen = z.infer<typeof parsedWhen>;
 
 export function parseWhen(when_: string | string[] | undefined): ParsedWhen[] {
     let when = when_ === undefined ? [] : !Array.isArray(when_) ? [when_] : when_;
-    return when.map(w => {
-        let p = jsep(w);
-        return { str: w, parsed: p, id: hash(p) };
-    });
+    try{
+        return when.map(w => {
+            let p = jsep(w);
+            return { str: w, parsed: p, id: hash(p) };
+        });
+    }catch(e){
+        if(e instanceof Error){
+            vscode.window.showErrorMessage(`Exception while parsing ${when}: ${e.message}`);
+        }else{
+            throw e;
+        }
+    }
+    return [];
 }
 
 export const bindingItem = z.object({

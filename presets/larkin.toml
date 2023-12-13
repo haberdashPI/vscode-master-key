@@ -75,6 +75,7 @@ return to insert mode.
 
 **TODO**: document the other modes
 """
+default.kind = "mode"
 
 [[bind.modes.items]]
 name = "normal"
@@ -260,14 +261,48 @@ computedArgs = {value = "count"}
 [[bind.edit.motion.prim.items.do]]
 command ="expandLineSelections"
 
-[[bind.edit.motion.prim]]
+[[bind.edit.motion.prim.items]]
 key = '\'
 name = "→ sel"
+description = "select *just* the character to the right"
+
+[[bind.edit.motion.prim.items.do]]
+command = "selection-utilities.shrinkToActive"
+
+[[bind.edit.motion.prim.items.do]]
+command = "cursorMove"
+args = {to = "right", select = true}
+computedArgs = {value = "count"}
+
+[[bind.edit.motion.prim.items]]
+key = 'shift+\'
+name = "← sel"
+description = "select *just* the character to the left"
+
+[[bind.edit.motion.prim.items.do]]
+command = "selection-utilities.shrinkToActive"
+
+[[bind.edit.motion.prim.items.do]]
+command = "cursorMove"
+args = {to = "left", select = true}
+computedArgs = {value = "count"}
+
+[[bind.edit.motion.prim.items]]
+key = "g shift+g"
+name = "doc end"
+description = "select to end of document"
+do = "cursorBottomSelect"
+
+[[bind.edit.motion.prim.items]]
+key = "g g"
+name = "doc start"
+description = "select to start of document"
+do = "cursorTopSelect"
 
 [bind.edit.motion.mod]
 name = "Modify Motion Effects"
 description = "Keys that change how other motions work"
-kind = "select"
+default.kind = "select"
 
 [[bind.edit.motion.mod.items]]
 key = "u"
@@ -297,10 +332,8 @@ name = "shrink selection"
 description = """
 reduce all selections to length zero
 """
-do = [
-    "selection-utilities.shrinkToActive", 
-    {command = "master-key.set", args={name="select_on", value=false}}
-]
+do = ["selection-utilities.shrinkToActive", 
+      {command = "master-key.set", args={name="select_on", value=false}}]
 
 [bind.edit.motion.obj]
 name = "Motions around various regex-like objects"
@@ -358,6 +391,132 @@ do.args.unit = "word"
 do.computedArgs.value = "-count || -1"
 
 [[bind.edit.motion.obj.items]]
+key = "' w"
+name = "WORD →"
+description = "next WORD; e.g. contiguous non-whitespace region"
+do.args.unit = "WORD"
+do.computedArgs.value = "count || 1"
+
+[[bind.edit.motion.obj.items]]
+key = "' b"
+name = "WORD ←"
+description = "previous WORD; e.g. contiguous non-whitespace region"
+do.args.unit = "WORD"
+do.computedArgs.value = "-count || -1"
+
+[[bind.edit.motion.obj.items]]
+key = "' e"
+name = "WORD end →"
+description = "next WORD end; e.g. contiguous non-whitespace region"
+do.args.unit = "WORD"
+do.computedArgs.boundary = "around_on ? 'both' : 'end'"
+do.computedArgs.value = "-count || -1"
+
+[[bind.edit.motion.obj.items]]
+key = "shift+2"
+name = "number ←"
+description = "previous number"
+do.args.unit = "integer"
+do.args.boundary = "both"
+do.args.selectWhole = true
+do.computedArgs = {value = "-(count || 1)"}
+
+[[bind.edit.motion.obj.items]]
+key = "shift+3"
+name = "number →"
+description = "next number"
+do.args.unit = "integer"
+do.args.boundary = "both"
+do.args.selectWhole = true
+do.computedArgs = {value = "-(count || 1)"}
+
+[[bind.edit.motion.obj.items]]
+key = "' ;"
+name = "comment ←"
+description = "previous comment"
+do.args.unit = "comment"
+do.args.boundary = "both"
+do.args.selectWhole = true
+do.computedArgs = {value = "-(count || 1)"}
+
+[[bind.edit.motion.obj.items]]
+key = "' shift+;"
+name = "comment →"
+description = "next comment"
+do.args.unit = "comment"
+do.args.boundary = "both"
+do.args.selectWhole = true
+do.computedArgs = {value = "-(count || 1)"}
+
+[[bind.edit.motion.obj.items]]
+key = ", ;"
+name = "blk cmnt ←"
+description = "previous block comment"
+do.args.unit = "block_comment"
+do.args.boundary = "both"
+do.args.selectWhole = true
+do.computedArgs = {value = "-(count || 1)"}
+
+[[bind.edit.motion.obj.items]]
+key = ", shift+;"
+name = "blk cmnt →"
+description = "next block comment"
+do.args.unit = "block_comment"
+do.args.boundary = "both"
+do.args.selectWhole = true
+do.computedArgs = {value = "-(count || 1)"}
+
+[[bind.edit.motion.obj.items]]
+key = "p"
+name = "paragraph →"
+description = "next paragraph"
+do.args.unit = "paragraph"
+do.computedArgs.value = "count || 1"
+
+[[bind.edit.motion.obj.items]]
+key = "shift+p"
+name = "paragraph ←"
+description = "previous paragraph"
+do.args.unit = "paragraph"
+do.computedArgs.value = "-(count || 1)"
+
+[[bind.edit.motion.obj.items]]
+key = "shift+0"
+name = "subsec →"
+description = "next subsection"
+do.args.unit = "subsection"
+do.computedArgs.value = "count || 1"
+
+[[bind.edit.motion.obj.items]]
+key = "shift+p"
+name = "subsec ←"
+description = "previous subsection"
+do.args.unit = "subsection"
+do.computedArgs.value = "-(count || 1)"
+
+[[bind.edit.motion.obj.items]]
+key = "' shift+0"
+name = "sec →"
+description = "next seciont"
+do.args.unit = "section"
+do.computedArgs.value = "count || 1"
+
+[[bind.edit.motion.obj.items]]
+key = "' shift+p"
+name = "sec ←"
+description = "previous seciont"
+do.args.unit = "section"
+do.computedArgs.value = "-(count || 1)"
+
+# TODO: add various iterations of notebook cell navigation
+
+[[bind.edit.motion.obj.items]]
+key = "shift+4"
+name = "all"
+description = "Select entire document"
+do = "editor.action.selectAll"
+
+[[bind.edit.motion.obj.items]]
 key = "u u"
 name = "smart expand"
 description = "Use VSCode's built-in smart expansion command"
@@ -397,6 +556,21 @@ name = "← search"
 description = "Go to the previous match of the search query"
 do.command = "master-key.previousMatch"
 do.args.register = "search"
+
+[[bind.edit.motion.search.items]]
+key = "shift+8"
+name = "match →"
+description = "Next match to object under curosr"
+do.computedArgs.text = "firstSelectionOrWord"
+do.args.register = "search"
+
+[[bind.edit.motion.search.items]]
+key = "shift+7"
+name = "match ←"
+description = "Previous match to object under curosr"
+do.computedArgs.text = "firstSelectionOrWord"
+do.args.register = "search"
+do.args.backwards = true
 
 [[bind.edit.motion.search.items]]
 key = "f"
@@ -474,7 +648,25 @@ do.command = "selection-utilities.expandAroundBrackets"
 key = "["
 name = "in parens"
 description = "text inside parens/brackets/braces"
-do.command = "selection-utilities.expandInBrackets"
+do = "selection-utilities.expandInBrackets"
+
+[[bind.edit.motion.syntax.items]]
+key = "shift+5"
+name = "to bracket"
+description = "Move to matching bracket"
+do = "editor.action.jumpToBracket"
+
+[[bind.edit.motion.syntax.items]]
+key = "' '"
+name = "in quotes"
+description = "text within current quotes"
+do = "bracketeer.selectQuotesContent"
+
+[[bind.edit.motion.syntax.items]]
+key = "' '"
+name = "around quotes"
+description = "text around current quotes"
+do = ["bracketeer.selectQuotesContent", "bracketeer.selectQuotesContent"]
 
 [bind.edit.action]
 name = "Actions"
