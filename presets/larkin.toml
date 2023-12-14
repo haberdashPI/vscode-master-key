@@ -1631,6 +1631,90 @@ description = "split by a given regular expression"
 key = "s r"
 do = "selection-utilities.splitByRegex"
 
+
+[[bind.edit.select_edit.split.items]]
+name = "character"
+description = "split by a given character"
+key = "s c"
+do.command = "modalkeys.captureChar"
+do.args.acceptAfter = 1
+do.args.executeAfter = { command = "selection-utilities.splitBy", args = { text = "capture" } }
+
+[[bind.edit.select_edit.create.items]]
+name = "create"
+description = """
+create a set of selections by the specified marker that all fall within the current 
+set of selections
+"""
+key = "/"
+resetTransient = false
+do.command = "master-key.prefix"
+do.args.key = "/"
+
+[[bind.edit.select_edit.create.items]]
+name = "string"
+description = "create selections of given string scoped to the current selections"
+key = "/ s"
+do = "selection-utilities.createBy"
+
+[[bind.edit.select_edit.create.items]]
+name = "regex"
+description = "create selections of given regular expression scoped to the current selections"
+key = "/ r"
+do = "selection-utilities.createByRegex"
+
+[[bind.edit.select_edit.create.items]]
+name = "character"
+description = "create selections of given character scoped to the current selections"
+key = "/ c"
+do.command = "modalkeys.captureChar"
+do.args.acceptAfter = 1
+do.args.executeAfter = { command = "selection-utilities.createBy", args = { text = "capture" } }
+
+[[bind.edit.select_edit.create.items]]
+name = "include by"
+description = """
+Include all selections that contain a given marker
+"""
+key = "["
+resetTransient = false
+do.command = "master-key.prefix"
+do.args.key = "["
+
+[[bind.edit.select_edit.create.items]]
+name = "exclude by"
+description = """
+Exclude all selections that contain a given marker
+"""
+key = "]"
+resetTransient = false
+do.command = "master-key.prefix"
+do.args.key = "]"
+
+[[bind.edit.select_edit.split.items]]
+name = "string"
+description = "Include all selections that contain a given string"
+key = "[ s"
+do = "selection-utilities.includeBy"
+
+[[bind.edit.select_edit.split.items]]
+name = "string"
+description = "Exclude all selections that contain a given string"
+key = "] s"
+do = "selection-utilities.excludeBy"
+
+[[bind.edit.select_edit.split.items]]
+name = "regex"
+description = "Include all selections that contain a given regular expression"
+key = "[ r"
+do = "selection-utilities.includeByRegex"
+
+[[bind.edit.select_edit.split.items]]
+name = "regex"
+description = "Exclude all selections that contain a given regular expression"
+key = "] r"
+do = "selection-utilities.excludeByRegex"
+
 [bind.edit.action.symmetric]
 name = "Symmetric Operations"
 description = "Operations that occur at both ends of a selection"
