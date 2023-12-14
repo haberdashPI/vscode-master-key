@@ -944,27 +944,27 @@ do = "selection-utilities.activeAtEnd"
 [[bind.edit.action.open_lines.items]]
 name = "add line below"
 description = "open a line below current line"
-key = "go"
+key = "g o"
 do = "editor.action.insertLineAfter"
 
 [[bind.edit.action.open_lines.items]]
 name = "open blw, act ←"
 description = "without selection: open a line above current line and enter insert, with selection: move cursor to end"
-key = "O"
+key = "shift+o"
 when = "!editorHasSelection"
 do = [ "editor.action.insertLineBefore", "modalkeys.enterInsert" ]
 
 [[bind.edit.action.open_lines.items]]
 name = "open blw, act ←"
 description = "without selection: open a line above current line and enter insert, with selection: move cursor to end"
-key = "O"
+key = "shift+o"
 when = "editorHasSelection"
 do = "selection-utilities.activeAtStart"
 
 [[bind.edit.action.open_lines.items]]
 name = "open above"
 description = "open a line above current line"
-key = "gO"
+key = "g shift+o"
 do = "editor.action.insertLineBefore"
 
 [bind.edit.action.indent]
@@ -1010,7 +1010,7 @@ Operations that modify comments
 """
 
 [[bind.edit.action.comment.items]]
-key = "g;"
+key = "g ;"
 name = "comment →"
 description = "select next comment"
 do = [
@@ -1030,7 +1030,7 @@ do = [
 ]
 
 [[bind.edit.action.comment.items]]
-key = "gq"
+key = "g q"
 name = "wrap"
 description = "wrap text, preserving commenting"
 do = "rewrap.rewrapComment"
