@@ -1,12 +1,9 @@
 current issue I'm working on:
 
-- implement some more of the bindings from modalbindings.js
-- implement master-key.replaceChar
-- implement master-key.captureChar
-
 Next up
 - implement master-key.replaceChar
-- start dogfooding (we need to answer the question: is this working well enough for this implementation to be viable)
+- implement master-key.captureChar
+- start dogfooding (we need to answer the question: is this working well enough for this implementation to be viable, does it work for my everyday use)
 
 - start implementing event recording / replay for
     record macro
@@ -19,7 +16,8 @@ Next up
 
 - require parsing to validate modes to be all negations or all positive mode specifications
 - move modalkeys.selectbetween to selection-utilities.selectBetween
-- expand to the full keybindings and start dogfooding the current setup
+- add various selectbetween commands
+- add symmetric insert setup and continue dogfooding with the new repeat actions
 
 Testing stuff:
 
