@@ -1,9 +1,10 @@
 current issue I'm working on:
 
-- there's a TODO in processBindings about how to handle expanding documentation values
+- implement selection utilities multi-line paste ala vim
+- implement some more of the bindings from modalbindings.js
+- implement master-key.replaceChar
 
 Next up
-- implement some more of the bindings from modalbindings.js
 - start dogfooding (we need to answer the question: is this working well enough for this implementation to be viable)
 
 - start implementing event recording / replay for
@@ -37,3 +38,9 @@ quick win: store clipboard to a register
 let modes change the cursor
 let modes change line numbering
 make config import work for both global and workspace settings
+
+add to existing future plans:
+
+there is some documentation propagation to handle: e.g. if a binding has the same key
+sequence and mode it should have the same documentation, oftne this means that only one such
+binding is actually documented. During documentation 

@@ -12,10 +12,6 @@ export function processBindings(spec: BindingSpec){
     let expandedSpec = expandDefaultsAndDefinedCommands(spec.bind, spec.define);
     let items: StrictBindingItem[] = listBindings(expandedSpec);
     items = expandBindingKeys(items, spec.define);
-    // TODO: move expand bindings docs to be after `resolveDuplicateBindings`
-    // that should be a much easier representation to work with and
-    // will allow us to accurate represent the mode
-    items = expandBindingDocsAcrossWhenClauses(items);
     let prefixItems: BindingMap = {};
     items = items.map(i => expandPrefixBindings(i, prefixItems));
     items = resolveDuplicateBindings(items, prefixItems);

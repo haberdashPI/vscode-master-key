@@ -1,20 +1,20 @@
 [header]
 version = "1.0"
 requiredExtensions = [
-    "dbankier.vscode-quick-select",
-    "haberdashPI.vscode-select-by-indent",
-    "haberdashPI.selection-utilities",
-    "haberdashPI.move-cursor-by-argument",
-    "pustelto.bracketeer",
-    "wmaurer.change-case",
-    "pranshuagrawal.toggle-case",
-    "albymor.increment-selection",
-    "pkief.markdown-checkbox",
-    "edgardmessias.clipboard-manager",
-    "stkb.rewrap",
-    "haberdashPI.terminal-polyglot",
-    "jack89ita.open-file-from-path",
-    "koalamer.labeled-bookmarks",
+      "dbankier.vscode-quick-select",
+      "haberdashPI.vscode-select-by-indent",
+      "haberdashPI.selection-utilities",
+      "haberdashPI.move-cursor-by-argument",
+      "pustelto.bracketeer",
+      "wmaurer.change-case",
+      "pranshuagrawal.toggle-case",
+      "albymor.increment-selection",
+      "pkief.markdown-checkbox",
+      "edgardmessias.clipboard-manager",
+      "stkb.rewrap",
+      "haberdashPI.terminal-polyglot",
+      "jack89ita.open-file-from-path",
+      "koalamer.labeled-bookmarks",
 ]
 
 [bind]
@@ -44,8 +44,8 @@ command = "selection-utilities.shrinkToActive"
 
 [[define.selectLinesDown]]
 command = "cursorMove"
-args = {to = "down", by = "wrappedLine", select = true}
-computedArgs = {value = "count"}
+args = { to = "down", by = "wrappedLine", select = true }
+computedArgs = { value = "count" }
 
 [[define.selectLinesDown]]
 command = "expandLineSelection"
@@ -55,8 +55,8 @@ command = "selection-utilities.shrinkToActive"
 
 [[define.selectLinesUp]]
 command = "cursorMove"
-args = {to = "up", by = "wrappedLine", select = true}
-computedArgs = {value = "count"}
+args = { to = "up", by = "wrappedLine", select = true }
+computedArgs = { value = "count" }
 
 [[define.selectLinesUp]]
 command = "expandLineSelection"
@@ -123,7 +123,7 @@ key = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
 do.command = "master-key.updateCount"
 do.args.value = "{key}"
 resetTransient = false
-mode = "!insert" # number keys apply in all modes but insert
+mode = "!insert"                                         # number keys apply in all modes but insert
 
 [bind.edit.motion]
 name = "Motions"
@@ -167,14 +167,14 @@ do.args.to = "right"
 key = "g j"
 name = "unwrp ↓"
 description = "down unwrapped line"
-do.args.to = "down" 
+do.args.to = "down"
 do.args.by = "line"
 
 [[bind.edit.motion.prim.items]]
 key = "g k"
 name = "unwrp ↑"
 description = "up unwrapped line"
-do.args.to = "down" 
+do.args.to = "down"
 do.args.by = "line"
 
 [[bind.edit.motion.prim.items]]
@@ -207,11 +207,11 @@ command = "selection-utilities.shrinkToActive"
 
 [[bind.edit.motion.prim.items.do]]
 command = "cursorMove"
-args = {to = "up", by="wrappedLine", select= true}
-computedArgs = {value = "count"}
+args = { to = "up", by = "wrappedLine", select = true }
+computedArgs = { value = "count" }
 
 [[bind.edit.motion.prim.items.do]]
-command ="expandLineSelections"
+command = "expandLineSelections"
 
 [[bind.edit.motion.prim.items]]
 key = "shift+j"
@@ -223,11 +223,11 @@ command = "selection-utilities.shrinkToActive"
 
 [[bind.edit.motion.prim.items.do]]
 command = "cursorMove"
-args = {to = "down", by="wrappedLine", select= true}
-computedArgs = {value = "count"}
+args = { to = "down", by = "wrappedLine", select = true }
+computedArgs = { value = "count" }
 
 [[bind.edit.motion.prim.items.do]]
-command ="expandLineSelections"
+command = "expandLineSelections"
 
 [[bind.edit.motion.prim.items]]
 key = "g shift+k"
@@ -239,11 +239,11 @@ command = "selection-utilities.shrinkToActive"
 
 [[bind.edit.motion.prim.items.do]]
 command = "cursorMove"
-args = {to = "up", by="line", select= true}
-computedArgs = {value = "count"}
+args = { to = "up", by = "line", select = true }
+computedArgs = { value = "count" }
 
 [[bind.edit.motion.prim.items.do]]
-command ="expandLineSelections"
+command = "expandLineSelections"
 
 [[bind.edit.motion.prim.items]]
 key = "g shift+j"
@@ -255,11 +255,11 @@ command = "selection-utilities.shrinkToActive"
 
 [[bind.edit.motion.prim.items.do]]
 command = "cursorMove"
-args = {to = "down", by="line", select= true}
-computedArgs = {value = "count"}
+args = { to = "down", by = "line", select = true }
+computedArgs = { value = "count" }
 
 [[bind.edit.motion.prim.items.do]]
-command ="expandLineSelections"
+command = "expandLineSelections"
 
 [[bind.edit.motion.prim.items]]
 key = '\'
@@ -271,8 +271,8 @@ command = "selection-utilities.shrinkToActive"
 
 [[bind.edit.motion.prim.items.do]]
 command = "cursorMove"
-args = {to = "right", select = true}
-computedArgs = {value = "count"}
+args = { to = "right", select = true }
+computedArgs = { value = "count" }
 
 [[bind.edit.motion.prim.items]]
 key = 'shift+\'
@@ -284,8 +284,8 @@ command = "selection-utilities.shrinkToActive"
 
 [[bind.edit.motion.prim.items.do]]
 command = "cursorMove"
-args = {to = "left", select = true}
-computedArgs = {value = "count"}
+args = { to = "left", select = true }
+computedArgs = { value = "count" }
 
 [[bind.edit.motion.prim.items]]
 key = "g shift+g"
@@ -317,7 +317,7 @@ do.command = "master-key.prefix"
 do.args = { key = "u", flag = "around_on" }
 
 [[bind.edit.motion.mod.items]]
-key = "space"
+key = "shift+space"
 name = "hold selection"
 description = """
 selection commands extend the selection
@@ -327,13 +327,15 @@ do.args.name = "select_on"
 do.args.value = true
 
 [[bind.edit.motion.mod.items]]
-key = "r"
+key = "space"
 name = "shrink selection"
 description = """
 reduce all selections to length zero
 """
-do = ["selection-utilities.shrinkToActive", 
-      {command = "master-key.set", args={name="select_on", value=false}}]
+do = [
+      "selection-utilities.shrinkToActive",
+      { command = "master-key.set", args = { name = "select_on", value = false } },
+]
 
 [bind.edit.motion.obj]
 name = "Motions around various regex-like objects"
@@ -419,7 +421,7 @@ description = "previous number"
 do.args.unit = "integer"
 do.args.boundary = "both"
 do.args.selectWhole = true
-do.computedArgs = {value = "-(count || 1)"}
+do.computedArgs = { value = "-(count || 1)" }
 
 [[bind.edit.motion.obj.items]]
 key = "shift+3"
@@ -428,7 +430,7 @@ description = "next number"
 do.args.unit = "integer"
 do.args.boundary = "both"
 do.args.selectWhole = true
-do.computedArgs = {value = "-(count || 1)"}
+do.computedArgs = { value = "-(count || 1)" }
 
 [[bind.edit.motion.obj.items]]
 key = "' ;"
@@ -437,7 +439,7 @@ description = "previous comment"
 do.args.unit = "comment"
 do.args.boundary = "both"
 do.args.selectWhole = true
-do.computedArgs = {value = "-(count || 1)"}
+do.computedArgs = { value = "-(count || 1)" }
 
 [[bind.edit.motion.obj.items]]
 key = "' shift+;"
@@ -446,7 +448,7 @@ description = "next comment"
 do.args.unit = "comment"
 do.args.boundary = "both"
 do.args.selectWhole = true
-do.computedArgs = {value = "-(count || 1)"}
+do.computedArgs = { value = "-(count || 1)" }
 
 [[bind.edit.motion.obj.items]]
 key = ", ;"
@@ -455,7 +457,7 @@ description = "previous block comment"
 do.args.unit = "block_comment"
 do.args.boundary = "both"
 do.args.selectWhole = true
-do.computedArgs = {value = "-(count || 1)"}
+do.computedArgs = { value = "-(count || 1)" }
 
 [[bind.edit.motion.obj.items]]
 key = ", shift+;"
@@ -464,7 +466,7 @@ description = "next block comment"
 do.args.unit = "block_comment"
 do.args.boundary = "both"
 do.args.selectWhole = true
-do.computedArgs = {value = "-(count || 1)"}
+do.computedArgs = { value = "-(count || 1)" }
 
 [[bind.edit.motion.obj.items]]
 key = "p"
@@ -668,6 +670,49 @@ name = "around quotes"
 description = "text around current quotes"
 do = ["bracketeer.selectQuotesContent", "bracketeer.selectQuotesContent"]
 
+[[bind.edit.motion.syntax.items]]
+key = "' >"
+name = "in <>"
+description = "text inside angle brackets"
+do = "extension.selectAngleBrackets"
+
+[[bind.edit.motion.syntax.items]]
+key = "' <"
+name = "in ><"
+description = "text inside tag pairs (e.g. <a>text</a>)"
+do = "extension.selectInTag"
+
+[[bind.edit.motion.syntax.items]]
+key = "]"
+name = "inside indent"
+description = "all text at the same indentation level"
+do = "vscode-select-by-indent.select-inner"
+
+[[bind.edit.motion.syntax.items]]
+key = "shift+]"
+name = "around indent"
+description = "all text at the same indentation level along with the line above and below this (ala c-like syntax)"
+do = "vscode-select-by-indent.select-outer"
+
+[[bind.edit.motion.syntax.items]]
+key = "' ]"
+name = "indent+top"
+description = "all text at the same indentation level and the line just about it (ala python syntax)"
+do = "vscode-select-by-indent.select-outer-top-only"
+
+[[bind.edit.motion.adjust.items]]
+key = "R"
+name = "expand no wht"
+description = "select full line(s), and trim external whitespace"
+do = "selection-utilities.trimSelectionWhitespace"
+
+[[bind.edit.motion.adjust.items]]
+name = 'narrow to subword'
+description = "Narrow current selection so it starts and stops at a subword (e.g. 'snake' in snake_case)"
+do.command = "selection-utilities.narrowTo"
+do.args.unit = "subident"
+do.args.boundary = "both"
+
 [bind.edit.action]
 name = "Actions"
 description = "Commands that modify the document or UI"
@@ -694,7 +739,11 @@ when = "editorHasSelection"
 
 [[bind.edit.action.basic.items]]
 key = "a"
-do = ["selection-utilities.shrinkToActive", "cursorRight", "master-key.enterInsert"]
+do = [
+      "selection-utilities.shrinkToActive",
+      "cursorRight",
+      "master-key.enterInsert",
+]
 when = "!editorHasSelection"
 
 [[bind.edit.action.basic.items]]
@@ -715,16 +764,22 @@ do = ["deleteRight", "master-key.enterInsert"]
 [[bind.edit.action.basic.items]]
 key = "c"
 when = "!editorHasSelection && master-key.count <= 1"
-do = ["expandLineSelection", "deleteRight", "editor.action.insertLineBefore", 
-            "master-key.enterInsert" ]
+do = [
+      "expandLineSelection",
+      "deleteRight",
+      "editor.action.insertLineBefore",
+      "master-key.enterInsert",
+]
 
 [[bind.edit.action.basic.items]]
 key = "c"
 when = "!editorHasSelection && master-key.count > 1"
-do = [{defined = "selectLinesDown"},
+do = [
+      { defined = "selectLinesDown" },
       "deleteRight",
       "editor.action.insertLineBefore",
-      "master-key.enterInsert"]
+      "master-key.enterInsert",
+]
 
 [[bind.edit.action.basic.items]]
 key = "shift+c"
@@ -733,15 +788,33 @@ description = """Without a count: change from current char to end of line. With 
 change the previous `count` lines.
 """
 when = "master-key.count <= 1"
-do = ["selection-utilities.shrinkToActive", "deleteAllRight", "master-key.enterInsert"]
+do = [
+      "selection-utilities.shrinkToActive",
+      "deleteAllRight",
+      "master-key.enterInsert",
+]
 
 [[bind.edit.action.basic.items]]
 key = "shift+c"
 when = "master-key.count > 1"
-do = [{defined = "selectLinesUp"}, "deleteRight", "editor.action.insertLineBefore",
-       "master-key.enterInsert"]
+do = [
+      { defined = "selectLinesUp" },
+      "deleteRight",
+      "editor.action.insertLineBefore",
+      "master-key.enterInsert",
+]
 
 [[bind.edit.action.basic.items]]
+key = "r"
+name = "replace char"
+description = "replace the character under the cursor"
+do = "master-key.replaceChar"
+
+[bind.edit.action.clipboard]
+name = "Clipboard Operations"
+description = "Operations that manipulate the clipboard in some way."
+
+[[bind.edit.action.clipboard.items]]
 key = "d"
 name = "delete"
 description = """
@@ -749,15 +822,221 @@ Without a count: delete selected text (and store to clipboard). With a
 count, delete up to the next `count` lines and store to clipboard.
 """
 when = "!editorHasSelection"
-do = [{defined = "selectLinesDown"},
+do = [
+      { defined = "selectLinesDown" },
       "editor.action.clipboardCutAction",
-      {command = "master-key.enterMode", args = {value = "normal"}}]
+      { command = "master-key.enterMode", args = { value = "normal" } },
+]
 
-[[bind.edit.action.basic.items]]
+[[bind.edit.action.clipboard.items]]
 key = "d"
 when = "editorHasSelection"
-do = ["editor.action.clipboardCutAction",
-            {command = "master-key.enterMode", args = {value = "normal"}}]
+do = [
+      "editor.action.clipboardCutAction",
+      { command = "master-key.enterMode", args = { value = "normal" } },
+]
+
+[[bind.edit.action.clipboard.items]]
+key = "shift+d"
+name = "without count: Delete from cursor to end of line; with count: Delete from current line up `count` number of keys."
+do = [
+      "selection-utilities.shrinkToActive",
+      { command = "cursorMove", args = { to = "wrappedLineEnd", select = true} },
+      "editor.action.clipboardCutAction"
+]
+
+[[bind.edit.action.clipboard.items]]
+key = "shift+d"
+when = "master-key.count > 1"
+do = [{ defined = "selectLinesUp" }, "deleteRight"]
+
+[[bind.edit.action.clipboared.items]]
+key = "y"
+name = "copy"
+description = "copy selected text to clipboard"
+do = ["editor.action.clipboardCopyAction", "selection-utilities.shrinkToActive"]
+
+[[bind.edit.action.clipboared.items]]
+key = "shift+y"
+name = "copy (eol/up)" 
+description = "without a count: copy to end of line; with a count: copy this and the previous N lines"
+when = "master-key.count <= 1"
+do = [
+      "selection-utilities.shrinkToActive",
+      { command = "cursorMove", args = { to = "wrappedLineEnd", select = true} },
+      "editor.action.clipboardCopyAction",
+      "editor.action.shrinkToActive"
+]
+
+[[bind.edit.action.clipboared.items]]
+key = "shift+y"
+when = "master-key.count > 1"
+do = [
+      { defined = "selectLinesUp" },
+      "editor.action.clipboardCopyAction",
+      "editor.action.shrinkToActive"
+]
+
+[[bind.edit.action.clipboared.items]]
+key = "v"
+name = "paste after"
+description = "Paste the next after the cursor/selection"
+when = "editorHasSelection"
+do = ["selection-utilities.activeAtEnd", "selection-utilities.shrinkToActive", "editor.action.clipboardPasteAction"]
+
+[[bind.edit.action.clipboared.items]]
+key = "v"
+when = "!editorHasSelection"
+do = ["cursorRight", "editor.action.clipboardPasteAction"]
+
+[[bind.edit.action.clipboared.items]]
+key = "shift+v"
+name = "paste before"
+description = "Paste before the cursor/selection"
+when = "editorHasSelection"
+do = ["selection-utilities.activeAtStart", "selection-utilities.shrinkToActive", "editor.action.clipboardPasteAction"]
+
+[[bind.edit.action.clipboared.items]]
+key = "shift+v"
+when = "!editorHasSelection"
+do = ["cursorRight", "editor.action.clipboardPasteAction"]
+
+[[bind.edit.action.clipboared.items]]
+name = "paste after line"
+description = "Paste text after current line"
+key = ", v"
+do = [
+      "expandLineSelection",
+      "selection-utilities.activeAtEnd",
+      "selection-utilities.shrinkToActive",
+      "editor.action.clipboardPasteAction",
+]
+
+[[bind.edit.action.clipboared.items]]
+name = "paste before line"
+description = "Paste text before current line"
+key = ", V"
+do = [
+      "expandLineSelection",
+      "selection-utilities.activeAtStart",
+      "selection-utilities.shrinkToActive",
+      "editor.action.clipboardPasteAction",
+]
+
+[bind.edit.action.open_lines]
+name = "Line opening actions"
+description = """
+These commands provides several ways of adding lines above or below the current line
+"""
+
+[[bind.edit.action.open_lines.items]]
+name = "open, act →"
+description = "without selection: open a line below current line and enter insert, with seleciton: move cursort to start"
+key = "o"
+when = "!editorHasSelection"
+do = ["editor.action.insertLineAfter", "modalkeys.enterInsert"]
+
+[[bind.edit.action.open_lines.items]]
+key = "o"
+when = "editorHasSelection"
+do = "selection-utilities.activeAtEnd"
+
+[[bind.edit.action.open_lines.items]]
+name = "add line below"
+description = "open a line below current line"
+key = "go"
+do = "editor.action.insertLineAfter"
+
+[[bind.edit.action.open_lines.items]]
+name = "open blw, act ←"
+description = "without selection: open a line above current line and enter insert, with selection: move cursor to end"
+key = "O"
+when = "!editorHasSelection"
+do = [ "editor.action.insertLineBefore", "modalkeys.enterInsert" ]
+
+[[bind.edit.action.open_lines.items]]
+name = "open blw, act ←"
+description = "without selection: open a line above current line and enter insert, with selection: move cursor to end"
+key = "O"
+when = "editorHasSelection"
+do = "selection-utilities.activeAtStart"
+
+[[bind.edit.action.open_lines.items]]
+name = "open above"
+description = "open a line above current line"
+key = "gO"
+do = "editor.action.insertLineBefore"
+
+[bind.edit.action.indent]
+name = "Indentation"
+description = """
+Operations that affect line indentation
+"""
+
+[[bind.edit.action.indent.items]]
+key = "shift+."
+name = "indent"
+description = "Indent lines"
+do = [
+      { defined = "selectLinesDown" },
+      "editor.action.indentLines", 
+      "modalkeys.cancelMultipleSelections"
+]
+
+[[bind.edit.action.indent.items]]
+key = "shift+,"
+name = "deindent"
+description = "Deindent lines"
+do = [
+      { defined = "selectLinesDown" },
+      "editor.action.outdentLines", 
+      "modalkeys.cancelMultipleSelections"
+]
+
+[[bind.edit.action.indent.items]]
+key = "g /"
+name = "format"
+description = "Format code"
+do = [
+      { defined = "selectLinesDown" },
+      "editor.action.formatSelection",
+      "modalkeys.cancelMultipleSelections"
+]
+
+[bind.edit.action.comment]
+name = "Comments"
+description = """
+Operations that modify comments
+"""
+
+[[bind.edit.action.comment.items]]
+key = "g;"
+name = "comment →"
+description = "select next comment"
+do = [
+      { defined = "selectLinesDown" },
+      "editor.action.commentLine", 
+      "modalkeys.cancelMultipleSelections",
+]
+
+[[bind.edit.action.comment.items]]
+key = "g"
+name = "comment ←"
+description = "select previous comment"
+do = [
+      { defined = "selectLinesDown" },
+      "editor.action.blockComment", 
+      "modalkeys.cancelMultipleSelections",
+]
+
+[[bind.edit.action.comment.items]]
+key = "gq"
+name = "wrap"
+description = "wrap text, preserving commenting"
+do = "rewrap.rewrapComment"
+
+[bind.edit.action.terminal]
+# TODO: working on terminal actions
 
 [bind.edit.action.symmetric]
 name = "Symmetric Operations"
@@ -809,12 +1088,31 @@ do.args.mode = "normal"
 "`" = "`"
 
 [[bind.edit.action.symmetric.items]]
-key = ["shift+;", ";", "'", "shift+'", ",", ".", "/", "shift+/", "shift+\\", 
-       "=", "shift+=", "-", "shift+-", "shift+8", "shift+7", "shift+6", 
-       "shift+5", "shift+4", "shift+3", "shift+2", "shift+1", "shift+`",
-       "`"]
+key = [
+      "shift+;",
+      ";",
+      "'",
+      "shift+'",
+      ",",
+      ".",
+      "/",
+      "shift+/",
+      "shift+\\",
+      "=",
+      "shift+=",
+      "-",
+      "shift+-",
+      "shift+8",
+      "shift+7",
+      "shift+6",
+      "shift+5",
+      "shift+4",
+      "shift+3",
+      "shift+2",
+      "shift+1",
+      "shift+`",
+      "`",
+]
 description = "Insert the character {symmetric_key_map[key]} at both ends of each selection"
 do.command = "selection-utilities.insertAround"
-do.args = { before = "{symmetric_key_map[key]}", after = "{symmetric_key_map[key]}"}
-
-
+do.args = { before = "{symmetric_key_map[key]}", after = "{symmetric_key_map[key]}" }

@@ -34,6 +34,7 @@ const keyContext = z.object({
 type KeyContext = z.infer<typeof keyContext> & { [key: string]: any } & {
     editorHasSelection: boolean,
     editorHasMultipleSelections: boolean,
+    editorHasMultiLineSelection: boolean,
     editorLangId: undefined | string,
     firstSelectionOrWord: string
 };
