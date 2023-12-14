@@ -1020,7 +1020,7 @@ do = [
 ]
 
 [[bind.edit.action.comment.items]]
-key = "g"
+key = "g shift+;"
 name = "comment ←"
 description = "select previous comment"
 do = [
@@ -1035,8 +1035,290 @@ name = "wrap"
 description = "wrap text, preserving commenting"
 do = "rewrap.rewrapComment"
 
-[bind.edit.action.terminal]
-# TODO: working on terminal actions
+[bind.edit.terminal]
+name = "Terminal Actions"
+description = "Commands that send text from the editor to the terminal"
+default.kind = "action"
+
+[[bind.edit.terminal.items]]
+name = "to repl"
+description = """
+send text to a terminal (usually containing a REPL); use language 
+specific extensions when available and put the pasted code into a block (when defined)."
+"""
+key = "m"
+when = "languageId == 'julia' && !editorHasSelection"
+do = [
+      { defined = "selectLinesDown" },
+      "expandLineSelection", "selection-utilities.trimSelectionWhitespace", 
+      "language-julia.executeCodeBlockOrSelectionAndMove"
+]
+
+[[bind.edit.terminal.items]]
+key = "m"
+when = "languageId == 'julia' && editorHasSelection"
+do = "language-julia.executeCodeBlockOrSelectionAndMove"
+
+[[bind.edit.terminal.items]]
+key = "m"
+when = "!(master-key.firstSelectionOrWord =~ /\n/)"
+do = ["terminal-polyglot.send-text",
+      "selection-utilities.shrinkToActive"]
+
+[[bind.edit.terminal.items]]
+key = "m"
+when = "master-key.firstSelectionOrWord =~ /\n/"
+do = ["terminal-polyglot.send-block-text",
+      "selection-utilities.shrinkToActive"]
+
+[[bind.edit.terminal.items]]
+key = "shift+m"
+name = "to repl (v2)"
+description = """
+send text to a terminal (usually containing a REPL), placing in a block when defined.
+"""
+when = "master-key.firstSelectionOrWord =~ /\n/"
+do = ["terminal-polyglot.send-block-text", "modalkeys.cancelMultipleSelections"]
+
+[[bind.edit.terminal.items]]
+key = "shift+m"
+name = "to repl (v2)"
+description = """
+send text to a terminal (usually containing a REPL), placing in a block when defined.
+"""
+when = "!(master-key.firstSelectionOrWord =~ /\n/)"
+do = ["terminal-polyglot.send-text", "modalkeys.cancelMultipleSelections"]
+
+[[bind.edit.terminal.items]]
+key = "g m"
+name = "to repl (v3)"
+description = """
+send text to a terminal (usually containing a REPL)
+"""
+do = ["terminal-polyglot.send-text", "modalkeys.cancelMultipleSelections"]
+
+## TODO: add git/version control commands
+
+[bind.edit.navigation]
+name = "Document Navigation"
+default.kind = "select"
+description = """
+Commands that navigate to various places in a document
+"""
+
+[[bind.edit.navigation.items]]
+name = "error →"
+description = """
+move to next error
+"""
+key = ", e"
+do = "editor.action.marker.next"
+
+[[bind.edit.navigation.items]]
+name = "error ←"
+description = """
+move to previous error
+"""
+key = ", shift+e"
+do = "editor.action.marker.prev"
+
+[[bind.edit.navigation.items]]
+name = "diff →"
+description = """
+move to and show next change
+"""
+key = ", d"
+do = "editor.action.dirtydiff.next"
+
+[[bind.edit.navigation.items]]
+name = "diff ←"
+description = """
+move to and show previous change
+"""
+key = ", shift+d"
+do = "editor.action.dirtydiff.previous"
+
+[[bind.edit.navigation.items]]
+name = "change →"
+description = """
+move to next change
+"""
+key = "' d"
+do = "workbench.action.editor.nextChange"
+
+[[bind.edit.navigation.items]]
+name = "change ←"
+description = """
+move to previous change
+"""
+key = "' shift+d"
+do = "workbench.action.editor.previousChange"
+
+[bind.window]
+name = "Window Manipulation"
+description = "Commands for navigating and manipulating the window/editor panes in some way"
+kind = "window"
+
+[[bind.window.items]]
+name = "center"
+description = "center window at primary cursor position"
+key = ", >"
+do = { "revealLine": { lineNumber: '__line', at: 'center' } }
+
+[[bind.window.items]]
+name = "top"
+description = "center window so that primary cursor is at the top"
+key = ", shift+k"
+do = { "revealLine": { lineNumber: '__line', at: 'top' } }
+
+[[bind.window.items]]
+name = "bottom"
+description = "center window so that primary cursor is at the bottom"
+key = ", shift+j"
+do = { "revealLine": { lineNumber: '__line', at: 'bottom' } }
+
+[[bind.window.items]]
+name = "max"
+description = "minimize size of all other windows"
+key = ", shift+m"
+do = "workbench.action.minimizeOtherEditors"
+
+[[bind.window.items]]
+name = "equal"
+description = "equalzize size of all windows"
+key = ", ="
+do = "workbench.action.evenEditorWidths"
+
+[[bind.window.items]]
+name = "split"
+description = "toggle split editor view"
+key = ", |"
+do = "workbench.action.toggleSplitEditorInGroup"
+
+[[bind.window.items]]
+name = "split →"
+description = "move to other side of editor split"
+key = ", shift+l"
+do = "workbench.action.focusOtherSideEditor"
+
+[[bind.window.items]]
+name = "→"
+description = "move focus to window to the right"
+key = ", l"
+do = "workbench.action.focusRightGroup"
+
+[[bind.window.items]]
+name = "←"
+description = "move focus to window to the left"
+key = ", h"
+do = "workbench.action.focusLeftGroup"
+
+[[bind.window.items]]
+name = "↑"
+description = "move focus to window above"
+key = ", k"
+do = "workbench.action.focusAboveGroup"
+
+[[bind.window.items]]
+name = "↓"
+description = "move focus to window below"
+key = ", j"
+do = "workbench.action.focusBelowGroup"
+
+[[bind.window.items]]
+name = "hover"
+description = "show the hover view"
+key = "g h"
+do = "editor.action.showHover"
+
+[[bind.window.items]]
+name = "open"
+description = "open the file name under the cursor"
+key = "g f"
+do = "extension.openFileFromPath"
+
+[[bind.window.items]]
+name = "go to"
+description = "go to the definition of symbol under curosr"
+key = "g d"
+do = "editor.action.revealDefinition"
+
+[[bind.window.items]]
+name = "go to (aside)"
+description = "go to the definition of symbol under curosr in an editor to the side"
+key = "g shift+d"
+do = "editor.action.revealDefinitionAside"
+
+[[bind.window.create.items]]
+name = "create"
+description = "create new window of editor in given direction" 
+key = ", c"
+kind = "prefix"
+resetTransient = false
+do.command = "master-key.prefix"
+do.args.key = "c"
+
+[[bind.window.create.items]]
+name = "→"
+description = "create new window of editor to left" 
+key = ", c l"
+do = "workbench.action.splitEditorRight"
+
+[[bind.window.create.items]]
+name = "←"
+description = "create new window of editor to left" 
+key = ", c h"
+do = "workbench.action.splitEditorLeft"
+
+[[bind.window.create.items]]
+name = "↓"
+description = "create new window of editor below" 
+key = ", c j"
+do = "workbench.action.splitEditorDown"
+
+[[bind.window.create.items]]
+name = "↑"
+description = "create new window of editor above" 
+key = ", c k"
+do = "workbench.action.splitEditorUp"
+
+[[bind.window.move.items]]
+name = "move to"
+description = "move editor to window in given direction" 
+key = ", m"
+resetTransient = false
+do.command = "master-key.prefix"
+do.args.key = "c"
+
+[[bind.window.move.items]]
+name = "→"
+description = "move editor to window to left" 
+key = ", m l"
+do = "workbench.action.moveEditorToRightGroup"
+
+[[bind.window.move.items]]
+name = "←"
+description = "move editor to window to left" 
+key = ", m h"
+do = "workbench.action.moveEditorToLeftGroup"
+
+[[bind.window.move.items]]
+name = "↓"
+description = "move editor to window below" 
+key = ", m j"
+do = "workbench.action.moveEditorToBelowGroup"
+
+[[bind.window.move.items]]
+name = "↑"
+description = "move editor to window above" 
+key = ", m k"
+do = "workbench.action.moveEditorToAboveGroup"
+
+[[bind.window.move.items]]
+name = "close pane"
+description = "close the given group of editors"
+key = ", x"
+do = "workbench.action.closeEditorsInGroup"
 
 [bind.edit.action.symmetric]
 name = "Symmetric Operations"
@@ -1063,7 +1345,8 @@ do.command = "master-key.enterMode"
 do.args.mode = "normal"
 
 [define.symmetric_key_map]
-"shift+;" = ":"
+"shift+;" = "
+do =
 "shift+'" = "\""
 "shift+/" = "?"
 "shift+\\" = "|"

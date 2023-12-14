@@ -1,10 +1,10 @@
 current issue I'm working on:
 
-- implement selection utilities multi-line paste ala vim
 - implement some more of the bindings from modalbindings.js
 - implement master-key.replaceChar
 
 Next up
+- implement master-key.replaceChar
 - start dogfooding (we need to answer the question: is this working well enough for this implementation to be viable)
 
 - start implementing event recording / replay for
@@ -38,6 +38,10 @@ quick win: store clipboard to a register
 let modes change the cursor
 let modes change line numbering
 make config import work for both global and workspace settings
+
+- implement conctext selection-utilities.firstSelectionOrWord (which accounts
+  for changes in the primary selection)
+  - NOTE: this should also use `master-key.set` when available
 
 add to existing future plans:
 

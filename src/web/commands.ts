@@ -24,6 +24,10 @@ function updateStatusBar(){
     }
 }
 
+// TODO: as a user it is confusing that when clause context scope
+// differs from evaluation scope; anything below that requires
+// a qualifier in a when clause (e.g. master-key.prefix)
+// should also require a qualifier below
 const keyContext = z.object({
     prefix: z.string(),
     count: z.number(),
@@ -34,6 +38,7 @@ const keyContext = z.object({
 type KeyContext = z.infer<typeof keyContext> & { [key: string]: any } & {
     editorHasSelection: boolean,
     editorHasMultipleSelections: boolean,
+    editorHasMultiLineSelection: boolean,
     editorLangId: undefined | string,
     firstSelectionOrWord: string
 };
@@ -55,6 +60,7 @@ class CommandState {
         validModes: ['insert'],
         editorHasSelection: false,
         editorHasMultipleSelections: false,
+        editorHasMultiLineSelection: false,
         editorLangId: undefined,
         firstSelectionOrWord: ""
     };
@@ -241,6 +247,8 @@ export function activate(context: vscode.ExtensionContext) {
         }else{
             state.values.firstSelectionOrWord = doc.getText(e.selections[0]);
         }
+        vscode.commands.executeCommand('setContext', 'master-key.firstSelectionOrWord', 
+            state.values.firstSelectionOrWord);
     });
 
     vscode.window.onDidChangeActiveTextEditor(e => {
