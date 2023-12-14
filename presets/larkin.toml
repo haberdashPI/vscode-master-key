@@ -35,7 +35,7 @@ These bindings are named after the middle name of my first child.
 """
 
 [define]
-validModes = ["insert", "search", "normal", "syminsert"]
+validModes = ["insert", "search", "normal", "syminsert", "selectedit"]
 select_on = false
 around_on = false
 
@@ -329,6 +329,7 @@ do.args.value = true
 [[bind.edit.motion.mod.items]]
 key = "space"
 name = "shrink selection"
+mode = ["normal", "selectedit"]
 description = """
 reduce all selections to length zero
 """
@@ -1158,24 +1159,28 @@ do = "workbench.action.editor.previousChange"
 name = "Window Manipulation"
 description = "Commands for navigating and manipulating the window/editor panes in some way"
 kind = "window"
+default.mode = "normal"
 
 [[bind.window.items]]
 name = "center"
 description = "center window at primary cursor position"
 key = ", >"
-do = { "revealLine": { lineNumber: '__line', at: 'center' } }
+do.command = "selection-utilities.revealActive"
+do.args = "center"
 
 [[bind.window.items]]
 name = "top"
 description = "center window so that primary cursor is at the top"
 key = ", shift+k"
-do = { "revealLine": { lineNumber: '__line', at: 'top' } }
+do.command = "selection-utilities.revealActive"
+do.args = "top"
 
 [[bind.window.items]]
 name = "bottom"
 description = "center window so that primary cursor is at the bottom"
 key = ", shift+j"
-do = { "revealLine": { lineNumber: '__line', at: 'bottom' } }
+do.command = "selection-utilities.revealActive"
+do.args = "bottom"
 
 [[bind.window.items]]
 name = "max"
@@ -1249,6 +1254,51 @@ description = "go to the definition of symbol under curosr in an editor to the s
 key = "g shift+d"
 do = "editor.action.revealDefinitionAside"
 
+[[bind.window.bookmark.items]]
+name = "mark"
+description = "toggle bookmark at given line (use 'j, 'k and '# to navigate bookmarks)"
+key = "g "
+do = "vsc-labeled-bookmarks.toggleBookmark"
+
+[[bind.window.bookmark.items]]
+name = "mark ↓"
+description = "move to next bookmark"
+key = "' j"
+when = "!master-key.select_on && !editorHasSelection"
+do = "vsc-labeled-bookmarks.navigateToNextBookmark"
+
+[[bind.window.bookmark.items]]
+key = "' j"
+when = "master-key.select_on || editorHasSelection"
+do = "vsc-labeled-bookmarks.expandSelectionToNextBookmark"
+
+[[bind.window.bookmark.items]]
+name = "mark ↑"
+description = "move to previous bookmark"
+key = "' k"
+when = "!master-key.select_on && !editorHasSelection"
+do = "vsc-labeled-bookmarks.navigateToPreviousBookmark"
+
+[[bind.window.bookmark.items]]
+name = "mark ↑"
+description = "move to previous bookmark"
+key = "' k"
+when = "master-key.select_on || editorHasSelection"
+do = ["vsc-labeled-bookmarks.expandSelectionToPreviousBookmark", 
+      "selection-utilities.activeAtStart"]
+
+[[bind.window.bookmark.items]]
+name = "mark"
+description = "remove bookmark (use quick selection)"
+key = "g x space"
+do = "vsc-labeled-bookmarks.deleteBookmark"
+
+[[bind.window.bookmark.items]]
+name = "nav marks"
+description = "reveal quick selection to move to a bookmark"
+key = "' shift+3"
+do = "vsc-labeled-bookmarks.navigateToBookmark"
+
 [[bind.window.create.items]]
 name = "create"
 description = "create new window of editor in given direction" 
@@ -1320,6 +1370,125 @@ description = "close the given group of editors"
 key = ", x"
 do = "workbench.action.closeEditorsInGroup"
 
+[bind.edit.select_edit]
+name = "Selection Editing"
+description = "Various kakaune inspired commands for editing multiple selections"
+default.mode = "selectedit"
+
+[[bind.edit.select_edit.items]]
+name = "select-edit"
+detail = """
+Enter a mode where you can edit and manipulate (possibly multiple) selections with ease. 
+Entering the mode also adds a new cursor for the next match to the word under the curosr 
+(or selection). You can use the count to ask multiple matches to be added. 
+(You can use `,\"` to avoid adding any cursors).
+"""
+key = "shift+'"
+when = "editorHasMultipleSelections"
+do.command = "master-key.enterMode"
+do.args = "selectedit"
+mode = "normal"
+
+[[bind.edit.select_edit.items]]
+key = "shift+'"
+when = "!editorHasMultipleSelections"
+do = [
+      {command = "master-key.enterMode", args = "selectedit"},
+      { command = "selection-utilities.addNext", computedArgs = { repeat = 'count' } }
+]
+mode = "normal"
+
+[[bind.edit.select_edit.items]]
+name = "select-edit"
+description = """
+Enter a mode where you can edit and manipulate (possibly multiple) selections with ease. 
+No additional cursors will be added when entering the mode with this command. 
+"""
+key = ", shift+'"
+do.command = "master-key.enterMode"
+do.args = "selectedit"
+mode = "normal"
+
+[[bind.edit.select_edit.items]]
+name = 'normal'
+description = "return to a single selection and return to normal mode"
+key = "enter"
+do = ["selection-utilities.cancelSelection", "modalkeys.enterNormal"]
+
+[[bind.edit.select_edit.items]]
+name = 'insert'
+description = "insert mode at cursor"
+key = "selectedit::i"
+do = ["modalkeys.enterNormal", "selection-utilities.shrinkToActive", "modalkeys.enterInsert"]
+
+[[bind.edit.select_edit.items]]
+name = "add →"
+description = "add cursor at the next match to the primary cursor's text" 
+key = ["shift+'", "shift+j"]
+do = { command = "selection-utilities.addNext", computedArgs = { repeat = 'count' } }
+
+[[bind.edit.select_edit.items]]
+name = "add ←"
+description = "add cursor at the previous match to the primary cursor's text" 
+key = "shift+k"
+do = { command = "selection-utilities.addPrev", computedArgs = { repeat = 'count' } }
+
+[[bind.edit.select_edit.items]]
+name = "skip →"
+description = "move primary cursor to the next match of the primary cursor's text" 
+key = "g j"
+do =  { command = "selection-utilities.skipNext", computedArgs = { repeat = 'count' } }
+
+[[bind.edit.select_edit.items]]
+name = "skip →"
+description = "move primary cursor to the previous match of the primary cursor's text" 
+key = "g k"
+do = { command = "selection-utilities.skipPrev", computedArgs = { repeat = 'count' } }
+
+
+[[bind.edit.select_edit.items]]
+name = "align ←"
+description = "align selections left"
+key = "="
+do = "selection-utilities.alignSelectionsLeft"
+
+[[bind.edit.select_edit.items]]
+name = "align →"
+description = "align selections right"
+key = "shift+="
+do = "selection-utilities.alignSelectionsRight"
+
+[[bind.edit.select_edit.items]]
+name = "save sel"
+description = """
+save all selections to the default register. 
+Use a count to specify an alternate register
+"""
+key = "' c"
+do = [
+      { command = "selection-utilities.appendToMemory", computedArgs = { register = "'selmemory_'+count" } },
+      "modalkeys.cancelMultipleSelections", "modalkeys.enterNormal"
+]
+
+[[bind.edit.select_edit.items]]
+name = "load sel"
+description = """
+load previously saved selections in the default register. 
+Use a count to specify an alternate register
+"""
+key = "' v"
+do = [
+      { command = "selection-utilities.restoreAndClear", computedArgs = { register = "'selmemory_'+count" } },
+]
+
+[[bind.edit.select_edit.items]]
+when = "editorHasMultipleSelections"
+key = "' v"
+do = [
+      { command = "selection-utilities.restoreAndClear", computedArgs = { register = "'selmemory_'+count" } },
+      { command = "enterMode", args = "selectedit" }
+]
+
 [bind.edit.action.symmetric]
 name = "Symmetric Operations"
 description = "Operations that occur at both ends of a selection"
@@ -1345,8 +1514,7 @@ do.command = "master-key.enterMode"
 do.args.mode = "normal"
 
 [define.symmetric_key_map]
-"shift+;" = "
-do =
+"shift+;" = ":"
 "shift+'" = "\""
 "shift+/" = "?"
 "shift+\\" = "|"
