@@ -934,11 +934,13 @@ These commands provides several ways of adding lines above or below the current 
 name = "open, act →"
 description = "without selection: open a line below current line and enter insert, with seleciton: move cursort to start"
 key = "o"
+mode = ["normal", "selectedit"]
 when = "!editorHasSelection"
 do = ["editor.action.insertLineAfter", "modalkeys.enterInsert"]
 
 [[bind.edit.action.open_lines.items]]
 key = "o"
+mode = ["normal", "selectedit"]
 when = "editorHasSelection"
 do = "selection-utilities.activeAtEnd"
 
@@ -953,12 +955,14 @@ name = "open blw, act ←"
 description = "without selection: open a line above current line and enter insert, with selection: move cursor to end"
 key = "shift+o"
 when = "!editorHasSelection"
+mode = ["normal", "selectedit"]
 do = [ "editor.action.insertLineBefore", "modalkeys.enterInsert" ]
 
 [[bind.edit.action.open_lines.items]]
 name = "open blw, act ←"
 description = "without selection: open a line above current line and enter insert, with selection: move cursor to end"
 key = "shift+o"
+mode = ["normal", "selectedit"]
 when = "editorHasSelection"
 do = "selection-utilities.activeAtStart"
 
@@ -1465,6 +1469,7 @@ save all selections to the default register.
 Use a count to specify an alternate register
 """
 key = "' c"
+mode = "normal"
 do = [
       { command = "selection-utilities.appendToMemory", computedArgs = { register = "'selmemory_'+count" } },
       "modalkeys.cancelMultipleSelections", "modalkeys.enterNormal"
@@ -1477,17 +1482,154 @@ load previously saved selections in the default register.
 Use a count to specify an alternate register
 """
 key = "' v"
+mode = ["normal", "normal"]
 do = [
-      { command = "selection-utilities.restoreAndClear", computedArgs = { register = "'selmemory_'+count" } },
+      { command = "selection-utilities.restoreAndClear", computedArgs = { register = "count" } },
 ]
 
 [[bind.edit.select_edit.items]]
 when = "editorHasMultipleSelections"
 key = "' v"
+mode = ["normal", "normal"]
 do = [
-      { command = "selection-utilities.restoreAndClear", computedArgs = { register = "'selmemory_'+count" } },
+      { command = "selection-utilities.restoreAndClear", computedArgs = { register = "count" } },
       { command = "enterMode", args = "selectedit" }
 ]
+
+[[bind.edit.select_edit.items]]
+name = "exchange sel"
+description = """
+exchange selections: with no saved selection, saves the selection, with saved selections exchanges text of current selections with those of the saved selections (number of selections must match). Use a count to specify an alternate register.
+"""
+key = "' x"
+mode = ["normal", "normal"]
+      do = { command = "selection-utilities.swapWithMemory", computedArgs = { register = "count" } }
+
+[[bind.edit.select_edit.items]]
+name = "rem saved sel"
+description = """
+remove the most recently saved selection from the list of saved selections
+"""
+key = "' n"
+mode = ["normal", "normal"]
+do = { command = "selection-utilities.deleteLastSaved", computedArgs = { register = "count" } }
+
+[[bind.edit.select_edit.items]]
+key = "' enter"
+name = "split sel"
+description = """
+split selection into multiple selections by new line charactesr
+"""
+mode = ["normal", "selectedit"]
+do = [
+      { defined = "selectLinesDown" },
+      "selection-utilities.splitByNewline",
+      { command = "master-key.enterMode", args = { mode = "selectedit" } }
+]
+
+[[bind.edit.select_edit.items]]
+name = "sel all"
+description = """
+create a selection for every match of the current word (or selection)
+"""
+key = "' shift+8"
+mode = ["normal", "selectedit"]
+do = [
+      "editor.action.selectHighlights",
+      { command = "master-key.enterMode", args = { mode = "selectedit" } }
+]
+
+[[bind.edit.select_edit.items]]
+name = "restore sel"
+description = """
+restore the most recently cleared selection
+"""
+key = ", -"
+mode = ["normal", "selectedit"]
+do = { command = "selection-utilities.restoreAndClear", args = { register = "cancel"} }
+
+[[bind.edit.select_edit.items]]
+when = "editorHasMultipleSelections"
+key = ", -"
+mode = ["normal", "selectedit"]
+do = [
+      { command = "selection-utilities.restoreAndClear", args = { register = "cancel"} },
+      { command = "master-key.enterMode", args = { mode = "selectedit" } }
+]
+
+[[bind.edit.select_edit.items]]
+name = "insert sel ↑"
+description = """
+insert cursor on line above
+"""
+key = "' shift+k"
+mode = ["normal", "selectedit"]
+do = [
+      { command = "editor.action.insertCursorAbove", computedArgs = { repeat = 'count' } },
+      { command = "modalkeys.enterMode", args = { mode = "selectedit" } },
+]
+
+[[bind.edit.select_edit.items]]
+name = "insert sel ↓"
+description = """
+insert cursor on line below
+"""
+key = "' shift+j"
+mode = ["normal", "selectedit"]
+do = [
+      { command = "editor.action.insertCursorBelow", computedArgs = { repeat = 'count' } },
+      { command = "modalkeys.enterMode", args = { mode = "selectedit" }},
+]
+
+[[bind.edit.select_edit.items]]
+name = "reset"
+description = "collapse all selections to the active position, and return to normal mode" 
+key = "r"
+do = [ "modalkeys.enterNormal", "selection-utilities.shrinkToActive" ]
+
+[[bind.edit.select_edit.items]]
+name = "→ sel"
+description = "make the next selection primary; primary selections determine from where you add cursors, what cursor you delete, and where the cursor goes when you clear or save selections" 
+key = "j"
+do = { command = "selection-utilities.movePrimaryRight", computedArgs = { repeat = 'count' } }
+
+[[bind.edit.select_edit.items]]
+name = "← sel"
+description = "make the previous selection primary; primary selections determine from where you add cursors, what cursor you delete, and where the cursor goes when you clear or save selections" 
+key = "k"
+do = { command = "selection-utilities.movePrimaryLeft", computedArgs = { repeat = 'count' } }
+
+[[bind.edit.select_edit.items]]
+name = "del. sel"
+description = "remove the primary selection" 
+key = "d"
+do = { command = "selection-utilities.deletePrimary", computedArgs = { repeat = 'count' } }
+
+[[bind.edit.select_edit.items]]
+key = "s"
+name = "split"
+description = "split the selection by a specified marker"
+resetTransient = false
+do.command = "master-key.prefix"
+do.args.key = "s" # TODO: this shouldn't be necessary (and could be confusing)
+
+[[bind.edit.select_edit.split.items]]
+name = "newline"
+description = "split by newlines"
+key = "s enter"
+do = "selection-utilities.splitByNewline"
+
+[[bind.edit.select_edit.split.items]]
+name = "string"
+description = "split by a given string"
+key = "s s"
+do = "selection-utilities.splitBy"
+
+[[bind.edit.select_edit.split.items]]
+name = "regex"
+description = "split by a given regular expression"
+key = "s r"
+do = "selection-utilities.splitByRegex"
 
 [bind.edit.action.symmetric]
 name = "Symmetric Operations"

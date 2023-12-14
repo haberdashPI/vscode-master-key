@@ -2,6 +2,7 @@ current issue I'm working on:
 
 - implement some more of the bindings from modalbindings.js
 - implement master-key.replaceChar
+- implement master-key.captureChar
 
 Next up
 - implement master-key.replaceChar
