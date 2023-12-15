@@ -4,6 +4,7 @@ import { validateInput } from './utils';
 import { setKeyContext, runCommands, state as keyState } from "./commands";
 import { strictDoArgs } from './keybindingParsing';
 import { wrappedTranslate } from './utils';
+import { captureKeys } from './captureKeys';
 
 export const searchArgs = z.object({
     backwards: z.boolean().optional(),
@@ -96,14 +97,14 @@ function* regexMatches(matcher: RegExp, line: string, forward: boolean,
 function* stringMatches(matcher: string, matchCase: boolean, line: string, forward: boolean, 
     offset: number | undefined): Generator<[number, number]>{
 
-    let search_me = offset === undefined ? line :
+    let searchMe = offset === undefined ? line :
         (forward ? line.substring(offset) : line.substring(0, offset - 1));
     let fromOffset = offset === undefined ? 0 : (forward ? offset : 0);
-    if(!matchCase){ search_me = search_me.toLowerCase(); }
-    let from = search_me.indexOf(matcher, 0);
+    if(!matchCase){ searchMe = searchMe.toLowerCase(); }
+    let from = searchMe.indexOf(matcher, 0);
     while(from >= 0){
         yield [from + fromOffset, matcher.length];
-        from = search_me.indexOf(matcher, from+1);
+        from = searchMe.indexOf(matcher, from+1);
     }
 }
 
@@ -112,6 +113,7 @@ interface SearchState{
     text: string;
     searchFrom: readonly vscode.Selection[];
     oldMode: string;
+    stop?: (() => void);
 }
 
 let searchStates: Map<vscode.TextEditor, Record<string, SearchState>> = new Map();
@@ -128,7 +130,7 @@ function getSearchState(editor: vscode.TextEditor, register: string = currentSea
             args: searchArgs.parse({}), 
             text: "", 
             searchFrom: [],
-            oldMode: keyState.values.mode
+            oldMode: keyState.values.mode,
         };
         statesForEditor[register] = searchState;
         searchStates.set(editor, statesForEditor);
@@ -158,23 +160,18 @@ async function search(editor: vscode.TextEditor, edit: vscode.TextEditorEdit, ar
     // when there are a fixed number of keys use `type` command
     if(state.args.acceptAfter){
         let acceptAfter = state.args.acceptAfter;
-        if(!typeSubscription){
-            try{
-                typeSubscription = vscode.commands.registerCommand('type', onType);
-            }catch(e){
-                vscode.window.showErrorMessage(`Failed to capture keyboard input. You 
-                    might have an extension that is already listing to type events 
-                    installed (e.g. vscodevim).`);
+        captureKeys((key, stop) => {
+            state.stop = stop;
+            if(key === "\n") { acceptSearch(editor, edit, state); }
+            else {
+                state.text += key; 
+                navigateTo(state, editor, false);
+                if(state.text.length >= acceptAfter){ acceptSearch(editor, edit, state); }
             }
-        }
-        onTypeFn = async (text: string) => { 
-            if(text === "\n") { acceptSearch(editor, edit, state); }
-            state.text += text; 
-            navigateTo(state, editor, false);
-            if(state.text.length >= acceptAfter){ acceptSearch(editor, edit, state); }
-        };
+        });
     }else{
         // if there are not a fixed number use a UX element that makes the keys visible
+        state.stop = undefined;
         let inputBox = vscode.window.createInputBox();
         inputBox.prompt = "Enter search text";
         inputBox.title = "Search";
@@ -197,10 +194,7 @@ async function acceptSearch(editor: vscode.TextEditor, edit: vscode.TextEditorEd
     if(state.args.doAfter){
         await runCommands({do: state.args.doAfter, resetTransient: true});
     }
-    if(typeSubscription){
-        typeSubscription.dispose();
-        typeSubscription = undefined;
-    }
+    if(state.stop){ state.stop(); }
     state.searchFrom = editor.selections;
     await setKeyContext({name: 'mode', value: state.oldMode, transient: false});
 }
@@ -227,10 +221,7 @@ async function cancelSearch(editor: vscode.TextEditor, edit: vscode.TextEditorEd
             revealActive(editor);
         }
     }
-    if(typeSubscription){
-        typeSubscription.dispose();
-        typeSubscription = undefined;
-    }
+    if(state.stop){ state.stop(); }
 }
 
 function deleteLastSearchCharacter(editor: vscode.TextEditor, edit: vscode.TextEditorEdit) {
