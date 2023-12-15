@@ -138,14 +138,6 @@ function getSearchState(editor: vscode.TextEditor, register: string = currentSea
     }
 }
 
-let typeSubscription: vscode.Disposable | undefined;
-let onTypeFn: (text: string) => Promise<void> = async function(text: string){
-    return;
-};
-async function onType(event: {text: string}){
-    return onTypeFn(event.text);
-}
-
 async function search(editor: vscode.TextEditor, edit: vscode.TextEditorEdit, args_: any[]){
     let args = validateInput('master-key.search', args_, searchArgs);
     if(!args){ return; }
