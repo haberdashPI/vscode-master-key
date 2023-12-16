@@ -1066,13 +1066,13 @@ do = "language-julia.executeCodeBlockOrSelectionAndMove"
 
 [[bind.edit.terminal.items]]
 key = "m"
-when = "!(master-key.firstSelectionOrWord =~ /\n/)"
+when = "!(master-key.firstSelectionOrWord =~ /\\n/)"
 do = ["terminal-polyglot.send-text",
       "selection-utilities.shrinkToActive"]
 
 [[bind.edit.terminal.items]]
 key = "m"
-when = "master-key.firstSelectionOrWord =~ /\n/"
+when = "master-key.firstSelectionOrWord =~ /\\n/"
 do = ["terminal-polyglot.send-block-text",
       "selection-utilities.shrinkToActive"]
 
@@ -1082,7 +1082,7 @@ name = "to repl (v2)"
 description = """
 send text to a terminal (usually containing a REPL), placing in a block when defined.
 """
-when = "master-key.firstSelectionOrWord =~ /\n/"
+when = "master-key.firstSelectionOrWord =~ /\\n/"
 do = ["terminal-polyglot.send-block-text", "modalkeys.cancelMultipleSelections"]
 
 [[bind.edit.terminal.items]]
@@ -1091,7 +1091,7 @@ name = "to repl (v2)"
 description = """
 send text to a terminal (usually containing a REPL), placing in a block when defined.
 """
-when = "!(master-key.firstSelectionOrWord =~ /\n/)"
+when = "!(master-key.firstSelectionOrWord =~ /\\n/)"
 do = ["terminal-polyglot.send-text", "modalkeys.cancelMultipleSelections"]
 
 [[bind.edit.terminal.items]]

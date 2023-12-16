@@ -1,6 +1,10 @@
+import hash from 'object-hash';
 import * as vscode from 'vscode';
-import { compile } from 'jse-eval';
+import * as expr from 'jse-eval';
 import { mapValues } from 'lodash';
+
+expr.addBinaryOp('=~', 6, (left, right) => right.test(left));
+expr.jsep.plugins.register(require('@jsep-plugin/regex'));
 
 export function reifyStrings(obj: any, ev: (str: string) => any): any {
     if (Array.isArray(obj)) { return obj.map(x => reifyStrings(x, ev)); }
@@ -16,8 +20,8 @@ export function reifyStrings(obj: any, ev: (str: string) => any): any {
     if (typeof obj === 'symbol') { return obj; }
 }
 
-export class expressionId(exp: string){
-    
+export function expressionId(exp: string){
+    return hash(expr.parse(exp));
 }
 
 export class EvalContext {
@@ -69,7 +73,7 @@ export class EvalContext {
                 use 'master-key.set' to do that.`);
                 return undefined;
             }
-            this.cache[str] = exec = compile(str);
+            this.cache[str] = exec = expr.compile(str);
         }
         let result = str;
         try {
