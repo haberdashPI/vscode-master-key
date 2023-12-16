@@ -18,8 +18,13 @@ export function reifyStrings(obj: any, ev: (str: string) => any): any {
     if (typeof obj === 'symbol') { return obj; }
 }
 
+export class expressionId(exp: string){
+    
+}
+
 export class EvalContext {
     private errors: string[] = [];
+    // TODO: we don't need this cache, SafeExpression already does this
     private cache: Record<string, EvalFun> = {};
 
     reportErrors(){

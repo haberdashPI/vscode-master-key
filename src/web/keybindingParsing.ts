@@ -1,6 +1,6 @@
 import hash from 'object-hash';
 import * as vscode from 'vscode';
-import jsep, { Expression as jsepExpression } from 'jsep';
+import jsep from 'jsep';
 const TOML = require("smol-toml");
 import * as semver from 'semver';
 import { TextDecoder } from 'text-encoding';

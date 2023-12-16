@@ -1638,7 +1638,7 @@ description = "split by a given character"
 key = "s c"
 do.command = "modalkeys.captureChar"
 do.args.acceptAfter = 1
-do.args.executeAfter = { command = "selection-utilities.splitBy", args = { text = "capture" } }
+do.args.doAfter = { command = "selection-utilities.splitBy", computedArgs = { text = "capture" } }
 
 [[bind.edit.select_edit.create.items]]
 name = "create"

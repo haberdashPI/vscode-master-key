@@ -71,6 +71,8 @@ class CommandState {
         }
         updateStatusBar();
     }
+    // TODO: have a setKeyContext and setKeyContextForUser to validate those things that
+    // aren't from code
     setKeyContext(key: string, value: any){
         // key validation
         validateInput('master-key.set', { key }, z.object({key: keyContextKey}));
