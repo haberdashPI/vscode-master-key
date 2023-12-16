@@ -33,6 +33,11 @@ unit tests: duplicate binding handling (especially with the automated keys)
 
 wishlist:
 
+post prototype phase: get rid of the somewhat crappy/bloated parsing and eval libraries
+(that are either poorly maintained, or overkill), and build our own grammer using
+https://sigma.vm.codes for both when clauses and computedArgs values and create our own
+evaluation compiler
+
 quick win: store clipboard to a register
 let modes change the cursor
 let modes change line numbering

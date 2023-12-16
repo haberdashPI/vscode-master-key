@@ -1,6 +1,12 @@
 import * as vscode from 'vscode';
 import SafeExpression, { EvalFun } from 'safe-expression';
+import jsep from 'jsep';
+const jsepRegex = require('@jsep-plugin/regex');
+import hash from 'object-hash';
 import { mapValues } from 'lodash';
+
+jsep.addBinaryOp("=~", 6);
+jsep.plugins.register(jsepRegex.default);
 
 const buildEvaled = new SafeExpression();
 
@@ -18,8 +24,8 @@ export function reifyStrings(obj: any, ev: (str: string) => any): any {
     if (typeof obj === 'symbol') { return obj; }
 }
 
-export class expressionId(exp: string){
-    
+export function expressionId(exp: string){
+    return hash(jsep(exp));
 }
 
 export class EvalContext {

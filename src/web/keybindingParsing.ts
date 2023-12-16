@@ -1,4 +1,3 @@
-import hash from 'object-hash';
 import * as vscode from 'vscode';
 import jsep from 'jsep';
 const TOML = require("smol-toml");
@@ -6,6 +5,7 @@ import * as semver from 'semver';
 import { TextDecoder } from 'text-encoding';
 import { ZodIssue, z } from "zod";
 import { ZodError, fromZodError, fromZodIssue } from 'zod-validation-error';
+import { expressionId } from './expressions';
 
 let decoder = new TextDecoder("utf-8");
 
@@ -121,7 +121,7 @@ export function parseWhen(when_: string | string[] | undefined): ParsedWhen[] {
     try{
         return when.map(w => {
             let p = jsep(w);
-            return { str: w, parsed: p, id: hash(p) };
+            return { str: w, id: expressionId(w) };
         });
     }catch(e){
         if(e instanceof Error){
