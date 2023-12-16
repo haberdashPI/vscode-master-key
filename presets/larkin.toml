@@ -672,13 +672,13 @@ description = "text around current quotes"
 do = ["bracketeer.selectQuotesContent", "bracketeer.selectQuotesContent"]
 
 [[bind.edit.motion.syntax.items]]
-key = "' >"
+key = "' shift+."
 name = "in <>"
 description = "text inside angle brackets"
 do = "extension.selectAngleBrackets"
 
 [[bind.edit.motion.syntax.items]]
-key = "' <"
+key = "' shift+,"
 name = "in ><"
 description = "text inside tag pairs (e.g. <a>text</a>)"
 do = "extension.selectInTag"
@@ -701,8 +701,12 @@ name = "indent+top"
 description = "all text at the same indentation level and the line just about it (ala python syntax)"
 do = "vscode-select-by-indent.select-outer-top-only"
 
+[bind.edit.motion.adjust]
+name = "Seleciton Adjustments"
+description = "Commands that adjust the boundaries of the current selections"
+
 [[bind.edit.motion.adjust.items]]
-key = "R"
+key = "shift+r"
 name = "expand no wht"
 description = "select full line(s), and trim external whitespace"
 do = "selection-utilities.trimSelectionWhitespace"
@@ -851,13 +855,13 @@ key = "shift+d"
 when = "master-key.count > 1"
 do = [{ defined = "selectLinesUp" }, "deleteRight"]
 
-[[bind.edit.action.clipboared.items]]
+[[bind.edit.action.clipboard.items]]
 key = "y"
 name = "copy"
 description = "copy selected text to clipboard"
 do = ["editor.action.clipboardCopyAction", "selection-utilities.shrinkToActive"]
 
-[[bind.edit.action.clipboared.items]]
+[[bind.edit.action.clipboard.items]]
 key = "shift+y"
 name = "copy (eol/up)" 
 description = "without a count: copy to end of line; with a count: copy this and the previous N lines"
@@ -869,7 +873,7 @@ do = [
       "editor.action.shrinkToActive"
 ]
 
-[[bind.edit.action.clipboared.items]]
+[[bind.edit.action.clipboard.items]]
 key = "shift+y"
 when = "master-key.count > 1"
 do = [
@@ -878,31 +882,31 @@ do = [
       "editor.action.shrinkToActive"
 ]
 
-[[bind.edit.action.clipboared.items]]
+[[bind.edit.action.clipboard.items]]
 key = "v"
 name = "paste after"
 description = "Paste the next after the cursor/selection"
 when = "editorHasSelection"
 do = ["selection-utilities.activeAtEnd", "selection-utilities.shrinkToActive", "editor.action.clipboardPasteAction"]
 
-[[bind.edit.action.clipboared.items]]
+[[bind.edit.action.clipboard.items]]
 key = "v"
 when = "!editorHasSelection"
 do = ["cursorRight", "editor.action.clipboardPasteAction"]
 
-[[bind.edit.action.clipboared.items]]
+[[bind.edit.action.clipboard.items]]
 key = "shift+v"
 name = "paste before"
 description = "Paste before the cursor/selection"
 when = "editorHasSelection"
 do = ["selection-utilities.activeAtStart", "selection-utilities.shrinkToActive", "editor.action.clipboardPasteAction"]
 
-[[bind.edit.action.clipboared.items]]
+[[bind.edit.action.clipboard.items]]
 key = "shift+v"
 when = "!editorHasSelection"
 do = ["cursorRight", "editor.action.clipboardPasteAction"]
 
-[[bind.edit.action.clipboared.items]]
+[[bind.edit.action.clipboard.items]]
 name = "paste after line"
 description = "Paste text after current line"
 key = ", v"
@@ -913,10 +917,10 @@ do = [
       "editor.action.clipboardPasteAction",
 ]
 
-[[bind.edit.action.clipboared.items]]
+[[bind.edit.action.clipboard.items]]
 name = "paste before line"
 description = "Paste text before current line"
-key = ", V"
+key = ", shift+v"
 do = [
       "expandLineSelection",
       "selection-utilities.activeAtStart",
@@ -1066,13 +1070,13 @@ do = "language-julia.executeCodeBlockOrSelectionAndMove"
 
 [[bind.edit.terminal.items]]
 key = "m"
-when = "!(master-key.firstSelectionOrWord =~ /\n/)"
+when = "!(master-key.firstSelectionOrWord =~ /\\n/)"
 do = ["terminal-polyglot.send-text",
       "selection-utilities.shrinkToActive"]
 
 [[bind.edit.terminal.items]]
 key = "m"
-when = "master-key.firstSelectionOrWord =~ /\n/"
+when = "master-key.firstSelectionOrWord =~ /\\n/"
 do = ["terminal-polyglot.send-block-text",
       "selection-utilities.shrinkToActive"]
 
@@ -1082,7 +1086,7 @@ name = "to repl (v2)"
 description = """
 send text to a terminal (usually containing a REPL), placing in a block when defined.
 """
-when = "master-key.firstSelectionOrWord =~ /\n/"
+when = "master-key.firstSelectionOrWord =~ /\\n/"
 do = ["terminal-polyglot.send-block-text", "modalkeys.cancelMultipleSelections"]
 
 [[bind.edit.terminal.items]]
@@ -1091,7 +1095,7 @@ name = "to repl (v2)"
 description = """
 send text to a terminal (usually containing a REPL), placing in a block when defined.
 """
-when = "!(master-key.firstSelectionOrWord =~ /\n/)"
+when = "!(master-key.firstSelectionOrWord =~ /\\n/)"
 do = ["terminal-polyglot.send-text", "modalkeys.cancelMultipleSelections"]
 
 [[bind.edit.terminal.items]]
@@ -1162,29 +1166,29 @@ do = "workbench.action.editor.previousChange"
 [bind.window]
 name = "Window Manipulation"
 description = "Commands for navigating and manipulating the window/editor panes in some way"
-kind = "window"
+default.kind = "window"
 default.mode = "normal"
 
 [[bind.window.items]]
 name = "center"
 description = "center window at primary cursor position"
-key = ", >"
+key = ", shift+."
 do.command = "selection-utilities.revealActive"
-do.args = "center"
+do.args.at = "center"
 
 [[bind.window.items]]
 name = "top"
 description = "center window so that primary cursor is at the top"
 key = ", shift+k"
 do.command = "selection-utilities.revealActive"
-do.args = "top"
+do.args.at = "top"
 
 [[bind.window.items]]
 name = "bottom"
 description = "center window so that primary cursor is at the bottom"
 key = ", shift+j"
 do.command = "selection-utilities.revealActive"
-do.args = "bottom"
+do.args.at = "bottom"
 
 [[bind.window.items]]
 name = "max"
@@ -1201,7 +1205,7 @@ do = "workbench.action.evenEditorWidths"
 [[bind.window.items]]
 name = "split"
 description = "toggle split editor view"
-key = ", |"
+key = ', shift+\'
 do = "workbench.action.toggleSplitEditorInGroup"
 
 [[bind.window.items]]
@@ -1257,6 +1261,10 @@ name = "go to (aside)"
 description = "go to the definition of symbol under curosr in an editor to the side"
 key = "g shift+d"
 do = "editor.action.revealDefinitionAside"
+
+[bind.window.bookmark]
+name = "Bookmarks"
+description = "Commands for creating and interacting with book marks"
 
 [[bind.window.bookmark.items]]
 name = "mark"
@@ -1381,7 +1389,7 @@ default.mode = "selectedit"
 
 [[bind.edit.select_edit.items]]
 name = "select-edit"
-detail = """
+description = """
 Enter a mode where you can edit and manipulate (possibly multiple) selections with ease. 
 Entering the mode also adds a new cursor for the next match to the word under the curosr 
 (or selection). You can use the count to ask multiple matches to be added. 
@@ -1390,14 +1398,14 @@ Entering the mode also adds a new cursor for the next match to the word under th
 key = "shift+'"
 when = "editorHasMultipleSelections"
 do.command = "master-key.enterMode"
-do.args = "selectedit"
+do.args.value = "selectedit"
 mode = "normal"
 
 [[bind.edit.select_edit.items]]
 key = "shift+'"
 when = "!editorHasMultipleSelections"
 do = [
-      {command = "master-key.enterMode", args = "selectedit"},
+      {command = "master-key.enterMode", args = { value = "selectedit"} },
       { command = "selection-utilities.addNext", computedArgs = { repeat = 'count' } }
 ]
 mode = "normal"
@@ -1410,7 +1418,7 @@ No additional cursors will be added when entering the mode with this command.
 """
 key = ", shift+'"
 do.command = "master-key.enterMode"
-do.args = "selectedit"
+do.args.value = "selectedit"
 mode = "normal"
 
 [[bind.edit.select_edit.items]]
@@ -1422,7 +1430,7 @@ do = ["selection-utilities.cancelSelection", "modalkeys.enterNormal"]
 [[bind.edit.select_edit.items]]
 name = 'insert'
 description = "insert mode at cursor"
-key = "selectedit::i"
+key = "i"
 do = ["modalkeys.enterNormal", "selection-utilities.shrinkToActive", "modalkeys.enterInsert"]
 
 [[bind.edit.select_edit.items]]
@@ -1493,7 +1501,7 @@ key = "' v"
 mode = ["normal", "normal"]
 do = [
       { command = "selection-utilities.restoreAndClear", computedArgs = { register = "count" } },
-      { command = "enterMode", args = "selectedit" }
+      { command = "enterMode", args = { value = "selectedit" } }
 ]
 
 [[bind.edit.select_edit.items]]
@@ -1613,6 +1621,10 @@ resetTransient = false
 do.command = "master-key.prefix"
 do.args.key = "s" # TODO: this shouldn't be necessary (and could be confusing)
 
+[bind.edit.select_edit.split]
+name = "Split Selections"
+description = "Commands that split a selection into multiple selections"
+
 [[bind.edit.select_edit.split.items]]
 name = "newline"
 description = "split by newlines"
@@ -1639,6 +1651,10 @@ key = "s c"
 do.command = "modalkeys.captureChar"
 do.args.acceptAfter = 1
 do.args.doAfter = { command = "selection-utilities.splitBy", computedArgs = { text = "capture" } }
+
+[bind.edit.select_edit.create]
+name = "Create Selections"
+description = "Create some number of selections derived from the bounds of the current selections"
 
 [[bind.edit.select_edit.create.items]]
 name = "create"
