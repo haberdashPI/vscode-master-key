@@ -1,8 +1,6 @@
 import * as vscode from 'vscode';
-import SafeExpression, { EvalFun } from 'safe-expression';
+import { compile } from 'jse-eval';
 import { mapValues } from 'lodash';
-
-const buildEvaled = new SafeExpression();
 
 export function reifyStrings(obj: any, ev: (str: string) => any): any {
     if (Array.isArray(obj)) { return obj.map(x => reifyStrings(x, ev)); }
@@ -20,7 +18,7 @@ export function reifyStrings(obj: any, ev: (str: string) => any): any {
 
 export class EvalContext {
     private errors: string[] = [];
-    private cache: Record<string, EvalFun> = {};
+    private cache: Record<string, (x: object) => any> = {};
 
     reportErrors(){
         if(this.errors.length > 0){
@@ -67,7 +65,7 @@ export class EvalContext {
                 use 'master-key.set' to do that.`);
                 return undefined;
             }
-            this.cache[str] = exec = buildEvaled(str);
+            this.cache[str] = exec = compile(str);
         }
         let result = str;
         try {
