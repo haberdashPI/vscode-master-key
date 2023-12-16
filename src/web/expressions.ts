@@ -16,6 +16,10 @@ export function reifyStrings(obj: any, ev: (str: string) => any): any {
     if (typeof obj === 'symbol') { return obj; }
 }
 
+export class expressionId(exp: string){
+    
+}
+
 export class EvalContext {
     private errors: string[] = [];
     private cache: Record<string, (x: object) => any> = {};
