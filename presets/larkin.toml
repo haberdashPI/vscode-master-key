@@ -116,6 +116,7 @@ description = """
 The number keys are used to update the count, which affects how many times the next 
 command is repeated, when relevant.
 """
+default.kind = "count"
 
 [[bind.edit.count.items]]
 name = "Update number with {key}"
@@ -491,7 +492,7 @@ do.args.unit = "subsection"
 do.computedArgs.value = "count || 1"
 
 [[bind.edit.motion.obj.items]]
-key = "shift+p"
+key = "shift+9"
 name = "subsec ←"
 description = "previous subsection"
 do.args.unit = "subsection"
@@ -666,7 +667,7 @@ description = "text within current quotes"
 do = "bracketeer.selectQuotesContent"
 
 [[bind.edit.motion.syntax.items]]
-key = "' '"
+key = "' shift+'"
 name = "around quotes"
 description = "text around current quotes"
 do = ["bracketeer.selectQuotesContent", "bracketeer.selectQuotesContent"]
@@ -714,6 +715,7 @@ do = "selection-utilities.trimSelectionWhitespace"
 [[bind.edit.motion.adjust.items]]
 name = 'narrow to subword'
 description = "Narrow current selection so it starts and stops at a subword (e.g. 'snake' in snake_case)"
+key = "shift+u"
 do.command = "selection-utilities.narrowTo"
 do.args.unit = "subident"
 do.args.boundary = "both"
@@ -830,7 +832,7 @@ when = "!editorHasSelection"
 do = [
       { defined = "selectLinesDown" },
       "editor.action.clipboardCutAction",
-      { command = "master-key.enterMode", args = { value = "normal" } },
+      { command = "master-key.setMode", args = { value = "normal" } },
 ]
 
 [[bind.edit.action.clipboard.items]]
@@ -838,7 +840,7 @@ key = "d"
 when = "editorHasSelection"
 do = [
       "editor.action.clipboardCutAction",
-      { command = "master-key.enterMode", args = { value = "normal" } },
+      { command = "master-key.setMode", args = { value = "normal" } },
 ]
 
 [[bind.edit.action.clipboard.items]]
@@ -1269,7 +1271,7 @@ description = "Commands for creating and interacting with book marks"
 [[bind.window.bookmark.items]]
 name = "mark"
 description = "toggle bookmark at given line (use 'j, 'k and '# to navigate bookmarks)"
-key = "g "
+key = "g space"
 do = "vsc-labeled-bookmarks.toggleBookmark"
 
 [[bind.window.bookmark.items]]
@@ -1311,6 +1313,10 @@ description = "reveal quick selection to move to a bookmark"
 key = "' shift+3"
 do = "vsc-labeled-bookmarks.navigateToBookmark"
 
+[bind.window.create]
+name = "Create New Panes"
+description = "Commands for placing editors in new panes."
+
 [[bind.window.create.items]]
 name = "create"
 description = "create new window of editor in given direction" 
@@ -1343,6 +1349,10 @@ name = "↑"
 description = "create new window of editor above" 
 key = ", c k"
 do = "workbench.action.splitEditorUp"
+
+[bind.window.move]
+name = "Move Editors"
+description = "Move editors between panes"
 
 [[bind.window.move.items]]
 name = "move to"
@@ -1386,6 +1396,7 @@ do = "workbench.action.closeEditorsInGroup"
 name = "Selection Editing"
 description = "Various kakaune inspired commands for editing multiple selections"
 default.mode = "selectedit"
+default.kind = "select"
 
 [[bind.edit.select_edit.items]]
 name = "select-edit"
@@ -1397,7 +1408,7 @@ Entering the mode also adds a new cursor for the next match to the word under th
 """
 key = "shift+'"
 when = "editorHasMultipleSelections"
-do.command = "master-key.enterMode"
+do.command = "master-key.setMode"
 do.args.value = "selectedit"
 mode = "normal"
 
@@ -1405,7 +1416,7 @@ mode = "normal"
 key = "shift+'"
 when = "!editorHasMultipleSelections"
 do = [
-      {command = "master-key.enterMode", args = { value = "selectedit"} },
+      {command = "master-key.setMode", args = { value = "selectedit"} },
       { command = "selection-utilities.addNext", computedArgs = { repeat = 'count' } }
 ]
 mode = "normal"
@@ -1417,7 +1428,7 @@ Enter a mode where you can edit and manipulate (possibly multiple) selections wi
 No additional cursors will be added when entering the mode with this command. 
 """
 key = ", shift+'"
-do.command = "master-key.enterMode"
+do.command = "master-key.setMode"
 do.args.value = "selectedit"
 mode = "normal"
 
@@ -1501,7 +1512,7 @@ key = "' v"
 mode = ["normal", "normal"]
 do = [
       { command = "selection-utilities.restoreAndClear", computedArgs = { register = "count" } },
-      { command = "enterMode", args = { value = "selectedit" } }
+      { command = "setMode", args = { value = "selectedit" } }
 ]
 
 [[bind.edit.select_edit.items]]
@@ -1532,7 +1543,7 @@ mode = ["normal", "selectedit"]
 do = [
       { defined = "selectLinesDown" },
       "selection-utilities.splitByNewline",
-      { command = "master-key.enterMode", args = { mode = "selectedit" } }
+      { command = "master-key.setMode", args = { mode = "selectedit" } }
 ]
 
 [[bind.edit.select_edit.items]]
@@ -1544,7 +1555,7 @@ key = "' shift+8"
 mode = ["normal", "selectedit"]
 do = [
       "editor.action.selectHighlights",
-      { command = "master-key.enterMode", args = { mode = "selectedit" } }
+      { command = "master-key.setMode", args = { mode = "selectedit" } }
 ]
 
 [[bind.edit.select_edit.items]]
@@ -1562,7 +1573,7 @@ key = ", -"
 mode = ["normal", "selectedit"]
 do = [
       { command = "selection-utilities.restoreAndClear", args = { register = "cancel"} },
-      { command = "master-key.enterMode", args = { mode = "selectedit" } }
+      { command = "master-key.setMode", args = { mode = "selectedit" } }
 ]
 
 [[bind.edit.select_edit.items]]
@@ -1574,7 +1585,7 @@ key = "' shift+k"
 mode = ["normal", "selectedit"]
 do = [
       { command = "editor.action.insertCursorAbove", computedArgs = { repeat = 'count' } },
-      { command = "modalkeys.enterMode", args = { mode = "selectedit" } },
+      { command = "modalkeys.setMode", args = { mode = "selectedit" } },
 ]
 
 [[bind.edit.select_edit.items]]
@@ -1586,7 +1597,7 @@ key = "' shift+j"
 mode = ["normal", "selectedit"]
 do = [
       { command = "editor.action.insertCursorBelow", computedArgs = { repeat = 'count' } },
-      { command = "modalkeys.enterMode", args = { mode = "selectedit" }},
+      { command = "modalkeys.setMode", args = { mode = "selectedit" }},
 ]
 
 [[bind.edit.select_edit.items]]
@@ -1745,14 +1756,14 @@ the selection
 """
 mode = "normal"
 key = "g '"
-do.command = "master-key.enterMode"
+do.command = "master-key.setMode"
 do.args.mode = "syminsert"
 
 [[bind.edit.action.symmetric.items]]
 name = "Normal"
 description = "Return to normal model"
 key = ["enter", "g '"]
-do.command = "master-key.enterMode"
+do.command = "master-key.setMode"
 do.args.mode = "normal"
 
 [define.symmetric_key_map]
