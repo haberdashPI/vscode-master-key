@@ -1,5 +1,20 @@
 current issue I'm working on:
 
+- figure out how to handle proper escaping in when clauses for prefixes that include a ' 
+  character
+  - NOTE: from what I can tell the best way to probably fix this is to 
+    either have `master-key.prefix` not be a string but rather an array of numbers
+    to test against OR to have a `master-key.prefixNum` that shadows the string
+    value and can be used when the prefix contains `'` characters
+    (if we do this, we should probably have a comment that indicates
+     what the actual prefix is)
+  - okay here's what we'lll do: we'll define a prefix code for each unique prefix defined
+    by the key bindings, and make a map from the strings to these bindings;
+    in the items we'll keep the prefix's until we render to json, so 
+    and resolve the prefix code when clause; in the comment
+    describing the binding we can note what each
+    when-clause prefix code refers to
+
 Next up
 - implement master-key.replaceChar
 - implement master-key.captureChar
@@ -31,12 +46,28 @@ unit tests: expected display of state
 unit tests: macro replay
 unit tests: duplicate binding handling (especially with the automated keys)
 
+File format changes:
+
+- use a non recursive format; where we would nest thing before
+  use a `path` field. This should be more forgiving when using JSON
+  instead of TOML, simplifies validation and zod types, etc...
+
+- replace do.command with command, and use `runCommands` for multiple commands
+  to make the format consistent with normal keybindings / one could
+  even copy normal keybindings to the file
+
 wishlist:
 
 post prototype phase: get rid of the somewhat crappy/bloated parsing and eval libraries
-(that are either poorly maintained, or overkill), and build our own grammer using
+(that are either poorly maintained, or overkill), and build our own grammar using
 https://sigma.vm.codes for both when clauses and computedArgs values and create our own
 evaluation compiler
+
+convert zod types in to schema for keybinding validation NOTE: I'm tempted to have a
+non-recursive format to make this easier one way to handle that would be to flatten all
+keybindings and just have some extra field like "category" that lists the context for it
+(this would make default expansion a little trickier); this would also simplify the code
+somewhat. It also makes a the file a little more repetitive to write.
 
 quick win: store clipboard to a register
 let modes change the cursor
