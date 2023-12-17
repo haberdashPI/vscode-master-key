@@ -55,7 +55,8 @@ function expandDefaultsAndDefinedCommands(bindings: BindingTree, definitions: an
     defaultItem: BindingItem = {when: [], prefixes: [""]}): StrictBindingTree {
 
     if (bindings.default !== undefined) {
-        defaultItem = { ...defaultItem, ...<BindingItem>bindings.default };
+        defaultItem = mergeWith(cloneDeep(defaultItem), <BindingItem>bindings.default,
+            expandWhenClauseByConcatenation);
     }
 
     let items: StrictBindingItem[] | undefined = undefined;
@@ -273,7 +274,8 @@ function movePrefixesToWhenClause(item: StrictBindingItem){
     let when = item.when || [];
     let allowed = item.prefixes.map(a => {
         // we need to proplery escape quotes
-        return `master-key.prefix == '${replaceAll(a, /'/g, "\\'")}'`;
+        let str = replaceAll(a, /'/g, '\\\'')
+        return `master-key.prefix == '${str}'`;
     }).join(' || ');
     when = when.concat(parseWhen(allowed));
     return {...item, when};
@@ -378,8 +380,17 @@ function addWithoutDuplicating(map: BindingMap, newItem: StrictBindingItem){
         if(newItem.prefixes.length > 0 && newItem.prefixes.every(x => x.length > 0)){
             binding = newItem.prefixes[0] + " " + binding;
         }
-        vscode.window.showErrorMessage(`Duplicate bindings for '${binding}' in mode 
-            '${newItem.mode}'`);
+        let message = ""
+        if(/'/.test(<string>binding)){
+            if(!/`/.test(<string>binding)){
+                message = `Duplicate bindings for \`${binding}\` in mode '${newItem.mode}'`;
+            }else{
+                message = `Duplicate bindings for ${binding} in mode '${newItem.mode}'`;
+            }
+        }else{
+            message = `Duplicate bindings for '${binding}' in mode '${newItem.mode}'`;
+        }
+        vscode.window.showErrorMessage(message);
     }else{
         map[key] = newItem;
     }
