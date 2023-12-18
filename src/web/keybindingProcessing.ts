@@ -26,7 +26,11 @@ function concatWhenAndOverwritePrefixes(obj_: any, src_: any, key: string){
         let src: any[] = src_ === undefined ? [] : !Array.isArray(src_) ? [src_] : src_;
         return obj.concat(src);
     }else if(key === 'prefixes'){
-        return src_;
+        if(src_ !== undefined){
+            return src_;
+        }else{
+            return obj_;
+        }
     }else{
         // revert to default behavior
         return;
@@ -252,15 +256,19 @@ export class PrefixCodes {
 
 function movePrefixesToWhenClause(item: StrictBindingItem, prefixCodes: PrefixCodes){
     let when = item.when || [];
-    let allowed = item.prefixes.map(a => {
-        if(prefixCodes.codes[a] === undefined){
-            throw Error(`Unexpected missing prefix code for prefix: ${a}`);
-        }else{
-            return `master-key.prefixCode == ${prefixCodes.codes[a]}`;
-        }
-    }).join(' || ');
-    when = when.concat(parseWhen(allowed));
-    return {...item, when};
+    if(item.prefixes.length > 0){
+        let allowed = item.prefixes.map(a => {
+            if(prefixCodes.codes[a] === undefined){
+                throw Error(`Unexpected missing prefix code for prefix: ${a}`);
+            }else{
+                return `master-key.prefixCode == ${prefixCodes.codes[a]}`;
+            }
+        }).join(' || ');
+        when = when.concat(parseWhen(allowed));
+        return {...item, when};
+    }else{
+        return item;
+    }
 }
 
 type BindingMap = { [key: string]: StrictBindingItem };

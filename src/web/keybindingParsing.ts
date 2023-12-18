@@ -143,7 +143,7 @@ export const bindingItem = z.object({
         pipe(parsedWhen.array()),
     mode: z.union([z.string(), z.string().array()]).optional(),
     prefixes: z.preprocess(x => x === "<all-prefixes>" ? [] : x,
-        z.string().array()).default([""]),
+        z.string().array()).optional(),
     do: doArgs.optional(),
     resetTransient: z.boolean().default(true).optional()
 }).strict();

@@ -97,7 +97,7 @@ class CommandState {
         let oldValue = this.values[key];
         if (key === 'prefixCodes') {
             this.values[key] = new PrefixCodes(value);
-        } {
+        }else{
             this.values[key] = value;
         }
         if(transient){ this.transientValues[key] = oldValue; }

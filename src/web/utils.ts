@@ -7,7 +7,7 @@ export function validateInput<T extends z.ZodRawShape>(command: string, args_: u
 
     let result = using.safeParse(args_);
     if(!result.success){
-        showParseError(`Unexpected arguments to '${command}':`, result.error);
+        showParseError(`'${command}' `, result.error);
         return;
     }
     return result.data;
