@@ -2,8 +2,7 @@ current issue I'm working on:
 
 - using escape while in capture mode messes up the state of `captureKeys`
 - word under cursor does not update properly
-- append lands on the wrong character when there is a selection (at least in reverse)
-- normal mode persists in git commit text field
+- prefix is not displayed
 
 Next up
 - more dogfooding (we need to answer the question: is this working well enough for this implementation to be viable, does it work for my everyday use)
