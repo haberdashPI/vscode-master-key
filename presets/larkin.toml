@@ -138,7 +138,7 @@ description = "Motions fundamental to moving around in the editor."
 default.do.command = "cursorMove"
 default.do.computedArgs.value = "count"
 default.do.computedArgs.around = "around_on"
-default.do.computedArgs.select = "select_on"
+default.do.computedArgs.select = "editorHasSelection || select_on"
 
 [[bind.edit.motion.prim.items]]
 key = "h"
@@ -228,7 +228,7 @@ args = { to = "down", by = "wrappedLine", select = true }
 computedArgs = { value = "count" }
 
 [[bind.edit.motion.prim.items.do]]
-command = "expandLineSelections"
+command = "expandLineSelection"
 
 [[bind.edit.motion.prim.items]]
 key = "g shift+k"
@@ -244,7 +244,7 @@ args = { to = "up", by = "line", select = true }
 computedArgs = { value = "count" }
 
 [[bind.edit.motion.prim.items.do]]
-command = "expandLineSelections"
+command = "expandLineSelection"
 
 [[bind.edit.motion.prim.items]]
 key = "g shift+j"
@@ -260,7 +260,7 @@ args = { to = "down", by = "line", select = true }
 computedArgs = { value = "count" }
 
 [[bind.edit.motion.prim.items.do]]
-command = "expandLineSelections"
+command = "expandLineSelection"
 
 [[bind.edit.motion.prim.items]]
 key = '\'
@@ -315,7 +315,7 @@ entire object (rather than extending to specified start/end point)
 kind = "prefix"
 resetTransient = false
 do.command = "master-key.prefix"
-do.args = { key = "u", flag = "around_on" }
+do.args = { flag = "around_on" }
 
 [[bind.edit.motion.mod.items]]
 key = "shift+space"
@@ -1015,6 +1015,58 @@ do = [
       "modalkeys.cancelMultipleSelections"
 ]
 
+[bind.edit.action.history]
+name = "History Commands"
+description = "Commands that interact with edit or cursor history."
+
+[[bind.edit.action.history.items]]
+name = "undo"
+description = "VSCode Undo"
+key = "z"
+do = [ "undo", "modalkeys.cancelMultipleSelections", "modalkeys.untouchDocument", ]
+
+[[bind.edit.action.history.items]]
+name = "undo"
+description = "VSCode Redo"
+key = "shift+z"
+do = [ "redo", "modalkeys.cancelMultipleSelections", "modalkeys.untouchDocument", ]
+
+[[bind.edit.action.history.items]]
+name = "cursor undo"
+description = "VSCode Cursor Undo"
+key = "-"
+do = "cursorUndo"
+
+[[bind.edit.action.history.items]]
+name = "cursor redo"
+description = "VSCode Cursor Redo"
+key = "shift+-"
+do = "cursorRedo"
+
+[[bind.edit.action.history.items]]
+name = "nav ←"
+description = "Go back in navigation history (e.g. goto definition)"
+key = "g -"
+do = "workbench.action.navigateBackInNavigationLocations"
+
+[[bind.edit.action.history.items]]
+name = "nav →"
+description = "Go forward in navigation history (e.g. goto definition)"
+key = "g shift+-"
+do = "workbench.action.navigateForwardInNavigationLocations"
+
+[[bind.edit.action.history.items]]
+name = "edit hist ←"
+description = "Go back in edit history (e.g. goto definition)"
+key = "' -"
+do = "workbench.action.navigateBackInEditLocations"
+
+[[bind.edit.action.history.items]]
+name = "edit hist →"
+description = "Go forward in edit history (e.g. goto definition)"
+key = "' shift+-"
+do = "workbench.action.navigateForwardInEditLocations"
+
 [bind.edit.action.comment]
 name = "Comments"
 description = """
@@ -1325,7 +1377,6 @@ key = ", c"
 kind = "prefix"
 resetTransient = false
 do.command = "master-key.prefix"
-do.args.key = "c"
 
 [[bind.window.create.items]]
 name = "→"
@@ -1361,7 +1412,6 @@ description = "move editor to window in given direction"
 key = ", m"
 resetTransient = false
 do.command = "master-key.prefix"
-do.args.key = "c"
 
 [[bind.window.move.items]]
 name = "→"
@@ -1631,7 +1681,6 @@ name = "split"
 description = "split the selection by a specified marker"
 resetTransient = false
 do.command = "master-key.prefix"
-do.args.key = "s" # TODO: this shouldn't be necessary (and could be confusing)
 
 [bind.edit.select_edit.split]
 name = "Split Selections"
@@ -1677,7 +1726,6 @@ set of selections
 key = "/"
 resetTransient = false
 do.command = "master-key.prefix"
-do.args.key = "/"
 
 [[bind.edit.select_edit.create.items]]
 name = "string"
@@ -1707,7 +1755,6 @@ Include all selections that contain a given marker
 key = "["
 resetTransient = false
 do.command = "master-key.prefix"
-do.args.key = "["
 
 [[bind.edit.select_edit.create.items]]
 name = "exclude by"
@@ -1717,7 +1764,6 @@ Exclude all selections that contain a given marker
 key = "]"
 resetTransient = false
 do.command = "master-key.prefix"
-do.args.key = "]"
 
 [[bind.edit.select_edit.split.items]]
 name = "string"
