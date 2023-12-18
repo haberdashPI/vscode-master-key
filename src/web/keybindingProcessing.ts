@@ -20,11 +20,17 @@ export function processBindings(spec: BindingSpec){
     return [configItem, definitions];
 }
 
-function expandWhenClauseByConcatenation(obj_: any, src_: any, key: string){
-    if(key !== 'when'){ return; }
-    let obj: any[] = obj_ === undefined ? [] : !Array.isArray(obj_) ? [obj_] : obj_;
-    let src: any[] = src_ === undefined ? [] : !Array.isArray(src_) ? [src_] : src_;
-    return obj.concat(src);
+function concatWhenAndOverwritePrefixes(obj_: any, src_: any, key: string){
+    if(key === 'when'){ 
+        let obj: any[] = obj_ === undefined ? [] : !Array.isArray(obj_) ? [obj_] : obj_;
+        let src: any[] = src_ === undefined ? [] : !Array.isArray(src_) ? [src_] : src_;
+        return obj.concat(src);
+    }else if(key === 'prefixes'){
+        return src_;
+    }else{
+        // revert to default behavior
+        return;
+    }
 }
 
 function expandDefinedCommands(item: BindingItem, definitions: any){
@@ -56,14 +62,14 @@ function expandDefaultsAndDefinedCommands(bindings: BindingTree, definitions: an
 
     if (bindings.default !== undefined) {
         defaultItem = mergeWith(cloneDeep(defaultItem), <BindingItem>bindings.default,
-            expandWhenClauseByConcatenation);
+            concatWhenAndOverwritePrefixes);
     }
 
     let items: StrictBindingItem[] | undefined = undefined;
     if (bindings.items !== undefined) {
         let validatedItems = bindings.items.map((item: BindingItem, i: number) => {
             let expandedItem = mergeWith(cloneDeep(defaultItem), item,
-                expandWhenClauseByConcatenation);
+                concatWhenAndOverwritePrefixes);
             expandedItem = expandDefinedCommands(expandedItem, definitions);
             let parsing = strictBindingItem.safeParse(expandedItem);
             if(!parsing.success){
@@ -283,6 +289,15 @@ function updatePrefixItemAndPrefix(item: StrictBindingItem, key: string, prefix:
 
     return [newItem, prefix];
 }
+function requireConcretePrefixes(item: StrictBindingItem){
+    if(item.prefixes.length === 0){
+        let modes = !item.mode ? "any" :
+            !Array.isArray(item.mode) ? item.mode :
+            item.mode.join(', ');
+        vscode.window.showErrorMessage(`Key binding '${item.key}' for mode 
+            '${modes}' is a prefix command; it cannot use '<all-prefixes>'.`);
+    }
+}
 
 function expandKeySequencesAndResolveDuplicates(items: StrictBindingItem[]): 
     [StrictBindingItem[], PrefixCodes]{
@@ -297,30 +312,30 @@ function expandKeySequencesAndResolveDuplicates(items: StrictBindingItem[]):
             let prefix = item.prefixes[0];
             let prefixItem;
 
-            // expand multi-key sequences into individual bindings
-            for(let key of keySeq.slice(0, -1)){
-                [prefixItem, prefix] = updatePrefixItemAndPrefix(item, key, prefix, 
-                    prefixCodes);
-                addWithoutDuplicating(result, prefixItem);
+            if(keySeq.length > 1){
+                requireConcretePrefixes(item);
+                // expand multi-key sequences into individual bindings
+                for(let key of keySeq.slice(0, -1)){
+                    [prefixItem, prefix] = updatePrefixItemAndPrefix(item, key, prefix, 
+                        prefixCodes);
+                    addWithoutDuplicating(result, prefixItem);
+                }
             }
 
             let suffixKey = keySeq[keySeq.length-1];
             // we have to inject the appropriate prefix code if this is a user
             // defined keybinding that calls `master-key.prefix
             if(isSingleCommand(item.do, 'master-key.prefix')){
-                if(item.prefixes.length === 0){
-                    let modes = !item.mode ? "any" :
-                        !Array.isArray(item.mode) ? item.mode :
-                        item.mode.join(', ');
-                    vscode.window.showErrorMessage(`Key binding '${item.key}' for mode 
-                        '${modes}' is a prefix command; it cannot use '<all-prefixes>'.`);
-                }else{
-                    let [prefixItem, _] = updatePrefixItemAndPrefix(item, suffixKey, prefix, 
-                        prefixCodes);
-                    addWithoutDuplicating(result, merge(item, prefixItem));
-                }
+                requireConcretePrefixes(item);
+                let [prefixItem, _] = updatePrefixItemAndPrefix(item, suffixKey, prefix, 
+                    prefixCodes);
+                addWithoutDuplicating(result, merge(item, prefixItem));
             }else{
-                addWithoutDuplicating(result, {...item, key: suffixKey, prefixes: [prefix]});
+                if(keySeq.length > 1){
+                    addWithoutDuplicating(result, {...item, key: suffixKey, prefixes: [prefix]});
+                }else{
+                    addWithoutDuplicating(result, item);
+                }
             }
         }else{
             throw Error("Unexpected operation");

@@ -522,6 +522,7 @@ do = "editor.action.selectAll"
 
 [[bind.edit.motion.obj.items]]
 key = "u u"
+prefixes = [""]
 name = "smart expand"
 description = "Use VSCode's built-in smart expansion command"
 do = "editor.action.smartSelect.expand"

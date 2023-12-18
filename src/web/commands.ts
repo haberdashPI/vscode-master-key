@@ -100,7 +100,7 @@ class CommandState {
         } {
             this.values[key] = value;
         }
-        this.transientValues[key] = oldValue;
+        if(transient){ this.transientValues[key] = oldValue; }
         vscode.commands.executeCommand('setContext', 'master-key.' + key, value);
         updateStatusBar();
     }
@@ -178,6 +178,7 @@ function prefix(args_: unknown){
     let args = validateInput('master-key.prefix', args_, prefixArgs);
     if(args !== undefined){
         state.setKeyContext('prefixCode', args.code);
+        let prefixCodes = state.values.prefixCodes;
         state.setKeyContext('prefix', state.values.prefixCodes.codeFor(args.code));
         if(args.flag){
             state.setKeyContext(args.flag, true, true);
