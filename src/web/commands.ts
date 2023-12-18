@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { StrictDoArg, strictDoArgs, validModes } from './keybindingParsing';
+import { PrefixCodes } from './keybindingProcessing';
 import { reifyStrings, EvalContext } from './expressions';
 import { validateInput } from './utils';
 import z from 'zod';
@@ -55,7 +56,8 @@ const keyContextKey = z.string().regex(/[a-zA-Z_]+[0-9a-zA-Z_]*/);
 class CommandState {
     values: KeyContext = {
         prefix: '',
-        prefixCode: 1,
+        prefixCode: 0,
+        prefixCodes: new PrefixCodes(),
         count: 0,
         mode: 'insert',
         search: '',
@@ -66,33 +68,50 @@ class CommandState {
         editorLangId: undefined,
         firstSelectionOrWord: ""
     };
-    transientValues: Record<string, any> = {};
-    constructor(){ 
-        for(let [k, v] of Object.entries(this.values)){
-            vscode.commands.executeCommand('setContext', 'master-key.'+k, v);
+    transientValues: Record<string, any> = { prefix: '', prefixCode: 0, count: 0 };
+    constructor() {
+        for (let [k, v] of Object.entries(this.values)) {
+            vscode.commands.executeCommand('setContext', 'master-key.' + k, v);
         }
         updateStatusBar();
     }
     // TODO: have a setKeyContext and setKeyContextForUser to validate those things that
     // aren't from code
-    setKeyContext(key: string, value: any){
+    setKeyContextForUser(key: string, value: any, transient: boolean = false) {
         // key validation
-        validateInput('master-key.set', { key }, z.object({key: keyContextKey}));
+        validateInput('master-key.set', { key }, z.object({ key: keyContextKey }));
 
         // value validation
-        if((<any>keyContext.shape)[key]){
+        if ((<any>keyContext.shape)[key]) {
             validateInput('master-key.set', value, (<any>keyContext.shape)[key]);
         }
-        if(key === 'mode'){
-            if(!this.values.validModes.some(m => m === value)){
+        if (key === 'mode') {
+            if (!this.values.validModes.some(m => m === value)) {
                 vscode.window.showErrorMessage(`Invalid mode '${value}'`);
             }
         }
-
+        return this.setKeyContext(key, value, transient);
+    }
+    setKeyContext(key: string, value: any, transient: boolean = false) {
         // assignment
-        this.values[key] = value;
-        vscode.commands.executeCommand('setContext', 'master-key.'+key, value);
+        let oldValue = this.values[key];
+        if (key === 'prefixCodes') {
+            this.values[key] = new PrefixCodes(value);
+        } {
+            this.values[key] = value;
+        }
+        this.transientValues[key] = oldValue;
+        vscode.commands.executeCommand('setContext', 'master-key.' + key, value);
         updateStatusBar();
+    }
+    reset() {
+        // clear any transient state
+        for (let [k, v] of Object.entries(this.transientValues)) { this.setKeyContext(k, v); }
+        this.transientValues = {
+            count: 0,
+            prefix: '',
+            prefixCode: 0
+        };
     }
 }
 export let state = new CommandState();
@@ -158,17 +177,10 @@ const prefixArgs = z.object({
 function prefix(args_: unknown){
     let args = validateInput('master-key.prefix', args_, prefixArgs);
     if(args !== undefined){
-        if(state.values.prefix.length > 0){
-            state.setKeyContext('prefixCode', args.code);
-            // TODO: have to do the inverse here... feels messy
-            state.setKeyContext('prefix', state.values.prefxCodes[]
-        }else{
-            state.setKeyContext('prefix', args.key);
-        }
+        state.setKeyContext('prefixCode', args.code);
+        state.setKeyContext('prefix', state.values.prefixCodes.codeFor(args.code));
         if(args.flag){
-            let oldValue = state.values[args.flag];
-            state.setKeyContext(args.flag, true);
-            state.transientValues[args.flag] = oldValue;
+            state.setKeyContext(args.flag, true, true);
         }
     }
 }
@@ -179,31 +191,25 @@ commands['master-key.prefix'] = prefix;
 const setArgs = z.object({
     name: z.string(),
     value: z.any(),
-    transient: z.boolean().default(false)
+    transient: z.boolean().default(false).optional()
 }).strict();
 type SetArgs = z.infer<typeof setArgs>;
 
 function setCmd(args_: unknown){
     let args = validateInput('master-key.set', args_, setArgs);
-    if(args){ setKeyContext(args); }
+    if(args){ 
+        state.setKeyContextForUser(args.name, args.value, args.transient || false);
+    }    
 }
 export function setKeyContext(args: SetArgs){
-    let oldValue = state.values[args.name];
-    state.setKeyContext(args.name, args.value);
-    if(args.transient){ state.transientValues[args.name] = oldValue; }
+    state.setKeyContext(args.name, args.value, args.transient || false);
 }
 commands['master-key.set'] = setCmd;
-commands['master-key.setMode'] = (x) => setKeyContext({name: 'mode', value: 'insert', transient: false});
-commands['master-key.enterInsert'] = (x) => setKeyContext({name: 'mode', value: 'insert', transient: false});
-commands['master-key.enterNormal'] = (x) => setKeyContext({name: 'mode', value: 'normal', transient: false});
+commands['master-key.setMode'] = (x) => setKeyContext({name: 'mode', value: 'insert'});
+commands['master-key.enterInsert'] = (x) => setKeyContext({name: 'mode', value: 'insert'});
+commands['master-key.enterNormal'] = (x) => setKeyContext({name: 'mode', value: 'normal'});
 
-function reset(){
-    // clear any relevant state
-    state.setKeyContext('count', 0);
-    state.setKeyContext('prefix', '');
-    for (let [k, v] of Object.entries(state.transientValues)) { state.setKeyContext(k, v); }
-    state.transientValues = {};
-}
+function reset(): void{ state.reset(); }
 commands['master-key.reset'] = reset;
 
 commands['master-key.ignore'] = () => undefined;

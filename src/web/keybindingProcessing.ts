@@ -172,7 +172,7 @@ export interface IConfigKeyBinding {
 function itemToConfigBinding(item: StrictBindingItem, defs: Record<string, any>): IConfigKeyBinding {
     let prefixDescriptions = item.prefixes.map(p => {
         let code = defs['prefixCodes'][p];
-        return `code ${code} = ${p}`;
+        return `${code}: ${p}`;
     });
     return {
         key: <string>item.key, // we've expanded all array keys, so we know its a string
@@ -276,16 +276,27 @@ function moveModeToWhenClause(binding: StrictBindingItem){
     return {...binding, when};
 }
 
-class PrefixCodes { 
-    len: number = 0;
-    codes: Record<string, number> = {};
-    constructor(){}
+export class PrefixCodes { 
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    codes: Record<string, number>;
+    names: string[];
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    constructor(codes: Record<string, number> = {'': 0}){
+        this.codes = codes;
+        this.names = [];
+        for(let [k, v] of Object.entries(codes)){
+            this.names[v] = k;
+        }
+    }
     codeFor(prefix: string){
         if(this.codes[prefix] === undefined){
-            this.len += 1;
-            this.codes[prefix] = this.len;
+            this.names.push(prefix);
+            this.codes[prefix] = this.names.length-1;
         }
         return this.codes[prefix];
+    }
+    nameFor(code: number): number | undefined {
+        return this.codes[code];
     }
 };
 
@@ -349,6 +360,7 @@ function expandPrefixBindings(item: StrictBindingItem, prefixItems: BindingMap =
             }
         }
 
+        let prefix = keySeq.slice(0, -1).join(' ');
         let suffixKey = keySeq[keySeq.length-1];
         // expand any bindings that are manually defined as prefix commands
         // to use the proper prefix codes
@@ -358,16 +370,18 @@ function expandPrefixBindings(item: StrictBindingItem, prefixItems: BindingMap =
                     !Array.isArray(item.mode) ? item.mode :
                     item.mode.join(', ');
                 vscode.window.showErrorMessage(`Key binding '${item.key}' for mode 
-                    '' is a prefix command but lacks
-                    a concrete list of allowed prefixes.`);
+                    '${modes}' is a prefix command; it cannot use '<all-prefixes>'.`);
             }
             else{
-                for(let prefix of prefixes.slice(0, -1)){
-                    let [prefixItem, _] = updatePrefixItemAndPrefix(item, suffixKey, prefix, 
+                for(let basePrefix of prefixes.slice(0, -1)){
+                    let fullPrefix = basePrefix.length > 0 ? basePrefix + " " + prefix : prefix;
+                    let [prefixItem, _] = updatePrefixItemAndPrefix(item, suffixKey, fullPrefix, 
                         prefixCodes);
                     addWithoutDuplicating(prefixItems, merge(item, prefixItem));
                 }
-                let [prefixItem, _] = updatePrefixItemAndPrefix(item, suffixKey, prefixes[0], 
+                let basePrefix = prefixes[prefixes.length];
+                let fullPrefix = basePrefix.length > 0 ? basePrefix + " " + prefix : prefix;
+                let [prefixItem, _] = updatePrefixItemAndPrefix(item, suffixKey, fullPrefix, 
                     prefixCodes);
                 return merge(item, prefixItem);
             }

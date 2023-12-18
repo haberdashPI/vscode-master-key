@@ -72,6 +72,7 @@ function formatBindings(file: vscode.Uri, items: IConfigKeyBinding[]){
             comment += item.description;
         }
         comment += "\n";
+        comment += "Prefix Codes:\n"
         comment += item.prefixDescriptions.join("\n");
 
         json += replaceAll(comment, /^\s*(?=\S+)/mg, "    // ")+"\n";
