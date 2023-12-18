@@ -434,7 +434,7 @@ description = "next number"
 do.args.unit = "integer"
 do.args.boundary = "both"
 do.args.selectWhole = true
-do.computedArgs = { value = "-(count || 1)" }
+do.computedArgs = { value = "(count || 1)" }
 
 [[bind.edit.motion.obj.items]]
 key = "' ;"
@@ -624,6 +624,7 @@ name = "char pair back"
 description = "To previous character pair"
 do.args.acceptAfter = 2
 do.args.offset = "start"
+do.args.backwards = true
 
 [[bind.edit.motion.search.items]]
 key = ";"
@@ -742,19 +743,11 @@ do = ["selection-utilities.shrinkToActive", "master-key.enterInsert"]
 
 [[bind.edit.action.basic.items]]
 key = "a"
-name = "append"
-description = "Switch to insert mode (right after character)"
-do = ["selection-utilities.shrinkToActive", "master-key.enterInsert"]
-when = "editorHasSelection"
-
-[[bind.edit.action.basic.items]]
-key = "a"
 do = [
       "selection-utilities.shrinkToActive",
       "cursorRight",
       "master-key.enterInsert",
 ]
-when = "!editorHasSelection"
 
 [[bind.edit.action.basic.items]]
 key = "shift+i"
@@ -1358,6 +1351,31 @@ name = "Window Manipulation"
 description = "Commands for navigating and manipulating the window/editor panes in some way"
 default.kind = "window"
 default.mode = "normal"
+default.when = "editorTextFocus"
+
+[[bind.window.items]]
+name = "open file"
+description = "Open file using quick open"
+key = ", f"
+do = "workbench.action.quickOpen"
+
+[[bind.window.items]]
+name = "open recent"
+description = "Open recent file"
+key = ", shift+r"
+do = "workbench.action.openRecent"
+
+[[bind.window.items]]
+name = "command"
+description = "Show the VSCode command palette"
+key = ", ,"
+do = "workbench.action.showCommands"
+
+[[bind.window.items]]
+name = "goto line"
+description = "Use VSCode goto line command"
+key = ", g"
+do = "workbench.action.gotoLine"
 
 [[bind.window.items]]
 name = "center"
