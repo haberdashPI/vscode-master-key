@@ -134,6 +134,12 @@ async function runCommand(command: StrictDoArg){
     if(typeof command === 'string'){
         vscode.commands.executeCommand(command);
     }else{
+        let ifCheck: any = true;
+        if(command.if){
+            if(!evalContext.evalStr(command.if, state.values)){
+                return; // if the if check fails, don't run the command
+            }
+        }
         let finalArgs: Record<string, any> = command.args || {};
         if(command.computedArgs !== undefined){
             finalArgs = {...finalArgs, 

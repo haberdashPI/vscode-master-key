@@ -1,7 +1,7 @@
 current issue I'm working on:
 
 - selectLinesDown doesn't handle the empty count properly
-- 'g o' doesn't switch to insert mode
+- 'o' doesn't switch to insert mode
 - cursor appearance gets confused when switching editors
 
 Next up

@@ -43,6 +43,7 @@ around_on = false
 command = "selection-utilities.shrinkToActive"
 
 [[define.selectLinesDown]]
+if = "count"
 command = "cursorMove"
 args = { to = "down", by = "wrappedLine", select = true }
 computedArgs = { value = "count" }
@@ -54,6 +55,7 @@ command = "expandLineSelection"
 command = "selection-utilities.shrinkToActive"
 
 [[define.selectLinesUp]]
+if = "count"
 command = "cursorMove"
 args = { to = "up", by = "wrappedLine", select = true }
 computedArgs = { value = "count" }
@@ -131,7 +133,6 @@ mode = "!insert"                                         # number keys apply in 
 name = "Motions"
 description = "Commands that move the cursors and/or selections"
 default.kind = "select"
-default.mode = "normal"
 
 [bind.edit.motion.prim]
 name = "Primitive Motions"

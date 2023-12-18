@@ -22,6 +22,7 @@ const bindingCommand = z.object({
     command: z.string().optional(), // only optional before default expansion
     args: z.object({}).passthrough().optional(),
     computedArgs: z.object({}).passthrough().optional(),
+    if: z.string().optional()
 }).strict();
 export type BindingCommand = z.infer<typeof bindingCommand>;
 
