@@ -101,16 +101,7 @@ class CommandState {
 
         if(key === 'mode'){
             let editor = vscode.window.activeTextEditor;
-            if(editor){
-                // TODO: make these user configurable
-                if(value === 'capture'){
-                    editor.options.cursorStyle = vscode.TextEditorCursorStyle.Underline;
-                }else if(value !== 'insert'){
-                    editor.options.cursorStyle = vscode.TextEditorCursorStyle.Block;
-                }else{
-                    editor.options.cursorStyle = vscode.TextEditorCursorStyle.Line;
-                }
-            }
+            if(editor){ updateCursorAppearance(editor, value); }
         }
         if(transient){ this.transientValues[key] = oldValue; }
         vscode.commands.executeCommand('setContext', 'master-key.' + key, value);
@@ -127,6 +118,17 @@ class CommandState {
     }
 }
 export let state = new CommandState();
+
+function updateCursorAppearance(editor: vscode.TextEditor, mode: string){
+    // TODO: make these user configurable
+    if(mode === 'capture'){
+        editor.options.cursorStyle = vscode.TextEditorCursorStyle.Underline;
+    }else if(mode !== 'insert'){
+        editor.options.cursorStyle = vscode.TextEditorCursorStyle.Block;
+    }else{
+        editor.options.cursorStyle = vscode.TextEditorCursorStyle.Line;
+    }
+}
 
 async function runCommand(command: StrictDoArg){
     if(typeof command === 'string'){
@@ -284,6 +286,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     vscode.window.onDidChangeActiveTextEditor(e => {
         state.values.editorLangId = e?.document?.languageId;
+        if(e){ updateCursorAppearance(e, state.values.mode); }
     });
 
     for (let [name, fn] of Object.entries(commands)) {
