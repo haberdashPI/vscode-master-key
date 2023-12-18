@@ -30,6 +30,7 @@ function updateStatusBar(){
 // should also require a qualifier below
 const keyContext = z.object({
     prefix: z.string(),
+    prefixCode: z.number(),
     count: z.number(),
     mode: z.string(),
     search: z.string(),
@@ -54,6 +55,7 @@ const keyContextKey = z.string().regex(/[a-zA-Z_]+[0-9a-zA-Z_]*/);
 class CommandState {
     values: KeyContext = {
         prefix: '',
+        prefixCode: 1,
         count: 0,
         mode: 'insert',
         search: '',
@@ -147,7 +149,7 @@ function updateCount(args_: unknown){
 commands['master-key.updateCount'] = updateCount;
 
 const prefixArgs = z.object({
-    key: z.string(),
+    code: z.number(),
     flag: z.string().min(1).optional(),
     // `automated` is used during keybinding preprocessing and is not normally used otherwise
     automated: z.boolean().optional() 
@@ -157,7 +159,9 @@ function prefix(args_: unknown){
     let args = validateInput('master-key.prefix', args_, prefixArgs);
     if(args !== undefined){
         if(state.values.prefix.length > 0){
-            state.setKeyContext('prefix', state.values.prefix + " " + args.key);
+            state.setKeyContext('prefixCode', args.code);
+            // TODO: have to do the inverse here... feels messy
+            state.setKeyContext('prefix', state.values.prefxCodes[]
         }else{
             state.setKeyContext('prefix', args.key);
         }

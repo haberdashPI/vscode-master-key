@@ -3,21 +3,22 @@ import { BindingSpec, BindingTree, StrictBindingTree, BindingItem, StrictBinding
          strictBindingItem, StrictDoArgs, parseWhen, StrictDoArg, DoArg, 
          DefinedCommand } from "./keybindingParsing";
 import * as vscode from 'vscode';
-import { isEqual, uniq, omit, mergeWith, cloneDeep, flatMap, values, entries } from 'lodash';
+import { isEqual, uniq, omit, mergeWith, cloneDeep, flatMap, merge, entries } from 'lodash';
 import { reifyStrings, EvalContext } from './expressions';
-import replaceAll from 'string.prototype.replaceall';
-
 
 export function processBindings(spec: BindingSpec){
     let expandedSpec = expandDefaultsAndDefinedCommands(spec.bind, spec.define);
     let items: StrictBindingItem[] = listBindings(expandedSpec);
     items = expandBindingKeys(items, spec.define);
     let prefixItems: BindingMap = {};
-    items = items.map(i => expandPrefixBindings(i, prefixItems));
+    let prefixCodes = new PrefixCodes();
+    items = items.map(i => expandPrefixBindings(i, prefixItems, prefixCodes));
     items = resolveDuplicateBindings(items, prefixItems);
     items = items.map(moveModeToWhenClause);
-    items = items.map(movePrefixesToWhenClause);
-    return items.map(itemToConfigBinding);
+    let newItems = items.map(i => movePrefixesToWhenClause(i, prefixCodes));
+    let definitions = {...spec.define, prefixCodes: prefixCodes.codes};
+    let configItem = newItems.map(i => itemToConfigBinding(i, definitions));
+    return [configItem, definitions];
 }
 
 function expandWhenClauseByConcatenation(obj_: any, src_: any, key: string){
@@ -157,23 +158,28 @@ function listBindings(bindings: StrictBindingTree): StrictBindingItem[] {
     });
 }
 
-interface IConfigKeyBinding {
+export interface IConfigKeyBinding {
     key: string,
     command: "master-key.do" | "master-key.prefix"
     name?: string,
     description?: string,
-    when?: string,
+    prefixDescriptions: string[],
+    when: string,
     args: { do: string | object | (string | object)[], resetTransient?: boolean } | 
           { key: string }
 }
 
-function itemToConfigBinding(item: StrictBindingItem): IConfigKeyBinding {
+function itemToConfigBinding(item: StrictBindingItem, defs: Record<string, any>): IConfigKeyBinding {
+    let prefixDescriptions = item.prefixes.map(p => {
+        let code = defs['prefixCodes'][p];
+        return `code ${code} = ${p}`;
+    });
     return {
         key: <string>item.key, // we've expanded all array keys, so we know its a string
         name: item.name,
         description: item.description,
-        when: Array.isArray(item.when) ? 
-            "(" + item.when.map(w => w.str).join(") && (") + ")" : undefined,
+        prefixDescriptions,
+        when: "(" + item.when.map(w => w.str).join(") && (") + ")",
         command: "master-key.do",
         args: { do: item.do, resetTransient: item.resetTransient }
     };
@@ -270,49 +276,107 @@ function moveModeToWhenClause(binding: StrictBindingItem){
     return {...binding, when};
 }
 
-function movePrefixesToWhenClause(item: StrictBindingItem){
+class PrefixCodes { 
+    len: number = 0;
+    codes: Record<string, number> = {};
+    constructor(){}
+    codeFor(prefix: string){
+        if(this.codes[prefix] === undefined){
+            this.len += 1;
+            this.codes[prefix] = this.len;
+        }
+        return this.codes[prefix];
+    }
+};
+
+function movePrefixesToWhenClause(item: StrictBindingItem, prefixCodes: PrefixCodes){
     let when = item.when || [];
     let allowed = item.prefixes.map(a => {
-        // we need to proplery escape quotes
-        let str = replaceAll(a, /'/g, '\\\'')
-        return `master-key.prefix == '${str}'`;
+        if(prefixCodes.codes[a] === undefined){
+            throw Error(`Unexpected missing prefix code for prefix: ${a}`);
+        }else{
+            return `master-key.prefixCode == ${prefixCodes.codes[a]}`;
+        }
     }).join(' || ');
     when = when.concat(parseWhen(allowed));
     return {...item, when};
 }
 
 type BindingMap = { [key: string]: StrictBindingItem };
-function expandPrefixBindings(item: StrictBindingItem, prefixItems: BindingMap = {}): StrictBindingItem{
+
+function updatePrefixItemAndPrefix(item: StrictBindingItem, key: string, prefix: string, 
+                    prefixCodes: PrefixCodes): [StrictBindingItem, string] {
+    let oldPrefix = prefix;
+    if (prefix.length > 0) { prefix += " "; }
+    prefix += key;
+
+    let newItem = {
+        key,
+        do: { 
+            command: "master-key.prefix", 
+            args: { 
+                code: prefixCodes.codeFor(prefix), 
+                automated: true 
+            } 
+        },
+        when: item.when,
+        kind: "prefix",
+        prefixes: [oldPrefix],
+        mode: item.mode,
+        resetTransient: false
+    };
+
+    return [newItem, prefix];
+}
+
+function expandPrefixBindings(item: StrictBindingItem, prefixItems: BindingMap = {}, 
+    prefixCodes: PrefixCodes): StrictBindingItem{
+
     let prefixes = item.prefixes || [];
 
     if(item.key !== undefined && !Array.isArray(item.key)){
         let keySeq = item.key.trim().split(/\s+/);
 
-        for(let key of keySeq.slice(0, -1)){
-            let prefixItem: StrictBindingItem = {
-                key, 
-                do: {command: "master-key.prefix", args: {key, automated: true}},
-                when: item.when, 
-                kind: "prefix", 
-                prefixes,
-                mode: item.mode,
-                resetTransient: false
-            }; 
+        // expand any key sequences to multiple bindings
+        // each that are just a single key
+        for(let basePrefix of prefixes){
+            let prefix = basePrefix;
+            let prefixItem;
+            for(let key of keySeq.slice(0, -1)){
+                [prefixItem, prefix] = updatePrefixItemAndPrefix(item, key, prefix, 
+                    prefixCodes);
+                addWithoutDuplicating(prefixItems, prefixItem);
+            }
+        }
 
-            // track the current prefix for the next iteration of `map`
-            prefixes = prefixes.map((prefix: string) => {
-                if(prefix.length > 0){ prefix += " "; }
-                prefix += key;
-                return prefix;
-            });
-
-            addWithoutDuplicating(prefixItems, prefixItem);
+        let suffixKey = keySeq[keySeq.length-1];
+        // expand any bindings that are manually defined as prefix commands
+        // to use the proper prefix codes
+        if(isSingleCommand(item.do, 'master-key.prefix')){
+            if(item.prefixes.length === 0){
+                let modes = !item.mode ? "any" :
+                    !Array.isArray(item.mode) ? item.mode :
+                    item.mode.join(', ');
+                vscode.window.showErrorMessage(`Key binding '${item.key}' for mode 
+                    '' is a prefix command but lacks
+                    a concrete list of allowed prefixes.`);
+            }
+            else{
+                for(let prefix of prefixes.slice(0, -1)){
+                    let [prefixItem, _] = updatePrefixItemAndPrefix(item, suffixKey, prefix, 
+                        prefixCodes);
+                    addWithoutDuplicating(prefixItems, merge(item, prefixItem));
+                }
+                let [prefixItem, _] = updatePrefixItemAndPrefix(item, suffixKey, prefixes[0], 
+                    prefixCodes);
+                return merge(item, prefixItem);
+            }
         }
 
         return {
             ...item, 
             prefixes,
-            key: keySeq[keySeq.length-1]
+            key: suffixKey
         };
     }
     return item;
@@ -380,7 +444,7 @@ function addWithoutDuplicating(map: BindingMap, newItem: StrictBindingItem){
         if(newItem.prefixes.length > 0 && newItem.prefixes.every(x => x.length > 0)){
             binding = newItem.prefixes[0] + " " + binding;
         }
-        let message = ""
+        let message = "";
         if(/'/.test(<string>binding)){
             if(!/`/.test(<string>binding)){
                 message = `Duplicate bindings for \`${binding}\` in mode '${newItem.mode}'`;

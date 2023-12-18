@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { searchMatches } from './searching';
 import { BindingItem, parseBindingFile, showParseError } from './keybindingParsing';
-import { processBindings } from './keybindingProcessing';
+import { processBindings, IConfigKeyBinding } from './keybindingProcessing';
 import { pick } from 'lodash';
 import replaceAll from 'string.prototype.replaceall';
 
@@ -60,7 +60,7 @@ function findText(doc: vscode.TextDocument, text: string) {
 //     return result + str.slice(offset, -1);
 // }
 
-function formatBindings(file: vscode.Uri, items: BindingItem[]){
+function formatBindings(file: vscode.Uri, items: IConfigKeyBinding[]){
     let json = "";
     for(let item of items){
         let comment = "";
@@ -71,6 +71,8 @@ function formatBindings(file: vscode.Uri, items: BindingItem[]){
         }else if(item.description !== undefined){
             comment += item.description;
         }
+        comment += "\n";
+        comment += item.prefixDescriptions.join("\n");
 
         json += replaceAll(comment, /^\s*(?=\S+)/mg, "    // ")+"\n";
         json += replaceAll(JSON.stringify(pick(item, ['key', 'when', 'command', 'args']), 
@@ -160,13 +162,10 @@ async function importBindings() {
     if (file === undefined) { return; }
     let parsedBindings = await parseBindingFile(file);
     if(parsedBindings.success){
-        let bindings = processBindings(parsedBindings.data);
+        let [bindings, definitions] = processBindings(parsedBindings.data);
         insertKeybindingsIntoConfig(file, bindings);
-        let definitions = parsedBindings.data.define;
-        if(definitions){
-            let config = vscode.workspace.getConfiguration('master-key');
-            config.update('definitions', definitions, vscode.ConfigurationTarget.Global);
-        }
+        let config = vscode.workspace.getConfiguration('master-key');
+        config.update('definitions', definitions, vscode.ConfigurationTarget.Global);
     }else{
         for (let issue of parsedBindings.error.issues.slice(0, 3)) {
             showParseError("Parsing of bindings failed: ", issue);
