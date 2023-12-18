@@ -236,7 +236,7 @@ export function activate(context: vscode.ExtensionContext) {
     keyStatusBar.accessibilityInformation = { label: "Keys Typed" };
     keyStatusBar.show();
 
-    searchStatusBar = vscode.window.createStatusBarItem('search', vscode.StatusBarAlignment.Left);
+    searchStatusBar = vscode.window.createStatusBarItem('capture', vscode.StatusBarAlignment.Left);
     searchStatusBar.accessibilityInformation = { label: "Search Text" };
     searchStatusBar.show();
 

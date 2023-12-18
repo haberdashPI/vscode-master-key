@@ -198,9 +198,9 @@ function contains(xs: string[], el: string){
     return xs.some(x => x === el);
 }
 export const validModes = z.string().array().
-    refine(x => contains(x, 'insert') && contains(x, 'search'), ms => {
+    refine(x => contains(x, 'insert') && contains(x, 'capture'), ms => {
         let modes = ms.join(', ');
-        return { message: `The modes 'insert' and 'search' are required, but the 
+        return { message: `The modes 'insert' and 'capture' are required, but the 
                  only valid modes listed modes were: ` + modes };
     });
 

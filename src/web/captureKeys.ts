@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import z from 'zod';
 import { strictDoArgs } from './keybindingParsing';
 import { validateInput } from './utils';
-import { runCommands, setKeyContext } from './commands';
+import { state, runCommands, setKeyContext } from './commands';
 
 let typeSubscription: vscode.Disposable | undefined;
 let onTypeFn: (text: string) => void = async function(text: string){
@@ -14,9 +14,11 @@ async function onType(event: {text: string}){
 
 type UpdateFn = (str: string, stop: () => void) => void;
 export function captureKeys(onUpdate: UpdateFn): void {
+    let oldMode = state.values.mode;
     if(!typeSubscription){
         try{
             typeSubscription = vscode.commands.registerCommand('type', onType);
+            setKeyContext({name: 'mode', value: 'capture'});
         }catch(e){
             vscode.window.showErrorMessage(`Failed to capture keyboard input. You 
                 might have an extension that is already listening to type events 
@@ -27,6 +29,7 @@ export function captureKeys(onUpdate: UpdateFn): void {
         if(typeSubscription){
             typeSubscription.dispose();
             typeSubscription = undefined;
+            setKeyContext({name: 'mode', value: oldMode});
         }
     };
     onTypeFn = (str: string) => onUpdate(str, stop);
@@ -42,7 +45,7 @@ function captureKeysCmd(args_: unknown){
         let a = args;
         let captured = "";
         captureKeys((key, stop) => {
-            let doStop = false
+            let doStop = false;
             if(key === "\n"){ doStop; }
             else{
                 captured += key;
@@ -61,11 +64,13 @@ function captureKeysCmd(args_: unknown){
     }
 }
 
-function replaceChar(editor: vscode.TextEditor, edit: vscode.TextEditorEdit){
+function replaceChar(editor: vscode.TextEditor) {
     captureKeys((key, stop) => {
-        for(let s of editor.selections){
-            edit.replace(new vscode.Range(s.active, s.active.translate(0, 1)), key);
-        }
+        editor.edit(edit => {
+            for (let s of editor.selections) {
+                edit.replace(new vscode.Range(s.active, s.active.translate(0, 1)), key);
+            }
+        });
         stop();
     });
 }
@@ -78,7 +83,7 @@ function insertChar(editor: vscode.TextEditor, edit: vscode.TextEditorEdit){
 }
 
 export function activate(context: vscode.ExtensionContext){
-    context.subscriptions.push(vscode.commands.registerCommand('master-key.captureKeys', captureKeys));
-    context.subscriptions.push(vscode.commands.registerCommand('master-key.replaceChar', replaceChar));
-    context.subscriptions.push(vscode.commands.registerCommand('master-key.insertChar', insertChar));
+    context.subscriptions.push(vscode.commands.registerCommand('master-key.captureKeys', captureKeysCmd));
+    context.subscriptions.push(vscode.commands.registerTextEditorCommand('master-key.replaceChar', replaceChar));
+    context.subscriptions.push(vscode.commands.registerTextEditorCommand('master-key.insertChar', insertChar));
 }

@@ -35,7 +35,7 @@ These bindings are named after the middle name of my first child.
 """
 
 [define]
-validModes = ["insert", "search", "normal", "syminsert", "selectedit"]
+validModes = ["insert", "capture", "normal", "syminsert", "selectedit"]
 select_on = false
 around_on = false
 
@@ -98,7 +98,7 @@ description = "this key does nothing"
 key = ["<all-keys>", "shift+<all-keys>"]
 do.command = "master-key.ignore"
 prefixes = "<all-prefixes>"
-mode = ["!insert", "!search"]
+mode = ["!insert", "!capture"]
 when = "editorTextFocus"
 
 [bind.edit]
@@ -538,7 +538,7 @@ default.do.args.wrapAround = true
 
 [[bind.edit.motion.search.items]]
 key = "/"
-name = "search"
+name = "capture"
 description = "search forwards"
 do.args.register = "search"
 

@@ -156,7 +156,7 @@ async function search(editor: vscode.TextEditor, edit: vscode.TextEditorEdit, ar
         return;
     }
 
-    setKeyContext({name: 'mode', value: 'search', transient: false});
+    setKeyContext({name: 'mode', value: 'capture', transient: false});
     // when there are a fixed number of keys use `type` command
     if(state.args.acceptAfter){
         let acceptAfter = state.args.acceptAfter;
@@ -174,7 +174,7 @@ async function search(editor: vscode.TextEditor, edit: vscode.TextEditorEdit, ar
         state.stop = undefined;
         let inputBox = vscode.window.createInputBox();
         inputBox.prompt = "Enter search text";
-        inputBox.title = "Search";
+        inputBox.title = "capture";
         inputBox.onDidChangeValue((str: string) => {
             state.text = str;
             navigateTo(state, editor, false);
@@ -213,7 +213,7 @@ export function activate(context: vscode.ExtensionContext){
 
 async function cancelSearch(editor: vscode.TextEditor, edit: vscode.TextEditorEdit) {
     let state = getSearchState(editor);
-    if (keyState.values.mode === 'search'){
+    if (keyState.values.mode === 'capture'){
         setKeyContext({name: 'mode', value: state.oldMode, transient: false});
         let editor = vscode.window.activeTextEditor;
         if (editor) {
