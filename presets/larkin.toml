@@ -127,7 +127,7 @@ key = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
 do.command = "master-key.updateCount"
 do.args.value = "{key}"
 resetTransient = false
-mode = "!insert"                                         # number keys apply in all modes but insert
+mode = ["!insert", "!capture"]                                         # number keys apply in all modes but insert
 
 [bind.edit.motion]
 name = "Motions"
@@ -214,7 +214,7 @@ args = { to = "up", by = "wrappedLine", select = true }
 computedArgs = { value = "count" }
 
 [[bind.edit.motion.prim.items.do]]
-command = "expandLineSelections"
+command = "expandLineSelection"
 
 [[bind.edit.motion.prim.items]]
 key = "shift+j"
@@ -757,6 +757,22 @@ do = [
 when = "!editorHasSelection"
 
 [[bind.edit.action.basic.items]]
+key = "shift+i"
+name = "insert start"
+do = [
+      { command = "cursorMove", args = { to = "wrappedLineFirstNonWhitespaceCharacter", select = false } },
+      "master-key.enterInsert",
+]
+
+[[bind.edit.action.basic.items]]
+key = "shift+a"
+name = "insert end"
+do = [
+      { command = "cursorMove", args = { to = "wrappedLineEnd", select = false } },
+      "master-key.enterInsert",
+]
+
+[[bind.edit.action.basic.items]]
 key = "c"
 name = "change"
 description = """
@@ -812,6 +828,15 @@ do = [
       "deleteRight",
       "editor.action.insertLineBefore",
       "master-key.enterInsert",
+]
+
+[[bind.edit.action.basic.items]]
+key = "x"
+name = "delete char"
+do = [
+      "selection-utilities.shrinkToActive",
+      { command = "cursorMove", args = { to = "right", select = true }, computedArgs = { value = "count" } },
+     "editor.action.clipboardCutAction"
 ]
 
 [[bind.edit.action.basic.items]]
@@ -1085,21 +1110,35 @@ Operations that affect line indentation
 key = "shift+."
 name = "indent"
 description = "Indent lines"
+when = "master-key.count >= 1"
 do = [
       { defined = "selectLinesDown" },
       "editor.action.indentLines", 
-      "master-key.cancelMultipleSelections"
+      "selection-utilities.shrinkToActive"
+]
+
+[[bind.edit.action.indent.items]]
+key = "shift+."
+name = "indent"
+description = "Indent lines"
+do = "editor.action.indentLines"
+
+[[bind.edit.action.indent.items]]
+key = "shift+,"
+name = "deindent"
+when = "master-key.count >= 1"
+description = "Deindent lines"
+do = [
+      { defined = "selectLinesDown" },
+      "editor.action.outdentLines", 
+      "selection-utilities.shrinkToActive"
 ]
 
 [[bind.edit.action.indent.items]]
 key = "shift+,"
 name = "deindent"
-description = "Deindent lines"
-do = [
-      { defined = "selectLinesDown" },
-      "editor.action.outdentLines", 
-      "master-key.cancelMultipleSelections"
-]
+description = "De-indent lines"
+do = "editor.action.outdentLines"
 
 [[bind.edit.action.indent.items]]
 key = "g /"
