@@ -100,6 +100,20 @@ class CommandState {
         }else{
             this.values[key] = value;
         }
+
+        if(key === 'mode'){
+            let editor = vscode.window.activeTextEditor;
+            if(editor){
+                // TODO: make these user configurable
+                if(value === 'capture'){
+                    editor.options.cursorStyle = vscode.TextEditorCursorStyle.Underline;
+                }else if(value !== 'insert'){
+                    editor.options.cursorStyle = vscode.TextEditorCursorStyle.Block;
+                }else{
+                    editor.options.cursorStyle = vscode.TextEditorCursorStyle.Line;
+                }
+            }
+        }
         if(transient){ this.transientValues[key] = oldValue; }
         vscode.commands.executeCommand('setContext', 'master-key.' + key, value);
         updateStatusBar();
