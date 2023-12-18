@@ -109,6 +109,7 @@ selecting text in the editor, moving around it, manipulating text in the editor,
 so forth.
 """
 default.when = "editorTextFocus && !findWidgetVisible"
+default.mode = "normal"
 
 [bind.edit.count]
 name = "count"
@@ -817,6 +818,100 @@ key = "r"
 name = "replace char"
 description = "replace the character under the cursor"
 do = "master-key.replaceChar"
+
+[bind.edit.action.capitals]
+name = "Capitlization Actions"
+description = "Actions that change how words are capitalized"
+
+[[bind.edit.action.capitals.items]]
+name = 'camel'
+description = "Swap style to lower camel case (`camelCase`)"
+key = "` c"
+do = "extension.changeCase.camel"
+
+[[bind.edit.action.capitals.items]]
+name = 'constant'
+description = "Swap style to constant (`IS_CONSTANT`)"
+key = "` shift+u"
+do = "extension.changeCase.constant"
+
+[[bind.edit.action.capitals.items]]
+name = 'dot'
+description = "Swap style to dot case (`dot.case`)"
+key = "` ."
+do = "extension.changeCase.dot"
+
+[[bind.edit.action.capitals.items]]
+name = 'kebab'
+description = "Swap style to kebab case (`kebab-case`)"
+key = "` -"
+do = "extension.changeCase.kebab"
+
+[[bind.edit.action.capitals.items]]
+name = 'all lower'
+description = "Swap all to lower case"
+key = "` shift+l"
+do = "extension.changeCase.lower"
+
+[[bind.edit.action.capitals.items]]
+name = 'first lower'
+description = "Swap first letter to lower case"
+key = "` l"
+do = "extension.changeCase.lowerFirst"
+
+[[bind.edit.action.capitals.items]]
+name = 'spaces'
+description = "Swap to spaces (`camelCase` -> `camel case`)"
+key = "` space"
+do = "extension.changeCase.no"
+
+[[bind.edit.action.capitals.items]]
+name = 'Camel'
+description = "Swap to upper camel case (`CamelCase`)"
+key = "` shift+c"
+do = "extension.changeCase.pascal"
+
+[[bind.edit.action.capitals.items]]
+name = 'path'
+description = "Swap to 'path' case (`path/case`)"
+key = "` /"
+do = "extension.changeCase.path"
+
+[[bind.edit.action.capitals.items]]
+name = 'snake'
+description = "Swap to snake case (`snake_case`)"
+key = "` shift+-"
+do = "extension.changeCase.snake"
+
+[[bind.edit.action.capitals.items]]
+name = 'swap'
+description = "Swap upper and lower case letters"
+key = "` s"
+do = "extension.changeCase.swap"
+
+[[bind.edit.action.capitals.items]]
+name = 'title'
+description = "Swap to title case (all words have first upper case letter)"
+key = "` t"
+do = "extension.changeCase.title"
+
+[[bind.edit.action.capitals.items]]
+name = 'all upper'
+description = "Swap to use all upper case letters"
+key = "` shift+y"
+do = "extension.changeCase.upper"
+
+[[bind.edit.action.capitals.items]]
+name = 'first upper'
+description = "Swap first character to upper case"
+key = "` u"
+do = "extension.changeCase.upperFirst"
+
+[[bind.edit.action.capitals.items]]
+name = 'toggle'
+description = "Toggle through all possible cases"
+key = "` `"
+do = "extension.toggleCase"
 
 [bind.edit.action.clipboard]
 name = "Clipboard Operations"

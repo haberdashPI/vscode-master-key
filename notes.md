@@ -1,24 +1,11 @@
 current issue I'm working on:
 
-- figure out how to handle proper escaping in when clauses for prefixes that include a ' 
-  character
-  - NOTE: from what I can tell the best way to probably fix this is to 
-    either have `master-key.prefix` not be a string but rather an array of numbers
-    to test against OR to have a `master-key.prefixNum` that shadows the string
-    value and can be used when the prefix contains `'` characters
-    (if we do this, we should probably have a comment that indicates
-     what the actual prefix is)
-  - okay here's what we'lll do: we'll define a prefix code for each unique prefix defined
-    by the key bindings, and make a map from the strings to these bindings;
-    in the items we'll keep the prefix's until we render to json, so 
-    and resolve the prefix code when clause; in the comment
-    describing the binding we can note what each
-    when-clause prefix code refers to
+- selectLinesDown doesn't handle the empty count properly
+- 'g o' doesn't switch to insert mode
+- cursor appearance gets confused when switching editors
 
 Next up
-- implement master-key.replaceChar
-- implement master-key.captureChar
-- start dogfooding (we need to answer the question: is this working well enough for this implementation to be viable, does it work for my everyday use)
+- more dogfooding (we need to answer the question: is this working well enough for this implementation to be viable, does it work for my everyday use)
 
 - start implementing event recording / replay for
     record macro
