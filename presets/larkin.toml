@@ -1039,7 +1039,7 @@ description = "without selection: open a line below current line and enter inser
 key = "o"
 mode = ["normal", "selectedit"]
 when = "!editorHasSelection"
-do = ["editor.action.insertLineAfter", "modalkeys.enterInsert"]
+do = ["editor.action.insertLineAfter", "master-key.enterInsert"]
 
 [[bind.edit.action.open_lines.items]]
 key = "o"
@@ -1059,7 +1059,7 @@ description = "without selection: open a line above current line and enter inser
 key = "shift+o"
 when = "!editorHasSelection"
 mode = ["normal", "selectedit"]
-do = [ "editor.action.insertLineBefore", "modalkeys.enterInsert" ]
+do = [ "editor.action.insertLineBefore", "master-key.enterInsert" ]
 
 [[bind.edit.action.open_lines.items]]
 name = "open blw, act ←"
@@ -1088,7 +1088,7 @@ description = "Indent lines"
 do = [
       { defined = "selectLinesDown" },
       "editor.action.indentLines", 
-      "modalkeys.cancelMultipleSelections"
+      "master-key.cancelMultipleSelections"
 ]
 
 [[bind.edit.action.indent.items]]
@@ -1098,7 +1098,7 @@ description = "Deindent lines"
 do = [
       { defined = "selectLinesDown" },
       "editor.action.outdentLines", 
-      "modalkeys.cancelMultipleSelections"
+      "master-key.cancelMultipleSelections"
 ]
 
 [[bind.edit.action.indent.items]]
@@ -1108,7 +1108,7 @@ description = "Format code"
 do = [
       { defined = "selectLinesDown" },
       "editor.action.formatSelection",
-      "modalkeys.cancelMultipleSelections"
+      "master-key.cancelMultipleSelections"
 ]
 
 [bind.edit.action.history]
@@ -1119,13 +1119,13 @@ description = "Commands that interact with edit or cursor history."
 name = "undo"
 description = "VSCode Undo"
 key = "z"
-do = [ "undo", "modalkeys.cancelMultipleSelections", "modalkeys.untouchDocument", ]
+do = [ "undo", "master-key.cancelMultipleSelections", "master-key.untouchDocument", ]
 
 [[bind.edit.action.history.items]]
 name = "undo"
 description = "VSCode Redo"
 key = "shift+z"
-do = [ "redo", "modalkeys.cancelMultipleSelections", "modalkeys.untouchDocument", ]
+do = [ "redo", "master-key.cancelMultipleSelections", "master-key.untouchDocument", ]
 
 [[bind.edit.action.history.items]]
 name = "cursor undo"
@@ -1176,7 +1176,7 @@ description = "select next comment"
 do = [
       { defined = "selectLinesDown" },
       "editor.action.commentLine", 
-      "modalkeys.cancelMultipleSelections",
+      "master-key.cancelMultipleSelections",
 ]
 
 [[bind.edit.action.comment.items]]
@@ -1186,7 +1186,7 @@ description = "select previous comment"
 do = [
       { defined = "selectLinesDown" },
       "editor.action.blockComment", 
-      "modalkeys.cancelMultipleSelections",
+      "master-key.cancelMultipleSelections",
 ]
 
 [[bind.edit.action.comment.items]]
@@ -1238,7 +1238,7 @@ description = """
 send text to a terminal (usually containing a REPL), placing in a block when defined.
 """
 when = "master-key.firstSelectionOrWord =~ /\\n/"
-do = ["terminal-polyglot.send-block-text", "modalkeys.cancelMultipleSelections"]
+do = ["terminal-polyglot.send-block-text", "master-key.cancelMultipleSelections"]
 
 [[bind.edit.terminal.items]]
 key = "shift+m"
@@ -1247,7 +1247,7 @@ description = """
 send text to a terminal (usually containing a REPL), placing in a block when defined.
 """
 when = "!(master-key.firstSelectionOrWord =~ /\\n/)"
-do = ["terminal-polyglot.send-text", "modalkeys.cancelMultipleSelections"]
+do = ["terminal-polyglot.send-text", "master-key.cancelMultipleSelections"]
 
 [[bind.edit.terminal.items]]
 key = "g m"
@@ -1255,7 +1255,7 @@ name = "to repl (v3)"
 description = """
 send text to a terminal (usually containing a REPL)
 """
-do = ["terminal-polyglot.send-text", "modalkeys.cancelMultipleSelections"]
+do = ["terminal-polyglot.send-text", "master-key.cancelMultipleSelections"]
 
 ## TODO: add git/version control commands
 
@@ -1583,13 +1583,13 @@ mode = "normal"
 name = 'normal'
 description = "return to a single selection and return to normal mode"
 key = "enter"
-do = ["selection-utilities.cancelSelection", "modalkeys.enterNormal"]
+do = ["selection-utilities.cancelSelection", "master-key.enterNormal"]
 
 [[bind.edit.select_edit.items]]
 name = 'insert'
 description = "insert mode at cursor"
 key = "i"
-do = ["modalkeys.enterNormal", "selection-utilities.shrinkToActive", "modalkeys.enterInsert"]
+do = ["master-key.enterNormal", "selection-utilities.shrinkToActive", "master-key.enterInsert"]
 
 [[bind.edit.select_edit.items]]
 name = "add →"
@@ -1638,7 +1638,7 @@ key = "' c"
 mode = "normal"
 do = [
       { command = "selection-utilities.appendToMemory", computedArgs = { register = "'selmemory_'+count" } },
-      "modalkeys.cancelMultipleSelections", "modalkeys.enterNormal"
+      "master-key.cancelMultipleSelections", "master-key.enterNormal"
 ]
 
 [[bind.edit.select_edit.items]]
@@ -1732,7 +1732,7 @@ key = "' shift+k"
 mode = ["normal", "selectedit"]
 do = [
       { command = "editor.action.insertCursorAbove", computedArgs = { repeat = 'count' } },
-      { command = "modalkeys.setMode", args = { mode = "selectedit" } },
+      { command = "master-key.setMode", args = { mode = "selectedit" } },
 ]
 
 [[bind.edit.select_edit.items]]
@@ -1744,14 +1744,14 @@ key = "' shift+j"
 mode = ["normal", "selectedit"]
 do = [
       { command = "editor.action.insertCursorBelow", computedArgs = { repeat = 'count' } },
-      { command = "modalkeys.setMode", args = { mode = "selectedit" }},
+      { command = "master-key.setMode", args = { mode = "selectedit" }},
 ]
 
 [[bind.edit.select_edit.items]]
 name = "reset"
 description = "collapse all selections to the active position, and return to normal mode" 
 key = "r"
-do = [ "modalkeys.enterNormal", "selection-utilities.shrinkToActive" ]
+do = [ "master-key.enterNormal", "selection-utilities.shrinkToActive" ]
 
 [[bind.edit.select_edit.items]]
 name = "→ sel"
@@ -1805,7 +1805,7 @@ do = "selection-utilities.splitByRegex"
 name = "character"
 description = "split by a given character"
 key = "s c"
-do.command = "modalkeys.captureChar"
+do.command = "master-key.captureChar"
 do.args.acceptAfter = 1
 do.args.doAfter = { command = "selection-utilities.splitBy", computedArgs = { text = "capture" } }
 
@@ -1839,7 +1839,7 @@ do = "selection-utilities.createByRegex"
 name = "character"
 description = "create selections of given character scoped to the current selections"
 key = "/ c"
-do.command = "modalkeys.captureChar"
+do.command = "master-key.captureChar"
 do.args.acceptAfter = 1
 do.args.executeAfter = { command = "selection-utilities.createBy", args = { text = "capture" } }
 

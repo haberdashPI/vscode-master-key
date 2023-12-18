@@ -75,8 +75,6 @@ class CommandState {
         }
         updateStatusBar();
     }
-    // TODO: have a setKeyContext and setKeyContextForUser to validate those things that
-    // aren't from code
     setKeyContextForUser(key: string, value: any, transient: boolean = false) {
         // key validation
         validateInput('master-key.set', { key }, z.object({ key: keyContextKey }));
@@ -226,7 +224,7 @@ export function setKeyContext(args: SetArgs){
     state.setKeyContext(args.name, args.value, args.transient || false);
 }
 commands['master-key.set'] = setCmd;
-commands['master-key.setMode'] = (x) => setKeyContext({name: 'mode', value: 'insert'});
+commands['master-key.setMode'] = (args) => setKeyContext({name: 'mode', value: (<any>args).value});
 commands['master-key.enterInsert'] = (x) => setKeyContext({name: 'mode', value: 'insert'});
 commands['master-key.enterNormal'] = (x) => setKeyContext({name: 'mode', value: 'normal'});
 
