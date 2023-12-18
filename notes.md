@@ -7,6 +7,8 @@ current issue I'm working on:
 Next up
 - more dogfooding (we need to answer the question: is this working well enough for this implementation to be viable, does it work for my everyday use)
 
+ANSWER: yes, I can use this for everyday work at this point with only minor annoyances
+
 - start implementing event recording / replay for
     record macro
     repeat action
@@ -32,6 +34,8 @@ unit tests: set key state (+validation)
 unit tests: expected display of state
 unit tests: macro replay
 unit tests: duplicate binding handling (especially with the automated keys)
+unit tests: captureKeys works as expected, even when you run some other command
+unit tests: UX settings show output
 
 File format changes:
 
