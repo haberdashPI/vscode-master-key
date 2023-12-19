@@ -542,13 +542,16 @@ default.do.args.wrapAround = true
 key = "/"
 name = "capture"
 description = "search forwards"
+do.args.offset = "start"
 do.args.register = "search"
 
 [[bind.edit.motion.search.items]]
 key = "shift+/"
 name = "search bk"
 description = "search backwards"
+do.args.offset = "start"
 do.args.register = "search"
+do.args.backwards = true
 
 [[bind.edit.motion.search.items]]
 key = "n"
@@ -569,6 +572,7 @@ key = "shift+8"
 name = "match →"
 description = "Next match to object under curosr"
 do.computedArgs.text = "firstSelectionOrWord"
+do.args.offset = "start"
 do.args.register = "search"
 
 [[bind.edit.motion.search.items]]
@@ -576,6 +580,7 @@ key = "shift+7"
 name = "match ←"
 description = "Previous match to object under curosr"
 do.computedArgs.text = "firstSelectionOrWord"
+do.args.offset = "start"
 do.args.register = "search"
 do.args.backwards = true
 
@@ -585,12 +590,14 @@ name = "find char"
 description = "Find the next char (include char in selection)"
 do.args.acceptAfter = 1
 do.computedArgs.skip = "count-1"
+do.args.offset = "inclusive"
 
 [[bind.edit.motion.search.items]]
 key = "shift+f"
 name = "find char back"
 description = "Find the previous char (include char in selection)"
 do.args.acceptAfter = 1
+do.args.offset = "inclusive"
 do.args.backwards = true
 do.computedArgs.skip = "count-1"
 
@@ -1301,6 +1308,7 @@ do = [
 [[bind.edit.action.indent.items]]
 key = "shift+,"
 name = "deindent"
+when = "master-key.count < 1"
 description = "De-indent lines"
 do = "editor.action.outdentLines"
 
@@ -1308,11 +1316,17 @@ do = "editor.action.outdentLines"
 key = "g /"
 name = "format"
 description = "Format code"
+when = "master-key.count >= 1"
 do = [
       { defined = "selectLinesDown" },
       "editor.action.formatSelection",
-      "master-key.cancelMultipleSelections"
+      "selection-utilities.shrinkToActive"
 ]
+
+[[bind.edit.action.indent.items]]
+key = "g /"
+when = "master-key.count < 1"
+do = "editor.action.formatSelection"
 
 [bind.edit.action.history]
 name = "History Commands"
@@ -1322,13 +1336,13 @@ description = "Commands that interact with edit or cursor history."
 name = "undo"
 description = "VSCode Undo"
 key = "z"
-do = [ "undo", "master-key.cancelMultipleSelections", "master-key.untouchDocument", ]
+do = [ "undo", "selection-utilities.shrinkToActive", "master-key.untouchDocument", ]
 
 [[bind.edit.action.history.items]]
 name = "undo"
 description = "VSCode Redo"
 key = "shift+z"
-do = [ "redo", "master-key.cancelMultipleSelections", "master-key.untouchDocument", ]
+do = [ "redo", "selection-utilities.shrinkToActive", "master-key.untouchDocument", ]
 
 [[bind.edit.action.history.items]]
 name = "cursor undo"
@@ -1374,23 +1388,34 @@ Operations that modify comments
 
 [[bind.edit.action.comment.items]]
 key = "g ;"
-name = "comment →"
+name = "comment lines"
 description = "select next comment"
+when = "master-key.count >= 1"
 do = [
       { defined = "selectLinesDown" },
       "editor.action.commentLine", 
-      "master-key.cancelMultipleSelections",
+]
+
+[[bind.edit.action.comment.items]]
+key = "g ;"
+when = "master-key.count < 1"
+do = "editor.action.commentLine"
+
+[[bind.edit.action.comment.items]]
+key = "g shift+;"
+name = "block comment lines"
+description = "select previous comment"
+when = "master-key.count >= 1"
+do = [
+      { defined = "selectLinesDown" },
+      "editor.action.blockComment", 
+      "selection-utilities.shrinkToActive",
 ]
 
 [[bind.edit.action.comment.items]]
 key = "g shift+;"
-name = "comment ←"
-description = "select previous comment"
-do = [
-      { defined = "selectLinesDown" },
-      "editor.action.blockComment", 
-      "master-key.cancelMultipleSelections",
-]
+when = "master-key.count < 1"
+do = "editor.action.blockComment"
 
 [[bind.edit.action.comment.items]]
 key = "g q"
@@ -1441,7 +1466,7 @@ description = """
 send text to a terminal (usually containing a REPL), placing in a block when defined.
 """
 when = "master-key.firstSelectionOrWord =~ /\\n/"
-do = ["terminal-polyglot.send-block-text", "master-key.cancelMultipleSelections"]
+do = ["terminal-polyglot.send-block-text", "selection-utilities.shrinkToActive"]
 
 [[bind.edit.terminal.items]]
 key = "shift+m"
@@ -1450,7 +1475,7 @@ description = """
 send text to a terminal (usually containing a REPL), placing in a block when defined.
 """
 when = "!(master-key.firstSelectionOrWord =~ /\\n/)"
-do = ["terminal-polyglot.send-text", "master-key.cancelMultipleSelections"]
+do = ["terminal-polyglot.send-text", "selection-utilities.shrinkToActive"]
 
 [[bind.edit.terminal.items]]
 key = "g m"
@@ -1458,7 +1483,7 @@ name = "to repl (v3)"
 description = """
 send text to a terminal (usually containing a REPL)
 """
-do = ["terminal-polyglot.send-text", "master-key.cancelMultipleSelections"]
+do = ["terminal-polyglot.send-text", "selection-utilities.shrinkToActive"]
 
 ## TODO: add git/version control commands
 
@@ -1866,7 +1891,7 @@ key = "' c"
 mode = "normal"
 do = [
       { command = "selection-utilities.appendToMemory", computedArgs = { register = "'selmemory_'+count" } },
-      "master-key.cancelMultipleSelections", "master-key.enterNormal"
+      "selection-utilities.shrinkToActive", "master-key.enterNormal"
 ]
 
 [[bind.edit.select_edit.items]]
