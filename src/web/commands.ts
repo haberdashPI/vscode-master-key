@@ -43,6 +43,7 @@ type KeyContext = z.infer<typeof keyContext> & { [key: string]: any } & {
     editorHasMultiLineSelection: boolean,
     editorLangId: undefined | string,
     firstSelectionOrWord: string
+    prefixCodes: PrefixCodes
 };
 
 const keyContextKey = z.string().regex(/[a-zA-Z_]+[0-9a-zA-Z_]*/);
@@ -203,8 +204,7 @@ function prefix(args_: unknown){
     let args = validateInput('master-key.prefix', args_, prefixArgs);
     if(args !== undefined){
         state.setKeyContext('prefixCode', args.code);
-        let prefixCodes = state.values.prefixCodes;
-        state.setKeyContext('prefix', state.values.prefixCodes.codeFor(args.code));
+        state.setKeyContext('prefix', state.values.prefixCodes.nameFor(args.code));
         if(args.flag){
             state.setKeyContext(args.flag, true, true);
         }
@@ -277,9 +277,8 @@ export function activate(context: vscode.ExtensionContext) {
         state.values.editorHasSelection = selCount > 0;
         state.values.editorHasMultipleSelections = selCount > 1;
         let doc = e.textEditor.document;
-        if(selCount === 0){
-            state.values.firstSelectionOrWord = "";
-        }else if(e.selections[0].isEmpty){
+
+        if(e.selections[0].isEmpty){
             let wordRange = doc.getWordRangeAtPosition(e.selections[0].start);
             state.values.firstSelectionOrWord = doc.getText(wordRange);
         }else{

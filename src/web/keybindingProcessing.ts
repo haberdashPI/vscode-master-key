@@ -249,8 +249,8 @@ export class PrefixCodes {
         }
         return this.codes[prefix];
     }
-    nameFor(code: number): number | undefined {
-        return this.codes[code];
+    nameFor(code: number): string | undefined {
+        return this.names[code];
     }
 };
 

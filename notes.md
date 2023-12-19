@@ -1,9 +1,5 @@
 current issue I'm working on:
 
-- using escape while in capture mode messes up the state of `captureKeys`
-- word under cursor does not update properly
-- prefix is not displayed
-
 Next up
 - more dogfooding (we need to answer the question: is this working well enough for this implementation to be viable, does it work for my everyday use)
 
