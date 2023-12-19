@@ -47,6 +47,8 @@ type KeyContext = z.infer<typeof keyContext> & { [key: string]: any } & {
 
 const keyContextKey = z.string().regex(/[a-zA-Z_]+[0-9a-zA-Z_]*/);
 
+type ListenerRequest = "keepOpen" | "close";
+
 // TODO: we will need to implement API equivalent flags
 // for each 'when' clause context variable we want to use
 
@@ -68,6 +70,7 @@ class CommandState {
         editorLangId: undefined,
         firstSelectionOrWord: ""
     };
+    listeners: ((values: KeyContext) => ListenerRequest)[] = [];
     transientValues: Record<string, any> = { prefix: '', prefixCode: 0, count: 0 };
     constructor() {
         for (let [k, v] of Object.entries(this.values)) {
@@ -106,7 +109,9 @@ class CommandState {
         if(transient){ this.transientValues[key] = oldValue; }
         vscode.commands.executeCommand('setContext', 'master-key.' + key, value);
         updateStatusBar();
+        this.listeners = this.listeners.filter(l => l(this.values) === "keepOpen");
     }
+    onContextChange(fn: (values: KeyContext) => ListenerRequest){ this.listeners.push(fn); }
     reset() {
         // clear any transient state
         for (let [k, v] of Object.entries(this.transientValues)) { this.setKeyContext(k, v); }

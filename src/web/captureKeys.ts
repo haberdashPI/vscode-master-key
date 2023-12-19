@@ -32,6 +32,16 @@ export function captureKeys(onUpdate: UpdateFn): void {
             setKeyContext({name: 'mode', value: oldMode});
         }
     };
+    state.onContextChange(values => {
+        if(values.mode !== 'capture'){
+            if(typeSubscription){
+                typeSubscription.dispose();
+                typeSubscription = undefined;
+            }
+            return "close";
+        }
+        return "keepOpen";
+    });
     onTypeFn = (str: string) => onUpdate(str, stop);
 }
 
