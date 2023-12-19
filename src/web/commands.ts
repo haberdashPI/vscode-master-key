@@ -231,7 +231,13 @@ export function setKeyContext(args: SetArgs){
     state.setKeyContext(args.name, args.value, args.transient || false);
 }
 commands['master-key.set'] = setCmd;
-commands['master-key.setMode'] = (args) => setKeyContext({name: 'mode', value: (<any>args).value});
+const setModeArgs = z.object({ value: z.string() }).strict();
+commands['master-key.setMode'] = function(args_: unknown){
+    let args = validateInput('master-key.setMode', args_, setModeArgs);
+    if(args){
+        return setKeyContext({name: 'mode', value: (<any>args).value});
+    }
+};
 commands['master-key.enterInsert'] = (x) => setKeyContext({name: 'mode', value: 'insert'});
 commands['master-key.enterNormal'] = (x) => setKeyContext({name: 'mode', value: 'normal'});
 
