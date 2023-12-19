@@ -2,6 +2,8 @@ current issue I'm working on:
 
 - the current cursor position should be used to update the searchFrom
   field when appropriate
+- next and previous match should be able to accept count arguments
+- why does selectedit turn into insert mode??
 
 Next up
 - more dogfooding (we need to answer the question: is this working well enough for this implementation to be viable, does it work for my everyday use)
@@ -38,7 +40,13 @@ unit tests: UX settings change status bar
 
 wishlist:
 
-have a debug mode that shows which command got executed from the given keybinding (with an option to show or not show prefixes)
+- expand all keybindings so that they reference a single mode by iterating their modes list
+  over all valid modes; this will keep the bindings generated simple, and it will make the
+  detection of duplicate bindings simpler and more accurate
+
+- have a debug mode that shows which command got executed from the given keybinding (with an
+  option to show or not show prefixes)
+
 quick win: store clipboard to a register
 let modes change the cursor
 let modes change line numbering
