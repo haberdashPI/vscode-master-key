@@ -33,31 +33,7 @@ unit tests: duplicate binding handling (especially with the automated keys)
 unit tests: captureKeys works as expected, even when you run some other command
 unit tests: UX settings change status bar
 
-File format changes:
-
-- use a non recursive format; where we would nest thing before
-  use a `path` field. This should be more forgiving when using JSON
-  instead of TOML, simplifies validation and zod types, etc...
-
-- replace do.command with command, and use `runCommands` for multiple commands
-  to make the format consistent with normal keybindings / one could
-  even copy normal keybindings to the file
-
 wishlist:
-
-make it an error/warning to create bindings that interfere with UX in VSCode: i.e.
-bindings without a modifier key have to require editor focus (where shift alone doesn't count)
-
-post prototype phase: get rid of the somewhat crappy/bloated parsing and eval libraries
-(that are either poorly maintained, or overkill), and build our own grammar using
-https://sigma.vm.codes for both when clauses and computedArgs values and create our own
-evaluation compiler
-
-convert zod types in to schema for keybinding validation NOTE: I'm tempted to have a
-non-recursive format to make this easier one way to handle that would be to flatten all
-keybindings and just have some extra field like "category" that lists the context for it
-(this would make default expansion a little trickier); this would also simplify the code
-somewhat. It also makes a the file a little more repetitive to write.
 
 quick win: store clipboard to a register
 let modes change the cursor
@@ -68,8 +44,4 @@ make config import work for both global and workspace settings
   for changes in the primary selection)
   - NOTE: this should also use `master-key.set` when available
 
-add to existing future plans:
 
-there is some documentation propagation to handle: e.g. if a binding has the same key
-sequence and mode it should have the same documentation, oftne this means that only one such
-binding is actually documented. During documentation 
