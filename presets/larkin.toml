@@ -153,12 +153,14 @@ key = "j"
 name = "↓"
 description = "move down"
 do.args.to = "down"
+do.args.by = "wrappedLine"
 
 [[bind.edit.motion.prim.items]]
 key = "k"
 name = "↑"
 description = "move up"
 do.args.to = "up"
+do.args.by = "wrappedLine"
 
 [[bind.edit.motion.prim.items]]
 key = "l"
@@ -186,7 +188,7 @@ name = "start"
 description = "start of line (alternates between first non-white and first)"
 do = "cursorHomeSelect"
 
-[[bind.edit.motion.prim.items]]
+[[bind.edit.motion.items]] # we don't use prim because we don't want the defaults
 key = "shift+l"
 name = "end"
 description = "end of line"
@@ -1209,6 +1211,7 @@ do = [
       "expandLineSelection",
       "selection-utilities.activeAtEnd",
       "selection-utilities.shrinkToActive",
+      "cursorDown",
       "editor.action.clipboardPasteAction",
 ]
 
@@ -1435,7 +1438,7 @@ send text to a terminal (usually containing a REPL); use language
 specific extensions when available and put the pasted code into a block (when defined)."
 """
 key = "m"
-when = "languageId == 'julia' && !editorHasSelection"
+when = "editorLangId == 'julia' && !editorHasSelection"
 do = [
       { defined = "selectLinesDown" },
       "expandLineSelection", "selection-utilities.trimSelectionWhitespace", 
@@ -1444,7 +1447,7 @@ do = [
 
 [[bind.edit.terminal.items]]
 key = "m"
-when = "languageId == 'julia' && editorHasSelection"
+when = "editorLangId == 'julia' && editorHasSelection"
 do = "language-julia.executeCodeBlockOrSelectionAndMove"
 
 [[bind.edit.terminal.items]]
@@ -1943,7 +1946,7 @@ mode = ["normal", "selectedit"]
 do = [
       { defined = "selectLinesDown" },
       "selection-utilities.splitByNewline",
-      { command = "master-key.setMode", args = { mode = "selectedit" } }
+      { command = "master-key.setMode", args = { value = "selectedit" } }
 ]
 
 [[bind.edit.select_edit.items]]
@@ -1955,7 +1958,7 @@ key = "' shift+8"
 mode = ["normal", "selectedit"]
 do = [
       "editor.action.selectHighlights",
-      { command = "master-key.setMode", args = { mode = "selectedit" } }
+      { command = "master-key.setMode", args = { value = "selectedit" } }
 ]
 
 [[bind.edit.select_edit.items]]
@@ -1973,7 +1976,7 @@ key = ", -"
 mode = ["normal", "selectedit"]
 do = [
       { command = "selection-utilities.restoreAndClear", args = { register = "cancel"} },
-      { command = "master-key.setMode", args = { mode = "selectedit" } }
+      { command = "master-key.setMode", args = { value = "selectedit" } }
 ]
 
 [[bind.edit.select_edit.items]]
@@ -1985,7 +1988,7 @@ key = "' shift+k"
 mode = ["normal", "selectedit"]
 do = [
       { command = "editor.action.insertCursorAbove", computedArgs = { repeat = 'count' } },
-      { command = "master-key.setMode", args = { mode = "selectedit" } },
+      { command = "master-key.setMode", args = { value = "selectedit" } },
 ]
 
 [[bind.edit.select_edit.items]]
@@ -1997,7 +2000,7 @@ key = "' shift+j"
 mode = ["normal", "selectedit"]
 do = [
       { command = "editor.action.insertCursorBelow", computedArgs = { repeat = 'count' } },
-      { command = "master-key.setMode", args = { mode = "selectedit" }},
+      { command = "master-key.setMode", args = { value = "selectedit" }},
 ]
 
 [[bind.edit.select_edit.items]]
