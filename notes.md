@@ -31,7 +31,7 @@ unit tests: expected display of state
 unit tests: macro replay
 unit tests: duplicate binding handling (especially with the automated keys)
 unit tests: captureKeys works as expected, even when you run some other command
-unit tests: UX settings show output
+unit tests: UX settings change status bar
 
 File format changes:
 
@@ -44,6 +44,9 @@ File format changes:
   even copy normal keybindings to the file
 
 wishlist:
+
+make it an error/warning to create bindings that interfere with UX in VSCode: i.e.
+bindings without a modifier key have to require editor focus (where shift alone doesn't count)
 
 post prototype phase: get rid of the somewhat crappy/bloated parsing and eval libraries
 (that are either poorly maintained, or overkill), and build our own grammar using
