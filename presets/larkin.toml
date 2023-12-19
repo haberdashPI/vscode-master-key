@@ -838,6 +838,25 @@ name = "replace char"
 description = "replace the character under the cursor"
 do = "master-key.replaceChar"
 
+[[bind.edit.action.basic.items]]
+key = "ctrl+i"
+name = "insert char"
+description = "insert a character in front of the cursor"
+do = "master-key.insertChar"
+
+[[bind.edit.action.basic.items]]
+name = 'join'
+description = "Remove newline between current and next line"
+key = "g y"
+when = "!editorHasSelection"
+do = [ { defined = "selectLinesDown" }, 'editor.action.joinLines' ] 
+
+[[bind.edit.action.basic.items]]
+name = 'join'
+description = "Remove newline between current and next line"
+key = "g y"
+do = 'editor.action.joinLines'
+
 [bind.edit.action.capitals]
 name = "Capitlization Actions"
 description = "Actions that change how words are capitalized"
@@ -931,6 +950,158 @@ name = 'toggle'
 description = "Toggle through all possible cases"
 key = "` `"
 do = "extension.toggleCase"
+
+[bind.edit.action.numbers]
+name = "Number Editing"
+description = "Commands that modify one or more numbers"
+
+[[bind.edit.action.numbers.items]]
+name = 'inc #' 
+description = "Increment a number by 1 (increases increment for subsequent selections)"
+key = "="
+when = "editorHasMultipleSelections"
+do = "editor.emmet.action.incrementNumberByOne"
+
+[[bind.edit.action.numbers.items]]
+key = "="
+do = "extension.incrementSelection"
+
+[[bind.edit.action.numbers.items]]
+name = 'dec #' 
+description = "Decrement a number by 1 (increases increment for subsequent selections)"
+key = "shift+="
+when = "editorHasMultipleSelections"
+do = "editor.emmet.action.decrementNumberByOne"
+
+[[bind.edit.action.numbers.items]]
+key = "shift+="
+do = "extension.decrementSelection"
+
+[[bind.edit.action.numbers.items]]
+name = 'inc all #' 
+description = "Increment all numbers by 1"
+key = "g ="
+do = "editor.emmet.action.incrementNumberByOne"
+
+[[bind.edit.action.numbers.items]]
+name = 'dec all #' 
+description = "Decrement all numbers by 1"
+key = "g shift+="
+do = "editor.emmet.action.decrementNumberByOne"
+
+[[bind.edit.action.basic.items]]
+name = 'toggle check' 
+description = "Toggle a markdown checkbox"
+key = "shift+6"
+do = "markdown-checkbox.markCheckbox"
+
+[[bind.edit.action.basic.items]]
+name = 'trim white' 
+description = "Delete all external whitespace (left and right edges)"
+key = "g a"
+do = "selection-utilities.trimWhitespace"
+
+[bind.edit.action.brackets]
+name = 'Bracket/Quote Editing'
+description = "Commands that edit two matching brackets or quotes."
+
+[[bind.edit.action.brackets.items]]
+name = 'remove pair' 
+description = "Delete a pairing (e.g. `()`)"
+key = "g x"
+do = "master-key.prefix"
+
+[[bind.edit.action.brackets.items]]
+name = 'parens/brackets' 
+description = "Removes pairs that start with `[`, `(` or `{`"
+key = "g x ["
+do =  "bracketeer.removeBrackets"
+
+[[bind.edit.action.brackets.items]]
+name = 'swap pair' 
+description = "Change between different kinds of pairs (e.g. `(` to `{`)"
+key = "g s"
+do = "master-key.prefix"
+
+[[bind.edit.action.brackets.items]]
+name = 'parens/brackets' 
+description = "Swap between `[`, `(` and `{`"
+key = "g s ["
+do =  "bracketeer.swapBrackets"
+
+[[bind.edit.action.brackets.items]]
+name = 'quotes' 
+description = "Change between different quotes"
+key = "g s '"
+do =  "bracketeer.swapQuotes"
+
+[[bind.edit.action.brackets.items]]
+name = 'quotes' 
+description = "Removes quotes (', \" or `)"
+key = "g x '"
+do =  "bracketeer.removeQuotes"
+
+[[bind.edit.action.brackets.items]]
+name = 'insert pair' 
+description = "Insert a pairing (e.g. ()) around a selection"
+key = "g i"
+do = "master-key.prefix"
+
+[[bind.edit.action.brackets.items]]
+name = 'paren' 
+description = "Insert parenthesis around selection"
+key = "g i shift+9"
+do = [ "modalkeys.enterInsert", { command = "type", args = { text = "(" } }, 
+       "modalkeys.enterNormal" ]
+
+[[bind.edit.action.brackets.items]]
+name = 'paren' 
+description = "Insert parenthesis around selection"
+key = "g i shift+,"
+do = [ "modalkeys.enterInsert", { command = "type", args = { text = "<" } }, 
+       "modalkeys.enterNormal" ]
+
+[[bind.edit.action.brackets.items]]
+name = 'ticks' 
+description = "Insert ticks (``) around selection"
+key = "g i `"
+do = [ "modalkeys.enterInsert", { command = "type", args = { text = "`" } }, 
+       "modalkeys.enterNormal" ]
+
+[[bind.edit.action.brackets.items]]
+name = 'dbl quotes' 
+description = "Insert quotes (\"\") around selection"
+key = "g i shift+'"
+do = [ "modalkeys.enterInsert", { command = "type", args = { "text" = "\"" } }, 
+       "modalkeys.enterNormal" ]
+
+[[bind.edit.action.brackets.items]]
+name = 'sgl quotes' 
+description = "Insert single quotes ('') around selection"
+key = "g i '"
+do = [ "modalkeys.enterInsert", { command = "type", args = { text = "'" } }, 
+       "modalkeys.enterNormal" ]
+
+[[bind.edit.action.brackets.items]]
+name = 'start' 
+description = "Insert stars (**) around selection"
+key = "g i shift+8"
+do = [ "modalkeys.enterInsert", { command = "type", args = { text = "*" } }, 
+       "modalkeys.enterNormal" ]
+
+[[bind.edit.action.brackets.items]]
+name = 'curly' 
+description = "Insert curly brackets ({}) around selection"
+key = "g i shift+["
+do = [ "modalkeys.enterInsert", { command = "type", args = { text = "{" } }, 
+       "modalkeys.enterNormal" ]
+
+[[bind.edit.action.brackets.items]]
+name = 'square' 
+description = "Insert square brackets ([]) around selection"
+key = "g i ["
+do = [ "modalkeys.enterInsert", { command = "type", args = { text = "[" } }, 
+       "modalkeys.enterNormal" ]
 
 [bind.edit.action.clipboard]
 name = "Clipboard Operations"
