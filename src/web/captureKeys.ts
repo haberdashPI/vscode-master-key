@@ -85,9 +85,11 @@ function replaceChar(editor: vscode.TextEditor) {
     });
 }
 
-function insertChar(editor: vscode.TextEditor, edit: vscode.TextEditorEdit){
+function insertChar(editor: vscode.TextEditor){
     captureKeys((key, stop) => {
-        for(let s of editor.selections){ edit.insert(s.active, key); }
+        editor.edit(edit => {
+            for(let s of editor.selections){ edit.insert(s.active, key); }
+        });
         stop();
     });
 }
