@@ -94,7 +94,7 @@ do = ["master-key.enterNormal", "master-key.reset"]
 prefixes = "<all-prefixes>"
 
 [[bind.modes.items]]
-# by default typing keys in a mode other than insert is simply ignored
+# by default typing keys in a mode other than insert (or capture) is simply ignored
 name = "ignore"
 description = "this key does nothing"
 key = ["<all-keys>", "shift+<all-keys>"]
@@ -122,12 +122,14 @@ command is repeated, when relevant.
 default.kind = "count"
 
 [[bind.edit.count.items]]
+# likewise, the numbers affect command count in all modes where text isn't
+# being entered
 name = "Update number with {key}"
 key = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
 do.command = "master-key.updateCount"
 do.args.value = "{key}"
 resetTransient = false
-mode = ["!insert", "!capture"]                                         # number keys apply in all modes but insert
+mode = ["!insert", "!capture"]
 
 [bind.edit.motion]
 name = "Motions"
@@ -665,7 +667,7 @@ do.command = "selection-utilities.expandAroundBrackets"
 key = "["
 name = "in parens"
 description = "text inside parens/brackets/braces"
-do = "selection-utilities.expandInBrackets"
+do = "selection-utilities.expandWithinBrackets"
 
 [[bind.edit.motion.syntax.items]]
 key = "shift+5"
