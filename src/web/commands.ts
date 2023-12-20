@@ -309,6 +309,42 @@ function updateDefinitions(event?: vscode.ConfigurationChangeEvent){
     }
 }
 
+const repeatMatcher = z.object({
+    command: z.string().or(z.object({regex: z.string()}).strict()).optional(),
+    args: z.object({}).passthrough().optional(),
+    kind: z.string().optional(),
+    path: z.string().optional(), // TODO: need to store this in config or something
+    inclusive: z.boolean().default(true)
+});
+
+const repeatArgs = z.object({
+    from: repeatMatcher.optional(),
+    to: repeatMatcher.optional(),
+    register: z.string().default("default")
+});
+
+let recordedCommands: Record<string, RunCommandsArgs[]> = {};
+async function repeat(args_: unknown){
+    let args = validateInput('master-key.repeat', args_, repeatArgs);
+    if(args){
+        if(!args.from && !args.to){
+            for(let cmd of recordedCommands[args.register]){
+                await runCommands(cmd);
+            }
+        }
+        let from = -1;
+        let to = -1;
+        for(let i=commandHistory.length-1;i>=0;i--){
+            // NOTE: when args.to is undeifned, commandMatches returns true
+            if(to < 0 && commandMatches(args.to, commandHistory[i])){
+                to = i;
+            } else if(from < 0 && commandMatches(args.to, commandHistory[i])){
+                from = i;
+            }
+        }
+    }
+}
+
 export function activate(context: vscode.ExtensionContext) {
     modeStatusBar = vscode.window.createStatusBarItem('mode', vscode.StatusBarAlignment.Left);
     modeStatusBar.accessibilityInformation = { label: "Keybinding Mode" };
