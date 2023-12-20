@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { StrictDoArg, strictDoArgs, validModes, strictBindingCommand } from './keybindingParsing';
+import { StrictDoArg, strictDoArgs, validModes, strictBindingCommand, StrictDoArgs } from './keybindingParsing';
 import { PrefixCodes } from './keybindingProcessing';
 import { reifyStrings, EvalContext } from './expressions';
 import { validateInput } from './utils';
@@ -136,27 +136,22 @@ function updateCursorAppearance(editor: vscode.TextEditor, mode: string){
     }
 }
 
-let updatedArgs: object | undefined = undefined;
 
 async function runCommand(command: StrictDoArg){
-    updatedArgs = undefined;
     if(typeof command === 'string'){
-        vscode.commands.executeCommand(command);
+        await vscode.commands.executeCommand(command);
     }else{
-        let ifCheck: any = true;
         if(command.if){
             if(!evalContext.evalStr(command.if, state.values)){
                 return; // if the if check fails, don't run the command
             }
         }
-        let finalArgs: Record<string, any> = command.args || {};
+        let reifyArgs: Record<string, any> = command.args || {};
         if(command.computedArgs !== undefined){
-            finalArgs = {...finalArgs, 
+            reifyArgs = {...reifyArgs, 
                         ...reifyStrings(command.computedArgs, str => evalContext.evalStr(str, state.values))};
         }
-        await vscode.commands.executeCommand(command.command, finalArgs);
-        // TODO: what do do with updatedArgs here to record them in our command
-        // history
+        await vscode.commands.executeCommand(command.command, reifyArgs);
     }
 }
 
@@ -167,15 +162,40 @@ const runCommandArgs = z.object({
 type RunCommandsArgs = z.infer<typeof runCommandArgs>;
 
 async function runCommandsCmd(args_: unknown){
+    updatedArgs = undefined;
     let args = validateInput('master-key.do', args_, runCommandArgs);
     if(args){ 
-        await runCommands(args); 
         commandHistory.push(args);
+        await runCommands(args); 
+    }
+}
+
+export function updateArgs(args: object){
+    if(updatedArgs){
+        vscode.window.showErrorMessage(`You cannot have more than one command that captures 
+            input in a single 'master-key.do' block`);
+    }else{
+        let doCmd = commandHistory[commandHistory.length-1];
+        if(Array.isArray(doCmd.do)){
+            for(let i=0; i<doCmd.do.length; i++){
+                doCmd.do[i] = updateArgsFor(doCmd.do[i], updatedArgs);
+            }
+        }else{
+            doCmd.do = updatedArgsFor(doCmd.do, updatedArgs);
+        }
+        commandHistory[commandHistory.length-1] = doCmd;
+    }
+}
+
+function updatedArgsFor(doArgs: StrictDoArgs, updatedArgs: object){
+    if(typeof doArgs === 'string'){
+
     }
 }
 
 let commandHistory: RunCommandsArgs[] = [];
 
+let updatedArgs: object | undefined = undefined;
 export async function runCommands(args: RunCommandsArgs){
     // run the commands
     trackSearchUsage();

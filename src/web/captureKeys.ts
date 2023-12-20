@@ -46,6 +46,7 @@ export function captureKeys(onUpdate: UpdateFn): void {
 }
 
 const captureKeysArgs = z.object({
+    keys: z.string().optional(),
     acceptAfter: z.number().min(1),
     doAfter: strictDoArgs,
 });
@@ -53,24 +54,26 @@ function captureKeysCmd(args_: unknown){
     let args = validateInput('master-key.captureKeys', args_, captureKeysArgs);
     if(args){
         let a = args;
-        let captured = "";
-        captureKeys((key, stop) => {
-            let doStop = false;
-            if(key === "\n"){ doStop; }
-            else{
-                captured += key;
-                setKeyContext({ name: 'captured', value: captured, transient: true });
-                if(captured.length >= a?.acceptAfter){
-                    doStop;
+        if(args.keys){ 
+            runCommands({ do: a.doAfter, resetTransient: true });
+        }else{
+            let captured = "";
+            captureKeys((key, stop) => {
+                let doStop = false;
+                if(key === "\n"){ doStop = true; }
+                else{
+                    captured += key;
+                    setKeyContext({ name: 'captured', value: captured, transient: true });
+                    if(captured.length >= a?.acceptAfter){
+                        doStop = true;
+                    }
                 }
-            }
-            if(doStop){
-                stop();
-                if(a.doAfter){ 
+                if(doStop){
+                    stop();
                     runCommands({ do: a.doAfter, resetTransient: true }); 
                 }
-            }
-        });
+            });
+        }
     }
 }
 
