@@ -1895,7 +1895,7 @@ Use a count to specify an alternate register
 key = "' c"
 mode = "normal"
 do = [
-      { command = "selection-utilities.appendToMemory", computedArgs = { register = "'selmemory_'+count" } },
+      { command = "selection-utilities.appendToMemory", computedArgs = { register = "count || 'default'" } },
       "selection-utilities.shrinkToActive", "master-key.enterNormal"
 ]
 
@@ -1906,17 +1906,17 @@ load previously saved selections in the default register.
 Use a count to specify an alternate register
 """
 key = "' v"
-mode = ["normal", "normal"]
+mode = ["normal", "selectedit"]
 do = [
-      { command = "selection-utilities.restoreAndClear", computedArgs = { register = "count" } },
+      { command = "selection-utilities.restoreAndClear", computedArgs = { register = "count || 'default'" } },
 ]
 
 [[bind.edit.select_edit.items]]
 when = "editorHasMultipleSelections"
 key = "' v"
-mode = ["normal", "normal"]
+mode = ["normal", "selectedit"]
 do = [
-      { command = "selection-utilities.restoreAndClear", computedArgs = { register = "count" } },
+      { command = "selection-utilities.restoreAndClear", computedArgs = { register = "count || 'default'" } },
       { command = "setMode", args = { value = "selectedit" } }
 ]
 
@@ -1926,8 +1926,8 @@ description = """
 exchange selections: with no saved selection, saves the selection, with saved selections exchanges text of current selections with those of the saved selections (number of selections must match). Use a count to specify an alternate register.
 """
 key = "' x"
-mode = ["normal", "normal"]
-      do = { command = "selection-utilities.swapWithMemory", computedArgs = { register = "count" } }
+mode = ["normal", "selectedit"]
+do = { command = "selection-utilities.swapWithMemory", computedArgs = { register = "count || 'default'" } }
 
 [[bind.edit.select_edit.items]]
 name = "rem saved sel"
@@ -1935,8 +1935,8 @@ description = """
 remove the most recently saved selection from the list of saved selections
 """
 key = "' n"
-mode = ["normal", "normal"]
-do = { command = "selection-utilities.deleteLastSaved", computedArgs = { register = "count" } }
+mode = ["normal", "selectedit"]
+do = { command = "selection-utilities.deleteLastSaved", computedArgs = { register = "count || 'default'" } }
 
 [[bind.edit.select_edit.items]]
 key = "' enter"

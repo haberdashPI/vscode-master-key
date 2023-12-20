@@ -3,7 +3,6 @@ current issue I'm working on:
 - the current cursor position should be used to update the searchFrom
   field when appropriate
 - next and previous match should be able to accept count arguments
-- why does selectedit turn into insert mode??
 
 Next up
 - more dogfooding (we need to answer the question: is this working well enough for this implementation to be viable, does it work for my everyday use)
