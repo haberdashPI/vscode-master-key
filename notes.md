@@ -1,7 +1,5 @@
 current issue I'm working on:
 
-- next and previous match should be able to accept count arguments
-
 Next up
 - more dogfooding (we need to answer the question: is this working well enough for this implementation to be viable, does it work for my everyday use)
 

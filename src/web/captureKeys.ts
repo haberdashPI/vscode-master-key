@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import z from 'zod';
 import { strictDoArgs } from './keybindingParsing';
 import { validateInput } from './utils';
-import { state, runCommands, setKeyContext } from './commands';
+import { state, runCommands, setKeyContext, updateArgs } from './commands';
 
 let typeSubscription: vscode.Disposable | undefined;
 let onTypeFn: (text: string) => void = async function(text: string){
@@ -38,6 +38,8 @@ export function captureKeys(onUpdate: UpdateFn): void {
                 typeSubscription.dispose();
                 typeSubscription = undefined;
             }
+            // TODO: we need to somehow "update" args here to indicate
+            // that capturing was canceled
             return "close";
         }
         return "keepOpen";
@@ -68,6 +70,7 @@ function captureKeysCmd(args_: unknown){
                         doStop = true;
                     }
                 }
+                updateArgs({ ...a, keys: captured });
                 if(doStop){
                     stop();
                     runCommands({ do: a.doAfter, resetTransient: true }); 
@@ -102,6 +105,7 @@ function doChar(editor: vscode.TextEditor, name: string,
 
         captureKeys((key, stop) => {
             action(editor, key);
+            updateArgs({ char: key });
             stop();
         });
     }

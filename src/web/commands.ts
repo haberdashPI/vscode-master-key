@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { StrictDoArg, strictDoArgs, validModes, strictBindingCommand, StrictDoArgs } from './keybindingParsing';
+import { StrictDoArg, strictDoArgs, validModes, strictBindingCommand, StrictDoArgs, DefinedCommand } from './keybindingParsing';
 import { PrefixCodes } from './keybindingProcessing';
 import { reifyStrings, EvalContext } from './expressions';
 import { validateInput } from './utils';
@@ -161,8 +161,9 @@ const runCommandArgs = z.object({
 }).strict();
 type RunCommandsArgs = z.infer<typeof runCommandArgs>;
 
+let argsUpdated = false;
 async function runCommandsCmd(args_: unknown){
-    updatedArgs = undefined;
+    argsUpdated = false;
     let args = validateInput('master-key.do', args_, runCommandArgs);
     if(args){ 
         commandHistory.push(args);
@@ -170,32 +171,42 @@ async function runCommandsCmd(args_: unknown){
     }
 }
 
-export function updateArgs(args: object){
-    if(updatedArgs){
+export function updateArgs(args: { [i: string]: unknown } | "CANCEL"){
+    if(argsUpdated){
         vscode.window.showErrorMessage(`You cannot have more than one command that captures 
             input in a single 'master-key.do' block`);
+    }else if(args === "CANCEL"){
+        commandHistory.pop();
     }else{
+        argsUpdated = true;
         let doCmd = commandHistory[commandHistory.length-1];
         if(Array.isArray(doCmd.do)){
             for(let i=0; i<doCmd.do.length; i++){
-                doCmd.do[i] = updateArgsFor(doCmd.do[i], updatedArgs);
+                doCmd.do[i] = updatedArgsFor(doCmd.do[i], args);
             }
         }else{
-            doCmd.do = updatedArgsFor(doCmd.do, updatedArgs);
+            doCmd.do = updatedArgsFor(doCmd.do, args);
         }
         commandHistory[commandHistory.length-1] = doCmd;
     }
 }
 
-function updatedArgsFor(doArgs: StrictDoArgs, updatedArgs: object){
-    if(typeof doArgs === 'string'){
+const INPUT_CAPTURE_COMMANDS = ['captureKeys', 'replaceChar', 'insertChar', 'search'];
 
+function updatedArgsFor(doArg: StrictDoArg, updatedArgs: { [i: string]: unknown }): StrictDoArg {
+    let cmdName = typeof doArg === 'string' ? doArg : doArg.command;
+    if(INPUT_CAPTURE_COMMANDS.some(c => `master-key.${c}` === cmdName)){
+        if(typeof doArg === 'string'){
+            return { command: doArg, args: updatedArgs };
+        }else{
+            return { ...doArg, args: updatedArgs };
+        }
     }
+    return doArg;
 }
 
 let commandHistory: RunCommandsArgs[] = [];
 
-let updatedArgs: object | undefined = undefined;
 export async function runCommands(args: RunCommandsArgs){
     // run the commands
     trackSearchUsage();

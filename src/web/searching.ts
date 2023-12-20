@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import z from 'zod';
 import { validateInput } from './utils';
-import { setKeyContext, runCommands, state as keyState } from "./commands";
+import { setKeyContext, runCommands, state as keyState, updateArgs } from "./commands";
 import { strictDoArgs } from './keybindingParsing';
 import { wrappedTranslate } from './utils';
 import { captureKeys } from './captureKeys';
@@ -167,16 +167,26 @@ async function search(editor: vscode.TextEditor, edit: vscode.TextEditorEdit, ar
                 state.text += key; 
                 navigateTo(state, editor, false);
                 if(state.text.length >= acceptAfter){ acceptSearch(editor, edit, state); }
+                // there are other-ways to cancel key capturing so we need to update
+                // the arguments on every keypress
+                else{ updateArgs( {...state.args, text: state.text }); }
             }
         });
     }else{
-        // if there are not a fixed number use a UX element that makes the keys visible
+        // if there are not a fixed number of characters use a UX element that makes the
+        // keys visible
         state.stop = undefined;
         let inputBox = vscode.window.createInputBox();
-        inputBox.prompt = "Enter search text";
-        inputBox.title = "capture";
+        if(state.args.regex){
+            inputBox.title = "Regex Search";
+            inputBox.prompt = "Enter regex to search for";
+        }else{
+            inputBox.title = "Search";
+            inputBox.prompt = "Enter text to search for";
+        }
         inputBox.onDidChangeValue((str: string) => {
             state.text = str;
+            updateArgs({ ...state.args, text: state.text });
             navigateTo(state, editor, false);
         });
         inputBox.onDidAccept(() => {
@@ -184,6 +194,7 @@ async function search(editor: vscode.TextEditor, edit: vscode.TextEditorEdit, ar
             inputBox.dispose();
         });
         inputBox.onDidHide(() => {
+            updateArgs("CANCEL");
             cancelSearch(editor, edit);
         });
         inputBox.show();
@@ -191,6 +202,7 @@ async function search(editor: vscode.TextEditor, edit: vscode.TextEditorEdit, ar
 }
 
 async function acceptSearch(editor: vscode.TextEditor, edit: vscode.TextEditorEdit, state: SearchState) {
+    updateArgs({ ...state.args, text: state.text });
     if(state.args.doAfter){
         await runCommands({do: state.args.doAfter, resetTransient: true});
     }
