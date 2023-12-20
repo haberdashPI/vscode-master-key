@@ -74,24 +74,60 @@ function captureKeysCmd(args_: unknown){
     }
 }
 
-function replaceChar(editor: vscode.TextEditor) {
-    captureKeys((key, stop) => {
-        editor.edit(edit => {
-            for (let s of editor.selections) {
-                edit.replace(new vscode.Range(s.active, s.active.translate(0, 1)), key);
-            }
+const charArgs = z.object({
+    char: z.string().optional()
+}).strict();
+
+
+function doChar(editor: vscode.TextEditor, name: string, 
+                action: (editor: vscode.TextEditor, char: string) => void, 
+                args_: unknown = {}) {
+
+    let char: string | undefined = undefined;
+    if(args_){
+        let args = validateInput(name, args_, charArgs);
+        if(args){ 
+            if(args.char){ char = args.char; } 
+        }else{
+            // validation error, stop trying to run this command
+            return;
+        }
+    }
+    if(char){
+        action(editor, char);
+    }else{
+
+        captureKeys((key, stop) => {
+            action(editor, key);
+            stop();
         });
-        stop();
+    }
+}
+
+function replaceCharHelper(editor: vscode.TextEditor, char: string){
+    editor.edit(edit => {
+        for (let s of editor.selections) {
+            edit.replace(new vscode.Range(s.active, s.active.translate(0, 1)), char);
+        }
     });
 }
 
-function insertChar(editor: vscode.TextEditor){
-    captureKeys((key, stop) => {
-        editor.edit(edit => {
-            for(let s of editor.selections){ edit.insert(s.active, key); }
-        });
-        stop();
+function replaceChar(editor: vscode.TextEditor, edit: vscode.TextEditorEdit, 
+    args_: unknown){
+
+    doChar(editor, 'master-key.replaceChar', replaceCharHelper, args_);
+}
+
+function insertCharHelper(editor: vscode.TextEditor, char: string){
+    editor.edit(edit => {
+        for(let s of editor.selections){ edit.insert(s.active, char); }
     });
+}
+
+function insertChar(editor: vscode.TextEditor, edit: vscode.TextEditorEdit, 
+    args_: unknown = {}){
+
+    doChar(editor, 'master-key.insertChar', insertCharHelper);
 }
 
 export function activate(context: vscode.ExtensionContext){

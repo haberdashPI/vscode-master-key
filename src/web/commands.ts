@@ -136,7 +136,10 @@ function updateCursorAppearance(editor: vscode.TextEditor, mode: string){
     }
 }
 
+let updatedArgs: object | undefined = undefined;
+
 async function runCommand(command: StrictDoArg){
+    updatedArgs = undefined;
     if(typeof command === 'string'){
         vscode.commands.executeCommand(command);
     }else{
@@ -152,6 +155,8 @@ async function runCommand(command: StrictDoArg){
                         ...reifyStrings(command.computedArgs, str => evalContext.evalStr(str, state.values))};
         }
         await vscode.commands.executeCommand(command.command, finalArgs);
+        // TODO: what do do with updatedArgs here to record them in our command
+        // history
     }
 }
 
@@ -163,8 +168,14 @@ type RunCommandsArgs = z.infer<typeof runCommandArgs>;
 
 async function runCommandsCmd(args_: unknown){
     let args = validateInput('master-key.do', args_, runCommandArgs);
-    if(args){ return await runCommands(args); }
+    if(args){ 
+        await runCommands(args); 
+        commandHistory.push(args);
+    }
 }
+
+let commandHistory: RunCommandsArgs[] = [];
+
 export async function runCommands(args: RunCommandsArgs){
     // run the commands
     trackSearchUsage();
