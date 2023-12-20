@@ -1,6 +1,7 @@
 {
   "name": "master-key",
   "displayName": "Master Key",
+	"publisher": "haberdashPI",
   "description": "Master your keybindings with documentation, discoverability, modal bindings and expressive configuration",
   "version": "0.1.0",
   "engines": {
@@ -20,7 +21,8 @@
     "commands": [
       {
         "command": "master-key.importBindings",
-        "title": "master-key: Insert Keybinding Configuration"
+        "category": "Master Key",
+        "title": "Select Keybinding Preset"
       }
     ],
     "configuration": {
