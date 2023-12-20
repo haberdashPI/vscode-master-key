@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { StrictDoArg, strictDoArgs, validModes } from './keybindingParsing';
+import { StrictDoArg, strictDoArgs, validModes, strictBindingCommand } from './keybindingParsing';
 import { PrefixCodes } from './keybindingProcessing';
 import { reifyStrings, EvalContext } from './expressions';
 import { validateInput } from './utils';
@@ -180,6 +180,19 @@ export async function runCommands(args: RunCommandsArgs){
     evalContext.reportErrors();
 }
 commands['master-key.do'] = runCommandsCmd;
+
+const repeatCommandArgs = strictBindingCommand.extend({
+    repeat: z.number().min(0).optional()
+});
+async function repeatCommand(args_: unknown){
+    let args = validateInput('master-key.repeat', args_, repeatCommandArgs);
+    if(args){
+        for(let i=0;i<(args.repeat || 1);i++){
+            await runCommand({ command: args.command, args: args.args, computedArgs: args.computedArgs });
+        }
+    }
+}
+commands['master-key.repeat'] = repeatCommand;
 
 const updateCountArgs = z.object({
     value: z.coerce.number()

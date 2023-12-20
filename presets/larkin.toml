@@ -1822,7 +1822,7 @@ key = "shift+'"
 when = "!editorHasMultipleSelections"
 do = [
       {command = "master-key.setMode", args = { value = "selectedit"} },
-      { command = "selection-utilities.addNext", computedArgs = { repeat = 'count' } }
+      {command = "master-key.repeat", args = { command = "selection-utilities.addNext" }, computedArgs = { repeat = 'count'} }
 ]
 mode = "normal"
 
@@ -1853,26 +1853,25 @@ do = ["master-key.enterNormal", "selection-utilities.shrinkToActive", "master-ke
 name = "add →"
 description = "add cursor at the next match to the primary cursor's text" 
 key = ["shift+'", "shift+j"]
-do = { command = "selection-utilities.addNext", computedArgs = { repeat = 'count' } }
+do = {command = "master-key.repeat", args = { command = "selection-utilities.addNext" }, computedArgs = { repeat = 'count'} }
 
 [[bind.edit.select_edit.items]]
 name = "add ←"
 description = "add cursor at the previous match to the primary cursor's text" 
 key = "shift+k"
-do = { command = "selection-utilities.addPrev", computedArgs = { repeat = 'count' } }
+do = {command = "master-key.repeat", args = { command = "selection-utilities.addPrev" }, computedArgs = { repeat = 'count'} }
 
 [[bind.edit.select_edit.items]]
 name = "skip →"
 description = "move primary cursor to the next match of the primary cursor's text" 
 key = "g j"
-do =  { command = "selection-utilities.skipNext", computedArgs = { repeat = 'count' } }
+do = {command = "master-key.repeat", args = { command = "selection-utilities.skipNext" }, computedArgs = { repeat = 'count'} }
 
 [[bind.edit.select_edit.items]]
 name = "skip →"
 description = "move primary cursor to the previous match of the primary cursor's text" 
 key = "g k"
-do = { command = "selection-utilities.skipPrev", computedArgs = { repeat = 'count' } }
-
+do = {command = "master-key.repeat", args = { command = "selection-utilities.skipPrev" }, computedArgs = { repeat = 'count'} }
 
 [[bind.edit.select_edit.items]]
 name = "align ←"
@@ -1989,8 +1988,8 @@ insert cursor on line above
 key = "' shift+k"
 mode = ["normal", "selectedit"]
 do = [
-      { command = "editor.action.insertCursorAbove", computedArgs = { repeat = 'count' } },
-      { command = "master-key.setMode", args = { value = "selectedit" } },
+      {command = "master-key.repeat", args = { command = "editor.action.insertCursorAbove" }, computedArgs = { repeat = 'count'} },
+      { command = "master-key.setMode", args = { value = "selectedit" } }
 ]
 
 [[bind.edit.select_edit.items]]
@@ -2001,8 +2000,8 @@ insert cursor on line below
 key = "' shift+j"
 mode = ["normal", "selectedit"]
 do = [
-      { command = "editor.action.insertCursorBelow", computedArgs = { repeat = 'count' } },
-      { command = "master-key.setMode", args = { value = "selectedit" }},
+      {command = "master-key.repeat", args = { command = "editor.action.insertCursorBelow" }, computedArgs = { repeat = 'count'} },
+      { command = "master-key.setMode", args = { value = "selectedit" }}
 ]
 
 [[bind.edit.select_edit.items]]
@@ -2015,19 +2014,19 @@ do = [ "master-key.enterNormal", "selection-utilities.shrinkToActive" ]
 name = "→ sel"
 description = "make the next selection primary; primary selections determine from where you add cursors, what cursor you delete, and where the cursor goes when you clear or save selections" 
 key = "j"
-do = { command = "selection-utilities.movePrimaryRight", computedArgs = { repeat = 'count' } }
+do = {command = "master-key.repeat", args = { command = "selection-utilities.movePrimaryRight" }, computedArgs = { repeat = 'count'} }
 
 [[bind.edit.select_edit.items]]
 name = "← sel"
 description = "make the previous selection primary; primary selections determine from where you add cursors, what cursor you delete, and where the cursor goes when you clear or save selections" 
 key = "k"
-do = { command = "selection-utilities.movePrimaryLeft", computedArgs = { repeat = 'count' } }
+do = {command = "master-key.repeat", args = { command = "selection-utilities.movePrimaryLeft" }, computedArgs = { repeat = 'count'} }
 
 [[bind.edit.select_edit.items]]
 name = "del. sel"
 description = "remove the primary selection" 
 key = "d"
-do = { command = "selection-utilities.deletePrimary", computedArgs = { repeat = 'count' } }
+do = {command = "master-key.repeat", args = { command = "selection-utilities.deletePrimary" }, computedArgs = { repeat = 'count'} }
 
 [[bind.edit.select_edit.items]]
 key = "s"

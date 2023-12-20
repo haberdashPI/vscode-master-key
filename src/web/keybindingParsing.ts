@@ -151,7 +151,7 @@ export const bindingItem = z.object({
 export type BindingItem = z.output<typeof bindingItem>;
 
 // a strictBindingItem is satisfied after expanding all default fields
-const strictBindingCommand = bindingCommand.required({command: true});
+export const strictBindingCommand = bindingCommand.required({command: true});
 
 const strictDoArg = z.union([z.string(), strictBindingCommand]);
 export const strictDoArgs = z.union([strictDoArg, strictDoArg.array()]);
