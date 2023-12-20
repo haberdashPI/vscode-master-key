@@ -149,6 +149,7 @@ key = "h"
 name = "←"
 description = "move left"
 do.args.to = "left"
+mode = ["normal", "selectedit"]
 
 [[bind.edit.motion.prim.items]]
 key = "j"
@@ -169,6 +170,7 @@ key = "l"
 name = "→"
 description = "move right"
 do.args.to = "right"
+mode = ["normal", "selectedit"]
 
 [[bind.edit.motion.prim.items]]
 key = "g j"
@@ -272,6 +274,7 @@ command = "expandLineSelection"
 key = '\'
 name = "→ sel"
 description = "select *just* the character to the right"
+mode = ["normal", "selectedit"]
 
 [[bind.edit.motion.prim.items.do]]
 command = "selection-utilities.shrinkToActive"
@@ -285,6 +288,7 @@ computedArgs = { value = "count" }
 key = 'shift+\'
 name = "← sel"
 description = "select *just* the character to the left"
+mode = ["normal", "selectedit"]
 
 [[bind.edit.motion.prim.items.do]]
 command = "selection-utilities.shrinkToActive"
@@ -320,6 +324,7 @@ entire object (rather than extending to specified start/end point)
 """
 kind = "prefix"
 resetTransient = false
+mode = ["normal", "selectedit"]
 do.command = "master-key.prefix"
 do.args = { flag = "around_on" }
 
@@ -332,6 +337,7 @@ selection commands extend the selection
 do.command = "master-key.set"
 do.args.name = "select_on"
 do.args.value = true
+mode = ["normal", "selectedit"]
 
 [[bind.edit.motion.mod.items]]
 key = "space"
@@ -355,6 +361,7 @@ default.do.args.boundary = "start"
 default.prefixes = ["", "u"]
 default.do.args.select = "!around_on"
 default.do.computedArgs.selectWhole = "around_on"
+default.mode = ["normal", "selectedit"]
 
 [[bind.edit.motion.obj.items]]
 key = "w"
@@ -578,6 +585,7 @@ description = "Next match to object under curosr"
 do.computedArgs.text = "firstSelectionOrWord"
 do.args.offset = "start"
 do.args.register = "search"
+mode = ["normal", "selectedit"]
 
 [[bind.edit.motion.search.items]]
 key = "shift+7"
@@ -587,6 +595,7 @@ do.computedArgs.text = "firstSelectionOrWord"
 do.args.offset = "start"
 do.args.register = "search"
 do.args.backwards = true
+mode = ["normal", "selectedit"]
 
 [[bind.edit.motion.search.items]]
 key = "f"
@@ -595,6 +604,7 @@ description = "Find the next char (include char in selection)"
 do.args.acceptAfter = 1
 do.computedArgs.skip = "count-1"
 do.args.offset = "inclusive"
+mode = ["normal", "selectedit"]
 
 [[bind.edit.motion.search.items]]
 key = "shift+f"
@@ -604,6 +614,7 @@ do.args.acceptAfter = 1
 do.args.offset = "inclusive"
 do.args.backwards = true
 do.computedArgs.skip = "count-1"
+mode = ["normal", "selectedit"]
 
 [[bind.edit.motion.search.items]]
 key = "t"
@@ -612,6 +623,7 @@ description = "Find the next char (exclude char in selection)"
 do.args.acceptAfter = 1
 do.args.offset = "start"
 do.computedArgs.skip = "count-1"
+mode = ["normal", "selectedit"]
 
 [[bind.edit.motion.search.items]]
 key = "shift+t"
@@ -621,6 +633,7 @@ do.args.acceptAfter = 1
 do.args.offset = "end"
 do.args.backwards = true
 do.computedArgs.skip = "count-1"
+mode = ["normal", "selectedit"]
 
 [[bind.edit.motion.search.items]]
 key = "s"
@@ -628,6 +641,7 @@ name = "find char pair"
 description = "To next character pair"
 do.args.acceptAfter = 2
 do.args.offset = "start"
+mode = ["normal", "selectedit"]
 
 [[bind.edit.motion.search.items]]
 key = "shift+s"
@@ -636,6 +650,7 @@ description = "To previous character pair"
 do.args.acceptAfter = 2
 do.args.offset = "start"
 do.args.backwards = true
+mode = ["normal", "selectedit"]
 
 [[bind.edit.motion.search.items]]
 key = ";"
@@ -643,6 +658,7 @@ name = "→ match"
 description = "Repeat search motion forwards"
 do.command = "master-key.nextMatch"
 do.computedArgs.repeat = "count"
+mode = ["normal", "selectedit"]
 
 [[bind.edit.motion.search.items]]
 key = "shift+;"
@@ -650,6 +666,7 @@ name = "← match"
 description = "Repeat search motion backwards"
 do.command = "master-key.previousMatch"
 do.computedArgs.repeat = "count"
+mode = ["normal", "selectedit"]
 
 [bind.edit.motion.syntax]
 name = "Motions around syntactic objects (e.g. parentheses and quotes)"
@@ -751,9 +768,11 @@ key = "i"
 name = "insert"
 description = "Switch to insert mode (right before character)"
 do = ["selection-utilities.shrinkToActive", "master-key.enterInsert"]
+mode = ["normal", "selectedit"]
 
 [[bind.edit.action.basic.items]]
 key = "a"
+mode = ["normal", "selectedit"]
 do = [
       "selection-utilities.shrinkToActive",
       "cursorRight",
@@ -763,6 +782,7 @@ do = [
 [[bind.edit.action.basic.items]]
 key = "shift+i"
 name = "insert start"
+mode = ["normal", "selectedit"]
 do = [
       { command = "cursorMove", args = { to = "wrappedLineFirstNonWhitespaceCharacter", select = false } },
       "master-key.enterInsert",
@@ -771,6 +791,7 @@ do = [
 [[bind.edit.action.basic.items]]
 key = "shift+a"
 name = "insert end"
+mode = ["normal", "selectedit"]
 do = [
       { command = "cursorMove", args = { to = "wrappedLineEnd", select = false } },
       "master-key.enterInsert",
@@ -784,12 +805,14 @@ Without a count: change selected region of text. With a count:
 change up to `count` lines.
 """
 when = "editorHasMultilineSelection"
+mode = ["normal", "selectedit"]
 do = ["deleteRight", "editor.action.insertLineBefore", "master-key.enterInsert"]
 
 [[bind.edit.action.basic.items]]
 key = "c"
 when = "!editorHasMultilineSelection && editorHasSelection"
 do = ["deleteRight", "master-key.enterInsert"]
+mode = ["normal", "selectedit"]
 
 [[bind.edit.action.basic.items]]
 key = "c"
@@ -800,9 +823,11 @@ do = [
       "editor.action.insertLineBefore",
       "master-key.enterInsert",
 ]
+mode = ["normal", "selectedit"]
 
 [[bind.edit.action.basic.items]]
 key = "c"
+mode = ["normal", "selectedit"]
 when = "!editorHasSelection && master-key.count > 1"
 do = [
       { defined = "selectLinesDown" },
@@ -817,6 +842,7 @@ name = "change to/back"
 description = """Without a count: change from current char to end of line. With a count: 
 change the previous `count` lines.
 """
+mode = ["normal", "selectedit"]
 when = "master-key.count <= 1"
 do = [
       "selection-utilities.shrinkToActive",
@@ -826,6 +852,7 @@ do = [
 
 [[bind.edit.action.basic.items]]
 key = "shift+c"
+mode = ["normal", "selectedit"]
 when = "master-key.count > 1"
 do = [
       { defined = "selectLinesUp" },
@@ -836,6 +863,7 @@ do = [
 
 [[bind.edit.action.basic.items]]
 key = "x"
+mode = ["normal", "selectedit"]
 name = "delete char"
 do = [
       "selection-utilities.shrinkToActive",
@@ -846,12 +874,14 @@ do = [
 [[bind.edit.action.basic.items]]
 key = "r"
 name = "replace char"
+mode = ["normal", "selectedit"]
 description = "replace the character under the cursor"
 do = "master-key.replaceChar"
 
 [[bind.edit.action.basic.items]]
 key = "ctrl+i"
 name = "insert char"
+mode = ["normal", "selectedit"]
 description = "insert a character in front of the cursor"
 do = "master-key.insertChar"
 
@@ -859,18 +889,21 @@ do = "master-key.insertChar"
 name = 'join'
 description = "Remove newline between current and next line"
 key = "g y"
+mode = ["normal", "selectedit"]
 when = "!editorHasSelection"
 do = [ { defined = "selectLinesDown" }, 'editor.action.joinLines' ] 
 
 [[bind.edit.action.basic.items]]
 name = 'join'
 description = "Remove newline between current and next line"
+mode = ["normal", "selectedit"]
 key = "g y"
 do = 'editor.action.joinLines'
 
 [bind.edit.action.capitals]
 name = "Capitlization Actions"
 description = "Actions that change how words are capitalized"
+default.mode = ["normal", "selectedit"]
 
 [[bind.edit.action.capitals.items]]
 name = 'camel'
@@ -1117,6 +1150,7 @@ do = [ "modalkeys.enterInsert", { command = "type", args = { text = "[" } },
 [bind.edit.action.clipboard]
 name = "Clipboard Operations"
 description = "Operations that manipulate the clipboard in some way."
+default.mode = ["normal", "selectedit"]
 
 [[bind.edit.action.clipboard.items]]
 key = "d"
@@ -1233,6 +1267,7 @@ name = "Line opening actions"
 description = """
 These commands provides several ways of adding lines above or below the current line
 """
+default.mode = ["normal", "selectedit"]
 
 [[bind.edit.action.open_lines.items]]
 name = "open, act →"
@@ -1281,6 +1316,7 @@ name = "Indentation"
 description = """
 Operations that affect line indentation
 """
+default.mode = ["normal", "selectedit"]
 
 [[bind.edit.action.indent.items]]
 key = "shift+."
@@ -1336,6 +1372,7 @@ do = "editor.action.formatSelection"
 [bind.edit.action.history]
 name = "History Commands"
 description = "Commands that interact with edit or cursor history."
+default.mode = ["normal", "selectedit"]
 
 [[bind.edit.action.history.items]]
 name = "undo"
@@ -1390,6 +1427,7 @@ name = "Comments"
 description = """
 Operations that modify comments
 """
+default.mode = ["normal", "selectedit"]
 
 [[bind.edit.action.comment.items]]
 key = "g ;"
@@ -1432,6 +1470,7 @@ do = "rewrap.rewrapComment"
 name = "Terminal Actions"
 description = "Commands that send text from the editor to the terminal"
 default.kind = "action"
+default.mode = ["normal", "selectedit"]
 
 [[bind.edit.terminal.items]]
 name = "to repl"
@@ -1842,12 +1881,6 @@ name = 'normal'
 description = "return to a single selection and return to normal mode"
 key = "enter"
 do = ["selection-utilities.cancelSelection", "master-key.enterNormal"]
-
-[[bind.edit.select_edit.items]]
-name = 'insert'
-description = "insert mode at cursor"
-key = "i"
-do = ["master-key.enterNormal", "selection-utilities.shrinkToActive", "master-key.enterInsert"]
 
 [[bind.edit.select_edit.items]]
 name = "add →"
