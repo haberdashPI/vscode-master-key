@@ -292,6 +292,8 @@ function navigateTo(state: SearchState, editor: vscode.TextEditor, updateSearchF
          */
         let searchRanges: vscode.Range[] = [];
 
+        if(updateSearchFrom){ state.searchFrom = editor.selections; }
+
         editor.selections = state.searchFrom.map(sel => {
             let matches = searchMatches(doc, sel.active, undefined, state.text, state.args);
             let result = matches.next();
@@ -321,9 +323,6 @@ function navigateTo(state: SearchState, editor: vscode.TextEditor, updateSearchF
                 return newSel;
             }
         });
-        if(updateSearchFrom){
-            state.searchFrom = editor.selections;
-        }
 
         revealActive(editor);
 
