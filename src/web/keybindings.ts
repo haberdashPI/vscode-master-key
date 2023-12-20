@@ -71,10 +71,11 @@ function formatBindings(file: vscode.Uri, items: IConfigKeyBinding[]){
         }else if(item.description !== undefined){
             comment += item.description;
         }
-        comment += "\n";
-        comment += "Prefix Codes:\n"
-        comment += item.prefixDescriptions.join("\n");
-
+        if(comment.length > 0){
+            comment += "\n";
+            comment += "Prefix Codes:\n";
+            comment += item.prefixDescriptions.join("\n");
+        }
         json += replaceAll(comment, /^\s*(?=\S+)/mg, "    // ")+"\n";
         json += replaceAll(JSON.stringify(pick(item, ['key', 'when', 'command', 'args']), 
             null, 4), /^/mg, "    ");
