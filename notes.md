@@ -1,9 +1,6 @@
 current issue I'm working on:
 
 Next up
-- more dogfooding (we need to answer the question: is this working well enough for this implementation to be viable, does it work for my everyday use)
-
-ANSWER: yes, I can use this for everyday work at this point with only minor annoyances
 
 - start implementing event recording / replay for
     record macro
