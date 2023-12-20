@@ -1591,7 +1591,7 @@ name = "Window Manipulation"
 description = "Commands for navigating and manipulating the window/editor panes in some way"
 default.kind = "window"
 default.mode = "normal"
-default.when = "editorTextFocus"
+default.when = "!inputFocus || editorTextFocus"
 
 [[bind.window.items]]
 name = "open file"
@@ -1616,6 +1616,7 @@ name = "goto line"
 description = "Use VSCode goto line command"
 key = ", g"
 do = "workbench.action.gotoLine"
+when = "editorTextFocus"
 
 [[bind.window.items]]
 name = "center"
@@ -1623,6 +1624,7 @@ description = "center window at primary cursor position"
 key = ", shift+."
 do.command = "selection-utilities.revealActive"
 do.args.at = "center"
+when = "editorTextFocus"
 
 [[bind.window.items]]
 name = "top"
@@ -1630,6 +1632,7 @@ description = "center window so that primary cursor is at the top"
 key = ", shift+k"
 do.command = "selection-utilities.revealActive"
 do.args.at = "top"
+when = "editorTextFocus"
 
 [[bind.window.items]]
 name = "bottom"
@@ -1637,6 +1640,7 @@ description = "center window so that primary cursor is at the bottom"
 key = ", shift+j"
 do.command = "selection-utilities.revealActive"
 do.args.at = "bottom"
+when = "editorTextFocus"
 
 [[bind.window.items]]
 name = "max"
@@ -1691,28 +1695,33 @@ name = "hover"
 description = "show the hover view"
 key = "g h"
 do = "editor.action.showHover"
+when = "editorTextFocus"
 
 [[bind.window.items]]
 name = "open"
 description = "open the file name under the cursor"
 key = "g f"
 do = "extension.openFileFromPath"
+when = "editorTextFocus"
 
 [[bind.window.items]]
 name = "go to"
 description = "go to the definition of symbol under curosr"
 key = "g d"
 do = "editor.action.revealDefinition"
+when = "editorTextFocus"
 
 [[bind.window.items]]
 name = "go to (aside)"
 description = "go to the definition of symbol under curosr in an editor to the side"
 key = "g shift+d"
 do = "editor.action.revealDefinitionAside"
+when = "editorTextFocus"
 
 [bind.window.bookmark]
 name = "Bookmarks"
 description = "Commands for creating and interacting with book marks"
+default.when = "editorTextFocus"
 
 [[bind.window.bookmark.items]]
 name = "mark"
