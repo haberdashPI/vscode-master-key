@@ -1,7 +1,5 @@
 current issue I'm working on:
 
-- the current cursor position should be used to update the searchFrom
-  field when appropriate
 - next and previous match should be able to accept count arguments
 
 Next up

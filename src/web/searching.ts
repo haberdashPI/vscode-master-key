@@ -236,13 +236,13 @@ export function revealActive(editor: vscode.TextEditor){
     editor.revealRange(act);
 }
 
-const matchStepArgs = z.object({register: z.string().default("default")});
+const matchStepArgs = z.object({register: z.string().default("default"), repeat: z.number().min(0).optional() });
 async function nextMatch(editor: vscode.TextEditor, edit: vscode.TextEditorEdit, args_: unknown){
     let args = validateInput('master-key.nextMatch', args_, matchStepArgs);
     if(!args) { return; }
     let state = getSearchState(editor, args!.register);
     if (state.text) {
-        navigateTo(state, editor);
+        for(let i=0; i<(args.repeat || 1); i++){ navigateTo(state, editor); }
         revealActive(editor);
     }
 }
@@ -253,7 +253,7 @@ async function previousMatch(editor: vscode.TextEditor, edit: vscode.TextEditorE
     let state = getSearchState(editor, args!.register);
     if (state.text) {
         state.args.backwards = !state.args.backwards;
-        navigateTo(state, editor);
+        for(let i=0; i<(args.repeat || 1); i++){ navigateTo(state, editor); }
         revealActive(editor);
         state.args.backwards = !state.args.backwards;
     }
