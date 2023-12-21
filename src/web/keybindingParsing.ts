@@ -163,6 +163,7 @@ export const strictBindingItem = bindingItem.required({
     when: parsedWhen.array(),
     prefixes: z.string().array(),
     do: strictDoArgs,
+    path: z.string(),
 });
 export type StrictBindingItem = z.infer<typeof strictBindingItem>;
 export type StrictDoArg = z.infer<typeof strictDoArg>;

@@ -110,6 +110,7 @@ function expandDefaultsAndDefinedCommands(bindings: BindingTree, definitions: an
         name: bindings.name,
         description: bindings.description,
         kind: bindings.kind,
+        path: prefix,
         items
     };
 
@@ -185,8 +186,11 @@ export interface IConfigKeyBinding {
     description?: string,
     prefixDescriptions: string[],
     when: string,
-    args: { do: string | object | (string | object)[], resetTransient?: boolean } | 
-          { key: string }
+    args: { key: string } | { 
+        do: string | object | (string | object)[], 
+        resetTransient?: boolean, 
+        kind: string, path: string 
+    }
 }
 
 function itemToConfigBinding(item: StrictBindingItem, defs: Record<string, any>): IConfigKeyBinding {
@@ -201,7 +205,8 @@ function itemToConfigBinding(item: StrictBindingItem, defs: Record<string, any>)
         prefixDescriptions,
         when: "(" + item.when.map(w => w.str).join(") && (") + ")",
         command: "master-key.do",
-        args: { do: item.do, resetTransient: item.resetTransient }
+        args: { do: item.do, resetTransient: item.resetTransient, kind: item.kind,
+                path: item.path }
     };
 }
 
@@ -292,6 +297,7 @@ function updatePrefixItemAndPrefix(item: StrictBindingItem, key: string, prefix:
         kind: "prefix",
         prefixes: [oldPrefix],
         mode: item.mode,
+        path: item.path,
         resetTransient: false
     };
 

@@ -39,27 +39,6 @@ function findText(doc: vscode.TextDocument, text: string) {
     return firstMatchResult.value;
 }
 
-// function replaceAll(str: string, regex: RegExp, replacement: string): string {
-//     let result = "";
-//     if(!/g/.test(regex.flags)){
-//         throw(Error(`Expected a 'g' flag for regex ${regex}`));
-//     }
-//     let m = regex.exec(str);
-//     let offset = 0;
-//     let oldIndex = 0;
-//     while(m !== null){
-//         result += str.slice(offset, m.index);
-//         result += replacement;
-//         offset += m[0].length;
-//         m = regex.exec(str);
-//         if(m && m.index === oldIndex){
-//             str = str.slice(oldIndex+1, -1);
-//             offset -= oldIndex+1;
-//         }
-//     }
-//     return result + str.slice(offset, -1);
-// }
-
 function formatBindings(file: vscode.Uri, items: IConfigKeyBinding[]){
     let json = "";
     for(let item of items){
@@ -72,11 +51,11 @@ function formatBindings(file: vscode.Uri, items: IConfigKeyBinding[]){
             comment += item.description;
         }
         comment += "\n";
-        comment += "Prefix Codes:\n"
+        comment += "Prefix Codes:\n";
         comment += item.prefixDescriptions.join("\n");
 
         json += replaceAll(comment, /^\s*(?=\S+)/mg, "    // ")+"\n";
-        json += replaceAll(JSON.stringify(pick(item, ['key', 'when', 'command', 'args']), 
+        json += replaceAll(JSON.stringify(pick(item, ['key', 'when', 'command', 'args', 'kind', 'path']), 
             null, 4), /^/mg, "    ");
         json += ",\n\n";
     }

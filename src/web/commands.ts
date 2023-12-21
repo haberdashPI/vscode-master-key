@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { StrictDoArg, strictDoArgs, validModes, strictBindingCommand, StrictDoArgs, DefinedCommand } from './keybindingParsing';
+import { StrictDoArg, strictDoArgs, validModes, strictBindingCommand, BindingCommand } from './keybindingParsing';
 import { PrefixCodes } from './keybindingProcessing';
 import { reifyStrings, EvalContext } from './expressions';
 import { validateInput } from './utils';
@@ -157,7 +157,9 @@ async function runCommand(command: StrictDoArg){
 
 const runCommandArgs = z.object({ 
     do: strictDoArgs, 
-    resetTransient: z.boolean().default(true) 
+    resetTransient: z.boolean().default(true),
+    kind: z.string(),
+    path: z.string(),
 }).strict();
 type RunCommandsArgs = z.infer<typeof runCommandArgs>;
 
@@ -309,17 +311,18 @@ function updateDefinitions(event?: vscode.ConfigurationChangeEvent){
     }
 }
 
-const repeatMatcher = z.object({
+const commandMatcher = z.object({
     command: z.string().or(z.object({regex: z.string()}).strict()).optional(),
     args: z.object({}).passthrough().optional(),
     kind: z.string().optional(),
     path: z.string().optional(), // TODO: need to store this in config or something
     inclusive: z.boolean().default(true)
 });
+type CommandMatcher = z.infer<typeof commandMatcher>;
 
 const repeatArgs = z.object({
-    from: repeatMatcher.optional(),
-    to: repeatMatcher.optional(),
+    from: commandMatcher.optional(),
+    to: commandMatcher.optional(),
     register: z.string().default("default")
 });
 
@@ -342,6 +345,49 @@ async function repeat(args_: unknown){
                 from = i;
             }
         }
+    }
+}
+
+function commandMatches(matcher: CommandMatcher, args: RunCommandsArgs){
+    if(typeof args.do === 'string'){
+        args.do = { command: args.do };
+    }
+    let doArgs = <BindingCommand>args.do;
+    if(matcher.command){
+        if(typeof matcher.command === 'string'){
+            if(matcher.command !== doArgs.command){ return false; }
+        }
+    }
+    if(matcher.args && !argsMatch(matcher.args, doArgs.args)){
+        return false;
+    }
+    if(matcher.kind && matcher.kind !== args.kind){
+        return false;
+    }
+    if(matcher.path && !args.path.startsWith(matcher.path)){
+        return false;
+    }
+}
+
+function argsMatch(matcher: unknown, obj: unknown){
+    for(let [key, value] of Object.entries(matcher)){
+        if(typeof value === 'object'){
+            if(obj[key] === undefined){ return false; }
+            if(typeof obj[key] !== 'object'){ return false; }
+            return argsMatch(matcher, obj);
+        }
+        if(Array.isArray(value)){
+            if(obj[key] === undefined){ return false; }
+            else if(!Array.isArray(obj[key])){ return false; }
+            else{
+                let obja: unknown[] = (<any>obj[key]);
+                if(obja.length !== value.length){ return false; }
+                for(let i=0;i<obja.length;i++){
+                    if(!argsMatch(value[i], obja[i])){ return false; }
+                }
+            }
+        }
+        if(value !== obj[key]){ return false; }
     }
 }
 
