@@ -32,6 +32,12 @@
           "type": "object",
           "description": "A set of variables defined by the keybinding mode that are accessible when evaluating `computedArgs`"
         },
+        "master-key.maxCommandHistory": {
+          "title": "Command History Maximum",
+          "type": "integer",
+          "description": "The maximum number of previously run commands that are saved.",
+          "default": 65536
+        },
         "master-key.searchMatchBackground": {
           "title": "Background of current search match",
           "type": "string",
