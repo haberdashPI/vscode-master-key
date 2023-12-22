@@ -42,19 +42,12 @@ function findText(doc: vscode.TextDocument, text: string) {
 function formatBindings(file: vscode.Uri, items: IConfigKeyBinding[]){
     let json = "";
     for(let item of items){
-        let comment = "";
-        if(item.name !== undefined && item.description !== undefined){
-            comment += `${item.name}: ${item.description}`;
-        }else if(item.name !== undefined){
-            comment += item.name;
-        }else if(item.description !== undefined){
-            comment += item.description;
+        json = "";
+        if(item.prefixDescriptions.length > 0){
+            let comment = "Prefix Codes:\n";
+            comment += item.prefixDescriptions.join("\n");
+            json += replaceAll(comment, /^\s*(?=\S+)/mg, "    // ")+"\n";
         }
-        comment += "\n";
-        comment += "Prefix Codes:\n";
-        comment += item.prefixDescriptions.join("\n");
-
-        json += replaceAll(comment, /^\s*(?=\S+)/mg, "    // ")+"\n";
         json += replaceAll(JSON.stringify(pick(item, ['key', 'when', 'command', 'args', 'kind', 'path']), 
             null, 4), /^/mg, "    ");
         json += ",\n\n";

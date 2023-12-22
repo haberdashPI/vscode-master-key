@@ -5,7 +5,7 @@ import { reifyStrings, EvalContext } from './expressions';
 import { validateInput } from './utils';
 import z from 'zod';
 import { clearSearchDecorations, trackSearchUsage, wasSearchUsed } from './searching';
-import { match } from 'assert';
+import { mapValues } from 'lodash';
 
 let modeStatusBar: vscode.StatusBarItem | undefined = undefined;
 let keyStatusBar: vscode.StatusBarItem | undefined = undefined;
@@ -312,129 +312,57 @@ function updateDefinitions(event?: vscode.ConfigurationChangeEvent){
     }
 }
 
-const commandMatcher = z.object({
-    command: z.string().or(z.object({regex: z.string()}).strict()).optional(),
+const strOrRegex = z.string().or(z.object({regex: z.string()}).strict())
+type StrOrRegex = z.infer<typeof strOrRegex>;
+function strOrRegexToZod(matcher: StrOrRegex){
+    if(typeof matcher === 'string'){ 
+        return z.object({ command: z.literal(matcher) }).or(z.literal(matcher))
+    }else{
+        let r = RegExp(matcher.regex);
+        return z.object({ command: z.string().regex(r) }).or(z.string().regex(r));
+    }
+}
+
+function prefixOrRegexToZod(matcher: StrOrRegex){
+    if(typeof matcher === 'string'){ 
+        return z.object({ command: z.string().startsWith(matcher) }).
+            or(z.string().startsWith(matcher))
+    }else{
+        let r = RegExp(matcher.regex);
+        return z.object({ command: z.string().regex(r) }).or(z.string().regex(r));
+    }
+}
+
+const doMatcher = z.object({
+    command: strOrRegex.optional(),
     args: z.object({}).passthrough().optional(),
-    kind: z.string().optional(),
-    path: z.string().optional(), // TODO: need to store this in config or something
+    kind: strOrRegex.optional(),
+    path: strOrRegex.optional(), 
     inclusive: z.boolean().default(true)
 });
-type CommandMatcher = z.infer<typeof commandMatcher>;
+type DoMatcher = z.infer<typeof doMatcher>;
 
-function matcherToZod(matcher: CommandMatcher){
+function doMatchToZod(matcher: DoMatcher){
     let result = z.object({});
     if(matcher.command){
-        if(typeof matcher.command === 'string'){
-            let strmatch = z.object({ command: z.literal(matcher.command) }).
-                or(z.literal(matcher.command))
-            result = result.extend({
-                do: strmatch.or(z.array(z.string().or(z.object({command: z.string()}))).refine(xs => {
-                    return xs.some(x => {
-                        if(typeof x === 'string'){ return x === matcher.command }
-                        else{ return x.command === matcher.command }
-                    });
-                }))
-            })
-        }else if(matcher.command){
-            let r = RegExp(matcher.command.regex);
-            let regmatch = z.object({ command: z.string().regex(r) }).or(z.string().regex(r));
-            result = result.extend({
-                do: regmatch.or(z.array(z.string().or(z.object({command: z.string()}))).refine(xs => {
-                    return xs.some(x => {
-                        if(typeof x === 'string'){ return r.test(x); }
-                        else{ return r.test(x.command); }
-                    });
-                }))
-            })
-        }
+        let commandMatch = strOrRegexToZod(matcher.command);
+        result = result.extend({
+        do: commandMatch.or(z.array(z.string().or(z.object({command: z.string()}))).refine(xs => {
+                return xs.some(x => commandMatch.safeParse(x).success);
+            }))
+        })
     }
-    if(matcher.args){
-        // TODO: stopped here
-    }
+    if(matcher.args){ result = result.extend({ args: argsToZod(matcher.args) }); }
+    if(matcher.kind){ result = result.extend({ kind: strOrRegexToZod(matcher.kind) }); }
+    if(matcher.path){ result = result.extend({ path: prefixOrRegexToZod(matcher.path) }); }
+    return result;
 }
 
-const repeatArgs = z.object({
-    from: commandMatcher.optional(),
-    to: commandMatcher.optional(),
-    register: z.string().default("default")
-});
-
-let recordedCommands: Record<string, RunCommandsArgs[]> = {};
-async function repeat(args_: unknown){
-    let args = validateInput('master-key.repeat', args_, repeatArgs);
-    if(args){
-        if(!args.from && !args.to){
-            for(let cmd of recordedCommands[args.register]){
-                await runCommands(cmd);
-            }
-        }
-        let from = -1;
-        let to = -1;
-        for(let i=commandHistory.length-1;i>=0;i--){
-            if(to < 0 && commandMatches(args.to, commandHistory[i])){
-                to = i;
-            } else if(from < 0 && commandMatches(args.to, commandHistory[i])){
-                from = i;
-            }
-        }
-    }
-}
-
-function doMatches(matcherTest: (x: string) => boolean, cmd: StrictDoArg){
-    if(typeof cmd === 'string'){
-        if(!matcherTest(cmd)){ return false; }
-    }
-    else{
-        if(!matcherTest(cmd.command)){ return false; }
-    }
-}
-
-function argMatches(matcher)
-
-function commandMatches(matcher_: CommandMatcher | undefined, args: RunCommandsArgs){
-    if(matcher_ === undefined){ return true; }
-    let matcher = <CommandMatcher>matcher_;
-
-    if(matcher.command){
-        let matcherTest; 
-        if(typeof matcher.command === 'string'){
-            matcherTest = (x: string) => x === matcher.command 
-        }else if(matcher.command){
-            let r = RegExp(matcher.command.regex);
-            matcherTest = (x: string) => r.test(x);
-        }else{
-            matcherTest = undefined;
-        }
-        if(matcherTest){
-            if(!Array.isArray(args.do)){
-                if(!doMatches(matcherTest, args.do)){ return false; }
-            }else{
-                for(let cmd of args.do){
-                    if(!doMatches(matcherTest, cmd)){ return false; }
-                }
-            }
-        }
-    }
-    if(matcher.args){
-        if(!Array.isArray(args.do)){
-            argMatches()
-        }else{
-
-        }
-        && !argsMatch(matcher.args, args.do.args || {})){
-    } 
-        return false;
-    }
-    if(matcher.kind && matcher.kind !== args.kind){
-        return false;
-    }
-    if(matcher.path && !args.path.startsWith(matcher.path)){
-        return false;
-    }
+function argsToZod(args: object){
+    return z.object({}).passthrough().refine(x => argsMatch(args, x));
 }
 
 function argsMatch(matcher: unknown, obj: unknown){
-    if(matcher === undefined){ return true; }
     if(obj === undefined){ return false; }
     if(matcher === obj){ return true; }
     if(Array.isArray(matcher)){
@@ -458,6 +386,47 @@ function argsMatch(matcher: unknown, obj: unknown){
     }
     return false;
 }
+
+const repeatArgs = z.object({
+    from: doMatcher.optional(),
+    to: doMatcher.optional(),
+    register: z.string().default("default")
+});
+
+let recordedCommands: Record<string, RunCommandsArgs[]> = {};
+async function repeat(args_: unknown){
+    let args = validateInput('master-key.repeat', args_, repeatArgs);
+    if(args){
+        // previously recorded commands can just be run
+        if(!args.from && !args.to){
+            for(let cmd of recordedCommands[args.register]){ await runCommands(cmd); }
+        }
+
+        // find the range of commands we want to repeat
+        let from = -1;
+        let to = -1;
+        let toMatcher = args.to ? doMatchToZod(args.to) : undefined;
+        let fromMatcher = args.from ? doMatchToZod(args.from) : undefined;
+        for(let i=commandHistory.length-1;i>=0;i--){
+            if(to < 0 && toMatcher && toMatcher.safeParse(commandHistory).success){
+                to = i+1;
+            } 
+            if(from < 0 && fromMatcher && fromMatcher.safeParse(commandHistory).success){
+                from = i;
+            }
+        }
+        if(args.to?.inclusive && to > 0){ to -= 1; }
+        if(args.from?.inclusive && from > 0){ from += 1; }
+
+        // record the command and run it
+        if(from > 0 && to > 0){
+            let commands = commandHistory.slice(from, to);
+            recordedCommands[args.register] = commands;
+            for(let cmd of commands){ await runCommands(cmd); }
+        }
+    }
+}
+commands['mater-key.repeat'] = repeat;
 
 export function activate(context: vscode.ExtensionContext) {
     modeStatusBar = vscode.window.createStatusBarItem('mode', vscode.StatusBarAlignment.Left);

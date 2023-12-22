@@ -182,14 +182,15 @@ function listBindings(bindings: StrictBindingTree): StrictBindingItem[] {
 export interface IConfigKeyBinding {
     key: string,
     command: "master-key.do" | "master-key.prefix"
-    name?: string,
-    description?: string,
     prefixDescriptions: string[],
     when: string,
     args: { key: string } | { 
         do: string | object | (string | object)[], 
+        name?: string,
+        description?: string,
         resetTransient?: boolean, 
-        kind: string, path: string 
+        kind: string, 
+        path: string 
     }
 }
 
@@ -200,13 +201,17 @@ function itemToConfigBinding(item: StrictBindingItem, defs: Record<string, any>)
     });
     return {
         key: <string>item.key, // we've expanded all array keys, so we know its a string
-        name: item.name,
-        description: item.description,
         prefixDescriptions,
         when: "(" + item.when.map(w => w.str).join(") && (") + ")",
         command: "master-key.do",
-        args: { do: item.do, resetTransient: item.resetTransient, kind: item.kind,
-                path: item.path }
+        args: { 
+            do: item.do, 
+            name: item.name,
+            description: item.description,
+            resetTransient: item.resetTransient, 
+            kind: item.kind,
+            path: item.path 
+        }
     };
 }
 
