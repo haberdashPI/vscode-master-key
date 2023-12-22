@@ -152,6 +152,7 @@ export type BindingItem = z.output<typeof bindingItem>;
 
 // a strictBindingItem is satisfied after expanding all default fields
 export const strictBindingCommand = bindingCommand.required({command: true});
+export type StrictBindingCommand = z.infer<typeof strictBindingCommand>;
 
 const strictDoArg = z.union([z.string(), strictBindingCommand]);
 export const strictDoArgs = z.union([strictDoArg, strictDoArg.array()]);

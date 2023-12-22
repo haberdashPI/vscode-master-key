@@ -1,10 +1,11 @@
 import * as vscode from 'vscode';
-import { StrictDoArg, strictDoArgs, validModes, strictBindingCommand, BindingCommand } from './keybindingParsing';
+import { StrictDoArg, strictDoArgs, validModes, strictBindingCommand, StrictBindingCommand } from './keybindingParsing';
 import { PrefixCodes } from './keybindingProcessing';
 import { reifyStrings, EvalContext } from './expressions';
 import { validateInput } from './utils';
 import z from 'zod';
 import { clearSearchDecorations, trackSearchUsage, wasSearchUsed } from './searching';
+import { match } from 'assert';
 
 let modeStatusBar: vscode.StatusBarItem | undefined = undefined;
 let keyStatusBar: vscode.StatusBarItem | undefined = undefined;
@@ -320,6 +321,32 @@ const commandMatcher = z.object({
 });
 type CommandMatcher = z.infer<typeof commandMatcher>;
 
+function matcherToZod(matcher: CommandMatcher){
+    let result = z.object({});
+    if(matcher.command){
+        if(typeof matcher.command === 'string'){
+            let strmatch = z.object({ 
+                command: z.literal(matcher.command)
+            }).or(z.literal(matcher.command))
+            result = result.extend({
+                do: strmatch.or(z.array(z.string().or(z.object({command: z.string()}))).refine(xs => {
+                    return xs.some(x => {
+                        if(typeof x === 'string'){ x === matcher.command }
+                        else{ x.command === matcher.command }
+                    });
+                }))
+            })
+        }else{
+            result = result.extend({
+                command: z.string().regex(RegExp(matcher.command.regex))
+            });
+        }
+    }
+    if(matcher.args){
+
+    }
+}
+
 const repeatArgs = z.object({
     from: commandMatcher.optional(),
     to: commandMatcher.optional(),
@@ -338,7 +365,6 @@ async function repeat(args_: unknown){
         let from = -1;
         let to = -1;
         for(let i=commandHistory.length-1;i>=0;i--){
-            // NOTE: when args.to is undeifned, commandMatches returns true
             if(to < 0 && commandMatches(args.to, commandHistory[i])){
                 to = i;
             } else if(from < 0 && commandMatches(args.to, commandHistory[i])){
@@ -348,17 +374,49 @@ async function repeat(args_: unknown){
     }
 }
 
-function commandMatches(matcher: CommandMatcher, args: RunCommandsArgs){
-    if(typeof args.do === 'string'){
-        args.do = { command: args.do };
+function doMatches(matcherTest: (x: string) => boolean, cmd: StrictDoArg){
+    if(typeof cmd === 'string'){
+        if(!matcherTest(cmd)){ return false; }
     }
-    let doArgs = <BindingCommand>args.do;
+    else{
+        if(!matcherTest(cmd.command)){ return false; }
+    }
+}
+
+function argMatches(matcher)
+
+function commandMatches(matcher_: CommandMatcher | undefined, args: RunCommandsArgs){
+    if(matcher_ === undefined){ return true; }
+    let matcher = <CommandMatcher>matcher_;
+
     if(matcher.command){
+        let matcherTest; 
         if(typeof matcher.command === 'string'){
-            if(matcher.command !== doArgs.command){ return false; }
+            matcherTest = (x: string) => x === matcher.command 
+        }else if(matcher.command){
+            let r = RegExp(matcher.command.regex);
+            matcherTest = (x: string) => r.test(x);
+        }else{
+            matcherTest = undefined;
+        }
+        if(matcherTest){
+            if(!Array.isArray(args.do)){
+                if(!doMatches(matcherTest, args.do)){ return false; }
+            }else{
+                for(let cmd of args.do){
+                    if(!doMatches(matcherTest, cmd)){ return false; }
+                }
+            }
         }
     }
-    if(matcher.args && !argsMatch(matcher.args, doArgs.args)){
+    if(matcher.args){
+        if(!Array.isArray(args.do)){
+            argMatches()
+        }else{
+
+        }
+        && !argsMatch(matcher.args, args.do.args || {})){
+    } 
         return false;
     }
     if(matcher.kind && matcher.kind !== args.kind){
@@ -370,25 +428,29 @@ function commandMatches(matcher: CommandMatcher, args: RunCommandsArgs){
 }
 
 function argsMatch(matcher: unknown, obj: unknown){
-    for(let [key, value] of Object.entries(matcher)){
-        if(typeof value === 'object'){
-            if(obj[key] === undefined){ return false; }
-            if(typeof obj[key] !== 'object'){ return false; }
-            return argsMatch(matcher, obj);
-        }
-        if(Array.isArray(value)){
-            if(obj[key] === undefined){ return false; }
-            else if(!Array.isArray(obj[key])){ return false; }
-            else{
-                let obja: unknown[] = (<any>obj[key]);
-                if(obja.length !== value.length){ return false; }
-                for(let i=0;i<obja.length;i++){
-                    if(!argsMatch(value[i], obja[i])){ return false; }
-                }
+    if(matcher === undefined){ return true; }
+    if(obj === undefined){ return false; }
+    if(matcher === obj){ return true; }
+    if(Array.isArray(matcher)){
+        if(!Array.isArray(obj)){ return false; }
+        else if(matcher.length !== obj.length){ return false; }
+        else{
+            for(let i=0;i<matcher.length;i++){
+                if(!argsMatch(matcher[i], obj[i])){ return false; }
             }
         }
-        if(value !== obj[key]){ return false; }
+        return true;
     }
+    if(typeof matcher === 'object'){
+        if(typeof obj !== 'object'){ return false; }
+        else{
+            for(let [key, value] of Object.entries(matcher || {})){
+                if(!argsMatch(value, (<any>obj)[key])){ return false; }
+            }
+        }
+        return true;
+    }
+    return false;
 }
 
 export function activate(context: vscode.ExtensionContext) {
