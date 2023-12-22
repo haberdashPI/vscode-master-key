@@ -325,25 +325,31 @@ function matcherToZod(matcher: CommandMatcher){
     let result = z.object({});
     if(matcher.command){
         if(typeof matcher.command === 'string'){
-            let strmatch = z.object({ 
-                command: z.literal(matcher.command)
-            }).or(z.literal(matcher.command))
+            let strmatch = z.object({ command: z.literal(matcher.command) }).
+                or(z.literal(matcher.command))
             result = result.extend({
                 do: strmatch.or(z.array(z.string().or(z.object({command: z.string()}))).refine(xs => {
                     return xs.some(x => {
-                        if(typeof x === 'string'){ x === matcher.command }
-                        else{ x.command === matcher.command }
+                        if(typeof x === 'string'){ return x === matcher.command }
+                        else{ return x.command === matcher.command }
                     });
                 }))
             })
-        }else{
+        }else if(matcher.command){
+            let r = RegExp(matcher.command.regex);
+            let regmatch = z.object({ command: z.string().regex(r) }).or(z.string().regex(r));
             result = result.extend({
-                command: z.string().regex(RegExp(matcher.command.regex))
-            });
+                do: regmatch.or(z.array(z.string().or(z.object({command: z.string()}))).refine(xs => {
+                    return xs.some(x => {
+                        if(typeof x === 'string'){ return r.test(x); }
+                        else{ return r.test(x.command); }
+                    });
+                }))
+            })
         }
     }
     if(matcher.args){
-
+        // TODO: stopped here
     }
 }
 
