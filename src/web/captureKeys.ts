@@ -57,7 +57,7 @@ function captureKeysCmd(args_: unknown){
     if(args){
         let a = args;
         if(args.keys){ 
-            runCommands({ do: a.doAfter, resetTransient: true });
+            runCommands({ do: a.doAfter });
         }else{
             let captured = "";
             captureKeys((key, stop) => {
@@ -73,7 +73,7 @@ function captureKeysCmd(args_: unknown){
                 updateArgs({ ...a, keys: captured });
                 if(doStop){
                     stop();
-                    runCommands({ do: a.doAfter, resetTransient: true }); 
+                    runCommands({ do: a.doAfter }); 
                 }
             });
         }

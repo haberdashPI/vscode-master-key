@@ -5,7 +5,7 @@ import { reifyStrings, EvalContext } from './expressions';
 import { validateInput } from './utils';
 import z from 'zod';
 import { clearSearchDecorations, trackSearchUsage, wasSearchUsed } from './searching';
-import { isSafeInteger, mapValues } from 'lodash';
+import { merge } from 'lodash';
 
 let modeStatusBar: vscode.StatusBarItem | undefined = undefined;
 let keyStatusBar: vscode.StatusBarItem | undefined = undefined;
@@ -149,8 +149,8 @@ async function runCommand(command: StrictDoArg){
         }
         let reifyArgs: Record<string, any> = command.args || {};
         if(command.computedArgs !== undefined){
-            reifyArgs = {...reifyArgs, 
-                        ...reifyStrings(command.computedArgs, str => evalContext.evalStr(str, state.values))};
+            let computed = reifyStrings(command.computedArgs, str => evalContext.evalStr(str, state.values))
+            reifyArgs = merge(reifyArgs, computed)
         }
         await vscode.commands.executeCommand(command.command, reifyArgs);
     }
@@ -158,11 +158,13 @@ async function runCommand(command: StrictDoArg){
 
 const runCommandArgs = z.object({ 
     do: strictDoArgs, 
-    resetTransient: z.boolean().default(true),
-    kind: z.string(),
-    path: z.string(),
+    resetTransient: z.boolean().optional().default(true),
+    kind: z.string().optional(),
+    path: z.string().optional(),
+    name: z.string().optional(),
+    description: z.string().optional()
 }).strict();
-type RunCommandsArgs = z.infer<typeof runCommandArgs>;
+type RunCommandsArgs = z.input<typeof runCommandArgs>;
 
 let argsUpdated = false;
 async function runCommandsCmd(args_: unknown){
@@ -344,7 +346,7 @@ const doMatcher = z.object({
     kind: strOrRegex.optional(),
     path: strOrRegex.optional(), 
     inclusive: z.boolean().default(true)
-});
+}).strict();
 type DoMatcher = z.infer<typeof doMatcher>;
 
 function doMatchToZod(matcher: DoMatcher){
@@ -392,39 +394,39 @@ function argsMatch(matcher: unknown, obj: unknown){
     return false;
 }
 
-const repeatArgs = z.object({
+const replayArgs = z.object({
     range: z.object({from: doMatcher, to: doMatcher}).optional(),
     at: doMatcher.optional(),
-    register: z.string().default("default")
-}).refine(x => !(x.at && x.range), 
-    { message: "Command 'master-key.repeat' cannot include both `at` and `range`. "});
-type RepeatArgs = z.infer<typeof repeatArgs>;
+    register: z.string().or(z.number()).default("default")
+}).strict().refine(x => !(x.at && x.range), 
+    { message: "Command 'master-key.replay' cannot include both `at` and `range`. "});
+type ReplayArgs = z.infer<typeof replayArgs>;
 
 let recordedCommands: Record<string, RunCommandsArgs[]> = {};
-async function repeat(args_: unknown){
-    let args = validateInput('master-key.repeat', args_, repeatArgs);
+async function replay(args_: unknown){
+    let args = validateInput('master-key.replay', args_, replayArgs);
     if(args){
         // previously recorded commands can just be run
-        if(!args.from && !args.to && args.at){
+        if(!args.range.from && !args.range.to && args.at){
             for(let cmd of recordedCommands[args.register]){ await runCommands(cmd); }
         }
 
-        // find the range of commands we want to repeat
+        // find the range of commands we want to replay
         let from = -1;
         let to = -1;
-        let argsTo = args.to || args.at;
+        let argsTo = args.range.to || args.at;
         let toMatcher = argsTo ? doMatchToZod(argsTo) : undefined;
-        let fromMatcher = args.from ? doMatchToZod(args.from) : undefined;
+        let fromMatcher = args.range.from ? doMatchToZod(args.range.from) : undefined;
         for(let i=commandHistory.length-1;i>=0;i--){
-            if(to < 0 && toMatcher && toMatcher.safeParse(commandHistory).success){
+            if(to < 0 && toMatcher && toMatcher.safeParse(commandHistory[i]).success){
                 to = i+1;
                 if(args.at){ from = to; }
-            } else if(from < 0 && fromMatcher && fromMatcher.safeParse(commandHistory).success){
+            } else if(from < 0 && fromMatcher && fromMatcher.safeParse(commandHistory[i]).success){
                 from = i;
             }
         }
-        if(args.to?.inclusive && to > 0){ to -= 1; }
-        if(args.from?.inclusive && from > 0){ from += 1; }
+        if(args.range.to?.inclusive && to > 0){ to -= 1; }
+        if(args.range.from?.inclusive && from > 0){ from += 1; }
 
         // record the command and run it
         if(from > 0 && to > 0){
@@ -434,7 +436,7 @@ async function repeat(args_: unknown){
         }
     }
 }
-commands['mater-key.repeat'] = repeat;
+commands['master-key.replay'] = replay;
 
 export function activate(context: vscode.ExtensionContext) {
     modeStatusBar = vscode.window.createStatusBarItem('mode', vscode.StatusBarAlignment.Left);

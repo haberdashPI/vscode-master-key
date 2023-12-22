@@ -1385,6 +1385,32 @@ description = "Go forward in edit history (e.g. goto definition)"
 key = "' shift+-"
 do = "workbench.action.navigateForwardInEditLocations"
 
+[[bind.edit.action.history.items]]
+name = "record"
+description = "Start/stop recording Master Key commands"
+key = "q"
+do.command = "master-key.set"
+do.args.name = "record"
+do.computedArgs.value = "record ? 0 : (count || 1)"
+
+[[bind.edit.action.history.items]]
+name = "replay"
+description = """
+Replay a previously recorded command; storing it in the default register,
+or, if a count is passed, the register associated with that count.
+"""
+key = "shift+q"
+do.command = "master-key.replay"
+do.computedArgs.register = "count || 1"
+do.args.range.from.command = "master-key.set"
+do.args.range.from.args.name = "record"
+do.computedArgs.range.from.args.value = "count || 1"
+do.args.range.from.inclusive = false
+do.args.range.to.command = "master-key.set"
+do.args.range.to.args.name = "record"
+do.args.range.to.args.value = 0
+do.args.range.to.inclusive = false
+
 [bind.edit.action.comment]
 name = "Comments"
 description = """

@@ -42,7 +42,6 @@ function findText(doc: vscode.TextDocument, text: string) {
 function formatBindings(file: vscode.Uri, items: IConfigKeyBinding[]){
     let json = "";
     for(let item of items){
-        json = "";
         if(item.prefixDescriptions.length > 0){
             let comment = "Prefix Codes:\n";
             comment += item.prefixDescriptions.join("\n");

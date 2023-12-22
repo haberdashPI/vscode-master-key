@@ -75,7 +75,7 @@ function expandDefaultsAndDefinedCommands(bindings: BindingTree, definitions: an
             let expandedItem = mergeWith(cloneDeep(defaultItem), item,
                 concatWhenAndOverwritePrefixes);
             expandedItem = expandDefinedCommands(expandedItem, definitions);
-            let parsing = strictBindingItem.safeParse(expandedItem);
+            let parsing = strictBindingItem.safeParse({...expandedItem, path: prefix});
             if(!parsing.success){
                 let issue = parsing.error.issues[0];
                 vscode.window.showErrorMessage(`Problem with item ${i} under ${prefix}: 
@@ -109,8 +109,6 @@ function expandDefaultsAndDefinedCommands(bindings: BindingTree, definitions: an
         ...result,
         name: bindings.name,
         description: bindings.description,
-        kind: bindings.kind,
-        path: prefix,
         items
     };
 
