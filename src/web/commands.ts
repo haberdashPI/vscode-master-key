@@ -405,6 +405,9 @@ function argsMatch(matcher: unknown, obj: unknown){
     return false;
 }
 
+// TODO: break the following single command into
+// 1. storing a given range into a register
+// 2. replaying from a register
 const replayArgs = z.object({
     range: z.object({from: doMatcher, to: doMatcher}).optional(),
     at: doMatcher.optional(),
