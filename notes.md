@@ -1,5 +1,8 @@
 current issue I'm working on:
 
+- replay
+- NOTE: we need a separate `master-key.storeForReplay` (or something)
+
 Next up
 - more dogfooding (we need to answer the question: is this working well enough for this implementation to be viable, does it work for my everyday use)
 

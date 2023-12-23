@@ -1400,16 +1400,18 @@ Replay a previously recorded command; storing it in the default register,
 or, if a count is passed, the register associated with that count.
 """
 key = "shift+q"
-do.command = "master-key.replay"
-do.computedArgs.register = "count || 1"
-do.args.range.from.command = "master-key.set"
-do.args.range.from.args.name = "record"
-do.computedArgs.range.from.args.value = "count || 1"
-do.args.range.from.inclusive = false
-do.args.range.to.command = "master-key.set"
-do.args.range.to.args.name = "record"
-do.args.range.to.args.value = 0
-do.args.range.to.inclusive = false
+
+[[kind.edit.action.history.items.do]]
+command = "master-key.replay"
+computedArgs.register = "count || 1"
+args.range.from.command = "master-key.set"
+args.range.from.args.name = "record"
+computedArgs.range.from.args.value = "count || 1"
+args.range.from.inclusive = false
+args.range.to.command = "master-key.set"
+args.range.to.args.name = "record"
+args.range.to.args.value = 0
+args.range.to.inclusive = false
 
 [bind.edit.action.comment]
 name = "Comments"

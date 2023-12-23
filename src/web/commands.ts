@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
-import { StrictDoArg, strictDoArgs, validModes, strictBindingCommand, StrictBindingCommand } from './keybindingParsing';
+import { StrictDoArg, strictDoArgs, validModes, strictBindingCommand, StrictBindingCommand, StrictDoArgs } from './keybindingParsing';
 import { PrefixCodes } from './keybindingProcessing';
 import { reifyStrings, EvalContext } from './expressions';
 import { validateInput } from './utils';
-import z from 'zod';
+import z, { ZodType, ZodTypeAny } from 'zod';
 import { clearSearchDecorations, trackSearchUsage, wasSearchUsed } from './searching';
 import { merge } from 'lodash';
 
@@ -351,15 +351,26 @@ type DoMatcher = z.infer<typeof doMatcher>;
 
 function doMatchToZod(matcher: DoMatcher){
     let result = z.object({});
-    if(matcher.command){
-        let commandMatch = strOrRegexToZod(matcher.command);
+    let doArgs: { command?: ZodTypeAny, args?: ZodTypeAny } = {};
+    let doArgsMatcher: undefined | ZodTypeAny;
+    if(matcher.command){ doArgs.command = strOrRegexToZod(matcher.command); }
+    if(matcher.args){ 
+        doArgs.args = argsToZod(matcher.args);
+        doArgsMatcher = z.object(doArgs);
+    }
+    else if(doArgs.command){
+        doArgsMatcher = doArgs.command.or(z.object(doArgs));
+    }
+    
+    if(doArgsMatcher){
+        let m = doArgsMatcher;
         result = result.extend({
-        do: commandMatch.or(z.array(z.string().or(z.object({command: z.string()}))).refine(xs => {
-                return xs.some(x => commandMatch.safeParse(x).success);
+            do: doArgsMatcher.or(z.array(z.string().or(z.object({}))).refine(xs => {
+                return xs.some(x => m.safeParse(x).success);
             }))
         });
     }
-    if(matcher.args){ result = result.extend({ args: argsToZod(matcher.args) }); }
+
     if(matcher.kind){ result = result.extend({ kind: strOrRegexToZod(matcher.kind) }); }
     if(matcher.path){ result = result.extend({ path: prefixOrRegexToZod(matcher.path) }); }
     return result;
@@ -403,12 +414,18 @@ const replayArgs = z.object({
 type ReplayArgs = z.infer<typeof replayArgs>;
 
 let recordedCommands: Record<string, RunCommandsArgs[]> = {};
+const REPLAY_DELAY = 50;
 async function replay(args_: unknown){
     let args = validateInput('master-key.replay', args_, replayArgs);
     if(args){
         // previously recorded commands can just be run
-        if(!args.range.from && !args.range.to && args.at){
-            for(let cmd of recordedCommands[args.register]){ await runCommands(cmd); }
+        if(recordedCommands[args.register]){
+            for(let cmd of recordedCommands[args.register]){
+                await runCommands(cmd); 
+                // replaying actions too fast messes up selection
+                await new Promise(res => setTimeout(res, REPLAY_DELAY));
+            }
+            return;
         }
 
         // find the range of commands we want to replay
@@ -419,20 +436,24 @@ async function replay(args_: unknown){
         let fromMatcher = args.range.from ? doMatchToZod(args.range.from) : undefined;
         for(let i=commandHistory.length-1;i>=0;i--){
             if(to < 0 && toMatcher && toMatcher.safeParse(commandHistory[i]).success){
-                to = i+1;
+                to = i;
                 if(args.at){ from = to; }
             } else if(from < 0 && fromMatcher && fromMatcher.safeParse(commandHistory[i]).success){
                 from = i;
             }
         }
-        if(args.range.to?.inclusive && to > 0){ to -= 1; }
-        if(args.range.from?.inclusive && from > 0){ from += 1; }
+        if(!args.range.to?.inclusive && to > 0){ to -= 1; }
+        if(!args.range.from?.inclusive && from > 0){ from += 1; }
 
         // record the command and run it
         if(from > 0 && to > 0){
             let commands = commandHistory.slice(from, to);
             recordedCommands[args.register] = commands;
-            for(let cmd of commands){ await runCommands(cmd); }
+            for(let cmd of commands){ 
+                await runCommands(cmd); 
+                // replaying actions too fast messes up selection
+                await new Promise(res => setTimeout(res, REPLAY_DELAY));
+            }
         }
     }
 }
