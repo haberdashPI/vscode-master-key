@@ -1,11 +1,12 @@
 import * as vscode from 'vscode';
 import { StrictDoArg, strictDoArgs, validModes, strictBindingCommand, StrictBindingCommand, StrictDoArgs } from './keybindingParsing';
-import { PrefixCodes } from './keybindingProcessing';
+import { PrefixCodes, isSingleCommand } from './keybindingProcessing';
 import { reifyStrings, EvalContext } from './expressions';
 import { validateInput } from './utils';
-import z, { ZodType, ZodTypeAny } from 'zod';
+import z, { ZodTypeAny } from 'zod';
 import { clearSearchDecorations, trackSearchUsage, wasSearchUsed } from './searching';
 import { merge } from 'lodash';
+import { INPUT_CAPTURE_COMMANDS } from './keybindingParsing';
 
 let modeStatusBar: vscode.StatusBarItem | undefined = undefined;
 let keyStatusBar: vscode.StatusBarItem | undefined = undefined;
@@ -26,10 +27,6 @@ function updateStatusBar(){
     }
 }
 
-// TODO: as a user it is confusing that when clause context scope
-// differs from evaluation scope; anything below that requires
-// a qualifier in a when clause (e.g. master-key.prefix)
-// should also require a qualifier below
 const keyContext = z.object({
     prefix: z.string(),
     prefixCode: z.number(),
@@ -43,8 +40,10 @@ type KeyContext = z.infer<typeof keyContext> & { [key: string]: any } & {
     editorHasMultipleSelections: boolean,
     editorHasMultiLineSelection: boolean,
     editorLangId: undefined | string,
-    firstSelectionOrWord: string
-    prefixCodes: PrefixCodes
+    firstSelectionOrWord: string,
+    prefixCodes: PrefixCodes,
+    macro: RunCommandsArgs[][],
+    record: boolean,
 };
 
 const keyContextKey = z.string().regex(/[a-zA-Z_]+[0-9a-zA-Z_]*/);
@@ -70,7 +69,9 @@ class CommandState {
         editorHasMultipleSelections: false,
         editorHasMultiLineSelection: false,
         editorLangId: undefined,
-        firstSelectionOrWord: ""
+        firstSelectionOrWord: "",
+        macro: [],
+        record: false
     };
     listeners: ((values: KeyContext) => ListenerRequest)[] = [];
     transientValues: Record<string, any> = { prefix: '', prefixCode: 0, count: 0 };
@@ -149,8 +150,9 @@ async function runCommand(command: StrictDoArg){
         }
         let reifyArgs: Record<string, any> = command.args || {};
         if(command.computedArgs !== undefined){
-            let computed = reifyStrings(command.computedArgs, str => evalContext.evalStr(str, state.values))
-            reifyArgs = merge(reifyArgs, computed)
+            let computed = reifyStrings(command.computedArgs, 
+                str => evalContext.evalStr(str, state.values));
+            reifyArgs = merge(reifyArgs, computed);
         }
         await vscode.commands.executeCommand(command.command, reifyArgs);
     }
@@ -171,7 +173,7 @@ async function runCommandsCmd(args_: unknown){
     argsUpdated = false;
     let args = validateInput('master-key.do', args_, runCommandArgs);
     if(args){
-        if(args.do !== 'master-key.prefix' && args.do.command !== 'master-key.prefix'){
+        if(!isSingleCommand(args.do, 'master-key.prefix')){
             commandHistory.push(args);
             if( commandHistory.length > maxHistory ){ commandHistory.shift(); }
         }
@@ -180,15 +182,13 @@ async function runCommandsCmd(args_: unknown){
 }
 
 export function updateArgs(args: { [i: string]: unknown } | "CANCEL"){
-    if(argsUpdated){
-        vscode.window.showErrorMessage(`You cannot have more than one command that captures 
-            input in a single 'master-key.do' block`);
-    }else if(args === "CANCEL"){
+    if(args === "CANCEL"){
         commandHistory.pop();
     }else{
         argsUpdated = true;
         let doCmd = commandHistory[commandHistory.length-1];
         if(Array.isArray(doCmd.do)){
+            let updated = false;
             for(let i=0; i<doCmd.do.length; i++){
                 doCmd.do[i] = updatedArgsFor(doCmd.do[i], args);
             }
@@ -198,8 +198,6 @@ export function updateArgs(args: { [i: string]: unknown } | "CANCEL"){
         commandHistory[commandHistory.length-1] = doCmd;
     }
 }
-
-const INPUT_CAPTURE_COMMANDS = ['captureKeys', 'replaceChar', 'insertChar', 'search'];
 
 function updatedArgsFor(doArg: StrictDoArg, updatedArgs: { [i: string]: unknown }): StrictDoArg {
     let cmdName = typeof doArg === 'string' ? doArg : doArg.command;
@@ -405,62 +403,128 @@ function argsMatch(matcher: unknown, obj: unknown){
     return false;
 }
 
-// TODO: break the following single command into
-// 1. storing a given range into a register
-// 2. replaying from a register
-const replayArgs = z.object({
-    range: z.object({from: doMatcher, to: doMatcher}).optional(),
+const pushMacroArgs = z.object({
+    range: z.object({from: doMatcher, to: doMatcher.optional()}).optional(),
     at: doMatcher.optional(),
-    register: z.string().or(z.number()).default("default")
-}).strict().refine(x => !(x.at && x.range), 
-    { message: "Command 'master-key.replay' cannot include both `at` and `range`. "});
-type ReplayArgs = z.infer<typeof replayArgs>;
+    value: runCommandArgs.array().optional()
+});
 
-let recordedCommands: Record<string, RunCommandsArgs[]> = {};
-const REPLAY_DELAY = 50;
-async function replay(args_: unknown){
-    let args = validateInput('master-key.replay', args_, replayArgs);
+function pushMacro(args_: unknown){
+    let args = validateInput('master-key.replay', args_, pushMacroArgs);
     if(args){
-        // previously recorded commands can just be run
-        if(recordedCommands[args.register]){
-            for(let cmd of recordedCommands[args.register]){
+        let value: RunCommandsArgs[] | undefined = undefined;
+        if(args.value){ value = args.value; }
+        else{
+            // find the range of commands we want to replay
+            let from = -1;
+            let to = -1;
+            let argsTo = args.range?.to || args.at;
+            let toMatcher = argsTo ? doMatchToZod(argsTo) : z.any();
+            let fromMatcher = args.range?.from ? doMatchToZod(args.range.from) : undefined;
+            for(let i=commandHistory.length-1;i>=0;i--){
+                if(to < 0 && toMatcher && toMatcher.safeParse(commandHistory[i]).success){
+                    to = i;
+                    if(args.at){ from = to; }
+                } else if(from < 0 && fromMatcher && fromMatcher.safeParse(commandHistory[i]).success){
+                    from = i;
+                }
+            }
+            if(!args?.range?.to?.inclusive && to > 0){ to -= 1; }
+            if(!args?.range?.from?.inclusive && from > 0){ from += 1; }
+
+            // record the command and run it
+            if(from > 0 && to > 0){
+                value = commandHistory.slice(from, to);
+            }
+        }
+        if(value){ state.values.macro.push(value); }
+    }
+}
+commands['master-key.pushMacro'] = pushMacro;
+
+const replayMacroArgs = z.object({
+    index: z.number().min(0).optional().default(0)
+});
+const REPLAY_DELAY = 50;
+async function replayMacro(args_: unknown){
+    let args = validateInput('master-key.replayMacro', args_, replayMacroArgs);
+    if(args){
+        let commands = state.values.macro[state.values.macro.length-args.index-1];
+        if(commands){
+            for(let cmd of commands){
                 await runCommands(cmd); 
                 // replaying actions too fast messes up selection
                 await new Promise(res => setTimeout(res, REPLAY_DELAY));
             }
             return;
         }
+    }
+}
+commands['master-key.replayMacro'] = replayMacro;
 
-        // find the range of commands we want to replay
-        let from = -1;
-        let to = -1;
-        let argsTo = args.range.to || args.at;
-        let toMatcher = argsTo ? doMatchToZod(argsTo) : undefined;
-        let fromMatcher = args.range.from ? doMatchToZod(args.range.from) : undefined;
-        for(let i=commandHistory.length-1;i>=0;i--){
-            if(to < 0 && toMatcher && toMatcher.safeParse(commandHistory[i]).success){
-                to = i;
-                if(args.at){ from = to; }
-            } else if(from < 0 && fromMatcher && fromMatcher.safeParse(commandHistory[i]).success){
-                from = i;
-            }
-        }
-        if(!args.range.to?.inclusive && to > 0){ to -= 1; }
-        if(!args.range.from?.inclusive && from > 0){ from += 1; }
-
-        // record the command and run it
-        if(from > 0 && to > 0){
-            let commands = commandHistory.slice(from, to);
-            recordedCommands[args.register] = commands;
-            for(let cmd of commands){ 
-                await runCommands(cmd); 
-                // replaying actions too fast messes up selection
-                await new Promise(res => setTimeout(res, REPLAY_DELAY));
-            }
+const storeNamedArgs = z.object({
+    description: z.string().optional(),
+    name: z.string(),
+    contents: z.string(),
+});
+let stored: Record<string, Record<string, any>> = {};
+function storeNamed(args_: unknown){
+    let argsNow = validateInput('master-key.storeNamed', args_, storeNamedArgs);
+    if(argsNow){
+        let args = argsNow;
+        let value = evalContext.evalStr(args.contents, state.values);
+        if(value !== undefined){
+            let picker = vscode.window.createQuickPick();
+            picker.title = args.description || args.name;
+            picker.placeholder = "Enter a new or existing name";
+            let options: vscode.QuickPickItem[] = Object.keys(stored[args.name] || {}).
+                map(k => ({label: k}));
+            options.unshift(
+                {label: "New Name...", alwaysShow: true}, 
+                {label: "Existing Names:", kind: vscode.QuickPickItemKind.Separator, 
+                 alwaysShow: true}
+            );
+            picker.items = options;
+            picker.onDidAccept(e => {
+                let item = picker.selectedItems[0];
+                let name;
+                if(item.label === "New Name..."){
+                    name = picker.value;
+                }else{
+                    name = item.label;
+                }
+                if(stored[args.name] === undefined){
+                    stored[args.name] = {};
+                }
+                stored[args.name][name] = value;
+                picker.hide();
+            });
+            picker.show();
         }
     }
 }
-commands['master-key.replay'] = replay;
+commands['master-key.storeNamed'] = storeNamed;
+
+const restoreNamedArgs = z.object({
+    description: z.string().optional(),
+    name: z.string(),
+    doAfter: strictDoArgs
+});
+async function restoreNamed(args_: unknown){
+    let args = validateInput('master-key.restoreNamed', args_, restoreNamedArgs);
+    if(args){
+        if(!stored[args.name]){
+            vscode.window.showErrorMessage(`No values are stored under '${args.name}'.`);
+        }
+        let items = Object.keys(stored[args.name]).map(x => ({label: x}));
+        let selected = await vscode.window.showQuickPick(items);
+        if(selected !== undefined){
+            setKeyContext({ name: 'captured', value: stored[args.name][selected.label] });
+            runCommands({ do: args.doAfter });
+        }
+    }
+}
+commands['master-key.restoreNamed'] = restoreNamed;
 
 export function activate(context: vscode.ExtensionContext) {
     modeStatusBar = vscode.window.createStatusBarItem('mode', vscode.StatusBarAlignment.Left);

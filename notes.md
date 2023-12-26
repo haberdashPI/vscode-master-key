@@ -1,13 +1,7 @@
 current issue I'm working on:
 
-- replay
-- NOTE: we need a separate `master-key.storeForReplay` (or something)
-- add ux that displays the recording state
-larking facing commands should be:
-  - record 
-  - replay last recorded macro (count replays an older macro)
-  - store last recorded macro to register (takes input?) (count stores an older macro)
-  - replay macro stored in register (takes input?) 
+repeat last selection
+repeat last action 
 
 Next up
 - more dogfooding (we need to answer the question: is this working well enough for this implementation to be viable, does it work for my everyday use)

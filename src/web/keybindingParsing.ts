@@ -6,6 +6,7 @@ import { TextDecoder } from 'text-encoding';
 import { ZodIssue, z } from "zod";
 import { ZodError, fromZodError, fromZodIssue } from 'zod-validation-error';
 import { expressionId } from './expressions';
+export const INPUT_CAPTURE_COMMANDS = ['captureKeys', 'replaceChar', 'insertChar', 'search'];
 
 let decoder = new TextDecoder("utf-8");
 
@@ -155,7 +156,18 @@ export const strictBindingCommand = bindingCommand.required({command: true});
 export type StrictBindingCommand = z.infer<typeof strictBindingCommand>;
 
 const strictDoArg = z.union([z.string(), strictBindingCommand]);
-export const strictDoArgs = z.union([strictDoArg, strictDoArg.array()]);
+export const strictDoArgs = z.union([strictDoArg, strictDoArg.array().refine(xs => {
+    let acceptsInput = 0;
+    for(let x of xs){
+        if(typeof x === 'string'){
+            if(INPUT_CAPTURE_COMMANDS.some(i => i === x)){ acceptsInput += 1; }
+        }else{
+            let cmd = (<BindingCommand>x).command;
+            if(INPUT_CAPTURE_COMMANDS.some(i => i === cmd)){ acceptsInput =+ 1; }
+        }
+    }
+    return acceptsInput <= 1;
+}, { message: "`do` commands can include only one command that accepts user input."})]);
 export const strictBindingItem = bindingItem.required({
     key: true,
     kind: true,

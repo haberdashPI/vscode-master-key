@@ -5,6 +5,7 @@ import { BindingSpec, BindingTree, StrictBindingTree, BindingItem, StrictBinding
 import * as vscode from 'vscode';
 import { isEqual, uniq, omit, mergeWith, cloneDeep, flatMap, merge, entries } from 'lodash';
 import { reifyStrings, EvalContext } from './expressions';
+import { fromZodError } from 'zod-validation-error';
 
 export function processBindings(spec: BindingSpec){
     let expandedSpec = expandDefaultsAndDefinedCommands(spec.bind, spec.define);
@@ -77,9 +78,8 @@ function expandDefaultsAndDefinedCommands(bindings: BindingTree, definitions: an
             expandedItem = expandDefinedCommands(expandedItem, definitions);
             let parsing = strictBindingItem.safeParse({...expandedItem, path: prefix});
             if(!parsing.success){
-                let issue = parsing.error.issues[0];
-                vscode.window.showErrorMessage(`Problem with item ${i} under ${prefix}: 
-                    ${issue.message} ${issue.path}`);
+                vscode.window.showErrorMessage(`Problem with item ${i} under ${prefix}:
+                    ${fromZodError(parsing.error)}`);
                 return undefined;
             }else{
                 return parsing.data;
@@ -362,7 +362,7 @@ function expandKeySequencesAndResolveDuplicates(items: StrictBindingItem[]):
 }
 
 
-function isSingleCommand(x: StrictDoArgs, cmd: string){
+export function isSingleCommand(x: StrictDoArgs, cmd: string){
     if(!Array.isArray(x)){
         if(typeof x === 'string'){ return x === cmd; }
         else{ return x.command === cmd; }

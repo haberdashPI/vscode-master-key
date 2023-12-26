@@ -1388,30 +1388,73 @@ do = "workbench.action.navigateForwardInEditLocations"
 [[bind.edit.action.history.items]]
 name = "record"
 description = "Start/stop recording Master Key commands"
-key = "q"
+key = "shift+q"
+when = "!master-key.record"
 do.command = "master-key.set"
 do.args.name = "record"
-do.computedArgs.value = "record ? 0 : (count || 1)"
+do.args.value = true
+
+[[bind.edit.action.history.items]]
+name = "record"
+description = """
+Start/stop recording key presses defined by Master Key pushing it to the
+top of the `history` stack once recording finishes."
+"""
+key = "shift+q"
+when = "master-key.record"
+
+[[bind.edit.action.history.items.do]]
+command = "master-key.set"
+args.name = "record"
+args.value = false
+
+[[bind.edit.action.history.items.do]]
+command = "master-key.pushMacro"
+args.range.from.command = "master-key.set"
+args.range.from.args.name = "record"
+args.range.from.args.value = true
+args.range.from.inclusive = false
+args.range.to.inclusive = false
 
 [[bind.edit.action.history.items]]
 name = "replay"
 description = """
-Replay a previously recorded command; storing it in the default register,
-or, if a count is passed, the register associated with that count.
+Replay the Master Key command sequence at the top of the `history` stack. Specifying
+a count requests the Nth most recent item on this stack.
 """
-key = "shift+q"
+key = "q q"
+do.command = "master-key.replayMacro"
+do.computedArgs.index = "count"
 
-[[kind.edit.action.history.items.do]]
-command = "master-key.replay"
-computedArgs.register = "count || 1"
-args.range.from.command = "master-key.set"
-args.range.from.args.name = "record"
-computedArgs.range.from.args.value = "count || 1"
-args.range.from.inclusive = false
-args.range.to.command = "master-key.set"
-args.range.to.args.name = "record"
-args.range.to.args.value = 0
-args.range.to.inclusive = false
+[[bind.edit.action.history.items]]
+name = "store"
+description = """
+Stores the top of the `history` stack into a named register. Specifying a count stores the 
+Nth most recent item on this stack.
+"""
+key = "q s"
+do.command = "master-key.storeNamed"
+do.args.description = "Save Macro"
+do.args.name = "macro"
+do.args.contents = "macro[macro.length-count-1]"
+
+[[bind.edit.action.history.items]]
+name = "replay stored"
+description = """
+Replay a recorded Master Key command sequence from a named register, pushing
+it to the front of the `history stack.
+"""
+key = "q r"
+do.command = "master-key.restoreNamed"
+do.args.description = "Macro"
+do.args.name = "macro"
+do.args.doAfter = [
+      { command = "master-key.pushMacro", computedArgs = { value = "captured" } },
+      { command = "master-key.replay", args = { index = 0 } }
+]
+
+[[bind.edit.action.history.items]]
+name = "repeat action"
 
 [bind.edit.action.comment]
 name = "Comments"
