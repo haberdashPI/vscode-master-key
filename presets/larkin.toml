@@ -1427,7 +1427,7 @@ do.command = "master-key.replayMacro"
 do.computedArgs.index = "count"
 
 [[bind.edit.action.history.items]]
-name = "store"
+name = "store macro"
 description = """
 Stores the top of the `history` stack into a named register. Specifying a count stores the 
 Nth most recent item on this stack.
@@ -1454,7 +1454,57 @@ do.args.doAfter = [
 ]
 
 [[bind.edit.action.history.items]]
+name = "store last"
+description = """
+Store the N most recently run commands as a macro, where N is the count (defaulting to 1).
+"""
+key = "q l"
+do.command = "master-key.pushMacro"
+do.computedArgs.from.index = "count || 1"
+do.args.to.inclusive = false
+
+[[bind.edit.action.history.items]]
 name = "repeat action"
+description = """
+Repeat the last action command. Actions usually modify the text of a document in one way or
+antoher. (But, e.g. sending text to the REPL is also considered an editor action).
+"""
+key = "ctrl+."
+
+[[bind.edit.action.history.items.do]]
+command = "master-key.pushMacro"
+register = "auto_repeat"
+args.at.path = "edit.action"
+args.at.not.name = "repeat action"
+
+[[bind.edit.action.history.items.do]]
+command = "mater-key.replayMacro"
+register = "auto_repeat"
+
+[[bind.edit.action.history.items]]
+name = "repeat object selection"
+description = """
+Repeat the last object selection. An object selection is a command sequence that starts by 
+shrinking the selected region to the active position and ends when an action 
+is run. For instance `w` followed by `d` selecs a word and deletes it. The `w` command
+would be the last object selection until some action is run after `d`.
+"""
+key = "ctrl+,"
+
+[[bind.edit.action.history.items.do]]
+command = "master-key.pushMacro"
+register = "auto_repeat"
+args.from = [
+      {path = "edit.motion", command = "selection-utilities.shrinkToActive"},
+      {path = "edit.motion", args = {selectWhole = true}}
+]
+args.to.path = "edit.action"
+args.to.not.name = "repeat action"
+args.to.inclusive = false
+
+[[bind.edit.action.history.items.do]]
+command = "master-key.replayMacro"
+register = "auto_repeat"
 
 [bind.edit.action.comment]
 name = "Comments"
@@ -1499,12 +1549,12 @@ name = "wrap"
 description = "wrap text, preserving commenting"
 do = "rewrap.rewrapComment"
 
-[bind.edit.terminal]
+[bind.edit.action.terminal]
 name = "Terminal Actions"
 description = "Commands that send text from the editor to the terminal"
 default.kind = "action"
 
-[[bind.edit.terminal.items]]
+[[bind.edit.action.terminal.items]]
 name = "to repl"
 description = """
 send text to a terminal (usually containing a REPL); use language 
@@ -1518,24 +1568,24 @@ do = [
       "language-julia.executeCodeBlockOrSelectionAndMove"
 ]
 
-[[bind.edit.terminal.items]]
+[[bind.edit.action.terminal.items]]
 key = "m"
 when = "editorLangId == 'julia' && editorHasSelection"
 do = "language-julia.executeCodeBlockOrSelectionAndMove"
 
-[[bind.edit.terminal.items]]
+[[bind.edit.action.terminal.items]]
 key = "m"
 when = "!(master-key.firstSelectionOrWord =~ /\\n/)"
 do = ["terminal-polyglot.send-text",
       "selection-utilities.shrinkToActive"]
 
-[[bind.edit.terminal.items]]
+[[bind.edit.action.terminal.items]]
 key = "m"
 when = "master-key.firstSelectionOrWord =~ /\\n/"
 do = ["terminal-polyglot.send-block-text",
       "selection-utilities.shrinkToActive"]
 
-[[bind.edit.terminal.items]]
+[[bind.edit.action.terminal.items]]
 key = "shift+m"
 name = "to repl (v2)"
 description = """
@@ -1544,7 +1594,7 @@ send text to a terminal (usually containing a REPL), placing in a block when def
 when = "master-key.firstSelectionOrWord =~ /\\n/"
 do = ["terminal-polyglot.send-block-text", "selection-utilities.shrinkToActive"]
 
-[[bind.edit.terminal.items]]
+[[bind.edit.action.terminal.items]]
 key = "shift+m"
 name = "to repl (v2)"
 description = """
@@ -1553,7 +1603,7 @@ send text to a terminal (usually containing a REPL), placing in a block when def
 when = "!(master-key.firstSelectionOrWord =~ /\\n/)"
 do = ["terminal-polyglot.send-text", "selection-utilities.shrinkToActive"]
 
-[[bind.edit.terminal.items]]
+[[bind.edit.action.terminal.items]]
 key = "g m"
 name = "to repl (v3)"
 description = """

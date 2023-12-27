@@ -3,7 +3,7 @@ import { StrictDoArg, strictDoArgs, validModes, strictBindingCommand, StrictBind
 import { PrefixCodes, isSingleCommand } from './keybindingProcessing';
 import { reifyStrings, EvalContext } from './expressions';
 import { validateInput } from './utils';
-import z, { ZodTypeAny } from 'zod';
+import z, { ZodObject, ZodTypeAny } from 'zod';
 import { clearSearchDecorations, trackSearchUsage, wasSearchUsed } from './searching';
 import { merge } from 'lodash';
 import { INPUT_CAPTURE_COMMANDS } from './keybindingParsing';
@@ -338,16 +338,59 @@ function prefixOrRegexToZod(matcher: StrOrRegex){
     }
 }
 
-const doMatcher = z.object({
+const doMatchBase = z.object({
     command: strOrRegex.optional(),
     args: z.object({}).passthrough().optional(),
     kind: strOrRegex.optional(),
     path: strOrRegex.optional(), 
-    inclusive: z.boolean().default(true)
-}).strict();
-type DoMatcher = z.infer<typeof doMatcher>;
+    index: z.number()
+});
 
-function doMatchToZod(matcher: DoMatcher){
+const doMatcher = doMatchBase.extend({
+    inclusive: z.boolean().default(true),
+    not: doMatchBase.optional()
+}).strict();
+const doMatchers = orArray(doMatcher);
+type DoMatchBase = z.infer<typeof doMatchBase>;
+type DoMatcher = z.infer<typeof doMatcher>;
+type DoMatchers = z.infer<typeof doMatchers>;
+
+function doMatchFn(matchers: DoMatchers, offset: number){
+    let matcherFns: ((x: unknown) => boolean)[];
+    let matcherPatterns: DoMatcher[];
+    if(Array.isArray(matchers)){
+        matcherFns = matchers.map(matcherFn);
+        matcherPatterns = matchers;
+    }else{
+        matcherFns = [matcherFn(matchers)];
+        matcherPatterns = [matchers];
+    }
+    return (x: unknown, index: number) => {
+        for(let i=0; i<matcherFns.length; i++){
+            if(matcherFns[i](x)){
+                if(matcherPatterns[i].index !== undefined &&
+                   matcherPatterns[i].index !== i){
+                    return;
+                }
+                return index + (matcherPatterns[i].inclusive ? offset : 0);
+            }
+        }
+    };
+}
+
+function matcherFn(matcher: DoMatcher){
+    let baseMatch = doMatchBaseToZod(matcher);
+    let baseNotMatch = matcher.not ? doMatchBaseToZod(matcher.not) : undefined
+    return (x: unknown) => {
+        if(baseMatch.safeParse(x).success){
+            if(baseNotMatch?.safeParse(x).success){ return false; }
+            return true;
+        }
+        return false;
+    };
+}
+
+function doMatchBaseToZod(matcher: DoMatchBase) {
     let result = z.object({});
     let doArgs: { command?: ZodTypeAny, args?: ZodTypeAny } = {};
     let doArgsMatcher: undefined | ZodTypeAny;
@@ -403,8 +446,12 @@ function argsMatch(matcher: unknown, obj: unknown){
     return false;
 }
 
+function orArray<T extends ZodTypeAny>(x: T){ return x.or(z.array(x)); }
 const pushMacroArgs = z.object({
-    range: z.object({from: doMatcher, to: doMatcher.optional()}).optional(),
+    range: z.object({
+        from: orArray(doMatcher), 
+        to: orArray(doMatcher).optional()
+    }).optional(),
     at: doMatcher.optional(),
     value: runCommandArgs.array().optional()
 });
@@ -419,23 +466,23 @@ function pushMacro(args_: unknown){
             let from = -1;
             let to = -1;
             let argsTo = args.range?.to || args.at;
-            let toMatcher = argsTo ? doMatchToZod(argsTo) : z.any();
-            let fromMatcher = args.range?.from ? doMatchToZod(args.range.from) : undefined;
+            let toMatcher = argsTo ? doMatchFn(argsTo, -1) : (x: unknown, i: number) => i;
+            let fromMatcher = args.range?.from ? doMatchFn(args.range.from, +1) : undefined;
             for(let i=commandHistory.length-1;i>=0;i--){
-                if(to < 0 && toMatcher && toMatcher.safeParse(commandHistory[i]).success){
-                    to = i;
-                    if(args.at){ from = to; }
-                } else if(from < 0 && fromMatcher && fromMatcher.safeParse(commandHistory[i]).success){
-                    from = i;
+                if(to < 0 && toMatcher){
+                    let atIndex = toMatcher(commandHistory[i], i);
+                    if(atIndex !== undefined){ 
+                        to = i; 
+                        if(args.at){ from = to; }
+                    }
+                } 
+                if(from < 0 && fromMatcher){
+                    let atIndex = fromMatcher(commandHistory[i], i);
+                    if(atIndex !== undefined){ from = i; }
                 }
             }
-            if(!args?.range?.to?.inclusive && to > 0){ to -= 1; }
-            if(!args?.range?.from?.inclusive && from > 0){ from += 1; }
 
-            // record the command and run it
-            if(from > 0 && to > 0){
-                value = commandHistory.slice(from, to);
-            }
+            if(from > 0 && to > 0){ value = commandHistory.slice(from, to); }
         }
         if(value){ state.values.macro.push(value); }
     }

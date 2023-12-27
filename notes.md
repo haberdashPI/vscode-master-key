@@ -3,16 +3,17 @@ current issue I'm working on:
 repeat last selection
 repeat last action 
 
-Next up
-- more dogfooding (we need to answer the question: is this working well enough for this implementation to be viable, does it work for my everyday use)
-
-ANSWER: yes, I can use this for everyday work at this point with only minor annoyances
+we need the ability to have multiple matchers (with OR semantics)
+we need the ability to negate (with a `not` field)
+we need the ability to store pushed macros in a specific register
+ability to have from/toMatcher match to index
 
 - start implementing event recording / replay for
-    record macro
+    X record macro
     repeat action
     repeat last pre-action selection
     repeat last selection/action pair
+    save last command to macro
 
 - start dogfooding (wee need to answer the question: post recording is this reasonably
   fast enough)
