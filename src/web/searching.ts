@@ -3,6 +3,7 @@ import z from 'zod';
 import { validateInput } from './utils';
 import { setKeyContext, runCommands, state as keyState, updateArgs } from "./commands";
 import { strictDoArgs } from './keybindingParsing';
+import { regularizeCommands } from './keybindingProcessing';
 import { wrappedTranslate } from './utils';
 import { captureKeys } from './captureKeys';
 
@@ -204,7 +205,7 @@ async function search(editor: vscode.TextEditor, edit: vscode.TextEditorEdit, ar
 async function acceptSearch(editor: vscode.TextEditor, edit: vscode.TextEditorEdit, state: SearchState) {
     updateArgs({ ...state.args, text: state.text });
     if(state.args.doAfter){
-        await runCommands({do: state.args.doAfter});
+        await runCommands({do: regularizeCommands(state.args.doAfter)});
     }
     if(state.stop){ state.stop(); }
     state.searchFrom = editor.selections;

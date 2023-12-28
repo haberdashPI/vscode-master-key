@@ -62,7 +62,7 @@ function expandDefinedCommands(item: BindingItem, definitions: any){
 }
 
 function expandDefaultsAndDefinedCommands(bindings: BindingTree, definitions: any, 
-    prefix: string = "bind", 
+    path: string = "", 
     defaultItem: BindingItem = {when: [], prefixes: [""]}): StrictBindingTree {
 
     if (bindings.default !== undefined) {
@@ -76,9 +76,9 @@ function expandDefaultsAndDefinedCommands(bindings: BindingTree, definitions: an
             let expandedItem = mergeWith(cloneDeep(defaultItem), item,
                 concatWhenAndOverwritePrefixes);
             expandedItem = expandDefinedCommands(expandedItem, definitions);
-            let parsing = strictBindingItem.safeParse({...expandedItem, path: prefix});
+            let parsing = strictBindingItem.safeParse({...expandedItem, path: path});
             if(!parsing.success){
-                vscode.window.showErrorMessage(`Problem with item ${i} under ${prefix}:
+                vscode.window.showErrorMessage(`Problem with item ${i} under ${path}:
                     ${fromZodError(parsing.error)}`);
                 return undefined;
             }else{
@@ -90,9 +90,9 @@ function expandDefaultsAndDefinedCommands(bindings: BindingTree, definitions: an
 
     let nonItems = Object.entries(omit(bindings, ['name', 'description', 'kind', 'items', 'default']));
     let result: { [key: string]: BindingTree } = Object.fromEntries(nonItems.map(([k, v]) => {
-        let entry = (prefix === "" ? "" : prefix+".")+k;
+        let entry = (path === "" ? "" : path+".")+k;
         if(typeof v !== 'object'){
-            vscode.window.showErrorMessage(`binding.${prefix} has unexpected field ${k}`);
+            vscode.window.showErrorMessage(`bind.${path} has unexpected field ${k}`);
             return [];
         }
         if(v.name !== undefined){
@@ -100,7 +100,7 @@ function expandDefaultsAndDefinedCommands(bindings: BindingTree, definitions: an
             // it is a binding tree
             return [k, expandDefaultsAndDefinedCommands(<BindingTree>v, definitions, entry, defaultItem)];
         }else{
-            vscode.window.showErrorMessage(`binding.${entry} has no "name" field.`);
+            vscode.window.showErrorMessage(`bind.${entry} has no "name" field.`);
             return [];
         }
     }));

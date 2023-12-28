@@ -72,7 +72,7 @@ export class EvalContext {
     evalStr(str: string, values: Record<string, any>) {
         let exec = this.cache[str];
         if (exec === undefined) {
-            if (str.match(/(?<!=)=(?!=)/)) {
+            if (str.match(/(?<!(\!|=))=(?!(\>|=))/)) {
                 this.errors.push(`Found an isolated "=" in this expression.
                 Your expressions are not permitted to set any values. You should
                 use 'master-key.set' to do that.`);

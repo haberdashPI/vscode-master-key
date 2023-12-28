@@ -320,14 +320,17 @@ function updateConfig(event?: vscode.ConfigurationChangeEvent){
 
 // TODO: we're going to have from and to be strings that get evaluated
 // to truthy statements
-const pushMacroArgs = z.object({
+const selectHistoryArgs = z.object({
     range: z.object({
         from: z.string(),
         to: z.string(),
     }).optional(),
     at: z.string().optional(),
-    value: runCommandArgs.array().optional()
-});
+    value: runCommandArgs.array().optional(),
+    register: z.string().optional(),
+}).strict().refine(x => x.at || x.range, ({
+    message: "Either `at` or `range` is required."
+}));
 
 function evalMatcher(matcher: string, i: number): number {
     let result_ = evalContext.evalStr(matcher, {...state.values, i});
@@ -339,55 +342,69 @@ function evalMatcher(matcher: string, i: number): number {
     }
 }
 
-function pushMacro(args_: unknown){
-    let args = validateInput('master-key.replay', args_, pushMacroArgs);
+function selectHistoryCommand(cmd: string, args_: unknown, 
+    followup: (seq: RunCommandsArgs[] | undefined) => void){
+
+    let args = validateInput('master-key.replay', args_, selectHistoryArgs);
     if(args){
         let value: RunCommandsArgs[] | undefined = undefined;
         if(args.value){ value = args.value; }
         else{
             // find the range of commands we want to replay
+            let history = state.values.commandHistory;
             let from = -1;
             let to = -1;
             let toMatcher = args.range?.to || args.at;
             let fromMatcher = args.range?.from;
-            for(let i=state.values.commandHistory.length-1;i>=0;i--){
+            for(let i=history.length-1;i>=0;i--){
                 if(to < 0){
-                    if(!toMatcher){ to = i; }
-                    else{ to = evalMatcher(toMatcher, i); }
+                    to = evalMatcher(toMatcher, i);
                     if(args.at){ from = to; }
                 } 
-                if(from < 0 && fromMatcher){
-                    let atIndex = evalMatcher(fromMatcher, i);
-                    if(atIndex !== undefined){ from = i; }
+                if(from < 0 && fromMatcher){ from = evalMatcher(fromMatcher, i); }
+                if(from > 0 && to > 0){ 
+                    value = history.slice(from, to+1); 
+                    break;
                 }
             }
-
-            if(from > 0 && to > 0){ value = state.values.commandHistory.slice(from, to); }
         }
-        if(value){ state.values.macro.push(value); }
+        followup(value);
     }
 }
-commands['master-key.pushMacro'] = pushMacro;
+commands['master-key.pushHistoryToStack'] = (args: unknown) => {
+    selectHistoryCommand('master-key.pushHistoryToStack', args, (commands) => {
+        if(commands){ state.values.macro.push(commands); }
+    });
+};
+commands['master-key.replayFromHistory'] = (args: unknown) => {
+    selectHistoryCommand('master-key.replayFromHistory', args, commands => {
+        if(commands){ runCommandHistory(commands); }
+    });
+};
 
-const replayMacroArgs = z.object({
-    index: z.number().min(0).optional().default(0)
+const replayFromStackArgs = z.object({
+    index: z.number().min(0).optional().default(0),
+    register: z.string().optional()
 });
 const REPLAY_DELAY = 50;
-async function replayMacro(args_: unknown){
-    let args = validateInput('master-key.replayMacro', args_, replayMacroArgs);
+async function runCommandHistory(commands: RunCommandsArgs[]){
+    for(let cmd of commands){
+        await runCommands(cmd); 
+        // replaying actions too fast messes up selection
+        await new Promise(res => setTimeout(res, REPLAY_DELAY));
+    }
+}
+async function replayFromStack(args_: unknown){
+    let args = validateInput('master-key.replayFromStack', args_, replayFromStackArgs);
     if(args){
         let commands = state.values.macro[state.values.macro.length-args.index-1];
         if(commands){
-            for(let cmd of commands){
-                await runCommands(cmd); 
-                // replaying actions too fast messes up selection
-                await new Promise(res => setTimeout(res, REPLAY_DELAY));
-            }
+            runCommandHistory(commands);
             return;
         }
     }
 }
-commands['master-key.replayMacro'] = replayMacro;
+commands['master-key.replayFromStack'] = replayFromStack;
 
 const storeNamedArgs = z.object({
     description: z.string().optional(),

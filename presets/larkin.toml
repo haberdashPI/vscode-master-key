@@ -1409,11 +1409,9 @@ args.name = "record"
 args.value = false
 
 [[bind.edit.action.history.items.do]]
-command = "master-key.pushMacro"
+command = "master-key.pushHistoryToStack"
 args.range.from = """
-commandHistory[i].do.some(c => c.command == 'master-key.set' &&
-                               c.args.name == 'record' &&
-                               c.args.value == true)
+commandHistory[i].name === "record" && i !== commandHistory.length-1
 """
 args.range.to = "i-1"
 
@@ -1424,8 +1422,8 @@ Replay the Master Key command sequence at the top of the `history` stack. Specif
 a count requests the Nth most recent item on this stack.
 """
 key = "q q"
-do.command = "master-key.replayMacro"
-do.computedArgs.index = "count"
+do.command = "master-key.replayFromStack"
+do.args.at.index = "i-(count || 1)"
 
 [[bind.edit.action.history.items]]
 name = "store macro"
@@ -1443,15 +1441,15 @@ do.args.contents = "macro[macro.length-count-1]"
 name = "replay stored"
 description = """
 Replay a recorded Master Key command sequence from a named register, pushing
-it to the front of the `history stack.
+it to the front of the history stack.
 """
 key = "q r"
 do.command = "master-key.restoreNamed"
 do.args.description = "Macro"
 do.args.name = "macro"
 do.args.doAfter = [
-      { command = "master-key.pushMacro", computedArgs = { value = "captured" } },
-      { command = "master-key.replay", args = { index = 0 } }
+      { command = "master-key.pushHistoryToStack", computedArgs = { value = "captured" } },
+      { command = "master-key.replayFromStack", args = { index = 0 } }
 ]
 
 [[bind.edit.action.history.items]]
@@ -1460,9 +1458,9 @@ description = """
 Store the N most recently run commands as a macro, where N is the count (defaulting to 1).
 """
 key = "q l"
-do.command = "master-key.pushMacro"
-do.computedArgs.from.index = "count || 1"
-do.args.to.inclusive = false
+do.command = "master-key.pushHistoryToStack"
+do.args.range.from = "i-(count || 1)"
+do.args.range.to = "i-1"
 
 [[bind.edit.action.history.items]]
 name = "repeat action"
@@ -1471,39 +1469,26 @@ Repeat the last action command. Actions usually modify the text of a document in
 antoher. (But, e.g. sending text to the REPL is also considered an editor action).
 """
 key = "ctrl+."
-
-[[bind.edit.action.history.items.do]]
-command = "master-key.pushMacro"
-register = "auto_repeat"
-args.at = """
+do.command = "master-key.replayFromHistory"
+do.args.at = """
 commandHistory[i].path.startsWith('edit.action') && commandHistory[i].name != 'repeat action')
 """
 
-[[bind.edit.action.history.items.do]]
-command = "mater-key.replayMacro"
-register = "auto_repeat"
-
 [[bind.edit.action.history.items]]
-name = "repeat last noun"
+name = "repeat last subject"
 description = """
-Repeat the last noun: the selection command that occurred right before an action. For 
+Repeat the last subject: the selection command that occurred right before an action. For 
 instance `w` followed by `d` selects a word and deletes it. The `w` command would be the 
 last noun until some action is run after `d`.
 """
 key = "ctrl+,"
-
-[[bind.edit.action.history.items.do]]
-command = "master-key.pushMacro"
-register = "auto_repeat"
-args.from = """
+do.command = "master-key.replayFromHistory"
+do.args.at = """
 commandHistory[i].path.startsWith("edit.motion") &&
 commandHistory[i+1].path.startsWith("edit.action") && 
-commandHistory[i+1].name != "repeat action"
+!(commandHistory[i+1].name.startsWith("repeat ") && 
+  commandHistory[i+1].path.startsWith("edit.action.history"))
 """
-
-[[bind.edit.action.history.items.do]]
-command = "master-key.replayMacro"
-register = "auto_repeat"
 
 [bind.edit.action.comment]
 name = "Comments"

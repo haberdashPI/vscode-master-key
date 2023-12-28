@@ -3,10 +3,7 @@ current issue I'm working on:
 repeat last selection
 repeat last action 
 
-we need the ability to have multiple matchers (with OR semantics)
-we need the ability to negate (with a `not` field)
 we need the ability to store pushed macros in a specific register
-ability to have from/toMatcher match to index
 
 - start implementing event recording / replay for
     X record macro
