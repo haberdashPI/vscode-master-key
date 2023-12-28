@@ -1410,11 +1410,12 @@ args.value = false
 
 [[bind.edit.action.history.items.do]]
 command = "master-key.pushMacro"
-args.range.from.command = "master-key.set"
-args.range.from.args.name = "record"
-args.range.from.args.value = true
-args.range.from.inclusive = false
-args.range.to.inclusive = false
+args.range.from = """
+commandHistory[i].do.some(c => c.command == 'master-key.set' &&
+                               c.args.name == 'record' &&
+                               c.args.value == true)
+"""
+args.range.to = "i-1"
 
 [[bind.edit.action.history.items]]
 name = "replay"
@@ -1474,33 +1475,31 @@ key = "ctrl+."
 [[bind.edit.action.history.items.do]]
 command = "master-key.pushMacro"
 register = "auto_repeat"
-args.at.path = "edit.action"
-args.at.not.name = "repeat action"
+args.at = """
+commandHistory[i].path.startsWith('edit.action') && commandHistory[i].name != 'repeat action')
+"""
 
 [[bind.edit.action.history.items.do]]
 command = "mater-key.replayMacro"
 register = "auto_repeat"
 
 [[bind.edit.action.history.items]]
-name = "repeat object selection"
+name = "repeat last noun"
 description = """
-Repeat the last object selection. An object selection is a command sequence that starts by 
-shrinking the selected region to the active position and ends when an action 
-is run. For instance `w` followed by `d` selecs a word and deletes it. The `w` command
-would be the last object selection until some action is run after `d`.
+Repeat the last noun: the selection command that occurred right before an action. For 
+instance `w` followed by `d` selects a word and deletes it. The `w` command would be the 
+last noun until some action is run after `d`.
 """
 key = "ctrl+,"
 
 [[bind.edit.action.history.items.do]]
 command = "master-key.pushMacro"
 register = "auto_repeat"
-args.from = [
-      {path = "edit.motion", command = "selection-utilities.shrinkToActive"},
-      {path = "edit.motion", args = {selectWhole = true}}
-]
-args.to.path = "edit.action"
-args.to.not.name = "repeat action"
-args.to.inclusive = false
+args.from = """
+commandHistory[i].path.startsWith("edit.motion") &&
+commandHistory[i+1].path.startsWith("edit.action") && 
+commandHistory[i+1].name != "repeat action"
+"""
 
 [[bind.edit.action.history.items.do]]
 command = "master-key.replayMacro"

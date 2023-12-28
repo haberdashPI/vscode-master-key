@@ -15,8 +15,12 @@ ability to have from/toMatcher match to index
     repeat last selection/action pair
     save last command to macro
 
+hold on: wouldn't this be easier if I regularized command formats and just made this a truthy clause of any command in the sequence?
+
 - start dogfooding (wee need to answer the question: post recording is this reasonably
   fast enough)
+
+maybe we should implement an edit and a navigation history since the built-in commands aren't particularly satisfying
 
 - require parsing to validate modes to be all negations or all positive mode specifications
 - move modalkeys.selectbetween to selection-utilities.selectBetween

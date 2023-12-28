@@ -1,7 +1,7 @@
 import hash from 'object-hash';
 import { BindingSpec, BindingTree, StrictBindingTree, BindingItem, StrictBindingItem, 
          strictBindingItem, StrictDoArgs, parseWhen, StrictDoArg, DoArg, 
-         DefinedCommand } from "./keybindingParsing";
+         DefinedCommand, StrictBindingCommand } from "./keybindingParsing";
 import * as vscode from 'vscode';
 import { isEqual, uniq, omit, mergeWith, cloneDeep, flatMap, merge, entries } from 'lodash';
 import { reifyStrings, EvalContext } from './expressions';
@@ -183,12 +183,28 @@ export interface IConfigKeyBinding {
     prefixDescriptions: string[],
     when: string,
     args: { key: string } | { 
-        do: string | object | (string | object)[], 
+        do: object[], 
         name?: string,
         description?: string,
         resetTransient?: boolean, 
         kind: string, 
         path: string 
+    }
+}
+
+function regularizeCommand(x: StrictDoArg): StrictBindingCommand{
+    if(typeof x === 'string'){
+        return {command: x};
+    }else{
+        return x;
+    }
+}
+
+export function regularizeCommands(x: StrictDoArgs): StrictBindingCommand[] {
+    if(Array.isArray(x)){
+        return x.map(regularizeCommand);
+    }else{
+        return [regularizeCommand(x)];
     }
 }
 
@@ -203,7 +219,7 @@ function itemToConfigBinding(item: StrictBindingItem, defs: Record<string, any>)
         when: "(" + item.when.map(w => w.str).join(") && (") + ")",
         command: "master-key.do",
         args: { 
-            do: item.do, 
+            do: regularizeCommands(item.do),
             name: item.name,
             description: item.description,
             resetTransient: item.resetTransient, 

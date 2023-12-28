@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { StrictDoArg, strictDoArgs, validModes, strictBindingCommand, StrictBindingCommand, StrictDoArgs } from './keybindingParsing';
-import { PrefixCodes, isSingleCommand } from './keybindingProcessing';
+import { PrefixCodes, isSingleCommand, regularizeCommands } from './keybindingProcessing';
 import { reifyStrings, EvalContext } from './expressions';
 import { validateInput } from './utils';
 import z, { ZodObject, ZodTypeAny } from 'zod';
@@ -43,6 +43,7 @@ type KeyContext = z.infer<typeof keyContext> & { [key: string]: any } & {
     firstSelectionOrWord: string,
     prefixCodes: PrefixCodes,
     macro: RunCommandsArgs[][],
+    commandHistory: RunCommandsArgs[],
     record: boolean,
 };
 
@@ -71,6 +72,7 @@ class CommandState {
         editorLangId: undefined,
         firstSelectionOrWord: "",
         macro: [],
+        commandHistory: [],
         record: false
     };
     listeners: ((values: KeyContext) => ListenerRequest)[] = [];
@@ -159,7 +161,7 @@ async function runCommand(command: StrictDoArg){
 }
 
 const runCommandArgs = z.object({ 
-    do: strictDoArgs, 
+    do: strictBindingCommand.array(),
     resetTransient: z.boolean().optional().default(true),
     kind: z.string().optional(),
     path: z.string().optional(),
@@ -174,8 +176,8 @@ async function runCommandsCmd(args_: unknown){
     let args = validateInput('master-key.do', args_, runCommandArgs);
     if(args){
         if(!isSingleCommand(args.do, 'master-key.prefix')){
-            commandHistory.push(args);
-            if( commandHistory.length > maxHistory ){ commandHistory.shift(); }
+            state.values.commandHistory.push(args);
+            if( state.values.commandHistory.length > maxHistory ){ state.values.commandHistory.shift(); }
         }
         await runCommands(args); 
     }
@@ -183,23 +185,23 @@ async function runCommandsCmd(args_: unknown){
 
 export function updateArgs(args: { [i: string]: unknown } | "CANCEL"){
     if(args === "CANCEL"){
-        commandHistory.pop();
+        state.values.commandHistory.pop();
     }else{
         argsUpdated = true;
-        let doCmd = commandHistory[commandHistory.length-1];
-        if(Array.isArray(doCmd.do)){
-            let updated = false;
-            for(let i=0; i<doCmd.do.length; i++){
-                doCmd.do[i] = updatedArgsFor(doCmd.do[i], args);
-            }
-        }else{
-            doCmd.do = updatedArgsFor(doCmd.do, args);
+        let doCmd = state.values.commandHistory[state.values.commandHistory.length-1];
+        // NOTE: while in principle this could update multiple arguments we have previously
+        // validated that only one command in this array will be one of the commands listed
+        // under `INPUT_CAPTURE_COMMANDS`
+        for(let i=0; i<doCmd.do.length; i++){
+            doCmd.do[i] = updatedArgsFor(doCmd.do[i], args);
         }
-        commandHistory[commandHistory.length-1] = doCmd;
+        state.values.commandHistory[state.values.commandHistory.length-1] = doCmd;
     }
 }
 
-function updatedArgsFor(doArg: StrictDoArg, updatedArgs: { [i: string]: unknown }): StrictDoArg {
+function updatedArgsFor(doArg: StrictBindingCommand, 
+    updatedArgs: { [i: string]: unknown }): StrictBindingCommand {
+
     let cmdName = typeof doArg === 'string' ? doArg : doArg.command;
     if(INPUT_CAPTURE_COMMANDS.some(c => `master-key.${c}` === cmdName)){
         if(typeof doArg === 'string'){
@@ -212,7 +214,6 @@ function updatedArgsFor(doArg: StrictDoArg, updatedArgs: { [i: string]: unknown 
 }
 
 let maxHistory = 0;
-let commandHistory: RunCommandsArgs[] = [];
 
 export async function runCommands(args: RunCommandsArgs){
     // run the commands
@@ -317,144 +318,26 @@ function updateConfig(event?: vscode.ConfigurationChangeEvent){
     }
 }
 
-const strOrRegex = z.string().or(z.object({regex: z.string()}).strict());
-type StrOrRegex = z.infer<typeof strOrRegex>;
-function strOrRegexToZod(matcher: StrOrRegex){
-    if(typeof matcher === 'string'){ 
-        return z.object({ command: z.literal(matcher) }).or(z.literal(matcher));
-    }else{
-        let r = RegExp(matcher.regex);
-        return z.object({ command: z.string().regex(r) }).or(z.string().regex(r));
-    }
-}
-
-function prefixOrRegexToZod(matcher: StrOrRegex){
-    if(typeof matcher === 'string'){ 
-        return z.object({ command: z.string().startsWith(matcher) }).
-            or(z.string().startsWith(matcher));
-    }else{
-        let r = RegExp(matcher.regex);
-        return z.object({ command: z.string().regex(r) }).or(z.string().regex(r));
-    }
-}
-
-const doMatchBase = z.object({
-    command: strOrRegex.optional(),
-    args: z.object({}).passthrough().optional(),
-    kind: strOrRegex.optional(),
-    path: strOrRegex.optional(), 
-    index: z.number()
-});
-
-const doMatcher = doMatchBase.extend({
-    inclusive: z.boolean().default(true),
-    not: doMatchBase.optional()
-}).strict();
-const doMatchers = orArray(doMatcher);
-type DoMatchBase = z.infer<typeof doMatchBase>;
-type DoMatcher = z.infer<typeof doMatcher>;
-type DoMatchers = z.infer<typeof doMatchers>;
-
-function doMatchFn(matchers: DoMatchers, offset: number){
-    let matcherFns: ((x: unknown) => boolean)[];
-    let matcherPatterns: DoMatcher[];
-    if(Array.isArray(matchers)){
-        matcherFns = matchers.map(matcherFn);
-        matcherPatterns = matchers;
-    }else{
-        matcherFns = [matcherFn(matchers)];
-        matcherPatterns = [matchers];
-    }
-    return (x: unknown, index: number) => {
-        for(let i=0; i<matcherFns.length; i++){
-            if(matcherFns[i](x)){
-                if(matcherPatterns[i].index !== undefined &&
-                   matcherPatterns[i].index !== i){
-                    return;
-                }
-                return index + (matcherPatterns[i].inclusive ? offset : 0);
-            }
-        }
-    };
-}
-
-function matcherFn(matcher: DoMatcher){
-    let baseMatch = doMatchBaseToZod(matcher);
-    let baseNotMatch = matcher.not ? doMatchBaseToZod(matcher.not) : undefined
-    return (x: unknown) => {
-        if(baseMatch.safeParse(x).success){
-            if(baseNotMatch?.safeParse(x).success){ return false; }
-            return true;
-        }
-        return false;
-    };
-}
-
-function doMatchBaseToZod(matcher: DoMatchBase) {
-    let result = z.object({});
-    let doArgs: { command?: ZodTypeAny, args?: ZodTypeAny } = {};
-    let doArgsMatcher: undefined | ZodTypeAny;
-    if(matcher.command){ doArgs.command = strOrRegexToZod(matcher.command); }
-    if(matcher.args){ 
-        doArgs.args = argsToZod(matcher.args);
-        doArgsMatcher = z.object(doArgs);
-    }
-    else if(doArgs.command){
-        doArgsMatcher = doArgs.command.or(z.object(doArgs));
-    }
-    
-    if(doArgsMatcher){
-        let m = doArgsMatcher;
-        result = result.extend({
-            do: doArgsMatcher.or(z.array(z.string().or(z.object({}))).refine(xs => {
-                return xs.some(x => m.safeParse(x).success);
-            }))
-        });
-    }
-
-    if(matcher.kind){ result = result.extend({ kind: strOrRegexToZod(matcher.kind) }); }
-    if(matcher.path){ result = result.extend({ path: prefixOrRegexToZod(matcher.path) }); }
-    return result;
-}
-
-function argsToZod(args: object){
-    return z.object({}).passthrough().refine(x => argsMatch(args, x));
-}
-
-function argsMatch(matcher: unknown, obj: unknown){
-    if(obj === undefined){ return false; }
-    if(matcher === obj){ return true; }
-    if(Array.isArray(matcher)){
-        if(!Array.isArray(obj)){ return false; }
-        else if(matcher.length !== obj.length){ return false; }
-        else{
-            for(let i=0;i<matcher.length;i++){
-                if(!argsMatch(matcher[i], obj[i])){ return false; }
-            }
-        }
-        return true;
-    }
-    if(typeof matcher === 'object'){
-        if(typeof obj !== 'object'){ return false; }
-        else{
-            for(let [key, value] of Object.entries(matcher || {})){
-                if(!argsMatch(value, (<any>obj)[key])){ return false; }
-            }
-        }
-        return true;
-    }
-    return false;
-}
-
-function orArray<T extends ZodTypeAny>(x: T){ return x.or(z.array(x)); }
+// TODO: we're going to have from and to be strings that get evaluated
+// to truthy statements
 const pushMacroArgs = z.object({
     range: z.object({
-        from: orArray(doMatcher), 
-        to: orArray(doMatcher).optional()
+        from: z.string(),
+        to: z.string(),
     }).optional(),
-    at: doMatcher.optional(),
+    at: z.string().optional(),
     value: runCommandArgs.array().optional()
 });
+
+function evalMatcher(matcher: string, i: number): number {
+    let result_ = evalContext.evalStr(matcher, {...state.values, i});
+    if(typeof result_ !== 'number'){
+        if(result_){ return i; }
+        else{ return -1; }
+    }else{
+        return result_;
+    }
+}
 
 function pushMacro(args_: unknown){
     let args = validateInput('master-key.replay', args_, pushMacroArgs);
@@ -465,24 +348,21 @@ function pushMacro(args_: unknown){
             // find the range of commands we want to replay
             let from = -1;
             let to = -1;
-            let argsTo = args.range?.to || args.at;
-            let toMatcher = argsTo ? doMatchFn(argsTo, -1) : (x: unknown, i: number) => i;
-            let fromMatcher = args.range?.from ? doMatchFn(args.range.from, +1) : undefined;
-            for(let i=commandHistory.length-1;i>=0;i--){
-                if(to < 0 && toMatcher){
-                    let atIndex = toMatcher(commandHistory[i], i);
-                    if(atIndex !== undefined){ 
-                        to = i; 
-                        if(args.at){ from = to; }
-                    }
+            let toMatcher = args.range?.to || args.at;
+            let fromMatcher = args.range?.from;
+            for(let i=state.values.commandHistory.length-1;i>=0;i--){
+                if(to < 0){
+                    if(!toMatcher){ to = i; }
+                    else{ to = evalMatcher(toMatcher, i); }
+                    if(args.at){ from = to; }
                 } 
                 if(from < 0 && fromMatcher){
-                    let atIndex = fromMatcher(commandHistory[i], i);
+                    let atIndex = evalMatcher(fromMatcher, i);
                     if(atIndex !== undefined){ from = i; }
                 }
             }
 
-            if(from > 0 && to > 0){ value = commandHistory.slice(from, to); }
+            if(from > 0 && to > 0){ value = state.values.commandHistory.slice(from, to); }
         }
         if(value){ state.values.macro.push(value); }
     }
@@ -567,7 +447,7 @@ async function restoreNamed(args_: unknown){
         let selected = await vscode.window.showQuickPick(items);
         if(selected !== undefined){
             setKeyContext({ name: 'captured', value: stored[args.name][selected.label] });
-            runCommands({ do: args.doAfter });
+            runCommands({ do: regularizeCommands(args.doAfter) });
         }
     }
 }
