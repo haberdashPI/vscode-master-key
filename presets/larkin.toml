@@ -1423,7 +1423,7 @@ a count requests the Nth most recent item on this stack.
 """
 key = "q q"
 do.command = "master-key.replayFromStack"
-do.args.at.index = "i-(count || 1)"
+do.computedArgs.index = "i-(count || 1)"
 
 [[bind.edit.action.history.items]]
 name = "store macro"

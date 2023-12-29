@@ -1,9 +1,11 @@
 import * as vscode from 'vscode';
-import z, { ZodTypeAny } from 'zod';
+import z from 'zod';
 import { showParseError } from './keybindingParsing';
 
-export function validateInput<T extends z.ZodTypeAny>(command: string, args_: unknown, 
-    using: T) {
+// function validateInput(command: string, args_: unknown, 
+//     using: z.ZodUn);
+export function validateInput<T, Def extends z.ZodTypeDef, I>(command: string, args_: unknown, 
+    using: z.ZodType<T,Def,I>): T | undefined {
     let result = using.safeParse(args_);
     if(!result.success){
         showParseError(`'${command}' `, result.error);

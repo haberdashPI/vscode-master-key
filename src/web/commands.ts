@@ -1,11 +1,11 @@
 import * as vscode from 'vscode';
-import { StrictDoArg, strictDoArgs, validModes, strictBindingCommand, StrictBindingCommand, StrictDoArgs } from './keybindingParsing';
+import { strictDoArgs, validModes, strictBindingCommand, StrictBindingCommand } from './keybindingParsing';
 import { PrefixCodes, isSingleCommand, regularizeCommands } from './keybindingProcessing';
 import { reifyStrings, EvalContext } from './expressions';
 import { validateInput } from './utils';
-import z, { ZodObject, ZodTypeAny } from 'zod';
+import z from 'zod';
 import { clearSearchDecorations, trackSearchUsage, wasSearchUsed } from './searching';
-import { merge } from 'lodash';
+import { merge, cloneDeep } from 'lodash';
 import { INPUT_CAPTURE_COMMANDS } from './keybindingParsing';
 
 let modeStatusBar: vscode.StatusBarItem | undefined = undefined;
@@ -141,23 +141,33 @@ function updateCursorAppearance(editor: vscode.TextEditor, mode: string){
 }
 
 
-async function runCommand(command: StrictDoArg){
-    if(typeof command === 'string'){
-        await vscode.commands.executeCommand(command);
-    }else{
-        if(command.if){
-            if(!evalContext.evalStr(command.if, state.values)){
-                return; // if the if check fails, don't run the command
-            }
-        }
-        let reifyArgs: Record<string, any> = command.args || {};
-        if(command.computedArgs !== undefined){
-            let computed = reifyStrings(command.computedArgs, 
-                str => evalContext.evalStr(str, state.values));
-            reifyArgs = merge(reifyArgs, computed);
-        }
-        await vscode.commands.executeCommand(command.command, reifyArgs);
+async function runCommand(command: StrictBindingCommand, i?: number){
+    let recordedCommand = command;
+    if(i !== undefined){
+        let recordedCommands = state.values.
+            commandHistory[state.values.commandHistory.length-1];
+        recordedCommand = recordedCommands.do[i];
     }
+    if(command.if !== undefined){
+        let doRun: unknown = undefined;
+        if(typeof command.if === 'boolean'){ doRun = command.if; }
+        else{ doRun = evalContext.evalStr(command.if, state.values); }
+        if(i !== undefined){ recordedCommand.if = !!doRun; }
+        if(!doRun){
+            return; // if the if check fails, don't run the command
+        }
+    }
+    let reifyArgs: Record<string, any> = command.args || {};
+    if(command.computedArgs !== undefined){
+        let computed = reifyStrings(command.computedArgs, 
+            str => evalContext.evalStr(str, state.values));
+        reifyArgs = merge(reifyArgs, computed);
+        if(i !== undefined){
+            recordedCommand.args = reifyArgs;
+            recordedCommand.computedArgs = undefined;
+        }
+    }
+    await vscode.commands.executeCommand(command.command, reifyArgs);
 }
 
 const runCommandArgs = z.object({ 
@@ -170,47 +180,33 @@ const runCommandArgs = z.object({
 }).strict();
 type RunCommandsArgs = z.input<typeof runCommandArgs>;
 
-let argsUpdated = false;
 async function runCommandsCmd(args_: unknown){
-    argsUpdated = false;
     let args = validateInput('master-key.do', args_, runCommandArgs);
     if(args){
         if(!isSingleCommand(args.do, 'master-key.prefix')){
-            state.values.commandHistory.push(args);
+            state.values.commandHistory.push(cloneDeep(args));
             if( state.values.commandHistory.length > maxHistory ){ state.values.commandHistory.shift(); }
         }
         await runCommands(args); 
     }
 }
 
-export function updateArgs(args: { [i: string]: unknown } | "CANCEL"){
+export function updateArgs(args: Record<string, unknown> | "CANCEL"){
     if(args === "CANCEL"){
         state.values.commandHistory.pop();
     }else{
-        argsUpdated = true;
-        let doCmd = state.values.commandHistory[state.values.commandHistory.length-1];
+        let commands = state.values.commandHistory[state.values.commandHistory.length-1];
         // NOTE: while in principle this could update multiple arguments we have previously
         // validated that only one command in this array will be one of the commands listed
         // under `INPUT_CAPTURE_COMMANDS`
-        for(let i=0; i<doCmd.do.length; i++){
-            doCmd.do[i] = updatedArgsFor(doCmd.do[i], args);
-        }
-        state.values.commandHistory[state.values.commandHistory.length-1] = doCmd;
+        commands.do = commands.do.map(cmd => {
+            if(INPUT_CAPTURE_COMMANDS.some(c => `master-key.${c}` === cmd.command)){
+                return { ...cmd, args };
+            }
+            return cmd;
+        });
+        state.values.commandHistory[state.values.commandHistory.length-1] = commands;
     }
-}
-
-function updatedArgsFor(doArg: StrictBindingCommand, 
-    updatedArgs: { [i: string]: unknown }): StrictBindingCommand {
-
-    let cmdName = typeof doArg === 'string' ? doArg : doArg.command;
-    if(INPUT_CAPTURE_COMMANDS.some(c => `master-key.${c}` === cmdName)){
-        if(typeof doArg === 'string'){
-            return { command: doArg, args: updatedArgs };
-        }else{
-            return { ...doArg, args: updatedArgs };
-        }
-    }
-    return doArg;
 }
 
 let maxHistory = 0;
@@ -218,8 +214,7 @@ let maxHistory = 0;
 export async function runCommands(args: RunCommandsArgs){
     // run the commands
     trackSearchUsage();
-    if (Array.isArray(args.do)) { for (let arg of args.do) { await runCommand(arg); } }
-    else { await runCommand(args.do); }
+    for (let i=0; i<args.do.length; i++) { await runCommand(args.do[i], i); }
 
     if(args.resetTransient){ 
         reset(); 
@@ -345,7 +340,7 @@ function evalMatcher(matcher: string, i: number): number {
 function selectHistoryCommand(cmd: string, args_: unknown, 
     followup: (seq: RunCommandsArgs[] | undefined) => void){
 
-    let args = validateInput('master-key.replay', args_, selectHistoryArgs);
+    let args = validateInput(cmd, args_, selectHistoryArgs);
     if(args){
         let value: RunCommandsArgs[] | undefined = undefined;
         if(args.value){ value = args.value; }
@@ -357,7 +352,10 @@ function selectHistoryCommand(cmd: string, args_: unknown,
             let toMatcher = args.range?.to || args.at;
             let fromMatcher = args.range?.from;
             for(let i=history.length-1;i>=0;i--){
-                if(to < 0){
+                // NOTE: remember that `selectHistoryArgs` cannot leave both `range` and
+                // `at` undefined, so at least one of `toMatcher` and `fromMatcher` are not
+                // undefined
+                if(to < 0 && toMatcher){
                     to = evalMatcher(toMatcher, i);
                     if(args.at){ from = to; }
                 } 

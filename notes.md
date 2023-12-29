@@ -3,7 +3,7 @@ current issue I'm working on:
 repeat last selection
 repeat last action 
 
-we need the ability to store pushed macros in a specific register
+issue: we need to reify computedArgs using `updateArgs` (written, needs to be tested)
 
 - start implementing event recording / replay for
     X record macro
@@ -16,13 +16,6 @@ hold on: wouldn't this be easier if I regularized command formats and just made 
 
 - start dogfooding (wee need to answer the question: post recording is this reasonably
   fast enough)
-
-maybe we should implement an edit and a navigation history since the built-in commands aren't particularly satisfying
-
-- require parsing to validate modes to be all negations or all positive mode specifications
-- move modalkeys.selectbetween to selection-utilities.selectBetween
-- add various selectbetween commands
-- add symmetric insert setup and continue dogfooding with the new repeat actions
 
 Testing stuff:
 
@@ -37,6 +30,28 @@ unit tests: macro replay
 unit tests: duplicate binding handling (especially with the automated keys)
 unit tests: captureKeys works as expected, even when you run some other command
 unit tests: UX settings change status bar
+unit tests: edges cases for command recording
+  - I think it may currently be possible to edit the wrong command
+    if a second command is executed in the process of awaiting
+    for input from the first (e.g. the input text for search is open
+    and a command combination that has a poorly defined when clause
+    triggers a new command)
+
+**TODO**: anything beyond this point needs to be organized and prioritized
+
+maybe we should implement an edit and a navigation history since the built-in commands aren't particularly satisfying
+
+- require parsing to validate modes to be all negations or all positive mode specifications
+- move modalkeys.selectbetween to selection-utilities.selectBetween
+- add various selectbetween commands
+- add symmetric insert setup and continue dogfooding with the new repeat actions
+
+cleanup:
+
+- we know transient variables aren't really something we need to expose to the user; from
+  their perspective all commands are a unitary thing (`prefix` is a special case, but is
+  only employed for documentation purposes on the user side; in principle it could be a no
+  op, and multi-key commands could be represented as they normally are in VSCode)
 
 wishlist:
 
@@ -56,4 +71,5 @@ make config import work for both global and workspace settings
   for changes in the primary selection)
   - NOTE: this should also use `master-key.set` when available
 
+enhancement: sneak shows the count required to reach each target
 
