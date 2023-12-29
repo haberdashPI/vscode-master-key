@@ -151,7 +151,12 @@ async function runCommand(command: StrictBindingCommand, i?: number){
     if(command.if !== undefined){
         let doRun: unknown = undefined;
         if(typeof command.if === 'boolean'){ doRun = command.if; }
-        else{ doRun = evalContext.evalStr(command.if, state.values); }
+        else{ 
+            // we expect that all arguments have been reifiend when we re-run
+            // a command, i === undefined when we are reunning a command
+            if(i === undefined){ throw Error("Unexpected operation! This is a bug."); }
+            doRun = evalContext.evalStr(command.if, state.values); 
+        }
         if(i !== undefined){ recordedCommand.if = !!doRun; }
         if(!doRun){
             return; // if the if check fails, don't run the command
@@ -165,6 +170,10 @@ async function runCommand(command: StrictBindingCommand, i?: number){
         if(i !== undefined){
             recordedCommand.args = reifyArgs;
             recordedCommand.computedArgs = undefined;
+        }else{
+            // we expect that all arguments have been reifyied when we re-run
+            // a command, i === undefined iff we are re-running a command
+            throw Error("Unexpected operation! This is a bug.");
         }
     }
     await vscode.commands.executeCommand(command.command, reifyArgs);
