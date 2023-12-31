@@ -459,7 +459,7 @@ do.args.selectWhole = true
 do.computedArgs = { value = "-(count || 1)" }
 
 [[bind.edit.motion.obj.items]]
-key = ", ;"
+key = "/ ;"
 name = "blk cmnt ←"
 description = "previous block comment"
 do.args.unit = "block_comment"
@@ -468,7 +468,7 @@ do.args.selectWhole = true
 do.computedArgs = { value = "-(count || 1)" }
 
 [[bind.edit.motion.obj.items]]
-key = ", shift+;"
+key = "/ shift+;"
 name = "blk cmnt →"
 description = "next block comment"
 do.args.unit = "block_comment"
@@ -543,7 +543,7 @@ default.do.args.selectTillMatch = true
 default.do.args.wrapAround = true
 
 [[bind.edit.motion.search.items]]
-key = "/"
+key = "/ /"
 name = "capture"
 description = "search forwards"
 do.args.offset = "start"
@@ -1208,7 +1208,7 @@ do = ["cursorRight", "editor.action.clipboardPasteAction"]
 [[bind.edit.action.clipboard.items]]
 name = "paste after line"
 description = "Paste text after current line"
-key = ", v"
+key = "/ v"
 do = [
       "expandLineSelection",
       "selection-utilities.activeAtEnd",
@@ -1220,7 +1220,7 @@ do = [
 [[bind.edit.action.clipboard.items]]
 name = "paste before line"
 description = "Paste text before current line"
-key = ", shift+v"
+key = "/ shift+v"
 do = [
       "expandLineSelection",
       "selection-utilities.activeAtStart",
@@ -1341,13 +1341,13 @@ description = "Commands that interact with edit or cursor history."
 name = "undo"
 description = "VSCode Undo"
 key = "z"
-do = [ "undo", "selection-utilities.shrinkToActive", "master-key.untouchDocument", ]
+do = [ "undo", "selection-utilities.shrinkToActive" ]
 
 [[bind.edit.action.history.items]]
 name = "undo"
 description = "VSCode Redo"
 key = "shift+z"
-do = [ "redo", "selection-utilities.shrinkToActive", "master-key.untouchDocument", ]
+do = [ "redo", "selection-utilities.shrinkToActive" ]
 
 [[bind.edit.action.history.items]]
 name = "cursor undo"
@@ -1423,7 +1423,7 @@ a count requests the Nth most recent item on this stack.
 """
 key = "q q"
 do.command = "master-key.replayFromStack"
-do.computedArgs.index = "i-(count || 1)"
+do.computedArgs.index = "count"
 
 [[bind.edit.action.history.items]]
 name = "store macro"
@@ -1468,10 +1468,14 @@ description = """
 Repeat the last action command. Actions usually modify the text of a document in one way or
 antoher. (But, e.g. sending text to the REPL is also considered an editor action).
 """
-key = "ctrl+."
+key = "."
 do.command = "master-key.replayFromHistory"
+# we can repeat any action but history-related actions; we make an exception
+# for replaying macros, which can be repeated
 do.args.at = """
-commandHistory[i].path.startsWith('edit.action') && commandHistory[i].name != 'repeat action')
+commandHistory[i].path.startsWith('edit.action') && 
+(!commandHistory[i].path.startsWith('edit.action.history') ||
+ commandHistory[i].name == 'replay')
 """
 
 [[bind.edit.action.history.items]]
@@ -1481,7 +1485,7 @@ Repeat the last subject: the selection command that occurred right before an act
 instance `w` followed by `d` selects a word and deletes it. The `w` command would be the 
 last noun until some action is run after `d`.
 """
-key = "ctrl+,"
+key = ","
 do.command = "master-key.replayFromHistory"
 do.args.at = """
 commandHistory[i].path.startsWith("edit.motion") &&
@@ -1609,7 +1613,7 @@ name = "error →"
 description = """
 move to next error
 """
-key = ", e"
+key = "/ e"
 do = "editor.action.marker.next"
 
 [[bind.edit.navigation.items]]
@@ -1617,7 +1621,7 @@ name = "error ←"
 description = """
 move to previous error
 """
-key = ", shift+e"
+key = "/ shift+e"
 do = "editor.action.marker.prev"
 
 [[bind.edit.navigation.items]]
@@ -1625,7 +1629,7 @@ name = "diff →"
 description = """
 move to and show next change
 """
-key = ", d"
+key = "/ d"
 do = "editor.action.dirtydiff.next"
 
 [[bind.edit.navigation.items]]
@@ -1633,7 +1637,7 @@ name = "diff ←"
 description = """
 move to and show previous change
 """
-key = ", shift+d"
+key = "/ shift+d"
 do = "editor.action.dirtydiff.previous"
 
 [[bind.edit.navigation.items]]
@@ -1662,94 +1666,94 @@ default.when = "editorTextFocus"
 [[bind.window.items]]
 name = "open file"
 description = "Open file using quick open"
-key = ", f"
+key = "/ f"
 do = "workbench.action.quickOpen"
 
 [[bind.window.items]]
 name = "open recent"
 description = "Open recent file"
-key = ", shift+r"
+key = "/ r"
 do = "workbench.action.openRecent"
 
 [[bind.window.items]]
 name = "command"
 description = "Show the VSCode command palette"
-key = ", ,"
+key = "/ ,"
 do = "workbench.action.showCommands"
 
 [[bind.window.items]]
 name = "goto line"
 description = "Use VSCode goto line command"
-key = ", g"
+key = "/ g"
 do = "workbench.action.gotoLine"
 
 [[bind.window.items]]
 name = "center"
 description = "center window at primary cursor position"
-key = ", shift+."
+key = "/ shift+."
 do.command = "selection-utilities.revealActive"
 do.args.at = "center"
 
 [[bind.window.items]]
 name = "top"
 description = "center window so that primary cursor is at the top"
-key = ", shift+k"
+key = "/ shift+k"
 do.command = "selection-utilities.revealActive"
 do.args.at = "top"
 
 [[bind.window.items]]
 name = "bottom"
 description = "center window so that primary cursor is at the bottom"
-key = ", shift+j"
+key = "/ shift+j"
 do.command = "selection-utilities.revealActive"
 do.args.at = "bottom"
 
 [[bind.window.items]]
 name = "max"
 description = "minimize size of all other windows"
-key = ", shift+m"
+key = "/ shift+m"
 do = "workbench.action.minimizeOtherEditors"
 
 [[bind.window.items]]
 name = "equal"
 description = "equalzize size of all windows"
-key = ", ="
+key = "/ ="
 do = "workbench.action.evenEditorWidths"
 
 [[bind.window.items]]
 name = "split"
 description = "toggle split editor view"
-key = ', shift+\'
+key = "/ shift+\\"
 do = "workbench.action.toggleSplitEditorInGroup"
 
 [[bind.window.items]]
 name = "split →"
 description = "move to other side of editor split"
-key = ", shift+l"
+key = "/ shift+l"
 do = "workbench.action.focusOtherSideEditor"
 
 [[bind.window.items]]
 name = "→"
 description = "move focus to window to the right"
-key = ", l"
+key = "/ l"
 do = "workbench.action.focusRightGroup"
 
 [[bind.window.items]]
 name = "←"
 description = "move focus to window to the left"
-key = ", h"
+key = "/ h"
 do = "workbench.action.focusLeftGroup"
 
 [[bind.window.items]]
 name = "↑"
 description = "move focus to window above"
-key = ", k"
+key = "/ k"
 do = "workbench.action.focusAboveGroup"
 
 [[bind.window.items]]
 name = "↓"
 description = "move focus to window below"
-key = ", j"
+key = "/ j"
 do = "workbench.action.focusBelowGroup"
 
 [[bind.window.items]]
@@ -1832,7 +1836,7 @@ description = "Commands for placing editors in new panes."
 [[bind.window.create.items]]
 name = "create"
 description = "create new window of editor in given direction" 
-key = ", c"
+key = "/ c"
 kind = "prefix"
 resetTransient = false
 do.command = "master-key.prefix"
@@ -1840,25 +1844,25 @@ do.command = "master-key.prefix"
 [[bind.window.create.items]]
 name = "→"
 description = "create new window of editor to left" 
-key = ", c l"
+key = "/ c l"
 do = "workbench.action.splitEditorRight"
 
 [[bind.window.create.items]]
 name = "←"
 description = "create new window of editor to left" 
-key = ", c h"
+key = "/ c h"
 do = "workbench.action.splitEditorLeft"
 
 [[bind.window.create.items]]
 name = "↓"
 description = "create new window of editor below" 
-key = ", c j"
+key = "/ c j"
 do = "workbench.action.splitEditorDown"
 
 [[bind.window.create.items]]
 name = "↑"
 description = "create new window of editor above" 
-key = ", c k"
+key = "/ c k"
 do = "workbench.action.splitEditorUp"
 
 [bind.window.move]
@@ -1868,38 +1872,38 @@ description = "Move editors between panes"
 [[bind.window.move.items]]
 name = "move to"
 description = "move editor to window in given direction" 
-key = ", m"
+key = "/ m"
 resetTransient = false
 do.command = "master-key.prefix"
 
 [[bind.window.move.items]]
 name = "→"
 description = "move editor to window to left" 
-key = ", m l"
+key = "/ m l"
 do = "workbench.action.moveEditorToRightGroup"
 
 [[bind.window.move.items]]
 name = "←"
 description = "move editor to window to left" 
-key = ", m h"
+key = "/ m h"
 do = "workbench.action.moveEditorToLeftGroup"
 
 [[bind.window.move.items]]
 name = "↓"
 description = "move editor to window below" 
-key = ", m j"
+key = "/ m j"
 do = "workbench.action.moveEditorToBelowGroup"
 
 [[bind.window.move.items]]
 name = "↑"
 description = "move editor to window above" 
-key = ", m k"
+key = "/ m k"
 do = "workbench.action.moveEditorToAboveGroup"
 
 [[bind.window.move.items]]
 name = "close pane"
 description = "close the given group of editors"
-key = ", x"
+key = "/ x"
 do = "workbench.action.closeEditorsInGroup"
 
 [bind.edit.select_edit]
@@ -1937,7 +1941,7 @@ description = """
 Enter a mode where you can edit and manipulate (possibly multiple) selections with ease. 
 No additional cursors will be added when entering the mode with this command. 
 """
-key = ", shift+'"
+key = "/ shift+'"
 do.command = "master-key.setMode"
 do.args.value = "selectedit"
 mode = "normal"
@@ -2072,13 +2076,13 @@ name = "restore sel"
 description = """
 restore the most recently cleared selection
 """
-key = ", -"
+key = "/ -"
 mode = ["normal", "selectedit"]
 do = { command = "selection-utilities.restoreAndClear", args = { register = "cancel"} }
 
 [[bind.edit.select_edit.items]]
 when = "editorHasMultipleSelections"
-key = ", -"
+key = "/ -"
 mode = ["normal", "selectedit"]
 do = [
       { command = "selection-utilities.restoreAndClear", args = { register = "cancel"} },
@@ -2181,7 +2185,7 @@ description = """
 create a set of selections by the specified marker that all fall within the current 
 set of selections
 """
-key = "/"
+key = "/ /"
 resetTransient = false
 do.command = "master-key.prefix"
 
