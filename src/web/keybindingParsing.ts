@@ -101,9 +101,6 @@ function keybindingError(arg: string){
 const bindingKey = z.string().refine(isAllowedKeybinding, keybindingError).
     transform((x: string) => x.toLowerCase());
 
-const doArg = z.union([z.string(), bindingCommand, definedCommand]);
-const doArgs = z.union([doArg, doArg.array()]);
-export type DoArg = z.infer<typeof doArg>;
 
 function prefixError(arg: string){
     return { 
@@ -135,9 +132,10 @@ export function parseWhen(when_: string | string[] | undefined): ParsedWhen[] {
     return [];
 }
 
-export const bindingItem = z.object({
+export const rawBindingItem = z.object({
     name: z.string().optional(),
     description: z.string().optional(),
+    path: z.string(),
     kind: z.string().optional(),
     key: z.union([bindingKey, bindingKey.array()]).optional(),
     when: z.union([z.string(), z.string().array()]).optional().
@@ -146,68 +144,45 @@ export const bindingItem = z.object({
     mode: z.union([z.string(), z.string().array()]).optional(),
     prefixes: z.preprocess(x => x === "<all-prefixes>" ? [] : x,
         z.string().array()).optional(),
-    do: doArgs.optional(),
     resetTransient: z.boolean().default(true).optional()
-}).strict();
-export type BindingItem = z.output<typeof bindingItem>;
+}).merge(bindingCommand).strict();
+export type BindingItem = z.output<typeof rawBindingItem>;
 
 // a strictBindingItem is satisfied after expanding all default fields
 export const strictBindingCommand = bindingCommand.required({command: true});
 export type StrictBindingCommand = z.infer<typeof strictBindingCommand>;
 
-const strictDoArg = z.union([z.string(), strictBindingCommand]);
-export const strictDoArgs = z.union([strictDoArg, strictDoArg.array().refine(xs => {
+export const doArgs = strictBindingCommand.array().refine(xs => {
     let acceptsInput = 0;
     for(let x of xs){
-        if(typeof x === 'string'){
-            if(INPUT_CAPTURE_COMMANDS.some(i => i === x)){ acceptsInput += 1; }
-        }else{
-            let cmd = (<BindingCommand>x).command;
-            if(INPUT_CAPTURE_COMMANDS.some(i => i === cmd)){ acceptsInput =+ 1; }
-        }
+        let cmd = (<BindingCommand>x).command;
+        if(INPUT_CAPTURE_COMMANDS.some(i => i === cmd)){ acceptsInput =+ 1; }
     }
     return acceptsInput <= 1;
-}, { message: "`do` commands can include only one command that accepts user input."})]);
-export const strictBindingItem = bindingItem.required({
-    key: true,
-    kind: true,
-}).extend({
-    // do now requires `command` to be present when using the object form
-    when: parsedWhen.array(),
-    prefixes: z.string().array(),
-    do: strictDoArgs,
-    path: z.string(),
-});
-export type StrictBindingItem = z.infer<typeof strictBindingItem>;
-export type StrictDoArg = z.infer<typeof strictDoArg>;
-export type StrictDoArgs = z.infer<typeof strictDoArgs>;
+}, { message: "`runCommand` arguments can include only one command that accepts user input."})
 
-const bindingTreeBase = z.object({
+export const bindingItem = z.object({
+    key: rawBindingItem.shape.key,
+    when: parsedWhen.array(),
+    command: z.literal("master-key.do"),
+    mode: rawBindingItem.shape.mode,
+    prefixes: z.string().array(),
+    args: z.object({
+        do: doArgs,
+        path: z.string(),
+    }).merge(rawBindingItem.pick({name: true, description: true, kind: true, 
+        resetTransient: true}))
+}).required({
+    key: true,
+    kind: true
+});
+
+export const bindingPath = z.object({
+    for: z.string().regex(/[a-ZA-Z0-9_-]+(\.[a-ZA-Z0-9_-]+)*/),
     name: z.string(),
     description: z.string(),
-    default: bindingItem.optional(),
-    items: bindingItem.array().optional()
+    default: bindingItem,
 });
-// BindingTree is a recursive type, keys that aren't defined above are nested BindingTree
-// objects; this requires some special care since `z.infer` on its own will not work; we
-// need to do a bit of manual work
-type OtherKeys = {
-    // we can't mark the keys as strictingly BindingTree objects because of the way that
-    // indexed fields work (they have to be a union of unnamed and named field types)
-    [key: string]: any 
-};
-export type BindingTree = z.output<typeof bindingTreeBase> & OtherKeys;
-type BindingTreeInput = z.input<typeof bindingTreeBase> & OtherKeys;
-export const bindingTree: z.ZodType<BindingTree, z.ZodTypeDef, BindingTreeInput> = 
-    bindingTreeBase.catchall(z.lazy(() => bindingTree));
-
-export const strictBindingTree = bindingTreeBase.extend({
-    items: strictBindingItem.array().optional()
-});
-export type StrictBindingTree = z.infer<typeof strictBindingTree> & OtherKeys;
-
-// TODO: unit test - verify that zod recursively validates all 
-// elements of the binding tree
 
 function contains(xs: string[], el: string){
     return xs.some(x => x === el);
@@ -221,7 +196,8 @@ export const validModes = z.string().array().
 
 export const bindingSpec = z.object({
     header: bindingHeader,
-    bind: bindingTree,
+    bind: bindingItem.array(),
+    paths: bindingPath.array(),
     define: z.object({ validModes: validModes }).passthrough().optional()
 });
 export type BindingSpec = z.infer<typeof bindingSpec>;

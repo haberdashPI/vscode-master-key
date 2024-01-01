@@ -1,9 +1,10 @@
 current issue I'm working on:
 
-setup unit tests (there's stuff to download here, so would be good to get that going)
+- unit tests are blocked by updating formattig, because I don't want to rewrite all tests
 
 NEXT UP:
 
+setup unit tests (there's stuff to download here, so would be good to get that going)
 - start dogfooding (wee need to answer the question: post recording is this reasonably
   fast enough)
 
@@ -60,13 +61,6 @@ maybe we should implement an edit and a navigation history since the built-in co
 - move modalkeys.selectbetween to selection-utilities.selectBetween
 - add various selectbetween commands
 - add symmetric insert setup and continue dogfooding with the new repeat actions
-
-cleanup:
-
-- we know transient variables aren't really something we need to expose to the user; from
-  their perspective all commands are a unitary thing (`prefix` is a special case, but is
-  only employed for documentation purposes on the user side; in principle it could be a no
-  op, and multi-key commands could be represented as they normally are in VSCode)
 
 wishlist:
 
