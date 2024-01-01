@@ -145,18 +145,17 @@ export const rawBindingItem = z.object({
     prefixes: z.preprocess(x => x === "<all-prefixes>" ? [] : x,
         z.string().array()).optional(),
     resetTransient: z.boolean().default(true).optional()
-}).merge(bindingCommand).strict();
-export type BindingItem = z.output<typeof rawBindingItem>;
+}).merge(rawBindingCommand).strict();
+export type RawBindingItem = z.output<typeof rawBindingItem>;
 
 // a strictBindingItem is satisfied after expanding all default fields
-export const strictBindingCommand = bindingCommand.required({command: true});
-export type StrictBindingCommand = z.infer<typeof strictBindingCommand>;
+export const bindingCommand = rawBindingCommand.required({command: true});
+export type BindingCommand = z.infer<typeof bindingCommand>;
 
-export const doArgs = strictBindingCommand.array().refine(xs => {
+export const doArgs = bindingCommand.array().refine(xs => {
     let acceptsInput = 0;
     for(let x of xs){
-        let cmd = (<BindingCommand>x).command;
-        if(INPUT_CAPTURE_COMMANDS.some(i => i === cmd)){ acceptsInput =+ 1; }
+        if(INPUT_CAPTURE_COMMANDS.some(i => i === x.command)){ acceptsInput =+ 1; }
     }
     return acceptsInput <= 1;
 }, { message: "`runCommand` arguments can include only one command that accepts user input."})
@@ -171,11 +170,9 @@ export const bindingItem = z.object({
         do: doArgs,
         path: z.string(),
     }).merge(rawBindingItem.pick({name: true, description: true, kind: true, 
-        resetTransient: true}))
-}).required({
-    key: true,
-    kind: true
+        resetTransient: true})).required({key: true, kind: true})
 });
+export type BindingItem = z.output<typeof bindingItem>;
 
 export const bindingPath = z.object({
     for: z.string().regex(/[a-ZA-Z0-9_-]+(\.[a-ZA-Z0-9_-]+)*/),

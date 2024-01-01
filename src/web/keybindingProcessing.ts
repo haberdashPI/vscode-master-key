@@ -1,7 +1,5 @@
 import hash from 'object-hash';
-import { BindingSpec, BindingTree, StrictBindingTree, BindingItem, StrictBindingItem, 
-         strictBindingItem, StrictDoArgs, parseWhen, StrictDoArg, DoArg, 
-         DefinedCommand, StrictBindingCommand } from "./keybindingParsing";
+import { parseWhen, bindingItem, BindingItem, BindingSpec } from "./keybindingParsing";
 import * as vscode from 'vscode';
 import { isEqual, uniq, omit, mergeWith, cloneDeep, flatMap, merge, entries } from 'lodash';
 import { reifyStrings, EvalContext } from './expressions';
@@ -61,9 +59,18 @@ function expandDefinedCommands(item: BindingItem, definitions: any){
     return item;
 }
 
-function expandDefaultsAndDefinedCommands(bindings: BindingTree, definitions: any, 
-    path: string = "", 
-    defaultItem: BindingItem = {when: [], prefixes: [""]}): StrictBindingTree {
+function expandDefaultsAndDefinedCommands(spec: BindingSpec): BindingItem[] {
+    let pathDefaults: Record<string, BindingItem> = {};
+    for(let path of spec.paths){
+        let parts = path.for.split('.');
+        let defaults: BindingItem = bindingItem.parse({});
+        if(parts.length > 1){
+            let prefix = parts.slice(0,-1).join('.');
+            if(pathDefaults[prefix] === undefined){
+                vscode.window.showErrorMessage(`The path ${path} was defined before ${prefix})
+            }
+        }
+    }
 
     if (bindings.default !== undefined) {
         defaultItem = mergeWith(cloneDeep(defaultItem), <BindingItem>bindings.default,
