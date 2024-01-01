@@ -2600,7 +2600,7 @@ description = "split by a given character"
 key = "s c"
 command = "master-key.captureChar"
 args.acceptAfter = 1
-args.doAfter = { command = "selection-utilities.splitBy", computedArgs = { text = "capture" } }
+args.doAfter = [{ command = "selection-utilities.splitBy", computedArgs = { text = "capture" } }]
 
 [[paths]]
 for = "edit.select_edit.create"

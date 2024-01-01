@@ -1,7 +1,7 @@
 import hash from 'object-hash';
 import { parseWhen, bindingItem, DoArgs, DefinedCommand, BindingItem, BindingSpec, rawBindingItem, RawBindingItem } from "./keybindingParsing";
 import * as vscode from 'vscode';
-import { isEqual, uniq, omit, mergeWith, cloneDeep, flatMap, merge, entries } from 'lodash';
+import { pick, isEqual, uniq, omit, mergeWith, cloneDeep, flatMap, merge, entries } from 'lodash';
 import { reifyStrings, EvalContext } from './expressions';
 import { fromZodError } from 'zod-validation-error';
 
@@ -90,8 +90,8 @@ function expandDefaultsAndDefinedCommands(spec: BindingSpec): BindingItem[] {
                 prefixes: item.prefixes,
                 command: "master-key.do",
                 args: {
-                    // TODO: handle the runCommands case here
-                    do: regularizeCommand(item.args),
+                    do: item.command === 'runCommands' ? 
+                        item.args : pick(item, ['command', 'args', 'computedArgs', 'if']),
                     path: item.path,
                     name: item.name,
                     description: item.description,
