@@ -21,7 +21,7 @@ type BindingHeader = z.infer<typeof bindingHeader>;
 
 const rawBindingCommand = z.object({
     command: z.string().optional(), // only optional before default expansion
-    args: z.object({}).passthrough().optional(),
+    args: z.any(),
     computedArgs: z.object({}).passthrough().optional(),
     if: z.string().or(z.boolean()).default(true).optional()
 }).strict();
@@ -159,6 +159,7 @@ export const doArgs = bindingCommand.array().refine(xs => {
     }
     return acceptsInput <= 1;
 }, { message: "`runCommand` arguments can include only one command that accepts user input."})
+export type DoArgs = z.infer<typeof doArgs>;
 
 export const bindingItem = z.object({
     key: rawBindingItem.shape.key,
@@ -170,8 +171,8 @@ export const bindingItem = z.object({
         do: doArgs,
         path: z.string(),
     }).merge(rawBindingItem.pick({name: true, description: true, kind: true, 
-        resetTransient: true})).required({key: true, kind: true})
-});
+        resetTransient: true})).required({kind: true})
+}).required({key: true, when: true, args: true});
 export type BindingItem = z.output<typeof bindingItem>;
 
 export const bindingPath = z.object({
@@ -193,7 +194,7 @@ export const validModes = z.string().array().
 
 export const bindingSpec = z.object({
     header: bindingHeader,
-    bind: bindingItem.array(),
+    bind: rawBindingItem.array(),
     paths: bindingPath.array(),
     define: z.object({ validModes: validModes }).passthrough().optional()
 });

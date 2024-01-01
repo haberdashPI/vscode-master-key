@@ -1,8 +1,7 @@
 current issue I'm working on:
 
 - file formatting (why: unit tests are blocked by updating formattig, because I don't want to rewrite all tests)
-  - current context: I've updated `keybindingParsing` and now I need to update
-    `keybindingProcessing`
+  - current context: I've mostly updated keybindingParsing, I have to handle `runCommands` now
   - NOTE: `commands` will also need to be updated
   - As I start trying to run this new version, I'd like to do that by writing
     up unit tests for the parsing and validation of keybindings
