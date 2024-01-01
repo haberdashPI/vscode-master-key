@@ -47,7 +47,7 @@ function formatBindings(file: vscode.Uri, items: IConfigKeyBinding[]){
             comment += item.prefixDescriptions.join("\n");
             json += replaceAll(comment, /^\s*(?=\S+)/mg, "    // ")+"\n";
         }
-        json += replaceAll(JSON.stringify(pick(item, ['key', 'when', 'command', 'args', 'kind', 'path']), 
+        json += replaceAll(JSON.stringify(pick(item, ['key', 'when', 'command', 'args']), 
             null, 4), /^/mg, "    ");
         json += ",\n\n";
     }
