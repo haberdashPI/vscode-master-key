@@ -1,6 +1,5 @@
 current issue I'm working on:
 
-recording edits!!
 setup unit tests (there's stuff to download here, so would be good to get that going)
 
 NEXT UP:
@@ -34,10 +33,18 @@ unit tests: edges cases for command recording
     this would likely require returning both a promise and a result
     (but maybe we can get away with returning something int he promise
     and just await on this result in the final command wrapper)
+unit tests: edge cases with recording edits
+  - how about when I switch documents?
+  - how about when we don't start with normal mode commands?
+  - how about long edits with lots of insert mode commands intersprsed with the edits?
+  - what about multiple cursors?
 
 REFACTOR: cleanup up and document code, make it nice and readable
 
 **TODO**: anything beyond this point needs to be organized and prioritized
+
+**TODO**: in document macro playback note the limitations of recording the keyboard
+(e.g. that it only records inserts)
 
 thoughts: things I must have to release:
 - the command palette like feature

@@ -5,7 +5,7 @@ import { reifyStrings, EvalContext } from './expressions';
 import { validateInput } from './utils';
 import z from 'zod';
 import { clearSearchDecorations, trackSearchUsage, wasSearchUsed } from './searching';
-import { merge, cloneDeep } from 'lodash';
+import { merge, cloneDeep, uniq } from 'lodash';
 import { INPUT_CAPTURE_COMMANDS } from './keybindingParsing';
 
 let modeStatusBar: vscode.StatusBarItem | undefined = undefined;
@@ -42,8 +42,8 @@ type KeyContext = z.infer<typeof keyContext> & { [key: string]: any } & {
     editorLangId: undefined | string,
     firstSelectionOrWord: string,
     prefixCodes: PrefixCodes,
-    macro: RunCommandsArgs[][],
-    commandHistory: RunCommandsArgs[],
+    macro: RecordedCommandArgs[][],
+    commandHistory: RecordedCommandArgs[],
     record: boolean,
 };
 
@@ -110,6 +110,11 @@ class CommandState {
         if(key === 'mode'){
             let editor = vscode.window.activeTextEditor;
             if(editor){ updateCursorAppearance(editor, value); }
+            if(value === 'insert'){
+                state.values.commandHistory[state.values.commandHistory.length-1].recordEdits = true;
+            }else{
+                state.values.commandHistory[state.values.commandHistory.length-1].recordEdits = false;
+            }
         }
         if(transient){ this.transientValues[key] = oldValue; }
         vscode.commands.executeCommand('setContext', 'master-key.' + key, value);
@@ -189,11 +194,17 @@ const runCommandArgs = z.object({
 }).strict();
 type RunCommandsArgs = z.input<typeof runCommandArgs>;
 
+type RecordedCommandArgs = RunCommandsArgs & {
+    recordEdits: boolean,
+    edits: vscode.TextDocumentChangeEvent[] | string
+};
+
 async function runCommandsCmd(args_: unknown){
     let args = validateInput('master-key.do', args_, runCommandArgs);
     if(args){
         if(!isSingleCommand(args.do, 'master-key.prefix')){
-            state.values.commandHistory.push(cloneDeep(args));
+            let recordEdits = state.values.mode === 'insert';
+            state.values.commandHistory.push({...cloneDeep(args), edits: [], recordEdits});
             if( state.values.commandHistory.length > maxHistory ){ state.values.commandHistory.shift(); }
         }
         await runCommands(args); 
@@ -318,7 +329,7 @@ function updateConfig(event?: vscode.ConfigurationChangeEvent){
         let config = vscode.workspace.getConfiguration('master-key');
         let definitions = config.get<object[]>('definitions');
         for(let [k, v] of Object.entries(definitions || {})){ state.setKeyContext(k, v); }
-        maxHistory = (config.get<number>('maxCommandHistory') || 65536);
+        maxHistory = (config.get<number>('maxCommandHistory') || 1024);
     }
 }
 
@@ -330,7 +341,7 @@ const selectHistoryArgs = z.object({
         to: z.string(),
     }).optional(),
     at: z.string().optional(),
-    value: runCommandArgs.array().optional(),
+    value: z.object({}).array().optional(),
     register: z.string().optional(),
 }).strict().refine(x => x.at || x.range, ({
     message: "Either `at` or `range` is required."
@@ -346,13 +357,12 @@ function evalMatcher(matcher: string, i: number): number {
     }
 }
 
-function selectHistoryCommand(cmd: string, args_: unknown, 
-    followup: (seq: RunCommandsArgs[] | undefined) => void){
+function selectHistoryCommand<T>(cmd: string, args_: unknown){ 
 
     let args = validateInput(cmd, args_, selectHistoryArgs);
     if(args){
-        let value: RunCommandsArgs[] | undefined = undefined;
-        if(args.value){ value = args.value; }
+        let value: RecordedCommandArgs[] | undefined = undefined;
+        if(args.value){ value = <RecordedCommandArgs[]>args.value; }
         else{
             // find the range of commands we want to replay
             let history = state.values.commandHistory;
@@ -375,28 +385,56 @@ function selectHistoryCommand(cmd: string, args_: unknown,
                 }
             }
         }
-        followup(value);
+        return value;
     }
+    return undefined;
 }
 commands['master-key.pushHistoryToStack'] = (args: unknown) => {
-    selectHistoryCommand('master-key.pushHistoryToStack', args, (commands) => {
-        if(commands){ state.values.macro.push(commands); }
-    });
+    let commands = selectHistoryCommand('master-key.pushHistoryToStack', args);
+    if(commands){ state.values.macro.push(commands); }
 };
-commands['master-key.replayFromHistory'] = (args: unknown) => {
-    selectHistoryCommand('master-key.replayFromHistory', args, commands => {
-        if(commands){ runCommandHistory(commands); }
-    });
+commands['master-key.replayFromHistory'] = async (args: unknown) => {
+    let commands = selectHistoryCommand('master-key.replayFromHistory', args);
+    if(commands){ await runCommandHistory(commands); }
 };
 
+function cleanupEdits(edits: vscode.TextDocumentChangeEvent[] | string){
+    if(typeof edits === 'string'){
+        return edits;
+    }else{
+        let result = "";
+        for(let edit of edits){
+            let strings = uniq(edit.contentChanges.map(x => x.text));
+            if(strings.length === 1){
+                result += strings[0];
+            }
+        }
+        return result;
+    }
+}
 const replayFromStackArgs = z.object({
     index: z.number().min(0).optional().default(0),
     register: z.string().optional()
 });
 const REPLAY_DELAY = 50;
-async function runCommandHistory(commands: RunCommandsArgs[]){
+async function runCommandHistory(commands: (RunCommandsArgs | RecordedCommandArgs)[]){
     for(let cmd of commands){
         await runCommands(cmd); 
+        if((<any>cmd).edits){
+            let editor = vscode.window.activeTextEditor;
+            if(editor){
+                let ed = editor;
+                let recorded = <RecordedCommandArgs>cmd;
+                let edits = cleanupEdits(recorded.edits);
+                recorded.edits = edits;
+                editor.edit(e => {
+                    for(let sel of ed.selections){ e.insert(sel.anchor, edits); }
+                });
+            }else{
+                vscode.window.showErrorMessage(`Command includes edits to the active text 
+                    editor, but there is currently no active editor.`)
+            }
+        }
         // replaying actions too fast messes up selection
         await new Promise(res => setTimeout(res, REPLAY_DELAY));
     }
@@ -406,8 +444,7 @@ async function replayFromStack(args_: unknown){
     if(args){
         let commands = state.values.macro[state.values.macro.length-args.index-1];
         if(commands){
-            runCommandHistory(commands);
-            return;
+            await runCommandHistory(commands);
         }
     }
 }
@@ -496,6 +533,14 @@ export function activate(context: vscode.ExtensionContext) {
 
     updateConfig();
     vscode.workspace.onDidChangeConfiguration(updateConfig);
+
+    vscode.workspace.onDidChangeTextDocument(e => {
+        let end = state.values.commandHistory.length-1;
+        let lastCommand = state.values.commandHistory[end];
+        if(typeof lastCommand.edits !== 'string' && lastCommand.recordEdits){
+            lastCommand.edits = lastCommand.edits.concat(e);
+        }
+    });
 
     vscode.window.onDidChangeTextEditorSelection(e => {
         let selCount = 0;

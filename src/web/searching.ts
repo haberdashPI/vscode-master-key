@@ -246,7 +246,8 @@ function deleteLastSearchCharacter(editor: vscode.TextEditor, edit: vscode.TextE
 
 export function revealActive(editor: vscode.TextEditor){
     let act = new vscode.Range(editor.selection.active, editor.selection.active);
-    editor.revealRange(act);
+    // TODO: make this customizable
+    editor.revealRange(act, vscode.TextEditorRevealType.InCenter);
 }
 
 const matchStepArgs = z.object({register: z.string().default("default"), repeat: z.number().min(0).optional() });

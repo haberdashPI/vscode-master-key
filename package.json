@@ -36,7 +36,7 @@
           "title": "Command History Maximum",
           "type": "integer",
           "description": "The maximum number of previously run commands that are saved.",
-          "default": 65536
+          "default": 1024
         },
         "master-key.searchMatchBackground": {
           "title": "Background of current search match",

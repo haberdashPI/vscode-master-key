@@ -353,7 +353,7 @@ selection commands that move by a predefined syntactic object (e.g. word, paragr
 default.do.command = "selection-utilities.moveBy"
 default.do.args.boundary = "start"
 default.prefixes = ["", "u"]
-default.do.args.select = "!around_on"
+default.do.computedArgs.select = "!around_on"
 default.do.computedArgs.selectWhole = "around_on"
 
 [[bind.edit.motion.obj.items]]
@@ -1469,14 +1469,19 @@ Repeat the last action command. Actions usually modify the text of a document in
 antoher. (But, e.g. sending text to the REPL is also considered an editor action).
 """
 key = "."
-do.command = "master-key.replayFromHistory"
+
+[[bind.edit.action.history.items.do]]
+command = "master-key.replayFromHistory"
 # we can repeat any action but history-related actions; we make an exception
 # for replaying macros, which can be repeated
-do.args.at = """
+args.at = """
 commandHistory[i].path.startsWith('edit.action') && 
 (!commandHistory[i].path.startsWith('edit.action.history') ||
  commandHistory[i].name == 'replay')
 """
+
+[[bind.edit.action.history.items.do]]
+command = "master-key.enterNormal"
 
 [[bind.edit.action.history.items]]
 name = "repeat last subject"
@@ -1690,7 +1695,7 @@ do = "workbench.action.gotoLine"
 [[bind.window.items]]
 name = "center"
 description = "center window at primary cursor position"
-key = "/ shift+."
+key = "/ ."
 do.command = "selection-utilities.revealActive"
 do.args.at = "center"
 
