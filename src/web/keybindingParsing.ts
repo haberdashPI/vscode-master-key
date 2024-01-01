@@ -19,13 +19,13 @@ const bindingHeader = z.object({
 });
 type BindingHeader = z.infer<typeof bindingHeader>;
 
-const bindingCommand = z.object({
+const rawBindingCommand = z.object({
     command: z.string().optional(), // only optional before default expansion
     args: z.object({}).passthrough().optional(),
     computedArgs: z.object({}).passthrough().optional(),
     if: z.string().or(z.boolean()).default(true).optional()
 }).strict();
-export type BindingCommand = z.infer<typeof bindingCommand>;
+export type RawBindingCommand = z.infer<typeof rawBindingCommand>;
 
 const definedCommand = z.object({ defined: z.string() }).strict();
 export type DefinedCommand = z.infer<typeof definedCommand>;
