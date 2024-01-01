@@ -9,14 +9,16 @@ NEXT UP:
 
 Testing stuff:
 
-unit tests: test out switching between files
+unit tests: keybinding validation (no UX required)
+unit tests: keybinding insertion (with weird file states?)
+unit tests: basic motions
+unit tests: each command
 unit tests: search movements
+unit tests: all state variables
 unit tests: command argument validation
+unit tests: prefix validation
 # TODO: maybe I should be changing the file format *before* writing these units tests
 # (sounds less redundant)
-unit tests: keybinding validation
-unit tests: keybinding insertion (with weird file states)
-unit tests: set key state (+validation)
 unit tests: expected display of state
 unit tests: macro replay
 unit tests: duplicate binding handling (especially with the automated keys)
@@ -82,6 +84,9 @@ wishlist:
 
 - have a debug mode that shows which command got executed from the given keybinding (with an
   option to show or not show prefixes)
+
+- binding validation checks that there aren't non-modifier bindings that
+  capture input outside of the text editor
 
 quick win: store clipboard to a register
 let modes change the cursor
