@@ -1,9 +1,8 @@
 import * as vscode from 'vscode';
 import z from 'zod';
-import { strictDoArgs } from './keybindingParsing';
+import { doArgs } from './keybindingParsing';
 import { validateInput } from './utils';
 import { state, runCommands, setKeyContext, updateArgs } from './commands';
-import { regularizeCommands } from './keybindingProcessing';
 
 let typeSubscription: vscode.Disposable | undefined;
 let onTypeFn: (text: string) => void = async function(text: string){
@@ -51,14 +50,14 @@ export function captureKeys(onUpdate: UpdateFn): void {
 const captureKeysArgs = z.object({
     keys: z.string().optional(),
     acceptAfter: z.number().min(1),
-    doAfter: strictDoArgs,
+    doAfter: doArgs,
 });
 function captureKeysCmd(args_: unknown){
     let args = validateInput('master-key.captureKeys', args_, captureKeysArgs);
     if(args){
         let a = args;
         if(args.keys){ 
-            runCommands({ do: regularizeCommands(a.doAfter) });
+            runCommands({ do: a.doAfter });
         }else{
             let captured = "";
             captureKeys((key, stop) => {
@@ -74,7 +73,7 @@ function captureKeysCmd(args_: unknown){
                 updateArgs({ ...a, keys: captured });
                 if(doStop){
                     stop();
-                    runCommands({ do: regularizeCommands(a.doAfter) }); 
+                    runCommands({ do: a.doAfter }); 
                 }
             });
         }
