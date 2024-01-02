@@ -1607,13 +1607,13 @@ do = "language-julia.executeCodeBlockOrSelectionAndMove"
 
 [[bind.edit.action.terminal.items]]
 key = "m"
-when = "!(master-key.firstSelectionOrWord =~ /\\n/)"
+when = "editoLangId != 'julia' && !(master-key.firstSelectionOrWord =~ /\\n/)"
 do = ["terminal-polyglot.send-text",
       "selection-utilities.shrinkToActive"]
 
 [[bind.edit.action.terminal.items]]
 key = "m"
-when = "master-key.firstSelectionOrWord =~ /\\n/"
+when = "editoLangId != 'julia' && master-key.firstSelectionOrWord =~ /\\n/"
 do = ["terminal-polyglot.send-block-text",
       "selection-utilities.shrinkToActive"]
 
