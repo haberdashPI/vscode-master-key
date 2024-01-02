@@ -7,6 +7,7 @@ import path from 'path';
 import * as vscode from 'vscode';
 import { processBindings } from '../../keybindingProcessing';
 import { parseBindingTOML } from '../../keybindingParsing';
+import { fromZodError } from 'zod-validation-error';
 
 function specForBindings(text: string){
     let result = parseBindingTOML(text);
@@ -16,60 +17,71 @@ function specForBindings(text: string){
             let [spec, defs] = data;
             return spec;
         }
+    } else {
+        throw new Error("Unexpected parsing failure!: "+fromZodError(result.error));
     }
     throw new Error("Unexpected parsing failure!");
 }
 
 suite('Keybinding Test Suite', () => {
-    // TODO: should I name `paths` `path`, and `for` `id`?
+    let simpleFile = `
+        [header]
+        version = "1.0"
+
+        [[path]]
+        id = ""
+        name = "Foo"
+
+        [[bind]]
+        path = ""
+        name = "foo"
+        key = "Cmd+a"
+        command = "fooCommand"
+
+        [[bind]]
+        path = ""
+        name = "bar"
+        key = "Cmd+b"
+        command = "barCommand"
+    `
+    test('Files can be parsed', () => {
+        let result = parseBindingTOML(simpleFile)
+        assert(result.success)
+        let data = processBindings(result.data);
+        assert(result.data);
+        let [spec, defs] = data;
+        assert(spec);
+    });
+
     // TODO: extract this pattern so it is easy to write tests
     // for the parsing of file content
     test('Imports correct number of bindings', () => {
-        let spec = specForBindings(`
-            [header]
-            version = 1.0
-        
-            [[paths]]
-            for = ""
-            name = "Foo"
-        
-            [[bind]]
-            path = ""
-            name = "foo"
-            key = "Cmd+a"
-            command = "fooCommand"
-        
-            [[bind]]
-            path = ""
-            name = "bar"
-            key = "Cmd+b"
-            command = "barCommand"
-        `);
+        let spec = specForBindings(simpleFile);
         assert.equal(spec.length, 2);
     });
 
     // TODO: test for typos for all keys
 
-    let defSpec = specForBindings(`
+    let defItems = specForBindings(`
         [header]
-        version = 1.0
+        version = "1.0"
 
-        [[paths]]
-        for = ""
+        [[path]]
+        id = ""
         name = "Base"
 
-        [[paths]]
-        for = "foo"
+        [[path]]
+        id = "foo"
         name = "Foo"
-        default.mode = "foomode"
+        default.kind = "fookind"
         default.when = "baz > 0"
         default.computedArgs.value = "count"
 
-        [[paths]]
-        for = "foo.bar"
+        [[path]]
+        id = "foo.bar"
         name = "FooBar"
         default.prefixes = ["", "u"]
-        default.mode = "barmode"
+        default.kind = "barkind"
         default.computedArgs.select = "prefix.startsWith('u')"
 
         [[bind]]
@@ -98,7 +110,15 @@ suite('Keybinding Test Suite', () => {
     // - only foo defaults get applied to foo
     // - when clauses get concatted
     // - prefixes get overwritten
-    test('Expands defaults properly', () => {
+    test('Defaults expand recursively', () => {
+        assert.equal(defItems[0].key, "a");
+        assert.equal(defItems[0].args.kind, "fookind");
+        assert.equal(defItems[0].prefixDescriptions.length, 1);
+        assert(defItems[0].when.match(/baz > 0/));
+        assert.notEqual(defItems[0].args.do[0].computedArgs?.select, "prefix.startsWith('u')");
     });
+
+    // TODO: verify that path id's are unique
+    // TODO: verify that duplicate keys get detected
 
 });

@@ -6,6 +6,7 @@ import { TextDecoder } from 'text-encoding';
 import { ZodIssue, z } from "zod";
 import { ZodError, fromZodError, fromZodIssue } from 'zod-validation-error';
 import { expressionId } from './expressions';
+import { uniqBy } from 'lodash';
 export const INPUT_CAPTURE_COMMANDS = ['captureKeys', 'replaceChar', 'insertChar', 'search'];
 
 let decoder = new TextDecoder("utf-8");
@@ -15,7 +16,7 @@ const bindingHeader = z.object({
         refine(x => semver.coerce(x), { message: "header.version is not a valid version number" }).
         refine(x => semver.satisfies(semver.coerce(x)!, '1'), 
                { message: "header.version is not a supported version number (must a compatible with 1.0)"}),
-    requiredExtensions: z.string().array()
+    requiredExtensions: z.string().array().optional()
 });
 type BindingHeader = z.infer<typeof bindingHeader>;
 
@@ -176,10 +177,11 @@ export const bindingItem = z.object({
 export type BindingItem = z.output<typeof bindingItem>;
 
 export const bindingPath = z.object({
-    for: z.string().regex(/[a-zA-Z0-9_\-]+(\.[a-zA-Z0-9_\-]+)*/),
+    // TODO: change from an empty `id` path, to fields at the top level in the header
+    id: z.string().regex(/(^$|[a-zA-Z0-9_\-]+(\.[a-zA-Z0-9_\-]+)*)/),
     name: z.string(),
-    description: z.string(),
-    default: bindingItem,
+    description: z.string().optional(),
+    default: rawBindingItem.partial().optional()
 });
 
 function contains(xs: string[], el: string){
@@ -195,7 +197,8 @@ export const validModes = z.string().array().
 export const bindingSpec = z.object({
     header: bindingHeader,
     bind: rawBindingItem.array(),
-    paths: bindingPath.array(),
+    path: bindingPath.array().refine(xs => uniqBy(xs, x => x.id).length === xs.length,
+        { message: "Defined [[path]] entries must all have unique 'id' fields."}),
     define: z.object({ validModes: validModes }).passthrough().optional()
 });
 export type BindingSpec = z.infer<typeof bindingSpec>;

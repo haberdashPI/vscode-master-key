@@ -1,6 +1,7 @@
 import hash from 'object-hash';
 import { parseWhen, bindingItem, DoArgs, DefinedCommand, BindingItem, BindingSpec, rawBindingItem, RawBindingItem } from "./keybindingParsing";
 import * as vscode from 'vscode';
+import z from 'zod';
 import { pick, isEqual, uniq, omit, mergeWith, cloneDeep, flatMap, merge, entries } from 'lodash';
 import { reifyStrings, EvalContext } from './expressions';
 import { fromZodError } from 'zod-validation-error';
@@ -58,11 +59,14 @@ function expandDefinedCommands(item: RawBindingItem, definitions: any): RawBindi
     return item;
 }
 
+const partialRawBindingItem = rawBindingItem.partial();
+type PartialRawBindingItem = z.infer<typeof partialRawBindingItem>;
+
 function expandDefaultsAndDefinedCommands(spec: BindingSpec): BindingItem[] {
-    let pathDefaults: Record<string, RawBindingItem> = {};
-    for(let path of spec.paths){
-        let parts = path.for.split('.');
-        let defaults: RawBindingItem = rawBindingItem.parse({});
+    let pathDefaults: Record<string, PartialRawBindingItem> = {};
+    for(let path of spec.path){
+        let parts = path.id.split('.');
+        let defaults: PartialRawBindingItem = partialRawBindingItem.parse({});
         if(parts.length > 1){
             let prefix = parts.slice(0,-1).join('.');
             if(pathDefaults[prefix] === undefined){
@@ -72,7 +76,7 @@ function expandDefaultsAndDefinedCommands(spec: BindingSpec): BindingItem[] {
                 defaults = cloneDeep(pathDefaults[prefix]);
             }
         }
-        pathDefaults[path.for] = mergeWith(defaults, path.default,
+        pathDefaults[path.id] = mergeWith(defaults, path.default,
             concatWhenAndOverwritePrefixes);
     }
 
@@ -162,11 +166,11 @@ function expandPrefixes(items: BindingItem[]){
 
 export interface IConfigKeyBinding {
     key: string,
-    command: "master-key.do" | "master-key.prefix"
+    command: "master-key.do"
     prefixDescriptions: string[],
     when: string,
-    args: { key: string } | { 
-        do: object[], 
+    args: { 
+        do: DoArgs, 
         name?: string,
         description?: string,
         resetTransient?: boolean, 
