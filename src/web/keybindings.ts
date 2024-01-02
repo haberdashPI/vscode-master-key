@@ -129,7 +129,7 @@ async function queryBindingFile() {
     return file[0];
 }
 
-export async function processFile(file: vscode.Uri){
+export async function processFile(file: vscode.Uri) {
     let parsedBindings = await parseBindingFile(file);
     if(parsedBindings.success){
         return processBindings(parsedBindings.data);

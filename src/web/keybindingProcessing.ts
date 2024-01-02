@@ -5,7 +5,7 @@ import { pick, isEqual, uniq, omit, mergeWith, cloneDeep, flatMap, merge, entrie
 import { reifyStrings, EvalContext } from './expressions';
 import { fromZodError } from 'zod-validation-error';
 
-export function processBindings(spec: BindingSpec){
+export function processBindings(spec: BindingSpec): [IConfigKeyBinding[], Record<string, any>]{
     let items = expandDefaultsAndDefinedCommands(spec);
     items = expandBindingKeys(items, spec.define);
     items = expandPrefixes(items);
@@ -14,8 +14,8 @@ export function processBindings(spec: BindingSpec){
     items = items.map(moveModeToWhenClause);
     let newItems = items.map(i => movePrefixesToWhenClause(i, prefixCodes));
     let definitions = {...spec.define, prefixCodes: prefixCodes.codes};
-    let configItem = newItems.map(i => itemToConfigBinding(i, definitions));
-    return [configItem, definitions];
+    let configItems = newItems.map(i => itemToConfigBinding(i, definitions));
+    return [configItems, definitions];
 }
 
 function concatWhenAndOverwritePrefixes(obj_: any, src_: any, key: string){
