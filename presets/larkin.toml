@@ -1095,57 +1095,57 @@ do = "master-key.prefix"
 name = 'paren' 
 description = "Insert parenthesis around selection"
 key = "g i shift+9"
-do = [ "modalkeys.enterInsert", { command = "type", args = { text = "(" } }, 
-       "modalkeys.enterNormal" ]
+do = [ "master-key.enterInsert", { command = "type", args = { text = "(" } }, 
+       "master-key.enterNormal" ]
 
 [[bind.edit.action.brackets.items]]
 name = 'paren' 
 description = "Insert parenthesis around selection"
 key = "g i shift+,"
-do = [ "modalkeys.enterInsert", { command = "type", args = { text = "<" } }, 
-       "modalkeys.enterNormal" ]
+do = [ "master-key.enterInsert", { command = "type", args = { text = "<" } }, 
+       "master-key.enterNormal" ]
 
 [[bind.edit.action.brackets.items]]
 name = 'ticks' 
 description = "Insert ticks (``) around selection"
 key = "g i `"
-do = [ "modalkeys.enterInsert", { command = "type", args = { text = "`" } }, 
-       "modalkeys.enterNormal" ]
+do = [ "master-key.enterInsert", { command = "type", args = { text = "`" } }, 
+       "master-key.enterNormal" ]
 
 [[bind.edit.action.brackets.items]]
 name = 'dbl quotes' 
 description = "Insert quotes (\"\") around selection"
 key = "g i shift+'"
-do = [ "modalkeys.enterInsert", { command = "type", args = { "text" = "\"" } }, 
-       "modalkeys.enterNormal" ]
+do = [ "master-key.enterInsert", { command = "type", args = { "text" = "\"" } }, 
+       "master-key.enterNormal" ]
 
 [[bind.edit.action.brackets.items]]
 name = 'sgl quotes' 
 description = "Insert single quotes ('') around selection"
 key = "g i '"
-do = [ "modalkeys.enterInsert", { command = "type", args = { text = "'" } }, 
-       "modalkeys.enterNormal" ]
+do = [ "master-key.enterInsert", { command = "type", args = { text = "'" } }, 
+       "master-key.enterNormal" ]
 
 [[bind.edit.action.brackets.items]]
 name = 'start' 
 description = "Insert stars (**) around selection"
 key = "g i shift+8"
-do = [ "modalkeys.enterInsert", { command = "type", args = { text = "*" } }, 
-       "modalkeys.enterNormal" ]
+do = [ "master-key.enterInsert", { command = "type", args = { text = "*" } }, 
+       "master-key.enterNormal" ]
 
 [[bind.edit.action.brackets.items]]
 name = 'curly' 
 description = "Insert curly brackets ({}) around selection"
 key = "g i shift+["
-do = [ "modalkeys.enterInsert", { command = "type", args = { text = "{" } }, 
-       "modalkeys.enterNormal" ]
+do = [ "master-key.enterInsert", { command = "type", args = { text = "{" } }, 
+       "master-key.enterNormal" ]
 
 [[bind.edit.action.brackets.items]]
 name = 'square' 
 description = "Insert square brackets ([]) around selection"
 key = "g i ["
-do = [ "modalkeys.enterInsert", { command = "type", args = { text = "[" } }, 
-       "modalkeys.enterNormal" ]
+do = [ "master-key.enterInsert", { command = "type", args = { text = "[" } }, 
+       "master-key.enterNormal" ]
 
 [bind.edit.action.clipboard]
 name = "Clipboard Operations"
