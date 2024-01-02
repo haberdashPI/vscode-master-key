@@ -129,19 +129,26 @@ async function queryBindingFile() {
     return file[0];
 }
 
-async function importBindings() {
-    let file = await queryBindingFile();
-    if (file === undefined) { return; }
+export async function processFile(file: vscode.Uri){
     let parsedBindings = await parseBindingFile(file);
     if(parsedBindings.success){
-        let [bindings, definitions] = processBindings(parsedBindings.data);
-        insertKeybindingsIntoConfig(file, bindings);
-        let config = vscode.workspace.getConfiguration('master-key');
-        config.update('definitions', definitions, vscode.ConfigurationTarget.Global);
+        return processBindings(parsedBindings.data);
     }else{
         for (let issue of parsedBindings.error.issues.slice(0, 3)) {
             showParseError("Parsing of bindings failed: ", issue);
         }
+    }   
+}
+
+async function importBindings() {
+    let file = await queryBindingFile();
+    if (file === undefined) { return; }
+    let result = await processFile(file);
+    if(result){
+        let [bindings, definitions] = result;
+        insertKeybindingsIntoConfig(file, bindings);
+        let config = vscode.workspace.getConfiguration('master-key');
+        config.update('definitions', definitions, vscode.ConfigurationTarget.Global);
     }
 }
 
