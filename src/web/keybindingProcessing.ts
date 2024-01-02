@@ -72,7 +72,8 @@ function expandDefaultsAndDefinedCommands(spec: BindingSpec): BindingItem[] {
                 defaults = cloneDeep(pathDefaults[prefix]);
             }
         }
-        pathDefaults[path.for] = mergeWith(defaults, path.default);
+        pathDefaults[path.for] = mergeWith(defaults, path.default,
+            concatWhenAndOverwritePrefixes);
     }
 
     let items = spec.bind.map((item, i) => {
@@ -81,7 +82,7 @@ function expandDefaultsAndDefinedCommands(spec: BindingSpec): BindingItem[] {
             vscode.window.showErrorMessage(`The path '${item.path}' is undefined.`);
             return undefined;
         }else{
-            item = mergeWith(cloneDeep(itemDefault), item);
+            item = mergeWith(cloneDeep(itemDefault), item, concatWhenAndOverwritePrefixes);
             item = expandDefinedCommands(item, spec.define);
             let parsing = bindingItem.safeParse({
                 key: item.key,
@@ -91,7 +92,7 @@ function expandDefaultsAndDefinedCommands(spec: BindingSpec): BindingItem[] {
                 command: "master-key.do",
                 args: {
                     do: item.command === 'runCommands' ? 
-                        item.args : pick(item, ['command', 'args', 'computedArgs', 'if']),
+                        item.args : [pick(item, ['command', 'args', 'computedArgs', 'if'])],
                     path: item.path,
                     name: item.name,
                     description: item.description,
@@ -109,7 +110,7 @@ function expandDefaultsAndDefinedCommands(spec: BindingSpec): BindingItem[] {
         }
     });
 
-    return <BindingItem[]>items.filter(x => x !== undefined);
+    return <BindingItem[]>(items.filter(x => x !== undefined));
 }
 
 // TODO: check in unit tests

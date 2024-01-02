@@ -176,7 +176,7 @@ export const bindingItem = z.object({
 export type BindingItem = z.output<typeof bindingItem>;
 
 export const bindingPath = z.object({
-    for: z.string().regex(/[a-ZA-Z0-9_-]+(\.[a-ZA-Z0-9_-]+)*/),
+    for: z.string().regex(/[a-zA-Z0-9_\-]+(\.[a-zA-Z0-9_\-]+)*/),
     name: z.string(),
     description: z.string(),
     default: bindingItem,
@@ -200,12 +200,20 @@ export const bindingSpec = z.object({
 });
 export type BindingSpec = z.infer<typeof bindingSpec>;
 
+export function parseBindingTOML(text: string){
+    return bindingSpec.safeParse(TOML.parse(text));
+}
+
+export function parseBindingJSON(text: string){
+    return bindingSpec.safeParse(JSON.parse(text));
+}
+
 export async function parseBindingFile(file: vscode.Uri){
     let fileData = await vscode.workspace.fs.readFile(file);
     let fileText = decoder.decode(fileData);
     if(file.fsPath.endsWith(".json")){
-        return bindingSpec.safeParse(JSON.parse(fileText));
+        return parseBindingJSON(fileText);
     }else{
-        return bindingSpec.safeParse(TOML.parse(fileText));
+        return parseBindingTOML(fileText);
     }
 }

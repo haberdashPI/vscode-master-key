@@ -1,16 +1,26 @@
-import { assert } from 'chai';
+import assert from 'assert';
 import fs from 'fs';
 import path from 'path';
 
 // You can import and use all API from the 'vscode' module
 // as well as import your extension to test it
 import * as vscode from 'vscode';
-import { processFile } from '../../keybindings';
+import { processBindings } from '../../keybindingProcessing';
+import { parseBindingTOML } from '../../keybindingParsing';
+
+function specForBindings(text: string){
+    let result = parseBindingTOML(text);
+    if (result.success) {
+        let data = processBindings(result.data);
+        if(data){
+            let [spec, defs] = data;
+            return spec;
+        }
+    }
+    throw new Error("Unexpected parsing failure!");
+}
 
 suite('Keybinding Test Suite', () => {
-    // TODO: I think because we are in a web environment we can't use node here,
-    // switch to testing via string input
-    // vscode.window.showInformationMessage('Start all tests.');
     let sampleBindings = `
     [header]
     version = 1.0
@@ -32,14 +42,10 @@ suite('Keybinding Test Suite', () => {
     command = "barCommand"
     `;
 
-    describe('Imports correct number of bindings', async () => {
-        let folder = fs.mkdtempSync('binding');
-        let file = path.join(folder, 'bindings.toml');
-        fs.writeFileSync(file, sampleBindings);
-        let result = await processFile(vscode.Uri.file(file));
-        assert.isArray(result);
-        assert.lengthOf(result!, 2);
-        let [spec, defs] = result!;
-        assert.lengthOf(spec, 2);
+    // TODO: extract this pattern so it is easy to write tests
+    // for the parsing of file content
+    test('Imports correct number of bindings', async () => {
+        let spec = specForBindings(sampleBindings);
+        assert.equal(spec.length, 2);
     });
 });
