@@ -1,7 +1,7 @@
 current issue I'm working on:
 
 - file formatting (why: unit tests are blocked by updating formattig, because I don't want to rewrite all tests)
-  - start generating some basic unit tests
+  - debug prefix code defiitions
 
 NEXT UP:
 
