@@ -1,7 +1,8 @@
 current issue I'm working on:
 
 - file formatting (why: unit tests are blocked by updating formattig, because I don't want to rewrite all tests)
-  - debug prefix code defiitions
+  - we are debugging the first unit test (reading N number of bindings)
+    and we need to change how we organize `bindingItem` (see the TODO in keybindingParsing)
 
 NEXT UP:
 

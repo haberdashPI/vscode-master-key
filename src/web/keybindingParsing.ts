@@ -162,18 +162,20 @@ export const doArgs = bindingCommand.array().refine(xs => {
 }, { message: "`runCommand` arguments can include only one command that accepts user input."})
 export type DoArgs = z.infer<typeof doArgs>;
 
+// TODO: the errors are not very informative if we transform the result so early in this
+// way; we need to keep this as close as possible to the form in the raw file
 export const bindingItem = z.object({
     key: rawBindingItem.shape.key,
     when: parsedWhen.array(),
     command: z.literal("master-key.do"),
     mode: rawBindingItem.shape.mode,
-    prefixes: z.string().array(),
+    prefixes: z.string().array().optional().default([""]),
     args: z.object({
         do: doArgs,
         path: z.string(),
     }).merge(rawBindingItem.pick({name: true, description: true, kind: true, 
         resetTransient: true})).required({kind: true})
-}).required({key: true, when: true, args: true});
+}).required({key: true, when: true, args: true}).strict();
 export type BindingItem = z.output<typeof bindingItem>;
 
 export const bindingPath = z.object({

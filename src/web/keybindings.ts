@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { searchMatches } from './searching';
-import { BindingItem, parseBindingFile, showParseError } from './keybindingParsing';
+import { parseBindingFile, showParseError } from './keybindingParsing';
 import { processBindings, IConfigKeyBinding } from './keybindingProcessing';
 import { pick } from 'lodash';
 import replaceAll from 'string.prototype.replaceall';

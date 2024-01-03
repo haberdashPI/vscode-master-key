@@ -309,8 +309,12 @@ function expandKeySequencesAndResolveDuplicates(items: BindingItem[]):
         if(!Array.isArray(item.key)){
             // we should always land here, because prior steps have expanded key sequences
             // into individual keys
-            let keySeq = item.key.trim().split(/\s+/);
-            let prefix = item.prefixes[0];
+            // NOTE: at this point there is always only one prefix (we have previously
+            // expanded multi-prefix bindings into several distinct bindings)
+            let prefix = '';
+            let key = item.key.trim();
+            if(item.prefixes[0].length > 0){ key = item.prefixes[0] + " " + key; }
+            let keySeq = key.split(/\s+/);
             let prefixItem;
 
             if(keySeq.length > 1){
