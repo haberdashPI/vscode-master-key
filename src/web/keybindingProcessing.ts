@@ -88,7 +88,14 @@ function expandDefaultsAndDefinedCommands(spec: BindingSpec): BindingItem[] {
         }else{
             item = mergeWith(cloneDeep(itemDefault), item, concatWhenAndOverwritePrefixes);
             item = expandDefinedCommands(item, spec.define);
-            let parsing = bindingItem.safeParse({
+            let required = ['key', 'command', 'kind'];
+            let missing = required.filter(r => (<any>item)[r] === undefined);
+            if(missing.length > 0){
+                vscode.window.showErrorMessage(`Problem with binding ${i} ${item.path}:
+                    missing field '${missing[0]}'`);
+                return undefined;
+            }
+            return bindingItem.parse({
                 key: item.key,
                 when: item.when,
                 mode: item.mode,
@@ -104,13 +111,6 @@ function expandDefaultsAndDefinedCommands(spec: BindingSpec): BindingItem[] {
                     resetTransient: item.resetTransient,
                 }
             });
-            if(!parsing.success){
-                vscode.window.showErrorMessage(`Problem with binding ${i} under ${item.path}:
-                    ${fromZodError(parsing.error)}`);
-                return undefined;
-            }else{
-                return parsing.data;
-            }
         }
     });
 

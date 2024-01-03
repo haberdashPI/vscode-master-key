@@ -36,12 +36,14 @@ suite('Keybinding Test Suite', () => {
         name = "foo"
         key = "Cmd+a"
         command = "fooCommand"
+        kind = "do"
 
         [[bind]]
         path = ""
         name = "bar"
         key = "Cmd+b"
         command = "barCommand"
+        kind = "do"
     `;
     test('Files can be parsed', () => {
         let result = parseBindingTOML(simpleFile);
@@ -112,12 +114,24 @@ suite('Keybinding Test Suite', () => {
     // - when clauses get concatted
     // - prefixes get overwritten
     test('Defaults expand recursively', () => {
-        console.log(defItems.map(x => x.key));
         assert.equal(defItems[0].key, "a");
         assert.equal(defItems[0].args.kind, "fookind");
         assert.equal(defItems[0].prefixDescriptions.length, 1);
         assert(defItems[0].when.match(/baz > 0/));
         assert.notEqual(defItems[0].args.do[0].computedArgs?.select, "prefix.startsWith('u')");
+        assert.equal(defItems[0].args.do[0].computedArgs?.value, "count");
+
+        let bkeys = defItems.filter(x => x.key === "b" && x.args.kind === "barkind");
+        assert.equal(bkeys.length, 2);
+        assert(bkeys[0].when.match(/baz > 0/));
+        assert(bkeys[0].when.match(/biz < 10/));
+        assert.equal(bkeys[0].args.do[0].computedArgs?.select, "prefix.startsWith('u')");
+        assert.equal(defItems[0].args.do[0].computedArgs?.value, "count");
+
+        let ckeys = defItems.filter(x => x.key === "c" && x.args.kind === "barkind");
+        assert.equal(ckeys.length, 1);
+        assert(ckeys[0].when.match(/baz > 0/));
+        assert(!ckeys[0].when.match(/biz < 10/));
     });
 
     // TODO: verify that path id's are unique
