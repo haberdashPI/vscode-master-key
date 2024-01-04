@@ -6,7 +6,7 @@ import * as vscode from 'vscode';
 import { processBindings } from '../../keybindingProcessing';
 import { parseBindingTOML } from '../../keybindingParsing';
 import { fromZodError } from 'zod-validation-error';
-import { sortBy } from 'lodash';
+import { sortBy, isEqual } from 'lodash';
 
 function specForBindings(text: string){
     let result = parseBindingTOML(text);
@@ -54,6 +54,17 @@ suite('Keybinding Test Suite', () => {
         assert(spec);
     });
 
+    test('Typos are noted', () => {
+        assert.throws(() => specForBindings(simpleFile.replace('header', 'headr')),
+            {message: 'Unexpected parsing failure!: Validation error: Required at "header"; Unrecognized key(s) in object: \'headr\''});
+        assert.throws(() => specForBindings(simpleFile.replace('name', 'nam')),
+            {message: 'Unexpected parsing failure!: Validation error: Required at "path[0].name"'});
+        assert.throws(() => specForBindings(simpleFile.replace('bind', 'bnd')),
+            {message: 'Unexpected parsing failure!: Validation error: Unrecognized key(s) in object: \'bnd\''});
+        assert.throws(() => specForBindings(simpleFile.replace('key', 'keye')),
+            {message: 'Unexpected parsing failure!: Validation error: Unrecognized key(s) in object: \'keye\' at "bind[0]"'});
+    });
+
     // TODO: extract this pattern so it is easy to write tests
     // for the parsing of file content
     test('Imports correct number of bindings', () => {
@@ -61,8 +72,6 @@ suite('Keybinding Test Suite', () => {
         console.dir(spec);
         assert.equal(spec.length, 2);
     });
-
-    // TODO: test for typos for all keys
 
     let defItems = specForBindings(`
         [header]
@@ -108,11 +117,6 @@ suite('Keybinding Test Suite', () => {
     `);
     defItems = sortBy(defItems, x => x.key);
 
-    // create multiple tests: should verify that
-    // - all defaults get applied to foo.bar
-    // - only foo defaults get applied to foo
-    // - when clauses get concatted
-    // - prefixes get overwritten
     test('Defaults expand recursively', () => {
         assert.equal(defItems[0].key, "a");
         assert.equal(defItems[0].args.kind, "fookind");
@@ -134,7 +138,56 @@ suite('Keybinding Test Suite', () => {
         assert(!ckeys[0].when.match(/biz < 10/));
     });
 
-    // TODO: verify that path id's are unique
-    // TODO: verify that duplicate keys get detected
+    test('Detects duplicate path ids', () => {
+        assert.throws(() => specForBindings(`
+            [header]
+            version = "1.0"
+
+            [[path]]
+            id = "foo"
+            name = "Foo"
+
+            [[path]]
+            id = "foo"
+            name = "FooAgain"
+
+            [[bind]]
+            path = "foo"
+            name = "1"
+            key = "a"
+            kind = "do"
+            command = "fooDo"
+        `), { message: 'Unexpected parsing failure!: Validation error: Defined [[path]] entries must all have unique \'id\' fields. at "path"'});
+    });
+
+    test('Multi-key bindings expand to individual bindings', () => {
+        let spec = specForBindings(`
+        [header]
+        version = "1.0"
+
+        [[path]]
+        id = "bind"
+        name = "All Bindings"
+
+        [[bind]]
+        path = "bind"
+        name = "1"
+        key = ["a", "b", "c", "d", "e"]
+        kind = "all"
+        command = "type"
+        args.text = "{key}"
+        `);
+
+        assert.equal(spec.length, 5);
+        assert(isEqual(spec.map(x => x.key), ["a", "b", "c", "d", "e"]));
+        assert(isEqual(spec.map(x => x.args.do[0].args.text), ["a", "b", "c", "d", "e"]));
+    });
+
+    // TODO: verify that duplicates are detected
+    // NOTE: we need to make two changes:
+    // 1. don't showErrorMessage throughout parsing code, wait until the end,
+    //   this will make it easier to test this methods without UX
+    // 2. we want to implement the fix to split out keys so that there is one per mode
+    // it is supported by (since this will simplify duplicate handling)
 
 });

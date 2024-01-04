@@ -202,7 +202,7 @@ export const bindingSpec = z.object({
     path: bindingPath.array().refine(xs => uniqBy(xs, x => x.id).length === xs.length,
         { message: "Defined [[path]] entries must all have unique 'id' fields."}),
     define: z.object({ validModes: validModes }).passthrough().optional()
-});
+}).strict();
 export type BindingSpec = z.infer<typeof bindingSpec>;
 
 export function parseBindingTOML(text: string){

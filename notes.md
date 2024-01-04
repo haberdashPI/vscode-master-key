@@ -1,8 +1,7 @@
 current issue I'm working on:
 
 - file formatting (why: unit tests are blocked by updating formattig, because I don't want to rewrite all tests)
-  - we are debugging the first unit test (reading N number of bindings)
-    and we need to change how we organize `bindingItem` (see the TODO in keybindingParsing)
+  - check out TODO/NOTES in parsing.test.ts
 
 NEXT UP:
 
@@ -65,6 +64,11 @@ maybe we should implement an edit and a navigation history since the built-in co
 - add symmetric insert setup and continue dogfooding with the new repeat actions
 
 wishlist:
+
+- relax keybinding formatting: right now we require `kind` and `path`
+  and in simple uses these shouldn't be necessary; it is also a bit weird
+  that there is the empty-name path at the top (perhaps this should be the default,
+  and it doesn't need to be explicitly defined)
 
 - `{defined}` commands should work inside `doAfter`
 
