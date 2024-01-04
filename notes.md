@@ -5,10 +5,6 @@ current issue I'm working on:
 
 NEXT UP:
 
-setup unit tests (there's stuff to download here, so would be good to get that going)
-- start dogfooding (wee need to answer the question: post recording is this reasonably
-  fast enough)
-
 Testing stuff:
 
 unit tests: test out switching between files

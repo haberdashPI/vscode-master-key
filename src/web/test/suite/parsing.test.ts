@@ -183,6 +183,8 @@ suite('Keybinding Test Suite', () => {
         assert(isEqual(spec.map(x => x.args.do[0].args.text), ["a", "b", "c", "d", "e"]));
     });
 
+    // TODO: test that `key` values are validated
+
     // TODO: verify that duplicates are detected
     // NOTE: we need to make two changes:
     // 1. don't showErrorMessage throughout parsing code, wait until the end,
