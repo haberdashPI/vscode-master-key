@@ -183,7 +183,46 @@ suite('Keybinding Test Suite', () => {
         assert(isEqual(spec.map(x => x.args.do[0].args.text), ["a", "b", "c", "d", "e"]));
     });
 
-    // TODO: test that `key` values are validated
+    test('`key` value is validated', () => {
+        let spec = specForBindings(`
+        [header]
+        version = "1.0"
+
+        [[path]]
+        id = "bind"
+        name = "All Bindings"
+
+        [[bind]]
+        path = "bind"
+        name = "1"
+        key = "Cmd+a"
+        kind = "all"
+        command = "foo"
+
+        // TODO: make each of these a separate binding spec
+
+        [[bind]]
+        path = "bind"
+        name = "2"
+        key = ":"
+        kind = "all"
+        command = "foo"
+
+        [[bind]]
+        path = "bind"
+        name = "2"
+        key = "k+f"
+        kind = "all"
+        command = "foo"
+
+        [[bind]]
+        path = "bind"
+        name = "2"
+        key = "F"
+        kind = "all"
+        command = "foo"
+        `);
+    })
 
     // TODO: verify that duplicates are detected
     // NOTE: we need to make two changes:
