@@ -277,4 +277,8 @@ suite('Keybinding Test Suite', () => {
     // TODO: at some point we should improve duplicate detection (and add a trickier test)
     // by expanding keybindings to have a single mode per binding item
 
+    // TODO: test prefix expansion
+    // NOTE: other tests for bindings (e.g. making sure when clauses work appropriately)
+    // are really UX tests
+
 });

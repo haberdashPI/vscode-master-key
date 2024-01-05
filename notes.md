@@ -1,17 +1,18 @@
 current issue I'm working on:
 
 - file formatting (why: unit tests are blocked by updating formattig, because I don't want to rewrite all tests)
+  - were almost done writing the initial unit tests for the parsing of bindings
+    we just have to write tests for prefix expansion now
+  - then we should make sure we can parse the new format of `larkin.toml` appropriately
+    - add unit tests from any bugs we find this way
 
 NEXT UP:
-
-Testing stuff:
 
 unit tests: test out switching between files
 unit tests: search movements
 unit tests: command argument validation
 # TODO: maybe I should be changing the file format *before* writing these units tests
 # (sounds less redundant)
-unit tests: keybinding validation
 unit tests: keybinding insertion (with weird file states)
 unit tests: set key state (+validation)
 unit tests: expected display of state
