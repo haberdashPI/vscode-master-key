@@ -46,11 +46,15 @@ REFACTOR: cleanup up and document code, make it nice and readable
 
 thoughts: things I must have to release:
 - the command palette like feature
-- the documentation features
+- keybinding documentation features
+- good documentation of the code
 - mode customization
 - modernized selection utilities
+  - good documentation
+  - modern build setup
 - improved mode UX
 - macro recoridng UX
+- anything else that has to be here? (check below wishlist and issues under the project)
 
 maybe we should implement an edit and a navigation history since the built-in commands aren't particularly satisfying
 
