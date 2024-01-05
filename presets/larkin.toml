@@ -1819,6 +1819,13 @@ do = "extension.openFileFromPath"
 when = "editorTextFocus"
 
 [[bind.window.items]]
+name = "to refs"
+description = "jump to a location where this symbol is referenced"
+key = "g r"
+do = "editor.action.goToReferences"
+when = "editorTextFocus"
+
+[[bind.window.items]]
 name = "go to"
 description = "go to the definition of symbol under curosr"
 key = "g d"
