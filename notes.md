@@ -1,9 +1,5 @@
 current issue I'm working on:
 
-- file formatting
-  - then we should make sure we can parse the new format of `larkin.toml` appropriately
-    - add unit tests from any bugs we find this way
-
 NEXT UP:
 
 for UX tests: we need to make a command that imports the currently open file
