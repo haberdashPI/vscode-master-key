@@ -8,11 +8,12 @@ current issue I'm working on:
 
 NEXT UP:
 
-unit tests: test out switching between files
+for UX tests: we need to make a command that imports the currently open file
+as a new preset (this will let us set up UX tests with a given set of bindings)
+
+unit tests: test out switching between files (ensure that cursor is the right shape)
 unit tests: search movements
 unit tests: command argument validation
-# TODO: maybe I should be changing the file format *before* writing these units tests
-# (sounds less redundant)
 unit tests: keybinding insertion (with weird file states)
 unit tests: set key state (+validation)
 unit tests: expected display of state
@@ -39,11 +40,6 @@ unit tests: edge cases with recording edits
 
 REFACTOR: cleanup up and document code, make it nice and readable
 
-**TODO**: anything beyond this point needs to be organized and prioritized
-
-**TODO**: in document macro playback note the limitations of recording the keyboard
-(e.g. that it only records inserts)
-
 thoughts: things I must have to release:
 - the command palette like feature
 - keybinding documentation features
@@ -55,6 +51,11 @@ thoughts: things I must have to release:
 - improved mode UX
 - macro recoridng UX
 - anything else that has to be here? (check below wishlist and issues under the project)
+
+**TODO**: in documenting macro playback note the limitations of recording the keyboard
+(e.g. that it only records inserts)
+
+**TODO**: anything beyond this point needs to be organized and prioritized
 
 maybe we should implement an edit and a navigation history since the built-in commands aren't particularly satisfying
 
