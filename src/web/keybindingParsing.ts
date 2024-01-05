@@ -14,7 +14,7 @@ let decoder = new TextDecoder("utf-8");
 const bindingHeader = z.object({
     version: z.string().
         refine(x => semver.coerce(x), { message: "header.version is not a valid version number" }).
-        refine(x => semver.satisfies(semver.coerce(x)!, '1'), 
+        refine(x => semver.satisfies(semver.coerce(x)!, '1'),
                { message: "header.version is not a supported version number (must a compatible with 1.0)"}),
     requiredExtensions: z.string().array().optional()
 });
@@ -42,12 +42,12 @@ const ALLOWED_KEYS = [
     /numpad_subtract/i, /numpad_decimal/i, /numpad_divide/i,
     // layout independent versions
     /(\[f[1-9]\])|(\[f1[0-9]\])/i, /\[Key[A-Z]\]/i, /\[Digit[0-9]\]/i, /\[Numpad[0-9]\]/i,
-    /\[Backquote\]/, /\[Minus\]/, /\[Equal\]/, /\[BracketLeft\]/, /\[BracketRight\]/, 
+    /\[Backquote\]/, /\[Minus\]/, /\[Equal\]/, /\[BracketLeft\]/, /\[BracketRight\]/,
     /\[Backslash\]/, /\[Semicolon\]/, /\[Quote\]/, /\[Comma\]/, /\[Period\]/, /\[Slash\]/,
-    /\[ArrowLeft\]/, /\[ArrowUp\]/, /\[ArrowRight\]/, /\[ArrowDown\]/, /\[PageUp\]/, 
-    /\[PageDown\]/, /\[End\]/, /\[Home\]/, /\[Tab\]/, /\[Enter\]/, /\[Escape\]/, /\[Space\]/, 
+    /\[ArrowLeft\]/, /\[ArrowUp\]/, /\[ArrowRight\]/, /\[ArrowDown\]/, /\[PageUp\]/,
+    /\[PageDown\]/, /\[End\]/, /\[Home\]/, /\[Tab\]/, /\[Enter\]/, /\[Escape\]/, /\[Space\]/,
     /\[Backspace\]/, /\[Delete\]/, /\[Pause\]/, /\[CapsLock\]/, /\[Insert\]/,
-    /\[NumpadMultiply\]/, /\[NumpadAdd\]/, /\[NumpadComma\]/, /\[NumpadSubtract\]/, 
+    /\[NumpadMultiply\]/, /\[NumpadAdd\]/, /\[NumpadComma\]/, /\[NumpadSubtract\]/,
     /\[NumpadDecimal\]/, /\[NumpadDivide\]/,
 ];
 
@@ -78,7 +78,7 @@ export async function showParseError(prefix: string, error: ZodError | ZodIssue)
     }
     var buttonPattern = /\s+\{button:\s*"(.+)(?<!\\)",\s*link:(.+)\}/;
     let match = suffix.match(buttonPattern);
-    if(match !== null && match.index !== undefined && match[1] !== undefined && 
+    if(match !== null && match.index !== undefined && match[1] !== undefined &&
        match[2] !== undefined){
         suffix = suffix.slice(0, match.index) + suffix.slice(match.index + match[0].length, -1);
         let button = match[1];
@@ -93,10 +93,10 @@ export async function showParseError(prefix: string, error: ZodError | ZodIssue)
 }
 
 function keybindingError(arg: string){
-    return { 
-        message: `Invalid keybinding '${arg}'. Tip: capital letters are represented 
-        using e.g. "shift+a". {button: "Keybinding Docs", 
-        link:https://code.visualstudio.com/docs/getstarted/keybindings#_accepted-keys}` 
+    return {
+        message: `Invalid keybinding '${arg}'. Tip: capital letters are represented
+        using e.g. "shift+a". {button: "Keybinding Docs",
+        link:https://code.visualstudio.com/docs/getstarted/keybindings#_accepted-keys}`
     };
 }
 const bindingKey = z.string().refine(isAllowedKeybinding, keybindingError).
@@ -104,8 +104,8 @@ const bindingKey = z.string().refine(isAllowedKeybinding, keybindingError).
 
 
 function prefixError(arg: string){
-    return { 
-        message: `Expected either an array of kebydinings or the string '<all-prefixes>', 
+    return {
+        message: `Expected either an array of kebydinings or the string '<all-prefixes>',
         but got '${arg}' instead`
     };
 }
@@ -118,19 +118,10 @@ export type ParsedWhen = z.infer<typeof parsedWhen>;
 
 export function parseWhen(when_: string | string[] | undefined): ParsedWhen[] {
     let when = when_ === undefined ? [] : !Array.isArray(when_) ? [when_] : when_;
-    try{
-        return when.map(w => {
-            let p = jsep(w);
-            return { str: w, id: expressionId(w) };
-        });
-    }catch(e){
-        if(e instanceof Error){
-            vscode.window.showErrorMessage(`Exception while parsing ${when}: ${e.message}`);
-        }else{
-            throw e;
-        }
-    }
-    return [];
+    return when.map(w => {
+        let p = jsep(w);
+        return { str: w, id: expressionId(w) };
+    });
 }
 
 export const rawBindingItem = z.object({
@@ -145,7 +136,7 @@ export const rawBindingItem = z.object({
     mode: z.union([z.string(), z.string().array()]).optional(),
     prefixes: z.preprocess(x => x === "<all-prefixes>" ? [] : x,
         z.string().array()).optional(),
-    resetTransient: z.boolean().default(true).optional()
+    resetTransient: z.boolean().optional()
 }).merge(rawBindingCommand).strict();
 export type RawBindingItem = z.output<typeof rawBindingItem>;
 
@@ -159,7 +150,7 @@ export const doArgs = bindingCommand.array().refine(xs => {
         if(INPUT_CAPTURE_COMMANDS.some(i => i === x.command)){ acceptsInput =+ 1; }
     }
     return acceptsInput <= 1;
-}, { message: "`runCommand` arguments can include only one command that accepts user input."})
+}, { message: "`runCommand` arguments can include only one command that accepts user input."});
 export type DoArgs = z.infer<typeof doArgs>;
 
 // TODO: the errors are not very informative if we transform the result so early in this
@@ -168,13 +159,14 @@ export const bindingItem = z.object({
     key: rawBindingItem.shape.key,
     when: parsedWhen.array(),
     command: z.literal("master-key.do"),
-    mode: rawBindingItem.shape.mode,
+    mode: rawBindingItem.shape.mode.default('insert'),
     prefixes: z.string().array().optional().default([""]),
     args: z.object({
         do: doArgs,
         path: z.string(),
-    }).merge(rawBindingItem.pick({name: true, description: true, kind: true, 
-        resetTransient: true})).required({kind: true})
+        resetTransient: rawBindingItem.shape.resetTransient.default(true)
+    }).merge(rawBindingItem.pick({name: true, description: true, kind: true})).
+        required({kind: true})
 }).required({key: true, when: true, args: true}).strict();
 export type BindingItem = z.output<typeof bindingItem>;
 
@@ -192,7 +184,7 @@ function contains(xs: string[], el: string){
 export const validModes = z.string().array().
     refine(x => contains(x, 'insert') && contains(x, 'capture'), ms => {
         let modes = ms.join(', ');
-        return { message: `The modes 'insert' and 'capture' are required, but the 
+        return { message: `The modes 'insert' and 'capture' are required, but the
                  only valid modes listed modes were: ` + modes };
     });
 

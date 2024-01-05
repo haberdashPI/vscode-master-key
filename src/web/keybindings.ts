@@ -9,10 +9,10 @@ import replaceAll from 'string.prototype.replaceall';
 // Keybinding Generation
 
 const AUTOMATED_COMMENT_START_PREFIX = `
-    // AUTOMATED BINDINGS START: ModalKey Bindings 
+    // AUTOMATED BINDINGS START: ModalKey Bindings
     //
     // These bindings were automatically inserted by the master-key extension from the
-    // following file: 
+    // following file:
     //
 `;
 
@@ -47,7 +47,7 @@ function formatBindings(file: vscode.Uri, items: IConfigKeyBinding[]){
             comment += item.prefixDescriptions.join("\n");
             json += replaceAll(comment, /^\s*(?=\S+)/mg, "    // ")+"\n";
         }
-        json += replaceAll(JSON.stringify(pick(item, ['key', 'when', 'command', 'args']), 
+        json += replaceAll(JSON.stringify(pick(item, ['key', 'when', 'command', 'args']),
             null, 4), /^/mg, "    ");
         json += ",\n\n";
     }
@@ -80,7 +80,7 @@ async function insertKeybindingsIntoConfig(file: vscode.Uri, config: any) {
             ed.document.getText(oldBindingsStart);
             if (oldBindingsStart && oldBindingsEnd) {
                 let range = new vscode.Range(
-                    new vscode.Position(oldBindingsStart.start.line-1, 
+                    new vscode.Position(oldBindingsStart.start.line-1,
                                         ed.document.lineAt(oldBindingsStart.start.line-1).range.end.character),
                     new vscode.Position(oldBindingsEnd.end.line + 4, 0));
                 await ed.edit(builder => {
@@ -99,8 +99,8 @@ async function insertKeybindingsIntoConfig(file: vscode.Uri, config: any) {
                 await ed.edit(builder => {
                     builder.insert(insertAt, "\n" + bindingsToInsert);
                 });
-                // TODO: uncomment after debugging 
-                // TODO: also have the cursor moved to the start of the 
+                // TODO: uncomment after debugging
+                // TODO: also have the cursor moved to the start of the
                 // automated bindings
                 // vscode.commands.executeCommand('workbench.action.files.save');
                 vscode.window.showInformationMessage(`Your modal key bindings have
@@ -132,12 +132,16 @@ async function queryBindingFile() {
 export async function processFile(file: vscode.Uri) {
     let parsedBindings = await parseBindingFile(file);
     if(parsedBindings.success){
-        return processBindings(parsedBindings.data);
+        let [bindings, definitions, problems] = processBindings(parsedBindings.data);
+        for (let problem of problems.slice(0, 3)){
+            vscode.window.showErrorMessage("Parsing error: "+problem);
+        }
+        return [bindings, definitions];
     }else{
         for (let issue of parsedBindings.error.issues.slice(0, 3)) {
-            showParseError("Parsing of bindings failed: ", issue);
+            showParseError("Parsing error: ", issue);
         }
-    }   
+    }
 }
 
 async function importBindings() {

@@ -1,7 +1,6 @@
 current issue I'm working on:
 
 - file formatting (why: unit tests are blocked by updating formattig, because I don't want to rewrite all tests)
-  - check out TODO/NOTES in parsing.test.ts
 
 NEXT UP:
 
@@ -91,4 +90,3 @@ make config import work for both global and workspace settings
   - NOTE: this should also use `master-key.set` when available
 
 enhancement: sneak shows the count required to reach each target
-

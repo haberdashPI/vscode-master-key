@@ -8,16 +8,17 @@ import { parseBindingTOML } from '../../keybindingParsing';
 import { fromZodError } from 'zod-validation-error';
 import { sortBy, isEqual } from 'lodash';
 
-function specForBindings(text: string){
+function specForBindings(text: string) {
     let result = parseBindingTOML(text);
     if (result.success) {
         let data = processBindings(result.data);
-        if(data){
-            let [spec, defs] = data;
+        if (data) {
+            let [spec, defs, problems] = data;
+            if(problems.length > 0){ throw new Error(problems[0]); }
             return spec;
         }
     } else {
-        throw new Error("Unexpected parsing failure!: "+fromZodError(result.error));
+        throw new Error("Unexpected parsing failure!: " + fromZodError(result.error));
     }
     throw new Error("Unexpected parsing failure!");
 }
@@ -56,17 +57,15 @@ suite('Keybinding Test Suite', () => {
 
     test('Typos are noted', () => {
         assert.throws(() => specForBindings(simpleFile.replace('header', 'headr')),
-            {message: 'Unexpected parsing failure!: Validation error: Required at "header"; Unrecognized key(s) in object: \'headr\''});
+            { message: /Unrecognized key\(s\) in object: \'headr\'/ });
         assert.throws(() => specForBindings(simpleFile.replace('name', 'nam')),
-            {message: 'Unexpected parsing failure!: Validation error: Required at "path[0].name"'});
+            { message: /Required at "path\[0\]\.name"/ });
         assert.throws(() => specForBindings(simpleFile.replace('bind', 'bnd')),
-            {message: 'Unexpected parsing failure!: Validation error: Unrecognized key(s) in object: \'bnd\''});
+            { message: /Unrecognized key\(s\) in object: \'bnd\'/ });
         assert.throws(() => specForBindings(simpleFile.replace('key', 'keye')),
-            {message: 'Unexpected parsing failure!: Validation error: Unrecognized key(s) in object: \'keye\' at "bind[0]"'});
+            { message: /Unrecognized key\(s\) in object: 'keye'/ });
     });
 
-    // TODO: extract this pattern so it is easy to write tests
-    // for the parsing of file content
     test('Imports correct number of bindings', () => {
         let spec = specForBindings(simpleFile);
         console.dir(spec);
@@ -157,7 +156,7 @@ suite('Keybinding Test Suite', () => {
             key = "a"
             kind = "do"
             command = "fooDo"
-        `), { message: 'Unexpected parsing failure!: Validation error: Defined [[path]] entries must all have unique \'id\' fields. at "path"'});
+        `), { message: /Defined \[\[path\]\] entries must all have unique 'id' fields/ });
     });
 
     test('Multi-key bindings expand to individual bindings', () => {
@@ -198,8 +197,16 @@ suite('Keybinding Test Suite', () => {
         key = "Cmd+a"
         kind = "all"
         command = "foo"
+        `);
+        assert.equal(spec.length, 1);
 
-        // TODO: make each of these a separate binding spec
+        assert.throws(() => specForBindings(`
+                [header]
+        version = "1.0"
+
+        [[path]]
+        id = "bind"
+        name = "All Bindings"
 
         [[bind]]
         path = "bind"
@@ -207,6 +214,15 @@ suite('Keybinding Test Suite', () => {
         key = ":"
         kind = "all"
         command = "foo"
+        `), {message: /Invalid keybinding/});
+
+        assert.throws(() => specForBindings(`
+        [header]
+        version = "1.0"
+
+        [[path]]
+        id = "bind"
+        name = "All Bindings"
 
         [[bind]]
         path = "bind"
@@ -214,6 +230,15 @@ suite('Keybinding Test Suite', () => {
         key = "k+f"
         kind = "all"
         command = "foo"
+        `), {message: /Invalid keybinding/});
+
+        assert.throws(() => specForBindings(`
+                [header]
+        version = "1.0"
+
+        [[path]]
+        id = "bind"
+        name = "All Bindings"
 
         [[bind]]
         path = "bind"
@@ -221,14 +246,35 @@ suite('Keybinding Test Suite', () => {
         key = "F"
         kind = "all"
         command = "foo"
-        `);
-    })
+        `), {message: /Invalid keybinding/});
+    });
 
-    // TODO: verify that duplicates are detected
-    // NOTE: we need to make two changes:
-    // 1. don't showErrorMessage throughout parsing code, wait until the end,
-    //   this will make it easier to test this methods without UX
-    // 2. we want to implement the fix to split out keys so that there is one per mode
-    // it is supported by (since this will simplify duplicate handling)
+
+    test('Checks for duplicate bindings', () => {
+        assert.throws(() => specForBindings(`
+        [header]
+        version = "1.0"
+
+        [[path]]
+        id = "bind"
+        name = "All Bindings"
+
+        [[bind]]
+        path = "bind"
+        name = "1"
+        key = "a"
+        kind = "all"
+        command = "foo"
+
+        [[bind]]
+        path = "bind"
+        name = "2"
+        key = "a"
+        kind = "all"
+        command = "foo"
+        `), {message: /Duplicate bindings for 'a' in mode 'insert'/});
+    });
+    // TODO: at some point we should improve duplicate detection (and add a trickier test)
+    // by expanding keybindings to have a single mode per binding item
 
 });
