@@ -26,24 +26,18 @@ suite('Keybinding Test Suite', () => {
     let simpleFile = `
         [header]
         version = "1.0"
-
-        [[path]]
-        id = ""
-        name = "Foo"
+        name = "test"
+        description = "A simple test file"
 
         [[bind]]
-        path = ""
         name = "foo"
         key = "Cmd+a"
         command = "fooCommand"
-        kind = "do"
 
         [[bind]]
-        path = ""
         name = "bar"
         key = "Cmd+b"
         command = "barCommand"
-        kind = "do"
     `;
     test('Files can be parsed', () => {
         let result = parseBindingTOML(simpleFile);
@@ -55,12 +49,14 @@ suite('Keybinding Test Suite', () => {
     });
 
     test('Typos are noted', () => {
+        assert.throws(() => specForBindings(simpleFile.replace('description', 'descrption')),
+            { message: /Unrecognized key\(s\) in object: 'descrption'/ });
         assert.throws(() => specForBindings(simpleFile.replace('header', 'headr')),
-            { message: /Unrecognized key\(s\) in object: \'headr\'/ });
+            { message: /Unrecognized key\(s\) in object: 'headr'/ });
         assert.throws(() => specForBindings(simpleFile.replace('name', 'nam')),
-            { message: /Required at "path\[0\]\.name"/ });
+            { message: /Unrecognized key\(s\) in object: 'nam'/ });
         assert.throws(() => specForBindings(simpleFile.replace('bind', 'bnd')),
-            { message: /Unrecognized key\(s\) in object: \'bnd\'/ });
+            { message: /Unrecognized key\(s\) in object: 'bnd'/ });
         assert.throws(() => specForBindings(simpleFile.replace('key', 'keye')),
             { message: /Unrecognized key\(s\) in object: 'keye'/ });
     });
@@ -199,8 +195,8 @@ suite('Keybinding Test Suite', () => {
         `);
         assert.equal(spec.length, 1);
 
-        assert.throws(() => specForBindings(`
-                [header]
+         assert.throws(() => specForBindings(`
+        [header]
         version = "1.0"
 
         [[path]]
@@ -215,7 +211,7 @@ suite('Keybinding Test Suite', () => {
         command = "foo"
         `), {message: /Invalid keybinding/});
 
-        assert.throws(() => specForBindings(`
+       assert.throws(() => specForBindings(`
         [header]
         version = "1.0"
 
@@ -232,7 +228,7 @@ suite('Keybinding Test Suite', () => {
         `), {message: /Invalid keybinding/});
 
         assert.throws(() => specForBindings(`
-                [header]
+        [header]
         version = "1.0"
 
         [[path]]
@@ -276,8 +272,33 @@ suite('Keybinding Test Suite', () => {
     // TODO: at some point we should improve duplicate detection (and add a trickier test)
     // by expanding keybindings to have a single mode per binding item
 
-    // TODO: test prefix expansion
-    // NOTE: other tests for bindings (e.g. making sure when clauses work appropriately)
-    // are really UX tests
+    test('Keybindings with multiple presses are expanded into prefix bindings', () => {
+        let spec = specForBindings(`
+        [header]
+        version = "1.0"
 
+        [[bind]]
+        name = "1"
+        key = "a b c"
+        command = "foo"
+        `);
+        assert.equal(spec.length, 3);
+        assert.equal(spec.filter(x => x.args.do[0].command === "foo").length, 1);
+        assert(isEqual(spec.map(x => x.key).sort(), ["a", "b", "c"]));
+    });
+
+    test('Keybindings properly resolve `<all-pefixes>` cases', () => {
+        let spec = specForBindings(`
+        [header]
+        version = "1.0"
+
+        [[bind]]
+        name = "1"
+        key = "escape"
+        prefixes = "<all-prefixes>"
+        command = "enterNormal"
+        `);
+        assert.equal(spec.length, 1);
+        assert.doesNotMatch(spec[0].when, /prefixCode/);
+    });
 });

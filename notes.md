@@ -1,8 +1,6 @@
 current issue I'm working on:
 
-- file formatting (why: unit tests are blocked by updating formattig, because I don't want to rewrite all tests)
-  - were almost done writing the initial unit tests for the parsing of bindings
-    we just have to write tests for prefix expansion now
+- file formatting
   - then we should make sure we can parse the new format of `larkin.toml` appropriately
     - add unit tests from any bugs we find this way
 
@@ -65,6 +63,12 @@ maybe we should implement an edit and a navigation history since the built-in co
 - add symmetric insert setup and continue dogfooding with the new repeat actions
 
 wishlist:
+
+- ideally we presever the order of bindings, and place prefixes right before
+  the first binding that uses them
+
+- validate the arguments to master-key commands so that these come up during import
+  of a preset rather than when you run a command
 
 - relax keybinding formatting: right now we require `kind` and `path`
   and in simple uses these shouldn't be necessary; it is also a bit weird

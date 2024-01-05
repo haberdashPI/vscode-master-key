@@ -63,7 +63,7 @@ const partialRawBindingItem = rawBindingItem.partial();
 type PartialRawBindingItem = z.infer<typeof partialRawBindingItem>;
 
 function expandDefaultsAndDefinedCommands(spec: BindingSpec, problems: string[]): BindingItem[] {
-    let pathDefaults: Record<string, PartialRawBindingItem> = {};
+    let pathDefaults: Record<string, PartialRawBindingItem> = {"": {}};
     for(let path of spec.path){
         let parts = path.id.split('.');
         let defaults: PartialRawBindingItem = partialRawBindingItem.parse({});
@@ -81,14 +81,14 @@ function expandDefaultsAndDefinedCommands(spec: BindingSpec, problems: string[])
     }
 
     let items = spec.bind.map((item, i) => {
-        let itemDefault = pathDefaults[item.path];
+        let itemDefault = pathDefaults[item.path || ""];
         if(!itemDefault){
             problems.push(`The path '${item.path}' is undefined.`);
             return undefined;
         }else{
             item = mergeWith(cloneDeep(itemDefault), item, concatWhenAndOverwritePrefixes);
             item = expandDefinedCommands(item, spec.define);
-            let required = ['key', 'command', 'kind'];
+            let required = ['key', 'command'];
             let missing = required.filter(r => (<any>item)[r] === undefined);
             if(missing.length > 0){
                 problems.push(`Problem with binding ${i} ${item.path}:
@@ -313,7 +313,9 @@ function expandKeySequencesAndResolveDuplicates(items: BindingItem[], problems: 
             // expanded multi-prefix bindings into several distinct bindings)
             let prefix = '';
             let key = item.key.trim();
-            if(item.prefixes[0].length > 0){ key = item.prefixes[0] + " " + key; }
+            if(item.prefixes.length > 0 && item.prefixes[0].length > 0){
+                key = item.prefixes[0] + " " + key;
+            }
             let keySeq = key.split(/\s+/);
             let prefixItem;
 

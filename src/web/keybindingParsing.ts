@@ -16,8 +16,10 @@ const bindingHeader = z.object({
         refine(x => semver.coerce(x), { message: "header.version is not a valid version number" }).
         refine(x => semver.satisfies(semver.coerce(x)!, '1'),
                { message: "header.version is not a supported version number (must a compatible with 1.0)"}),
-    requiredExtensions: z.string().array().optional()
-});
+    requiredExtensions: z.string().array().optional(),
+    name: z.string().optional(),
+    description: z.string().optional(),
+}).strict();
 type BindingHeader = z.infer<typeof bindingHeader>;
 
 const rawBindingCommand = z.object({
@@ -127,7 +129,7 @@ export function parseWhen(when_: string | string[] | undefined): ParsedWhen[] {
 export const rawBindingItem = z.object({
     name: z.string().optional(),
     description: z.string().optional(),
-    path: z.string(),
+    path: z.string().optional(),
     kind: z.string().optional(),
     key: z.union([bindingKey, bindingKey.array()]).optional(),
     when: z.union([z.string(), z.string().array()]).optional().
@@ -163,10 +165,10 @@ export const bindingItem = z.object({
     prefixes: z.string().array().optional().default([""]),
     args: z.object({
         do: doArgs,
-        path: z.string(),
-        resetTransient: rawBindingItem.shape.resetTransient.default(true)
-    }).merge(rawBindingItem.pick({name: true, description: true, kind: true})).
-        required({kind: true})
+        path: z.string().optional().default(""),
+        resetTransient: rawBindingItem.shape.resetTransient.default(true),
+        kind: z.string().optional().default(""),
+    }).merge(rawBindingItem.pick({name: true, description: true}))
 }).required({key: true, when: true, args: true}).strict();
 export type BindingItem = z.output<typeof bindingItem>;
 
@@ -192,7 +194,8 @@ export const bindingSpec = z.object({
     header: bindingHeader,
     bind: rawBindingItem.array(),
     path: bindingPath.array().refine(xs => uniqBy(xs, x => x.id).length === xs.length,
-        { message: "Defined [[path]] entries must all have unique 'id' fields."}),
+        { message: "Defined [[path]] entries must all have unique 'id' fields."}).
+        optional().default([]),
     define: z.object({ validModes: validModes }).passthrough().optional()
 }).strict();
 export type BindingSpec = z.infer<typeof bindingSpec>;
