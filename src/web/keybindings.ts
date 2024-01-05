@@ -4,6 +4,7 @@ import { parseBindingFile, showParseError } from './keybindingParsing';
 import { processBindings, IConfigKeyBinding } from './keybindingProcessing';
 import { pick } from 'lodash';
 import replaceAll from 'string.prototype.replaceall';
+import { Utils } from 'vscode-uri'
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 // Keybinding Generation
@@ -115,6 +116,7 @@ async function insertKeybindingsIntoConfig(file: vscode.Uri, config: any) {
 // User-facing commands and helpers
 
 async function queryBindingFile() {
+    let picked = vscode.window.showQuickPick(["Use Current File", "Use File..."]);
     // TODO: improve this interface; there should be some predefined set of presets and you
     // can add your own to the list (these can get saved using globalStorageUri)
     let file = await vscode.window.showOpenDialog({
@@ -161,9 +163,21 @@ async function importBindings() {
 // TODO: we want to be able to export a preset to a file
 // TODO: we should be able to delete user defined presets
 
-export function activate(context: vscode.ExtensionContext) {
+interface Preset {
+    builin?: {label: string, file: vscode.Uri}
+    userSpecified?: {label: string, file: vscode.Uri}
+}
+let keybindingPresets = [];
+export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(vscode.commands.registerCommand(
         'master-key.importBindings',
         importBindings
     ));
+    let extensionPresetsDir = Utils.joinPath(context.extensionUri, "presets");
+    for(let [name, type] of await vscode.workspace.fs.readDirectory(extensionPresetsDir)){
+        if(type === vscode.FileType.File){
+            let [label] = name.split('.');
+            keybindingPresets.push({label, file: name});
+        }
+    }
 }

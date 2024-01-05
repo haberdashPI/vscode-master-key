@@ -3,7 +3,11 @@ current issue I'm working on:
 for UX tests: we need to make a command that imports the currently open file
 as a new preset (this will let us set up UX tests with a given set of bindings)
 
+working on an improved preset loading UX
+
 NEXT UP:
+
+
 
 
 unit tests: test out switching between files (ensure that cursor is the right shape)

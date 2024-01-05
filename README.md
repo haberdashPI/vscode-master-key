@@ -1,15 +1,14 @@
 # Master Key
 
-Master your keybindings, learn from clear visual documentation, and record repeative sequences of keys with keyboard macros.
+Master your keybindings, learn from clear visual documentation, and record/replay repetitive sequences of keys with keyboard macros.
 
 If you appreciate the power of vim, emacs, kakaune, helix, or any other well made text
 editor OR if you aren't familiar with these tools, but want to learn how to level up your
 text editing skills, Master Key might be right for you.
 
 There are two ways to use this extension: using an existing preset you can learn from the
-built-in documentation and discoverable commands Master Key provides; OR you can build your
-own customized set of keybindings based off one of these presets or even from your own
-existing keybindings.
+built-in documentation and discoverable commands Master Key provides; OR you can
+build your own customized set of keybindings based off one of these presets or even from your own existing keybindings.
 
 When you use one Master Key's preset keybindings, and you will get:
 
@@ -20,12 +19,12 @@ When you use one Master Key's preset keybindings, and you will get:
   you can query for just the keybindings that have that key sequence as a prefix.
 4. Easily repeat any sequences of existing commands by recording them (keyboard macros), so
   long as the commands are defined through Master Key. It is easy to take existing commands
-  from another extension add and them to Master Key's keybinding file, just copy/past from the default keybindings.
+  from another extension and add them to Master Key's keybinding file, just copy/paste from the default keybindings.
 
 To create your own custom keybindings, you express them in a special file, which supports a
 superset of the standard VSCode keybinding format. You can start by copy/pasting your
 existing keybindings or build from one of the existing Master Key presets. In addition to
-JSON, Master Keys also supports TOML and YAML file formats.
+JSON, Master Keys also supports TOML and YAML file formats and can import your existing keybindings into any of these three formats.
 
 Master Key's file format extends VSCode's built in keybinding format in several ways.
 
@@ -40,8 +39,8 @@ Master Key's file format extends VSCode's built in keybinding format in several 
 4. Modal bindings: ala Vim, you can define specific keyboard modes, and then define
    some of your bindings to be specific to a given mode.
 
-5. Computed arguments: `master-key-.do` allows you set values with one command (e.g. the
-  number of times to repeat the next command) and pass those computed values as an argument
+5. Computed arguments: `master-key-.do` allows you to set values with one command (e.g. the
+  number of times to repeat some action) and pass those computed values as an argument
   to the next command; for example in vim, typing 5dj in normal mode will delete the current
   line and the next 5 lines below it. This command is implemented in Master Key's vim preset
   using computed arguments.
