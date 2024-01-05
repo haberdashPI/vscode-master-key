@@ -2,8 +2,7 @@ import * as vscode from 'vscode';
 import z from 'zod';
 import { validateInput } from './utils';
 import { setKeyContext, runCommands, state as keyState, updateArgs } from "./commands";
-import { strictDoArgs } from './keybindingParsing';
-import { regularizeCommands } from './keybindingProcessing';
+import { doArgs } from './keybindingParsing';
 import { wrappedTranslate } from './utils';
 import { captureKeys } from './captureKeys';
 
@@ -18,7 +17,7 @@ export const searchArgs = z.object({
     text: z.string().min(1).optional(),
     regex: z.boolean().optional(),
     register: z.string().default("default"),
-    doAfter: strictDoArgs.optional(),
+    doAfter: doArgs.optional(),
 });
 export type SearchArgs = z.infer<typeof searchArgs>;
 
@@ -205,7 +204,7 @@ async function search(editor: vscode.TextEditor, edit: vscode.TextEditorEdit, ar
 async function acceptSearch(editor: vscode.TextEditor, edit: vscode.TextEditorEdit, state: SearchState) {
     updateArgs({ ...state.args, text: state.text });
     if(state.args.doAfter){
-        await runCommands({do: regularizeCommands(state.args.doAfter)});
+        await runCommands({do: state.args.doAfter});
     }
     if(state.stop){ state.stop(); }
     state.searchFrom = editor.selections;

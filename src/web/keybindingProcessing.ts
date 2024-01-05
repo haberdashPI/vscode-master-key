@@ -1,28 +1,27 @@
 import hash from 'object-hash';
-import { BindingSpec, BindingTree, StrictBindingTree, BindingItem, StrictBindingItem, 
-         strictBindingItem, StrictDoArgs, parseWhen, StrictDoArg, DoArg, 
-         DefinedCommand, StrictBindingCommand } from "./keybindingParsing";
+import { parseWhen, bindingItem, DoArgs, DefinedCommand, BindingItem, BindingSpec, rawBindingItem, RawBindingItem } from "./keybindingParsing";
 import * as vscode from 'vscode';
-import { isEqual, uniq, omit, mergeWith, cloneDeep, flatMap, merge, entries } from 'lodash';
+import z from 'zod';
+import { pick, isEqual, uniq, omit, mergeWith, cloneDeep, flatMap, merge, entries } from 'lodash';
 import { reifyStrings, EvalContext } from './expressions';
 import { fromZodError } from 'zod-validation-error';
 
-export function processBindings(spec: BindingSpec){
-    let expandedSpec = expandDefaultsAndDefinedCommands(spec.bind, spec.define);
-    let items: StrictBindingItem[] = listBindings(expandedSpec);
+export function processBindings(spec: BindingSpec): [IConfigKeyBinding[], Record<string, any>, string[]]{
+    let problems: string[] = [];
+    let items = expandDefaultsAndDefinedCommands(spec, problems);
     items = expandBindingKeys(items, spec.define);
     items = expandPrefixes(items);
     let prefixCodes: PrefixCodes;
-    [items, prefixCodes] = expandKeySequencesAndResolveDuplicates(items);
+    [items, prefixCodes] = expandKeySequencesAndResolveDuplicates(items, problems);
     items = items.map(moveModeToWhenClause);
     let newItems = items.map(i => movePrefixesToWhenClause(i, prefixCodes));
     let definitions = {...spec.define, prefixCodes: prefixCodes.codes};
-    let configItem = newItems.map(i => itemToConfigBinding(i, definitions));
-    return [configItem, definitions];
+    let configItems = newItems.map(i => itemToConfigBinding(i, definitions));
+    return [configItems, definitions, problems];
 }
 
 function concatWhenAndOverwritePrefixes(obj_: any, src_: any, key: string){
-    if(key === 'when'){ 
+    if(key === 'when'){
         let obj: any[] = obj_ === undefined ? [] : !Array.isArray(obj_) ? [obj_] : obj_;
         let src: any[] = src_ === undefined ? [] : !Array.isArray(src_) ? [src_] : src_;
         return obj.concat(src);
@@ -38,109 +37,110 @@ function concatWhenAndOverwritePrefixes(obj_: any, src_: any, key: string){
     }
 }
 
-function expandDefinedCommands(item: BindingItem, definitions: any){
-    if(item.do && Array.isArray(item.do)){
-        let itemDo = item.do.flatMap((cmd: DoArg) => {
+function expandDefinedCommands(item: RawBindingItem, definitions: any): RawBindingItem{
+    if(item.command && item.command === 'runCommands' && Array.isArray(item.args)){
+        let args = flatMap(item.args, cmd => {
             if(typeof cmd === 'string'){
-                return [cmd];
-            }else if((<any>cmd).command){
-                return [cmd];
-            }else{
+                return [{command: cmd}];
+            }else if((<any>cmd).defined){
                 let definedCommand = <DefinedCommand>cmd;
                 let commands = definitions[definedCommand.defined];
-                if(!commands){ 
-                    vscode.window.showErrorMessage(`Command definition missing under 
+                if(!commands){
+                    throw new Error(`Command definition missing under
                         'define.${definedCommand.defined}`);
-                    return [cmd];
                 }
                 return commands;
+            }else{
+                return [cmd];
             }
         });
-        return {...item, do: itemDo};
+        return {...item, args};
     }
     return item;
 }
 
-function expandDefaultsAndDefinedCommands(bindings: BindingTree, definitions: any, 
-    path: string = "", 
-    defaultItem: BindingItem = {when: [], prefixes: [""]}): StrictBindingTree {
+const partialRawBindingItem = rawBindingItem.partial();
+type PartialRawBindingItem = z.infer<typeof partialRawBindingItem>;
 
-    if (bindings.default !== undefined) {
-        defaultItem = mergeWith(cloneDeep(defaultItem), <BindingItem>bindings.default,
+function expandDefaultsAndDefinedCommands(spec: BindingSpec, problems: string[]): BindingItem[] {
+    let pathDefaults: Record<string, PartialRawBindingItem> = {"": {}};
+    for(let path of spec.path){
+        let parts = path.id.split('.');
+        let defaults: PartialRawBindingItem = partialRawBindingItem.parse({});
+        if(parts.length > 1){
+            let prefix = parts.slice(0,-1).join('.');
+            if(pathDefaults[prefix] === undefined){
+                problems.push(`The path '${path}' was defined before
+                    '${prefix}'.`);
+            }else{
+                defaults = cloneDeep(pathDefaults[prefix]);
+            }
+        }
+        pathDefaults[path.id] = mergeWith(defaults, path.default,
             concatWhenAndOverwritePrefixes);
     }
 
-    let items: StrictBindingItem[] | undefined = undefined;
-    if (bindings.items !== undefined) {
-        let validatedItems = bindings.items.map((item: BindingItem, i: number) => {
-            let expandedItem = mergeWith(cloneDeep(defaultItem), item,
-                concatWhenAndOverwritePrefixes);
-            expandedItem = expandDefinedCommands(expandedItem, definitions);
-            let parsing = strictBindingItem.safeParse({...expandedItem, path: path});
-            if(!parsing.success){
-                vscode.window.showErrorMessage(`Problem with item ${i} under ${path}:
-                    ${fromZodError(parsing.error)}`);
-                return undefined;
-            }else{
-                return parsing.data;
-            }
-        });
-        items = <StrictBindingItem[]>validatedItems.filter(x => x !== undefined);
-    }
-
-    let nonItems = Object.entries(omit(bindings, ['name', 'description', 'kind', 'items', 'default']));
-    let result: { [key: string]: BindingTree } = Object.fromEntries(nonItems.map(([k, v]) => {
-        let entry = (path === "" ? "" : path+".")+k;
-        if(typeof v !== 'object'){
-            vscode.window.showErrorMessage(`bind.${path} has unexpected field ${k}`);
-            return [];
-        }
-        if(v.name !== undefined){
-            // though type script can't enforce it statically, if v has a `name`
-            // it is a binding tree
-            return [k, expandDefaultsAndDefinedCommands(<BindingTree>v, definitions, entry, defaultItem)];
+    let items = spec.bind.map((item, i) => {
+        let itemDefault = pathDefaults[item.path || ""];
+        if(!itemDefault){
+            problems.push(`The path '${item.path}' is undefined.`);
+            return undefined;
         }else{
-            vscode.window.showErrorMessage(`bind.${entry} has no "name" field.`);
-            return [];
+            item = mergeWith(cloneDeep(itemDefault), item, concatWhenAndOverwritePrefixes);
+            item = expandDefinedCommands(item, spec.define);
+            let required = ['key', 'command'];
+            let missing = required.filter(r => (<any>item)[r] === undefined);
+            if(missing.length > 0){
+                problems.push(`Problem with binding ${i} ${item.path}:
+                    missing field '${missing[0]}'`);
+                return undefined;
+            }
+            return bindingItem.parse({
+                key: item.key,
+                when: item.when,
+                mode: item.mode,
+                prefixes: item.prefixes,
+                command: "master-key.do",
+                args: {
+                    do: item.command === 'runCommands' ?
+                        item.args : [pick(item, ['command', 'args', 'computedArgs', 'if'])],
+                    path: item.path,
+                    name: item.name,
+                    description: item.description,
+                    kind: item.kind,
+                    resetTransient: item.resetTransient,
+                }
+            });
         }
-    }));
+    });
 
-    let returnValue = {
-        ...result,
-        name: bindings.name,
-        description: bindings.description,
-        items
-    };
-
-    // I'm not sure exactly why this case is required, I think it is about the weirdness of
-    // indexed keys in the type definition
-    return <StrictBindingTree>returnValue;
+    return <BindingItem[]>(items.filter(x => x !== undefined));
 }
 
 // TODO: check in unit tests
 // invalid items (e.g. both key and keys defined) get detected
 
-function expandBindingKey(k: string, item: StrictBindingItem, context: EvalContext, 
-    definitions: any): StrictBindingItem[] {
+function expandBindingKey(k: string, item: BindingItem, context: EvalContext,
+    definitions: any): BindingItem[] {
 
     let match: RegExpMatchArray | null = null;
     if((match = /((.*)\+)?<all-keys>/.exec(k)) !== null){
         if(match[2] !== undefined){
             let mod = match[2];
-            return flatMap(Array.from(ALL_KEYS), k => 
+            return flatMap(Array.from(ALL_KEYS), k =>
                 expandBindingKey(`${mod}+${k}`, item, context, definitions));
         }else{
-            return flatMap(Array.from(ALL_KEYS), k => 
+            return flatMap(Array.from(ALL_KEYS), k =>
                 expandBindingKey(k, item, context, definitions));
         }
     }
-    let keyEvaled = reifyStrings(omit(item, 'key'), 
+    let keyEvaled = reifyStrings(omit(item, 'key'),
         str => context.evalExpressionsInString(str, {...definitions, key: k}));
     return [{...keyEvaled, key: k}];
 }
 
 const ALL_KEYS = "`1234567890-=qwertyuiop[]\\asdfghjkl;'zxcvbnm,./";
-function expandBindingKeys(bindings: StrictBindingItem[], definitions: any): StrictBindingItem[] {
+function expandBindingKeys(bindings: BindingItem[], definitions: any): BindingItem[] {
     let context = new EvalContext();
     let result = flatMap(bindings, item => {
         if(Array.isArray(item.key)){
@@ -153,7 +153,7 @@ function expandBindingKeys(bindings: StrictBindingItem[], definitions: any): Str
     return result;
 }
 
-function expandPrefixes(items: StrictBindingItem[]){
+function expandPrefixes(items: BindingItem[]){
     return flatMap(items, item => {
         if(item.prefixes && item.prefixes.length > 1){
             return item.prefixes.map(prefix => {
@@ -164,51 +164,22 @@ function expandPrefixes(items: StrictBindingItem[]){
     });
 }
 
-function listBindings(bindings: StrictBindingTree): StrictBindingItem[] {
-    return flatMap(Object.keys(bindings), key => {
-        if(key === 'items' && bindings.items){ return bindings.items; }
-        let val = bindings[key];
-        if(typeof val === 'string'){ return []; }
-        if(typeof val === 'number'){ return []; }
-        if(typeof val === 'boolean'){ return []; }
-        if(typeof val === 'undefined'){ return []; }
-        if(typeof val === 'object'){ return listBindings(<StrictBindingTree>val); }
-        return [];
-    });
-}
-
 export interface IConfigKeyBinding {
     key: string,
-    command: "master-key.do" | "master-key.prefix"
+    command: "master-key.do"
     prefixDescriptions: string[],
     when: string,
-    args: { key: string } | { 
-        do: object[], 
+    args: {
+        do: DoArgs,
         name?: string,
         description?: string,
-        resetTransient?: boolean, 
-        kind: string, 
-        path: string 
+        resetTransient?: boolean,
+        kind: string,
+        path: string
     }
 }
 
-function regularizeCommand(x: StrictDoArg): StrictBindingCommand{
-    if(typeof x === 'string'){
-        return {command: x};
-    }else{
-        return x;
-    }
-}
-
-export function regularizeCommands(x: StrictDoArgs): StrictBindingCommand[] {
-    if(Array.isArray(x)){
-        return x.map(regularizeCommand);
-    }else{
-        return [regularizeCommand(x)];
-    }
-}
-
-function itemToConfigBinding(item: StrictBindingItem, defs: Record<string, any>): IConfigKeyBinding {
+function itemToConfigBinding(item: BindingItem, defs: Record<string, any>): IConfigKeyBinding {
     let prefixDescriptions = item.prefixes.map(p => {
         let code = defs['prefixCodes'][p];
         return `${code}: ${p}`;
@@ -218,18 +189,11 @@ function itemToConfigBinding(item: StrictBindingItem, defs: Record<string, any>)
         prefixDescriptions,
         when: "(" + item.when.map(w => w.str).join(") && (") + ")",
         command: "master-key.do",
-        args: { 
-            do: regularizeCommands(item.do),
-            name: item.name,
-            description: item.description,
-            resetTransient: item.resetTransient, 
-            kind: item.kind,
-            path: item.path 
-        }
+        args: item.args
     };
 }
 
-function moveModeToWhenClause(binding: StrictBindingItem){
+function moveModeToWhenClause(binding: BindingItem){
     let when = binding.when ? binding.when : [];
     if(binding.mode !== undefined){
         let modes = Array.isArray(binding.mode) ? binding.mode : [binding.mode];
@@ -254,7 +218,7 @@ function moveModeToWhenClause(binding: StrictBindingItem){
     return {...binding, when};
 }
 
-export class PrefixCodes { 
+export class PrefixCodes {
     // eslint-disable-next-line @typescript-eslint/naming-convention
     codes: Record<string, number>;
     names: string[];
@@ -278,7 +242,7 @@ export class PrefixCodes {
     }
 };
 
-function movePrefixesToWhenClause(item: StrictBindingItem, prefixCodes: PrefixCodes){
+function movePrefixesToWhenClause(item: BindingItem, prefixCodes: PrefixCodes){
     let when = item.when || [];
     if(item.prefixes.length > 0){
         let allowed = item.prefixes.map(a => {
@@ -295,45 +259,49 @@ function movePrefixesToWhenClause(item: StrictBindingItem, prefixCodes: PrefixCo
     }
 }
 
-type BindingMap = { [key: string]: StrictBindingItem };
+type BindingMap = { [key: string]: BindingItem };
 
-function updatePrefixItemAndPrefix(item: StrictBindingItem, key: string, prefix: string, 
-                    prefixCodes: PrefixCodes): [StrictBindingItem, string] {
+function updatePrefixItemAndPrefix(item: BindingItem, key: string, prefix: string,
+                    prefixCodes: PrefixCodes): [BindingItem, string] {
     let oldPrefix = prefix;
     if (prefix.length > 0) { prefix += " "; }
     prefix += key;
 
     let newItem = {
         key,
-        do: { 
-            command: "master-key.prefix", 
-            args: { 
-                code: prefixCodes.codeFor(prefix), 
-                automated: true 
-            } 
+        command: item.command,
+        args: {
+            do: [{
+                command: "master-key.prefix",
+                args: {
+                    code: prefixCodes.codeFor(prefix),
+                    automated: true
+                },
+            }],
+            path: item.args.path,
+            name: "Command Prefix: "+prefix,
+            kind: "prefix",
+            resetTransient: false,
         },
         when: item.when,
-        kind: "prefix",
         prefixes: [oldPrefix],
         mode: item.mode,
-        path: item.path,
-        resetTransient: false
     };
 
     return [newItem, prefix];
 }
-function requireConcretePrefixes(item: StrictBindingItem){
+function requireConcretePrefixes(item: BindingItem, problems: string[]){
     if(item.prefixes.length === 0){
         let modes = !item.mode ? "any" :
             !Array.isArray(item.mode) ? item.mode :
             item.mode.join(', ');
-        vscode.window.showErrorMessage(`Key binding '${item.key}' for mode 
+        problems.push(`Key binding '${item.key}' for mode
             '${modes}' is a prefix command; it cannot use '<all-prefixes>'.`);
     }
 }
 
-function expandKeySequencesAndResolveDuplicates(items: StrictBindingItem[]): 
-    [StrictBindingItem[], PrefixCodes]{
+function expandKeySequencesAndResolveDuplicates(items: BindingItem[], problems: string[]):
+    [BindingItem[], PrefixCodes]{
 
     let result: BindingMap = {};
     let prefixCodes = new PrefixCodes();
@@ -341,33 +309,40 @@ function expandKeySequencesAndResolveDuplicates(items: StrictBindingItem[]):
         if(!Array.isArray(item.key)){
             // we should always land here, because prior steps have expanded key sequences
             // into individual keys
-            let keySeq = item.key.trim().split(/\s+/);
-            let prefix = item.prefixes[0];
+            // NOTE: at this point there is always only one prefix (we have previously
+            // expanded multi-prefix bindings into several distinct bindings)
+            let prefix = '';
+            let key = item.key.trim();
+            if(item.prefixes.length > 0 && item.prefixes[0].length > 0){
+                key = item.prefixes[0] + " " + key;
+            }
+            let keySeq = key.split(/\s+/);
             let prefixItem;
 
             if(keySeq.length > 1){
-                requireConcretePrefixes(item);
+                requireConcretePrefixes(item, problems);
                 // expand multi-key sequences into individual bindings
                 for(let key of keySeq.slice(0, -1)){
-                    [prefixItem, prefix] = updatePrefixItemAndPrefix(item, key, prefix, 
+                    [prefixItem, prefix] = updatePrefixItemAndPrefix(item, key, prefix,
                         prefixCodes);
-                    addWithoutDuplicating(result, prefixItem);
+                    addWithoutDuplicating(result, prefixItem, problems);
                 }
             }
 
             let suffixKey = keySeq[keySeq.length-1];
             // we have to inject the appropriate prefix code if this is a user
             // defined keybinding that calls `master-key.prefix
-            if(isSingleCommand(item.do, 'master-key.prefix')){
-                requireConcretePrefixes(item);
-                let [prefixItem, _] = updatePrefixItemAndPrefix(item, suffixKey, prefix, 
+            if(isSingleCommand(item.args.do, 'master-key.prefix')){
+                requireConcretePrefixes(item, problems);
+                let [prefixItem, _] = updatePrefixItemAndPrefix(item, suffixKey, prefix,
                     prefixCodes);
-                addWithoutDuplicating(result, merge(item, prefixItem));
+                addWithoutDuplicating(result, merge(item, prefixItem), problems);
             }else{
                 if(keySeq.length > 1){
-                    addWithoutDuplicating(result, {...item, key: suffixKey, prefixes: [prefix]});
+                    addWithoutDuplicating(result, {...item, key: suffixKey, prefixes: [prefix]},
+                        problems);
                 }else{
-                    addWithoutDuplicating(result, item);
+                    addWithoutDuplicating(result, item, problems);
                 }
             }
         }else{
@@ -378,27 +353,15 @@ function expandKeySequencesAndResolveDuplicates(items: StrictBindingItem[]):
 }
 
 
-export function isSingleCommand(x: StrictDoArgs, cmd: string){
-    if(!Array.isArray(x)){
-        if(typeof x === 'string'){ return x === cmd; }
-        else{ return x.command === cmd; }
-    }
-    return false;
+export function isSingleCommand(x: DoArgs, cmd: string){
+    if(x.length > 1){ return false; }
+    return x[0].command === cmd;
 }
 
-function coerceSingleCommand(x_: StrictDoArgs){
-    let x = <StrictDoArg>x_; // we always check for `isSingleCommand` before using this coerce method
-    if(typeof x === 'string'){
-        return {command: x};
-    }else{
-        return x;
-    }
-}
-
-function addWithoutDuplicating(map: BindingMap, newItem: StrictBindingItem){
+function addWithoutDuplicating(map: BindingMap, newItem: BindingItem, problems: string[]): BindingMap {
     let key = hash({
-        newItem: newItem.key, 
-        mode: newItem.mode, 
+        newItem: newItem.key,
+        mode: newItem.mode,
         when: newItem.when?.map(w => w.id)?.sort(),
         prefixes: newItem.prefixes
     });
@@ -407,21 +370,19 @@ function addWithoutDuplicating(map: BindingMap, newItem: StrictBindingItem){
     if(existingItem){
         if(isEqual(newItem, existingItem)){
             // use the existing newItem
-            return map; 
-        }else if(isSingleCommand(newItem.do, "master-key.ignore")){
+            return map;
+        }else if(isSingleCommand(newItem.args.do, "master-key.ignore")){
             // use the existing newItem
-            return map; 
-        }else if(isSingleCommand(existingItem.do, "master-key.ignore")){
+            return map;
+        }else if(isSingleCommand(existingItem.args.do, "master-key.ignore")){
             map[key] = newItem;
             return map;
-        }else if(isSingleCommand(newItem.do, "master-key.prefix") && 
-                 isSingleCommand(existingItem.do, "master-key.prefix")){
-            let newItemDo = coerceSingleCommand(newItem.do);
-            let existingItemDo = coerceSingleCommand(existingItem.do);
-            if(newItemDo.args?.automated){
+        }else if(isSingleCommand(newItem.args.do, "master-key.prefix") &&
+                 isSingleCommand(existingItem.args.do, "master-key.prefix")){
+            if(newItem.args.do[0].args?.automated){
                 // use the existing newItem
-                return map; 
-            }else if(existingItemDo.args?.automated){
+                return map;
+            }else if(existingItem.args.do[0].args?.automated){
                 map[key] = newItem;
                 return map;
             }
@@ -442,7 +403,7 @@ function addWithoutDuplicating(map: BindingMap, newItem: StrictBindingItem){
         }else{
             message = `Duplicate bindings for '${binding}' in mode '${newItem.mode}'`;
         }
-        vscode.window.showErrorMessage(message);
+        problems.push(message);
     }else{
         map[key] = newItem;
     }

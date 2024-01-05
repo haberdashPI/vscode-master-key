@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
-import { strictDoArgs, validModes, strictBindingCommand, StrictBindingCommand } from './keybindingParsing';
-import { PrefixCodes, isSingleCommand, regularizeCommands } from './keybindingProcessing';
+import { doArgs, validModes, bindingCommand, BindingCommand } from './keybindingParsing';
+import { PrefixCodes, isSingleCommand } from './keybindingProcessing';
 import { reifyStrings, EvalContext } from './expressions';
 import { validateInput } from './utils';
 import z from 'zod';
@@ -146,7 +146,7 @@ function updateCursorAppearance(editor: vscode.TextEditor, mode: string){
 }
 
 
-async function runCommand(command: StrictBindingCommand, i?: number){
+async function runCommand(command: BindingCommand, i?: number){
     let recordedCommand = command;
     if(i !== undefined){
         let recordedCommands = state.values.
@@ -185,7 +185,7 @@ async function runCommand(command: StrictBindingCommand, i?: number){
 }
 
 const runCommandArgs = z.object({ 
-    do: strictBindingCommand.array(),
+    do: doArgs,
     resetTransient: z.boolean().optional().default(true),
     kind: z.string().optional(),
     path: z.string().optional(),
@@ -246,7 +246,7 @@ export async function runCommands(args: RunCommandsArgs){
 }
 commands['master-key.do'] = runCommandsCmd;
 
-const repeatCommandArgs = strictBindingCommand.extend({
+const repeatCommandArgs = bindingCommand.extend({
     repeat: z.number().min(0).optional()
 });
 async function repeatCommand(args_: unknown){
@@ -432,7 +432,7 @@ async function runCommandHistory(commands: (RunCommandsArgs | RecordedCommandArg
                 });
             }else{
                 vscode.window.showErrorMessage(`Command includes edits to the active text 
-                    editor, but there is currently no active editor.`)
+                    editor, but there is currently no active editor.`);
             }
         }
         // replaying actions too fast messes up selection
@@ -496,7 +496,7 @@ commands['master-key.storeNamed'] = storeNamed;
 const restoreNamedArgs = z.object({
     description: z.string().optional(),
     name: z.string(),
-    doAfter: strictDoArgs
+    doAfter: doArgs
 });
 async function restoreNamed(args_: unknown){
     let args = validateInput('master-key.restoreNamed', args_, restoreNamedArgs);
@@ -508,7 +508,7 @@ async function restoreNamed(args_: unknown){
         let selected = await vscode.window.showQuickPick(items);
         if(selected !== undefined){
             setKeyContext({ name: 'captured', value: stored[args.name][selected.label] });
-            runCommands({ do: regularizeCommands(args.doAfter) });
+            runCommands({ do: args.doAfter });
         }
     }
 }
