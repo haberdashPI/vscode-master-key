@@ -9,7 +9,7 @@ import replaceAll from 'string.prototype.replaceall';
 // Keybinding Generation
 
 const AUTOMATED_COMMENT_START_PREFIX = `
-    // AUTOMATED BINDINGS START: ModalKey Bindings
+    // AUTOMATED BINDINGS START: Master Key Bindings
     //
     // These bindings were automatically inserted by the master-key extension from the
     // following file:
@@ -25,7 +25,7 @@ const AUTOMATED_COMMENT_START_SUFFIX = `
 `;
 
 const AUTOMATED_COMMENT_END = `
-    // AUTOMATED BINDINGS END: ModalKey Bindings
+    // AUTOMATED BINDINGS END: Master Key Bindings
 
     // Leave this comment (and the one denoting the start) unmodified to ensure the
     // automated bindings are properly updated if/when you insert another preset
