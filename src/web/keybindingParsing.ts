@@ -1,9 +1,12 @@
 import * as vscode from 'vscode';
 import jsep from 'jsep';
+import JSONC from 'jsonc-parser';
+import { Utils } from 'vscode-uri';
 const TOML = require("smol-toml");
+import YAML from 'yaml';
 import * as semver from 'semver';
 import { TextDecoder } from 'text-encoding';
-import { ZodIssue, z } from "zod";
+import z, { ZodIssue } from "zod";
 import { ZodError, fromZodError, fromZodIssue } from 'zod-validation-error';
 import { expressionId } from './expressions';
 import { uniqBy } from 'lodash';
@@ -200,20 +203,23 @@ export const bindingSpec = z.object({
 }).strict();
 export type BindingSpec = z.infer<typeof bindingSpec>;
 
-export function parseBindingTOML(text: string){
-    return bindingSpec.safeParse(TOML.parse(text));
-}
-
-export function parseBindingJSON(text: string){
-    return bindingSpec.safeParse(JSON.parse(text));
+export function parseBindings<T>(text: string, parse: string | ((data: string) => unknown)){
+    if(typeof parse === 'string'){
+        let ext = parse.toLowerCase();
+        if(ext === 'json' || ext === 'jsonc'){ return parseBindings(text, JSONC.parse); }
+        else if(ext === 'yaml' || ext === 'yml'){ return parseBindings(text, YAML.parse); }
+        else if(ext === 'toml' ){ return parseBindings(text, TOML.parse); }
+        else{
+            throw new Error("Unexpected file extension: "+ext);
+        }
+    }else{
+        return bindingSpec.safeParse(parse(text));
+    }
 }
 
 export async function parseBindingFile(file: vscode.Uri){
     let fileData = await vscode.workspace.fs.readFile(file);
     let fileText = decoder.decode(fileData);
-    if(file.fsPath.endsWith(".json")){
-        return parseBindingJSON(fileText);
-    }else{
-        return parseBindingTOML(fileText);
-    }
+    let ext = Utils.extname(file);
+    return parseBindings(fileText, ext);
 }

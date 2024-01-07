@@ -1,10 +1,11 @@
 import * as vscode from 'vscode';
 import { searchMatches } from './searching';
-import { parseBindingFile, showParseError } from './keybindingParsing';
-import { processBindings, IConfigKeyBinding } from './keybindingProcessing';
+import { parseBindings, BindingSpec, showParseError, parseBindingFile } from './keybindingParsing';
+import { processBindings, IConfigKeyBinding, Bindings } from './keybindingProcessing';
 import { pick } from 'lodash';
 import replaceAll from 'string.prototype.replaceall';
-import { Utils } from 'vscode-uri'
+import uri, { Utils } from 'vscode-uri'
+import z from 'zod';
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 // Keybinding Generation
@@ -115,30 +116,13 @@ async function insertKeybindingsIntoConfig(file: vscode.Uri, config: any) {
 ////////////////////////////////////////////////////////////////////////////////////////////
 // User-facing commands and helpers
 
-async function queryBindingFile() {
-    let picked = vscode.window.showQuickPick(["Use Current File", "Use File..."]);
-    // TODO: improve this interface; there should be some predefined set of presets and you
-    // can add your own to the list (these can get saved using globalStorageUri)
-    let file = await vscode.window.showOpenDialog({
-        openLabel: "Import Modal-Key-Binding Spec",
-        // eslint-disable-next-line @typescript-eslint/naming-convention
-        filters: { Preset: ["json", "toml"] },
-        canSelectFiles: true,
-        canSelectFolders: false,
-        canSelectMany: false
-    });
-    if(!file || file.length !== 1) { return undefined; }
-    return file[0];
-}
-
-export async function processFile(file: vscode.Uri) {
-    let parsedBindings = await parseBindingFile(file);
+export async function processParsing<T>(parsedBindings: z.SafeParseReturnType<T, BindingSpec>){
     if(parsedBindings.success){
-        let [bindings, definitions, problems] = processBindings(parsedBindings.data);
+        let [bindings, problems] = processBindings(parsedBindings.data);
         for (let problem of problems.slice(0, 3)){
             vscode.window.showErrorMessage("Parsing error: "+problem);
         }
-        return [bindings, definitions];
+        return bindings;
     }else{
         for (let issue of parsedBindings.error.issues.slice(0, 3)) {
             showParseError("Parsing error: ", issue);
@@ -146,15 +130,102 @@ export async function processFile(file: vscode.Uri) {
     }
 }
 
-async function importBindings() {
-    let file = await queryBindingFile();
-    if (file === undefined) { return; }
-    let result = await processFile(file);
-    if(result){
-        let [bindings, definitions] = result;
-        insertKeybindingsIntoConfig(file, bindings);
+async function resolvePresets(presets: Preset[]){
+    let result: ResolvedPreset[] = [];
+    for(let preset of presets){
+        if(!preset.resolved){
+            let resolved = await preset.promise;
+            if(resolved){
+                result.push({
+                    resolved: true,
+                    uri: preset.uri,
+                    name: resolved.name || preset.name,
+                    bindings: resolved
+                });
+            }
+        }else{
+            result.push(preset);
+        }
+    }
+    return result;
+}
+
+interface PresetPick extends vscode.QuickPickItem{
+    preset?: ResolvedPreset
+}
+
+function makeQuickPicksFromPresets(presets: ResolvedPreset[]): PresetPick[]{
+    let nameCount: Record<string, number> = {};
+    for(let preset of presets){
+        let count = nameCount[preset.name] || 0;
+        nameCount[name] = count+1;
+    }
+
+    return presets.map(preset => {
+        if(nameCount[preset.name] > 1){
+            return {preset, label: preset.name, detail: preset.uri.path};
+        }else{
+            return {preset, label: preset.name};
+        }
+    });
+}
+
+async function selectPreset(){
+    let options = makeQuickPicksFromPresets(await resolvePresets(keybindingPresets));
+    options.push({label: "Use Current File"}, {label: "Use File..."}, {label: "Add Directory..."});
+    let picked = await vscode.window.showQuickPick(options);
+    if(picked?.label === "Use Current File"){
+        let editor = vscode.window.activeTextEditor;
+        if(!editor){
+            vscode.window.showErrorMessage("There is no current file");
+        }else{
+            let text = editor.document.getText();
+            let uri = editor.document.uri;
+            let langId = editor.document.languageId;
+            let bindings = await processParsing(parseBindings(text,
+                langId || Utils.extname(uri)));
+
+            return bindings;
+        }
+    }else if(picked?.label === 'Use File...'){
+        let file = await vscode.window.showOpenDialog({
+            openLabel: "Import Modal-Key-Binding Spec",
+            // eslint-disable-next-line @typescript-eslint/naming-convention
+            filters: { Preset: ["json", "jsonc", "toml", "yml", "yaml"] },
+            canSelectFiles: true,
+            canSelectFolders: false,
+            canSelectMany: false
+        });
+        if(file && file.length === 1){
+            let bindings = await processParsing(await parseBindingFile(file[0]));
+            return bindings;
+        }
+    }else if(picked?.label === 'Add Directory of Presets...'){
         let config = vscode.workspace.getConfiguration('master-key');
-        config.update('definitions', definitions, vscode.ConfigurationTarget.Global);
+        let dir = await vscode.window.showOpenDialog({
+            openLabel: "Select Directory",
+            canSelectFiles: false,
+            canSelectFolders: true,
+            canSelectMany: false
+        });
+
+        if(dir){
+            let dirs = config.get<string[]>('presetDirectories');
+            dirs?.push();
+            await config.update('pressetDirectories', dirs, vscode.ConfigurationTarget.Global);
+            selectPreset();
+        }
+    }else{
+        return picked?.preset?.bindings;
+    }
+}
+
+async function importBindings(file: vscode.Uri, preset: Bindings) {
+    if (preset === undefined) { return; }
+    if(preset){
+        insertKeybindingsIntoConfig(file, preset.bind);
+        let config = vscode.workspace.getConfiguration('master-key');
+        config.update('definitions', preset.define, vscode.ConfigurationTarget.Global);
     }
 }
 
@@ -163,21 +234,50 @@ async function importBindings() {
 // TODO: we want to be able to export a preset to a file
 // TODO: we should be able to delete user defined presets
 
-interface Preset {
-    builin?: {label: string, file: vscode.Uri}
-    userSpecified?: {label: string, file: vscode.Uri}
+interface UnresolvedPreset {
+    resolved: false,
+    uri: vscode.Uri,
+    name: string,
+    promise: Promise<Bindings | undefined>,
 }
-let keybindingPresets = [];
-export async function activate(context: vscode.ExtensionContext) {
-    context.subscriptions.push(vscode.commands.registerCommand(
-        'master-key.importBindings',
-        importBindings
-    ));
-    let extensionPresetsDir = Utils.joinPath(context.extensionUri, "presets");
-    for(let [name, type] of await vscode.workspace.fs.readDirectory(extensionPresetsDir)){
-        if(type === vscode.FileType.File){
-            let [label] = name.split('.');
-            keybindingPresets.push({label, file: name});
+interface ResolvedPreset{
+    resolved: true,
+    uri: vscode.Uri,
+    name: string
+    bindings: Bindings,
+}
+type Preset = UnresolvedPreset | ResolvedPreset;
+let keybindingPresets: Preset[] = [];
+
+async function updatePresets(event?: vscode.ConfigurationChangeEvent){
+    if(!event || event.affectsConfiguration('master-key')){
+        let config = vscode.workspace.getConfiguration('master-key');
+        let userDirs = config.get<string[]>('presetDirectories')?.map(x =>
+            uri.URI.from({scheme: "file", path: x}));
+        let allDirs;
+        if(userDirs){ allDirs = [extensionPresetsDir].concat(); }
+        else{ allDirs = [extensionPresetsDir]; }
+
+        for(let dir of allDirs){
+            for(let [filename, type] of await vscode.workspace.fs.readDirectory(dir)){
+                if(type === vscode.FileType.File){
+                    let uri = Utils.joinPath(extensionPresetsDir, filename);
+                    let bindings = processParsing(await parseBindingFile(uri));
+                    let [label] = Utils.basename(uri).split('.');
+                    keybindingPresets.push({promise: bindings, name: label, uri, resolved: false});
+                }
+            }
         }
     }
+}
+
+let extensionPresetsDir: vscode.Uri;
+export async function activate(context: vscode.ExtensionContext) {
+    context.subscriptions.push(vscode.commands.registerCommand(
+        'master-key.selectPreset',
+        selectPreset
+    ));
+    extensionPresetsDir = Utils.joinPath(context.extensionUri, "presets");
+    updatePresets();
+    vscode.workspace.onDidChangeConfiguration(updatePresets);
 }

@@ -3,18 +3,18 @@ import assert from 'assert';
 // You can import and use all API from the 'vscode' module
 // as well as import your extension to test it
 import { processBindings } from '../../keybindingProcessing';
-import { parseBindingTOML } from '../../keybindingParsing';
+import { parseBindings } from '../../keybindingParsing';
 import { fromZodError } from 'zod-validation-error';
 import { sortBy, isEqual } from 'lodash';
 
 function specForBindings(text: string) {
-    let result = parseBindingTOML(text);
+    let result = parseBindings(text, 'toml');
     if (result.success) {
         let data = processBindings(result.data);
         if (data) {
-            let [spec, defs, problems] = data;
+            let [spec, problems] = data;
             if(problems.length > 0){ throw new Error(problems[0]); }
-            return spec;
+            return spec.bind;
         }
     } else {
         throw new Error("Unexpected parsing failure!: " + fromZodError(result.error));
@@ -40,7 +40,7 @@ suite('Keybinding Test Suite', () => {
         command = "barCommand"
     `;
     test('Files can be parsed', () => {
-        let result = parseBindingTOML(simpleFile);
+        let result = parseBindings(simpleFile, 'toml');
         assert(result.success);
         let data = processBindings(result.data);
         assert(result.data);
