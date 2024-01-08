@@ -206,6 +206,8 @@ export type BindingSpec = z.infer<typeof bindingSpec>;
 export function parseBindings<T>(text: string, parse: string | ((data: string) => unknown)){
     if(typeof parse === 'string'){
         let ext = parse.toLowerCase();
+        let match = ext.match(/^\.(.+)$/);
+        if(match){ ext = match[1]; }
         if(ext === 'json' || ext === 'jsonc'){ return parseBindings(text, JSONC.parse); }
         else if(ext === 'yaml' || ext === 'yml'){ return parseBindings(text, YAML.parse); }
         else if(ext === 'toml' ){ return parseBindings(text, TOML.parse); }

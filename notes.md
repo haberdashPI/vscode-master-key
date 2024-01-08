@@ -1,5 +1,6 @@
 current issue I'm working on:
 
+TODO: imports work except for adding a directory
 for UX tests: we need to make a command that imports the currently open file
 as a new preset (this will let us set up UX tests with a given set of bindings)
 

@@ -20,8 +20,8 @@ export function captureKeys(onUpdate: UpdateFn): void {
             typeSubscription = vscode.commands.registerCommand('type', onType);
             setKeyContext({name: 'mode', value: 'capture'});
         }catch(e){
-            vscode.window.showErrorMessage(`Failed to capture keyboard input. You 
-                might have an extension that is already listening to type events 
+            vscode.window.showErrorMessage(`Failed to capture keyboard input. You
+                might have an extension that is already listening to type events
                 (e.g. vscodevim).`);
         }
     }
@@ -56,7 +56,7 @@ function captureKeysCmd(args_: unknown){
     let args = validateInput('master-key.captureKeys', args_, captureKeysArgs);
     if(args){
         let a = args;
-        if(args.keys){ 
+        if(args.keys){
             runCommands({ do: a.doAfter });
         }else{
             let captured = "";
@@ -73,7 +73,7 @@ function captureKeysCmd(args_: unknown){
                 updateArgs({ ...a, keys: captured });
                 if(doStop){
                     stop();
-                    runCommands({ do: a.doAfter }); 
+                    runCommands({ do: a.doAfter });
                 }
             });
         }
@@ -85,15 +85,15 @@ const charArgs = z.object({
 }).strict();
 
 
-function doChar(editor: vscode.TextEditor, name: string, 
-                action: (editor: vscode.TextEditor, char: string) => void, 
+function doChar(editor: vscode.TextEditor, name: string,
+                action: (editor: vscode.TextEditor, char: string) => void,
                 args_: unknown = {}) {
 
     let char: string | undefined = undefined;
     if(args_){
         let args = validateInput(name, args_, charArgs);
-        if(args){ 
-            if(args.char){ char = args.char; } 
+        if(args){
+            if(args.char){ char = args.char; }
         }else{
             // validation error, stop trying to run this command
             return;
@@ -119,7 +119,7 @@ function replaceCharHelper(editor: vscode.TextEditor, char: string){
     });
 }
 
-function replaceChar(editor: vscode.TextEditor, edit: vscode.TextEditorEdit, 
+function replaceChar(editor: vscode.TextEditor, edit: vscode.TextEditorEdit,
     args_: unknown){
 
     doChar(editor, 'master-key.replaceChar', replaceCharHelper, args_);
@@ -131,7 +131,7 @@ function insertCharHelper(editor: vscode.TextEditor, char: string){
     });
 }
 
-function insertChar(editor: vscode.TextEditor, edit: vscode.TextEditorEdit, 
+function insertChar(editor: vscode.TextEditor, edit: vscode.TextEditorEdit,
     args_: unknown = {}){
 
     doChar(editor, 'master-key.insertChar', insertCharHelper);
