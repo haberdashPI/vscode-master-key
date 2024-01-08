@@ -66,6 +66,9 @@ maybe we should implement an edit and a navigation history since the built-in co
 
 wishlist:
 
+- users should be able to populate their own bindings file with one of the existing
+  presets as to serve as a starting point
+
 - ideally we presever the order of bindings, and place prefixes right before
   the first binding that uses them
 

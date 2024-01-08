@@ -6,13 +6,13 @@ If you appreciate the power of vim, emacs, kakaune, helix, or any other well mad
 editor OR if you aren't familiar with these tools, but want to learn how to level up your
 text editing skills, Master Key might be right for you.
 
-There are two ways to use this extension: using an existing preset you can learn from the
-built-in documentation and discoverable commands Master Key provides; OR you can
-build your own customized set of keybindings based off one of these presets or even from your own existing keybindings.
+There are two ways to use this extension: using a pre-existing keybinding preset, or creaging your own custom bindings.
 
-When you use one Master Key's preset keybindings, and you will get:
+## Using an existing preset
 
-1. Visual documentation of all keybindings
+When you use an existing preset you get:
+
+1. A keyboard-layout visual documentation guide of all keybindings
 2. Thorough tables listing all keybindings organized by category
 3. Context specific command palette: All defined keybindings can be searched based on their
   name and description. Furthermore, if you are in the middle of typing a multi-key sequence
@@ -20,6 +20,20 @@ When you use one Master Key's preset keybindings, and you will get:
 4. Easily repeat any sequences of existing commands by recording them (keyboard macros), so
   long as the commands are defined through Master Key. It is easy to take existing commands
   from another extension and add them to Master Key's keybinding file, just copy/paste from the default keybindings.
+
+There are four available presets:
+
+1. Vim: bindings most similar to vim's defaults
+2. Emacs: bindings most similar to emacs's defaults
+3. Kakoune: bindings most similar to kakoune's defaults
+4. Larkin: a custom keybinding set, inspired by kakaune, unique to Master Key
+
+Note that Master Key does not aim to perfectly replicate any pre-existing editor (if that's
+your goal, you will probably be happier using one of the extensions already built for that
+purpose); Instead, it uses the design of each as an inspiration for keybindings that provide
+a VSCode native experience that is discoverable and highly customizable.
+
+## Creating custom bindings
 
 To create your own custom keybindings, you express them in a special file, which supports a
 superset of the standard VSCode keybinding format. You can start by copy/pasting your
@@ -29,21 +43,42 @@ JSON, Master Keys also supports TOML and YAML file formats and can import your e
 Master Key's file format extends VSCode's built in keybinding format in several ways.
 
 1. Support for documentation: by providing a little extra information for each binding,
-   Master Keys can automatically generate helpful visual and textual documentation of your
+   Master Keys can automatically generate helpful visual and textual documentation for your
    keybindings
 
 3. Recording each key press: when Master Key reads your keybindings it converts all commands
-  by wrapping them in `master-key.do`, which executes the specified command and records the
-  result. This lets you implement keyboard macro's or Vim's "repeat action"
+   by wrapping them in `master-key.do`, which executes the specified command and records the
+   result. This lets you implement keyboard macro's or things like Vim's "repeat action"
 
 4. Modal bindings: ala Vim, you can define specific keyboard modes, and then define
    some of your bindings to be specific to a given mode.
 
-5. Computed arguments: `master-key-.do` allows you to set values with one command (e.g. the
-  number of times to repeat some action) and pass those computed values as an argument
-  to the next command; for example in vim, typing 5dj in normal mode will delete the current
-  line and the next 5 lines below it. This command is implemented in Master Key's vim preset
-  using computed arguments.
+5. Computed arguments: `master-key.set` and `master-key.do` allows you to set and compute
+   values; for example in vim, typing 5dj in normal mode will delete the current line and
+   the next 5 lines below it. This command is implemented in Master Key's vim preset by
+   using computed arguments.
+
+6. Default bindings: some bindings are small variations on other keybindings. The extended
+   format allows you to define nested defaults that make it easy to only specify the
+   parts of each binding that are unique to a given category of binding.
+
+7. Multi-binding entries: Bindings can even be defined by passing an array of different
+   bindings to the `key` property, with the other properties of binding defined parametrically w.r.t to each value in this array.
+
+8. Definitions: for any values you wish to re-use across many bindings you can define these
+   in the `define` section of the file, and reference them in the keybindings that
+   require their use.
+
+Files are thoroughly validated before their use, proactively identifying errors.
+
+## Related Extensions
+
+- [VSCodeVim](https://github.com/VSCodeVim/Vim)
+- [vscode-neovim](https://github.com/asvetliakov/vscode-neovim)
+- [Awesome Emacs Keymap](https://github.com/whitphx/vscode-emacs-mcx)
+- [Dance](https://github.com/71/dance)
+- [ModalEdit](https://github.com/johtela/vscode-modaledit)
+- [ModalKeys](https://github.com/haberdashPI/vscode-modal-keys)
 
 ## Developer Notes
 

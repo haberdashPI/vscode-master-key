@@ -4,9 +4,13 @@
   "publisher": "haberdashPI",
   "description": "Master your keybindings with documentation, discoverability, modal bindings and expressive configuration",
   "version": "0.1.0",
+  "repository": {
+    "url": "https://github.com/haberdashPi/vscode-master-key"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },
+  "license": "MIT",
   "categories": [
     "Other"
   ],
