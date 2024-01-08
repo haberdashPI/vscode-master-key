@@ -2,9 +2,9 @@ import * as vscode from 'vscode';
 import { searchMatches } from './searching';
 import { parseBindings, BindingSpec, showParseError, parseBindingFile, bindingSpec } from './keybindingParsing';
 import { processBindings, IConfigKeyBinding, Bindings } from './keybindingProcessing';
-import { pick } from 'lodash';
+import { uniq, pick } from 'lodash';
 import replaceAll from 'string.prototype.replaceall';
-import uri, { Utils } from 'vscode-uri'
+import uri, { Utils } from 'vscode-uri';
 import z from 'zod';
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -155,9 +155,9 @@ async function queryPreset(): Promise<Preset | undefined> {
     let options = makeQuickPicksFromPresets(await keybindingPresets);
     options.push(
         {label: "add new presets...", kind: vscode.QuickPickItemKind.Separator},
-        {label: "Use Current File", command: "current"},
-        {label: "Use File...", command: "file"},
-        {label: "Add Directory...", command: "dir"}
+        {label: "Current File", command: "current"},
+        {label: "File...", command: "file"},
+        {label: "Directory...", command: "dir"}
     );
     let picked = await vscode.window.showQuickPick(options);
     if(picked?.command === "current"){
@@ -211,6 +211,7 @@ async function queryPreset(): Promise<Preset | undefined> {
         if(dir){
             let dirs = config.get<string[]>('presetDirectories');
             dirs?.push(dir[0].fsPath);
+            if(dirs){ dirs = uniq(dirs); }
             await config.update('presetDirectories', dirs, vscode.ConfigurationTarget.Global);
             updatePresets();
             return queryPreset();
@@ -263,7 +264,7 @@ async function loadPresets(allDirs: vscode.Uri[]){
             if(type === vscode.FileType.File &&
                 /(json|jsonc|yml|yaml|toml)$/.test(filename)){
 
-                let uri = Utils.joinPath(extensionPresetsDir, filename);
+                let uri = Utils.joinPath(dir, filename);
                 let bindings = processParsing(await parseBindingFile(uri), filename+" ");
                 let [label] = Utils.basename(uri).split('.');
                 if(bindings){
