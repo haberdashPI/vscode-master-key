@@ -1,10 +1,9 @@
 import hash from 'object-hash';
-import { parseWhen, bindingItem, DoArgs, DefinedCommand, BindingItem, BindingSpec, rawBindingItem, RawBindingItem } from "./keybindingParsing";
-import * as vscode from 'vscode';
+import { parseWhen, bindingItem, DoArgs, DefinedCommand, BindingItem, BindingSpec,
+         rawBindingItem, RawBindingItem } from "./keybindingParsing";
 import z from 'zod';
-import { pick, isEqual, uniq, omit, mergeWith, cloneDeep, flatMap, merge, entries } from 'lodash';
+import { pick, isEqual, omit, mergeWith, cloneDeep, flatMap, merge } from 'lodash';
 import { reifyStrings, EvalContext } from './expressions';
-import { fromZodError } from 'zod-validation-error';
 
 export interface Bindings{
     name?: string,
