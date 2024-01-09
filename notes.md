@@ -53,6 +53,9 @@ thoughts: things I must have to release:
 **TODO**: in documenting macro playback note the limitations of recording the keyboard
 (e.g. that it only records inserts)
 
+**TODO**: fix default expansion for `when` clauses (keep it simple) and add an extra
+field e.g. `extend` (or `concat`?) for the fancier situation
+
 **TODO**: anything beyond this point needs to be organized and prioritized
 
 maybe we should implement an edit and a navigation history since the built-in commands aren't particularly satisfying
