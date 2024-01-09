@@ -1,6 +1,9 @@
 # Master Key
 
-Master your keybindings, learn from clear visual documentation, and record/replay repetitive sequences of keys with keyboard macros.
+Master your keybindings, with:
+- **clear and discoverable visual documentation**
+- **leveled-up keybinding format**: computed argument values, nested defaults, parameteric multiple-binding specifications; in-short enough power to make vim or emacs-like keybindings
+- **keyboard macros**: record/replay repetitive sequences of keys
 
 If you appreciate the power of vim, emacs, kakaune, helix, or any other well made text
 editor OR if you aren't familiar with these tools, but want to learn how to level up your
@@ -13,10 +16,11 @@ There are two ways to use this extension: using a pre-existing keybinding preset
 When you use an existing preset you get:
 
 1. A keyboard-layout visual documentation guide of all keybindings
-2. Thorough tables listing all keybindings organized by category
-3. Context specific command palette: All defined keybindings can be searched based on their
-  name and description. Furthermore, if you are in the middle of typing a multi-key sequence
-  you can query for just the keybindings that have that key sequence as a prefix.
+2. Standard documentation of all keybindings
+3. Context specific command palette: All defined keybindings can be searched for based on
+  their name and description. Furthermore, if you are in the middle of typing a multi-key
+  sequence, or in a specific key mode, you can query for just the keybindings that have that
+  key sequence as a prefix and/or mode.
 4. Easily repeat any sequences of existing commands by recording them (keyboard macros), so
   long as the commands are defined through Master Key. It is easy to take existing commands
   from another extension and add them to Master Key's keybinding file, just copy/paste from the default keybindings.
@@ -63,13 +67,14 @@ Master Key's file format extends VSCode's built in keybinding format in several 
    parts of each binding that are unique to a given category of binding.
 
 7. Multi-binding entries: Bindings can even be defined by passing an array of different
-   bindings to the `key` property, with the other properties of binding defined parametrically w.r.t to each value in this array.
+   bindings to the `key` property, with the other properties of binding defined parametrically w.r.t to each value `key` can be.
 
 8. Definitions: for any values you wish to re-use across many bindings you can define these
    in the `define` section of the file, and reference them in the keybindings that
    require their use.
 
-Files are thoroughly validated before their use, proactively identifying errors.
+Files are thoroughly validated before their use, proactively identifying a variety of
+errors.
 
 ## Related Extensions
 
@@ -82,7 +87,7 @@ Files are thoroughly validated before their use, proactively identifying errors.
 
 ## Developer Notes
 
-This repository relies on a working version of `nvm` installed in bash and a npm version
+This repository relies on a working versions of `nvm` installed in bash and a npm version
 matching the version specified in `.nvmrc`. You can satisfy this requirement by copying and
 running the following in bash.
 
