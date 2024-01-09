@@ -2,8 +2,7 @@ import * as vscode from 'vscode';
 import z from 'zod';
 import { validateInput } from './utils';
 import { setKeyContext, runCommands, state as keyState, updateArgs } from "./commands";
-import { strictDoArgs } from './keybindingParsing';
-import { regularizeCommands } from './keybindingProcessing';
+import { doArgs } from './keybindingParsing';
 import { wrappedTranslate } from './utils';
 import { captureKeys } from './captureKeys';
 
@@ -18,11 +17,11 @@ export const searchArgs = z.object({
     text: z.string().min(1).optional(),
     regex: z.boolean().optional(),
     register: z.string().default("default"),
-    doAfter: strictDoArgs.optional(),
+    doAfter: doArgs.optional(),
 });
 export type SearchArgs = z.infer<typeof searchArgs>;
 
-export function* searchMatches(doc: vscode.TextDocument, start: vscode.Position, 
+export function* searchMatches(doc: vscode.TextDocument, start: vscode.Position,
     end: vscode.Position | undefined, target: string, args_: unknown) {
     let parsedArgs = validateInput('master-key.search', args_, searchArgs);
     if(!parsedArgs){ return; }
@@ -77,7 +76,7 @@ function* linesOf(doc: vscode.TextDocument, pos: vscode.Position,
     }
 }
 
-function* regexMatches(matcher: RegExp, line: string, forward: boolean, 
+function* regexMatches(matcher: RegExp, line: string, forward: boolean,
     offset: number | undefined): Generator<[number, number]>{
     matcher.lastIndex = 0;
     let match = matcher.exec(line);
@@ -95,7 +94,7 @@ function* regexMatches(matcher: RegExp, line: string, forward: boolean,
     }
 }
 
-function* stringMatches(matcher: string, matchCase: boolean, line: string, forward: boolean, 
+function* stringMatches(matcher: string, matchCase: boolean, line: string, forward: boolean,
     offset: number | undefined): Generator<[number, number]>{
 
     let searchMe = offset === undefined ? line :
@@ -128,8 +127,8 @@ function getSearchState(editor: vscode.TextEditor, register: string = currentSea
     statesForEditor = statesForEditor ? statesForEditor : {};
     if(!statesForEditor[register]){
         let searchState: SearchState = {
-            args: searchArgs.parse({}), 
-            text: "", 
+            args: searchArgs.parse({}),
+            text: "",
             searchFrom: [],
             oldMode: keyState.values.mode,
         };
@@ -165,7 +164,7 @@ async function search(editor: vscode.TextEditor, edit: vscode.TextEditorEdit, ar
             state.stop = stop;
             if(key === "\n") { acceptSearch(editor, edit, state); }
             else {
-                state.text += key; 
+                state.text += key;
                 navigateTo(state, editor, false);
                 if(state.text.length >= acceptAfter){ acceptSearch(editor, edit, state); }
                 // there are other-ways to cancel key capturing so we need to update
@@ -205,7 +204,7 @@ async function search(editor: vscode.TextEditor, edit: vscode.TextEditorEdit, ar
 async function acceptSearch(editor: vscode.TextEditor, edit: vscode.TextEditorEdit, state: SearchState) {
     updateArgs({ ...state.args, text: state.text });
     if(state.args.doAfter){
-        await runCommands({do: regularizeCommands(state.args.doAfter)});
+        await runCommands({do: state.args.doAfter});
     }
     if(state.stop){ state.stop(); }
     state.searchFrom = editor.selections;
@@ -317,11 +316,11 @@ function navigateTo(state: SearchState, editor: vscode.TextEditor, updateSearchF
                     [result.value.start, result.value.end] :
                     [result.value.end, result.value.start];
                 newSel = adjustSearchPosition(new vscode.Selection(anchor, active), doc,
-                    result.value.end.character - result.value.start.character, 
+                    result.value.end.character - result.value.start.character,
                     state.args);
                 if (state.args.selectTillMatch){
                     newSel = new vscode.Selection(sel.anchor, newSel.active);
-                } 
+                }
 
                 if(!newSel.start.isEqual(sel.start) || !newSel.end.isEqual(sel.end)) { break; }
 

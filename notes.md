@@ -1,24 +1,19 @@
 current issue I'm working on:
 
-setup unit tests (there's stuff to download here, so would be good to get that going)
+for UX tests:
+  - check to see if we can call the extension API directly
+  - if that doesn't work use the "Add Current File..."
+
+working on an improved preset loading UX
 
 NEXT UP:
 
-- start dogfooding (wee need to answer the question: post recording is this reasonably
-  fast enough)
-
-Testing stuff:
-
-unit tests: keybinding validation (no UX required)
-unit tests: keybinding insertion (with weird file states?)
-unit tests: basic motions
-unit tests: each command
+unit tests: test out switching between files (ensure that cursor is the right shape)
 unit tests: search movements
 unit tests: all state variables
 unit tests: command argument validation
-unit tests: prefix validation
-# TODO: maybe I should be changing the file format *before* writing these units tests
-# (sounds less redundant)
+unit tests: keybinding insertion (with weird file states)
+unit tests: set key state (+validation)
 unit tests: expected display of state
 unit tests: macro replay
 unit tests: duplicate binding handling (especially with the automated keys)
@@ -43,18 +38,22 @@ unit tests: edge cases with recording edits
 
 REFACTOR: cleanup up and document code, make it nice and readable
 
-**TODO**: anything beyond this point needs to be organized and prioritized
-
-**TODO**: in document macro playback note the limitations of recording the keyboard
-(e.g. that it only records inserts)
-
 thoughts: things I must have to release:
 - the command palette like feature
-- the documentation features
+- keybinding documentation features
+- good documentation of the code
 - mode customization
 - modernized selection utilities
+  - good documentation
+  - modern build setup
 - improved mode UX
 - macro recoridng UX
+- anything else that has to be here? (check below wishlist and issues under the project)
+
+**TODO**: in documenting macro playback note the limitations of recording the keyboard
+(e.g. that it only records inserts)
+
+**TODO**: anything beyond this point needs to be organized and prioritized
 
 maybe we should implement an edit and a navigation history since the built-in commands aren't particularly satisfying
 
@@ -63,14 +62,23 @@ maybe we should implement an edit and a navigation history since the built-in co
 - add various selectbetween commands
 - add symmetric insert setup and continue dogfooding with the new repeat actions
 
-cleanup:
-
-- we know transient variables aren't really something we need to expose to the user; from
-  their perspective all commands are a unitary thing (`prefix` is a special case, but is
-  only employed for documentation purposes on the user side; in principle it could be a no
-  op, and multi-key commands could be represented as they normally are in VSCode)
-
 wishlist:
+
+- users should be able to populate their own bindings file with one of the existing
+  presets as to serve as a starting point
+
+- ideally we presever the order of bindings, and place prefixes right before
+  the first binding that uses them
+
+- validate the arguments to master-key commands so that these come up during import
+  of a preset rather than when you run a command
+
+- relax keybinding formatting: right now we require `kind` and `path`
+  and in simple uses these shouldn't be necessary; it is also a bit weird
+  that there is the empty-name path at the top (perhaps this should be the default,
+  and it doesn't need to be explicitly defined)
+
+- `{defined}` commands should work inside `doAfter`
 
 - insert character can be repeated
 
@@ -98,4 +106,3 @@ make config import work for both global and workspace settings
   - NOTE: this should also use `master-key.set` when available
 
 enhancement: sneak shows the count required to reach each target
-

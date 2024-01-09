@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
-import { strictDoArgs, validModes, strictBindingCommand, StrictBindingCommand } from './keybindingParsing';
-import { PrefixCodes, isSingleCommand, regularizeCommands } from './keybindingProcessing';
+import { doArgs, validModes, bindingCommand, BindingCommand } from './keybindingParsing';
+import { PrefixCodes, isSingleCommand } from './keybindingProcessing';
 import { reifyStrings, EvalContext } from './expressions';
 import { validateInput } from './utils';
 import z from 'zod';
@@ -17,7 +17,7 @@ let evalContext = new EvalContext();
 let commands: Record<string, ((x: unknown) => any) | (() => any)> = {};
 
 function updateStatusBar(){
-    if(modeStatusBar !== undefined && keyStatusBar !== undefined && 
+    if(modeStatusBar !== undefined && keyStatusBar !== undefined &&
        countStatusBar !== undefined && searchStatusBar !== undefined){
         modeStatusBar.text = state.values.mode || 'insert';
         keyStatusBar.text = state.values.prefix || '';
@@ -146,7 +146,7 @@ function updateCursorAppearance(editor: vscode.TextEditor, mode: string){
 }
 
 
-async function runCommand(command: StrictBindingCommand, i?: number){
+async function runCommand(command: BindingCommand, i?: number){
     let recordedCommand = command;
     if(i !== undefined){
         let recordedCommands = state.values.
@@ -156,11 +156,11 @@ async function runCommand(command: StrictBindingCommand, i?: number){
     if(command.if !== undefined){
         let doRun: unknown = undefined;
         if(typeof command.if === 'boolean'){ doRun = command.if; }
-        else{ 
+        else{
             // we expect that all arguments have been reifiend when we re-run
             // a command, i === undefined when we are reunning a command
             if(i === undefined){ throw Error("Unexpected operation! This is a bug."); }
-            doRun = evalContext.evalStr(command.if, state.values); 
+            doRun = evalContext.evalStr(command.if, state.values);
         }
         if(i !== undefined){ recordedCommand.if = !!doRun; }
         if(!doRun){
@@ -169,7 +169,7 @@ async function runCommand(command: StrictBindingCommand, i?: number){
     }
     let reifyArgs: Record<string, any> = command.args || {};
     if(command.computedArgs !== undefined){
-        let computed = reifyStrings(command.computedArgs, 
+        let computed = reifyStrings(command.computedArgs,
             str => evalContext.evalStr(str, state.values));
         reifyArgs = merge(reifyArgs, computed);
         if(i !== undefined){
@@ -184,8 +184,8 @@ async function runCommand(command: StrictBindingCommand, i?: number){
     await vscode.commands.executeCommand(command.command, reifyArgs);
 }
 
-const runCommandArgs = z.object({ 
-    do: strictBindingCommand.array(),
+const runCommandArgs = z.object({
+    do: doArgs,
     resetTransient: z.boolean().optional().default(true),
     kind: z.string().optional(),
     path: z.string().optional(),
@@ -207,7 +207,7 @@ async function runCommandsCmd(args_: unknown){
             state.values.commandHistory.push({...cloneDeep(args), edits: [], recordEdits});
             if( state.values.commandHistory.length > maxHistory ){ state.values.commandHistory.shift(); }
         }
-        await runCommands(args); 
+        await runCommands(args);
     }
 }
 
@@ -236,9 +236,9 @@ export async function runCommands(args: RunCommandsArgs){
     trackSearchUsage();
     for (let i=0; i<args.do.length; i++) { await runCommand(args.do[i], i); }
 
-    if(args.resetTransient){ 
-        reset(); 
-        if(!wasSearchUsed() && vscode.window.activeTextEditor){ 
+    if(args.resetTransient){
+        reset();
+        if(!wasSearchUsed() && vscode.window.activeTextEditor){
             clearSearchDecorations(vscode.window.activeTextEditor) ;
         }
     }
@@ -246,7 +246,7 @@ export async function runCommands(args: RunCommandsArgs){
 }
 commands['master-key.do'] = runCommandsCmd;
 
-const repeatCommandArgs = strictBindingCommand.extend({
+const repeatCommandArgs = bindingCommand.extend({
     repeat: z.number().min(0).optional()
 });
 async function repeatCommand(args_: unknown){
@@ -275,7 +275,7 @@ const prefixArgs = z.object({
     code: z.number(),
     flag: z.string().min(1).optional(),
     // `automated` is used during keybinding preprocessing and is not normally used otherwise
-    automated: z.boolean().optional() 
+    automated: z.boolean().optional()
 }).strict();
 
 function prefix(args_: unknown){
@@ -301,9 +301,9 @@ type SetArgs = z.infer<typeof setArgs>;
 
 function setCmd(args_: unknown){
     let args = validateInput('master-key.set', args_, setArgs);
-    if(args){ 
+    if(args){
         state.setKeyContextForUser(args.name, args.value, args.transient || false);
-    }    
+    }
 }
 export function setKeyContext(args: SetArgs){
     state.setKeyContext(args.name, args.value, args.transient || false);
@@ -357,7 +357,7 @@ function evalMatcher(matcher: string, i: number): number {
     }
 }
 
-function selectHistoryCommand<T>(cmd: string, args_: unknown){ 
+function selectHistoryCommand<T>(cmd: string, args_: unknown){
 
     let args = validateInput(cmd, args_, selectHistoryArgs);
     if(args){
@@ -377,10 +377,10 @@ function selectHistoryCommand<T>(cmd: string, args_: unknown){
                 if(to < 0 && toMatcher){
                     to = evalMatcher(toMatcher, i);
                     if(args.at){ from = to; }
-                } 
+                }
                 if(from < 0 && fromMatcher){ from = evalMatcher(fromMatcher, i); }
-                if(from > 0 && to > 0){ 
-                    value = history.slice(from, to+1); 
+                if(from > 0 && to > 0){
+                    value = history.slice(from, to+1);
                     break;
                 }
             }
@@ -419,7 +419,7 @@ const replayFromStackArgs = z.object({
 const REPLAY_DELAY = 50;
 async function runCommandHistory(commands: (RunCommandsArgs | RecordedCommandArgs)[]){
     for(let cmd of commands){
-        await runCommands(cmd); 
+        await runCommands(cmd);
         if((<any>cmd).edits){
             let editor = vscode.window.activeTextEditor;
             if(editor){
@@ -431,8 +431,8 @@ async function runCommandHistory(commands: (RunCommandsArgs | RecordedCommandArg
                     for(let sel of ed.selections){ e.insert(sel.anchor, edits); }
                 });
             }else{
-                vscode.window.showErrorMessage(`Command includes edits to the active text 
-                    editor, but there is currently no active editor.`)
+                vscode.window.showErrorMessage(`Command includes edits to the active text
+                    editor, but there is currently no active editor.`);
             }
         }
         // replaying actions too fast messes up selection
@@ -468,8 +468,8 @@ function storeNamed(args_: unknown){
             let options: vscode.QuickPickItem[] = Object.keys(stored[args.name] || {}).
                 map(k => ({label: k}));
             options.unshift(
-                {label: "New Name...", alwaysShow: true}, 
-                {label: "Existing Names:", kind: vscode.QuickPickItemKind.Separator, 
+                {label: "New Name...", alwaysShow: true},
+                {label: "Existing Names:", kind: vscode.QuickPickItemKind.Separator,
                  alwaysShow: true}
             );
             picker.items = options;
@@ -496,7 +496,7 @@ commands['master-key.storeNamed'] = storeNamed;
 const restoreNamedArgs = z.object({
     description: z.string().optional(),
     name: z.string(),
-    doAfter: strictDoArgs
+    doAfter: doArgs
 });
 async function restoreNamed(args_: unknown){
     let args = validateInput('master-key.restoreNamed', args_, restoreNamedArgs);
@@ -508,7 +508,7 @@ async function restoreNamed(args_: unknown){
         let selected = await vscode.window.showQuickPick(items);
         if(selected !== undefined){
             setKeyContext({ name: 'captured', value: stored[args.name][selected.label] });
-            runCommands({ do: regularizeCommands(args.doAfter) });
+            runCommands({ do: args.doAfter });
         }
     }
 }
@@ -558,7 +558,7 @@ export function activate(context: vscode.ExtensionContext) {
         }else{
             state.values.firstSelectionOrWord = doc.getText(e.selections[0]);
         }
-        vscode.commands.executeCommand('setContext', 'master-key.firstSelectionOrWord', 
+        vscode.commands.executeCommand('setContext', 'master-key.firstSelectionOrWord',
             state.values.firstSelectionOrWord);
     });
 
