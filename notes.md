@@ -8,9 +8,6 @@ working on an improved preset loading UX
 
 NEXT UP:
 
-
-
-
 unit tests: test out switching between files (ensure that cursor is the right shape)
 unit tests: search movements
 unit tests: command argument validation
