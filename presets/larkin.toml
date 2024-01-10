@@ -200,7 +200,7 @@ path = "edit.motion.prim"
 key = "g k"
 name = "unwrp ↑"
 description = "up unwrapped line"
-args.to = "down"
+args.to = "up"
 args.by = "line"
 
 [[bind]]
