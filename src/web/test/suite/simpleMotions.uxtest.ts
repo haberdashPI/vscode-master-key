@@ -1,18 +1,21 @@
 import assert from 'assert';
-import { Editor, EditorView, InputBox, VSBrowser, WebDriver, Workbench } from 'vscode-extension-tester';
-import { Actions } from 'selenium-webdriver';
+import { TextEditor, EditorView, InputBox, VSBrowser, WebDriver, Workbench } from 'vscode-extension-tester';
 
 describe('My Test Suite', () => {
     let browser: VSBrowser;
     let driver: WebDriver;
     let workbench: Workbench;
-    let editor: Editor;
+    let editor: TextEditor;
 
     // initialize the browser and webdriver
     before(async () => {
         browser = VSBrowser.instance;
         driver = browser.driver;
         workbench = new Workbench();
+        // TODO: I need to use use `TextEditor` because the reutrn value of `openEditor`
+        // is a Editor object
+        // TODO: there is a way to open a file using VSBrowser
+        // look that up in helloworld example and use that
         const editorView = new EditorView();
         let configEditor = await editorView.openEditor('config.toml');
         await configEditor.setText(`

@@ -1,6 +1,8 @@
 current issue I'm working on:
 
 for UX tests:
+  - figured out some issues with ux tests, fix them and continue figuring out
+    how to configure webpack so we can run the tests
   - check to see if we can call the extension API directly
   - if that doesn't work use the "Add Current File..."
 
