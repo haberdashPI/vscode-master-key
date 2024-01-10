@@ -11,6 +11,7 @@ NEXT UP:
 unit tests: test out switching between files (ensure that cursor is the right shape)
 unit tests: search movements
 unit tests: command argument validation
+unit tests: bindings with out a mode apply in all modes
 unit tests: keybinding insertion (with weird file states)
 unit tests: set key state (+validation)
 unit tests: expected display of state
