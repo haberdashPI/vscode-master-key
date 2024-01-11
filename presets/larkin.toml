@@ -1858,18 +1858,27 @@ command = "language-julia.executeCodeBlockOrSelectionAndMove"
 [[bind]]
 path = "edit.action.terminal"
 key = "m"
-when = "editoLangId != 'julia' && !(master-key.firstSelectionOrWord =~ /\\n/)"
+when = "editorLangId != 'julia' && !(master-key.firstSelectionOrWord =~ /\\n/)"
 command = "runCommands"
 args = ["terminal-polyglot.send-text",
-      "selection-utilities.shrinkToActive"]
+        "selection-utilities.shrinkToActive"]
 
 [[bind]]
 path = "edit.action.terminal"
 key = "m"
-when = "editoLangId != 'julia' && master-key.firstSelectionOrWord =~ /\\n/"
+when = "editorLangId != 'julia' && master-key.firstSelectionOrWord =~ /\\n/"
 command = "runCommands"
 args = ["terminal-polyglot.send-block-text",
       "selection-utilities.shrinkToActive"]
+
+[[bind]]
+path = "edit.action.terminal"
+name = "activate"
+description = "Activate the julia project associated with the current file in the active REPL"
+key = "' a"
+when = "editorLangId == 'julia'"
+command = "terminal-polyglot.send-command"
+args.cmd = "activate_from(\"%file%\")"
 
 [[bind]]
 path = "edit.action.terminal"
