@@ -12,13 +12,14 @@ describe('My Test Suite', () => {
         browser = VSBrowser.instance;
         driver = browser.driver;
         workbench = new Workbench();
-        // TODO: I need to use use `TextEditor` because the reutrn value of `openEditor`
-        // is a Editor object
-        // TODO: there is a way to open a file using VSBrowser
-        // look that up in helloworld example and use that
-        const editorView = new EditorView();
-        let configEditor = await editorView.openEditor('config.toml');
-        await configEditor.setText(`
+        let editorView = new EditorView();
+
+        // NOTE: ux tests *have* to be compiled in a node context, so we should use the
+        // path/fs utilities to generate a temporary file, and then use the VSBrowser object
+        // to load the file into VSCode
+        await editorView.openEditor('config.toml');
+        let configEditor = new TextEditor(editorView);
+        configEditor.setText(`
             [header]
             version = "1.0"
 
@@ -64,7 +65,8 @@ describe('My Test Suite', () => {
         const input = await InputBox.create();
         await input.setText('Current File');
         await input.confirm();
-        let editor = await editorView.openEditor('test.txt');
+        await editorView.openEditor('test.txt');
+        editor = new TextEditor(editorView);
         editor.setText(`
 Anim reprehenderit voluptate magna excepteur dolore aliqua minim labore est
 consectetur ullamco ullamco aliqua ex. Pariatur officia nostrud pariatur ex

@@ -12,6 +12,10 @@
 const path = require('path');
 const webpack = require('webpack');
 
+// TODO: we need to configure this so that ux tests are compiled in a node context; we can
+// do this by exporting a function and passing an `--env` argument to webpack to select the
+// appropriate configuration
+
 /** @type WebpackConfig */
 const webExtensionConfig = {
     mode: 'none', // this leaves the source code as close as possible to the original (when packaging we set this to 'production')
@@ -19,7 +23,6 @@ const webExtensionConfig = {
     entry: {
         'extension': './src/web/extension.ts',
         'test/suite/index': './src/web/test/suite/index.ts',
-        // 'test/suite/uxindex': './src/web/test/suite/index.uxtest.ts',
     },
     output: {
         filename: '[name].js',
