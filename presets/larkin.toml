@@ -1831,7 +1831,7 @@ id = "edit.action.terminal"
 name = "Terminal Actions"
 description = "Commands that send text from the editor to the terminal"
 default.kind = "action"
-default.mode = ["normal", "selectedit"]
+default.mode = "normal"
 
 [[bind]]
 path = "edit.action.terminal"
@@ -1841,21 +1841,34 @@ send text to a terminal (usually containing a REPL); use language
 specific extensions when available and put the pasted code into a block (when defined)."
 """
 key = "m"
-when = "editorLangId == 'julia' && !editorHasSelection"
+when = "editorLangId == 'julia' && !editorHasSelection && count >= 1"
 command = "runCommands"
 args = [
       { defined = "selectLinesDown" },
       "expandLineSelection", "selection-utilities.trimSelectionWhitespace",
-      "language-julia.executeCodeBlockOrSelectionAndMove"
+      "language-julia.executeCodeBlockOrSelectionAndMove",
+      "cursorUndo"
 ]
 
 [[bind]]
 path = "edit.action.terminal"
 key = "m"
-when = "editorLangId == 'julia' && editorHasSelection && count"
+when = "editorLangId == 'julia' && !editorHasSelection"
 command = "runCommands"
-args = ["language-julia.executeCodeBlockOrSelectionAndMove",
-        "selection-utilities.trimSelectionWhitespace"]
+args = [
+      "expandLineSelection", "selection-utilities.trimSelectionWhitespace",
+      "language-julia.executeCodeBlockOrSelectionAndMove",
+      "cursorUndo"
+]
+
+[[bind]]
+path = "edit.action.terminal"
+key = "m"
+when = "editorLangId == 'julia' && editorHasSelection"
+command = "runCommands"
+args = ["selection-utilities.trimSelectionWhitespace",
+        "language-julia.executeCodeBlockOrSelectionAndMove",
+        "cursorUndo"]
 
 [[bind]]
 path = "edit.action.terminal"
