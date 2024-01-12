@@ -70,6 +70,10 @@ maybe we should implement an edit and a navigation history since the built-in co
 
 wishlist:
 
+- layred keybindings: you can specify a
+  - user binding file
+  - workspace binding file
+
 - users should be able to populate their own bindings file with one of the existing
   presets as to serve as a starting point
 
