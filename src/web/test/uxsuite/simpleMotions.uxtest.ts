@@ -10,7 +10,10 @@ describe('My Test Suite', () => {
     let editor: TextEditor;
 
     // initialize the browser and webdriver
-    before(async () => {
+    before(async function(){
+        // TODO: for the very first test, maybe wait until the welcome screen has
+        // shown up here...?
+        this.timeout(50000);
         browser = VSBrowser.instance;
         driver = browser.driver;
         workbench = new Workbench();
@@ -63,14 +66,13 @@ describe('My Test Suite', () => {
             key = "k"
             args.to = "up"
         `);
-        VSBrowser.instance.openResources(config);
 
-        console.log('resource opened!');
         await workbench.executeCommand('Master Key: Select Keybinding');
         const input = await InputBox.create();
-        console.log("input box created");
-        await input.setText('Current File');
+        // TODO: somewhere here, just open the temporary file via the simple open dialog
+        await input.setText('Open File');
         await input.confirm();
+        // TODO: we're getting a welcome screen when vscode opens, need to fix this
         let textFile = path.join(tempdir, 'test.txt');
         fs.writeFileSync(textFile, `Anim reprehenderit voluptate magna excepteur dolore aliqua minim labore est
 consectetur ullamco ullamco aliqua ex. Pariatur officia nostrud pariatur ex
@@ -85,6 +87,7 @@ dolor magna. Consequat cupidatat amet nostrud proident occaecat ex.
         let oldLoc = await editor.getLocation();
         await editor.sendKeys('jj');
         let loc = await editor.getLocation();
+        // TODO: how do I compare positions
         assert.equal(oldLoc.y+2, loc.y);
     });
 });
