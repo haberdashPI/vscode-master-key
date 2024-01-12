@@ -1,10 +1,11 @@
 current issue I'm working on:
 
 for UX tests:
-  - right now working on compilation: check out webpack.config.js
-    how to configure webpack so we can run the tests
-  - check to see if we can call the extension API directly
-  - if that doesn't work use the "Add Current File..."
+  - we're hitting a timeout during ux tests
+    - there's something about how the version of vscode we're running is an emulation
+      (maybe need to change some parameters to the command running tests)
+    - maybe there's a way to change the timeout??
+    - or maybe we're doing something wrong
 
 working on an improved preset loading UX
 
