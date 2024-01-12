@@ -1,5 +1,7 @@
 import assert from 'assert';
 import { TextEditor, EditorView, InputBox, VSBrowser, WebDriver, Workbench } from 'vscode-extension-tester';
+import * as fs from 'fs';
+import * as path from 'path';
 
 describe('My Test Suite', () => {
     let browser: VSBrowser;
@@ -17,9 +19,10 @@ describe('My Test Suite', () => {
         // NOTE: ux tests *have* to be compiled in a node context, so we should use the
         // path/fs utilities to generate a temporary file, and then use the VSBrowser object
         // to load the file into VSCode
-        await editorView.openEditor('config.toml');
-        let configEditor = new TextEditor(editorView);
-        configEditor.setText(`
+        if(!fs.existsSync('uxtest/temp/')){ fs.mkdirSync('uxtest/temp/'); }
+        let tempdir = fs.mkdtempSync('uxtest/temp/tmp');
+        let config = path.join(tempdir, 'config.toml');
+        fs.writeFileSync(config, `
             [header]
             version = "1.0"
 
@@ -60,18 +63,22 @@ describe('My Test Suite', () => {
             key = "k"
             args.to = "up"
         `);
+        VSBrowser.instance.openResources(config);
 
-        workbench.executeCommand('Master Key: Select Keybinding');
+        console.log('resource opened!');
+        await workbench.executeCommand('Master Key: Select Keybinding');
         const input = await InputBox.create();
+        console.log("input box created");
         await input.setText('Current File');
         await input.confirm();
-        await editorView.openEditor('test.txt');
-        editor = new TextEditor(editorView);
-        editor.setText(`
-Anim reprehenderit voluptate magna excepteur dolore aliqua minim labore est
+        let textFile = path.join(tempdir, 'test.txt');
+        fs.writeFileSync(textFile, `Anim reprehenderit voluptate magna excepteur dolore aliqua minim labore est
 consectetur ullamco ullamco aliqua ex. Pariatur officia nostrud pariatur ex
 dolor magna. Consequat cupidatat amet nostrud proident occaecat ex.
 `);
+        await VSBrowser.instance.openResources(textFile);
+        editor = new TextEditor(editorView);
+        return;
     });
 
     it('Has Working Down Motions', async () => {
