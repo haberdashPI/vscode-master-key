@@ -3,6 +3,8 @@ import { TextEditor, EditorView, InputBox, VSBrowser, WebDriver, Workbench } fro
 import * as fs from 'fs';
 import * as path from 'path';
 
+function pause(ms: number){ return new Promise(res => setTimeout(res, ms)); }
+
 describe('My Test Suite', () => {
     let browser: VSBrowser;
     let driver: WebDriver;
@@ -11,9 +13,10 @@ describe('My Test Suite', () => {
 
     // initialize the browser and webdriver
     before(async function(){
+        this.timeout(0);
         // TODO: for the very first test, maybe wait until the welcome screen has
         // shown up here...?
-        this.timeout(50000);
+        await pause(10 * 1000);
         browser = VSBrowser.instance;
         driver = browser.driver;
         workbench = new Workbench();
@@ -23,7 +26,7 @@ describe('My Test Suite', () => {
         // path/fs utilities to generate a temporary file, and then use the VSBrowser object
         // to load the file into VSCode
         if(!fs.existsSync('uxtest/temp/')){ fs.mkdirSync('uxtest/temp/'); }
-        let tempdir = fs.mkdtempSync('uxtest/temp/tmp');
+        let tempdir = path.join(process.cwd(), fs.mkdtempSync('uxtest/temp/tmp'));
         let config = path.join(tempdir, 'config.toml');
         fs.writeFileSync(config, `
             [header]
@@ -67,12 +70,16 @@ describe('My Test Suite', () => {
             args.to = "up"
         `);
 
+
         await workbench.executeCommand('Master Key: Select Keybinding');
-        const input = await InputBox.create();
-        // TODO: somewhere here, just open the temporary file via the simple open dialog
-        await input.setText('Open File');
+        let input = await InputBox.create();
+        await input.setText('File...');
         await input.confirm();
-        // TODO: we're getting a welcome screen when vscode opens, need to fix this
+
+        input = await InputBox.create();
+        await input.setText(config);
+        await input.confirm();
+
         let textFile = path.join(tempdir, 'test.txt');
         fs.writeFileSync(textFile, `Anim reprehenderit voluptate magna excepteur dolore aliqua minim labore est
 consectetur ullamco ullamco aliqua ex. Pariatur officia nostrud pariatur ex
