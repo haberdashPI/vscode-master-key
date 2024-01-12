@@ -99,3 +99,5 @@ You can then install all dependencies for this project as follows:
 nvm use
 npm i
 ```
+
+**TODO**: this should really document the use of the debug-profile file

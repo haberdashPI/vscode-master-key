@@ -73,7 +73,7 @@
   },
   "scripts": {
     "preui-test": "npx tsc -p tsconfig.ux.json",
-    "ui-test": "extest setup-and-run './uxtest/out/*.uxtest.ts' -s uxtest/storage -e uxtest/extensions -t insiders",
+    "ui-test": "extest setup-and-run './uxtest/out/*.uxtest.js' -s uxtest/storage -e uxtest/extensions -t insiders",
     "test": "vscode-test-web --browserType=chromium --extensionDevelopmentPath=. --extensionTestsPath=dist/web/test/suite/index.js",
     "pretest": "npm run compile-web",
     "vscode:prepublish": "npm run package-web",

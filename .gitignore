@@ -1,8 +1,8 @@
 out
 dist
-uxtest/out/**
 node_modules
 .vscode-test-web/
 *.vsix
 uxtest/extensions/**
 uxtest/storage/**
+uxtest/out/**

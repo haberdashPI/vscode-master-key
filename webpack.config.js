@@ -8,58 +8,9 @@
 
 //@ts-check
 /** @typedef {import('webpack').Configuration} WebpackConfig **/
-/** @typedef {import('webpack').Configuration} options */
 
 const path = require('path');
 const webpack = require('webpack');
-
-// TODO: we need to configure this so that ux tests are compiled in a node context; we can
-// do this by exporting a function and passing an `--env` argument to webpack to select the
-// appropriate configuration
-
-/** @type WebpackConfig */
-const uxtestConfig = {
-    mode: 'none',
-    target: 'es2020',
-    entry: { 'test/suite/uxtests': './src/web/test/suite/index.uxtest.ts' },
-    output: {
-        filename: '[name].js',
-        path: path.join(__dirname, './dist/uxtest'),
-        library: { type: 'commonjs' },
-        devtoolModuleFilenameTemplate: '../../[resource-path]',
-        chunkFormat: 'commonjs'
-    },
-    resolve: {
-        mainFields: ['browser', 'module', 'main'], // look for `browser` entry point in imported node modules
-        extensions: ['.ts', '.js'],
-        fallback: {
-            // Webpack 5 no longer polyfills Node.js core modules automatically.
-            // see https://webpack.js.org/configuration/resolve/#resolvefallback
-            // for the list of Node.js core module polyfills.
-            'assert': require.resolve('assert'),
-            'process/browser': require.resolve('process/browser')
-        }
-    },
-    module: {
-        rules: [{
-            test: /\.ts$/,
-            exclude: /node_modules/,
-            use: [{ loader: 'ts-loader' }]
-        }]
-    },
-    plugins: [
-        new webpack.ProvidePlugin({
-            process: 'process/browser', // provide a shim for the global `process` variable
-        }),
-    ],
-    externals: {
-        'vscode': 'commonjs vscode', // ignored because it doesn't exist
-    },
-    devtool: 'nosources-source-map', // create a source map that points to the original source file
-    infrastructureLogging: {
-        level: "log", // enables logging required for problem matchers
-    },
-};
 
 /** @type WebpackConfig */
 const webExtensionConfig = {
@@ -118,6 +69,4 @@ const webExtensionConfig = {
     },
 };
 
-module.exports = function(env, options){
-    return env.uxtest ? uxtestConfig : webExtensionConfig;
-};
+module.exports = webExtensionConfig;
