@@ -1,5 +1,5 @@
-import assert from 'assert';
-import { TextEditor, EditorView, InputBox, VSBrowser, WebDriver, Workbench } from 'vscode-extension-tester';
+import { assert } from 'chai';
+import { Key, TextEditor, EditorView, InputBox, VSBrowser, WebDriver, Workbench } from 'vscode-extension-tester';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -14,8 +14,6 @@ describe('My Test Suite', () => {
     // initialize the browser and webdriver
     before(async function(){
         this.timeout(0);
-        // TODO: for the very first test, maybe wait until the welcome screen has
-        // shown up here...?
         await pause(10 * 1000);
         browser = VSBrowser.instance;
         driver = browser.driver;
@@ -50,21 +48,25 @@ describe('My Test Suite', () => {
             default.when = "editorTextFocus"
 
             [[bind]]
+            path = "motion"
             name = "left"
             key = "h"
             args.to = "left"
 
             [[bind]]
+            path = "motion"
             name = "right"
             key = "l"
             args.to = "right"
 
             [[bind]]
+            path = "motion"
             name = "down"
             key = "j"
             args.to = "down"
 
             [[bind]]
+            path = "motion"
             name = "up"
             key = "k"
             args.to = "up"
@@ -84,17 +86,29 @@ describe('My Test Suite', () => {
         fs.writeFileSync(textFile, `Anim reprehenderit voluptate magna excepteur dolore aliqua minim labore est
 consectetur ullamco ullamco aliqua ex. Pariatur officia nostrud pariatur ex
 dolor magna. Consequat cupidatat amet nostrud proident occaecat ex.
+Ex cillum duis anim dolor cupidatat non nostrud non et sint ullamco. Consectetur consequat
+ipsum ex labore enim. Amet do commodo et occaecat proident ex cupidatat in. Quis id magna
+laborum ad. Dolore exercitation cillum eiusmod culpa minim duis
 `);
+        await pause(2 * 1000);
         await VSBrowser.instance.openResources(textFile);
-        editor = new TextEditor(editorView);
+        editor = await editorView.openEditor('test.txt') as TextEditor;
         return;
     });
 
-    it('Has Working Down Motions', async () => {
-        let oldLoc = await editor.getLocation();
-        await editor.sendKeys('jj');
-        let loc = await editor.getLocation();
-        // TODO: how do I compare positions
-        assert.equal(oldLoc.y+2, loc.y);
+    it('Has Working Down Motions', async function(){
+        this.timeout(10000);
+        await pause(1000);
+        await editor.click();
+
+        let oldpos = await editor.getCoordinates();
+        await driver.actions().sendKeys(Key.ESCAPE, 'k').perform();
+        let newpos = await editor.getCoordinates();
+        assert.equal(oldpos[0]-1, newpos[0]);
+
+        oldpos = await editor.getCoordinates();
+        await driver.actions().sendKeys('l');
+        newpos = await editor.getCoordinates();
+        assert.equal(oldpos[1]+1, newpos[1]);
     });
 });
