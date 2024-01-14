@@ -1,6 +1,6 @@
-import { assert } from 'chai';
 import { Key, TextEditor, EditorView, InputBox, VSBrowser, WebDriver, Workbench } from 'vscode-extension-tester';
 import * as fs from 'fs';
+import expect from 'expect';
 import * as path from 'path';
 
 function pause(ms: number){ return new Promise(res => setTimeout(res, ms)); }
@@ -90,7 +90,7 @@ Ex cillum duis anim dolor cupidatat non nostrud non et sint ullamco. Consectetur
 ipsum ex labore enim. Amet do commodo et occaecat proident ex cupidatat in. Quis id magna
 laborum ad. Dolore exercitation cillum eiusmod culpa minim duis
 `);
-        await pause(2 * 1000);
+        await pause(3 * 1000);
         await VSBrowser.instance.openResources(textFile);
         editor = await editorView.openEditor('test.txt') as TextEditor;
         return;
@@ -99,16 +99,32 @@ laborum ad. Dolore exercitation cillum eiusmod culpa minim duis
     it('Has Working Down Motions', async function(){
         this.timeout(10000);
         await pause(1000);
-        await editor.click();
+        await editor.moveCursor(1, 1);
+        await pause(2000);
 
         let oldpos = await editor.getCoordinates();
-        await driver.actions().sendKeys(Key.ESCAPE, 'k').perform();
+        await editor.typeText(Key.ESCAPE);
+        await editor.typeText('j');
         let newpos = await editor.getCoordinates();
-        assert.equal(oldpos[0]-1, newpos[0]);
+        expect(oldpos[0]+1).toEqual(newpos[0]);
+        expect(oldpos[1]).toEqual(newpos[1]);
 
         oldpos = await editor.getCoordinates();
-        await driver.actions().sendKeys('l');
+        await editor.typeText('l');
         newpos = await editor.getCoordinates();
-        assert.equal(oldpos[1]+1, newpos[1]);
+        expect(oldpos[0]).toEqual(newpos[0]);
+        expect(oldpos[1]+1).toEqual(newpos[1]);
+
+        oldpos = await editor.getCoordinates();
+        await editor.typeText('h');
+        newpos = await editor.getCoordinates();
+        expect(oldpos[0]).toEqual(newpos[0]);
+        expect(oldpos[1]-1).toEqual(newpos[1]);
+
+        oldpos = await editor.getCoordinates();
+        await editor.typeText('k');
+        newpos = await editor.getCoordinates();
+        expect(oldpos[0]-1).toEqual(newpos[0]);
+        expect(oldpos[1]).toEqual(newpos[1]);
     });
 });

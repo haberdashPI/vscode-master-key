@@ -1,11 +1,11 @@
 current issue I'm working on:
 
 for UX tests:
-  - we're having issues loading an appropriate assert library
     - there's something about how the version of vscode we're running is an emulation
       (maybe need to change some parameters to the command running tests)
       I reported a bug here, but might need to just look into why the wrong version
       is downloaded myself, it's quite painful
+      - going to investigate this a bit in the source code...
 
 working on an improved preset loading UX
 
