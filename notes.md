@@ -6,12 +6,15 @@ for UX tests:
       I reported a bug here, but might need to just look into why the wrong version
       is downloaded myself, it's quite painful
       - going to investigate this a bit in the source code...
+        excellent! fixed that, just awaiting PR (will need to locally link my
+        branch until it merges)
 
 working on an improved preset loading UX
 
 NEXT UP:
 
 unit tests: test out switching between files (ensure that cursor is the right shape)
+unit tests: all commands run
 unit tests: search movements
 unit tests: all state variables
 unit tests: command argument validation

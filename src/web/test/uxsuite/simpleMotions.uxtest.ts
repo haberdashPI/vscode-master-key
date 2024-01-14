@@ -13,8 +13,8 @@ describe('My Test Suite', () => {
 
     // initialize the browser and webdriver
     before(async function(){
-        this.timeout(0);
-        await pause(10 * 1000);
+        this.timeout(10 * 1000);
+        await pause(1000);
         browser = VSBrowser.instance;
         driver = browser.driver;
         workbench = new Workbench();
@@ -90,17 +90,14 @@ Ex cillum duis anim dolor cupidatat non nostrud non et sint ullamco. Consectetur
 ipsum ex labore enim. Amet do commodo et occaecat proident ex cupidatat in. Quis id magna
 laborum ad. Dolore exercitation cillum eiusmod culpa minim duis
 `);
-        await pause(3 * 1000);
+        await pause(500);
         await VSBrowser.instance.openResources(textFile);
         editor = await editorView.openEditor('test.txt') as TextEditor;
         return;
     });
 
     it('Has Working Down Motions', async function(){
-        this.timeout(10000);
-        await pause(1000);
         await editor.moveCursor(1, 1);
-        await pause(2000);
 
         let oldpos = await editor.getCoordinates();
         await editor.typeText(Key.ESCAPE);

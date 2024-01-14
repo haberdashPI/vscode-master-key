@@ -101,7 +101,7 @@
     "process": "^0.11.10",
     "ts-loader": "^9.5.1",
     "typescript": "^5.3.2",
-    "vscode-extension-tester": "^7.0.0",
+    "vscode-extension-tester": "file:../vscode-extension-tester",
     "webpack": "^5.89.0",
     "webpack-cli": "^5.1.4"
   },
