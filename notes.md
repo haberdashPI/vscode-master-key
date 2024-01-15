@@ -1,29 +1,26 @@
 current issue I'm working on:
 
 for UX tests:
-    - there's something about how the version of vscode we're running is an emulation
-      (maybe need to change some parameters to the command running tests)
-      I reported a bug here, but might need to just look into why the wrong version
-      is downloaded myself, it's quite painful
-      - going to investigate this a bit in the source code...
-        excellent! fixed that, just awaiting PR (will need to locally link my
-        branch until it merges)
+  - we're using a revised version of vscod-extension-tester (https://github.com/redhat-developer/vscode-extension-tester/pull/1084) after fixing a bug on MacOS ARM
+  -
 
 working on an improved preset loading UX
 
 NEXT UP:
 
-unit tests: test out switching between files (ensure that cursor is the right shape)
-unit tests: all commands run
+unit tests: all basic commands run
+  - do
+  - repeat
+  - updateCount
+  - prefix (with/without flag)
+  - set (state is setable and readable)
+  - switch modes (verify keys actually change)
 unit tests: search movements
-unit tests: all state variables
+unit tests: capture keys
+  works even even when you run some other command
 unit tests: command argument validation
 unit tests: keybinding insertion (with weird file states)
-unit tests: set key state (+validation)
-unit tests: expected display of state
 unit tests: macro replay
-unit tests: duplicate binding handling (especially with the automated keys)
-unit tests: captureKeys works as expected, even when you run some other command
 unit tests: UX settings change status bar
 unit tests: edges cases for command recording
   - I think it may currently be possible to edit the wrong command
