@@ -5,7 +5,7 @@ import { Utils } from 'vscode-uri';
 const TOML = require("smol-toml");
 import YAML from 'yaml';
 import * as semver from 'semver';
-import { TextDecoder } from 'text-encoding';
+import { TextDecoder } from 'web-encoding';
 import z, { ZodIssue } from "zod";
 import { ZodError, fromZodError, fromZodIssue } from 'zod-validation-error';
 import { expressionId } from './expressions';

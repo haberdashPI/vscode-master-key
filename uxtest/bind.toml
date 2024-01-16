@@ -1,0 +1,68 @@
+[header]
+version = "1.0"
+
+[define]
+validModes = ["insert", "capture", "normal"]
+
+[[bind]]
+name = "normal mode"
+key = "escape"
+command = "runCommands"
+args = ["master-key.enterNormal", "master-key.reset"]
+prefixes = "<all-prefixes>"
+
+[[path]]
+id = "motion"
+name = "basic motions"
+default.command = "cursorMove"
+default.mode = "normal"
+default.when = "editorTextFocus"
+default.computedArgs.value = "count"
+
+[[bind]]
+path = "motion"
+name = "left"
+key = "h"
+args.to = "left"
+
+[[bind]]
+path = "motion"
+name = "right"
+key = "l"
+args.to = "right"
+
+[[bind]]
+path = "motion"
+name = "down"
+key = "j"
+args.to = "down"
+
+[[bind]]
+path = "motion"
+name = "up"
+key = "k"
+args.to = "up"
+
+[[bind]]
+name = "double right"
+key = "shift+l"
+command = "master-key.repeat"
+mode = "normal"
+args.command = "cursorMove"
+args.args.to = "right"
+args.repeat = 2
+
+[[define.keyNumber]]
+"shift+1" = 1
+"shift+2" = 2
+"shift+3" = 3
+
+[[bind]]
+# NOTE: because of how vscode-extension-tester is implemented
+# numeric values get typed, so we use other keybindings here
+key = ["shift+1", "shift+2", "shift+3"]
+mode = "normal"
+name = "count keyNumber[{key}]"
+command = "master-key.updateCount"
+args.value = "keyNumber[{key}]"
+resetTransient = false

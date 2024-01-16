@@ -139,7 +139,7 @@ function makeQuickPicksFromPresets(presets: Preset[]): PresetPick[]{
     let nameCount: Record<string, number> = {};
     for(let preset of presets){
         let count = nameCount[preset.name] || 0;
-        nameCount[name] = count+1;
+        nameCount[preset.name] = count+1;
     }
 
     return presets.map(preset => {

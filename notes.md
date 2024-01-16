@@ -1,23 +1,25 @@
 current issue I'm working on:
 
-for UX tests:
-  - check to see if we can call the extension API directly
-  - if that doesn't work use the "Add Current File..."
+look at unit test list below
 
-working on an improved preset loading UX
+NOTE: we're using a revised version of vscod-extension-tester (https://github.com/redhat-developer/vscode-extension-tester/pull/1084) after fixing a bug on MacOS ARM
 
 NEXT UP:
 
-unit tests: test out switching between files (ensure that cursor is the right shape)
+unit tests: all basic commands run
+  + do
+  + repeat
+  + updateCount
+  - prefix (with/without flag)
+  - set (state is setable and readable)
+  - switch modes (verify keys actually change)
 unit tests: search movements
+unit tests: capture keys
+  works even even when you run some other command
 unit tests: command argument validation
 unit tests: bindings with out a mode apply in all modes
 unit tests: keybinding insertion (with weird file states)
-unit tests: set key state (+validation)
-unit tests: expected display of state
 unit tests: macro replay
-unit tests: duplicate binding handling (especially with the automated keys)
-unit tests: captureKeys works as expected, even when you run some other command
 unit tests: UX settings change status bar
 unit tests: edges cases for command recording
   - I think it may currently be possible to edit the wrong command
@@ -53,7 +55,22 @@ thoughts: things I must have to release:
 **TODO**: in documenting macro playback note the limitations of recording the keyboard
 (e.g. that it only records inserts)
 
+**TODO**: fix default expansion for `when` clauses (keep it simple) and add an extra
+field e.g. `extend` (or `concat`?) for the fancier situation
+
 **TODO**: anything beyond this point needs to be organized and prioritized
+
+- REDESIGN!! I think the the way repeated keys works is a little unwieldy in many cases
+  (maybe we should express it explicitly as a loop somehow...🤔)
+
+```toml
+[[bind]]
+for.i = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0]
+key = "shift+{i}"
+name = "count {i}"
+command = "master-key.updateCount"
+args.value = "{i}"
+```
 
 maybe we should implement an edit and a navigation history since the built-in commands aren't particularly satisfying
 
@@ -63,6 +80,12 @@ maybe we should implement an edit and a navigation history since the built-in co
 - add symmetric insert setup and continue dogfooding with the new repeat actions
 
 wishlist:
+
+- status bar updates are called a lot, maybe reduce this
+
+- layred keybindings: you can specify a
+  - user binding file
+  - workspace binding file
 
 - users should be able to populate their own bindings file with one of the existing
   presets as to serve as a starting point
@@ -92,6 +115,9 @@ wishlist:
 
 - have a debug mode that shows which command got executed from the given keybinding (with an
   option to show or not show prefixes)
+
+- binding validation checks that there aren't non-modifier bindings that
+  capture input outside of the text editor
 
 quick win: store clipboard to a register
 let modes change the cursor
