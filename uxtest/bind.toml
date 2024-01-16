@@ -52,10 +52,17 @@ args.command = "cursorMove"
 args.args.to = "right"
 args.repeat = 2
 
+[[define.keyNumber]]
+"shift+1" = 1
+"shift+2" = 2
+"shift+3" = 3
+
 [[bind]]
-key = ["1", "2", "3"]
+# NOTE: because of how vscode-extension-tester is implemented
+# numeric values get typed, so we use other keybindings here
+key = ["shift+1", "shift+2", "shift+3"]
 mode = "normal"
-name = "count {key}"
+name = "count keyNumber[{key}]"
 command = "master-key.updateCount"
-args.value = "{key}"
+args.value = "keyNumber[{key}]"
 resetTransient = false

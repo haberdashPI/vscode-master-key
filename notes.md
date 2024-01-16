@@ -1,17 +1,15 @@
 current issue I'm working on:
 
-for UX tests:
-  - we're using a revised version of vscod-extension-tester (https://github.com/redhat-developer/vscode-extension-tester/pull/1084) after fixing a bug on MacOS ARM
-  -
+look at unit test list below
 
-working on an improved preset loading UX
+NOTE: we're using a revised version of vscod-extension-tester (https://github.com/redhat-developer/vscode-extension-tester/pull/1084) after fixing a bug on MacOS ARM
 
 NEXT UP:
 
 unit tests: all basic commands run
-  - do
-  - repeat
-  - updateCount
+  + do
+  + repeat
+  + updateCount
   - prefix (with/without flag)
   - set (state is setable and readable)
   - switch modes (verify keys actually change)
@@ -60,6 +58,18 @@ thoughts: things I must have to release:
 field e.g. `extend` (or `concat`?) for the fancier situation
 
 **TODO**: anything beyond this point needs to be organized and prioritized
+
+- REDESIGN!! I think the the way repeated keys works is a little unwieldy in many cases
+  (maybe we should express it explicitly as a loop somehow...🤔)
+
+```toml
+[[bind]]
+for.i = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0]
+key = "shift+{i}"
+name = "count {i}"
+command = "master-key.updateCount"
+args.value = "{i}"
+```
 
 maybe we should implement an edit and a navigation history since the built-in commands aren't particularly satisfying
 
