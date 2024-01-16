@@ -183,6 +183,7 @@ export interface IConfigKeyBinding {
     when: string,
     args: {
         do: DoArgs,
+        key: string, // repeated here so that commands can display the key pressed
         name?: string,
         description?: string,
         resetTransient?: boolean,
@@ -201,7 +202,7 @@ function itemToConfigBinding(item: BindingItem, defs: Record<string, any>): ICon
         prefixDescriptions,
         when: "(" + item.when.map(w => w.str).join(") && (") + ")",
         command: "master-key.do",
-        args: item.args
+        args: {...item.args, key: <string>item.key}
     };
 }
 

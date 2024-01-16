@@ -70,6 +70,8 @@ maybe we should implement an edit and a navigation history since the built-in co
 
 wishlist:
 
+- status bar updates are called a lot, maybe reduce this
+
 - layred keybindings: you can specify a
   - user binding file
   - workspace binding file

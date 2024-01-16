@@ -146,7 +146,7 @@ laborum ad. Dolore exercitation cillum eiusmod culpa minim duis
     it('Counts repeat motion', async () => {
         await editor.moveCursor(1, 1);
         await editor.typeText(Key.ESCAPE);
-        await pause(500);
+        await pause(2000);
 
         for (let c = 1; c <= 3; c++) {
             console.log('c: '+c);

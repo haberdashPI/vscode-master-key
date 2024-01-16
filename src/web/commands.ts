@@ -10,20 +10,44 @@ import { INPUT_CAPTURE_COMMANDS } from './keybindingParsing';
 
 let modeStatusBar: vscode.StatusBarItem | undefined = undefined;
 let keyStatusBar: vscode.StatusBarItem | undefined = undefined;
-let countStatusBar: vscode.StatusBarItem | undefined = undefined;
 let searchStatusBar: vscode.StatusBarItem | undefined = undefined;
 let evalContext = new EvalContext();
 
 let commands: Record<string, ((x: unknown) => any) | (() => any)> = {};
 
-function updateStatusBar(){
+let statusUpdates = Number.MIN_SAFE_INTEGER;
+function updateStatusBar(opt: {delayStatusBarUpdate: boolean} = {delayStatusBarUpdate: false}){
     if(modeStatusBar !== undefined && keyStatusBar !== undefined &&
-       countStatusBar !== undefined && searchStatusBar !== undefined){
-        modeStatusBar.text = state.values.mode || 'insert';
-        keyStatusBar.text = state.values.prefix || '';
-        countStatusBar.text = state.values.count ?
-            state.values.count + "×" : '';
-        searchStatusBar.text = state.values.search || '';
+       searchStatusBar !== undefined){
+        let plannedModeStatusBar = state.values.mode || 'insert';
+        let plannedKeyStatusBar = state.values.count ? state.values.count + "× " : '';
+        plannedKeyStatusBar += state.values.prefix || '';
+        let plannedSearchStatusBar = state.values.search || '';
+
+        if(opt.delayStatusBarUpdate){
+            let currentUpdate = statusUpdates;
+            setTimeout(() => {
+                if(currentUpdate === statusUpdates){
+                    if(statusUpdates < Number.MAX_SAFE_INTEGER){
+                        statusUpdates += 1;
+                    }else{
+                        statusUpdates = Number.MIN_SAFE_INTEGER;
+                    }
+                    if(modeStatusBar){ modeStatusBar.text = plannedModeStatusBar; }
+                    if(keyStatusBar){ keyStatusBar.text = plannedKeyStatusBar; }
+                    if(searchStatusBar){ searchStatusBar.text = plannedSearchStatusBar; }
+                }
+            }, 1000);
+        }else{
+            if(statusUpdates < Number.MAX_SAFE_INTEGER){
+                statusUpdates += 1;
+            }else{
+                statusUpdates = Number.MIN_SAFE_INTEGER;
+            }
+            modeStatusBar.text = plannedModeStatusBar;
+            keyStatusBar.text = plannedKeyStatusBar;
+            searchStatusBar.text = plannedSearchStatusBar;
+        }
     }
 }
 
@@ -98,7 +122,8 @@ class CommandState {
         }
         return this.setKeyContext(key, value, transient);
     }
-    setKeyContext(key: string, value: any, transient: boolean = false) {
+    setKeyContext(key: string, value: any, transient: boolean = false,
+                  opt: {updateStatusBar: boolean} = {updateStatusBar: true}) {
         // assignment
         let oldValue = this.values[key];
         if (key === 'prefixCodes') {
@@ -118,13 +143,16 @@ class CommandState {
         }
         if(transient){ this.transientValues[key] = oldValue; }
         vscode.commands.executeCommand('setContext', 'master-key.' + key, value);
-        updateStatusBar();
+        if(opt.updateStatusBar){ updateStatusBar(); }
         this.listeners = this.listeners.filter(l => l(this.values) === "keepOpen");
     }
     onContextChange(fn: (values: KeyContext) => ListenerRequest){ this.listeners.push(fn); }
     reset() {
         // clear any transient state
-        for (let [k, v] of Object.entries(this.transientValues)) { this.setKeyContext(k, v); }
+        for (let [k, v] of Object.entries(this.transientValues)) {
+            this.setKeyContext(k, v, false, {updateStatusBar: false});
+        }
+        updateStatusBar({delayStatusBarUpdate: true});
         this.transientValues = {
             count: 0,
             prefix: '',
@@ -186,6 +214,7 @@ async function runCommand(command: BindingCommand, i?: number){
 
 const runCommandArgs = z.object({
     do: doArgs,
+    key: z.string().optional(),
     resetTransient: z.boolean().optional().default(true),
     kind: z.string().optional(),
     path: z.string().optional(),
@@ -237,6 +266,10 @@ export async function runCommands(args: RunCommandsArgs){
     for (let i=0; i<args.do.length; i++) { await runCommand(args.do[i], i); }
 
     if(args.resetTransient){
+        // this will be immediately cleared by `reset` but
+        // its display will persist in the status bar for a little bit
+        // (see `updateStatusBar`)
+        if(args.key){ state.setKeyContext('prefix', args.key); }
         reset();
         if(!wasSearchUsed() && vscode.window.activeTextEditor){
             clearSearchDecorations(vscode.window.activeTextEditor) ;
@@ -515,19 +548,15 @@ async function restoreNamed(args_: unknown){
 commands['master-key.restoreNamed'] = restoreNamed;
 
 export function activate(context: vscode.ExtensionContext) {
-    modeStatusBar = vscode.window.createStatusBarItem('mode', vscode.StatusBarAlignment.Left);
+    modeStatusBar = vscode.window.createStatusBarItem('mode', vscode.StatusBarAlignment.Left, 1000);
     modeStatusBar.accessibilityInformation = { label: "Keybinding Mode" };
     modeStatusBar.show();
 
-    countStatusBar = vscode.window.createStatusBarItem('count', vscode.StatusBarAlignment.Left);
-    countStatusBar.accessibilityInformation = { label: "Current Repeat Count" };
-    countStatusBar.show();
-
-    keyStatusBar = vscode.window.createStatusBarItem('keys', vscode.StatusBarAlignment.Left);
+    keyStatusBar = vscode.window.createStatusBarItem('keys', vscode.StatusBarAlignment.Left, 999);
     keyStatusBar.accessibilityInformation = { label: "Keys Typed" };
     keyStatusBar.show();
 
-    searchStatusBar = vscode.window.createStatusBarItem('capture', vscode.StatusBarAlignment.Left);
+    searchStatusBar = vscode.window.createStatusBarItem('capture', vscode.StatusBarAlignment.Left, 998);
     searchStatusBar.accessibilityInformation = { label: "Search Text" };
     searchStatusBar.show();
 
