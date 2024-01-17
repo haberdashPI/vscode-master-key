@@ -80,6 +80,8 @@ maybe we should implement an edit and a navigation history since the built-in co
 
 wishlist:
 
+- quick win: should be able to specify that a key works in all modes
+
 - status bar updates are called a lot, maybe reduce this
 
 - layred keybindings: you can specify a

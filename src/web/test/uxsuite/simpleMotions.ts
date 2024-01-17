@@ -90,7 +90,7 @@ laborum ad. Dolore exercitation cillum eiusmod culpa minim duis`);
         return;
     });
 
-    it('Directional Motions', async () => {
+    it('Works with Directional Motions', async () => {
         await editor.moveCursor(1, 1);
         await editor.typeText(Key.ESCAPE);
         await pause(500);
@@ -101,7 +101,7 @@ laborum ad. Dolore exercitation cillum eiusmod culpa minim duis`);
         await movesCurosrInEditor(() => editor.typeText('k'), [-1, 0], editor);
     });
 
-    it('Repeat Command', async () => {
+    it('Can Repeat Commands', async () => {
         await editor.moveCursor(1, 1);
         await editor.typeText(Key.ESCAPE);
         await pause(500);
@@ -109,7 +109,7 @@ laborum ad. Dolore exercitation cillum eiusmod culpa minim duis`);
         await movesCurosrInEditor(() => editor.typeText(Key.chord(Key.SHIFT, 'l')), [0, 2], editor);
     });
 
-    it('Counts repeat motion', async function(){
+    it('Repeats using count', async function(){
         await editor.moveCursor(1, 1);
         await editor.typeText(Key.ESCAPE);
         await pause(500);
