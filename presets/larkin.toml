@@ -747,6 +747,45 @@ computedArgs.repeat = "count"
 mode = ["normal", "selectedit"]
 
 [[path]]
+id = "edit.motion.searchpair"
+name = "Search pairs"
+description = "Find text that falls between pairs of characters"
+mode = ["normal", "selectedit"]
+
+[[bind]]
+path = "edit.motion.searchpair"
+name = "between"
+description = """
+Select between pairs of identical N characters, where N is the count e.g.
+3uc''' would search for a string between ''' and '''.
+"""
+key = "u c"
+command = "master-key.captureKeys"
+computedArgs.acceptAfter = "count || 1"
+
+[[bind.args.doAfter]]
+command = "selection-utilities.selectBetween"
+computedArgs.str = "captured"
+args.inclusive = false
+
+[[bind]]
+path = "edit.motion.searchpair"
+name = "between"
+description = """
+Select between pairs of identical N characters, where N is the count e.g.
+3uc''' would search for a string between ''' and '''.
+"""
+key = "u v"
+command = "master-key.captureKeys"
+computedArgs.acceptAfter = "2*(count || 1)"
+
+[[bind.args.doAfter]]
+command = "selection-utilities.selectBetween"
+computedArgs.between.from = "captured.slice(0, captured.length/2)"
+computedArgs.between.to = "captured.slice(captured.length/2)"
+args.inclusive = false
+
+[[path]]
 id = "edit.motion.syntax"
 name = "Motions around syntactic objects (e.g. parentheses and quotes)"
 description = """
