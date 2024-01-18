@@ -292,7 +292,11 @@ export async function runCommands(args: RunCommandsArgs){
         // this will be immediately cleared by `reset` but
         // its display will persist in the status bar for a little bit
         // (see `updateStatusBar`)
-        if(args.key){ state.setKeyContext('prefix', args.key); }
+        if(args.key){
+            let newPrefix = state.values.prefix;
+            newPrefix = newPrefix.length > 0 ? newPrefix + " " + args.key : args.key;
+            state.setKeyContext('prefix', newPrefix);
+        }
         reset();
         if(!wasSearchUsed() && vscode.window.activeTextEditor){
             clearSearchDecorations(vscode.window.activeTextEditor) ;
