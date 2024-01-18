@@ -89,7 +89,7 @@ class CommandState {
         count: 0,
         mode: 'insert',
         search: '',
-        validModes: ['insert'],
+        validModes: ['insert', 'capture'],
         editorHasSelection: false,
         editorHasMultipleSelections: false,
         editorHasMultiLineSelection: false,

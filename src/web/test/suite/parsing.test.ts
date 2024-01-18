@@ -268,9 +268,36 @@ suite('Keybinding Test Suite', () => {
         kind = "all"
         command = "foo"
         `), {message: /Duplicate bindings for 'a' in mode 'insert'/});
+
+        assert.throws(() => specForBindings(`
+        [header]
+        version = "1.0"
+
+        [define]
+        validModes = ["insert", "capture", "normal"]
+
+        [[path]]
+        id = "bind"
+        name = "All Bindings"
+
+        [[bind]]
+        path = "bind"
+        name = "1"
+        key = "a"
+        kind = "all"
+        mode = "!insert"
+        command = "foo"
+
+        [[bind]]
+        path = "bind"
+        name = "2"
+        key = "a"
+        kind = "all"
+        mode = "!normal"
+        command = "foo"
+        `), {message: /Duplicate bindings for 'a' in mode 'capture'/});
+
     });
-    // TODO: at some point we should improve duplicate detection (and add a trickier test)
-    // by expanding keybindings to have a single mode per binding item
 
     test('Keybindings with multiple presses are expanded into prefix bindings', () => {
         let spec = specForBindings(`

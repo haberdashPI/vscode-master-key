@@ -716,7 +716,7 @@ name = "find char pair"
 description = "To next character pair"
 args.acceptAfter = 2
 args.offset = "start"
-mode = ["normal", "selectedit"]
+mode = "normal"
 
 [[bind]]
 path = "edit.motion.search"
@@ -1031,7 +1031,6 @@ args = [
 path = "edit.action.basic"
 key = "r"
 name = "replace char"
-mode = ["normal", "selectedit"]
 description = "replace the character under the cursor"
 command = "master-key.replaceChar"
 
