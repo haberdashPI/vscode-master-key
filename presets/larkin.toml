@@ -2197,6 +2197,69 @@ key = "g shift+d"
 command = "editor.action.revealDefinitionAside"
 when = "editorTextFocus"
 
+[[bind]]
+path = "window"
+name = "debug hover"
+description = "show the debug hover view"
+key = "g H"
+command = "editor.debug.action.showDebugHover"
+when = "editorTextFocus"
+
+[[bind]]
+path = "window"
+name = "breakpt."
+description = "toggle debug breakpoint"
+key = "g b"
+command = "editor.debug.action.toggleBreakpoint"
+when = "editorTextFocus"
+
+[[bind]]
+path = "window"
+name = "debug"
+description = "additional debug actions"
+key = "g e b"
+command = "editor.debug.action.conditionalBreakpoint"
+when = "editorTextFocus"
+
+
+[[bind]]
+path = "window"
+name = "start"
+description = "start debugging"
+key = "g e r"
+command = "workbench.action.debug.start"
+
+[[bind]]
+path = "window"
+name = "continue"
+description = "continue debugging"
+key = "g e c"
+command = "workbench.action.debug.continue"
+
+[[bind]]
+path = "window"
+name = "next"
+description = "debug: step over next line"
+key = "g e j"
+command = "workbench.action.debug.stepOver"
+when = "editorTextFocus"
+
+[[bind]]
+path = "window"
+name = "into"
+description = "debug: step into next line"
+key = "g e l"
+command = "workbench.action.debug.stepInto"
+when = "editorTextFocus"
+
+[[bind]]
+path = "window"
+name = "out"
+description = "debug: step out"
+key = "g e k"
+command = "workbench.action.debug.stepOut"
+when = "editorTextFocus"
+
 [[path]]
 id = "window.bookmark"
 name = "Bookmarks"
