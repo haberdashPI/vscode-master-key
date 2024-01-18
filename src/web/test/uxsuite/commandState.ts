@@ -1,5 +1,6 @@
 import { Key, TextEditor } from "vscode-extension-tester";
-import { movesCurosrInEditor, setBindings, setupEditor } from "./utils";
+import { movesCursorInEditor, setBindings, setupEditor } from "./utils";
+import expect from 'expect';
 
 export const run = () => describe('Command state', () => {
     let editor: TextEditor;
@@ -87,20 +88,28 @@ export const run = () => describe('Command state', () => {
             computedArgs.text = "foo"
         `);
 
-        editor = await setupEditor(`Fugiat qui eiusmod ullamco Lorem non esse commodo
-consequat. Adipisicing aliqua Lorem Lorem proident excepteur reprehenderit et adipisicing
-aliquip eu mollit tempor sit. Amet ut do nisi voluptate laboris ipsum magna velit. Est
-cillum eiusmod cillum fugiat nostrud dolore sint. Amet excepteur eu minim aliqua. Labore
-aute sint ad ullamco. Nulla consequat in do velit incididunt id nisi Lorem aliqua.`);
+        editor = await setupEditor(`This is a short, simple sentence`);
     });
 
-    it('Handles Prefixes', async () => {
+    it('Handles Automated Prefixes', async () => {
         await editor.moveCursor(1, 1);
 
-        await movesCurosrInEditor(async () => {
+        await movesCursorInEditor(async () => {
             await editor.typeText(Key.chord(Key.CONTROL, 'g')+Key.chord(Key.CONTROL, 'f'));
         }, [0, 1], editor);
-
-        // TODO: run each command from the list above and verify its effect
     });
+
+    it("Handles Flagged Prefixs", async () => {
+        await editor.moveCursor(1, 1);
+
+        await movesCursorInEditor(async () => {
+            await editor.typeText(Key.chord(Key.CONTROL, Key.SHIFT, 'w'));
+        }, [0, 4], editor);
+        expect(editor.getSelectedText()).toEqual('');
+
+        await editor.moveCursor(1, 1);
+        await editor.typeText(Key.chord(Key.CONTROL, 'l')+Key.chord(Key.CONTROL, Key.SHIFT, 'w'));
+        expect(editor.getSelectedText()).toEqual('This');
+    });
+
 });
