@@ -2201,7 +2201,7 @@ when = "editorTextFocus"
 path = "window"
 name = "debug hover"
 description = "show the debug hover view"
-key = "g H"
+key = "g shift+h"
 command = "editor.debug.action.showDebugHover"
 when = "editorTextFocus"
 
@@ -2373,6 +2373,13 @@ description = "move editor to window in given direction"
 key = "/ m"
 resetTransient = false
 command = "master-key.prefix"
+
+[[bind]]
+path = "window.move"
+name = "vert/horz"
+key = "/ m r"
+description = "Toggle between horizontal and vertical layouts"
+command = "workbench.action.toggleEditorGroupLayout"
 
 [[bind]]
 path = "window.move"
