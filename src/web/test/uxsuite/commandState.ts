@@ -1,5 +1,5 @@
 import { Key, TextEditor } from "vscode-extension-tester";
-import { movesCursorInEditor, setBindings, setupEditor } from "./utils";
+import { pause, movesCursorInEditor, setBindings, setupEditor } from "./utils";
 import expect from 'expect';
 
 export const run = () => describe('Command state', () => {
@@ -44,6 +44,7 @@ export const run = () => describe('Command state', () => {
 
             [[path]]
             id = "word"
+            name = "word"
             default.prefixes = ["", "ctrl+l"]
 
             [[bind]]
@@ -87,12 +88,14 @@ export const run = () => describe('Command state', () => {
             command = "type"
             computedArgs.text = "foo"
         `);
+        await pause(1000);
 
         editor = await setupEditor(`This is a short, simple sentence`);
     });
 
     it('Handles Automated Prefixes', async () => {
         await editor.moveCursor(1, 1);
+        await pause(250);
 
         await movesCursorInEditor(async () => {
             await editor.typeText(Key.chord(Key.CONTROL, 'g')+Key.chord(Key.CONTROL, 'f'));
@@ -101,6 +104,7 @@ export const run = () => describe('Command state', () => {
 
     it("Handles Flagged Prefixs", async () => {
         await editor.moveCursor(1, 1);
+        await pause(250);
 
         await movesCursorInEditor(async () => {
             await editor.typeText(Key.chord(Key.CONTROL, Key.SHIFT, 'w'));
@@ -113,3 +117,5 @@ export const run = () => describe('Command state', () => {
     });
 
 });
+
+export default { run };

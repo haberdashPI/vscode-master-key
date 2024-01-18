@@ -62,6 +62,12 @@ export const run = () => describe('Simple motions', () => {
             args.args.to = "right"
             args.repeat = 2
 
+            [[bind]]
+            name = "insert mode"
+            key = "i"
+            command = "master-key.enterInsert"
+            mode = "normal"
+
             [define.keyNumber]
             "shift+0" = 0
             "shift+1" = 1
@@ -139,6 +145,7 @@ laborum ad. Dolore exercitation cillum eiusmod culpa minim duis`);
         }, [0, 10], editor);
     });
 
+    after(async () => await editor.typeText('i'));
 });
 
 export default { run };

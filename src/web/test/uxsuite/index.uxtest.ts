@@ -1,5 +1,6 @@
 import { cleanupTempdir, pause, setupTempdir } from './utils';
 import simpleMotions from './simpleMotions';
+import commandState from "./commandState";
 
 describe('UI Test Suite', () => {
     before(async function(){
@@ -9,6 +10,7 @@ describe('UI Test Suite', () => {
     });
 
     simpleMotions.run();
+    commandState.run();
 
     after(() => { cleanupTempdir(); });
 });

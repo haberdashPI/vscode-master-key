@@ -2,67 +2,78 @@
 version = "1.0"
 
 [define]
-validModes = ["insert", "capture", "normal"]
+validModes = ["insert", "capture", "left"]
 
 [[bind]]
-name = "normal mode"
-key = "escape"
-command = "runCommands"
-args = ["master-key.enterNormal", "master-key.reset"]
-prefixes = "<all-prefixes>"
+name = "left mode"
+key = "ctrl+shift+r"
+command = "master-key.setMode"
+args.value = "right"
+
+[[bind]]
+name = "move right"
+key = "ctrl+g ctrl+f"
+command = "moveCursor"
+args.to = "right"
+when = "editorTextFocus"
+
+[[bind]]
+name = "move left"
+mode = "left"
+key = "ctrl+g ctrl+f"
+command = "moveCursor"
+args.to = "left"
+when = "editorTextFocus"
+
+[[bind]]
+name = "prepare select"
+key = "ctrl+l"
+command = "master-key.prefix"
+args.flag = "select"
+resetTransient = false
 
 [[path]]
-id = "motion"
-name = "basic motions"
-default.command = "cursorMove"
-default.mode = "normal"
-default.when = "editorTextFocus"
-default.computedArgs.value = "count"
+id = "word"
+name = "word"
+default.prefixes = ["", "ctrl+l"]
 
 [[bind]]
-path = "motion"
-name = "left"
-key = "h"
-args.to = "left"
+path = "word"
+name = "word motion"
+key = "ctrl+shift+w"
+when = "!master-key.select"
+command = "cursorWordRight"
 
 [[bind]]
-path = "motion"
-name = "right"
-key = "l"
-args.to = "right"
+path = "word"
+name = "word motion"
+key = "ctrl+shift+w"
+when = "!master-key.select"
+mode = "left"
+command = "cursorWordLeft"
 
 [[bind]]
-path = "motion"
-name = "down"
-key = "j"
-args.to = "down"
+path = "word"
+key = "ctrl+shift+w"
+when = "master-key.select"
+command = "cursorWordRightSelect"
 
 [[bind]]
-path = "motion"
-name = "up"
-key = "k"
-args.to = "up"
+path = "word"
+key = "ctrl+shift+w"
+mode = "left"
+when = "master-key.select"
+command = "cursorWordLeftSelect"
 
 [[bind]]
-name = "double right"
-key = "shift+l"
-command = "master-key.repeat"
-mode = "normal"
-args.command = "cursorMove"
-args.args.to = "right"
-args.repeat = 2
-
-[[define.keyNumber]]
-"shift+1" = 1
-"shift+2" = 2
-"shift+3" = 3
+name = "set foo"
+key = "ctrl+alt+w"
+command = "master-key.set"
+args.name = "foo"
+args.value = 2
 
 [[bind]]
-# NOTE: because of how vscode-extension-tester is implemented
-# numeric values get typed, so we use other keybindings here
-key = ["shift+1", "shift+2", "shift+3"]
-mode = "normal"
-name = "count keyNumber[{key}]"
-command = "master-key.updateCount"
-args.value = "keyNumber[{key}]"
-resetTransient = false
+name = "write foo"
+key = "ctrl+alt+l"
+command = "type"
+computedArgs.text = "foo"
