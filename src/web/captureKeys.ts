@@ -57,6 +57,7 @@ function captureKeysCmd(args_: unknown){
     if(args){
         let a = args;
         if(args.keys){
+            setKeyContext({ name: 'captured', value: args.keys, transient: true });
             runCommands({ do: a.doAfter });
         }else{
             let captured = "";

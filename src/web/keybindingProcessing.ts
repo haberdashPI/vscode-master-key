@@ -4,6 +4,7 @@ import { parseWhen, bindingItem, DoArgs, DefinedCommand, BindingItem, BindingSpe
 import z from 'zod';
 import { pick, isEqual, omit, mergeWith, cloneDeep, flatMap, merge } from 'lodash';
 import { reifyStrings, EvalContext } from './expressions';
+import { validateInput } from './utils';
 
 export interface Bindings{
     name?: string,
@@ -17,6 +18,7 @@ export function processBindings(spec: BindingSpec): [Bindings, string[]]{
     let items = expandDefaultsAndDefinedCommands(spec, problems);
     items = expandBindingKeys(items, spec.define);
     items = expandPrefixes(items);
+    items = expandModes(items, spec.define);
     let prefixCodes: PrefixCodes;
     [items, prefixCodes] = expandKeySequencesAndResolveDuplicates(items, problems);
     items = items.map(moveModeToWhenClause);
@@ -110,7 +112,7 @@ function expandDefaultsAndDefinedCommands(spec: BindingSpec, problems: string[])
             return bindingItem.parse({
                 key: item.key,
                 when: item.when,
-                mode: item.mode,
+                mode: typeof item.mode === 'string' ? [item.mode] : item.mode,
                 prefixes: item.prefixes,
                 command: "master-key.do",
                 args: {
@@ -176,6 +178,25 @@ function expandPrefixes(items: BindingItem[]){
     });
 }
 
+function expandModes(items: BindingItem[], define: Record<string, any> | undefined) {
+    let validModeArg = z.string().array().optional();
+    let validModes = validModeArg.parse(define?.validModes) || ['insert', 'capture'];
+    return flatMap(items, (item: BindingItem): BindingItem[] => {
+        let modes = item.mode || ['insert'];
+        if (modes.length > 0 && modes[0].startsWith('!')) {
+            // TODO: 'parsing' should validate that all modes specifiers are inclusive
+            // or exclusive (!)
+            let exclude = modes.map(m => m.slice(1));
+            modes = validModes.filter(mode => !exclude.some(x => x === mode));
+        }
+        if (modes.length === 0) {
+            return [item];
+        } else {
+            return modes.map(m => ({ ...item, mode: [m] }));
+        }
+    });
+}
+
 export interface IConfigKeyBinding {
     key: string,
     command: "master-key.do"
@@ -207,25 +228,11 @@ function itemToConfigBinding(item: BindingItem, defs: Record<string, any>): ICon
 }
 
 function moveModeToWhenClause(binding: BindingItem){
-    let when = binding.when ? binding.when : [];
-    if(binding.mode !== undefined){
-        let modes = Array.isArray(binding.mode) ? binding.mode : [binding.mode];
-        let negative = false;
-        let whenClause = modes.map(m => {
-            if(m.startsWith("!")){
-                negative = true;
-                return `(master-key.mode != '${m.slice(1)}')`;
-            }else{
-                return `(master-key.mode == '${m}')`;
-            }
-        });
-        // NOTE: parsing validation should ensure that only negative or only
-        // positive mode specifications occur in one list
-        if(negative){
-            when = when.concat(parseWhen("("+whenClause.join(') && (')+")"));
-        }else{
-            when = when.concat(parseWhen("("+whenClause.join(') || (')+")"));
-        }
+    let when = binding.when ? cloneDeep(binding.when) : [];
+    if(binding.mode !== undefined && binding.mode.length > 0){
+        // NOTE: because we have already called `expandMode`
+        // we know the array is length 0 or 1
+        when = when.concat(parseWhen(`master-key.mode == ${binding.mode[0]}`));
     }
 
     return {...binding, when};
@@ -373,7 +380,7 @@ export function isSingleCommand(x: DoArgs, cmd: string){
 
 function addWithoutDuplicating(map: BindingMap, newItem: BindingItem, problems: string[]): BindingMap {
     let key = hash({
-        newItem: newItem.key,
+        key: newItem.key,
         mode: newItem.mode,
         when: newItem.when?.map(w => w.id)?.sort(),
         prefixes: newItem.prefixes

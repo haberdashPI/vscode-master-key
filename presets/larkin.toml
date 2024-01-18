@@ -200,7 +200,7 @@ path = "edit.motion.prim"
 key = "g k"
 name = "unwrp ↑"
 description = "up unwrapped line"
-args.to = "down"
+args.to = "up"
 args.by = "line"
 
 [[bind]]
@@ -716,7 +716,7 @@ name = "find char pair"
 description = "To next character pair"
 args.acceptAfter = 2
 args.offset = "start"
-mode = ["normal", "selectedit"]
+mode = "normal"
 
 [[bind]]
 path = "edit.motion.search"
@@ -745,6 +745,45 @@ description = "Repeat search motion backwards"
 command = "master-key.previousMatch"
 computedArgs.repeat = "count"
 mode = ["normal", "selectedit"]
+
+[[path]]
+id = "edit.motion.searchpair"
+name = "Search pairs"
+description = "Find text that falls between pairs of characters"
+mode = ["normal", "selectedit"]
+
+[[bind]]
+path = "edit.motion.searchpair"
+name = "between"
+description = """
+Select between pairs of identical N characters, where N is the count e.g.
+3uc''' would search for a string between ''' and '''.
+"""
+key = "u c"
+command = "master-key.captureKeys"
+computedArgs.acceptAfter = "count || 1"
+
+[[bind.args.doAfter]]
+command = "selection-utilities.selectBetween"
+computedArgs.str = "captured"
+args.inclusive = false
+
+[[bind]]
+path = "edit.motion.searchpair"
+name = "between"
+description = """
+Select between pairs of identical N characters, where N is the count e.g.
+3uc''' would search for a string between ''' and '''.
+"""
+key = "u v"
+command = "master-key.captureKeys"
+computedArgs.acceptAfter = "2*(count || 1)"
+
+[[bind.args.doAfter]]
+command = "selection-utilities.selectBetween"
+computedArgs.between.from = "captured.slice(0, captured.length/2)"
+computedArgs.between.to = "captured.slice(captured.length/2)"
+args.inclusive = false
 
 [[path]]
 id = "edit.motion.syntax"
@@ -992,7 +1031,6 @@ args = [
 path = "edit.action.basic"
 key = "r"
 name = "replace char"
-mode = ["normal", "selectedit"]
 description = "replace the character under the cursor"
 command = "master-key.replaceChar"
 
@@ -1831,7 +1869,7 @@ id = "edit.action.terminal"
 name = "Terminal Actions"
 description = "Commands that send text from the editor to the terminal"
 default.kind = "action"
-default.mode = ["normal", "selectedit"]
+default.mode = "normal"
 
 [[bind]]
 path = "edit.action.terminal"
@@ -1841,35 +1879,65 @@ send text to a terminal (usually containing a REPL); use language
 specific extensions when available and put the pasted code into a block (when defined)."
 """
 key = "m"
-when = "editorLangId == 'julia' && !editorHasSelection"
+when = "editorLangId == 'julia' && !editorHasSelection && count >= 1"
 command = "runCommands"
 args = [
       { defined = "selectLinesDown" },
       "expandLineSelection", "selection-utilities.trimSelectionWhitespace",
-      "language-julia.executeCodeBlockOrSelectionAndMove"
+      "language-julia.executeCodeBlockOrSelectionAndMove",
+      "cursorUndo"
+]
+
+[[bind]]
+path = "edit.action.terminal"
+key = "m"
+when = "editorLangId == 'julia' && !editorHasSelection"
+command = "runCommands"
+args = [
+      "expandLineSelection", "selection-utilities.trimSelectionWhitespace",
+      "language-julia.executeCodeBlockOrSelectionAndMove",
+      "cursorUndo"
 ]
 
 [[bind]]
 path = "edit.action.terminal"
 key = "m"
 when = "editorLangId == 'julia' && editorHasSelection"
-command = "language-julia.executeCodeBlockOrSelectionAndMove"
+command = "runCommands"
+args = ["selection-utilities.trimSelectionWhitespace",
+        "language-julia.executeCodeBlockOrSelectionAndMove",
+        "cursorUndo"]
 
 [[bind]]
 path = "edit.action.terminal"
 key = "m"
-when = "editoLangId != 'julia' && !(master-key.firstSelectionOrWord =~ /\\n/)"
+when = "editorLangId != 'julia' && !(master-key.firstSelectionOrWord =~ /\\n/)"
 command = "runCommands"
 args = ["terminal-polyglot.send-text",
-      "selection-utilities.shrinkToActive"]
+        "selection-utilities.shrinkToActive"]
 
 [[bind]]
 path = "edit.action.terminal"
 key = "m"
-when = "editoLangId != 'julia' && master-key.firstSelectionOrWord =~ /\\n/"
+when = "editorLangId != 'julia' && master-key.firstSelectionOrWord =~ /\\n/"
 command = "runCommands"
 args = ["terminal-polyglot.send-block-text",
       "selection-utilities.shrinkToActive"]
+
+[[bind]]
+path = "edit.action.terminal"
+key = "/ t"
+command = "terminal-polyglot.open-terminal-N"
+computedArgs.index = "count || 1"
+
+[[bind]]
+path = "edit.action.terminal"
+name = "activate"
+description = "Activate the julia project associated with the current file in the active REPL"
+key = "' a"
+when = "editorLangId == 'julia'"
+command = "terminal-polyglot.send-command"
+args.cmd = "activate_from(\"%file%\")"
 
 [[bind]]
 path = "edit.action.terminal"

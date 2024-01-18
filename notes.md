@@ -17,6 +17,7 @@ unit tests: search movements
 unit tests: capture keys
   works even even when you run some other command
 unit tests: command argument validation
+unit tests: bindings with out a mode apply in all modes
 unit tests: keybinding insertion (with weird file states)
 unit tests: macro replay
 unit tests: UX settings change status bar
@@ -80,6 +81,18 @@ maybe we should implement an edit and a navigation history since the built-in co
 
 wishlist:
 
+- change capture mode so it accepts all keys it can (and you can define what sequence
+  cancels), rather than newlines being always marked as cancel
+
+- quick win: master-key.ignore shouldn't need to be passed to
+  master-key.do (we can just call ignore directly)
+
+- status bar updates are called a lot, maybe reduce this
+
+- layred keybindings: you can specify a
+  - user binding file
+  - workspace binding file
+
 - quick win: should be able to specify that a key works in all modes
 
 - status bar updates are called a lot, maybe reduce this
@@ -109,10 +122,6 @@ wishlist:
 - store from history can take a count or it can use a quick pick that lists the name
   of all recent commands and an index that you can then select two indices from
   on for the the start and one for the top of the macro
-
-- expand all keybindings so that they reference a single mode by iterating their modes list
-  over all valid modes; this will keep the bindings generated simple, and it will make the
-  detection of duplicate bindings simpler and more accurate
 
 - have a debug mode that shows which command got executed from the given keybinding (with an
   option to show or not show prefixes)

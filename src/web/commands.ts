@@ -89,7 +89,7 @@ class CommandState {
         count: 0,
         mode: 'insert',
         search: '',
-        validModes: ['insert'],
+        validModes: ['insert', 'capture'],
         editorHasSelection: false,
         editorHasMultipleSelections: false,
         editorHasMultiLineSelection: false,
@@ -566,7 +566,7 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.workspace.onDidChangeTextDocument(e => {
         let end = state.values.commandHistory.length-1;
         let lastCommand = state.values.commandHistory[end];
-        if(typeof lastCommand.edits !== 'string' && lastCommand.recordEdits){
+        if(lastCommand && typeof lastCommand.edits !== 'string' && lastCommand.recordEdits){
             lastCommand.edits = lastCommand.edits.concat(e);
         }
     });

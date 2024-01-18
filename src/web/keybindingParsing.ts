@@ -164,7 +164,7 @@ export const bindingItem = z.object({
     key: rawBindingItem.shape.key,
     when: parsedWhen.array(),
     command: z.literal("master-key.do"),
-    mode: rawBindingItem.shape.mode.default('insert'),
+    mode: z.string().array().optional(),
     prefixes: z.string().array().optional().default([""]),
     args: z.object({
         do: doArgs,
