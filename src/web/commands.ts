@@ -16,12 +16,23 @@ let evalContext = new EvalContext();
 let commands: Record<string, ((x: unknown) => any) | (() => any)> = {};
 
 let statusUpdates = Number.MIN_SAFE_INTEGER;
+function prettifyPrefix(str: string){
+    str = str.toUpperCase();
+    str = str.replace(/shift\+/i, '⇧');
+    str = str.replace(/ctrl\+/i, '^');
+    str = str.replace(/alt\+/i, '⌥');
+    str = str.replace(/meta\+/i, '◆');
+    str = str.replace(/win\+/i, '⊞');
+    str = str.replace(/cmd\+/i, '⌘');
+    str = str.replace(" ", ", ");
+    return str;
+}
 function updateStatusBar(opt: {delayStatusBarUpdate: boolean} = {delayStatusBarUpdate: false}){
     if(modeStatusBar !== undefined && keyStatusBar !== undefined &&
        searchStatusBar !== undefined){
         let plannedModeStatusBar = state.values.mode || 'insert';
         let plannedKeyStatusBar = state.values.count ? state.values.count + "× " : '';
-        plannedKeyStatusBar += state.values.prefix || '';
+        plannedKeyStatusBar += prettifyPrefix(state.values.prefix) || '';
         let plannedSearchStatusBar = state.values.search || '';
 
         if(opt.delayStatusBarUpdate){
@@ -33,7 +44,14 @@ function updateStatusBar(opt: {delayStatusBarUpdate: boolean} = {delayStatusBarU
                     }else{
                         statusUpdates = Number.MIN_SAFE_INTEGER;
                     }
-                    if(modeStatusBar){ modeStatusBar.text = plannedModeStatusBar; }
+                    if(modeStatusBar){
+                        if(plannedModeStatusBar !== 'insert'){
+                            modeStatusBar.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
+                        }else{
+                            modeStatusBar.backgroundColor = undefined;
+                        }
+                        modeStatusBar.text = plannedModeStatusBar;
+                    }
                     if(keyStatusBar){ keyStatusBar.text = plannedKeyStatusBar; }
                     if(searchStatusBar){ searchStatusBar.text = plannedSearchStatusBar; }
                 }
@@ -43,6 +61,11 @@ function updateStatusBar(opt: {delayStatusBarUpdate: boolean} = {delayStatusBarU
                 statusUpdates += 1;
             }else{
                 statusUpdates = Number.MIN_SAFE_INTEGER;
+            }
+            if(plannedModeStatusBar !== 'insert'){
+                modeStatusBar.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
+            }else{
+                modeStatusBar.backgroundColor = undefined;
             }
             modeStatusBar.text = plannedModeStatusBar;
             keyStatusBar.text = plannedKeyStatusBar;
