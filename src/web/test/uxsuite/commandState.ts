@@ -52,7 +52,7 @@ export const run = () => describe('Command state', () => {
             name = "word motion"
             key = "ctrl+shift+w"
             when = "!master-key.select"
-            command = "cursorWordRight"
+            command = "cursorWordEndRight"
 
             [[bind]]
             path = "word"
@@ -66,7 +66,7 @@ export const run = () => describe('Command state', () => {
             path = "word"
             key = "ctrl+shift+w"
             when = "master-key.select"
-            command = "cursorWordRightSelect"
+            command = "cursorWordEndRightSelect"
 
             [[bind]]
             path = "word"
@@ -106,8 +106,11 @@ export const run = () => describe('Command state', () => {
         await editor.moveCursor(1, 1);
         await pause(250);
 
+        // TODO: debug why this command is not running (it seems like
+        // there is probably an issue with the binding itself)
         await movesCursorInEditor(async () => {
             await editor.typeText(Key.chord(Key.CONTROL, Key.SHIFT, 'w'));
+            await pause(250);
         }, [0, 4], editor);
         expect(editor.getSelectedText()).toEqual('');
 
