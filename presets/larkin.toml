@@ -85,6 +85,7 @@ path = "modes"
 name = "normal"
 description = "Enter normal mode"
 key = ["escape", "ctrl+["]
+mode = []
 command = "runCommands"
 args = ["master-key.enterNormal", "master-key.reset"]
 when = "!findWidgetVisible"
@@ -95,6 +96,7 @@ path = "modes"
 key = ["escape", "ctrl+["]
 when = "suggsetWidgetVisible && editorTextFocus && !findWidgetVisible"
 command = "runCommands"
+mode = []
 args = ["master-key.enterNormal", "master-key.reset"]
 prefixes = "<all-prefixes>"
 
