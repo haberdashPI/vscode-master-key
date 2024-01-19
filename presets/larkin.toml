@@ -1893,7 +1893,7 @@ args = [
 [[bind]]
 path = "edit.action.terminal"
 key = "m"
-when = "editorLangId == 'julia' && !editorHasSelection"
+when = "editorLangId == 'julia' && !editorHasSelection && !count"
 command = "runCommands"
 args = [
       "expandLineSelection", "selection-utilities.trimSelectionWhitespace",
@@ -1931,6 +1931,27 @@ path = "edit.action.terminal"
 key = "/ t"
 command = "terminal-polyglot.open-terminal-N"
 computedArgs.index = "count || 1"
+args.focus = false
+
+[[bind]]
+path = "edit.action.terminal"
+key = "g p"
+command = "runCommands"
+when = "master-key.count"
+
+[[bind.args]]
+command = "terminal-polyglot.open-terminal-N"
+computedArgs.index = "count || 1"
+args.focus = false
+
+[[bind.args]]
+command = "terminal-polyglot.run"
+
+[[bind]]
+path = "edit.action.terminal"
+key = "g p"
+command = "terminal-polyglot.run"
+when = "!master-key.count"
 
 [[bind]]
 path = "edit.action.terminal"
