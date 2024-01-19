@@ -4,8 +4,9 @@ import { parseBindings, BindingSpec, showParseError, parseBindingFile, bindingSp
 import { processBindings, IConfigKeyBinding, Bindings } from './keybindingProcessing';
 import { uniq, pick } from 'lodash';
 import replaceAll from 'string.prototype.replaceall';
-import uri, { Utils } from 'vscode-uri';
+import { Utils } from 'vscode-uri';
 import z from 'zod';
+import { setKeyContext } from './commands';
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 // Keybinding Generation
@@ -224,6 +225,7 @@ async function queryPreset(): Promise<Preset | undefined> {
 async function importBindings(file: vscode.Uri, preset: Bindings) {
     insertKeybindingsIntoConfig(file, preset.bind);
     let config = vscode.workspace.getConfiguration('master-key');
+    setKeyContext({name: 'mode', value: 'insert'});
     config.update('definitions', preset.define, vscode.ConfigurationTarget.Global);
 }
 

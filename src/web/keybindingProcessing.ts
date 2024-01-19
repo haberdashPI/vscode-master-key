@@ -303,7 +303,7 @@ function updatePrefixItemAndPrefix(item: BindingItem, key: string, prefix: strin
             kind: "prefix",
             resetTransient: false,
         },
-        when: item.when,
+        when: [],
         prefixes: [oldPrefix],
         mode: item.mode,
     };

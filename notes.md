@@ -4,6 +4,11 @@ look at unit test list below
 
 NOTE: we're using a revised version of vscod-extension-tester (https://github.com/redhat-developer/vscode-extension-tester/pull/1084) after fixing a bug on MacOS ARM
 
+
+BUG FOUND: recordEdits not being properly dealt with
+BUG: we need to put all automated prefix near the top of the definitions
+BUG: non-automated prefixes need to be marked as such (they aren't)
+
 NEXT UP:
 
 unit tests: all basic commands run
@@ -13,6 +18,10 @@ unit tests: all basic commands run
   - prefix (with/without flag)
   - set (state is setable and readable)
   - switch modes (verify keys actually change)
+
+unit tests: prefixes aren't duplicated even when there are
+  when clauses that split behavior for a keybinding
+  (only the mode and prefix code should be in the when clause of the automated prefix)
 unit tests: search movements
 unit tests: capture keys
   works even even when you run some other command
@@ -86,6 +95,7 @@ wishlist:
 
 - quick win: master-key.ignore shouldn't need to be passed to
   master-key.do (we can just call ignore directly)
+  -NOTE: the same might be said for `prefix` command
 
 - status bar updates are called a lot, maybe reduce this
 

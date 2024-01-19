@@ -159,6 +159,7 @@ class CommandState {
             let editor = vscode.window.activeTextEditor;
             if(editor){ updateCursorAppearance(editor, value); }
             if(value === 'insert'){
+                // BUG: `recordEdits` is something not defined
                 state.values.commandHistory[state.values.commandHistory.length-1].recordEdits = true;
             }else{
                 state.values.commandHistory[state.values.commandHistory.length-1].recordEdits = false;
