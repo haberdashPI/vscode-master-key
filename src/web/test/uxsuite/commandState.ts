@@ -167,7 +167,7 @@ export const run = () => describe('Command state', () => {
 
         await editor.moveCursor(1, 4);
         await pause(250);
-        await editor.typeText(Key.chord(Key.CONTROL, 'l'))
+        await editor.typeText(Key.chord(Key.CONTROL, 'l'));
         await pause(50);
         await editor.typeText(Key.chord(Key.CONTROL, Key.SHIFT, 'w'));
         await pause(250);
