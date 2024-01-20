@@ -588,15 +588,15 @@ async function restoreNamed(args_: unknown){
 commands['master-key.restoreNamed'] = restoreNamed;
 
 export function activate(context: vscode.ExtensionContext) {
-    modeStatusBar = vscode.window.createStatusBarItem('mode', vscode.StatusBarAlignment.Left, 1000);
+    modeStatusBar = vscode.window.createStatusBarItem('mode', vscode.StatusBarAlignment.Left, 100000);
     modeStatusBar.accessibilityInformation = { label: "Keybinding Mode" };
     modeStatusBar.show();
 
-    keyStatusBar = vscode.window.createStatusBarItem('keys', vscode.StatusBarAlignment.Left, 999);
+    keyStatusBar = vscode.window.createStatusBarItem('keys', vscode.StatusBarAlignment.Left, -10000);
     keyStatusBar.accessibilityInformation = { label: "Keys Typed" };
     keyStatusBar.show();
 
-    searchStatusBar = vscode.window.createStatusBarItem('capture', vscode.StatusBarAlignment.Left, 998);
+    searchStatusBar = vscode.window.createStatusBarItem('capture', vscode.StatusBarAlignment.Left, -9999);
     searchStatusBar.accessibilityInformation = { label: "Search Text" };
     searchStatusBar.show();
 
