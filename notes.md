@@ -12,7 +12,7 @@ unit tests: all basic commands run
   + updateCount
   + prefix (with/without flag)
   + set (state is setable and readable)
-  - switch modes (verify keys actually change)
+  + switch modes (verify keys actually change)
 
 unit tests: prefixes aren't duplicated even when there are
   when clauses that split behavior for a keybinding
@@ -52,7 +52,7 @@ thoughts: things I must have to release:
 - modernized selection utilities
   - good documentation
   - modern build setup
-- improved mode UX
++ improved mode UX
 - macro recoridng UX
 - anything else that has to be here? (check below wishlist and issues under the project)
 

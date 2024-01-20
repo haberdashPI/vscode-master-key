@@ -1,4 +1,4 @@
-import { Key, TextEditor } from "vscode-extension-tester";
+import { Key, TextEditor, Workbench } from "vscode-extension-tester";
 import { pause, movesCursorInEditor, setBindings, setupEditor } from "./utils";
 import expect from 'expect';
 
@@ -80,6 +80,11 @@ export const run = () => describe('Command state', () => {
 
             [[bind]]
             path = "word"
+            key = "ctrl+g ctrl+shift+w"
+            command = "notACommand"
+
+            [[bind]]
+            path = "word"
             key = "ctrl+shift+w"
             mode = "left"
             when = "master-key.select"
@@ -145,27 +150,27 @@ export const run = () => describe('Command state', () => {
         }, [0, 6], editor);
     });
 
-    it("Mode changes key effects", async () => {
-        await editor.moveCursor(1, 5);
+    it.only("Mode changes key effects", async () => {
+        await editor.moveCursor(1, 6);
         await pause(250);
-        editor.typeText(Key.ESCAPE);
-        editor.typeText(Key.chord(Key.CONTROL, Key.SHIFT, 'r'));
-        await pause(50);
+        await editor.typeText(Key.ESCAPE);
+        await editor.typeText(Key.chord(Key.CONTROL, Key.SHIFT, 'r'));
 
         await movesCursorInEditor(async () => {
-            await editor.typeText(Key.chord(Key.CONTROL, 'g')+Key.chord(Key.CONTROL, 'f'));
+            await editor.typeText(Key.chord(Key.CONTROL, 'g'));
+            await pause(50);
+            await editor.typeText(Key.chord(Key.CONTROL, 'f'));
         }, [0, -1], editor);
 
         await movesCursorInEditor(async () => {
             await editor.typeText(Key.chord(Key.CONTROL, Key.SHIFT, 'w'));
-            await pause(250);
         }, [0, -4], editor);
 
-        editor.typeText(Key.ESCAPE);
-        editor.typeText(Key.chord(Key.CONTROL, Key.SHIFT, 'r'));
+        await editor.typeText(Key.ESCAPE);
+        await editor.typeText(Key.chord(Key.CONTROL, Key.SHIFT, 'r'));
         await pause(50);
 
-        await editor.moveCursor(1, 4);
+        await editor.moveCursor(1, 5);
         await pause(250);
         await editor.typeText(Key.chord(Key.CONTROL, 'l'));
         await pause(50);
@@ -174,10 +179,21 @@ export const run = () => describe('Command state', () => {
         expect(await editor.getSelectedText()).toEqual('This');
     });
 
-    // TODO: check that changing the mode changes the direction of the motions
+    it.only('Resets state on error',async () => {
+        // clear any other notificatoins that happened before
+        let workbench = new Workbench();
+        let notifications = await workbench.getNotifications();
+        for(let note of notifications){ await note.clear(); }
 
-    // TODO: check that the flagged prefixes work as expected in the new mode
-
+        await editor.typeText(Key.ESCAPE);
+        await pause(250);
+        await editor.typeText(Key.chord(Key.CONTROL, 'g'));
+        await pause(50);
+        await editor.typeText(Key.chord(Key.CONTROL, Key.SHIFT, 'w'));
+        notifications = await workbench.getNotifications();
+        const message = await notifications[0].getMessage();
+        expect(message).toEqual('foobar');
+    });
     // TODO: test that command state appropriate resets if there is an exception
     // thrown in the keybinding
 
