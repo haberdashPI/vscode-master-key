@@ -7,6 +7,7 @@ import z from 'zod';
 import { clearSearchDecorations, trackSearchUsage, wasSearchUsed } from './searching';
 import { merge, cloneDeep, uniq } from 'lodash';
 import { INPUT_CAPTURE_COMMANDS } from './keybindingParsing';
+import replaceAll from 'string.prototype.replaceall';
 
 let modeStatusBar: vscode.StatusBarItem | undefined = undefined;
 let keyStatusBar: vscode.StatusBarItem | undefined = undefined;
@@ -18,13 +19,13 @@ let commands: Record<string, ((x: unknown) => any) | (() => any)> = {};
 let statusUpdates = Number.MIN_SAFE_INTEGER;
 function prettifyPrefix(str: string){
     str = str.toUpperCase();
-    str = str.replace(/shift\+/i, '⇧');
-    str = str.replace(/ctrl\+/i, '^');
-    str = str.replace(/alt\+/i, '⌥');
-    str = str.replace(/meta\+/i, '◆');
-    str = str.replace(/win\+/i, '⊞');
-    str = str.replace(/cmd\+/i, '⌘');
-    str = str.replace(" ", ", ");
+    str = replaceAll(str, /shift\+/gi, '⇧');
+    str = replaceAll(str, /ctrl\+/gi, '^');
+    str = replaceAll(str, /alt\+/gi, '⌥');
+    str = replaceAll(str, /meta\+/gi, '◆');
+    str = replaceAll(str, /win\+/gi, '⊞');
+    str = replaceAll(str, /cmd\+/gi, '⌘');
+    str = replaceAll(str, / /g, ", ");
     return str;
 }
 function updateStatusBar(opt: {delayStatusBarUpdate: boolean} = {delayStatusBarUpdate: false}){
@@ -158,11 +159,12 @@ class CommandState {
         if(key === 'mode'){
             let editor = vscode.window.activeTextEditor;
             if(editor){ updateCursorAppearance(editor, value); }
-            if(value === 'insert'){
-                // BUG: `recordEdits` is something not defined
-                state.values.commandHistory[state.values.commandHistory.length-1].recordEdits = true;
-            }else{
-                state.values.commandHistory[state.values.commandHistory.length-1].recordEdits = false;
+            if(state.values.commandHistory.length >= 1){
+                if(value === 'insert'){
+                    state.values.commandHistory[state.values.commandHistory.length-1].recordEdits = true;
+                }else{
+                    state.values.commandHistory[state.values.commandHistory.length-1].recordEdits = false;
+                }
             }
         }
         if(transient){ this.transientValues[key] = oldValue; }
@@ -259,8 +261,16 @@ async function runCommandsCmd(args_: unknown){
             let recordEdits = state.values.mode === 'insert';
             state.values.commandHistory.push({...cloneDeep(args), edits: [], recordEdits});
             if( state.values.commandHistory.length > maxHistory ){ state.values.commandHistory.shift(); }
+            await runCommands(args);
+        }else{
+            if(args.do[0].computedArgs){
+                vscode.window.showErrorMessage("Key prefixes cannot use `computedArgs`");
+            }
+            if(args.do[0].if !== undefined && typeof args.do[0].if !== 'boolean'){
+                vscode.window.showErrorMessage("Key prefixes cannot use computed `if` field");
+            }
+            await runCommand(args.do[0]);
         }
-        await runCommands(args);
     }
 }
 
@@ -287,20 +297,22 @@ let maxHistory = 0;
 export async function runCommands(args: RunCommandsArgs){
     // run the commands
     trackSearchUsage();
-    for (let i=0; i<args.do.length; i++) { await runCommand(args.do[i], i); }
-
-    if(args.resetTransient){
-        // this will be immediately cleared by `reset` but
-        // its display will persist in the status bar for a little bit
-        // (see `updateStatusBar`)
-        if(args.key){
-            let newPrefix = state.values.prefix;
-            newPrefix = newPrefix.length > 0 ? newPrefix + " " + args.key : args.key;
-            state.setKeyContext('prefix', newPrefix);
-        }
-        reset();
-        if(!wasSearchUsed() && vscode.window.activeTextEditor){
-            clearSearchDecorations(vscode.window.activeTextEditor) ;
+    try{
+        for (let i=0; i<args.do.length; i++) { await runCommand(args.do[i], i); }
+    }finally{
+        if(args.resetTransient){
+            // this will be immediately cleared by `reset` but
+            // its display will persist in the status bar for a little bit
+            // (see `updateStatusBar`)
+            if(args.key){
+                let newPrefix = state.values.prefix;
+                newPrefix = newPrefix.length > 0 ? newPrefix + " " + args.key : args.key;
+                state.setKeyContext('prefix', newPrefix);
+            }
+            reset();
+            if(!wasSearchUsed() && vscode.window.activeTextEditor){
+                clearSearchDecorations(vscode.window.activeTextEditor) ;
+            }
         }
     }
     evalContext.reportErrors();
