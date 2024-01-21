@@ -6,14 +6,6 @@ NOTE: we're using a revised version of vscod-extension-tester (https://github.co
 
 NEXT UP:
 
-unit tests: all basic commands run
-  + do
-  + repeat
-  + updateCount
-  + prefix (with/without flag)
-  + set (state is setable and readable)
-  + switch modes (verify keys actually change)
-
 unit tests: prefixes aren't duplicated even when there are
   when clauses that split behavior for a keybinding
   (only the mode and prefix code should be in the when clause of the automated prefix)

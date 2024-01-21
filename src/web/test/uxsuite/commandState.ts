@@ -150,7 +150,7 @@ export const run = () => describe('Command state', () => {
         }, [0, 6], editor);
     });
 
-    it.only("Mode changes key effects", async () => {
+    it("Mode changes key effects", async () => {
         await editor.moveCursor(1, 6);
         await pause(250);
         await editor.typeText(Key.ESCAPE);
@@ -179,20 +179,30 @@ export const run = () => describe('Command state', () => {
         expect(await editor.getSelectedText()).toEqual('This');
     });
 
-    it.only('Resets state on error',async () => {
+    it('Resets state on error',async () => {
         // clear any other notificatoins that happened before
         let workbench = new Workbench();
         let notifications = await workbench.getNotifications();
-        for(let note of notifications){ await note.clear(); }
+        for(let note of notifications){
+            console.log(await note.getMessage);
+            await note.dismiss();
+            await pause(10);
+        }
 
         await editor.typeText(Key.ESCAPE);
         await pause(250);
         await editor.typeText(Key.chord(Key.CONTROL, 'g'));
         await pause(50);
         await editor.typeText(Key.chord(Key.CONTROL, Key.SHIFT, 'w'));
+
+        await pause(250);
         notifications = await workbench.getNotifications();
         const message = await notifications[0].getMessage();
-        expect(message).toEqual('foobar');
+        expect(message).toEqual("command 'notACommand' not found");
+
+        await movesCursorInEditor(async () => {
+            await editor.typeText(Key.chord(Key.CONTROL, 'g')+Key.chord(Key.CONTROL, 'f'));
+        }, [0, 1], editor);
     });
     // TODO: test that command state appropriate resets if there is an exception
     // thrown in the keybinding
