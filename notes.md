@@ -6,9 +6,6 @@ NOTE: we're using a revised version of vscod-extension-tester (https://github.co
 
 NEXT UP:
 
-unit tests: prefixes aren't duplicated even when there are
-  when clauses that split behavior for a keybinding
-  (only the mode and prefix code should be in the when clause of the automated prefix)
 unit tests: search movements
 unit tests: capture keys
   works even even when you run some other command
