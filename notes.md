@@ -9,10 +9,10 @@ NEXT UP:
 unit tests: search movements
 unit tests: capture keys
   works even even when you run some other command
-unit tests: command argument validation
 unit tests: bindings with out a mode apply in all modes
-unit tests: keybinding insertion (with weird file states)
 unit tests: macro replay
+unit tests: command argument validation
+unit tests: keybinding insertion (with weird file states)
 unit tests: UX settings change status bar
 unit tests: edges cases for command recording
   - I think it may currently be possible to edit the wrong command
