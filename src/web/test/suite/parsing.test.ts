@@ -297,6 +297,30 @@ suite('Keybinding Test Suite', () => {
         command = "foo"
         `), {message: /Duplicate bindings for 'a' in mode 'capture'/});
 
+        let bindings = specForBindings(`
+        [header]
+        version = "1.0"
+
+        [define]
+        validModes = ["insert", "capture"]
+
+        [[bind]]
+        name = "1"
+        key = "a b"
+        kind = "all"
+        when = "foobar"
+        command = "foo"
+
+        [[bind]]
+        name = "2"
+        key = "a c"
+        kind = "all"
+        when = "bizbaz"
+        command = "foo"
+        `);
+
+        let prefixes = bindings.filter(x => x.args.do[0].command === 'master-key.prefix');
+        assert.equal(prefixes.length, 1);
     });
 
     test('Keybindings with multiple presses are expanded into prefix bindings', () => {
