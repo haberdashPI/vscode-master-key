@@ -6,13 +6,9 @@ NOTE: we're using a revised version of vscod-extension-tester (https://github.co
 
 NEXT UP:
 
-unit tests: all basic commands run
-  + do
-  + repeat
-  + updateCount
-  - prefix (with/without flag)
-  - set (state is setable and readable)
-  - switch modes (verify keys actually change)
+unit tests: prefixes aren't duplicated even when there are
+  when clauses that split behavior for a keybinding
+  (only the mode and prefix code should be in the when clause of the automated prefix)
 unit tests: search movements
 unit tests: capture keys
   works even even when you run some other command
@@ -48,7 +44,7 @@ thoughts: things I must have to release:
 - modernized selection utilities
   - good documentation
   - modern build setup
-- improved mode UX
++ improved mode UX
 - macro recoridng UX
 - anything else that has to be here? (check below wishlist and issues under the project)
 
@@ -86,6 +82,15 @@ wishlist:
 
 - quick win: master-key.ignore shouldn't need to be passed to
   master-key.do (we can just call ignore directly)
+  -NOTE: the same might be said for `prefix` command
+
+- status bar updates are called a lot, maybe reduce this
+
+- layred keybindings: you can specify a
+  - user binding file
+  - workspace binding file
+
+- quick win: should be able to specify that a key works in all modes
 
 - status bar updates are called a lot, maybe reduce this
 

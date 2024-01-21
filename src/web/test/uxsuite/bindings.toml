@@ -2,57 +2,78 @@
 version = "1.0"
 
 [define]
-validModes = ["insert", "capture", "normal"]
+validModes = ["insert", "capture", "left"]
 
 [[bind]]
-name = "normal mode"
-key = "escape"
-command = "runCommands"
-args = ["master-key.enterNormal", "master-key.reset"]
-prefixes = "<all-prefixes>"
+name = "left mode"
+key = "ctrl+shift+r"
+command = "master-key.setMode"
+args.value = "right"
+
+[[bind]]
+name = "move right"
+key = "ctrl+g ctrl+f"
+command = "moveCursor"
+args.to = "right"
+when = "editorTextFocus"
+
+[[bind]]
+name = "move left"
+mode = "left"
+key = "ctrl+g ctrl+f"
+command = "moveCursor"
+args.to = "left"
+when = "editorTextFocus"
+
+[[bind]]
+name = "prepare select"
+key = "ctrl+l"
+command = "master-key.prefix"
+args.flag = "select"
+resetTransient = false
 
 [[path]]
-id = "motion"
-name = "basic motions"
-default.command = "cursorMove"
-default.mode = "normal"
-default.when = "editorTextFocus"
+id = "word"
+name = "word"
+default.prefixes = ["", "ctrl+l"]
 
 [[bind]]
-path = "motion"
-name = "left"
-key = "h"
-args.to = "left"
+path = "word"
+name = "word motion"
+key = "ctrl+shift+w"
+when = "!master-key.select"
+command = "cursorWordEndRight"
 
 [[bind]]
-path = "motion"
-name = "right"
-key = "l"
-args.to = "right"
+path = "word"
+name = "word motion"
+key = "ctrl+shift+w"
+when = "!master-key.select"
+mode = "left"
+command = "cursorWordLeft"
 
 [[bind]]
-path = "motion"
-name = "down"
-key = "j"
-args.to = "down"
+path = "word"
+key = "ctrl+shift+w"
+when = "master-key.select"
+command = "cursorWordEndRightSelect"
 
 [[bind]]
-path = "motion"
-name = "up"
-key = "k"
-args.to = "up"
+path = "word"
+key = "ctrl+shift+w"
+mode = "left"
+when = "master-key.select"
+command = "cursorWordLeftSelect"
 
 [[bind]]
-path = "motion"
-name = "double right"
-key = "shift+l"
-command = "master-key.repeat"
-args.command = "cursorMove"
-args.args.to = "right"
-args.repeat = 2
+name = "set foo"
+key = "ctrl+alt+w"
+command = "master-key.set"
+args.name = "foo"
+args.value = 2
 
 [[bind]]
-key = ["1", "2", "3"]
-name = "count {key}"
-command = "master-key.updateCount"
-args.value = "{key}"
+name = "write foo"
+key = "ctrl+alt+l"
+command = "type"
+computedArgs.text = "foo"

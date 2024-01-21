@@ -1,5 +1,5 @@
 import { Key, TextEditor } from 'vscode-extension-tester';
-import { pause, movesCurosrInEditor, setupEditor, setBindings } from './utils';
+import { pause, movesCursorInEditor, setupEditor, setBindings } from './utils';
 
 export const run = () => describe('Simple motions', () => {
     let editor: TextEditor;
@@ -62,6 +62,12 @@ export const run = () => describe('Simple motions', () => {
             args.args.to = "right"
             args.repeat = 2
 
+            [[bind]]
+            name = "insert mode"
+            key = "i"
+            command = "master-key.enterInsert"
+            mode = "normal"
+
             [define.keyNumber]
             "shift+0" = 0
             "shift+1" = 1
@@ -90,55 +96,56 @@ laborum ad. Dolore exercitation cillum eiusmod culpa minim duis`);
         return;
     });
 
-    it('Directional Motions', async () => {
+    it('Works with Directional Motions', async () => {
         await editor.moveCursor(1, 1);
         await editor.typeText(Key.ESCAPE);
         await pause(500);
 
-        await movesCurosrInEditor(() => editor.typeText('j'), [1, 0], editor);
-        await movesCurosrInEditor(() => editor.typeText('l'), [0, 1], editor);
-        await movesCurosrInEditor(() => editor.typeText('h'), [0, -1], editor);
-        await movesCurosrInEditor(() => editor.typeText('k'), [-1, 0], editor);
+        await movesCursorInEditor(() => editor.typeText('j'), [1, 0], editor);
+        await movesCursorInEditor(() => editor.typeText('l'), [0, 1], editor);
+        await movesCursorInEditor(() => editor.typeText('h'), [0, -1], editor);
+        await movesCursorInEditor(() => editor.typeText('k'), [-1, 0], editor);
     });
 
-    it('Repeat Command', async () => {
+    it('Can Repeat Commands', async () => {
         await editor.moveCursor(1, 1);
         await editor.typeText(Key.ESCAPE);
         await pause(500);
 
-        await movesCurosrInEditor(() => editor.typeText(Key.chord(Key.SHIFT, 'l')), [0, 2], editor);
+        await movesCursorInEditor(() => editor.typeText(Key.chord(Key.SHIFT, 'l')), [0, 2], editor);
     });
 
-    it('Counts repeat motion', async function(){
+    it('Repeats using count', async function(){
         await editor.moveCursor(1, 1);
         await editor.typeText(Key.ESCAPE);
         await pause(500);
 
         for (let c = 1; c <= 3; c++) {
-            await movesCurosrInEditor(async () => {
+            await movesCursorInEditor(async () => {
                 await editor.typeText(Key.chord(Key.SHIFT, String(c)));
                 await editor.typeText('j');
             }, [1*c, 0], editor);
-            await movesCurosrInEditor(async () => {
+            await movesCursorInEditor(async () => {
                 await editor.typeText(Key.chord(Key.SHIFT, String(c)));
                 await editor.typeText('l');
             }, [0, 1*c], editor);
-            await movesCurosrInEditor(async () => {
+            await movesCursorInEditor(async () => {
                 await editor.typeText(Key.chord(Key.SHIFT, String(c)));
                 await editor.typeText('h');
             }, [0, -1*c], editor);
-            await movesCurosrInEditor(async () => {
+            await movesCursorInEditor(async () => {
                 await editor.typeText(Key.chord(Key.SHIFT, String(c)));
                 await editor.typeText('k');
             }, [-1*c, 0], editor);
         }
-        await movesCurosrInEditor(async () => {
+        await movesCursorInEditor(async () => {
             await editor.typeText(Key.chord(Key.SHIFT, '1'));
             await editor.typeText(Key.chord(Key.SHIFT, '0'));
             await editor.typeText('l');
         }, [0, 10], editor);
     });
 
+    after(async () => await editor.typeText('i'));
 });
 
 export default { run };

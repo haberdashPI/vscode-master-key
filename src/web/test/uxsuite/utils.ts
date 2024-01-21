@@ -16,9 +16,10 @@ export async function cleanupTempdir(){
 
 export function pause(ms: number){ return new Promise(res => setTimeout(res, ms)); }
 
-export async function movesCurosrInEditor(action: () => Promise<void>, by: [number, number], editor: TextEditor){
+export async function movesCursorInEditor(action: () => Promise<void>, by: [number, number], editor: TextEditor){
     let oldpos = await editor.getCoordinates();
     await action();
+    await pause(15);
     let newpos = await editor.getCoordinates();
     let ydiff = newpos[0] - oldpos[0];
     let xdiff = newpos[1] - oldpos[1];
