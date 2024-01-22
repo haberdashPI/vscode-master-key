@@ -125,6 +125,42 @@ labore elit occaecat cupidatat non POINT_B.`);
         }, [2, 34], editor);
     });
 
+    it('Can do a wrap-around search', async () => {
+        await editor.moveCursor(1, 1);
+        await editor.typeText(Key.ESCAPE);
+        await pause(250);
+
+        await movesCursorInEditor(async () => {
+            await editor.typeText('/');
+            await pause(50);
+            const input = await InputBox.create();
+
+            await input.setText('POINT_A');
+            await input.confirm();
+            await pause(100);
+
+            await editor.typeText('n');
+            await editor.typeText('n');
+        }, [0, 39], editor);
+
+        await editor.moveCursor(1, 1);
+        await pause(250);
+
+        await movesCursorInEditor(async () => {
+            await editor.typeText('w');
+            await editor.typeText('/');
+            await pause(50);
+            const input = await InputBox.create();
+
+            await input.setText('POINT_A');
+            await input.confirm();
+            await pause(100);
+
+            await editor.typeText('n');
+            await editor.typeText('n');
+        }, [0, 10], editor);
+   });
+
     // TODO: start working on testing out the most basic command
     // TODO: test out each argument
     // - wrapAround
