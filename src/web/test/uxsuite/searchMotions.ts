@@ -56,7 +56,19 @@ export const run = () => describe('Search motions', () => {
             key = "ctrl+/"
             path = "search"
             args.caseSensitive = true
-       `);
+
+            [[bind]]
+            name = "search (case sensitive)"
+            key = "w /"
+            path = "search"
+            args.wrapAround = true
+
+            [[bind]]
+            name = "to letter"
+            key = "t"
+            path = "search"
+            args.acceptAfter = 1
+      `);
 
        editor = await setupEditor(`foobar bum POINT_A Officia voluptate ex point_a commodo esse laborum velit
 ipsum velit excepteur sunt cillum nulla adipisicing cupidatat. Laborum officia do mollit do
@@ -161,10 +173,20 @@ labore elit occaecat cupidatat non POINT_B.`);
         }, [0, 10], editor);
    });
 
+    it.only('Can handle accept after', async () => {
+        await editor.moveCursor(1, 1);
+        await editor.typeText(Key.ESCAPE);
+        await pause(250);
+
+        await movesCursorInEditor(async () => {
+            await editor.typeText('t');
+            await pause(50);
+            await editor.typeText('p');
+        }, [0, 10], editor);
+   });
+
     // TODO: start working on testing out the most basic command
     // TODO: test out each argument
-    // - wrapAround
-    // - acceptAfter
     // - selectTillMatch
     // - highlightMatches
     // - offset
