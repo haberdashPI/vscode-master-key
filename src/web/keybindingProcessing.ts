@@ -361,6 +361,7 @@ function expandKeySequencesAndResolveDuplicates(items: BindingItem[], problems: 
             }else if(isSingleCommand(item.args.do, 'master-key.ignore')){
                 if(keySeq.length > 1){
                     problems.push("Expected master-key.ignore commands to be single sequence keys.");
+                }else{
                     addWithoutDuplicating(result, -1, item, problems);
                 }
             }else{
