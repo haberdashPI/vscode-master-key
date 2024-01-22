@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { searchMatches } from './searching';
+import { searchArgs, searchMatches } from './searching';
 import { parseBindings, BindingSpec, showParseError, parseBindingFile, bindingSpec } from './keybindingParsing';
 import { processBindings, IConfigKeyBinding, Bindings } from './keybindingProcessing';
 import { uniq, pick } from 'lodash';
@@ -35,7 +35,8 @@ const AUTOMATED_COMMENT_END = `
 `;
 
 function findText(doc: vscode.TextDocument, text: string) {
-    let matches = searchMatches(doc, new vscode.Position(0, 0), undefined, text, {});
+    let matches = searchMatches(doc, new vscode.Position(0, 0), undefined, text,
+                                searchArgs.parse({}));
     let firstMatchResult = matches.next();
     if (firstMatchResult.done) { return undefined; }
 

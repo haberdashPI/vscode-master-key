@@ -22,18 +22,15 @@ export const searchArgs = z.object({
 export type SearchArgs = z.infer<typeof searchArgs>;
 
 export function* searchMatches(doc: vscode.TextDocument, start: vscode.Position,
-    end: vscode.Position | undefined, target: string, args_: unknown) {
-    let parsedArgs = validateInput('master-key.search', args_, searchArgs);
-    if(!parsedArgs){ return; }
-    let args = parsedArgs!;
+    end: vscode.Position | undefined, target: string, args: SearchArgs) {
 
     let matchesFn: (line: string, offset: number | undefined) => Generator<[number, number]>;
     if (args.regex) {
-        let matcher = RegExp(target, "g" + (!args.caseSensitive ? "" : "i"));
+        let matcher = RegExp(target, "g" + (args.caseSensitive ? "" : "i"));
         matchesFn = (line, offset) => regexMatches(matcher, line, !args.backwards, offset);
     } else {
-        let matcher = !args.caseSensitive ? target : target.toLowerCase();
-        matchesFn = (line, offset) => stringMatches(matcher, !args.caseSensitive, line,
+        let matcher = args.caseSensitive ? target : target.toLowerCase();
+        matchesFn = (line, offset) => stringMatches(matcher, !!args.caseSensitive, line,
             !args.backwards, offset);
     }
 
@@ -94,13 +91,13 @@ function* regexMatches(matcher: RegExp, line: string, forward: boolean,
     }
 }
 
-function* stringMatches(matcher: string, matchCase: boolean, line: string, forward: boolean,
+function* stringMatches(matcher: string, caseSensitive: boolean, line: string, forward: boolean,
     offset: number | undefined): Generator<[number, number]>{
 
     let searchMe = offset === undefined ? line :
         (forward ? line.substring(offset) : line.substring(0, offset - 1));
     let fromOffset = offset === undefined ? 0 : (forward ? offset : 0);
-    if(!matchCase){ searchMe = searchMe.toLowerCase(); }
+    if(!caseSensitive){ searchMe = searchMe.toLowerCase(); }
     let from = searchMe.indexOf(matcher, 0);
     while(from >= 0){
         yield [from + fromOffset, matcher.length];
