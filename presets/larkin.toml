@@ -588,7 +588,72 @@ description = "previous seciont"
 args.unit = "section"
 computedArgs.value = "-(count || 1)"
 
-# TODO: add various iterations of notebook cell navigation
+[[path]]
+id = "edit.motion.cell"
+name = "Cell Motions"
+description = "Motions for operating on notebook cells"
+
+[[bind]]
+path = "edit.motion.cell"
+key = "' y"
+when = "editorLangId == 'markdown' || editorLangId == 'quarto'"
+command = "runCommands"
+args = ["terminal-polyglot.next-fence-select", "selection-utilities.revealActive"]
+
+[[bind]]
+path = "edit.motion.cell"
+key = "' y"
+when = "!(editorLangId == 'markdown' || editorLangId == 'quarto')"
+command = "runCommands"
+args = [ "jupyter.gotoNextCellInFile", "jupyter.selectCell" ]
+name = "cell ←"
+description = "previous jupyter notebook cell"
+
+[[bind]]
+path = "edit.motion.cell"
+key = "' shift+y"
+when = "editorLangId == 'markdown' || editorLangId == 'quarto'"
+command = "runCommands"
+args = ["terminal-polyglot.prev-fence-select", "selection-utilities.revealActive"]
+
+
+[[bind]]
+path = "edit.motion.cell"
+key = "' shift+y"
+when = "!(editorLangId == 'markdown' || editorLangId == 'quarto')"
+command = "runCommands"
+args = ["jupyter.gotoPrevCellInFile", "jupyter.selectCell"]
+name = "cell"
+description = "select a jyputer notebook cell"
+
+[[bind]]
+path = "edit.motion.cell"
+key = "/ y"
+when = "editorLangId == 'quarto'"
+command = "quarto.insertCodeCell"
+name = "insert cell"
+description = "insert a new cell in a notebook"
+
+[[bind]]
+path = "edit.motion.cell"
+key = "/ y"
+when = "editorLangId == 'quarto'"
+command = "jupyter.selectCell"
+
+[[bind]]
+path = "edit.motion.cell"
+key = "u y"
+when = "editorLangId == 'markdown' || editorLangId == 'quarto'"
+command = "runCommands"
+args = ["terminal-polyglot.select-fence", "selection-utilities.revealActive"]
+
+[[bind]]
+path = "edit.motion.cell"
+key = "u y"
+when = "!(editorLangId == 'markdown' || editorLangId == 'quarto')"
+command = "jupyter.selectCell"
+name = "create cell"
+description = "Create a new jupyter notebook cell"
 
 [[bind]]
 path = "edit.motion.obj"
