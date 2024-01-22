@@ -597,7 +597,8 @@ description = "Motions for operating on notebook cells"
 path = "edit.motion.cell"
 key = "' y"
 when = "editorLangId == 'markdown' || editorLangId == 'quarto'"
-command = "terminal-polyglot.next-fence-select"
+command = "runCommands"
+args = ["terminal-polyglot.next-fence-select", "selection-utilities.revealActive"]
 
 [[bind]]
 path = "edit.motion.cell"
@@ -612,7 +613,9 @@ description = "previous jupyter notebook cell"
 path = "edit.motion.cell"
 key = "' shift+y"
 when = "editorLangId == 'markdown' || editorLangId == 'quarto'"
-command = "terminal-polyglot.prev-fence-select"
+command = "runCommands"
+args = ["terminal-polyglot.prev-fence-select", "selection-utilities.revealActive"]
+
 
 [[bind]]
 path = "edit.motion.cell"
@@ -641,7 +644,8 @@ command = "jupyter.selectCell"
 path = "edit.motion.cell"
 key = "u y"
 when = "editorLangId == 'markdown' || editorLangId == 'quarto'"
-command = "terminal-polyglot.select-fence"
+command = "runCommands"
+args = ["terminal-polyglot.select-fence", "selection-utilities.revealActive"]
 
 [[bind]]
 path = "edit.motion.cell"
