@@ -303,7 +303,7 @@ function updatePrefixItemAndPrefix(item: BindingItem, key: string, prefix: strin
             kind: "prefix",
             resetTransient: false,
         },
-        when: [],
+        when: item.when,
         prefixes: [oldPrefix],
         mode: item.mode,
     };
@@ -358,6 +358,11 @@ function expandKeySequencesAndResolveDuplicates(items: BindingItem[], problems: 
                 let [prefixItem, _] = updatePrefixItemAndPrefix(item, suffixKey, prefix,
                     prefixCodes, false);
                 addWithoutDuplicating(result, i, merge(item, prefixItem), problems);
+            }else if(isSingleCommand(item.args.do, 'master-key.ignore')){
+                if(keySeq.length > 1){
+                    problems.push("Expected master-key.ignore commands to be single sequence keys.");
+                    addWithoutDuplicating(result, -1, item, problems);
+                }
             }else{
                 if(keySeq.length > 1){
                     addWithoutDuplicating(result, i, {...item, key: suffixKey, prefixes: [prefix]},
