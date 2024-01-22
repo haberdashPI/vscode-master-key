@@ -9,7 +9,6 @@ NEXT UP:
 unit tests: search movements
 unit tests: capture keys
   works even even when you run some other command
-unit tests: bindings with out a mode apply in all modes
 unit tests: macro replay
 unit tests: command argument validation
 unit tests: keybinding insertion (with weird file states)
@@ -74,6 +73,10 @@ maybe we should implement an edit and a navigation history since the built-in co
 
 wishlist:
 
+- maybe there should be a default set of `ignore` bindings for all
+  modes but insert and capture; we would need some way to remove these
+  bindings if desired
+
 - change capture mode so it accepts all keys it can (and you can define what sequence
   cancels), rather than newlines being always marked as cancel
 
@@ -90,10 +93,6 @@ wishlist:
 - quick win: should be able to specify that a key works in all modes
 
 - status bar updates are called a lot, maybe reduce this
-
-- layred keybindings: you can specify a
-  - user binding file
-  - workspace binding file
 
 - users should be able to populate their own bindings file with one of the existing
   presets as to serve as a starting point
