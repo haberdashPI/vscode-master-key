@@ -84,6 +84,10 @@ wishlist:
   master-key.do (we can just call ignore directly)
   -NOTE: the same might be said for `prefix` command
 
+- quick win:
+  - let modes change the cursor
+  - let modes change line numbering
+
 - status bar updates are called a lot, maybe reduce this
 
 - layred keybindings: you can specify a
@@ -96,9 +100,6 @@ wishlist:
 
 - users should be able to populate their own bindings file with one of the existing
   presets as to serve as a starting point
-
-- ideally we presever the order of bindings, and place prefixes right before
-  the first binding that uses them
 
 - validate the arguments to master-key commands so that these come up during import
   of a preset rather than when you run a command
@@ -123,9 +124,6 @@ wishlist:
   capture input outside of the text editor
 
 quick win: store clipboard to a register
-let modes change the cursor
-let modes change line numbering
-make config import work for both global and workspace settings
 
 - implement conctext selection-utilities.firstSelectionOrWord (which accounts
   for changes in the primary selection)
