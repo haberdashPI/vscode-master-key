@@ -4,20 +4,7 @@ look at unit test list below
 
 NOTE: we're using a revised version of vscod-extension-tester (https://github.com/redhat-developer/vscode-extension-tester/pull/1084) after fixing a bug on MacOS ARM
 
-
-BUG FOUND: recordEdits not being properly dealt with
-BUG: we need to put all automated prefix near the top of the definitions
-BUG: non-automated prefixes need to be marked as such (they aren't)
-
 NEXT UP:
-
-unit tests: all basic commands run
-  + do
-  + repeat
-  + updateCount
-  - prefix (with/without flag)
-  - set (state is setable and readable)
-  - switch modes (verify keys actually change)
 
 unit tests: prefixes aren't duplicated even when there are
   when clauses that split behavior for a keybinding
@@ -57,7 +44,7 @@ thoughts: things I must have to release:
 - modernized selection utilities
   - good documentation
   - modern build setup
-- improved mode UX
++ improved mode UX
 - macro recoridng UX
 - anything else that has to be here? (check below wishlist and issues under the project)
 

@@ -2,7 +2,7 @@ import hash from 'object-hash';
 import { parseWhen, bindingItem, DoArgs, DefinedCommand, BindingItem, BindingSpec,
          rawBindingItem, RawBindingItem } from "./keybindingParsing";
 import z from 'zod';
-import { pick, isEqual, omit, mergeWith, cloneDeep, flatMap, merge } from 'lodash';
+import { sortBy, pick, isEqual, omit, mergeWith, cloneDeep, flatMap, merge } from 'lodash';
 import { reifyStrings, EvalContext } from './expressions';
 import { validateInput } from './utils';
 
@@ -279,10 +279,10 @@ function movePrefixesToWhenClause(item: BindingItem, prefixCodes: PrefixCodes){
     }
 }
 
-type BindingMap = { [key: string]: BindingItem };
+type BindingMap = { [key: string]: {index: number, item: BindingItem} };
 
 function updatePrefixItemAndPrefix(item: BindingItem, key: string, prefix: string,
-                    prefixCodes: PrefixCodes): [BindingItem, string] {
+                    prefixCodes: PrefixCodes, automated: boolean = true): [BindingItem, string] {
     let oldPrefix = prefix;
     if (prefix.length > 0) { prefix += " "; }
     prefix += key;
@@ -295,7 +295,7 @@ function updatePrefixItemAndPrefix(item: BindingItem, key: string, prefix: strin
                 command: "master-key.prefix",
                 args: {
                     code: prefixCodes.codeFor(prefix),
-                    automated: true
+                    automated
                 },
             }],
             path: item.args.path,
@@ -325,7 +325,8 @@ function expandKeySequencesAndResolveDuplicates(items: BindingItem[], problems: 
 
     let result: BindingMap = {};
     let prefixCodes = new PrefixCodes();
-    for(let item of items){
+    for(let i=0; i<items.length; i++){
+        let item = items[i];
         if(!Array.isArray(item.key)){
             // we should always land here, because prior steps have expanded key sequences
             // into individual keys
@@ -345,7 +346,7 @@ function expandKeySequencesAndResolveDuplicates(items: BindingItem[], problems: 
                 for(let key of keySeq.slice(0, -1)){
                     [prefixItem, prefix] = updatePrefixItemAndPrefix(item, key, prefix,
                         prefixCodes);
-                    addWithoutDuplicating(result, prefixItem, problems);
+                    addWithoutDuplicating(result, 0, prefixItem, problems);
                 }
             }
 
@@ -355,21 +356,22 @@ function expandKeySequencesAndResolveDuplicates(items: BindingItem[], problems: 
             if(isSingleCommand(item.args.do, 'master-key.prefix')){
                 requireConcretePrefixes(item, problems);
                 let [prefixItem, _] = updatePrefixItemAndPrefix(item, suffixKey, prefix,
-                    prefixCodes);
-                addWithoutDuplicating(result, merge(item, prefixItem), problems);
+                    prefixCodes, false);
+                addWithoutDuplicating(result, i, merge(item, prefixItem), problems);
             }else{
                 if(keySeq.length > 1){
-                    addWithoutDuplicating(result, {...item, key: suffixKey, prefixes: [prefix]},
+                    addWithoutDuplicating(result, i, {...item, key: suffixKey, prefixes: [prefix]},
                         problems);
                 }else{
-                    addWithoutDuplicating(result, item, problems);
+                    addWithoutDuplicating(result, i, item, problems);
                 }
             }
         }else{
             throw Error("Unexpected operation");
         }
     }
-    return [Object.values(result), prefixCodes];
+    let sortedResult = sortBy(Object.values(result), i => i.index);
+    return [sortedResult.map(i => i.item), prefixCodes];
 }
 
 
@@ -378,7 +380,9 @@ export function isSingleCommand(x: DoArgs, cmd: string){
     return x[0].command === cmd;
 }
 
-function addWithoutDuplicating(map: BindingMap, newItem: BindingItem, problems: string[]): BindingMap {
+function addWithoutDuplicating(map: BindingMap, index: number, newItem: BindingItem,
+    problems: string[]): BindingMap {
+
     let key = hash({
         key: newItem.key,
         mode: newItem.mode,
@@ -386,7 +390,7 @@ function addWithoutDuplicating(map: BindingMap, newItem: BindingItem, problems: 
         prefixes: newItem.prefixes
     });
 
-    let existingItem = map[key];
+    let existingItem = map[key]?.item;
     if(existingItem){
         if(isEqual(newItem, existingItem)){
             // use the existing newItem
@@ -395,7 +399,7 @@ function addWithoutDuplicating(map: BindingMap, newItem: BindingItem, problems: 
             // use the existing newItem
             return map;
         }else if(isSingleCommand(existingItem.args.do, "master-key.ignore")){
-            map[key] = newItem;
+            map[key] = {item: newItem, index};
             return map;
         }else if(isSingleCommand(newItem.args.do, "master-key.prefix") &&
                  isSingleCommand(existingItem.args.do, "master-key.prefix")){
@@ -403,7 +407,7 @@ function addWithoutDuplicating(map: BindingMap, newItem: BindingItem, problems: 
                 // use the existing newItem
                 return map;
             }else if(existingItem.args.do[0].args?.automated){
-                map[key] = newItem;
+                map[key] = {item: newItem, index};
                 return map;
             }
         }
@@ -425,7 +429,7 @@ function addWithoutDuplicating(map: BindingMap, newItem: BindingItem, problems: 
         }
         problems.push(message);
     }else{
-        map[key] = newItem;
+        map[key] = {item: newItem, index};
     }
     return map;
 }
