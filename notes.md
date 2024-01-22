@@ -6,8 +6,11 @@ NOTE: we're using a revised version of vscod-extension-tester (https://github.co
 
 NEXT UP:
 
-bugfix/cleanup: all non-modifier keys (k or shift+k) get a condition added to them
-so they don't mess up input boxes
+idea: all non-modifier keys (k or shift+k) get a condition added to them
+so they don't mess up input boxes ???
+
+bugfix / unit test fix: we actually do need prefixes to include when clause (we just need
+the right ordering change the unit test!!)
 
 unit tests: add tests for ignore keys (ensure they come before prefix keys; alternatively
 we may need to think of something less hacky to handle automated prefix keys)

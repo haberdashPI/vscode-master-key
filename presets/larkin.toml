@@ -591,8 +591,7 @@ computedArgs.value = "-(count || 1)"
 [[bind]]
 key = "' y"
 when = "editorLangId == 'markdown' || editorLangId == 'quarto'"
-command = "runCommands"
-args = "terminal-polyglot.next-fence-select"
+command = "terminal-polyglot.next-fence-select"
 
 [[bind]]
 key = "' y"
@@ -605,8 +604,7 @@ description = "previous jupyter notebook cell"
 [[bind]]
 key = "' shift+y"
 when = "editorLangId == 'markdown' || editorLangId == 'quarto'"
-command = "runCommands"
-args = "terminal-polyglot.prev-fence-select"
+command = "terminal-polyglot.prev-fence-select"
 
 [[bind]]
 key = "' shift+y"
@@ -615,6 +613,37 @@ command = "runCommands"
 args = ["jupyter.gotoPrevCellInFile", "jupyter.selectCell"]
 name = "cell"
 description = "select a jyputer notebook cell"
+
+[[bind]]
+key = "' shift+y"
+when = "!(editorLangId == 'markdown' || editorLangId == 'quarto')"
+command = "runCommands"
+args = ["jupyter.gotoPrevCellInFile", "jupyter.selectCell"]
+name = "cell"
+description = "select a jyputer notebook cell"
+
+[[bind]]
+key = "u y"
+when = "editorLangId == 'markdown' || __language == 'quarto'"
+command = "terminal-polyglot.select-fence"
+
+[[bind]]
+key = "u y"
+command = "jupyter.selectCell"
+name = "create cell"
+description = "Create a new jupyter notebook cell"
+
+[[bind]]
+key = ", y"
+when = "editorLangId == 'quarto'"
+command = "quarto.insertCodeCell"
+name = "insert cell"
+description = "insert a new cell in a notebook"
+
+[[bind]]
+key = ", y"
+when = "editorLangId != 'quarto'"
+command = "jupyter.selectCell"
 
 [[bind]]
 key = "u y"
