@@ -98,7 +98,13 @@ export const run = () => describe('Search motions', () => {
             key = "p /"
             path = "search"
             args.text = "point_"
-    `);
+
+            [[bind]]
+            name = "regex search"
+            key = "r /"
+            path = "search"
+            args.regex = true
+   `);
 
        editor = await setupEditor(`foobar bum POINT_A Officia voluptate ex point_a commodo esse laborum velit
 ipsum velit excepteur sunt cillum nulla adipisicing cupidatat. Laborum officia do mollit do
@@ -236,7 +242,7 @@ labore elit occaecat cupidatat non POINT_B.`);
         expect(text).toEqual("foobar bum ");
     });
 
-    it.only('Handles each offset', async function() {
+    it('Handles each offset', async function() {
         this.timeout(8000);
 
         await editor.moveCursor(1, 1);
@@ -320,9 +326,36 @@ labore elit occaecat cupidatat non POINT_B.`);
         }, [0, 10], editor);
     });
 
+    it.only('Handles `regex` option.', async () => {
+        await editor.moveCursor(1, 1);
+        await editor.typeText(Key.ESCAPE);
+        await pause(250);
+
+        await movesCursorInEditor(async () => {
+            await editor.typeText('r');
+            await editor.typeText('/');
+            await pause(50);
+            const input = await InputBox.create();
+
+            await input.setText('POINT_(A|B)');
+            await input.confirm();
+
+            await pause(50);
+        }, [0, 10], editor);
+
+        await movesCursorInEditor(async () => {
+            await editor.typeText('n');
+            await pause(50);
+        }, [0, 29], editor);
+
+        await movesCursorInEditor(async () => {
+            await editor.typeText('n');
+            await pause(50);
+        }, [2, -5], editor);
+    });
+
     // TODO: start working on testing out the most basic command
     // TODO: test out each argument
-    // - text
     // - regex
     // - register
     // - doAfter
