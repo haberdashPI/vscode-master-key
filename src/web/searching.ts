@@ -18,7 +18,7 @@ export const searchArgs = z.object({
     regex: z.boolean().optional(),
     register: z.string().default("default"),
     doAfter: doArgs.optional(),
-});
+}).strict();
 export type SearchArgs = z.infer<typeof searchArgs>;
 
 export function* searchMatches(doc: vscode.TextDocument, start: vscode.Position,

@@ -74,7 +74,25 @@ export const run = () => describe('Search motions', () => {
             key = "s /"
             path = "search"
             args.selectTillMatch = true
-     `);
+
+            [[bind]]
+            name = "inclusive search"
+            key = "i /"
+            path = "search"
+            args.offset = "inclusive"
+
+            [[bind]]
+            name = "inclusive search"
+            key = "a /"
+            path = "search"
+            args.offset = "start"
+
+            [[bind]]
+            name = "inclusive search"
+            key = "b /"
+            path = "search"
+            args.offset = "end"
+    `);
 
        editor = await setupEditor(`foobar bum POINT_A Officia voluptate ex point_a commodo esse laborum velit
 ipsum velit excepteur sunt cillum nulla adipisicing cupidatat. Laborum officia do mollit do
@@ -191,7 +209,7 @@ labore elit occaecat cupidatat non POINT_B.`);
         }, [0, 10], editor);
    });
 
-    it.only('Selects till match', async () => {
+    it('Selects till match', async () => {
         await editor.moveCursor(1, 1);
         await editor.typeText(Key.ESCAPE);
         await pause(250);
@@ -212,9 +230,80 @@ labore elit occaecat cupidatat non POINT_B.`);
         expect(text).toEqual("foobar bum ");
     });
 
+    it.only('Handles each offset', async function() {
+        this.timeout(8000);
+
+        await editor.moveCursor(1, 1);
+        await editor.typeText(Key.ESCAPE);
+        await pause(250);
+
+        await movesCursorInEditor(async () => {
+            await editor.typeText('i');
+            await editor.typeText('/');
+            await pause(50);
+            const input = await InputBox.create();
+
+            await input.setText('POINT_A');
+            await input.confirm();
+            await pause(100);
+        }, [0, 17], editor);
+
+        await movesCursorInEditor(async () => {
+            await pause(50);
+            await editor.typeText('n');
+            await pause(50);
+            await editor.typeText('N');
+            await pause(100);
+        }, [0, -6], editor);
+
+
+        await editor.moveCursor(1, 1);
+        await pause(250);
+
+        await movesCursorInEditor(async () => {
+            await editor.typeText('a');
+            await editor.typeText('/');
+            await pause(50);
+            const input = await InputBox.create();
+
+            await input.setText('POINT_A');
+            await input.confirm();
+            await pause(100);
+        }, [0, 11], editor);
+
+        await movesCursorInEditor(async () => {
+            await pause(50);
+            await editor.typeText('n');
+            await pause(50);
+            await editor.typeText('N');
+            await pause(100);
+        }, [0, 0], editor);
+
+        await editor.moveCursor(1, 1);
+        await pause(250);
+
+        await movesCursorInEditor(async () => {
+            await editor.typeText('b');
+            await editor.typeText('/');
+            await pause(50);
+            const input = await InputBox.create();
+
+            await input.setText('POINT_A');
+            await input.confirm();
+            await pause(100);
+        }, [0, 18], editor);
+
+        await movesCursorInEditor(async () => {
+            await pause(50);
+            await editor.typeText('n');
+            await pause(50);
+            await editor.typeText('N');
+            await pause(100);
+        }, [0, 0], editor);
+   });
+
     // TODO: start working on testing out the most basic command
     // TODO: test out each argument
-    // - offset
     // - text
     // - regex
     // - register
