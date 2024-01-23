@@ -637,7 +637,7 @@ description = "insert a new cell in a notebook"
 [[bind]]
 path = "edit.motion.cell"
 key = "/ y"
-when = "editorLangId == 'quarto'"
+when = "editorLangId != 'quarto'"
 command = "jupyter.selectCell"
 
 [[bind]]
