@@ -92,6 +92,12 @@ export const run = () => describe('Search motions', () => {
             key = "b /"
             path = "search"
             args.offset = "end"
+
+            [[bind]]
+            name = "preset search"
+            key = "p /"
+            path = "search"
+            args.text = "point_"
     `);
 
        editor = await setupEditor(`foobar bum POINT_A Officia voluptate ex point_a commodo esse laborum velit
@@ -301,6 +307,18 @@ labore elit occaecat cupidatat non POINT_B.`);
             await pause(100);
         }, [0, 0], editor);
    });
+
+    it('Accepts `text` argument.', async () => {
+        await editor.moveCursor(1, 1);
+        await editor.typeText(Key.ESCAPE);
+        await pause(250);
+
+        await movesCursorInEditor(async () => {
+            await editor.typeText('p');
+            await editor.typeText('/');
+            await pause(50);
+        }, [0, 10], editor);
+    });
 
     // TODO: start working on testing out the most basic command
     // TODO: test out each argument
