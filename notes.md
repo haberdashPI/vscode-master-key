@@ -10,7 +10,7 @@ unit tests: search movements
 unit tests: capture keys
   works even even when you run some other command
 unit tests: macro replay
-unit tests: command argument validation
+unit tests: command argument validation (maybe do this within imported file)
 unit tests: keybinding insertion (with weird file states)
 unit tests: UX settings change status bar
 unit tests: edges cases for command recording
@@ -72,6 +72,9 @@ maybe we should implement an edit and a navigation history since the built-in co
 - add symmetric insert setup and continue dogfooding with the new repeat actions
 
 wishlist:
+
+- maybe the parse errors can be added to the problems window? (and just have one error
+  message for all problems)
 
 - maybe there should be a default set of `ignore` bindings for all
   modes but insert and capture; we would need some way to remove these
