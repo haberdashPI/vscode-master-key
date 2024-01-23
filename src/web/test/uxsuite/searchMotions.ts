@@ -326,7 +326,7 @@ labore elit occaecat cupidatat non POINT_B.`);
         }, [0, 10], editor);
     });
 
-    it.only('Handles `regex` option.', async () => {
+    it('Handles `regex` option.', async () => {
         await editor.moveCursor(1, 1);
         await editor.typeText(Key.ESCAPE);
         await pause(250);
@@ -354,9 +354,11 @@ labore elit occaecat cupidatat non POINT_B.`);
         }, [2, -5], editor);
     });
 
-    // TODO: start working on testing out the most basic command
+    it.only('Handles multiple registers', async () => {
+
+    });
+
     // TODO: test out each argument
-    // - regex
     // - register
     // - doAfter
     // TODO: test correctness of cancelling out a search
