@@ -104,6 +104,12 @@ export const run = () => describe('Search motions', () => {
             key = "r /"
             path = "search"
             args.regex = true
+
+            [[bind]]
+            name = "register search"
+            key = "shift+r /"
+            path = "search"
+            args.register = "other"
    `);
 
        editor = await setupEditor(`foobar bum POINT_A Officia voluptate ex point_a commodo esse laborum velit
@@ -354,8 +360,30 @@ labore elit occaecat cupidatat non POINT_B.`);
         }, [2, -5], editor);
     });
 
-    it.only('Handles multiple registers', async () => {
+    it('Handles multiple registers', async () => {
+        await editor.moveCursor(1, 1);
+        await editor.typeText(Key.ESCAPE);
+        await pause(250);
 
+        await movesCursorInEditor(async () => {
+            await editor.typeText('/');
+            await pause(50);
+            let input = await InputBox.create();
+
+            await input.setText('point_a');
+            await input.confirm();
+
+            await editor.typeText(Key.chord(Key.SHIFT, 'r'));
+            await editor.typeText('/');
+            await pause(50);
+            input = await InputBox.create();
+
+            await input.setText('point_b');
+            await input.confirm();
+
+            await editor.typeText(Key.chord(Key.SHIFT, 'n'));
+            await pause(100);
+        }, [0, 47], editor);
     });
 
     // TODO: test out each argument
