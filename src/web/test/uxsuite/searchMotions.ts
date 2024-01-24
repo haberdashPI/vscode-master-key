@@ -58,6 +58,11 @@ export const run = () => describe('Search motions', () => {
             args.caseSensitive = true
 
             [[bind]]
+            name = "delete last search char"
+            key = "backspace"
+            command = "deleteLastSearchChar"
+
+            [[bind]]
             name = "search (case sensitive)"
             key = "w /"
             path = "search"
@@ -68,6 +73,12 @@ export const run = () => describe('Search motions', () => {
             key = "t"
             path = "search"
             args.acceptAfter = 1
+
+            [[bind]]
+            name = "to letter"
+            key = "shift+t"
+            path = "search"
+            args.acceptAfter = 2
 
             [[bind]]
             name = "select search"
@@ -223,7 +234,7 @@ labore elit occaecat cupidatat non POINT_B.`);
         }, [0, 10], editor);
    });
 
-    it.only('Can handle accept after', async () => {
+    it('Can handle accept after', async () => {
         await editor.moveCursor(1, 1);
         await editor.typeText(Key.ESCAPE);
         await pause(250);
@@ -245,7 +256,27 @@ labore elit occaecat cupidatat non POINT_B.`);
             await pause(50);
             await editor.typeText('p');
         }, [0, 20], editor);
-   });
+    });
+
+    it('Can handle delete char for acceptAfter', async () => {
+        await editor.moveCursor(1, 1);
+        await editor.typeText(Key.ESCAPE);
+        await pause(250);
+
+        await movesCursorInEditor(async () => {
+            await editor.typeText(Key.chord(Key.SHIFT, 't'));
+            await pause(50);
+            await editor.typeText('po');
+        }, [0, 10], editor);
+
+        await movesCursorInEditor(async () => {
+            await editor.typeText('t');
+            await pause(50);
+            await editor.typeText('p');
+            await editor.typeText(Key.BACK_SPACE);
+            await editor.typeText('po');
+        }, [0, 20], editor);
+    });
 
     it('Selects till match', async () => {
         await editor.moveCursor(1, 1);
@@ -423,8 +454,6 @@ labore elit occaecat cupidatat non POINT_B.`);
         let text = await editor.getSelectedText();
         expect(text).toEqual(' POINT_A');
     });
-
-    // TODO: test out 'delete last char' command (or remove this command)
 });
 
 export default { run };
