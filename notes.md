@@ -6,13 +6,9 @@ NOTE: we're using a revised version of vscod-extension-tester (https://github.co
 
 NEXT UP:
 
-unit tests: search movements
 unit tests: capture keys
   works even even when you run some other command
 unit tests: macro replay
-unit tests: command argument validation (maybe do this within imported file)
-unit tests: keybinding insertion (with weird file states)
-unit tests: UX settings change status bar
 unit tests: edges cases for command recording
   - I think it may currently be possible to edit the wrong command
     if a second command is executed in the process of awaiting
@@ -67,9 +63,7 @@ args.value = "{i}"
 maybe we should implement an edit and a navigation history since the built-in commands aren't particularly satisfying
 
 - require parsing to validate modes to be all negations or all positive mode specifications
-- move modalkeys.selectbetween to selection-utilities.selectBetween
-- add various selectbetween commands
-- add symmetric insert setup and continue dogfooding with the new repeat actions
+- add more to symmetric insert setup
 
 wishlist:
 
