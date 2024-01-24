@@ -110,6 +110,14 @@ export const run = () => describe('Search motions', () => {
             key = "shift+r /"
             path = "search"
             args.register = "other"
+
+            [[bind]]
+            name = "select word search"
+            key = "e /"
+            path = "search"
+
+            [[bind.args.doAfter]]
+            command = "cursorWordEndRightSelect"
    `);
 
        editor = await setupEditor(`foobar bum POINT_A Officia voluptate ex point_a commodo esse laborum velit
@@ -146,7 +154,7 @@ labore elit occaecat cupidatat non POINT_B.`);
             await input.setText('POINT_A');
             await input.confirm();
             await pause(100);
-        }, [0, 18], editor);
+        }, [-1, 47], editor);
     });
 
     it('Handle case sensitive search', async () => {
@@ -384,6 +392,24 @@ labore elit occaecat cupidatat non POINT_B.`);
             await editor.typeText(Key.chord(Key.SHIFT, 'n'));
             await pause(100);
         }, [0, 47], editor);
+    });
+
+    it.only('Handles post-search commands', async () => {
+        await editor.moveCursor(1, 1);
+        await editor.typeText(Key.ESCAPE);
+        await pause(250);
+
+        await movesCursorInEditor(async () => {
+            await editor.typeText('e');
+            await editor.typeText('/');
+            await pause(50);
+            let input = await InputBox.create();
+            await input.setText('point_a');
+            await input.confirm();
+        }, [0, 18], editor);
+        await pause(50);
+        let text = await editor.getSelectedText();
+        expect(text).toEqual(' POINT_A');
     });
 
     // TODO: test out each argument
