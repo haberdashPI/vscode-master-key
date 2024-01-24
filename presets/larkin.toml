@@ -224,7 +224,7 @@ args.select = true
 [[bind]]
 path = "edit.motion.prim"
 key = "shift+g"
-name = "exapnd"
+name = "exapand"
 description = "expand selections to full lines"
 command = "expandLineSelection"
 
