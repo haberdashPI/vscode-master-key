@@ -17,6 +17,7 @@ export const searchArgs = z.object({
     text: z.string().min(1).optional(),
     regex: z.boolean().optional(),
     register: z.string().default("default"),
+    skip: z.number().optional().default(0),
     doAfter: doArgs.optional(),
 }).strict();
 export type SearchArgs = z.infer<typeof searchArgs>;
@@ -204,6 +205,10 @@ async function acceptSearch(editor: vscode.TextEditor, edit: vscode.TextEditorEd
     state.searchFrom = editor.selections;
     await setKeyContext({name: 'mode', value: state.oldMode, transient: false});
 
+    let skip = (state.args.skip || 0);
+    if(skip > 0){
+        await nextMatch(editor, edit, {register: state.args.register, repeat: state.args.skip});
+    }
     if(state.args.doAfter){
         await runCommands({do: state.args.doAfter});
     }

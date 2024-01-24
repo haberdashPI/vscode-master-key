@@ -783,6 +783,7 @@ name = "find char pair"
 description = "To next character pair"
 args.acceptAfter = 2
 args.offset = "start"
+computedArgs.skip = "count-1"
 mode = "normal"
 
 [[bind]]
@@ -792,6 +793,7 @@ name = "char pair back"
 description = "To previous character pair"
 args.acceptAfter = 2
 args.offset = "start"
+computedArgs.skip = "count-1"
 args.backwards = true
 mode = ["normal", "selectedit"]
 

@@ -127,6 +127,12 @@ export const run = () => describe('Search motions', () => {
             key = "e /"
             path = "search"
 
+            [[bind]]
+            name = "skip search"
+            key = "shift+2 /"
+            path = "search"
+            args.skip = 1
+
             [[bind.args.doAfter]]
             command = "cursorWordEndRightSelect"
    `);
@@ -167,6 +173,24 @@ labore elit occaecat cupidatat non POINT_B.`);
             await pause(100);
         }, [-1, 47], editor);
     });
+
+    it('Handles `skip` argument', async () => {
+        await editor.moveCursor(1, 1);
+        await editor.typeText(Key.ESCAPE);
+        await pause(250);
+
+        await movesCursorInEditor(async () => {
+            await editor.typeText(Key.chord(Key.SHIFT, '2'));
+            await editor.typeText('/');
+            await pause(50);
+            const input = await InputBox.create();
+
+            await input.setText('POINT_A');
+            await input.confirm();
+            await pause(100);
+        }, [0, 47], editor);
+    });
+
 
     it('Handle case sensitive search', async () => {
         await editor.moveCursor(1, 1);
