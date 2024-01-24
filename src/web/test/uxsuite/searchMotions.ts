@@ -223,7 +223,7 @@ labore elit occaecat cupidatat non POINT_B.`);
         }, [0, 10], editor);
    });
 
-    it('Can handle accept after', async () => {
+    it.only('Can handle accept after', async () => {
         await editor.moveCursor(1, 1);
         await editor.typeText(Key.ESCAPE);
         await pause(250);
@@ -233,6 +233,18 @@ labore elit occaecat cupidatat non POINT_B.`);
             await pause(50);
             await editor.typeText('p');
         }, [0, 10], editor);
+
+        await movesCursorInEditor(async () => {
+            await editor.typeText('t');
+            await pause(50);
+            await editor.typeText(Key.ESCAPE);
+        }, [0, 0], editor);
+
+        await movesCursorInEditor(async () => {
+            await editor.typeText('t');
+            await pause(50);
+            await editor.typeText('p');
+        }, [0, 20], editor);
    });
 
     it('Selects till match', async () => {
@@ -394,7 +406,7 @@ labore elit occaecat cupidatat non POINT_B.`);
         }, [0, 47], editor);
     });
 
-    it.only('Handles post-search commands', async () => {
+    it('Handles post-search commands', async () => {
         await editor.moveCursor(1, 1);
         await editor.typeText(Key.ESCAPE);
         await pause(250);
@@ -412,13 +424,7 @@ labore elit occaecat cupidatat non POINT_B.`);
         expect(text).toEqual(' POINT_A');
     });
 
-    // TODO: test out each argument
-    // - register
-    // - doAfter
-    // TODO: test correctness of cancelling out a search
-    // TODO: test correctness of failing to find search in text
-    // TODO: test out 'delete last char'
-    // TODO: test out next and previous match
+    // TODO: test out 'delete last char' command (or remove this command)
 });
 
 export default { run };
