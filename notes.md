@@ -14,6 +14,15 @@ the right ordering change the unit test!!)
 
 unit tests: add tests for ignore keys (ensure they come before prefix keys; alternatively
 we may need to think of something less hacky to handle automated prefix keys)
+what's hacky about what we're doing with the current solution? we're injecting
+automated bindings at some arbitrary index, and altering the indices of
+bindings defined by the user. ideally there is some clear, user-controllable ordering
+for all keybindings.
+
+what we need is a guarantee that each automated prefix occurs before any user specified
+prefix of the same sequence (though they differ in when clause); I guess we can place these
+automated keys *exactly* before the first user defined one
+
 unit tests: search movements
 unit tests: capture keys
   works even even when you run some other command
