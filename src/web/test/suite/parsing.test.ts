@@ -338,6 +338,21 @@ suite('Keybinding Test Suite', () => {
         assert(isEqual(spec.map(x => x.key).sort(), ["a", "b", "c"]));
     });
 
+    test('Automated prefixes are properly ordered', () => {
+        let spec = specForBindings(`
+        [header]
+        version = "1.0"
+
+        [[bind]]
+        name = "1"
+        key = "a b c"
+        command = "foo"
+        `);
+        assert.equal(spec.length, 3);
+        assert.equal(spec.filter(x => x.args.do[0].command === "foo").length, 1);
+        assert(isEqual(spec.map(x => x.key).sort(), ["a", "b", "c"]));
+    });
+
     test('Keybindings properly resolve `<all-pefixes>` cases', () => {
         let spec = specForBindings(`
         [header]

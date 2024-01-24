@@ -71,7 +71,7 @@ field e.g. `extend` (or `concat`?) for the fancier situation
 
 ```toml
 [[bind]]
-for.i = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0]
+foreach.i = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0]
 key = "shift+{i}"
 name = "count {i}"
 command = "master-key.updateCount"

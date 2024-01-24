@@ -325,6 +325,7 @@ function expandKeySequencesAndResolveDuplicates(items: BindingItem[], problems: 
 
     let result: BindingMap = {};
     let prefixCodes = new PrefixCodes();
+    let prefixIndex: Record<string, number> = {};
     for(let i=0; i<items.length; i++){
         let item = items[i];
         if(!Array.isArray(item.key)){
@@ -346,7 +347,17 @@ function expandKeySequencesAndResolveDuplicates(items: BindingItem[], problems: 
                 for(let key of keySeq.slice(0, -1)){
                     [prefixItem, prefix] = updatePrefixItemAndPrefix(item, key, prefix,
                         prefixCodes);
-                    addWithoutDuplicating(result, 0, prefixItem, problems);
+                    // when automated prefixes occur after their manual definition (see
+                    // below), they must be placed *before* that manual definition to get
+                    // sensible behavior (in other words, any custom behavior the user
+                    // specified prefix uses should not be overwritten by the automated
+                    // prefix)
+                    let oldIndex = prefixIndex[prefix];
+                    if(oldIndex){
+                        addWithoutDuplicating(result, oldIndex - 1, prefixItem, problems);
+                    }else{
+                        addWithoutDuplicating(result, i, prefixItem, problems);
+                    }
                 }
             }
 
@@ -355,14 +366,16 @@ function expandKeySequencesAndResolveDuplicates(items: BindingItem[], problems: 
             // defined keybinding that calls `master-key.prefix
             if(isSingleCommand(item.args.do, 'master-key.prefix')){
                 requireConcretePrefixes(item, problems);
-                let [prefixItem, _] = updatePrefixItemAndPrefix(item, suffixKey, prefix,
-                    prefixCodes, false);
+                let [prefixItem, itemPrefix] = updatePrefixItemAndPrefix(item, suffixKey,
+                    prefix, prefixCodes, false);
+                // track the index of this user defined prefix command
+                prefixIndex[itemPrefix] = i;
                 addWithoutDuplicating(result, i, merge(item, prefixItem), problems);
             }else if(isSingleCommand(item.args.do, 'master-key.ignore')){
                 if(keySeq.length > 1){
                     problems.push("Expected master-key.ignore commands to be single sequence keys.");
                 }else{
-                    addWithoutDuplicating(result, -1, item, problems);
+                    addWithoutDuplicating(result, i, item, problems);
                 }
             }else{
                 if(keySeq.length > 1){
