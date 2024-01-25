@@ -6,14 +6,6 @@ NOTE: we're using a revised version of vscod-extension-tester (https://github.co
 
 NEXT UP:
 
-idea: all non-modifier keys (k or shift+k) get a condition added to them
-so they don't mess up input boxes ???
-
-bugfix / unit test fix: we actually do need prefixes to include when clause (we just need
-the right ordering change the unit test!!)
-
-unit tests: add tests for ignore keys (ensure they come before prefix keys; alternatively
-we may need to think of something less hacky to handle automated prefix keys)
 unit tests: search movements
 unit tests: capture keys
   works even even when you run some other command
@@ -62,7 +54,7 @@ field e.g. `extend` (or `concat`?) for the fancier situation
 
 ```toml
 [[bind]]
-for.i = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0]
+foreach.i = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0]
 key = "shift+{i}"
 name = "count {i}"
 command = "master-key.updateCount"
@@ -93,16 +85,13 @@ wishlist:
 - quick win:
   - let modes change the cursor
   - let modes change line numbering
+  - allow modes to specify if they ignore keys?? (instead of manually adding these)
 
 - status bar updates are called a lot, maybe reduce this
 
 - layred keybindings: you can specify a
   - user binding file
   - workspace binding file
-
-- quick win: should be able to specify that a key works in all modes
-
-- status bar updates are called a lot, maybe reduce this
 
 - users should be able to populate their own bindings file with one of the existing
   presets as to serve as a starting point
@@ -128,6 +117,8 @@ wishlist:
 
 - binding validation checks that there aren't non-modifier bindings that
   capture input outside of the text editor
+  OR
+  all non-modifier keys (k or shift+k) get a condition added to them so they don't mess up input boxes ???
 
 quick win: store clipboard to a register
 
