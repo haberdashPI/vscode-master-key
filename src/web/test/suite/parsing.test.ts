@@ -320,7 +320,7 @@ suite('Keybinding Test Suite', () => {
         `);
 
         let prefixes = bindings.filter(x => x.args.do[0].command === 'master-key.prefix');
-        assert.equal(prefixes.length, 1);
+        assert.equal(prefixes.length, 2);
     });
 
     test('Keybindings with multiple presses are expanded into prefix bindings', () => {
@@ -344,13 +344,26 @@ suite('Keybinding Test Suite', () => {
         version = "1.0"
 
         [[bind]]
+        name = "before"
+        key = "d"
+        command = "bar"
+
+        [[bind]]
         name = "1"
         key = "a b c"
+        when = "bar"
         command = "foo"
+
+        [[bind]]
+        name = "2"
+        key = "a b"
+        command = "modal-key.prefix"
+        args.flag = "ab_prefix"
         `);
-        assert.equal(spec.length, 3);
-        assert.equal(spec.filter(x => x.args.do[0].command === "foo").length, 1);
-        assert(isEqual(spec.map(x => x.key).sort(), ["a", "b", "c"]));
+        assert.equal(spec.length, 6);
+        assert(isEqual(spec.map(i => i.key), ["d", "a", "b", "c", "a", "b"]));
+        assert(isEqual(spec.map(i => !!(i.args.do[0]?.args?.automated)),
+                       [false, true, true, false, true, false]));
     });
 
     test('Keybindings properly resolve `<all-pefixes>` cases', () => {
