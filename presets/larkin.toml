@@ -1848,9 +1848,11 @@ Repeat the last action command. Actions usually modify the text of a document in
 antoher. (But, e.g. sending text to the REPL is also considered an editor action).
 """
 key = "."
-command = "runCommands"
+command = "master-key.repeat"
+computedArgs.repeat = "count"
+args.command = "runCommands"
 
-[[bind.args]]
+[[bind.args.args.commands]]
 command = "master-key.replayFromHistory"
 # we can repeat any action but history-related actions; we make an exception
 # for replaying macros, which can be repeated
@@ -1860,7 +1862,7 @@ commandHistory[i].path.startsWith('edit.action') &&
  commandHistory[i].name == 'replay')
 """
 
-[[bind.args]]
+[[bind.args.args.commands]]
 command = "master-key.enterNormal"
 
 [[bind]]

@@ -3,13 +3,15 @@ current issue I'm working on:
 a few UI tests have regressed; (might just need more of a delay)
   we need to fix them before doing the last set of ui tests (macro recording)
 
+TODO: fix "runCommands" syntax: `args` isn't an array it's a single `commands` property
+
 NOTE: we're using a revised version of vscod-extension-tester (https://github.com/redhat-developer/vscode-extension-tester/pull/1084) after fixing a bug on MacOS ARM
 
 NEXT UP:
-
+/
 unit tests: macro replay
 unit tests: edges cases for command recording
-  - I think it may currently be possible to edit the wrong command
+  - I think it may currently be possible to edit wrong command
     if a second command is executed in the process of awaiting
     for input from the first (e.g. the input text for search is open
     and a command combination that has a poorly defined when clause
