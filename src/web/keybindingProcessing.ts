@@ -51,24 +51,33 @@ function concatWhenAndOverwritePrefixes(obj_: any, src_: any, key: string){
     }
 }
 
+const runCommandsArgs = z.object({
+    commands: z.array(z.string().
+        or(z.object({command: z.string()}).passthrough()).
+        or(z.object({defined: z.string()}).passthrough()))
+});
 function expandDefinedCommands(item: RawBindingItem, definitions: any): RawBindingItem{
-    if(item.command && item.command === 'runCommands' && Array.isArray(item.args)){
-        let args = flatMap(item.args, cmd => {
+    if(item.command && item.command === 'runCommands'){
+        let args = validateInput('runCommands', item.args, runCommandsArgs);
+        let translatedArgs = !args ? item.args : flatMap(args.commands, cmd => {
             if(typeof cmd === 'string'){
                 return [{command: cmd}];
-            }else if((<any>cmd).defined){
+            }else if(cmd.defined){
                 let definedCommand = <DefinedCommand>cmd;
                 let commands = definitions[definedCommand.defined];
                 if(!commands){
                     throw new Error(`Command definition missing under
                         'define.${definedCommand.defined}`);
                 }
-                return commands;
+                return commands.map((cmd: any) => {
+                    if(cmd === 'string'){ return {command: cmd}; }
+                    else{ return cmd; }
+                });
             }else{
                 return [cmd];
             }
         });
-        return {...item, args};
+        return {...item, args: translatedArgs};
     }
     return item;
 }
