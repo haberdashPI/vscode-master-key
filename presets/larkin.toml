@@ -1550,7 +1550,6 @@ args = [
       "expandLineSelection",
       "selection-utilities.activeAtEnd",
       "selection-utilities.shrinkToActive",
-      "cursorDown",
       "editor.action.clipboardPasteAction",
 ]
 

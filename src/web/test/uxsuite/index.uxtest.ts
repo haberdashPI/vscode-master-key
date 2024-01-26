@@ -2,6 +2,7 @@ import { cleanupTempdir, pause, setupTempdir } from './utils';
 import simpleMotions from './simpleMotions';
 import commandState from "./commandState";
 import searchMotions from './searchMotions';
+import captureKeys from './captureKeys.test';
 
 describe('UI Test Suite', () => {
     before(async function(){
@@ -13,6 +14,7 @@ describe('UI Test Suite', () => {
     simpleMotions.run();
     commandState.run();
     searchMotions.run();
+    captureKeys.run();
 
     after(() => { cleanupTempdir(); });
 });

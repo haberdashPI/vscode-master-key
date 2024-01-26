@@ -1,14 +1,12 @@
 current issue I'm working on:
 
-look at unit test list below
+a few UI tests have regressed; (might just need more of a delay)
+  we need to fix them before doing the last set of ui tests (macro recording)
 
 NOTE: we're using a revised version of vscod-extension-tester (https://github.com/redhat-developer/vscode-extension-tester/pull/1084) after fixing a bug on MacOS ARM
 
 NEXT UP:
 
-unit tests: search movements
-unit tests: capture keys
-  works even even when you run some other command
 unit tests: macro replay
 unit tests: edges cases for command recording
   - I think it may currently be possible to edit the wrong command
@@ -42,7 +40,8 @@ thoughts: things I must have to release:
 - anything else that has to be here? (check below wishlist and issues under the project)
 
 **TODO**: in documenting macro playback note the limitations of recording the keyboard
-(e.g. that it only records inserts)
+(e.g. that it only records inserts; any modifiers are espected to be commands
+that are recorded)
 
 **TODO**: fix default expansion for `when` clauses (keep it simple) and add an extra
 field e.g. `extend` (or `concat`?) for the fancier situation

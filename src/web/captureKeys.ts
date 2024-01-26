@@ -48,7 +48,7 @@ export function captureKeys(onUpdate: UpdateFn): void {
 }
 
 const captureKeysArgs = z.object({
-    keys: z.string().optional(),
+    text: z.string().optional(),
     acceptAfter: z.number().min(1),
     doAfter: doArgs,
 });
@@ -56,8 +56,8 @@ function captureKeysCmd(args_: unknown){
     let args = validateInput('master-key.captureKeys', args_, captureKeysArgs);
     if(args){
         let a = args;
-        if(args.keys){
-            setKeyContext({ name: 'captured', value: args.keys, transient: true });
+        if(args.text){
+            setKeyContext({ name: 'captured', value: args.text, transient: true });
             runCommands({ do: a.doAfter });
         }else{
             let captured = "";
@@ -71,7 +71,7 @@ function captureKeysCmd(args_: unknown){
                         doStop = true;
                     }
                 }
-                updateArgs({ ...a, keys: captured });
+                updateArgs({ ...a, text: captured });
                 if(doStop){
                     stop();
                     runCommands({ do: a.doAfter });
@@ -135,7 +135,7 @@ function insertCharHelper(editor: vscode.TextEditor, char: string){
 function insertChar(editor: vscode.TextEditor, edit: vscode.TextEditorEdit,
     args_: unknown = {}){
 
-    doChar(editor, 'master-key.insertChar', insertCharHelper);
+    doChar(editor, 'master-key.insertChar', insertCharHelper, args_);
 }
 
 export function activate(context: vscode.ExtensionContext){
