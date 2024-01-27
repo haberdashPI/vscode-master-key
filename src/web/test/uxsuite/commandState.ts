@@ -6,7 +6,7 @@ export const run = () => describe('Command state', () => {
     let editor: TextEditor;
 
     before(async function(){
-        this.timeout(8 * 1000);
+        this.timeout(10 * 1000);
         await setBindings(`
             [header]
             version = "1.0"
@@ -19,7 +19,7 @@ export const run = () => describe('Command state', () => {
             key = "escape"
             mode = []
             command = "runCommands"
-            args = ["master-key.enterInsert", "master-key.reset"]
+            args.commands = ["master-key.enterInsert", "master-key.reset"]
             when = "!findWidgetVisible"
             prefixes = "<all-prefixes>"
 
@@ -106,7 +106,7 @@ export const run = () => describe('Command state', () => {
         `);
         await pause(1000);
 
-        editor = await setupEditor(`This is a short, simple sentence`);
+        editor = await setupEditor(`This is a short, simple sentence`, "state");
     });
 
     it('Handles Automated Prefixes', async () => {
