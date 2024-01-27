@@ -18,7 +18,7 @@ export const run = () => describe('Simple motions', () => {
             name = "normal mode"
             key = "escape"
             command = "runCommands"
-            args = ["master-key.enterNormal", "master-key.reset"]
+            args.commands = ["master-key.enterNormal", "master-key.reset"]
             prefixes = "<all-prefixes>"
 
             [[path]]

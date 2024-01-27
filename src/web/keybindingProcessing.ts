@@ -385,7 +385,9 @@ function expandKeySequencesAndResolveDuplicates(items: BindingItem[], problems: 
                 let [prefixItem, itemPrefix] = updatePrefixItemAndPrefix(item, suffixKey,
                     prefix, prefixCodes, false);
                 // track the index of this user defined prefix command
-                prefixIndex[itemPrefix] = i;
+                if(prefixIndex[itemPrefix] === undefined){
+                    prefixIndex[itemPrefix] = i;
+                }
                 addWithoutDuplicating(result, i, merge(item, prefixItem), problems);
             }else if(isSingleCommand(item.args.do, 'master-key.ignore')){
                 if(keySeq.length > 1){

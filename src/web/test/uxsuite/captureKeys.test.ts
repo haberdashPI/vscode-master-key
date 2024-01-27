@@ -1,7 +1,7 @@
 import { pause, movesCursorInEditor, setBindings, setupEditor } from "./utils";
 import expect from "expect";
 import { InputBox, Key, TextEditor, Workbench } from "vscode-extension-tester";
-export const run = () => describe('Search motions', () => {
+export const run = () => describe('Capture key commands', () => {
     let editor: TextEditor;
 
     before(async function(){
@@ -15,7 +15,7 @@ export const run = () => describe('Search motions', () => {
             key = "escape"
             mode = []
             command = "runCommands"
-            args = ["master-key.enterNormal", "master-key.reset"]
+            args.commands = ["master-key.enterNormal", "master-key.reset"]
             prefixes = "<all-prefixes>"
 
             [[path]]
