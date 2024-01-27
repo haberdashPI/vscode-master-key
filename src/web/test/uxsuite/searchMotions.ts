@@ -127,14 +127,14 @@ export const run = () => describe('Search motions', () => {
             key = "e /"
             path = "search"
 
+            [[bind.args.doAfter]]
+            command = "cursorWordEndRightSelect"
+
             [[bind]]
             name = "skip search"
             key = "shift+2 /"
             path = "search"
             args.skip = 1
-
-            [[bind.args.doAfter]]
-            command = "cursorWordEndRightSelect"
    `);
 
        editor = await setupEditor(`foobar bum POINT_A Officia voluptate ex point_a commodo esse laborum velit
@@ -473,8 +473,8 @@ labore elit occaecat cupidatat non POINT_B.`);
             let input = await InputBox.create();
             await input.setText('point_a');
             await input.confirm();
+            await pause(150);
         }, [0, 18], editor);
-        await pause(50);
         let text = await editor.getSelectedText();
         expect(text).toEqual(' POINT_A');
     });
