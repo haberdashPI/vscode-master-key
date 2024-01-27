@@ -5,6 +5,7 @@ import z from 'zod';
 import { sortBy, pick, isEqual, omit, mergeWith, cloneDeep, flatMap, merge } from 'lodash';
 import { reifyStrings, EvalContext } from './expressions';
 import { validateInput } from './utils';
+import { fromZodError } from 'zod-validation-error';
 
 export interface Bindings{
     name?: string,
@@ -58,7 +59,7 @@ const runCommandsArgs = z.object({
 });
 function expandDefinedCommands(item: RawBindingItem, definitions: any): RawBindingItem{
     if(item.command && item.command === 'runCommands'){
-        let args = validateInput('runCommands', item.args, runCommandsArgs);
+        let args = validateInput(`key ${item.key}, mode ${item.mode}; runCommands`, item.args, runCommandsArgs);
         let translatedArgs = !args ? item.args : flatMap(args.commands, cmd => {
             if(typeof cmd === 'string'){
                 return [{command: cmd}];
@@ -118,7 +119,7 @@ function expandDefaultsAndDefinedCommands(spec: BindingSpec, problems: string[])
                     missing field '${missing[0]}'`);
                 return undefined;
             }
-            return bindingItem.parse({
+            let result = bindingItem.safeParse({
                 key: item.key,
                 when: item.when,
                 mode: typeof item.mode === 'string' ? [item.mode] : item.mode,
@@ -134,6 +135,12 @@ function expandDefaultsAndDefinedCommands(spec: BindingSpec, problems: string[])
                     resetTransient: item.resetTransient,
                 }
             });
+            if(!result.success){
+                problems.push(`Item ${i} with name ${item.name}: ${fromZodError(result.error).message}`);
+                return undefined;
+            }else{
+                return result.data;
+            }
         }
     });
 
