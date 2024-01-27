@@ -59,8 +59,8 @@ export const run = () => describe('Capture key commands', () => {
             command = "master-key.insertChar"
         `);
 
-       editor = await setupEditor(`foobar bum POINT_A`);
-       await pause(250);
+       editor = await setupEditor(`foobar bum POINT_A`, 'capture');
+       await pause(500);
     });
 
     it('Captures keys', async () => {

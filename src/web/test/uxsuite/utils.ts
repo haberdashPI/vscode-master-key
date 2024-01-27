@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { TextEditor, EditorView, InputBox, VSBrowser, Workbench } from 'vscode-extension-tester';
 import expect from 'expect';
+import hash from 'object-hash';
 
 let tempdir: string;
 
@@ -26,12 +27,14 @@ export async function movesCursorInEditor(action: () => Promise<void>, by: [numb
     expect({y: ydiff, x: xdiff}).toEqual({y: by[0], x: by[1]});
 }
 
-export async function setupEditor(str: string){
+export async function setupEditor(str: string, testname: string){
+    let filename = testname + ".txt";
     let editorView = new EditorView();
-    let textFile = path.join(tempdir, 'test.txt');
+    let textFile = path.join(tempdir, filename);
     fs.writeFileSync(textFile, str);
+    await pause(100);
     await VSBrowser.instance.openResources(textFile);
-    return await editorView.openEditor('test.txt') as TextEditor;
+    return await editorView.openEditor(filename) as TextEditor;
 }
 
 export async function setBindings(str: string){

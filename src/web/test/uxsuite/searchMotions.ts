@@ -139,7 +139,7 @@ export const run = () => describe('Search motions', () => {
 
        editor = await setupEditor(`foobar bum POINT_A Officia voluptate ex point_a commodo esse laborum velit
 ipsum velit excepteur sunt cillum nulla adipisicing cupidatat. Laborum officia do mollit do
-labore elit occaecat cupidatat non POINT_B.`);
+labore elit occaecat cupidatat non POINT_B.`, "search");
     });
 
     it('Handles basic search', async () => {
@@ -188,7 +188,7 @@ labore elit occaecat cupidatat non POINT_B.`);
             await input.setText('POINT_A');
             await input.confirm();
             await pause(100);
-        }, [0, 47], editor);
+        }, [0, 39], editor);
     });
 
 

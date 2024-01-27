@@ -106,7 +106,7 @@ export const run = () => describe('Command state', () => {
         `);
         await pause(1000);
 
-        editor = await setupEditor(`This is a short, simple sentence`);
+        editor = await setupEditor(`This is a short, simple sentence`, "state");
     });
 
     it('Handles Automated Prefixes', async () => {
