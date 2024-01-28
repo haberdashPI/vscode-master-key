@@ -181,6 +181,12 @@ export const run = () => describe('Capture key commands', () => {
         command = "master-key.replayFromStack"
         computedArgs.index = "count"
 
+        [[bind]]
+        path = "replay"
+        name = "replay last"
+        key = "q l"
+        command = "master-key.replayFromHistory"
+        args.at = "i-2"
         `);
 
        editor = await setupEditor(``, 'replay');
@@ -196,13 +202,9 @@ export const run = () => describe('Capture key commands', () => {
     // - replace/insert char
     // - if
 
-    // we need to verify the following recording commands work
-    // - pushHistoryToStack
-    // - replayFromHistory
-    // - replayFromStack
-
     it('Basic recording', async () => {
         editor.setText(`a b c d\ne f g h\ni j k l`);
+        editor.moveCursor(1, 1);
         await pause(250);
         editor.typeText(Key.ESCAPE);
         await pause(50);
@@ -218,5 +220,23 @@ export const run = () => describe('Capture key commands', () => {
             await editor.typeText('q q');
         }, [1, 1], editor);
     });
+
+    it('Replay from history', async () => {
+        editor.setText(`a b c d\ne f g h\ni j k l`);
+        editor.moveCursor(1, 1);
+        await pause(250);
+        editor.typeText(Key.ESCAPE);
+        await pause(50);
+
+        movesCursorInEditor(async () => {
+            await editor.typeText('l');
+            await editor.typeText('j');
+        }, [1, 1], editor);
+
+        movesCursorInEditor(async () => {
+            await editor.typeText('q l');
+        }, [1, 0], editor);
+    });
+
 });
 export default { run };
