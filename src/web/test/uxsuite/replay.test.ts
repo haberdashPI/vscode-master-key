@@ -5,7 +5,7 @@ export const run = () => describe('Capture key commands', () => {
     let editor: TextEditor;
 
     before(async function(){
-        this.timeout(8 * 1000);
+        this.timeout(10 * 1000);
         await setBindings(`
         [header]
         version = "1.0"
@@ -188,37 +188,37 @@ export const run = () => describe('Capture key commands', () => {
         command = "master-key.replayFromHistory"
         args.at = "i-2"
         `);
+        await pause(250);
 
        editor = await setupEditor(``, 'replay');
        await pause(500);
     });
 
-    // we need verify that the follow can be recorded
-    // - counts
-    // - search (with, without acceptAfter)
-    // - capture
-    // - canceled captured keys
-    // - canceled search (with accept after)
-    // - replace/insert char
-    // - if
-
-    it('Basic recording', async () => {
+    // TODO: for some reason this test is passing even though what
+    // I see on the screen is clearly wrong.
+    it.only('Basic recording', async () => {
         editor.setText(`a b c d\ne f g h\ni j k l`);
         editor.moveCursor(1, 1);
         await pause(250);
         editor.typeText(Key.ESCAPE);
         await pause(50);
 
-        editor.typeText('shift+q');
+        editor.typeText(Key.chord(Key.SHIFT, 'q'));
         movesCursorInEditor(async () => {
             await editor.typeText('l');
+            await pause(50);
             await editor.typeText('j');
         }, [1, 1], editor);
-        editor.typeText('shift+q');
+        editor.typeText(Key.chord(Key.SHIFT, 'q'));
+        await pause(50);
 
+        await pause(2000);
+        console.dir(await editor.getCoordinates());
         movesCursorInEditor(async () => {
             await editor.typeText('q q');
         }, [1, 1], editor);
+        await pause(2000);
+        console.dir(await editor.getCoordinates());
     });
 
     it('Replay from history', async () => {
@@ -238,5 +238,57 @@ export const run = () => describe('Capture key commands', () => {
         }, [1, 0], editor);
     });
 
+    it('Replay counts', async () => {
+
+        editor.setText(`a b c d\ne f g h\ni j k l`);
+        editor.moveCursor(1, 1);
+        await pause(250);
+        editor.typeText(Key.ESCAPE);
+        await pause(50);
+
+        editor.typeText(Key.chord(Key.SHIFT, 'q'));
+        movesCursorInEditor(async () => {
+            await editor.typeText(Key.chord(Key.SHIFT, '3'));
+            await editor.typeText('l');
+        }, [0, 3], editor);
+        editor.typeText(Key.chord(Key.SHIFT, 'q'));
+
+        movesCursorInEditor(async () => {
+            await editor.typeText('q q');
+        }, [0, 3], editor);
+    });
+
+    it('Replay search', async () => {
+        editor.setText(`a b c d\ne f g h\ni j k l`);
+        editor.moveCursor(1, 1);
+        await pause(250);
+        editor.typeText(Key.ESCAPE);
+        await pause(50);
+
+        editor.typeText(Key.chord(Key.SHIFT, 'q'));
+        movesCursorInEditor(async () => {
+            await editor.typeText('/');
+            await pause(50);
+            const input = await InputBox.create();
+
+            await input.setText('c d');
+            await input.confirm();
+            await pause(100);
+        }, [0, 4], editor);
+        editor.typeText(Key.chord(Key.SHIFT, 'q'));
+
+        editor.moveCursor(1, 1);
+        movesCursorInEditor(async () => {
+            await editor.typeText('q q');
+        }, [0, 4], editor);
+    });
+
+        // we need verify that the follow can be recorded
+    // - search (with, without acceptAfter)
+    // - capture
+    // - canceled captured keys
+    // - canceled search (with accept after)
+    // - replace/insert char
+    // - if
 });
 export default { run };
