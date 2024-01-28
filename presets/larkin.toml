@@ -2649,7 +2649,7 @@ mode = ["normal", "selectedit"]
 command = "runCommands"
 args.commands = [
       { command = "selection-utilities.restoreAndClear", computedArgs = { register = "count || 'default'" } },
-      { command = "setMode", args = { value = "selectedit" } }
+      { command = "master-key.setMode", args = { value = "selectedit" } }
 ]
 
 [[bind]]

@@ -406,8 +406,6 @@ function updateConfig(event?: vscode.ConfigurationChangeEvent){
     }
 }
 
-// TODO: we're going to have from and to be strings that get evaluated
-// to truthy statements
 const selectHistoryArgs = z.object({
     range: z.object({
         from: z.string(),

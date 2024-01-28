@@ -24,6 +24,7 @@ unit tests: edge cases with recording edits
   - how about when we don't start with normal mode commands?
   - how about long edits with lots of insert mode commands intersprsed with the edits?
   - what about multiple cursors?
+unit tests: store/restore named
 
 REFACTOR: cleanup up and document code, make it nice and readable
 
