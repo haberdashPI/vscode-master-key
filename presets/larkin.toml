@@ -502,7 +502,7 @@ computedArgs = { value = "(count || 1)" }
 
 [[bind]]
 path = "edit.motion.obj"
-key = "' ;"
+key = "' shift+;"
 name = "comment ←"
 description = "previous comment"
 args.unit = "comment"
@@ -512,13 +512,13 @@ computedArgs = { value = "-(count || 1)" }
 
 [[bind]]
 path = "edit.motion.obj"
-key = "' shift+;"
+key = "' ;"
 name = "comment →"
 description = "next comment"
 args.unit = "comment"
 args.boundary = "both"
 args.selectWhole = true
-computedArgs = { value = "-(count || 1)" }
+computedArgs = { value = "(count || 1)" }
 
 [[bind]]
 path = "edit.motion.obj"
@@ -2132,7 +2132,7 @@ name = "Window Manipulation"
 description = "Commands for navigating and manipulating the window/editor panes in some way"
 default.kind = "window"
 default.mode = "normal"
-default.when = "!inputFocus || editorTextFocus"
+default.when = "(!inputFocus && !textInputFocus && !sideBarFocus) || editorTextFocus"
 
 [[bind]]
 path = "window"
