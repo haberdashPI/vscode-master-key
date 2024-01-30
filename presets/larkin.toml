@@ -2620,7 +2620,7 @@ save all selections to the default register.
 Use a count to specify an alternate register
 """
 key = "' c"
-mode = "normal"
+mode = ["normal", "selectedit"]
 command = "runCommands"
 args.commands = [
       { command = "selection-utilities.appendToMemory", computedArgs = { register = "count || 'default'" } },
