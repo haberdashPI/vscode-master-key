@@ -263,7 +263,7 @@ i j k l`, 'replay');
         await pause(50);
 
         await editor.typeText(Key.chord(Key.SHIFT, 'q'));
-        movesCursorInEditor(async () => {
+        await movesCursorInEditor(async () => {
             await editor.typeText('/');
             await pause(50);
             const input = await InputBox.create();
@@ -275,7 +275,7 @@ i j k l`, 'replay');
         await editor.typeText(Key.chord(Key.SHIFT, 'q'));
 
         await editor.moveCursor(1, 1);
-        movesCursorInEditor(async () => {
+        await movesCursorInEditor(async () => {
             await editor.typeText('q');
             await editor.typeText('q');
             await pause(250);
@@ -328,7 +328,30 @@ i j k l`, 'replay');
         }, [0, 3], editor);
     });
 
-    // we need verify that the follow can be recorded
+    it.only('Replay capture keys', async () => {
+        await editor.moveCursor(1, 1);
+        await pause(250);
+        editor.typeText(Key.ESCAPE);
+        await pause(50);
+
+        await editor.typeText(Key.chord(Key.SHIFT, 'q'));
+        await movesCursorInEditor(async () => {
+            await editor.typeText('s');
+            await editor.typeText('c');
+            await editor.typeText(' ');
+            await pause(100);
+        }, [0, 3], editor);
+        await editor.typeText(Key.chord(Key.SHIFT, 'q'));
+
+        await editor.moveCursor(1, 1);
+        await movesCursorInEditor(async () => {
+            await editor.typeText('q');
+            await editor.typeText('q');
+            await pause(250);
+        }, [0, 3], editor);
+    });
+
+    // we need to verify that the following can be recorded
     // - capture
     // - canceled captured keys
     // - replace/insert char
