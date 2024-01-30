@@ -282,9 +282,53 @@ i j k l`, 'replay');
         }, [0, 4], editor);
     });
 
+    it('Replay search with `acceptAfter`', async () => {
+        await editor.moveCursor(1, 1);
+        await pause(250);
+        editor.typeText(Key.ESCAPE);
+        await pause(50);
+
+        await editor.typeText(Key.chord(Key.SHIFT, 'q'));
+        await movesCursorInEditor(async () => {
+            await editor.typeText('t');
+            await editor.typeText('c');
+            await pause(100);
+        }, [0, 3], editor);
+        await editor.typeText(Key.chord(Key.SHIFT, 'q'));
+
+        await editor.moveCursor(1, 1);
+        await movesCursorInEditor(async () => {
+            await editor.typeText('q');
+            await editor.typeText('q');
+            await pause(250);
+        }, [0, 3], editor);
+    });
+
+    it('Replay search with canceled entry', async () => {
+        await editor.moveCursor(1, 1);
+        await pause(250);
+        editor.typeText(Key.ESCAPE);
+        await pause(50);
+
+        await editor.typeText(Key.chord(Key.SHIFT, 'q'));
+        await movesCursorInEditor(async () => {
+            await editor.typeText('t');
+            await editor.typeText(Key.ESCAPE);
+            await editor.typeText('t');
+            await editor.typeText('c');
+            await pause(100);
+        }, [0, 3], editor);
+        await editor.typeText(Key.chord(Key.SHIFT, 'q'));
+
+        await editor.moveCursor(1, 1);
+        await movesCursorInEditor(async () => {
+            await editor.typeText('q');
+            await editor.typeText('q');
+            await pause(250);
+        }, [0, 3], editor);
+    });
+
     // we need verify that the follow can be recorded
-    // - search (with, without acceptAfter)
-    // - canceled search (with accept after)
     // - capture
     // - canceled captured keys
     // - replace/insert char
