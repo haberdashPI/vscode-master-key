@@ -1,7 +1,7 @@
 import { pause, movesCursorInEditor, setBindings, setupEditor } from "./utils";
 import expect from "expect";
 import { InputBox, Key, TextEditor, Workbench } from "vscode-extension-tester";
-export const run = () => describe('Capture key commands', () => {
+export const run = () => describe('Replay commands', () => {
     let editor: TextEditor;
 
     before(async function(){
@@ -190,7 +190,9 @@ export const run = () => describe('Capture key commands', () => {
         `);
         await pause(250);
 
-       editor = await setupEditor(`a b c d\ne f g h\ni j k l`, 'replay');
+       editor = await setupEditor(`a b c d
+e f g h
+i j k l`, 'replay');
        await pause(500);
     });
 
@@ -222,44 +224,43 @@ export const run = () => describe('Capture key commands', () => {
         editor.typeText(Key.ESCAPE);
         await pause(50);
 
-        movesCursorInEditor(async () => {
+        await movesCursorInEditor(async () => {
             await editor.typeText('l');
             await editor.typeText('j');
         }, [1, 1], editor);
 
-        movesCursorInEditor(async () => {
-            await editor.typeText('q l');
+        await movesCursorInEditor(async () => {
+            await editor.typeText('q');
+            await editor.typeText('l');
         }, [1, 0], editor);
     });
 
-    it('Replay counts', async () => {
-
-        editor.setText(`a b c d\ne f g h\ni j k l`);
+    it.only('Replay counts', async () => {
+        await editor.setText(`a b c d\ne f g h\ni j k l`);
         await editor.moveCursor(1, 1);
         await pause(250);
-        editor.typeText(Key.ESCAPE);
+        await editor.typeText(Key.ESCAPE);
         await pause(50);
 
-        editor.typeText(Key.chord(Key.SHIFT, 'q'));
-        movesCursorInEditor(async () => {
+        await editor.typeText(Key.chord(Key.SHIFT, 'q'));
+        await movesCursorInEditor(async () => {
             await editor.typeText(Key.chord(Key.SHIFT, '3'));
             await editor.typeText('l');
         }, [0, 3], editor);
-        editor.typeText(Key.chord(Key.SHIFT, 'q'));
+        await editor.typeText(Key.chord(Key.SHIFT, 'q'));
 
-        movesCursorInEditor(async () => {
+        await movesCursorInEditor(async () => {
             await editor.typeText('q q');
         }, [0, 3], editor);
     });
 
     it('Replay search', async () => {
-        editor.setText(`a b c d\ne f g h\ni j k l`);
         await editor.moveCursor(1, 1);
         await pause(250);
         editor.typeText(Key.ESCAPE);
         await pause(50);
 
-        editor.typeText(Key.chord(Key.SHIFT, 'q'));
+        await editor.typeText(Key.chord(Key.SHIFT, 'q'));
         movesCursorInEditor(async () => {
             await editor.typeText('/');
             await pause(50);
@@ -269,7 +270,7 @@ export const run = () => describe('Capture key commands', () => {
             await input.confirm();
             await pause(100);
         }, [0, 4], editor);
-        editor.typeText(Key.chord(Key.SHIFT, 'q'));
+        await editor.typeText(Key.chord(Key.SHIFT, 'q'));
 
         await editor.moveCursor(1, 1);
         movesCursorInEditor(async () => {
@@ -277,11 +278,11 @@ export const run = () => describe('Capture key commands', () => {
         }, [0, 4], editor);
     });
 
-        // we need verify that the follow can be recorded
+    // we need verify that the follow can be recorded
     // - search (with, without acceptAfter)
+    // - canceled search (with accept after)
     // - capture
     // - canceled captured keys
-    // - canceled search (with accept after)
     // - replace/insert char
     // - if
 });
