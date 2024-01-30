@@ -190,15 +190,14 @@ export const run = () => describe('Capture key commands', () => {
         `);
         await pause(250);
 
-       editor = await setupEditor(``, 'replay');
+       editor = await setupEditor(`a b c d\ne f g h\ni j k l`, 'replay');
        await pause(500);
     });
 
     // TODO: for some reason this test is passing even though what
     // I see on the screen is clearly wrong.
-    it.only('Basic recording', async () => {
-        editor.setText(`a b c d\ne f g h\ni j k l`);
-        editor.moveCursor(1, 1);
+    it('Basic recording', async () => {
+        await editor.moveCursor(1, 1);
         await pause(250);
         editor.typeText(Key.ESCAPE);
         await pause(50);
@@ -212,18 +211,13 @@ export const run = () => describe('Capture key commands', () => {
         editor.typeText(Key.chord(Key.SHIFT, 'q'));
         await pause(50);
 
-        await pause(2000);
-        console.dir(await editor.getCoordinates());
         movesCursorInEditor(async () => {
             await editor.typeText('q q');
         }, [1, 1], editor);
-        await pause(2000);
-        console.dir(await editor.getCoordinates());
     });
 
     it('Replay from history', async () => {
-        editor.setText(`a b c d\ne f g h\ni j k l`);
-        editor.moveCursor(1, 1);
+        await editor.moveCursor(1, 1);
         await pause(250);
         editor.typeText(Key.ESCAPE);
         await pause(50);
@@ -241,7 +235,7 @@ export const run = () => describe('Capture key commands', () => {
     it('Replay counts', async () => {
 
         editor.setText(`a b c d\ne f g h\ni j k l`);
-        editor.moveCursor(1, 1);
+        await editor.moveCursor(1, 1);
         await pause(250);
         editor.typeText(Key.ESCAPE);
         await pause(50);
@@ -260,7 +254,7 @@ export const run = () => describe('Capture key commands', () => {
 
     it('Replay search', async () => {
         editor.setText(`a b c d\ne f g h\ni j k l`);
-        editor.moveCursor(1, 1);
+        await editor.moveCursor(1, 1);
         await pause(250);
         editor.typeText(Key.ESCAPE);
         await pause(50);
@@ -277,7 +271,7 @@ export const run = () => describe('Capture key commands', () => {
         }, [0, 4], editor);
         editor.typeText(Key.chord(Key.SHIFT, 'q'));
 
-        editor.moveCursor(1, 1);
+        await editor.moveCursor(1, 1);
         movesCursorInEditor(async () => {
             await editor.typeText('q q');
         }, [0, 4], editor);
