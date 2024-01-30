@@ -235,7 +235,7 @@ i j k l`, 'replay');
         }, [1, 0], editor);
     });
 
-    it.only('Replay counts', async () => {
+    it('Replay counts', async () => {
         await editor.setText(`a b c d\ne f g h\ni j k l`);
         await editor.moveCursor(1, 1);
         await pause(250);
@@ -250,7 +250,9 @@ i j k l`, 'replay');
         await editor.typeText(Key.chord(Key.SHIFT, 'q'));
 
         await movesCursorInEditor(async () => {
-            await editor.typeText('q q');
+            await editor.typeText('q');
+            await editor.typeText('q');
+            await pause(250);
         }, [0, 3], editor);
     });
 
@@ -274,7 +276,9 @@ i j k l`, 'replay');
 
         await editor.moveCursor(1, 1);
         movesCursorInEditor(async () => {
-            await editor.typeText('q q');
+            await editor.typeText('q');
+            await editor.typeText('q');
+            await pause(250);
         }, [0, 4], editor);
     });
 
