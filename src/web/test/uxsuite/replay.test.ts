@@ -1,7 +1,7 @@
 import { pause, movesCursorInEditor, setBindings, setupEditor } from "./utils";
 import expect from "expect";
 import { InputBox, Key, TextEditor, Workbench } from "vscode-extension-tester";
-export const run = () => describe.only('Replay commands', () => {
+export const run = () => describe('Replay commands', () => {
     let editor: TextEditor;
 
     before(async function(){
