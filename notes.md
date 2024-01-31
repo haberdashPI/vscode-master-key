@@ -1,7 +1,6 @@
 current issue I'm working on:
 
-a few UI tests have regressed; (might just need more of a delay)
-  we need to fix them before doing the last set of ui tests (macro recording)
+once we wrap up the basic macro tests, we need to clean up how commands get recorded
 
 NOTE: we're using a revised version of vscod-extension-tester (https://github.com/redhat-developer/vscode-extension-tester/pull/1084) after fixing a bug on MacOS ARM
 
@@ -14,6 +13,11 @@ unit tests: edges cases for command recording
     for input from the first (e.g. the input text for search is open
     and a command combination that has a poorly defined when clause
     triggers a new command)
+
+    YES: we found this edge case by working testing out the recording
+    of a `doAfter` block in `captureKeys`.
+
+    time to re-organize this bit
 
     we probably need to take on a more functional style in the commands,
     this would likely require returning both a promise and a result
@@ -67,6 +71,12 @@ maybe we should implement an edit and a navigation history since the built-in co
 - add more to symmetric insert setup
 
 wishlist:
+
+- quick win: we really shouldn't allow macro recording inside of macro recording
+  unless this is what a user explicitly requests, by default calling
+  macro recording commands in this way should raise an error
+  (it is an easy mistake to make when specifying the range of command to store
+   on the stack when defining a keybinding)
 
 - maybe the parse errors can be added to the problems window? (and just have one error
   message for all problems)

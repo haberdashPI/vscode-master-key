@@ -513,7 +513,8 @@ async function runCommandHistory(commands: (RunCommandsArgs | RecordedCommandArg
 async function replayFromStack(args_: unknown){
     let args = validateInput('master-key.replayFromStack', args_, replayFromStackArgs);
     if(args){
-        let commands = state.values.macro[state.values.macro.length-args.index-1];
+        let macros = state.values.macro;
+        let commands = macros[macros.length-args.index-1];
         if(commands){
             await runCommandHistory(commands);
         }
