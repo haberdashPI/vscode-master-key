@@ -1,11 +1,5 @@
 current issue I'm working on:
 
-debugging macro unit tests
-- remaining issue: search command is not getting pushed to history at all
-  (so looking back to get it doesn't work, obviously)
-- two tests are marked as broken; they are going to be fixed in a separate
-  branch, since that is a bigger project
-
 NOTE: we're using a revised version of vscod-extension-tester (https://github.com/redhat-developer/vscode-extension-tester/pull/1084) after fixing a bug on MacOS ARM
 
 NEXT UP:
