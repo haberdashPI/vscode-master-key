@@ -33,15 +33,15 @@ unit tests: store/restore named
 REFACTOR: cleanup up and document code, make it nice and readable
 
 thoughts: things I must have to release:
+- good documentation of the code
 - the command palette like feature
 - keybinding documentation features
-- good documentation of the code
 - mode customization
 - modernized selection utilities
   - good documentation
   - modern build setup
 + improved mode UX
-- macro recoridng UX
++ macro recoridng UX
 - anything else that has to be here? (check below wishlist and issues under the project)
 
 **TODO**: in documenting macro playback note the limitations of recording the keyboard

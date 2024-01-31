@@ -3,7 +3,7 @@ import { doArgs, validModes, bindingCommand, BindingCommand } from './keybinding
 import { PrefixCodes, isSingleCommand } from './keybindingProcessing';
 import { reifyStrings, EvalContext } from './expressions';
 import { validateInput } from './utils';
-import z from 'zod';
+import z, { record } from 'zod';
 import { clearSearchDecorations, trackSearchUsage, wasSearchUsed } from './searching';
 import { merge, cloneDeep, uniq } from 'lodash';
 import { INPUT_CAPTURE_COMMANDS } from './keybindingParsing';
@@ -31,7 +31,8 @@ function prettifyPrefix(str: string){
 function updateStatusBar(opt: {delayStatusBarUpdate: boolean} = {delayStatusBarUpdate: false}){
     if(modeStatusBar !== undefined && keyStatusBar !== undefined &&
        searchStatusBar !== undefined){
-        let plannedModeStatusBar = state.values.mode || 'insert';
+        let plannedModeStatusBar = (state.values.record ? "rec: " : "") +
+            (state.values.mode || 'insert');
         let plannedKeyStatusBar = state.values.count ? state.values.count + "× " : '';
         plannedKeyStatusBar += prettifyPrefix(state.values.prefix) || '';
         let plannedSearchStatusBar = state.values.search || '';
@@ -46,7 +47,9 @@ function updateStatusBar(opt: {delayStatusBarUpdate: boolean} = {delayStatusBarU
                         statusUpdates = Number.MIN_SAFE_INTEGER;
                     }
                     if(modeStatusBar){
-                        if(plannedModeStatusBar !== 'insert'){
+                        if(state.values.record){
+                            modeStatusBar.backgroundColor = new vscode.ThemeColor("statusBarItem.errorBackground");
+                        }else if(plannedModeStatusBar !== 'insert'){
                             modeStatusBar.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
                         }else{
                             modeStatusBar.backgroundColor = undefined;
@@ -63,7 +66,9 @@ function updateStatusBar(opt: {delayStatusBarUpdate: boolean} = {delayStatusBarU
             }else{
                 statusUpdates = Number.MIN_SAFE_INTEGER;
             }
-            if(plannedModeStatusBar !== 'insert'){
+            if(state.values.record){
+                modeStatusBar.backgroundColor = new vscode.ThemeColor("statusBarItem.errorBackground");
+            }else if(plannedModeStatusBar !== 'insert'){
                 modeStatusBar.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
             }else{
                 modeStatusBar.backgroundColor = undefined;
