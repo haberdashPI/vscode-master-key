@@ -214,6 +214,7 @@ i j k l`, 'replay');
         await movesCursorInEditor(async () => {
             await editor.typeText('q');
             await editor.typeText('q');
+            await pause(250);
         }, [1, 1], editor);
     });
 

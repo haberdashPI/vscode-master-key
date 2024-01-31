@@ -1,6 +1,8 @@
 current issue I'm working on:
 
 debugging macro unit tests
+- remaining issue: search command is not getting pushed to history at all
+  (so looking back to get it doesn't work, obviously)
 
 NOTE: we're using a revised version of vscod-extension-tester (https://github.com/redhat-developer/vscode-extension-tester/pull/1084) after fixing a bug on MacOS ARM
 
@@ -8,7 +10,9 @@ NEXT UP:
 
 we need to clean up how commands get recorded, this is the cause of the broken tests
   (I have a notion of how to do this already by using a more functional approach
-   to command recording)
+   to command recording; there are some tricks to getting this right with the
+   many asynchronous elements; we can't make it *completely* functional, but
+   there can be less global state mutation than there is)
 
 unit tests: macro replay
 unit tests: edges cases for command recording
