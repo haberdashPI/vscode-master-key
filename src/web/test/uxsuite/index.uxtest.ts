@@ -3,6 +3,7 @@ import simpleMotions from './simpleMotions';
 import commandState from "./commandState";
 import searchMotions from './searchMotions';
 import captureKeys from './captureKeys.test';
+import replay from './replay.test';
 
 describe('UI Test Suite', () => {
     before(async function(){
@@ -15,6 +16,7 @@ describe('UI Test Suite', () => {
     commandState.run();
     searchMotions.run();
     captureKeys.run();
+    replay.run();
 
     after(() => { cleanupTempdir(); });
 });

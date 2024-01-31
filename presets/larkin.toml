@@ -1784,9 +1784,7 @@ args.value = false
 
 [[bind.args.commands]]
 command = "master-key.pushHistoryToStack"
-args.range.from = """
-commandHistory[i].name === "record" && i !== commandHistory.length-1
-"""
+args.range.from = 'commandHistory[i-1].name === "record"'
 args.range.to = "i-1"
 
 [[bind]]
@@ -2649,7 +2647,7 @@ mode = ["normal", "selectedit"]
 command = "runCommands"
 args.commands = [
       { command = "selection-utilities.restoreAndClear", computedArgs = { register = "count || 'default'" } },
-      { command = "setMode", args = { value = "selectedit" } }
+      { command = "master-key.setMode", args = { value = "selectedit" } }
 ]
 
 [[bind]]

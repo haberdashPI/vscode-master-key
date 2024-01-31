@@ -192,8 +192,10 @@ async function search(editor: vscode.TextEditor, edit: vscode.TextEditorEdit, ar
             inputBox.dispose();
         });
         inputBox.onDidHide(() => {
-            updateArgs("CANCEL");
-            cancelSearch(editor, edit);
+            if(state.stop){
+                updateArgs("CANCEL");
+                cancelSearch(editor, edit);
+            }
         });
         inputBox.show();
     }

@@ -1,11 +1,14 @@
 current issue I'm working on:
 
-a few UI tests have regressed; (might just need more of a delay)
-  we need to fix them before doing the last set of ui tests (macro recording)
-
 NOTE: we're using a revised version of vscod-extension-tester (https://github.com/redhat-developer/vscode-extension-tester/pull/1084) after fixing a bug on MacOS ARM
 
 NEXT UP:
+
+we need to clean up how commands get recorded, this is the cause of the broken tests
+  (I have a notion of how to do this already by using a more functional approach
+   to command recording; there are some tricks to getting this right with the
+   many asynchronous elements; we can't make it *completely* functional, but
+   there can be less global state mutation than there is)
 
 unit tests: macro replay
 unit tests: edges cases for command recording
@@ -14,6 +17,11 @@ unit tests: edges cases for command recording
     for input from the first (e.g. the input text for search is open
     and a command combination that has a poorly defined when clause
     triggers a new command)
+
+    YES: we found this edge case by working testing out the recording
+    of a `doAfter` block in `captureKeys`.
+
+    time to re-organize this bit
 
     we probably need to take on a more functional style in the commands,
     this would likely require returning both a promise and a result
@@ -24,19 +32,20 @@ unit tests: edge cases with recording edits
   - how about when we don't start with normal mode commands?
   - how about long edits with lots of insert mode commands intersprsed with the edits?
   - what about multiple cursors?
+unit tests: store/restore named
 
 REFACTOR: cleanup up and document code, make it nice and readable
 
 thoughts: things I must have to release:
+- good documentation of the code
 - the command palette like feature
 - keybinding documentation features
-- good documentation of the code
 - mode customization
 - modernized selection utilities
   - good documentation
   - modern build setup
 + improved mode UX
-- macro recoridng UX
++ macro recoridng UX
 - anything else that has to be here? (check below wishlist and issues under the project)
 
 **TODO**: in documenting macro playback note the limitations of recording the keyboard
@@ -66,6 +75,12 @@ maybe we should implement an edit and a navigation history since the built-in co
 - add more to symmetric insert setup
 
 wishlist:
+
+- quick win: we really shouldn't allow macro recording inside of macro recording
+  unless this is what a user explicitly requests, by default calling
+  macro recording commands in this way should raise an error
+  (it is an easy mistake to make when specifying the range of command to store
+   on the stack when defining a keybinding)
 
 - maybe the parse errors can be added to the problems window? (and just have one error
   message for all problems)

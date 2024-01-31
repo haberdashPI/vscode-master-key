@@ -2,8 +2,8 @@
 
 Master your keybindings, with:
 - **clear and discoverable visual documentation**
-- **leveled-up keybinding format**: computed argument values, nested defaults, parameteric multiple-binding specifications; in-short enough power to make vim or emacs-like keybindings
-- **keyboard macros**: record/replay repetitive sequences of keys
+- **leveled-up keybinding format**: modal bindings, set values, evaluate simple expressions, parameteric multi-binding specifications; in-short enough power to make vim or emacs-like keybindings easy to define
+- **keyboard macros**: record/replay repetitive sequences of keys (with some caveats)
 
 If you appreciate the power of vim, emacs, kakaune, helix, or any other well made text
 editor OR if you aren't familiar with these tools, but want to learn how to level up your
