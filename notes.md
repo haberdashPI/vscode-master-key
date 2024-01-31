@@ -1,10 +1,14 @@
 current issue I'm working on:
 
-once we wrap up the basic macro tests, we need to clean up how commands get recorded
+debugging macro unit tests
 
 NOTE: we're using a revised version of vscod-extension-tester (https://github.com/redhat-developer/vscode-extension-tester/pull/1084) after fixing a bug on MacOS ARM
 
 NEXT UP:
+
+we need to clean up how commands get recorded, this is the cause of the broken tests
+  (I have a notion of how to do this already by using a more functional approach
+   to command recording)
 
 unit tests: macro replay
 unit tests: edges cases for command recording

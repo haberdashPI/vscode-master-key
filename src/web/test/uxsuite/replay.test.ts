@@ -1,7 +1,7 @@
 import { pause, movesCursorInEditor, setBindings, setupEditor } from "./utils";
 import expect from "expect";
 import { InputBox, Key, TextEditor, Workbench } from "vscode-extension-tester";
-export const run = () => describe('Replay commands', () => {
+export const run = () => describe.only('Replay commands', () => {
     let editor: TextEditor;
 
     before(async function(){
@@ -184,7 +184,7 @@ export const run = () => describe('Replay commands', () => {
         name = "replay last"
         key = "q l"
         command = "master-key.replayFromHistory"
-        args.at = "i-2"
+        args.at = "i-1"
         `);
         await pause(250);
 
@@ -202,28 +202,30 @@ i j k l`, 'replay');
         editor.typeText(Key.ESCAPE);
         await pause(50);
 
-        editor.typeText(Key.chord(Key.SHIFT, 'q'));
-        movesCursorInEditor(async () => {
+        await editor.typeText(Key.chord(Key.SHIFT, 'q'));
+        await movesCursorInEditor(async () => {
             await editor.typeText('l');
             await pause(50);
             await editor.typeText('j');
         }, [1, 1], editor);
-        editor.typeText(Key.chord(Key.SHIFT, 'q'));
+        await editor.typeText(Key.chord(Key.SHIFT, 'q'));
         await pause(50);
 
-        movesCursorInEditor(async () => {
-            await editor.typeText('q q');
+        await movesCursorInEditor(async () => {
+            await editor.typeText('q');
+            await editor.typeText('q');
         }, [1, 1], editor);
     });
 
     it('Replays from history', async () => {
         await editor.moveCursor(1, 1);
         await pause(250);
-        editor.typeText(Key.ESCAPE);
+        await editor.typeText(Key.ESCAPE);
         await pause(50);
 
         await movesCursorInEditor(async () => {
             await editor.typeText('l');
+            await pause(50);
             await editor.typeText('j');
         }, [1, 1], editor);
 
@@ -268,15 +270,16 @@ i j k l`, 'replay');
             await input.setText('c d');
             await input.confirm();
             await pause(100);
-        }, [0, 4], editor);
+        }, [0, 3], editor);
         await editor.typeText(Key.chord(Key.SHIFT, 'q'));
 
         await editor.moveCursor(1, 1);
+        await pause(250);
         await movesCursorInEditor(async () => {
             await editor.typeText('q');
             await editor.typeText('q');
             await pause(250);
-        }, [0, 4], editor);
+        }, [0, 3], editor);
     });
 
     it('Replays search with `acceptAfter`', async () => {
@@ -376,7 +379,7 @@ i j k l`, 'replay');
         }, [0, 3], editor);
     });
 
-    it.only('Replaces chars', async () => {
+    it('Replaces chars', async () => {
         await editor.moveCursor(1, 1);
         await editor.typeText(Key.ESCAPE);
         await pause(250);
@@ -401,7 +404,7 @@ i j k l`, 'replay');
         await editor.setText(`a b c d\ne f g h\ni j k l`);
     });
 
-    it.only('Insert chars', async () => {
+    it('Insert chars', async () => {
         await editor.moveCursor(1, 1);
         await editor.typeText(Key.ESCAPE);
         await pause(250);
