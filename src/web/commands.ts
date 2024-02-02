@@ -85,7 +85,6 @@ const keyContext = z.object({
     prefixCode: z.number(),
     count: z.number(),
     mode: z.string(),
-    search: z.string(),
     validModes: validModes
 }).passthrough();
 type KeyContext = z.infer<typeof keyContext> & { [key: string]: any } & {

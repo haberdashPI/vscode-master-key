@@ -2,6 +2,50 @@ current issue I'm working on:
 
 NOTE: we're using a revised version of vscod-extension-tester (https://github.com/redhat-developer/vscode-extension-tester/pull/1084) after fixing a bug on MacOS ARM
 
+
+new plan for state:
+
+we don't really want the user modifying most of the state values anyways:
+we should control things more here
+
+1. all current state values that aren't set in larkin: make them
+   validated and prevent the user from modifying them
+
+2. user can also not define any of these predefined values in the keybinding file
+  (we have to do `validModes` differently; this is a good time to switch
+  to my plan below of having the user define the behavior of each mode)
+
+3. user can set flags via `master-key.setFlag` or mode via `mater-key.setMode`
+  flags should generally have a visible UX, just like counts do
+  this avoids weird situations where there is background state not visible
+  in the UX (NOTE: flags that are transient need not have UX)
+
+4. the other way to set things is to use the commands that store and restore things;
+  there I think it's okay to have hidden state since the point is that is shown when
+  you bring up the quick pick menu
+
+Like wise we don't use as much global variable updating of this new, controlled state:
+
+1. this state gets passed around via promises and only resolved to the global state when
+  `runCommands` is completed
+
+2. likewise, there is no `doAfter`; we just await the run of e.g. captureKeys
+  and the next command can use `captured`
+
+3. search state becomes part of this global object as well
+
+4. we probably don't want `do` commands to be nested, that feels like a needless can of
+   worms
+
+PROBLEM: much of the state is relatively local to a set of methods; is there some way
+to break this up so that you can define the state you need with the functions that
+use that state? probably you have some 'get' like mechanism with a default value
+and the state handler is generic
+
+YES: I think if we use the design in `state` each set of functions
+can deal with it's own state locally (to avoid overwriting state we
+can have some global table of all state names)
+
 NEXT UP:
 
 we need to clean up how commands get recorded, this is the cause of the broken tests
