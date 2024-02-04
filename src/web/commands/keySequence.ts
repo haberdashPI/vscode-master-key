@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import z from 'zod';
 import { validateInput } from '../utils';
-import { CommandState } from '../state';
+import { wrapStateful, CommandState } from '../state';
 import { PrefixCodes } from '../keybindingProcessing';
 import replaceAll from 'string.prototype.replaceall';
 
@@ -19,7 +19,7 @@ const FLAGS = 'flag';
 const DEFAULT_FLAGS = new Set<string>();
 const COUNT = 'count';
 
-function prefix(args_: unknown, state: CommandState){
+async function prefix(state: CommandState, args_: unknown){
     let args = validateInput('master-key.prefix', args_, prefixArgs);
     if(args !== undefined){
         let prefix = state.get<PrefixCodes>(PREFIX_CODES)?.nameFor(args.code);
@@ -39,7 +39,7 @@ const updateCountArgs = z.object({
     value: z.coerce.number()
 }).strict();
 
-function updateCount(args_: unknown, state: CommandState){
+async function updateCount(state: CommandState, args_: unknown){
     let args = validateInput('master-key.updateCount', args_, updateCountArgs);
     if(args !== undefined){
         state.set(COUNT, state.get<number>(COUNT, 0)!*10 + args.value);
@@ -91,8 +91,8 @@ export function activate(context: vscode.ExtensionContext){
     keyStatusBar.accessibilityInformation = { label: "Keys Typed" };
     keyStatusBar.show();
 
-    // TODO: if `prefix` ever becomes a bare command, well need to copy some of the
-    // state handling code I write up in `master-key.do` to here
-    context.subscriptions.push(vscode.commands.registerCommand('master-key.prefix', prefix));
-    context.subscriptions.push(vscode.commands.registerCommand('master-key.updateCount', updateCount));
+    context.subscriptions.push(vscode.commands.registerCommand('master-key.prefix',
+        wrapStateful(prefix)));
+    context.subscriptions.push(vscode.commands.registerCommand('master-key.updateCount',
+        wrapStateful(updateCount)));
 }

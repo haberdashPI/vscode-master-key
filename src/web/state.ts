@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { cloneDeep } from 'lodash';
+import { boolean } from 'zod';
 
 // OLD THINGS THAT GOT UPDATED IN `set` THAT MUST GO ELSEWHERE
 // - call the command `setContext (in `runCommand` final result)
@@ -11,7 +12,7 @@ export interface ListenerResult{
     close: boolean
 }
 
-export type Listener = (states: States) => ListenerResult;
+export type Listener = (states: CommandState) => ListenerResult;
 
 interface State{
     value: unknown,
@@ -19,6 +20,16 @@ interface State{
     listeners: Listener[]
 }
 type States = Record<string, State>;
+
+// TODO: update this and use it for both resolve listeners and nomral listeners
+function triggerListeners(listeners: Listener[]){
+    listeners = listeners.filter(fn => {
+        let result = fn(this);
+        this.states = result.states;
+        return result.close;
+    });
+
+}
 
 export class CommandState{
     private states: States = {};
@@ -36,7 +47,7 @@ export class CommandState{
         this.states[key] = {value, resetTo, listeners};
 
         listeners = listeners.filter(fn => {
-            let result = fn(this.states);
+            let result = fn(this);
             this.states = result.states;
             return result.close;
         });
@@ -54,4 +65,39 @@ export class CommandState{
     }
 
     reset(){ this.states = {}; }
+
+    onSet(key: string, listener: Listener){
+        let state = this.states[key];
+        if(!state){
+            state = {value: undefined, resetTo: undefined, listeners: []};
+        }
+        state.listeners.push(listener);
+        this.states[key] = state;
+    }
+}
+
+let resolveListeners: Listener[] = [];
+function onStateResolves(listener: Listener){
+    resolveListeners.push(listener);
+}
+
+let state: undefined | Thenable<CommandState> = undefined;
+const WRAPPING_STATEFUL = 'wrappingStateful';
+export function wrapStateful(fn: (state: CommandState, ...args: any[]) => Promise<CommandState>) {
+    return async function (...args: any[]) {
+        if (!state) { state = Promise.resolve(new CommandState()); }
+        let state_ = await state;
+        let globalWrapper = state_.get<boolean>(WRAPPING_STATEFUL, false)
+        if(globalWrapper){ state_.set(WRAPPING_STATEFUL, true); }
+        state = fn(state_, ...args);
+        if(globalWrapper){
+            state_ = await state;
+            state_.set(WRAPPING_STATEFUL, false);
+            resolveListeners = resolveListeners.filter(fn => {
+                let result = fn(state_);
+
+            })
+        }
+        return state_;
+    };
 }
