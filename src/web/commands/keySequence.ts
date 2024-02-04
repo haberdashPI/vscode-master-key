@@ -7,7 +7,7 @@ import replaceAll from 'string.prototype.replaceall';
 
 const prefixArgs = z.object({
     code: z.number(),
-    flag: z.string().min(1).optional(),
+    flag: z.string().min(1).endsWith('_on').optional(),
     // `automated` is used during keybinding preprocessing and is not normally used otherwise
     automated: z.boolean().optional()
 }).strict();
@@ -15,8 +15,6 @@ const prefixArgs = z.object({
 const PREFIX_CODE = 'prefixCode';
 const PREFIX_CODES = 'prefixCodes';
 const PREFIX = 'prefix';
-const FLAGS = 'flag';
-const DEFAULT_FLAGS = new Set<string>();
 const COUNT = 'count';
 
 async function prefix(state: CommandState, args_: unknown){
@@ -26,10 +24,8 @@ async function prefix(state: CommandState, args_: unknown){
         state.set(PREFIX_CODE, args.code);
         state.set(PREFIX, prefix);
 
-        if(args.flag){
-            let flags = state.get<Set<string>>(FLAGS, DEFAULT_FLAGS);
-            flags!.add(args.flag);
-        }
+        if(args.flag){ state.set(args.flag, true); }
+        state.onResolve('updateKeyState', updateKeyStatus);
         return state;
     }
     return state;
@@ -44,6 +40,7 @@ async function updateCount(state: CommandState, args_: unknown){
     if(args !== undefined){
         state.set(COUNT, state.get<number>(COUNT, 0)!*10 + args.value);
     }
+    state.onResolve('updateKeyState', updateKeyStatus);
     return state;
 }
 
@@ -62,7 +59,7 @@ function prettifyPrefix(str: string){
 let keyStatusBar: vscode.StatusBarItem | undefined = undefined;
 
 let statusUpdates = Number.MIN_SAFE_INTEGER;
-function updateKeyStatus(state: CommandState, opt: {delayedUpdate: boolean}){
+function updateKeyStatus(state: CommandState, opt: {delayedUpdate?: boolean} = {}){
     if(keyStatusBar !== undefined){
         let count = state.get<number>(COUNT);
         let plannedUpdate = count ? count + "× " : '';
@@ -84,6 +81,7 @@ function updateKeyStatus(state: CommandState, opt: {delayedUpdate: boolean}){
             keyStatusBar.text = plannedUpdate;
         }
     }
+    return false;
 }
 
 export function activate(context: vscode.ExtensionContext){
