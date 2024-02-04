@@ -8,6 +8,9 @@ import { clearSearchDecorations, trackSearchUsage, wasSearchUsed } from './searc
 import { merge, cloneDeep, uniq } from 'lodash';
 import { INPUT_CAPTURE_COMMANDS } from './keybindingParsing';
 import replaceAll from 'string.prototype.replaceall';
+import { CommandState } from './state';
+
+let state = new CommandState();
 
 let modeStatusBar: vscode.StatusBarItem | undefined = undefined;
 let keyStatusBar: vscode.StatusBarItem | undefined = undefined;
@@ -109,88 +112,6 @@ type ListenerRequest = "keepOpen" | "close";
 // TODO: we should make a task to make it possible
 // to register new variables here that extensions can hook into
 
-class CommandState {
-    values: KeyContext = {
-        prefix: '',
-        prefixCode: 0,
-        prefixCodes: new PrefixCodes(),
-        count: 0,
-        mode: 'insert',
-        search: '',
-        validModes: ['insert', 'capture'],
-        editorHasSelection: false,
-        editorHasMultipleSelections: false,
-        editorHasMultiLineSelection: false,
-        editorLangId: undefined,
-        firstSelectionOrWord: "",
-        macro: [],
-        commandHistory: [],
-        record: false
-    };
-    listeners: ((values: KeyContext) => ListenerRequest)[] = [];
-    transientValues: Record<string, any> = { prefix: '', prefixCode: 0, count: 0 };
-    constructor() {
-        for (let [k, v] of Object.entries(this.values)) {
-            vscode.commands.executeCommand('setContext', 'master-key.' + k, v);
-        }
-        updateStatusBar();
-    }
-    setKeyContextForUser(key: string, value: any, transient: boolean = false) {
-        // key validation
-        validateInput('master-key.set', { key }, z.object({ key: keyContextKey }));
-
-        // value validation
-        if ((<any>keyContext.shape)[key]) {
-            validateInput('master-key.set', value, (<any>keyContext.shape)[key]);
-        }
-        if (key === 'mode') {
-            if (!this.values.validModes.some(m => m === value)) {
-                vscode.window.showErrorMessage(`Invalid mode '${value}'`);
-            }
-        }
-        return this.setKeyContext(key, value, transient);
-    }
-    setKeyContext(key: string, value: any, transient: boolean = false,
-                  opt: {updateStatusBar: boolean} = {updateStatusBar: true}) {
-        // assignment
-        let oldValue = this.values[key];
-        if (key === 'prefixCodes') {
-            this.values[key] = new PrefixCodes(value);
-        }else{
-            this.values[key] = value;
-        }
-
-        if(key === 'mode'){
-            let editor = vscode.window.activeTextEditor;
-            if(editor){ updateCursorAppearance(editor, value); }
-            if(state.values.commandHistory.length >= 1){
-                if(value === 'insert'){
-                    state.values.commandHistory[state.values.commandHistory.length-1].recordEdits = true;
-                }else{
-                    state.values.commandHistory[state.values.commandHistory.length-1].recordEdits = false;
-                }
-            }
-        }
-        if(transient){ this.transientValues[key] = oldValue; }
-        vscode.commands.executeCommand('setContext', 'master-key.' + key, value);
-        if(opt.updateStatusBar){ updateStatusBar(); }
-        this.listeners = this.listeners.filter(l => l(this.values) === "keepOpen");
-    }
-    onContextChange(fn: (values: KeyContext) => ListenerRequest){ this.listeners.push(fn); }
-    reset() {
-        // clear any transient state
-        for (let [k, v] of Object.entries(this.transientValues)) {
-            this.setKeyContext(k, v, false, {updateStatusBar: false});
-        }
-        updateStatusBar({delayStatusBarUpdate: true});
-        this.transientValues = {
-            count: 0,
-            prefix: '',
-            prefixCode: 0
-        };
-    }
-}
-export let state = new CommandState();
 
 function updateCursorAppearance(editor: vscode.TextEditor, mode: string){
     // TODO: make these user configurable
@@ -348,23 +269,6 @@ function updateCount(args_: unknown){
 }
 commands['master-key.updateCount'] = updateCount;
 
-const prefixArgs = z.object({
-    code: z.number(),
-    flag: z.string().min(1).optional(),
-    // `automated` is used during keybinding preprocessing and is not normally used otherwise
-    automated: z.boolean().optional()
-}).strict();
-
-function prefix(args_: unknown){
-    let args = validateInput('master-key.prefix', args_, prefixArgs);
-    if(args !== undefined){
-        state.setKeyContext('prefixCode', args.code);
-        state.setKeyContext('prefix', state.values.prefixCodes.nameFor(args.code));
-        if(args.flag){
-            state.setKeyContext(args.flag, true, true);
-        }
-    }
-}
 commands['master-key.prefix'] = prefix;
 
 // TODO: there needs to be more data validation for the standard state values; only

@@ -1,51 +1,57 @@
 import * as vscode from 'vscode';
-import { Map, List } from 'immutable';
-import { boolean } from 'zod';
+import { cloneDeep } from 'lodash';
 
 // OLD THINGS THAT GOT UPDATED IN `set` THAT MUST GO ELSEWHERE
 // - call the command `setContext (in `runCommand` final result)
 // - status bar / various other ux changes that happen due to state changes
 // - update cursor appearance
 
-interface ListenerResult{
-    state: Map<string, unknown>
+export interface ListenerResult{
+    states: States,
     close: boolean
 }
 
-type Listener = (state: State) => ListenerResult;
-type State = Map<string, unknown>;
+export type Listener = (states: States) => ListenerResult;
 
-class CommandState{
-    private state: State = Map();
-    private transient: State = Map();
-    private listeners: Map<string, List<Listener>> = Map();
+interface State{
+    value: unknown,
+    resetTo: unknown,
+    listeners: Listener[]
+}
+type States = Record<string, State>;
 
-    constructor(state: State = Map(), transient: State = Map(),
-        listeners = Map<string, List<Listener>>()) {
+export class CommandState{
+    private states: States = {};
 
-        this.state = state;
-        this.transient = transient;
-        this.listeners = listeners;
+    constructor(states: States = {}) {
+        this.states = states;
     }
 
     set(key: string, value: unknown, transient: boolean = false){
-        let newTransient = this.transient;
-        if(transient && this.transient.get(key) !== undefined){
-            newTransient = this.transient.set(key, this.state.get(key));
+        let resetTo = undefined;
+        if(transient && this.states[key] !== undefined){
+            resetTo = this.states[key].value;
         }
+        let listeners = this.states[key]?.listeners || [];
+        this.states[key] = {value, resetTo, listeners};
 
-        let newState = this.state.set(key, value);
-        let newListeners = this.listeners;
-        let keyListeners = this.listeners.get(key);
-        if(keyListeners){
-            let newKeyListeners = keyListeners.filter(fn => {
-                let result = fn(newState);
-                newState = result.state;
-                return result.close;
-            });
-            newListeners = this.listeners.set(key, newKeyListeners);
-        }
-        return new CommandState(newState, newTransient, newListeners);
+        listeners = listeners.filter(fn => {
+            let result = fn(this.states);
+            this.states = result.states;
+            return result.close;
+        });
+
+        this.states[key].listeners = listeners;
     }
-    get(key: string){ return this.state.get(key); }
+
+    get<T>(key: string, defaultValue?: T): T | undefined {
+        let val = <T>this.states[key].value;
+        if(val === undefined){
+            this.states[key] = {value: cloneDeep(defaultValue), resetTo: defaultValue, listeners: []};
+            return defaultValue;
+        }
+        else{ return val; }
+    }
+
+    reset(){ this.states = {}; }
 }
