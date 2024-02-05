@@ -88,15 +88,6 @@ type KeyContext = z.infer<typeof keyContext> & { [key: string]: any } & {
 
 const keyContextKey = z.string().regex(/[a-zA-Z_]+[0-9a-zA-Z_]*/);
 
-type ListenerRequest = "keepOpen" | "close";
-
-// TODO: we will need to implement API equivalent flags
-// for each 'when' clause context variable we want to use
-
-// TODO: we should make a task to make it possible
-// to register new variables here that extensions can hook into
-
-
 function updateCursorAppearance(editor: vscode.TextEditor, mode: string){
     // TODO: make these user configurable
     if(mode === 'capture'){
@@ -109,40 +100,6 @@ function updateCursorAppearance(editor: vscode.TextEditor, mode: string){
 }
 
 
-const repeatCommandArgs = bindingCommand.extend({
-    repeat: z.number().min(0).optional()
-});
-async function repeatCommand(args_: unknown){
-    let args = validateInput('master-key.repeat', args_, repeatCommandArgs);
-    if(args){
-        for(let i=0;i<(args.repeat || 1);i++){
-            await runCommand({ command: args.command, args: args.args, computedArgs: args.computedArgs });
-        }
-    }
-}
-commands['master-key.repeat'] = repeatCommand;
-
-// TODO: move a more limited version of this (set flag) to `state.ts`)
-// TODO: there needs to be more data validation for the standard state values; only
-// arbitrary values should be free to be any value
-const setArgs = z.object({
-    name: z.string(),
-    value: z.any(),
-    transient: z.boolean().default(false).optional()
-}).strict();
-type SetArgs = z.infer<typeof setArgs>;
-
-function setCmd(args_: unknown){
-    let args = validateInput('master-key.set', args_, setArgs);
-    if(args){
-        state.setKeyContextForUser(args.name, args.value, args.transient || false);
-    }
-}
-
-export function setKeyContext(args: SetArgs){
-    state.setKeyContext(args.name, args.value, args.transient || false);
-}
-commands['master-key.set'] = setCmd;
 const setModeArgs = z.object({ value: z.string() }).strict();
 commands['master-key.setMode'] = function(args_: unknown){
     let args = validateInput('master-key.setMode', args_, setModeArgs);
@@ -153,75 +110,7 @@ commands['master-key.setMode'] = function(args_: unknown){
 commands['master-key.enterInsert'] = (x) => setKeyContext({name: 'mode', value: 'insert'});
 commands['master-key.enterNormal'] = (x) => setKeyContext({name: 'mode', value: 'normal'});
 
-// TODO: move to state.ts??? (do we actually need it)
-function reset(): void{ state.reset(); }
-commands['master-key.reset'] = reset;
-
 commands['master-key.ignore'] = () => undefined;
-
-const storeNamedArgs = z.object({
-    description: z.string().optional(),
-    name: z.string(),
-    contents: z.string(),
-});
-let stored: Record<string, Record<string, any>> = {};
-function storeNamed(args_: unknown){
-    let argsNow = validateInput('master-key.storeNamed', args_, storeNamedArgs);
-    if(argsNow){
-        let args = argsNow;
-        let value = evalContext.evalStr(args.contents, state.values);
-        if(value !== undefined){
-            let picker = vscode.window.createQuickPick();
-            picker.title = args.description || args.name;
-            picker.placeholder = "Enter a new or existing name";
-            let options: vscode.QuickPickItem[] = Object.keys(stored[args.name] || {}).
-                map(k => ({label: k}));
-            options.unshift(
-                {label: "New Name...", alwaysShow: true},
-                {label: "Existing Names:", kind: vscode.QuickPickItemKind.Separator,
-                 alwaysShow: true}
-            );
-            picker.items = options;
-            picker.onDidAccept(e => {
-                let item = picker.selectedItems[0];
-                let name;
-                if(item.label === "New Name..."){
-                    name = picker.value;
-                }else{
-                    name = item.label;
-                }
-                if(stored[args.name] === undefined){
-                    stored[args.name] = {};
-                }
-                stored[args.name][name] = value;
-                picker.hide();
-            });
-            picker.show();
-        }
-    }
-}
-commands['master-key.storeNamed'] = storeNamed;
-
-const restoreNamedArgs = z.object({
-    description: z.string().optional(),
-    name: z.string(),
-    doAfter: doArgs
-});
-async function restoreNamed(args_: unknown){
-    let args = validateInput('master-key.restoreNamed', args_, restoreNamedArgs);
-    if(args){
-        if(!stored[args.name]){
-            vscode.window.showErrorMessage(`No values are stored under '${args.name}'.`);
-        }
-        let items = Object.keys(stored[args.name]).map(x => ({label: x}));
-        let selected = await vscode.window.showQuickPick(items);
-        if(selected !== undefined){
-            setKeyContext({ name: 'captured', value: stored[args.name][selected.label] });
-            runCommands({ do: args.doAfter });
-        }
-    }
-}
-commands['master-key.restoreNamed'] = restoreNamed;
 
 export function activate(context: vscode.ExtensionContext) {
     modeStatusBar = vscode.window.createStatusBarItem('mode', vscode.StatusBarAlignment.Left, 100000);

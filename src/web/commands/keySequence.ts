@@ -50,6 +50,9 @@ async function updateCount(state: CommandState, args_: unknown){
     return state;
 }
 
+// TODO: we can have a status bar file that calls `prettyPrefix` and requests the `count` to
+// generate the status bar (so move this to, e.g. status/keys.ts)
+
 function prettifyPrefix(str: string){
     str = str.toUpperCase();
     str = replaceAll(str, /shift\+/gi, '⇧');

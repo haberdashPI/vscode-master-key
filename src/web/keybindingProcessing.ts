@@ -133,6 +133,7 @@ function expandDefaultsAndDefinedCommands(spec: BindingSpec, problems: string[])
                     description: item.description,
                     kind: item.kind,
                     resetTransient: item.resetTransient,
+                    repeat: item.repeat
                 }
             });
             if(!result.success){
@@ -318,6 +319,7 @@ function updatePrefixItemAndPrefix(item: BindingItem, key: string, prefix: strin
             name: "Command Prefix: "+prefix,
             kind: "prefix",
             resetTransient: false,
+            repeat: 0
         },
         when: item.when,
         prefixes: [oldPrefix],

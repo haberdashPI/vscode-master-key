@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
+import z from 'zod';
 import { cloneDeep, mapValues } from 'lodash';
 import { pickBy } from 'lodash';
+import { validateInput } from './utils';
 
 // OLD THINGS THAT GOT UPDATED IN `set` THAT MUST GO ELSEWHERE
 // - status bar / various other ux changes that happen due to state changes
@@ -105,7 +107,23 @@ function updateConfig(event?: vscode.ConfigurationChangeEvent){
     }
 }
 
-function activate(context: vscode.ExtensionContext){
+const setFlagArgs = z.object({
+    name: z.string(),
+    value: z.boolean(),
+    transient: z.boolean().default(false).optional()
+}).strict();
+type SetFlagArgs = z.infer<typeof setFlagArgs>;
+
+async function setFlag(state: CommandState, args_: unknown){
+    let args = validateInput('master-key.set', args_, setFlagArgs);
+    if(args){ state.set(args.name, args.value, args.transient || false); }
+    return state;
+}
+
+export function activate(context: vscode.ExtensionContext){
     updateConfig();
     vscode.workspace.onDidChangeConfiguration(updateConfig);
+
+    context.subscriptions.push(vscode.commands.registerCommand('master-key.setFlag',
+        wrapStateful(setFlag)));
 }

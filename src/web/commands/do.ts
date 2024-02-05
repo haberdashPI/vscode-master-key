@@ -4,11 +4,9 @@ import { validateInput } from '../utils';
 import { BindingCommand, doArgs } from '../keybindingParsing';
 import { CommandState, wrapStateful } from '../state';
 import { cloneDeep, merge } from 'lodash';
-import { EvalContext, reifyStrings } from '../expressions';
+import { evalContext, reifyStrings } from '../expressions';
 import { keySuffix } from './keySequence';
 import { isSingleCommand } from '../keybindingProcessing';
-
-let evalContext = new EvalContext();
 
 async function doCommand(state: CommandState, command: BindingCommand):
     Promise<[BindingCommand, CommandState]> {
@@ -44,10 +42,11 @@ const runCommandArgs = z.object({
     do: doArgs,
     key: z.string().optional(),
     resetTransient: z.boolean().optional().default(true),
+    repeat: z.number().min(0).optional(),
     kind: z.string().optional(),
     path: z.string().optional(),
     name: z.string().optional(),
-    description: z.string().optional()
+    description: z.string().optional(),
 }).strict();
 export type RunCommandsArgs = z.input<typeof runCommandArgs>;
 
@@ -71,6 +70,14 @@ export async function doCommands(state: CommandState, args: RunCommandsArgs):
             let command;
             [command, state] = await doCommand(state, cmd);
             reifiedCommands.push(command);
+        }
+        let repeat = args.repeat || 0;
+        if(repeat > 0){
+            for(let i = 0; i < repeat; i++){
+                for(const cmd of args.do){
+                    [, state] = await doCommand(state, cmd);
+                }
+            }
         }
     }finally{
         if(args.resetTransient){

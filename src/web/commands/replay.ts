@@ -104,6 +104,36 @@ async function runCommandHistory(state: CommandState, commands: (RunCommandsArgs
     return state;
 }
 
+async function pushHistoryToStack(state: CommandState, args: unknown){
+    let commands = await selectHistoryCommand(state, 'master-key.pushHistoryToStack', args);
+    if(commands){
+        let macro = state.get<RecordedCommandArgs[][]>(MACRO, [])!;
+        macro.push(commands);
+        state.set(MACRO, macro);
+    }
+    return state;
+};
+
+async function replayFromHistory(state: CommandState, args: unknown){
+    let commands = await selectHistoryCommand(state, 'master-key.replayFromHistory', args);
+    if(commands){
+        state = await runCommandHistory(state, commands);
+    }
+    return state;
+};
+
+async function replayFromStack(state: CommandState, args_: unknown){
+    let args = validateInput('master-key.replayFromStack', args_, replayFromStackArgs);
+    if(args){
+        let macros = state.get<RecordedCommandArgs[][]>(MACRO, [])!;
+        let commands = macros[macros.length-args.index-1];
+        if(commands){
+            state = await runCommandHistory(state, commands);
+        }
+    }
+    return state;
+};
+
 const replayFromStackArgs = z.object({
     index: z.number().min(0).optional().default(0),
     register: z.string().optional()
@@ -111,42 +141,13 @@ const replayFromStackArgs = z.object({
 
 const MACRO = 'macro';
 function activate(context: vscode.ExtensionContext){
-    // TODO: these shouldn't be anonymous functions
-    let pushHistory = async (state: CommandState, args: unknown) => {
-        let commands = await selectHistoryCommand(state, 'master-key.pushHistoryToStack', args);
-        if(commands){
-            let macro = state.get<RecordedCommandArgs[][]>(MACRO, [])!;
-            macro.push(commands);
-            state.set(MACRO, macro);
-        }
-        return state;
-    };
-
     context.subscriptions.push(vscode.commands.registerCommand('master-key.pushHistoryToStack',
-        wrapStateful(pushHistory)));
+        wrapStateful(pushHistoryToStack)));
 
-    let replayFromHistory = async (state: CommandState, args: unknown) => {
-        let commands = await selectHistoryCommand(state, 'master-key.replayFromHistory', args);
-        if(commands){
-            state = await runCommandHistory(state, commands);
-        }
-        return state;
-    };
 
     context.subscriptions.push(vscode.commands.registerCommand('master-key.pushHistoryToStack',
         wrapStateful(replayFromHistory)));
 
-    let replayFromStack = async (state: CommandState, args_: unknown) => {
-        let args = validateInput('master-key.replayFromStack', args_, replayFromStackArgs);
-        if(args){
-            let macros = state.get<RecordedCommandArgs[][]>(MACRO, [])!;
-            let commands = macros[macros.length-args.index-1];
-            if(commands){
-                state = await runCommandHistory(state, commands);
-            }
-        }
-        return state;
-    };
     context.subscriptions.push(vscode.commands.registerCommand('master-key.replayFromStack',
         wrapStateful(replayFromStack)));
 

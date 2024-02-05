@@ -91,3 +91,5 @@ export class EvalContext {
         return result;
     }
 }
+
+export const evalContext = new EvalContext();
