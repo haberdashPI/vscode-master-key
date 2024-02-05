@@ -2030,6 +2030,15 @@ args.cmd = "activate_from(\"%file%\")"
 
 [[bind]]
 path = "edit.action.terminal"
+name = "activate tests"
+description = "Activate the julia project test environmentassociated with the current file in the active REPL"
+key = "' t"
+when = "editorLangId == 'julia'"
+command = "terminal-polyglot.send-command"
+args.cmd = "\nbegin; activate_from(\"%file%\"); using TestEnv; TestEnv.activate(); end"
+
+[[bind]]
+path = "edit.action.terminal"
 key = "shift+m"
 name = "to repl (v2)"
 description = """
