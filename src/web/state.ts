@@ -1,10 +1,8 @@
 import * as vscode from 'vscode';
 import { cloneDeep, mapValues } from 'lodash';
-import { boolean } from 'zod';
 import { pickBy } from 'lodash';
 
 // OLD THINGS THAT GOT UPDATED IN `set` THAT MUST GO ELSEWHERE
-// - call the command `setContext (in `runCommand` final result)
 // - status bar / various other ux changes that happen due to state changes
 // - update cursor appearance
 
@@ -56,7 +54,16 @@ export class CommandState{
     onResolve(name: string, listener: Listener){
         this.resolveListeners[name] = listener;
     }
-    resolve(){ this.resolveListeners = pickBy(this.resolveListeners, fn => fn(this)); }
+    resolve(){
+        this.resolveListeners = pickBy(this.resolveListeners, fn => fn(this));
+        for(let [key, state] of Object.entries(this.states)){
+            vscode.commands.executeCommand('setContext', 'master-key.'+key, state.value);
+        }
+    }
+
+    async evalContext(extra: object = {}){
+        return { ...mapValues(this.states, val => val.value), extra };
+    }
 }
 
 let state: undefined | Thenable<CommandState> = undefined;
@@ -79,4 +86,26 @@ export function wrapStateful(fn: (state: CommandState, ...args: any[]) => Promis
         }
         return state_;
     };
+}
+
+async function addDefinitions(state: Thenable<CommandState> | undefined, definitions: any){
+    let state_ = state ? await state : new CommandState();
+
+    for(let [k, v] of Object.entries(definitions || {})){
+        state_.set(k, v);
+    }
+    return state_;
+}
+
+function updateConfig(event?: vscode.ConfigurationChangeEvent){
+    if(!event || event?.affectsConfiguration('master-key')){
+        let config = vscode.workspace.getConfiguration('master-key');
+        let definitions = config.get<object[]>('definitions');
+        state = addDefinitions(state, definitions);
+    }
+}
+
+function activate(context: vscode.ExtensionContext){
+    updateConfig();
+    vscode.workspace.onDidChangeConfiguration(updateConfig);
 }

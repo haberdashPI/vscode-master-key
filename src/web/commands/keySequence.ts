@@ -31,6 +31,12 @@ async function prefix(state: CommandState, args_: unknown){
     return state;
 }
 
+export function keySuffix(state: CommandState, key: string){
+    let newPrefix = state.get<string>(PREFIX, '')!;
+    newPrefix = newPrefix.length > 0 ? newPrefix + " " + key : key;
+    state.set(PREFIX, newPrefix);
+}
+
 const updateCountArgs = z.object({
     value: z.coerce.number()
 }).strict();
@@ -60,6 +66,8 @@ let keyStatusBar: vscode.StatusBarItem | undefined = undefined;
 
 let statusUpdates = Number.MIN_SAFE_INTEGER;
 function updateKeyStatus(state: CommandState, opt: {delayedUpdate?: boolean} = {}){
+    // TODO: how do we infer delayedUpdate in this new context
+    // (some how have to pass this from `reset`)
     if(keyStatusBar !== undefined){
         let count = state.get<number>(COUNT);
         let plannedUpdate = count ? count + "× " : '';

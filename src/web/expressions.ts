@@ -42,7 +42,7 @@ export class EvalContext {
         }
     }
 
-    evalExpressionsInString(str: string, values: Record<string, any>) {
+    async evalExpressionsInString(str: string, values: Promise<Record<string, any>>) {
         let result = "";
         let r = /\{.*?key.*?\}/g;
         let match = r.exec(str);
@@ -52,12 +52,12 @@ export class EvalContext {
             let evaled;
             try {
                 // slice to remove `{` and `}`
-                evaled = this.evalStr(match[0].slice(1, -1), values);
+                evaled = await this.evalStr(match[0].slice(1, -1), values);
             } catch (e) {
                 evaled = undefined;
             }
             if (evaled === undefined) {
-                this.errors.push(`The expression 
+                this.errors.push(`The expression
                 ${match[0]}, found in ${str}, could not be evaluated.`);
                 evaled = match[0];
             }
@@ -69,7 +69,7 @@ export class EvalContext {
         return result;
     }
 
-    evalStr(str: string, values: Record<string, any>) {
+    async evalStr(str: string, values: Promise<Record<string, any>>) {
         let exec = this.cache[str];
         if (exec === undefined) {
             if (str.match(/(?<!(\!|=))=(?!(\>|=))/)) {
@@ -83,7 +83,7 @@ export class EvalContext {
         let result = str;
         try {
             // do not let the expression modify any of the `values`
-            result = exec(values);
+            result = exec(await values);
         } catch (e: any) {
             this.errors.push(`Error evaluating ${str}: ${e.message}`);
             return undefined;
