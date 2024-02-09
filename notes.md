@@ -3,6 +3,12 @@ current issue I'm working on:
 re-organizing command state management (see plan below)
 
 current task: `search` needs to be refactored
+  THOUGHTS: I think the search input should be generified,
+  we can move most of the input logic over to `capture` and make that
+  how things work when there isn't an `acceptAfter` value set
+  and give options to change the message
+
+  THEN: search can just call into `captureKeys` with appropriate options
 
 also we need to split up `keySequence` into prefix and count and move the status
 bar stuff to a separate file??? (or something)

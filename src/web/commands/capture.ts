@@ -65,7 +65,7 @@ export function captureKeys(state: CommandState, onUpdate: UpdateFn) {
 
 const captureKeysArgs = z.object({
     text: z.string().optional(),
-    acceptAfter: z.number().min(1).optional(),
+    acceptAfter: z.number().min(1),
 });
 
 async function captureKeysCmd(state: CommandState, args_: unknown): Promise<CommandResult> {
@@ -81,7 +81,7 @@ async function captureKeysCmd(state: CommandState, args_: unknown): Promise<Comm
                 if(char === "\n"){ stop = true; }
                 else{
                     result += char;
-                    if(a?.acceptAfter && result.length >= a.acceptAfter){ stop = true; }
+                    if(result.length >= a.acceptAfter){ stop = true; }
                 }
                 return [result, stop];
             });
