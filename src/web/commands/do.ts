@@ -34,7 +34,9 @@ async function doCommand(state: CommandState, command: BindingCommand):
         reifiedCommand.computedArgs = undefined;
     }
 
-    state = await vscode.commands.executeCommand(command.command, reifyArgs);
+    let possibleState = await vscode.commands.executeCommand<void | CommandState>(
+        command.command, reifyArgs);
+    state = possibleState instanceof CommandState ? possibleState : state;
     return [reifiedCommand, state];
 }
 

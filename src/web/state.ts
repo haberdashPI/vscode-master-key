@@ -8,7 +8,7 @@ import { validateInput } from './utils';
 // - status bar / various other ux changes that happen due to state changes
 // - update cursor appearance
 
-export type Listener = (states: CommandState) => boolean;
+export type Listener = (states: CommandState) => Promise<boolean>;
 
 interface State{
     value: unknown,
@@ -21,7 +21,7 @@ export class CommandState{
     private states: States = {};
     private resolveListeners: Record<string, Listener> = {};
 
-    set(key: string, value: unknown, transient: boolean = false){
+    async set(key: string, value: unknown, transient: boolean = false){
         let resetTo = undefined;
         if(transient && this.states[key] !== undefined){
             resetTo = this.states[key].value;
@@ -29,8 +29,13 @@ export class CommandState{
         let listeners = this.states[key]?.listeners || [];
         this.states[key] = {value, resetTo, listeners};
 
-        listeners = listeners.filter(fn => fn(this));
-        this.states[key].listeners = listeners;
+        let newListeners: Listener[] = [];
+        for(let listener of listeners){
+            let keep = await listener(this);
+            if(keep){ newListeners.push(listener); }
+        }
+
+        this.states[key].listeners = newListeners;
     }
 
     get<T>(key: string, defaultValue?: T): T | undefined {
@@ -56,8 +61,14 @@ export class CommandState{
     onResolve(name: string, listener: Listener){
         this.resolveListeners[name] = listener;
     }
-    resolve(){
-        this.resolveListeners = pickBy(this.resolveListeners, fn => fn(this));
+    async resolve(){
+        let newListeners: Record<string, Listener> = {};
+        for(let [name, fn] of Object.entries(this.resolveListeners)){
+            let keep = await fn(this);
+            if(keep){ newListeners[name] = fn; }
+        }
+
+        this.resolveListeners = newListeners;
         for(let [key, state] of Object.entries(this.states)){
             vscode.commands.executeCommand('setContext', 'master-key.'+key, state.value);
         }

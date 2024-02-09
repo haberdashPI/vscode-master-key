@@ -12,41 +12,6 @@ async function onType(event: {text: string}){
     return onTypeFn(event.text);
 }
 
-type UpdateFn = (str: string, stop: () => void) => void;
-export function captureKeys(onUpdate: UpdateFn): void {
-    let oldMode = state.values.mode;
-    if(!typeSubscription){
-        try{
-            typeSubscription = vscode.commands.registerCommand('type', onType);
-            setKeyContext({name: 'mode', value: 'capture'});
-        }catch(e){
-            vscode.window.showErrorMessage(`Failed to capture keyboard input. You
-                might have an extension that is already listening to type events
-                (e.g. vscodevim).`);
-        }
-    }
-    let stop = () => {
-        if(typeSubscription){
-            typeSubscription.dispose();
-            typeSubscription = undefined;
-            setKeyContext({name: 'mode', value: oldMode});
-        }
-    };
-    state.onContextChange(values => {
-        if(values.mode !== 'capture'){
-            if(typeSubscription){
-                typeSubscription.dispose();
-                typeSubscription = undefined;
-            }
-            // TODO: we need to somehow "update" args here to indicate
-            // that capturing was canceled
-            return "close";
-        }
-        return "keepOpen";
-    });
-    onTypeFn = (str: string) => onUpdate(str, stop);
-}
-
 const captureKeysArgs = z.object({
     text: z.string().optional(),
     acceptAfter: z.number().min(1),
