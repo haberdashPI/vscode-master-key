@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import z from 'zod';
 import { validateInput } from '../utils';
-import { BindingCommand, doArgs } from '../keybindingParsing';
-import { CommandState, wrapStateful } from '../state';
+import { BindingCommand, DoArgs, doArgs } from '../keybindingParsing';
+import { CommandResult, CommandState, WrappedCommandResult, commandArgs, wrapStateful } from '../state';
 import { cloneDeep, merge } from 'lodash';
 import { evalContext, reifyStrings } from '../expressions';
 import { keySuffix } from './keySequence';
@@ -34,9 +34,12 @@ async function doCommand(state: CommandState, command: BindingCommand):
         reifiedCommand.computedArgs = undefined;
     }
 
-    let possibleState = await vscode.commands.executeCommand<void | CommandState>(
-        command.command, reifyArgs);
-    state = possibleState instanceof CommandState ? possibleState : state;
+    // sometime, based on user input, a command can change its final argument values we need
+    // to capture this result and save it as part of the `reifiedCommand` (for example, see
+    // `replaceChar` in `capture.ts`)
+    let result = await vscode.commands.executeCommand<WrappedCommandResult | void>(command.command, reifyArgs);
+    let args = commandArgs(result);
+    if(args){ reifiedCommand.args = args; }
     return [reifiedCommand, state];
 }
 
@@ -44,7 +47,7 @@ const runCommandArgs = z.object({
     do: doArgs,
     key: z.string().optional(),
     resetTransient: z.boolean().optional().default(true),
-    repeat: z.number().min(0).optional(),
+    repeat: z.number().min(0).or(z.string()).optional(),
     kind: z.string().optional(),
     path: z.string().optional(),
     name: z.string().optional(),
@@ -57,6 +60,22 @@ export type RecordedCommandArgs = RunCommandsArgs & {
     edits: vscode.TextDocumentChangeEvent[] | string
 };
 
+function resolveRepeat(state: CommandState, args: RunCommandsArgs): number {
+    if(typeof args.repeat === 'string'){
+        let repeatEval = evalContext.evalStr(args.repeat, state.evalContext());
+        let repeatNum = z.number().safeParse(repeatEval);
+        if(repeatNum.success){
+            return repeatNum.data;
+        }else{
+            vscode.window.showErrorMessage(`The expression '${args.repeat}' did not
+                evaluate to a number`);
+            return 0;
+        }
+    }else{
+        return args.repeat || 0;
+    }
+}
+
 // TODO: handle search usage functions
 // they should become part of state listeners in `search` file
 export async function doCommands(state: CommandState, args: RunCommandsArgs):
@@ -66,6 +85,7 @@ export async function doCommands(state: CommandState, args: RunCommandsArgs):
 
     // trackSearchUsage();
     let reifiedCommands: BindingCommand[] | undefined = undefined;
+    let repeat = 0;
     try{
         reifiedCommands = [];
         for(const cmd of args.do){
@@ -73,10 +93,10 @@ export async function doCommands(state: CommandState, args: RunCommandsArgs):
             [command, state] = await doCommand(state, cmd);
             reifiedCommands.push(command);
         }
-        let repeat = args.repeat || 0;
+        repeat = resolveRepeat(state, args);
         if(repeat > 0){
             for(let i = 0; i < repeat; i++){
-                for(const cmd of args.do){
+                for(const cmd of reifiedCommands){
                     [, state] = await doCommand(state, cmd);
                 }
             }
@@ -95,7 +115,7 @@ export async function doCommands(state: CommandState, args: RunCommandsArgs):
         }
     }
     evalContext.reportErrors();
-    return [state, { ...args, do: reifiedCommands }];
+    return [state, { ...args, do: reifiedCommands, repeat }];
 }
 
 export const COMMAND_HISTORY = 'commandHistory';
@@ -103,7 +123,7 @@ const MODE = 'mode';
 
 let maxHistory = 0;
 
-async function doCommandsCmd(state: CommandState, args_: unknown){
+async function doCommandsCmd(state: CommandState, args_: unknown): Promise<CommandResult> {
     let args = validateInput('master-key.do', args_, runCommandArgs);
     if(args){
         let command;
@@ -115,7 +135,7 @@ async function doCommandsCmd(state: CommandState, args_: unknown){
             state.set(COMMAND_HISTORY, history);
         }
     }
-    return state;
+    return [undefined, state];
 }
 
 function updateConfig(event?: vscode.ConfigurationChangeEvent){

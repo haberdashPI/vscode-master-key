@@ -3,6 +3,8 @@ import z from 'zod';
 import { cloneDeep, mapValues } from 'lodash';
 import { pickBy } from 'lodash';
 import { validateInput } from './utils';
+import { RunCommandsArgs } from './commands/do';
+import { DoArgs } from './keybindingParsing';
 
 // OLD THINGS THAT GOT UPDATED IN `set` THAT MUST GO ELSEWHERE
 // - status bar / various other ux changes that happen due to state changes
@@ -82,22 +84,33 @@ export class CommandState{
 let state: undefined | Thenable<CommandState> = undefined;
 const WRAPPING_STATEFUL = 'wrappingStateful';
 
-export function wrapStateful(fn: (state: CommandState, ...args: any[]) => Promise<CommandState>) {
-    return async function (...args: any[]) {
+const WRAPPED_UUID = "28509bd6-8bde-4eef-8406-afd31ad11b43";
+export type WrappedCommandResult = { id: "28509bd6-8bde-4eef-8406-afd31ad11b43", args?: object };
+export function commandArgs(x: unknown): undefined | object {
+    if((<any>x)?.id === WRAPPED_UUID){
+        return (<WrappedCommandResult>x).args;
+    }
+}
+
+export type CommandResult = [object | undefined, CommandState];
+type CommandFn = (state: CommandState, ...args: any[]) => Promise<CommandResult>;
+export function wrapStateful(fn: CommandFn) {
+    return async function (...args: any[]): Promise<WrappedCommandResult> {
         if (!state) { state = Promise.resolve(new CommandState()); }
         let state_ = await state;
 
         let globalWrapper = state_.get<boolean>(WRAPPING_STATEFUL, false);
         if(globalWrapper){ state_.set(WRAPPING_STATEFUL, true); }
 
-        state = fn(state_, ...args);
+        let rargs;
+        [rargs, state_] = await fn(state_, ...args);
 
         if(globalWrapper){
             state_ = await state;
             state_.set(WRAPPING_STATEFUL, false);
             state_.resolve();
         }
-        return state_;
+        return { id: WRAPPED_UUID, args: rargs };
     };
 }
 
@@ -125,10 +138,10 @@ const setFlagArgs = z.object({
 }).strict();
 type SetFlagArgs = z.infer<typeof setFlagArgs>;
 
-async function setFlag(state: CommandState, args_: unknown){
+async function setFlag(state: CommandState, args_: unknown): Promise<CommandResult> {
     let args = validateInput('master-key.set', args_, setFlagArgs);
     if(args){ state.set(args.name, args.value, args.transient || false); }
-    return state;
+    return [undefined, state];
 }
 
 export function activate(context: vscode.ExtensionContext){

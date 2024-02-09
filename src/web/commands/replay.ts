@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import z from 'zod';
 import { validateInput } from '../utils';
 import { EvalContext } from '../expressions';
-import { CommandState, wrapStateful } from '../state';
+import { CommandResult, CommandState, wrapStateful } from '../state';
 import { doCommands, RecordedCommandArgs, RunCommandsArgs, COMMAND_HISTORY } from './do';
 import { uniq } from 'lodash';
 
@@ -79,7 +79,9 @@ function cleanupEdits(edits: vscode.TextDocumentChangeEvent[] | string){
 
 const REPLAY_DELAY = 50;
 // TODO: does `commands` require the `RunCommandsArgs` type?
-async function runCommandHistory(state: CommandState, commands: (RunCommandsArgs | RecordedCommandArgs)[]){
+async function runCommandHistory(state: CommandState,
+    commands: (RunCommandsArgs | RecordedCommandArgs)[]): Promise<CommandResult> {
+
     for(let cmd of commands){
         [state, ] = await doCommands(state, cmd);
 
@@ -101,37 +103,37 @@ async function runCommandHistory(state: CommandState, commands: (RunCommandsArgs
         // replaying actions too fast messes up selection
         await new Promise(res => setTimeout(res, REPLAY_DELAY));
     }
-    return state;
+    return [undefined, state];
 }
 
-async function pushHistoryToStack(state: CommandState, args: unknown){
+async function pushHistoryToStack(state: CommandState, args: unknown): Promise<CommandResult> {
     let commands = await selectHistoryCommand(state, 'master-key.pushHistoryToStack', args);
     if(commands){
         let macro = state.get<RecordedCommandArgs[][]>(MACRO, [])!;
         macro.push(commands);
         state.set(MACRO, macro);
     }
-    return state;
+    return [undefined, state];
 };
 
-async function replayFromHistory(state: CommandState, args: unknown){
+async function replayFromHistory(state: CommandState, args: unknown): Promise<CommandResult> {
     let commands = await selectHistoryCommand(state, 'master-key.replayFromHistory', args);
     if(commands){
-        state = await runCommandHistory(state, commands);
+        [, state] = await runCommandHistory(state, commands);
     }
-    return state;
+    return [undefined, state];
 };
 
-async function replayFromStack(state: CommandState, args_: unknown){
+async function replayFromStack(state: CommandState, args_: unknown): Promise<CommandResult> {
     let args = validateInput('master-key.replayFromStack', args_, replayFromStackArgs);
     if(args){
         let macros = state.get<RecordedCommandArgs[][]>(MACRO, [])!;
         let commands = macros[macros.length-args.index-1];
         if(commands){
-            state = await runCommandHistory(state, commands);
+            [, state] = await runCommandHistory(state, commands);
         }
     }
-    return state;
+    return [undefined, state];
 };
 
 const replayFromStackArgs = z.object({
@@ -140,15 +142,13 @@ const replayFromStackArgs = z.object({
 });
 
 const MACRO = 'macro';
-function activate(context: vscode.ExtensionContext){
+export function activate(context: vscode.ExtensionContext){
     context.subscriptions.push(vscode.commands.registerCommand('master-key.pushHistoryToStack',
         wrapStateful(pushHistoryToStack)));
 
-
-    context.subscriptions.push(vscode.commands.registerCommand('master-key.pushHistoryToStack',
+    context.subscriptions.push(vscode.commands.registerCommand('master-key.replayFromHistory',
         wrapStateful(replayFromHistory)));
 
     context.subscriptions.push(vscode.commands.registerCommand('master-key.replayFromStack',
         wrapStateful(replayFromStack)));
-
 }

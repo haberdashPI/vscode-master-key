@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import z from 'zod';
 import { validateInput } from '../utils';
-import { wrapStateful, CommandState } from '../state';
+import { wrapStateful, CommandState, CommandResult } from '../state';
 import { PrefixCodes } from '../keybindingProcessing';
 import replaceAll from 'string.prototype.replaceall';
 
@@ -17,7 +17,7 @@ const PREFIX_CODES = 'prefixCodes';
 const PREFIX = 'prefix';
 const COUNT = 'count';
 
-async function prefix(state: CommandState, args_: unknown){
+async function prefix(state: CommandState, args_: unknown): Promise<CommandResult>{
     let args = validateInput('master-key.prefix', args_, prefixArgs);
     if(args !== undefined){
         let prefix = state.get<PrefixCodes>(PREFIX_CODES)?.nameFor(args.code);
@@ -26,9 +26,9 @@ async function prefix(state: CommandState, args_: unknown){
 
         if(args.flag){ state.set(args.flag, true); }
         state.onResolve('updateKeyState', updateKeyStatus);
-        return state;
+        return [undefined, state];
     }
-    return state;
+    return [undefined, state];
 }
 
 export function keySuffix(state: CommandState, key: string){
@@ -41,13 +41,13 @@ const updateCountArgs = z.object({
     value: z.coerce.number()
 }).strict();
 
-async function updateCount(state: CommandState, args_: unknown){
+async function updateCount(state: CommandState, args_: unknown): Promise<CommandResult> {
     let args = validateInput('master-key.updateCount', args_, updateCountArgs);
     if(args !== undefined){
         state.set(COUNT, state.get<number>(COUNT, 0)!*10 + args.value);
     }
     state.onResolve('updateKeyState', updateKeyStatus);
-    return state;
+    return [undefined, state];
 }
 
 // TODO: we can have a status bar file that calls `prettyPrefix` and requests the `count` to
@@ -68,7 +68,7 @@ function prettifyPrefix(str: string){
 let keyStatusBar: vscode.StatusBarItem | undefined = undefined;
 
 let statusUpdates = Number.MIN_SAFE_INTEGER;
-function updateKeyStatus(state: CommandState, opt: {delayedUpdate?: boolean} = {}){
+async function updateKeyStatus(state: CommandState, opt: {delayedUpdate?: boolean} = {}){
     // TODO: how do we infer delayedUpdate in this new context
     // (some how have to pass this from `reset`)
     if(keyStatusBar !== undefined){

@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import z from 'zod';
 import { validateInput } from '../utils';
-import { CommandState, wrapStateful } from '../state';
+import { CommandResult, CommandState, wrapStateful } from '../state';
 import { evalContext } from '../expressions';
 
 const restoreNamedArgs = z.object({
@@ -13,7 +13,7 @@ let stored: Record<string, Record<string, unknown>> = {};
 
 const CAPTURED = 'captured';
 
-async function restoreNamed(state: CommandState, args_: unknown){
+async function restoreNamed(state: CommandState, args_: unknown): Promise<CommandResult> {
     let args = validateInput('master-key.restoreNamed', args_, restoreNamedArgs);
     if(args){
         if(!stored[args.name]){
@@ -25,7 +25,7 @@ async function restoreNamed(state: CommandState, args_: unknown){
             state.set(CAPTURED, stored[args.name][selected.label]);
         }
     }
-    return state;
+    return [undefined, state];
 }
 
 const storeNamedArgs = z.object({
@@ -34,13 +34,13 @@ const storeNamedArgs = z.object({
     contents: z.string(),
 });
 
-function storeNamed(state: CommandState, args_: unknown){
+function storeNamed(state: CommandState, args_: unknown): Promise<CommandResult> {
     let argsNow = validateInput('master-key.storeNamed', args_, storeNamedArgs);
     if(argsNow){
         let args = argsNow;
         let value = evalContext.evalStr(args.contents, state.evalContext());
         if(value !== undefined){
-            return new Promise<CommandState>((resolve, reject) => {
+            return new Promise<CommandResult>((resolve, reject) => {
                 try{
                     let picker = vscode.window.createQuickPick();
                     picker.title = args.description || args.name;
@@ -67,13 +67,13 @@ function storeNamed(state: CommandState, args_: unknown){
                         stored[args.name][name] = value;
                         picker.hide();
                     });
-                    picker.onDidHide(e => { resolve(state); });
+                    picker.onDidHide(e => { resolve([undefined, state]); });
                     picker.show();
                 }catch(e){ reject(e); }
             });
         }
     }
-    return Promise.resolve(state);
+    return Promise.resolve([undefined, state]);
 }
 
 export function activate(context: vscode.ExtensionContext){

@@ -1,5 +1,12 @@
 current issue I'm working on:
 
+re-organizing command state management (see plan below)
+
+current task: `search` needs to be refactored
+
+also we need to split up `keySequence` into prefix and count and move the status
+bar stuff to a separate file??? (or something)
+
 NOTE: we're using a revised version of vscod-extension-tester (https://github.com/redhat-developer/vscode-extension-tester/pull/1084) after fixing a bug on MacOS ARM
 
 
