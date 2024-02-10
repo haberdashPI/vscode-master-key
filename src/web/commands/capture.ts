@@ -54,6 +54,7 @@ export function captureKeys(state: CommandState, onUpdate: UpdateFn) {
                 [result, stop] = onUpdate(result, str);
                 if(stop){
                     clearTypeSubscription();
+                    state.set(MODE, oldMode);
                     resolve(result);
                 }
             };

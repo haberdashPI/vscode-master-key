@@ -9,7 +9,7 @@ import { keySuffix } from './keySequence';
 import { isSingleCommand } from '../keybindingProcessing';
 
 async function doCommand(state: CommandState, command: BindingCommand):
-    Promise<[BindingCommand, CommandState]> {
+    Promise<[BindingCommand | undefined, CommandState]> {
 
     let reifiedCommand = cloneDeep(command);
     if (command.if !== undefined) {
@@ -39,6 +39,7 @@ async function doCommand(state: CommandState, command: BindingCommand):
     // `replaceChar` in `capture.ts`)
     let result = await vscode.commands.executeCommand<WrappedCommandResult | void>(command.command, reifyArgs);
     let args = commandArgs(result);
+    if(args === "cancel"){ return [undefined, state]; }
     if(args){ reifiedCommand.args = args; }
     return [reifiedCommand, state];
 }
@@ -91,7 +92,7 @@ export async function doCommands(state: CommandState, args: RunCommandsArgs):
         for(const cmd of args.do){
             let command;
             [command, state] = await doCommand(state, cmd);
-            reifiedCommands.push(command);
+            if(command){ reifiedCommands.push(command); }
         }
         repeat = resolveRepeat(state, args);
         if(repeat > 0){

@@ -85,14 +85,14 @@ let state: undefined | Thenable<CommandState> = undefined;
 const WRAPPING_STATEFUL = 'wrappingStateful';
 
 const WRAPPED_UUID = "28509bd6-8bde-4eef-8406-afd31ad11b43";
-export type WrappedCommandResult = { id: "28509bd6-8bde-4eef-8406-afd31ad11b43", args?: object };
-export function commandArgs(x: unknown): undefined | object {
+export type WrappedCommandResult = { id: "28509bd6-8bde-4eef-8406-afd31ad11b43", args?: object | "cancel" };
+export function commandArgs(x: unknown): undefined | object | "cancel" {
     if((<any>x)?.id === WRAPPED_UUID){
         return (<WrappedCommandResult>x).args;
     }
 }
 
-export type CommandResult = [object | undefined, CommandState];
+export type CommandResult = [object | undefined | "cancel", CommandState];
 type CommandFn = (state: CommandState, ...args: any[]) => Promise<CommandResult>;
 export function wrapStateful(fn: CommandFn) {
     return async function (...args: any[]): Promise<WrappedCommandResult> {
