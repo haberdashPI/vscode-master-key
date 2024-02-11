@@ -2,11 +2,12 @@ current issue I'm working on:
 
 re-organizing command state management (see plan below)
 
-current task: `search` needs to be refactored
-  mostly finished, need to do a little bit of cleanup
-
-also we need to split up `keySequence` into prefix and count and move the status
-bar stuff to a separate file??? (or something)
+- setup various evaluation variables we want (e.g. stuff in `activate` of old `commands` file)
+- split up `keySequence` into 3 things
+  - prefix
+  - count
+  - the status display of both prefix and count (in a status bar subfolder rather than commands)
+- the other status bar stuf
 
 NOTE: we're using a revised version of vscod-extension-tester (https://github.com/redhat-developer/vscode-extension-tester/pull/1084) after fixing a bug on MacOS ARM
 
@@ -87,6 +88,7 @@ unit tests: edge cases with recording edits
 unit tests: store/restore named
 
 REFACTOR: cleanup up and document code, make it nice and readable
+REFACTOR: add prettier config
 
 thoughts: things I must have to release:
 - good documentation of the code

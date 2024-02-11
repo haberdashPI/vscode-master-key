@@ -49,7 +49,9 @@ export class CommandState{
         else{ return val; }
     }
 
-    reset(){ this.states = {}; }
+    reset(){
+        for(let state of Object.values(this.states)){ state.value = state.resetTo; }
+    }
 
     onSet(key: string, listener: Listener){
         let state = this.states[key];
@@ -107,8 +109,9 @@ export function wrapStateful(fn: CommandFn) {
 
         if(globalWrapper){
             state_ = await state;
-            state_.set(WRAPPING_STATEFUL, false);
             state_.resolve();
+            state_.set(WRAPPING_STATEFUL, false);
+            state_.reset();
         }
         return { id: WRAPPED_UUID, args: rargs };
     };
