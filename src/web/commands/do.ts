@@ -5,8 +5,9 @@ import { BindingCommand, DoArgs, doArgs } from '../keybindingParsing';
 import { CommandResult, CommandState, WrappedCommandResult, commandArgs, wrapStateful } from '../state';
 import { cloneDeep, merge } from 'lodash';
 import { evalContext, reifyStrings } from '../expressions';
-import { keySuffix } from './keySequence';
+import { keySuffix } from './prefix';
 import { isSingleCommand } from '../keybindingProcessing';
+import { MODE } from './mode';
 
 async function doCommand(state: CommandState, command: BindingCommand):
     Promise<[BindingCommand | undefined, CommandState]> {
@@ -120,7 +121,6 @@ export async function doCommands(state: CommandState, args: RunCommandsArgs):
 }
 
 export const COMMAND_HISTORY = 'commandHistory';
-const MODE = 'mode';
 
 let maxHistory = 0;
 
@@ -149,4 +149,7 @@ function updateConfig(event?: vscode.ConfigurationChangeEvent){
 export function activate(context: vscode.ExtensionContext){
     context.subscriptions.push(vscode.commands.registerCommand('master-key.do',
         wrapStateful(doCommandsCmd)));
+
+    updateConfig();
+    vscode.workspace.onDidChangeConfiguration(updateConfig);
 }

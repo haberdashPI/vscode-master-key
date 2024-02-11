@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import z from 'zod';
 import { validateInput } from '../utils';
 import { EvalContext } from '../expressions';
-import { CommandResult, CommandState, wrapStateful } from '../state';
+import { onResolve, CommandResult, CommandState, wrapStateful } from '../state';
 import { doCommands, RecordedCommandArgs, RunCommandsArgs, COMMAND_HISTORY } from './do';
 import { uniq } from 'lodash';
 
@@ -124,6 +124,11 @@ async function replayFromHistory(state: CommandState, args: unknown): Promise<Co
     return [undefined, state];
 };
 
+const replayFromStackArgs = z.object({
+    index: z.number().min(0).optional().default(0),
+    register: z.string().optional()
+}).strict();
+
 async function replayFromStack(state: CommandState, args_: unknown): Promise<CommandResult> {
     let args = validateInput('master-key.replayFromStack', args_, replayFromStackArgs);
     if(args){
@@ -136,12 +141,21 @@ async function replayFromStack(state: CommandState, args_: unknown): Promise<Com
     return [undefined, state];
 };
 
-const replayFromStackArgs = z.object({
-    index: z.number().min(0).optional().default(0),
-    register: z.string().optional()
-});
+export const RECORD = 'record';
+const recordArgs = z.object({
+    on: z.boolean()
+}).strict();
+
+async function record(state: CommandState, args_: unknown): Promise<CommandResult>{
+    let args = validateInput('master-key.record', args_, recordArgs);
+    if(args){
+        state.set(RECORD, args.on);
+    }
+    return [undefined, state];
+}
 
 const MACRO = 'macro';
+let commandHistory: RecordedCommandArgs[] = [];
 export function activate(context: vscode.ExtensionContext){
     context.subscriptions.push(vscode.commands.registerCommand('master-key.pushHistoryToStack',
         wrapStateful(pushHistoryToStack)));
@@ -151,4 +165,21 @@ export function activate(context: vscode.ExtensionContext){
 
     context.subscriptions.push(vscode.commands.registerCommand('master-key.replayFromStack',
         wrapStateful(replayFromStack)));
+
+     context.subscriptions.push(vscode.commands.registerCommand('master-key.record',
+        wrapStateful(record)));
+
+    // TODO: this still feels kind of hacky, maybe think about
+    // how state is handled in events more carefully
+    onResolve('commandHistory', async (state: CommandState) => {
+        commandHistory = state.get<RecordedCommandArgs[]>(COMMAND_HISTORY, [])!;
+        return true;
+    });
+
+    vscode.workspace.onDidChangeTextDocument(e => {
+        let lastCommand = commandHistory[commandHistory.length-1];
+        if(lastCommand && typeof lastCommand.edits !== 'string' && lastCommand.recordEdits){
+            lastCommand.edits = lastCommand.edits.concat(e);
+        }
+    });
 }

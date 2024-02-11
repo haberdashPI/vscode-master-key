@@ -2,12 +2,14 @@ current issue I'm working on:
 
 re-organizing command state management (see plan below)
 
-- setup various evaluation variables we want (e.g. stuff in `activate` of old `commands` file)
-- split up `keySequence` into 3 things
-  - prefix
-  - count
-  - the status display of both prefix and count (in a status bar subfolder rather than commands)
-- the other status bar stuf
+- in thinking through the state that is updated by events I think my current model
+  is poorly setup; it assumes state is available only during commands. Need to think
+  about how I handle updating state with events in this context; I think
+  I'm hitting a lot of race conditions
+
+- also there's the original sin of the race codintions prior to state setup...
+maybe it should start as a promise, so you are always awaiting;
+does this solve for race conditions though????
 
 NOTE: we're using a revised version of vscod-extension-tester (https://github.com/redhat-developer/vscode-extension-tester/pull/1084) after fixing a bug on MacOS ARM
 

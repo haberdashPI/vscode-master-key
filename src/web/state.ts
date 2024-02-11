@@ -94,6 +94,16 @@ export function commandArgs(x: unknown): undefined | object | "cancel" {
     }
 }
 
+export async function onResolve(key: string, listener: Listener){
+    let state_;
+    if(!state){
+        state = Promise.resolve(new CommandState());
+    }
+    state_ = await state;
+    state_.onResolve(key, listener);
+    state = Promise.resolve(state_);
+}
+
 export type CommandResult = [object | undefined | "cancel", CommandState];
 type CommandFn = (state: CommandState, ...args: any[]) => Promise<CommandResult>;
 export function wrapStateful(fn: CommandFn) {
@@ -153,4 +163,32 @@ export function activate(context: vscode.ExtensionContext){
 
     context.subscriptions.push(vscode.commands.registerCommand('master-key.setFlag',
         wrapStateful(setFlag)));
+
+    // TODO: how to properly handle events like this, where we don't have ready
+    // access to the state...
+    // (maybe we need a different concept for what are essentially read only values
+    // in the state, update by these event handlers)
+    vscode.window.onDidChangeTextEditorSelection(e => {
+        let selCount = 0;
+        for(let sel of e.selections){
+            if(!sel.isEmpty){ selCount += 1; }
+            if(selCount > 1){ break; }
+        }
+        state.values.editorHasSelection = selCount > 0;
+        state.values.editorHasMultipleSelections = selCount > 1;
+        let doc = e.textEditor.document;
+
+        if(e.selections[0].isEmpty){
+            let wordRange = doc.getWordRangeAtPosition(e.selections[0].start);
+            state.values.firstSelectionOrWord = doc.getText(wordRange);
+        }else{
+            state.values.firstSelectionOrWord = doc.getText(e.selections[0]);
+        }
+        vscode.commands.executeCommand('setContext', 'master-key.firstSelectionOrWord',
+            state.values.firstSelectionOrWord);
+    });
+
+    vscode.window.onDidChangeActiveTextEditor(e => {
+        state.values.editorLangId = e?.document?.languageId;
+    });
 }
