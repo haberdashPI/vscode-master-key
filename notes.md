@@ -2,86 +2,15 @@ current issue I'm working on:
 
 re-organizing command state management (see plan below)
 
-- in thinking through the state that is updated by events I think my current model
-  is poorly setup; it assumes state is available only during commands. Need to think
-  about how I handle updating state with events in this context; I think
-  I'm hitting a lot of race conditions
-
-- also there's the original sin of the race codintions prior to state setup...
-maybe it should start as a promise, so you are always awaiting;
-does this solve for race conditions though????
-
 NOTE: we're using a revised version of vscod-extension-tester (https://github.com/redhat-developer/vscode-extension-tester/pull/1084) after fixing a bug on MacOS ARM
-
-
-new plan for state:
-
-we don't really want the user modifying most of the state values anyways:
-we should control things more here
-
-1. all current state values that aren't set in larkin: make them
-   validated and prevent the user from modifying them
-
-2. user can also not define any of these predefined values in the keybinding file
-  (we have to do `validModes` differently; this is a good time to switch
-  to my plan below of having the user define the behavior of each mode)
-
-3. user can set flags via `master-key.setFlag` or mode via `mater-key.setMode`
-  flags should generally have a visible UX, just like counts do
-  this avoids weird situations where there is background state not visible
-  in the UX (NOTE: flags that are transient need not have UX)
-
-4. the other way to set things is to use the commands that store and restore things;
-  there I think it's okay to have hidden state since the point is that is shown when
-  you bring up the quick pick menu
-
-Like wise we don't use as much global variable updating of this new, controlled state:
-
-1. this state gets passed around via promises and only resolved to the global state when
-  `runCommands` is completed
-
-2. likewise, there is no `doAfter`; we just await the run of e.g. captureKeys
-  and the next command can use `captured`
-
-3. search state becomes part of this global object as well
-
-4. we probably don't want `do` commands to be nested, that feels like a needless can of
-   worms
-
-PROBLEM: much of the state is relatively local to a set of methods; is there some way
-to break this up so that you can define the state you need with the functions that
-use that state? probably you have some 'get' like mechanism with a default value
-and the state handler is generic
-
-YES: I think if we use the design in `state` each set of functions
-can deal with it's own state locally (to avoid overwriting state we
-can have some global table of all state names)
 
 NEXT UP:
 
-we need to clean up how commands get recorded, this is the cause of the broken tests
-  (I have a notion of how to do this already by using a more functional approach
-   to command recording; there are some tricks to getting this right with the
-   many asynchronous elements; we can't make it *completely* functional, but
-   there can be less global state mutation than there is)
+- debug the new refactoring
+- get all existing unit tests to work again
 
 unit tests: macro replay
-unit tests: edges cases for command recording
-  - I think it may currently be possible to edit wrong command
-    if a second command is executed in the process of awaiting
-    for input from the first (e.g. the input text for search is open
-    and a command combination that has a poorly defined when clause
-    triggers a new command)
-
-    YES: we found this edge case by working testing out the recording
-    of a `doAfter` block in `captureKeys`.
-
-    time to re-organize this bit
-
-    we probably need to take on a more functional style in the commands,
-    this would likely require returning both a promise and a result
-    (but maybe we can get away with returning something int he promise
-    and just await on this result in the final command wrapper)
+  - get the two broken tests working
 unit tests: edge cases with recording edits
   - how about when I switch documents?
   - how about when we don't start with normal mode commands?
@@ -90,7 +19,7 @@ unit tests: edge cases with recording edits
 unit tests: store/restore named
 
 REFACTOR: cleanup up and document code, make it nice and readable
-REFACTOR: add prettier config
+REFACTOR: add prettier config and apply new style to all files
 
 thoughts: things I must have to release:
 - good documentation of the code
@@ -100,8 +29,6 @@ thoughts: things I must have to release:
 - modernized selection utilities
   - good documentation
   - modern build setup
-+ improved mode UX
-+ macro recoridng UX
 - anything else that has to be here? (check below wishlist and issues under the project)
 
 **TODO**: in documenting macro playback note the limitations of recording the keyboard
