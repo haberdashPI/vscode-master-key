@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import z from 'zod';
 import { validateInput, wrappedTranslate } from '../utils';
-import { doArgs } from '../keybindingParsing';
+import { doArgs } from '../keybindings/parsing';
 import { CommandResult, CommandState, wrapStateful } from '../state';
 import { MODE } from './mode';
 import { captureKeys } from './capture';

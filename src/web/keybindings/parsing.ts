@@ -8,7 +8,7 @@ import * as semver from 'semver';
 import { TextDecoder } from 'web-encoding';
 import z, { ZodIssue } from "zod";
 import { ZodError, fromZodError, fromZodIssue } from 'zod-validation-error';
-import { expressionId } from './expressions';
+import { expressionId } from '../expressions';
 import { uniqBy } from 'lodash';
 export const INPUT_CAPTURE_COMMANDS = ['captureKeys', 'replaceChar', 'insertChar', 'search'];
 

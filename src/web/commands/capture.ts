@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import z from 'zod';
-import { doArgs } from '../keybindingParsing';
+import { doArgs } from '../keybindings/parsing';
 import { validateInput } from '../utils';
 import { CommandResult, CommandState } from '../state';
 import { MODE } from './mode';

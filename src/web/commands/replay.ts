@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import z from 'zod';
 import { validateInput } from '../utils';
 import { EvalContext } from '../expressions';
-import { onResolve, CommandResult, CommandState, wrapStateful } from '../state';
+import { setState, onResolve, CommandResult, CommandState, wrapStateful } from '../state';
 import { doCommands, RecordedCommandArgs, RunCommandsArgs, COMMAND_HISTORY } from './do';
 import { uniq } from 'lodash';
 
@@ -169,17 +169,13 @@ export function activate(context: vscode.ExtensionContext){
      context.subscriptions.push(vscode.commands.registerCommand('master-key.record',
         wrapStateful(record)));
 
-    // TODO: this still feels kind of hacky, maybe think about
-    // how state is handled in events more carefully
-    onResolve('commandHistory', async (state: CommandState) => {
-        commandHistory = state.get<RecordedCommandArgs[]>(COMMAND_HISTORY, [])!;
-        return true;
-    });
-
     vscode.workspace.onDidChangeTextDocument(e => {
-        let lastCommand = commandHistory[commandHistory.length-1];
-        if(lastCommand && typeof lastCommand.edits !== 'string' && lastCommand.recordEdits){
-            lastCommand.edits = lastCommand.edits.concat(e);
-        }
+        setState<RecordedCommandArgs[]>(COMMAND_HISTORY, [], false, history => {
+            let lastCommand = history[history.length - 1];
+            if (lastCommand && typeof lastCommand.edits !== 'string' && lastCommand.recordEdits) {
+                lastCommand.edits = lastCommand.edits.concat(e);
+            }
+            return history;
+        });
     });
 }

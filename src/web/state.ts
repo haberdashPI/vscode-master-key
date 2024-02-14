@@ -1,10 +1,7 @@
 import * as vscode from 'vscode';
 import z from 'zod';
 import { cloneDeep, mapValues } from 'lodash';
-import { pickBy } from 'lodash';
 import { validateInput } from './utils';
-import { RunCommandsArgs } from './commands/do';
-import { DoArgs } from './keybindingParsing';
 
 // OLD THINGS THAT GOT UPDATED IN `set` THAT MUST GO ELSEWHERE
 // - status bar / various other ux changes that happen due to state changes
@@ -83,7 +80,7 @@ export class CommandState{
     }
 }
 
-let state: undefined | Thenable<CommandState> = undefined;
+let state: Thenable<CommandState> = Promise.resolve(new CommandState());
 const WRAPPING_STATEFUL = 'wrappingStateful';
 
 const WRAPPED_UUID = "28509bd6-8bde-4eef-8406-afd31ad11b43";
@@ -96,11 +93,15 @@ export function commandArgs(x: unknown): undefined | object | "cancel" {
 
 export async function onResolve(key: string, listener: Listener){
     let state_;
-    if(!state){
-        state = Promise.resolve(new CommandState());
-    }
     state_ = await state;
     state_.onResolve(key, listener);
+    state = Promise.resolve(state_);
+}
+
+export async function setState<T>(str: string, def: T, transient: boolean, fn: (x: T) => T){
+    let state_;
+    state_ = await state;
+    state_.set(str, fn(state_.get<T>(str, def)!), transient);
     state = Promise.resolve(state_);
 }
 
@@ -108,7 +109,6 @@ export type CommandResult = [object | undefined | "cancel", CommandState];
 type CommandFn = (state: CommandState, ...args: any[]) => Promise<CommandResult>;
 export function wrapStateful(fn: CommandFn) {
     return async function (...args: any[]): Promise<WrappedCommandResult> {
-        if (!state) { state = Promise.resolve(new CommandState()); }
         let state_ = await state;
 
         let globalWrapper = state_.get<boolean>(WRAPPING_STATEFUL, false);
@@ -164,31 +164,30 @@ export function activate(context: vscode.ExtensionContext){
     context.subscriptions.push(vscode.commands.registerCommand('master-key.setFlag',
         wrapStateful(setFlag)));
 
-    // TODO: how to properly handle events like this, where we don't have ready
-    // access to the state...
-    // (maybe we need a different concept for what are essentially read only values
-    // in the state, update by these event handlers)
-    vscode.window.onDidChangeTextEditorSelection(e => {
+    vscode.window.onDidChangeTextEditorSelection(async e => {
         let selCount = 0;
         for(let sel of e.selections){
             if(!sel.isEmpty){ selCount += 1; }
             if(selCount > 1){ break; }
         }
-        state.values.editorHasSelection = selCount > 0;
-        state.values.editorHasMultipleSelections = selCount > 1;
+        let state_ = await state;
+        state_.set('editorHasSelection', selCount > 0);
+        state_.set('editorHasMultipleSelections', selCount > 1);
         let doc = e.textEditor.document;
 
+        let firstSelectionOrWord;
         if(e.selections[0].isEmpty){
             let wordRange = doc.getWordRangeAtPosition(e.selections[0].start);
-            state.values.firstSelectionOrWord = doc.getText(wordRange);
+            firstSelectionOrWord = doc.getText(wordRange);
         }else{
-            state.values.firstSelectionOrWord = doc.getText(e.selections[0]);
+            firstSelectionOrWord = doc.getText(e.selections[0]);
         }
+        state_.set('firstSelectionOrWord', firstSelectionOrWord);
         vscode.commands.executeCommand('setContext', 'master-key.firstSelectionOrWord',
-            state.values.firstSelectionOrWord);
+            firstSelectionOrWord);
     });
 
     vscode.window.onDidChangeActiveTextEditor(e => {
-        state.values.editorLangId = e?.document?.languageId;
+        setState('editorLangId', '', false, val => e?.document?.languageId || '');
     });
 }

@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import z from 'zod';
 import { validateInput } from '../utils';
 import { wrapStateful, CommandState, CommandResult } from '../state';
-import { PrefixCodes } from '../keybindingProcessing';
+import { PrefixCodes } from '../keybindings/processing';
 
 const prefixArgs = z.object({
     code: z.number(),

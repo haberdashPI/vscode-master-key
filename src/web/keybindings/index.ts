@@ -1,12 +1,13 @@
 import * as vscode from 'vscode';
-import { searchArgs, searchMatches } from './searching';
-import { parseBindings, BindingSpec, showParseError, parseBindingFile, bindingSpec } from './keybindingParsing';
-import { processBindings, IConfigKeyBinding, Bindings } from './keybindingProcessing';
+import { searchArgs, searchMatches } from '../commands/search';
+import { parseBindings, BindingSpec, showParseError, parseBindingFile, bindingSpec } from './parsing';
+import { processBindings, IConfigKeyBinding, Bindings } from './processing';
 import { uniq, pick } from 'lodash';
 import replaceAll from 'string.prototype.replaceall';
 import { Utils } from 'vscode-uri';
 import z from 'zod';
-import { setKeyContext } from './commands';
+import { setState } from '../state';
+import { MODE } from '../commands/mode';
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 // Keybinding Generation
@@ -226,7 +227,7 @@ async function queryPreset(): Promise<Preset | undefined> {
 async function importBindings(file: vscode.Uri, preset: Bindings) {
     insertKeybindingsIntoConfig(file, preset.bind);
     let config = vscode.workspace.getConfiguration('master-key');
-    setKeyContext({name: 'mode', value: 'insert'});
+    setState(MODE, '', false, val => 'insert');
     config.update('definitions', preset.define, vscode.ConfigurationTarget.Global);
 }
 

@@ -1,12 +1,12 @@
 import * as vscode from 'vscode';
 import z from 'zod';
 import { validateInput } from '../utils';
-import { BindingCommand, DoArgs, doArgs } from '../keybindingParsing';
+import { BindingCommand, DoArgs, doArgs } from '../keybindings/parsing';
 import { CommandResult, CommandState, WrappedCommandResult, commandArgs, wrapStateful } from '../state';
 import { cloneDeep, merge } from 'lodash';
 import { evalContext, reifyStrings } from '../expressions';
 import { keySuffix } from './prefix';
-import { isSingleCommand } from '../keybindingProcessing';
+import { isSingleCommand } from '../keybindings/processing';
 import { MODE } from './mode';
 
 async function doCommand(state: CommandState, command: BindingCommand):
