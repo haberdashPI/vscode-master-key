@@ -87,7 +87,7 @@ description = "Enter normal mode"
 key = ["escape", "ctrl+["]
 mode = []
 command = "runCommands"
-args.commands = ["master-key.enterNormal", "master-key.reset"]
+args.commands = ["master-key.enterNormal"]
 when = "!findWidgetVisible"
 prefixes = "<all-prefixes>"
 
@@ -97,7 +97,7 @@ key = ["escape", "ctrl+["]
 when = "suggsetWidgetVisible && editorTextFocus && !findWidgetVisible"
 command = "runCommands"
 mode = []
-args.commands = ["master-key.enterNormal", "master-key.reset"]
+args.commands = ["master-key.enterNormal"]
 prefixes = "<all-prefixes>"
 
 [[bind]]
@@ -373,7 +373,7 @@ name = "hold selection"
 description = """
 selection commands extend the selection
 """
-command = "master-key.set"
+command = "master-key.setFlag"
 args.name = "select_on"
 args.value = true
 mode = ["normal", "selectedit"]
@@ -389,7 +389,7 @@ reduce all selections to length zero
 command = "runCommands"
 args.commands = [
       "selection-utilities.shrinkToActive",
-      { command = "master-key.set", args = { name = "select_on", value = false } },
+      { command = "master-key.setFlag", args = { name = "select_on", value = false } },
 ]
 
 [[path]]
@@ -1762,9 +1762,8 @@ name = "record"
 description = "Start/stop recording Master Key commands"
 key = "shift+q"
 when = "!master-key.record"
-command = "master-key.set"
-args.name = "record"
-args.value = true
+command = "master-key.record"
+args.on = true
 
 [[bind]]
 path = "edit.action.history"
@@ -1778,9 +1777,8 @@ when = "master-key.record"
 command = "runCommands"
 
 [[bind.args.commands]]
-command = "master-key.set"
-args.name = "record"
-args.value = false
+command = "master-key.record"
+args.on = false
 
 [[bind.args.commands]]
 command = "master-key.pushHistoryToStack"
@@ -1846,11 +1844,10 @@ Repeat the last action command. Actions usually modify the text of a document in
 antoher. (But, e.g. sending text to the REPL is also considered an editor action).
 """
 key = "."
-command = "master-key.repeat"
-computedArgs.repeat = "count"
-args.command = "runCommands"
+command = "runCommands"
+repeat = "count"
 
-[[bind.args.args.commands]]
+[[bind.args.commands]]
 command = "master-key.replayFromHistory"
 # we can repeat any action but history-related actions; we make an exception
 # for replaying macros, which can be repeated
@@ -1860,7 +1857,7 @@ commandHistory[i].path.startsWith('edit.action') &&
  commandHistory[i].name == 'replay')
 """
 
-[[bind.args.args.commands]]
+[[bind.args.commands]]
 command = "master-key.enterNormal"
 
 [[bind]]
@@ -2531,9 +2528,10 @@ key = "shift+'"
 when = "!editorHasMultipleSelections"
 command = "runCommands"
 args.commands = [
-      {command = "master-key.setMode", args = { value = "selectedit"} },
-      {command = "master-key.repeat", args = { command = "selection-utilities.addNext" }, computedArgs = { repeat = 'count'} }
+      { command = "master-key.setMode", args = { value = "selectedit"} },
+      { command = "selection-utilities.addNext" }
 ]
+repeat = "count"
 mode = "normal"
 
 [[bind]]
@@ -2561,40 +2559,32 @@ path = "edit.select_edit"
 name = "add →"
 description = "add cursor at the next match to the primary cursor's text"
 key = ["shift+'", "shift+j"]
-
-command = "master-key.repeat"
-args.command = "selection-utilities.addNext"
-computedArgs.repeat = 'count'
+repeat = "count"
+command = "selection-utilities.addNext"
 
 [[bind]]
 path = "edit.select_edit"
 name = "add ←"
 description = "add cursor at the previous match to the primary cursor's text"
 key = "shift+k"
-
-command = "master-key.repeat"
-args.command = "selection-utilities.addPrev"
-computedArgs.repeat = 'count'
+command = "selection-utilities.addPrev"
+repeat = 'count'
 
 [[bind]]
 path = "edit.select_edit"
 name = "skip →"
 description = "move primary cursor to the next match of the primary cursor's text"
 key = "g j"
-
-command = "master-key.repeat"
-args.command = "selection-utilities.skipNext"
-computedArgs.repeat = 'count'
+command = "selection-utilities.skipNext"
+repeat = "count"
 
 [[bind]]
 path = "edit.select_edit"
 name = "skip →"
 description = "move primary cursor to the previous match of the primary cursor's text"
 key = "g k"
-
-command = "master-key.repeat"
-args.command = "selection-utilities.skipPrev"
-computedArgs.repeat = 'count'
+command = "selection-utilities.skipPrev"
+repeat = 'count'
 
 [[bind]]
 path = "edit.select_edit"
@@ -2734,9 +2724,10 @@ insert cursor on line above
 key = "' shift+k"
 mode = ["normal", "selectedit"]
 command = "runCommands"
+repeat = "count"
 args.commands = [
-      {command = "master-key.repeat", args = { command = "editor.action.insertCursorAbove" }, computedArgs = { repeat = 'count'} },
-      { command = "master-key.setMode", args = { value = "selectedit" } }
+      { command = "master-key.setMode", args = { value = "selectedit" } },
+      { command = "editor.action.insertCursorAbove" }
 ]
 
 [[bind]]
@@ -2748,9 +2739,10 @@ insert cursor on line below
 key = "' shift+j"
 mode = ["normal", "selectedit"]
 command = "runCommands"
+repeat = "count"
 args.commands = [
-      {command = "master-key.repeat", args = { command = "editor.action.insertCursorBelow" }, computedArgs = { repeat = 'count'} },
-      { command = "master-key.setMode", args = { value = "selectedit" }}
+      { command = "master-key.setMode", args = { value = "selectedit" }},
+      { command = "editor.action.insertCursorBelow" }
 ]
 
 [[bind]]
@@ -2766,30 +2758,24 @@ path = "edit.select_edit"
 name = "→ sel"
 description = "make the next selection primary; primary selections determine from where you add cursors, what cursor you delete, and where the cursor goes when you clear or save selections"
 key = "j"
-
-command = "master-key.repeat"
-args.command = "selection-utilities.movePrimaryRight"
-computedArgs.repeat = 'count'
+command = "selection-utilities.movePrimaryRight"
+repeat = 'count'
 
 [[bind]]
 path = "edit.select_edit"
 name = "← sel"
 description = "make the previous selection primary; primary selections determine from where you add cursors, what cursor you delete, and where the cursor goes when you clear or save selections"
 key = "k"
-
-command = "master-key.repeat"
-args.command = "selection-utilities.movePrimaryLeft"
-computedArgs.repeat = 'count'
+command = "selection-utilities.movePrimaryLeft"
+repeat = 'count'
 
 [[bind]]
 path = "edit.select_edit"
 name = "del. sel"
 description = "remove the primary selection"
 key = "d"
-
-command = "master-key.repeat"
-args.command = "selection-utilities.deletePrimary"
-computedArgs.repeat = 'count'
+command = "selection-utilities.deletePrimary"
+repeat = 'count'
 
 [[bind]]
 path = "edit.select_edit"

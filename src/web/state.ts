@@ -38,7 +38,7 @@ export class CommandState{
     }
 
     get<T>(key: string, defaultValue?: T): T | undefined {
-        let val = <T>this.states[key].value;
+        let val = <T>this.states[key]?.value;
         if(val === undefined){
             this.states[key] = {value: cloneDeep(defaultValue), resetTo: defaultValue, listeners: []};
             return defaultValue;
@@ -75,19 +75,28 @@ export class CommandState{
         }
     }
 
-    async evalContext(extra: object = {}){
+    evalContext(extra: object = {}){
         return { ...mapValues(this.states, val => val.value), extra };
     }
 }
 
 let state: Thenable<CommandState> = Promise.resolve(new CommandState());
-const WRAPPING_STATEFUL = 'wrappingStateful';
+const NESTED_CALL = 'nestedCall';
 
 const WRAPPED_UUID = "28509bd6-8bde-4eef-8406-afd31ad11b43";
-export type WrappedCommandResult = { id: "28509bd6-8bde-4eef-8406-afd31ad11b43", args?: object | "cancel" };
+export type WrappedCommandResult = {
+    id: "28509bd6-8bde-4eef-8406-afd31ad11b43",
+    args?: object | "cancel"
+    state: CommandState
+};
 export function commandArgs(x: unknown): undefined | object | "cancel" {
     if((<any>x)?.id === WRAPPED_UUID){
         return (<WrappedCommandResult>x).args;
+    }
+}
+export function commandState(x: unknown): undefined | CommandState {
+    if((<any>x)?.id === WRAPPED_UUID){
+        return (<WrappedCommandResult>x).state;
     }
 }
 
@@ -109,21 +118,30 @@ export type CommandResult = [object | undefined | "cancel", CommandState];
 type CommandFn = (state: CommandState, ...args: any[]) => Promise<CommandResult>;
 export function wrapStateful(fn: CommandFn) {
     return async function (...args: any[]): Promise<WrappedCommandResult> {
-        let state_ = await state;
+        let state_;
+        let passArgs;
+        if(args[0] instanceof CommandState){
+            state_ = args[0];
+            passArgs = args.slice(1);
+        }else{
+            state_ = await state;
+            passArgs = args;
+        }
 
-        let globalWrapper = state_.get<boolean>(WRAPPING_STATEFUL, false);
-        if(globalWrapper){ state_.set(WRAPPING_STATEFUL, true); }
+        let nestedCall = state_.get<boolean>(NESTED_CALL, false);
+        if(!nestedCall){ state_.set(NESTED_CALL, true); }
 
         let rargs;
         [rargs, state_] = await fn(state_, ...args);
 
-        if(globalWrapper){
+        if(!nestedCall){
             state_ = await state;
             state_.resolve();
-            state_.set(WRAPPING_STATEFUL, false);
+            state_.set(NESTED_CALL, false);
             state_.reset();
         }
-        return { id: WRAPPED_UUID, args: rargs };
+        state = Promise.resolve(state_);
+        return { id: WRAPPED_UUID, args: rargs, state: state_ };
     };
 }
 
@@ -145,14 +163,14 @@ function updateConfig(event?: vscode.ConfigurationChangeEvent){
 }
 
 const setFlagArgs = z.object({
-    name: z.string(),
+    name: z.string().endsWith('_on'),
     value: z.boolean(),
     transient: z.boolean().default(false).optional()
 }).strict();
 type SetFlagArgs = z.infer<typeof setFlagArgs>;
 
 async function setFlag(state: CommandState, args_: unknown): Promise<CommandResult> {
-    let args = validateInput('master-key.set', args_, setFlagArgs);
+    let args = validateInput('master-key.setFlag', args_, setFlagArgs);
     if(args){ state.set(args.name, args.value, args.transient || false); }
     return [undefined, state];
 }

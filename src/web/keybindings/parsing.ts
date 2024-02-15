@@ -30,7 +30,6 @@ const rawBindingCommand = z.object({
     args: z.any(),
     computedArgs: z.object({}).passthrough().optional(),
     if: z.string().or(z.boolean()).default(true).optional(),
-    repeat: z.number().min(0).optional(),
 }).strict();
 export type RawBindingCommand = z.infer<typeof rawBindingCommand>;
 
@@ -142,7 +141,8 @@ export const rawBindingItem = z.object({
     mode: z.union([z.string(), z.string().array()]).optional(),
     prefixes: z.preprocess(x => x === "<all-prefixes>" ? [] : x,
         z.string().array()).optional(),
-    resetTransient: z.boolean().optional()
+    resetTransient: z.boolean().optional(),
+    repeat: z.number().min(0).or(z.string()).default(0).optional()
 }).merge(rawBindingCommand).strict();
 export type RawBindingItem = z.output<typeof rawBindingItem>;
 
@@ -172,7 +172,7 @@ export const bindingItem = z.object({
         path: z.string().optional().default(""),
         resetTransient: rawBindingItem.shape.resetTransient.default(true),
         kind: z.string().optional().default(""),
-        repeat: z.number().min(0).default(0),
+        repeat: z.number().min(0).or(z.string()).default(0)
     }).merge(rawBindingItem.pick({name: true, description: true}))
 }).required({key: true, when: true, args: true}).strict();
 export type BindingItem = z.output<typeof bindingItem>;

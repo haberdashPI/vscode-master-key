@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import z from 'zod';
 import { validateInput } from '../utils';
 import { BindingCommand, DoArgs, doArgs } from '../keybindings/parsing';
-import { CommandResult, CommandState, WrappedCommandResult, commandArgs, wrapStateful } from '../state';
+import { CommandResult, CommandState, WrappedCommandResult, commandState, commandArgs, wrapStateful } from '../state';
 import { cloneDeep, merge } from 'lodash';
 import { evalContext, reifyStrings } from '../expressions';
 import { keySuffix } from './prefix';
@@ -38,10 +38,12 @@ async function doCommand(state: CommandState, command: BindingCommand):
     // sometime, based on user input, a command can change its final argument values we need
     // to capture this result and save it as part of the `reifiedCommand` (for example, see
     // `replaceChar` in `capture.ts`)
-    let result = await vscode.commands.executeCommand<WrappedCommandResult | void>(command.command, reifyArgs);
+    let result = await vscode.commands.executeCommand<WrappedCommandResult | void>(command.command, state, reifyArgs);
     let args = commandArgs(result);
     if(args === "cancel"){ return [undefined, state]; }
     if(args){ reifiedCommand.args = args; }
+    let newState = commandState(result);
+    if(newState){ state = newState; }
     return [reifiedCommand, state];
 }
 
