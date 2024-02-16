@@ -16,14 +16,20 @@ interface State{
 }
 type States = Record<string, State>;
 
+const UNDEFINED_RESET_UUID = "21c64688-c3e6-4f44-bf57-d17f8d3a2d50";
+
 export class CommandState{
     private states: States = {};
     private resolveListeners: Record<string, Listener> = {};
 
     async set(key: string, value: unknown, transient: boolean = false){
         let resetTo = undefined;
-        if(transient && this.states[key] !== undefined){
-            resetTo = this.states[key].value;
+        if(transient){
+            if(this.states[key] !== undefined){
+                resetTo = this.states[key].value;
+            }else{
+                resetTo = { id: UNDEFINED_RESET_UUID };
+            }
         }
         let listeners = this.states[key]?.listeners || [];
         this.states[key] = {value, resetTo, listeners};
@@ -47,7 +53,15 @@ export class CommandState{
     }
 
     reset(){
-        for(let state of Object.values(this.states)){ state.value = state.resetTo; }
+        for(let state of Object.values(this.states)){
+            if(state.resetTo !== undefined){
+                if((<any>state.resetTo)?.id === UNDEFINED_RESET_UUID){
+                    state.value = undefined;
+                }else{
+                    state.value = state.resetTo;
+                }
+            }
+        }
     }
 
     onSet(key: string, listener: Listener){

@@ -109,9 +109,9 @@ export async function doCommands(state: CommandState, args: RunCommandsArgs):
         if(args.resetTransient){
             // this will be immediately cleared by `reset` but
             // its display will persist in the status bar for a little bit
-            // (see `updateStatusBar`)
+            // (see `status/keyseq.ts`)
             if(args.key){ keySuffix(state, args.key); }
-            // TODO: maybe here we specify a delayed updae of the status???
+            state.resolve();
             state.reset();
             // if(!wasSearchUsed() && vscode.window.activeTextEditor){
             //     clearSearchDecorations(vscode.window.activeTextEditor) ;

@@ -19,10 +19,10 @@ async function prefix(state: CommandState, args_: unknown): Promise<CommandResul
     let args = validateInput('master-key.prefix', args_, prefixArgs);
     if(args !== undefined){
         let prefix = state.get<PrefixCodes>(PREFIX_CODES)?.nameFor(args.code);
-        state.set(PREFIX_CODE, args.code);
-        state.set(PREFIX, prefix);
+        state.set(PREFIX_CODE, args.code, true);
+        state.set(PREFIX, prefix, true);
 
-        if(args.flag){ state.set(args.flag, true); }
+        if(args.flag){ state.set(args.flag, true, true); }
         return [undefined, state];
     }
     return [undefined, state];
