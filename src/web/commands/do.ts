@@ -38,7 +38,7 @@ async function doCommand(state: CommandState, command: BindingCommand):
     // sometime, based on user input, a command can change its final argument values we need
     // to capture this result and save it as part of the `reifiedCommand` (for example, see
     // `replaceChar` in `capture.ts`)
-    let result = await vscode.commands.executeCommand<WrappedCommandResult | void>(command.command, state, reifyArgs);
+    let result = await vscode.commands.executeCommand<WrappedCommandResult | void>(command.command, reifyArgs, state);
     let args = commandArgs(result);
     if(args === "cancel"){ return [undefined, state]; }
     if(args){ reifiedCommand.args = args; }
@@ -135,7 +135,7 @@ async function doCommandsCmd(state: CommandState, args_: unknown): Promise<Comma
             let history = state.get<RecordedCommandArgs[]>(COMMAND_HISTORY, [])!;
             let recordEdits = state.get<string>(MODE, 'insert') === 'insert';
             history.push({ ...command, edits: [], recordEdits });
-            state.set(COMMAND_HISTORY, history);
+            state.set(COMMAND_HISTORY, history, {});
         }
     }
     return [undefined, state];

@@ -29,7 +29,7 @@ export function captureKeys(state: CommandState, onUpdate: UpdateFn) {
     if(!typeSubscription){
         try{
             typeSubscription = vscode.commands.registerCommand('type', onType);
-            state.set(MODE, 'capture');
+            state.set(MODE, 'capture', {public: true});
         }catch(e){
             vscode.window.showErrorMessage(`Failed to capture keyboard input. You
                 might have an extension that is already listening to type events
@@ -54,7 +54,7 @@ export function captureKeys(state: CommandState, onUpdate: UpdateFn) {
                 [result, stop] = onUpdate(result, str);
                 if(stop){
                     clearTypeSubscription();
-                    state.set(MODE, oldMode);
+                    state.set(MODE, oldMode, {public: true});
                     resolve(result);
                 }
             };
@@ -87,7 +87,7 @@ async function captureKeysCmd(state: CommandState, args_: unknown): Promise<Comm
                 return [result, stop];
             });
         }
-        state.set(CAPTURE, args.text, true);
+        state.set(CAPTURE, args.text, {transient: true});
         args = {...args, text};
     }
     return [args, state];

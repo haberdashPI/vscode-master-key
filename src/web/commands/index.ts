@@ -6,6 +6,7 @@ import * as mode from './mode';
 import * as namedStore from './namedStore';
 import * as replay from './replay';
 import * as search from './search';
+import * as prefix from "./prefix";
 
 export function activate(context: vscode.ExtensionContext){
     capture.activate(context);
@@ -15,6 +16,7 @@ export function activate(context: vscode.ExtensionContext){
     namedStore.activate(context);
     replay.activate(context);
     search.activate(context);
+    prefix.activate(context);
 
     context.subscriptions.push(vscode.commands.registerCommand('master-key.ignore',
         () => undefined));

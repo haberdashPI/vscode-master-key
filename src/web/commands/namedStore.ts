@@ -22,7 +22,7 @@ async function restoreNamed(state: CommandState, args_: unknown): Promise<Comman
         let items = Object.keys(stored[args.name]).map(x => ({label: x}));
         let selected = await vscode.window.showQuickPick(items);
         if(selected !== undefined){
-            state.set(CAPTURED, stored[args.name][selected.label]);
+            state.set(CAPTURED, stored[args.name][selected.label], {public: true});
         }
     }
     return [undefined, state];

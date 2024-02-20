@@ -13,6 +13,7 @@ function prettifyPrefix(str: string){
     str = replaceAll(str, /win\+/gi, '⊞');
     str = replaceAll(str, /cmd\+/gi, '⌘');
     str = replaceAll(str, / /g, ", ");
+    str = replaceAll(str, /escape/gi, "ESC");
     return str;
 }
 

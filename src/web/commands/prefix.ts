@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import z from 'zod';
 import { validateInput } from '../utils';
-import { wrapStateful, CommandState, CommandResult } from '../state';
+import { wrapStateful, CommandState, CommandResult, setState } from '../state';
 import { PrefixCodes } from '../keybindings/processing';
 
 const prefixArgs = z.object({
@@ -18,11 +18,13 @@ export const PREFIX = 'prefix';
 async function prefix(state: CommandState, args_: unknown): Promise<CommandResult>{
     let args = validateInput('master-key.prefix', args_, prefixArgs);
     if(args !== undefined){
-        let prefix = state.get<PrefixCodes>(PREFIX_CODES)?.nameFor(args.code);
-        state.set(PREFIX_CODE, args.code, true);
-        state.set(PREFIX, prefix, true);
+        let prefixCodes = state.get<PrefixCodes>(PREFIX_CODES)!;
+        let prefix = prefixCodes.nameFor(args.code);
+        state.set(PREFIX_CODE, args.code,
+            {transient: true, public: true, resetTo: 0});
+        state.set(PREFIX, prefix, {transient: true, public: true});
 
-        if(args.flag){ state.set(args.flag, true, true); }
+        if(args.flag){ state.set(args.flag, true, {transient: true, public: true}); }
         return [undefined, state];
     }
     return [undefined, state];
@@ -31,10 +33,11 @@ async function prefix(state: CommandState, args_: unknown): Promise<CommandResul
 export function keySuffix(state: CommandState, key: string){
     let newPrefix = state.get<string>(PREFIX, '')!;
     newPrefix = newPrefix.length > 0 ? newPrefix + " " + key : key;
-    state.set(PREFIX, newPrefix);
+    state.set(PREFIX, newPrefix, {transient: true, public:true});
 }
 
 export function activate(context: vscode.ExtensionContext){
+    setState(PREFIX_CODE, 0, {public: true}, val => 0);
     context.subscriptions.push(vscode.commands.registerCommand('master-key.prefix',
         wrapStateful(prefix)));
 }

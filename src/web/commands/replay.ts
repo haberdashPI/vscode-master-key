@@ -111,7 +111,7 @@ async function pushHistoryToStack(state: CommandState, args: unknown): Promise<C
     if(commands){
         let macro = state.get<RecordedCommandArgs[][]>(MACRO, [])!;
         macro.push(commands);
-        state.set(MACRO, macro);
+        state.set(MACRO, macro, {public: true});
     }
     return [undefined, state];
 };
@@ -149,7 +149,7 @@ const recordArgs = z.object({
 async function record(state: CommandState, args_: unknown): Promise<CommandResult>{
     let args = validateInput('master-key.record', args_, recordArgs);
     if(args){
-        state.set(RECORD, args.on);
+        state.set(RECORD, args.on, {public: true});
     }
     return [undefined, state];
 }
@@ -170,7 +170,7 @@ export function activate(context: vscode.ExtensionContext){
         wrapStateful(record)));
 
     vscode.workspace.onDidChangeTextDocument(e => {
-        setState<RecordedCommandArgs[]>(COMMAND_HISTORY, [], false, history => {
+        setState<RecordedCommandArgs[]>(COMMAND_HISTORY, [], {}, history => {
             let lastCommand = history[history.length - 1];
             if (lastCommand && typeof lastCommand.edits !== 'string' && lastCommand.recordEdits) {
                 lastCommand.edits = lastCommand.edits.concat(e);

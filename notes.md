@@ -1,5 +1,22 @@
 current issue I'm working on:
 
+okya, what we have doesn't work with the "threaded" nature of the execution model
+
+we need a coherent state change model
+
+Idea: each modifier to state gets queue up, and is executed one by one in a channel
+each change to state is represented by a promise
+
+wrapStateful has to help with this carefully: it is called within async chains,
+they only initiate queued change in the outer step, and they resolve the promise
+chain in the outer layer
+
+this implies that the building blocks of the state change queue have to be promises
+  - this means that the wrappedStateful contains many steps of state chain
+    that are built up
+
+the key point here is that this model should sequentialize the changes
+
 re-organizing command state management (see plan below)
 
 NOTE: we're using a revised version of vscod-extension-tester (https://github.com/redhat-developer/vscode-extension-tester/pull/1084) after fixing a bug on MacOS ARM

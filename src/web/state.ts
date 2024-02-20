@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import z from 'zod';
 import { cloneDeep, mapValues } from 'lodash';
 import { validateInput } from './utils';
+import { Map, List, Record as iRecord } from 'immutable';
 
 // OLD THINGS THAT GOT UPDATED IN `set` THAT MUST GO ELSEWHERE
 // - status bar / various other ux changes that happen due to state changes
@@ -9,30 +10,35 @@ import { validateInput } from './utils';
 
 export type Listener = (states: CommandState) => Promise<boolean>;
 
-interface State{
-    value: unknown,
-    resetTo: unknown,
-    listeners: Listener[]
-}
-type States = Record<string, State>;
+const StateRecord = iRecord({
+    value: undefined,
+    transient: false,
+    resetTo: undefined,
+    listteners: List<Listener>(),
+    public: false
+})
 
 const UNDEFINED_RESET_UUID = "21c64688-c3e6-4f44-bf57-d17f8d3a2d50";
 
-export class CommandState{
-    private states: States = {};
-    private resolveListeners: Record<string, Listener> = {};
+interface ISetOptions {
+    transient?: boolean,
+    resetTo?: unknown,
+    public?: boolean
+}
 
-    async set(key: string, value: unknown, transient: boolean = false){
-        let resetTo = undefined;
-        if(transient){
-            if(this.states[key] !== undefined){
-                resetTo = this.states[key].value;
-            }else{
-                resetTo = { id: UNDEFINED_RESET_UUID };
-            }
-        }
-        let listeners = this.states[key]?.listeners || [];
-        this.states[key] = {value, resetTo, listeners};
+export class CommandState{
+    private states = Map<string, iRecord>();
+    private resolveListeners = Map();
+
+    async set(key: string, change: (state: Map<string, Map<string, ) => unknown, options: ISetOptions){
+        let listeners = this.states.getIn([key, 'listeners'], List<Listener>());
+        this.states[key] = {
+            value, listeners,
+            transient: options.transient || false,
+            resetTo: options.resetTo !== undefined ? options.resetTo :
+                this.states[key].value,
+            public: options.public || false
+        };
 
         let newListeners: Listener[] = [];
         for(let listener of listeners){
@@ -46,7 +52,13 @@ export class CommandState{
     get<T>(key: string, defaultValue?: T): T | undefined {
         let val = <T>this.states[key]?.value;
         if(val === undefined){
-            this.states[key] = {value: cloneDeep(defaultValue), resetTo: defaultValue, listeners: []};
+            this.states[key] = {
+                value: cloneDeep(defaultValue),
+                resetTo: defaultValue,
+                transient: false,
+                listeners: [],
+                public: false
+            };
             return defaultValue;
         }
         else{ return val; }
@@ -54,20 +66,20 @@ export class CommandState{
 
     reset(){
         for(let state of Object.values(this.states)){
-            if(state.resetTo !== undefined){
-                if((<any>state.resetTo)?.id === UNDEFINED_RESET_UUID){
-                    state.value = undefined;
-                }else{
-                    state.value = state.resetTo;
-                }
-            }
+            if(state.transient){ state.value = state.resetTo; }
         }
     }
 
     onSet(key: string, listener: Listener){
         let state = this.states[key];
         if(!state){
-            state = {value: undefined, resetTo: undefined, listeners: []};
+            state = {
+                value: undefined,
+                resetTo: undefined,
+                transient: false,
+                listeners: [],
+                public: false
+            };
         }
         state.listeners.push(listener);
         this.states[key] = state;
@@ -85,13 +97,21 @@ export class CommandState{
 
         this.resolveListeners = newListeners;
         for(let [key, state] of Object.entries(this.states)){
-            vscode.commands.executeCommand('setContext', 'master-key.'+key, state.value);
+            if(state.public){
+                vscode.commands.executeCommand('setContext', 'master-key.'+key, state.value);
+            }
         }
     }
 
     evalContext(extra: object = {}){
         return { ...mapValues(this.states, val => val.value), extra };
     }
+}
+
+function* stateStream(){
+    let state = Map();
+
+
 }
 
 let state: Thenable<CommandState> = Promise.resolve(new CommandState());
@@ -121,10 +141,10 @@ export async function onResolve(key: string, listener: Listener){
     state = Promise.resolve(state_);
 }
 
-export async function setState<T>(str: string, def: T, transient: boolean, fn: (x: T) => T){
+export async function setState<T>(str: string, def: T, opt: ISetOptions, fn: (x: T) => T){
     let state_;
     state_ = await state;
-    state_.set(str, fn(state_.get<T>(str, def)!), transient);
+    state_.set(str, fn(state_.get<T>(str, def)!), opt);
     state = Promise.resolve(state_);
 }
 
@@ -134,16 +154,16 @@ export function wrapStateful(fn: CommandFn) {
     return async function (...args: any[]): Promise<WrappedCommandResult> {
         let state_;
         let passArgs;
-        if(args[0] instanceof CommandState){
-            state_ = args[0];
-            passArgs = args.slice(1);
+        if(args[1] instanceof CommandState){
+            state_ = args[1];
+            passArgs = args.slice(0, 1).concat(args.slice(2));
         }else{
             state_ = await state;
             passArgs = args;
         }
 
         let nestedCall = state_.get<boolean>(NESTED_CALL, false);
-        if(!nestedCall){ state_.set(NESTED_CALL, true); }
+        if(!nestedCall){ state_.set(NESTED_CALL, true, {}); }
 
         let rargs;
         [rargs, state_] = await fn(state_, ...args);
@@ -151,7 +171,7 @@ export function wrapStateful(fn: CommandFn) {
         if(!nestedCall){
             state_ = await state;
             state_.resolve();
-            state_.set(NESTED_CALL, false);
+            state_.set(NESTED_CALL, false, {});
             state_.reset();
         }
         state = Promise.resolve(state_);
@@ -159,11 +179,11 @@ export function wrapStateful(fn: CommandFn) {
     };
 }
 
-async function addDefinitions(state: Thenable<CommandState> | undefined, definitions: any){
-    let state_ = state ? await state : new CommandState();
+async function addDefinitions(state: Thenable<CommandState>, definitions: any){
+    let state_ = await state;
 
     for(let [k, v] of Object.entries(definitions || {})){
-        state_.set(k, v);
+        await state_.set(k, v, {public: true});
     }
     return state_;
 }
@@ -185,7 +205,7 @@ type SetFlagArgs = z.infer<typeof setFlagArgs>;
 
 async function setFlag(state: CommandState, args_: unknown): Promise<CommandResult> {
     let args = validateInput('master-key.setFlag', args_, setFlagArgs);
-    if(args){ state.set(args.name, args.value, args.transient || false); }
+    if(args){ state.set(args.name, args.value, {transient: args.transient || false}); }
     return [undefined, state];
 }
 
@@ -203,8 +223,8 @@ export function activate(context: vscode.ExtensionContext){
             if(selCount > 1){ break; }
         }
         let state_ = await state;
-        state_.set('editorHasSelection', selCount > 0);
-        state_.set('editorHasMultipleSelections', selCount > 1);
+        state_.set('editorHasSelection', selCount > 0, {});
+        state_.set('editorHasMultipleSelections', selCount > 1, {});
         let doc = e.textEditor.document;
 
         let firstSelectionOrWord;
@@ -214,12 +234,12 @@ export function activate(context: vscode.ExtensionContext){
         }else{
             firstSelectionOrWord = doc.getText(e.selections[0]);
         }
-        state_.set('firstSelectionOrWord', firstSelectionOrWord);
+        state_.set('firstSelectionOrWord', firstSelectionOrWord, {public: true});
         vscode.commands.executeCommand('setContext', 'master-key.firstSelectionOrWord',
             firstSelectionOrWord);
     });
 
     vscode.window.onDidChangeActiveTextEditor(e => {
-        setState('editorLangId', '', false, val => e?.document?.languageId || '');
+        setState('editorLangId', '', {}, val => e?.document?.languageId || '');
     });
 }

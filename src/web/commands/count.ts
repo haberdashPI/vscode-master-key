@@ -13,7 +13,8 @@ const updateCountArgs = z.object({
 async function updateCount(state: CommandState, args_: unknown): Promise<CommandResult> {
     let args = validateInput('master-key.updateCount', args_, updateCountArgs);
     if(args !== undefined){
-        state.set(COUNT, state.get<number>(COUNT, 0)!*10 + args.value);
+        state.set(COUNT, state.get<number>(COUNT, 0)! * 10 + args.value,
+            { public: true, transient: true });
     }
     return [undefined, state];
 }

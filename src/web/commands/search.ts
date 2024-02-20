@@ -302,12 +302,12 @@ async function search(commandState: CommandState, editor: vscode.TextEditor,
     if(!args){ return [undefined, commandState]; }
 
     // clear old search decorators if they exist
-    commandState.set(SEARCH_CHANGED, false);
+    commandState.set(SEARCH_CHANGED, false, {});
     commandState.resolve();
 
     // set up to clear search decorators on a future command that doesn't set
     // `SEARCH_CHANGED`
-    commandState.set(SEARCH_CHANGED, true, true);
+    commandState.set(SEARCH_CHANGED, true, {transient: true});
     commandState.onResolve('search', async (state: CommandState) => {
         if(state.get<boolean>(SEARCH_CHANGED, false)){ clearSearchDecorations(editor); }
         return true;
@@ -323,7 +323,7 @@ async function search(commandState: CommandState, editor: vscode.TextEditor,
         navigateTo(state, editor);
         state.searchFrom = editor.selections;
     } else {
-        commandState.set(MODE, 'capture');
+        commandState.set(MODE, 'capture', {public: true});
         // when there are a fixed number of keys use `type` command
         if (state.args.acceptAfter) {
             let acceptAfter = state.args.acceptAfter;
@@ -371,12 +371,12 @@ async function search(commandState: CommandState, editor: vscode.TextEditor,
             });
             state.text = await inputResult;
         }
-        commandState.set(MODE, state.oldMode);
+        commandState.set(MODE, state.oldMode, {public: true});
     }
     if(state.text){
         return [{...state.args, text: state.text}, commandState];
     }else{
-        commandState.set(MODE, state.oldMode);
+        commandState.set(MODE, state.oldMode, {public: true});
         return ["cancel", commandState];
     }
 }
@@ -393,7 +393,7 @@ async function nextMatch(commandState: CommandState, editor: vscode.TextEditor,
 
     let args = validateInput('master-key.nextMatch', args_, matchStepArgs);
     if(!args) { return [undefined, commandState]; }
-    commandState.set(SEARCH_CHANGED, true, true);
+    commandState.set(SEARCH_CHANGED, true, {transient: true});
     let state = getSearchState(commandState, editor, args!.register);
     if (state.text) {
         for(let i=0; i<(args.repeat || 1); i++){ navigateTo(state, editor); }
@@ -407,7 +407,7 @@ async function previousMatch(commandState: CommandState, editor: vscode.TextEdit
 
     let args = validateInput('master-key.previousMatch', args_, matchStepArgs);
     if(!args) { return [undefined, commandState]; }
-    commandState.set(SEARCH_CHANGED, true, true);
+    commandState.set(SEARCH_CHANGED, true, {transient: true});
     let state = getSearchState(commandState, editor, args!.register);
     if (state.text) {
         state.args.backwards = !state.args.backwards;

@@ -22,7 +22,7 @@ const setModeArgs = z.object({ value: z.string() }).strict();
 async function setMode(state: CommandState, args_: unknown): Promise<CommandResult> {
     let args = validateInput('master-key.setMode', args_, setModeArgs);
     if(args){
-        state.set(MODE, args.value);
+        state.set(MODE, args.value, {public: true});
     }
     return [undefined, state];
 };
