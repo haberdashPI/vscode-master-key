@@ -133,17 +133,29 @@ export function commandState(x: unknown): undefined | CommandState {
 }
 
 export async function onResolve(key: string, listener: Listener){
-    await stateStream.next(state => state.onResolve(key, listener));
+    return await stateStream.next(state => state.onResolve(key, listener));
 }
 
 // TODO: stopped here
 
-export async function setState<T>(str: string, def: T, opt: ISetOptions, fn: (x: T) => T){
-    let state_;
-    state_ = await state;
-    state_.set(str, fn(state_.get<T>(str, def)!), opt);
-    state = Promise.resolve(state_);
+export function setState<T>(opt: ISetOptions, fn: StateSetter): Promise<void>;
+export function setState<T>(fn: StateSetter): Promise<void>;
+export async function setState(optOrFn_: ISetOptions | StateSetter, fn_?: StateSetter){
+    let fn: StateSetter;
+    let opt: ISetOptions;
+    if(fn_){
+        fn = fn_;
+        opt = <ISetOptions>optOrFn_;
+    }else{
+        fn = <StateSetter>optOrFn_;
+        opt = {};
+    }
+
+    await stateStream.next(fn);
+    return;
 }
+
+// TODO: stopped here
 
 export type CommandResult = [object | undefined | "cancel", CommandState];
 type CommandFn = (state: CommandState, ...args: any[]) => Promise<CommandResult>;
