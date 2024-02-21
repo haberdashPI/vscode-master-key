@@ -2,120 +2,118 @@ import * as vscode from 'vscode';
 import z from 'zod';
 import { cloneDeep, mapValues } from 'lodash';
 import { validateInput } from './utils';
-import { Map, List, Record as iRecord } from 'immutable';
+import { Map, List, RecordOf, Record as IRecord } from 'immutable';
+import { RunCommandsArgs } from './commands/do';
 
 // OLD THINGS THAT GOT UPDATED IN `set` THAT MUST GO ELSEWHERE
 // - status bar / various other ux changes that happen due to state changes
 // - update cursor appearance
 
-export type Listener = (states: CommandState) => Promise<boolean>;
+export type Listener = (states: Map<string, unknown>) => boolean;
 
-const StateRecord = iRecord({
-    value: undefined,
-    transient: false,
-    resetTo: undefined,
-    listteners: List<Listener>(),
+interface IStateOptions{
+    transient?: { reset: unknown },
+    listeners: List<Listener>,
+    public: boolean
+}
+const StateOptions = IRecord<IStateOptions>({
+    transient: undefined,
+    listeners: List<Listener>(),
     public: false
-})
+});
+type RStateOptions = RecordOf<IStateOptions>;
 
 const UNDEFINED_RESET_UUID = "21c64688-c3e6-4f44-bf57-d17f8d3a2d50";
 
 interface ISetOptions {
-    transient?: boolean,
-    resetTo?: unknown,
+    transient?: { reset: unknown },
     public?: boolean
 }
 
-export class CommandState{
-    private states = Map<string, iRecord>();
-    private resolveListeners = Map();
+type ChangeFn<T> = (state: Map<string, unknown>) => T;
 
-    async set(key: string, change: (state: Map<string, Map<string, ) => unknown, options: ISetOptions){
-        let listeners = this.states.getIn([key, 'listeners'], List<Listener>());
-        this.states[key] = {
-            value, listeners,
-            transient: options.transient || false,
-            resetTo: options.resetTo !== undefined ? options.resetTo :
-                this.states[key].value,
-            public: options.public || false
-        };
+interface ICommandState{
+    options: Map<string, RStateOptions>;
+    resolveListeners: Map<string, Listener>;
+    values: Map<string, unknown>;
+    nesting: boolean;
+}
 
-        let newListeners: Listener[] = [];
-        for(let listener of listeners){
-            let keep = await listener(this);
-            if(keep){ newListeners.push(listener); }
-        }
+const CommandStateFactory = IRecord({
+    options: Map<string, RStateOptions>(),
+    resolveListeners: Map<string, Listener>(),
+    values: Map<string, unknown>(),
+    nesting: false
+});
+type RCommandState = RecordOf<ICommandState>;
 
-        this.states[key].listeners = newListeners;
+export class CommandState {
+    private record: RCommandState;
+    constructor(record: RCommandState = CommandStateFactory()){
+        this.record = record;
     }
 
-    get<T>(key: string, defaultValue?: T): T | undefined {
-        let val = <T>this.states[key]?.value;
-        if(val === undefined){
-            this.states[key] = {
-                value: cloneDeep(defaultValue),
-                resetTo: defaultValue,
-                transient: false,
-                listeners: [],
-                public: false
-            };
-            return defaultValue;
-        }
-        else{ return val; }
+    update<T>(key: string, change: ChangeFn<T>, opt: ISetOptions = {}){
+        let values = this.record.values.set(key, change(this.record.values));
+        let listeners = this.record.options.get(key, StateOptions()).listeners;
+        listeners = listeners.filter((listener) => listener(values));
+
+        let options = this.record.options.set(key, StateOptions({
+            transient: opt.transient,
+            listeners,
+            public: opt.public
+        }));
+
+        let resolveListeners = this.record.resolveListeners;
+        return new CommandState(CommandStateFactory({
+            options,
+            resolveListeners,
+            values
+        }));
     }
 
     reset(){
-        for(let state of Object.values(this.states)){
-            if(state.transient){ state.value = state.resetTo; }
-        }
+        let values = this.record.options.map(x => x.transient?.reset || x);
+        return new CommandState(this.record.set('values', values));
     }
 
     onSet(key: string, listener: Listener){
-        let state = this.states[key];
-        if(!state){
-            state = {
-                value: undefined,
-                resetTo: undefined,
-                transient: false,
-                listeners: [],
-                public: false
-            };
-        }
-        state.listeners.push(listener);
-        this.states[key] = state;
+        let options = this.record.options.get(key, StateOptions());
+        options.update('listeners', ls => ls.push(listener));
+        return new CommandState(this.record.setIn(['options', key], options));
     }
 
     onResolve(name: string, listener: Listener){
-        this.resolveListeners[name] = listener;
+        return new CommandState(this.record.setIn(['resolveListeners', name], listener));
     }
-    async resolve(){
-        let newListeners: Record<string, Listener> = {};
-        for(let [name, fn] of Object.entries(this.resolveListeners)){
-            let keep = await fn(this);
-            if(keep){ newListeners[name] = fn; }
-        }
 
-        this.resolveListeners = newListeners;
-        for(let [key, state] of Object.entries(this.states)){
-            if(state.public){
-                vscode.commands.executeCommand('setContext', 'master-key.'+key, state.value);
+    resolve() {
+        let listeners = this.record.resolveListeners.filter(li => li(this.record.values));
+        this.record.values.forEach((v, k) => {
+            if (this.record.options.get(k)?.public) {
+                vscode.commands.executeCommand('setContext', 'master-key.' + k, v);
             }
-        }
+        });
+        return new CommandState(this.record.setIn(['options', 'resolveListeners'], listeners));
     }
 
-    evalContext(extra: object = {}){
-        return { ...mapValues(this.states, val => val.value), extra };
+    get values(){ return this.record.values.toJS(); }
+
+    nest<T>(fn: (state: CommandState) => [CommandState, T]): [CommandState, T] {
+        let [state, others] = fn(new CommandState(this.record.set('nesting', true)));
+        return [new CommandState(state.record.set('nesting', false)), others];
     }
 }
 
-function* stateStream(){
-    let state = Map();
-
-
+type StateSetter = (x: CommandState) => CommandState;
+function* generateStateStream(): Generator<Promise<CommandState>, void, StateSetter>{
+    let state = Promise.resolve(new CommandState());
+    while(true){
+        let setter = yield state;
+        state = state.then(setter);
+    }
 }
-
-let state: Thenable<CommandState> = Promise.resolve(new CommandState());
-const NESTED_CALL = 'nestedCall';
+let stateStream = generateStateStream();
 
 const WRAPPED_UUID = "28509bd6-8bde-4eef-8406-afd31ad11b43";
 export type WrappedCommandResult = {
@@ -135,11 +133,10 @@ export function commandState(x: unknown): undefined | CommandState {
 }
 
 export async function onResolve(key: string, listener: Listener){
-    let state_;
-    state_ = await state;
-    state_.onResolve(key, listener);
-    state = Promise.resolve(state_);
+    await stateStream.next(state => state.onResolve(key, listener));
 }
+
+// TODO: stopped here
 
 export async function setState<T>(str: string, def: T, opt: ISetOptions, fn: (x: T) => T){
     let state_;

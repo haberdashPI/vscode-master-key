@@ -41,8 +41,8 @@ export function captureKeys(state: CommandState, onUpdate: UpdateFn) {
             let result = '';
             // other commands can interrupt user input to `captureKeys` by changing the mode
             // away from 'capture'
-            state.onSet(MODE, async state => {
-                if(state.get<string>(MODE, 'insert') !== 'capture'){
+            state.onSet(MODE, state => {
+                if(state.get(MODE) !== 'capture'){
                     clearTypeSubscription();
                     resolve(result);
                     return false;
