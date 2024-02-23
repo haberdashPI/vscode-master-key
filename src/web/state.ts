@@ -101,6 +101,10 @@ export class CommandState {
         }
     }
 
+    get<T>(key: string, defaultValue?: T): T | undefined {
+        return this.record.get(key, defaultValue);
+    }
+
     reset(){
         let values = this.record.options.map(x => x.transient?.reset || x);
         let record = this.record.set('values', values);
