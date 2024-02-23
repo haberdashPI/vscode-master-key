@@ -227,7 +227,7 @@ async function queryPreset(): Promise<Preset | undefined> {
 async function importBindings(file: vscode.Uri, preset: Bindings) {
     insertKeybindingsIntoConfig(file, preset.bind);
     let config = vscode.workspace.getConfiguration('master-key');
-    setState(MODE, '', {}, val => 'insert');
+    setState(async state => state.update(MODE, x => 'insert'));
     config.update('definitions', preset.define, vscode.ConfigurationTarget.Global);
 }
 

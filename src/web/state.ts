@@ -16,6 +16,7 @@ interface IStateOptions{
     listeners: List<Listener>,
     public: boolean
 }
+// eslint-disable-next-line @typescript-eslint/naming-convention
 const StateOptions = IRecord<IStateOptions>({
     transient: undefined,
     listeners: List<Listener>(),
@@ -39,6 +40,8 @@ interface ICommandState{
     nesting: boolean;
 }
 
+
+// eslint-disable-next-line @typescript-eslint/naming-convention
 const CommandStateFactory = IRecord({
     options: Map<string, RStateOptions>(),
     resolveListeners: Map<string, Listener>(),
@@ -53,7 +56,27 @@ export class CommandState {
         this.record = record;
     }
 
-    update<T>(key: string, change: ChangeFn<T>, opt: ISetOptions = {}){
+    withMutations(fn: (x: CommandState) => void) {
+        let rec = this.record.withMutations(rec => {
+            rec.update('values', v => v.asMutable());
+            fn(new CommandState(rec));
+            rec.update('values', v => v.asImmutable());
+        });
+        return new CommandState(rec);
+    }
+
+    update<T>(key: string, opt: ISetOptions, change: ChangeFn<T>): CommandState;
+    update<T>(key: string, change: ChangeFn<T>): CommandState;
+    update<T>(key: string, optOrChange: ISetOptions | ChangeFn<T>, change_?: ChangeFn<T>){
+        let opt: ISetOptions;
+        let change: ChangeFn<T>;
+        if(typeof optOrChange === 'function'){
+            opt = {};
+            change = optOrChange;
+        }else{
+            opt = optOrChange;
+            change = <ChangeFn<T>>(change_);
+        }
         let values = this.record.values.set(key, change(this.record.values));
         let listeners = this.record.options.get(key, StateOptions()).listeners;
         listeners = listeners.filter((listener) => listener(values));
@@ -65,26 +88,47 @@ export class CommandState {
         }));
 
         let resolveListeners = this.record.resolveListeners;
-        return new CommandState(CommandStateFactory({
-            options,
-            resolveListeners,
-            values
-        }));
+        // NOTE: we set `record` in this way so that `update` can be used
+        // both inside and outside of `withMutations`;
+        let record = this.record.
+            set('options', options).
+            set('resolveListeners', resolveListeners).
+            set('values', values);
+        if(record.wasAltered()){
+            return this;
+        }else{
+            return new CommandState(record);
+        }
     }
 
     reset(){
         let values = this.record.options.map(x => x.transient?.reset || x);
-        return new CommandState(this.record.set('values', values));
+        let record = this.record.set('values', values);
+        if(record.wasAltered()){
+            return this;
+        }else{
+            return new CommandState(record);
+        }
     }
 
     onSet(key: string, listener: Listener){
         let options = this.record.options.get(key, StateOptions());
         options.update('listeners', ls => ls.push(listener));
-        return new CommandState(this.record.setIn(['options', key], options));
+        let record = this.record.setIn(['options', key], options);
+        if(record.wasAltered()){
+            return this;
+        }else{
+            return new CommandState(record);
+        }
     }
 
     onResolve(name: string, listener: Listener){
-        return new CommandState(this.record.setIn(['resolveListeners', name], listener));
+        let record = this.record.setIn(['resolveListeners', name], listener);
+        if(record.wasAltered()){
+            return this;
+        }else{
+            return new CommandState(record);
+        }
     }
 
     resolve() {
@@ -94,19 +138,28 @@ export class CommandState {
                 vscode.commands.executeCommand('setContext', 'master-key.' + k, v);
             }
         });
-        return new CommandState(this.record.setIn(['options', 'resolveListeners'], listeners));
+        let record = this.record.setIn(['options', 'resolveListeners'], listeners);
+        if(record.wasAltered()){
+            return this;
+        }else{
+            return new CommandState(record);
+        }
     }
 
     get values(){ return this.record.values.toJS(); }
 
-    nest<T>(fn: (state: CommandState) => [CommandState, T]): [CommandState, T] {
-        let [state, others] = fn(new CommandState(this.record.set('nesting', true)));
-        return [new CommandState(state.record.set('nesting', false)), others];
+    async nest<T>(fn: (state: CommandState) => Promise<[T, CommandState]>): Promise<[T, CommandState]> {
+        let oldNest = this.record.nesting;
+        let [others, state] = await fn(new CommandState(this.record.set('nesting', true)));
+        if(!oldNest){
+            state = state.resolve().reset();
+        }
+        return [others, new CommandState(state.record.set('nesting', oldNest))];
     }
 }
 
-type StateSetter = (x: CommandState) => CommandState;
-function* generateStateStream(): Generator<Promise<CommandState>, void, StateSetter>{
+type StateSetter = (x: CommandState) => Promise<CommandState>;
+async function* generateStateStream(): AsyncGenerator<CommandState, void, StateSetter>{
     let state = Promise.resolve(new CommandState());
     while(true){
         let setter = yield state;
@@ -114,6 +167,17 @@ function* generateStateStream(): Generator<Promise<CommandState>, void, StateSet
     }
 }
 let stateStream = generateStateStream();
+
+export async function onResolve(key: string, listener: Listener){
+    return await stateStream.next(async state => state.onResolve(key, listener));
+}
+
+// TODO: stopped here
+
+export async function setState<T>(fn: StateSetter): Promise<void>{
+    await stateStream.next(fn);
+    return;
+}
 
 const WRAPPED_UUID = "28509bd6-8bde-4eef-8406-afd31ad11b43";
 export type WrappedCommandResult = {
@@ -132,76 +196,45 @@ export function commandState(x: unknown): undefined | CommandState {
     }
 }
 
-export async function onResolve(key: string, listener: Listener){
-    return await stateStream.next(state => state.onResolve(key, listener));
-}
-
-// TODO: stopped here
-
-export function setState<T>(opt: ISetOptions, fn: StateSetter): Promise<void>;
-export function setState<T>(fn: StateSetter): Promise<void>;
-export async function setState(optOrFn_: ISetOptions | StateSetter, fn_?: StateSetter){
-    let fn: StateSetter;
-    let opt: ISetOptions;
-    if(fn_){
-        fn = fn_;
-        opt = <ISetOptions>optOrFn_;
-    }else{
-        fn = <StateSetter>optOrFn_;
-        opt = {};
-    }
-
-    await stateStream.next(fn);
-    return;
-}
-
-// TODO: stopped here
-
 export type CommandResult = [object | undefined | "cancel", CommandState];
-type CommandFn = (state: CommandState, ...args: any[]) => Promise<CommandResult>;
-export function wrapStateful(fn: CommandFn) {
-    return async function (...args: any[]): Promise<WrappedCommandResult> {
-        let state_;
-        let passArgs;
-        if(args[1] instanceof CommandState){
-            state_ = args[1];
-            passArgs = args.slice(0, 1).concat(args.slice(2));
-        }else{
-            state_ = await state;
-            passArgs = args;
-        }
-
-        let nestedCall = state_.get<boolean>(NESTED_CALL, false);
-        if(!nestedCall){ state_.set(NESTED_CALL, true, {}); }
-
+type CommandFn = (args: any, state: CommandState) => Promise<CommandResult>;
+export function statefulFunction(fn: CommandFn) {
+    return async function (args: any, state?: CommandState): Promise<WrappedCommandResult | undefined> {
+        let finalState;
         let rargs;
-        [rargs, state_] = await fn(state_, ...args);
-
-        if(!nestedCall){
-            state_ = await state;
-            state_.resolve();
-            state_.set(NESTED_CALL, false, {});
-            state_.reset();
+        if(state !== undefined){
+            [rargs, state] = await fn(args, state);
+            return { id: WRAPPED_UUID, args: rargs, state };
+        }else{
+            finalState = await stateStream.next(async state => {
+                [rargs, state] = await state.nest(async state => {
+                    return await fn(args, state);
+                });
+                return state;
+            });
         }
-        state = Promise.resolve(state_);
-        return { id: WRAPPED_UUID, args: rargs, state: state_ };
+
+        if(!finalState.done){
+            return { id: WRAPPED_UUID, args: rargs, state: finalState.value };
+        }
     };
 }
 
-async function addDefinitions(state: Thenable<CommandState>, definitions: any){
-    let state_ = await state;
-
-    for(let [k, v] of Object.entries(definitions || {})){
-        await state_.set(k, v, {public: true});
-    }
-    return state_;
+function addDefinitions(state: CommandState, definitions: any){
+    return state.withMutations(state => {
+        for(let [k, v] of Object.entries(definitions || {})){
+            state.update(k, { public: true }, vals => {
+                vals.set(k, v);
+            });
+        }
+    });
 }
 
 function updateConfig(event?: vscode.ConfigurationChangeEvent){
     if(!event || event?.affectsConfiguration('master-key')){
         let config = vscode.workspace.getConfiguration('master-key');
         let definitions = config.get<object[]>('definitions');
-        state = addDefinitions(state, definitions);
+        setState(async state => addDefinitions(state, definitions));
     }
 }
 
@@ -212,9 +245,15 @@ const setFlagArgs = z.object({
 }).strict();
 type SetFlagArgs = z.infer<typeof setFlagArgs>;
 
-async function setFlag(state: CommandState, args_: unknown): Promise<CommandResult> {
+async function setFlag(args_: unknown, state: CommandState): Promise<CommandResult> {
     let args = validateInput('master-key.setFlag', args_, setFlagArgs);
-    if(args){ state.set(args.name, args.value, {transient: args.transient || false}); }
+    if (args) {
+        let opt = !args.transient ? {} : {
+            transient: { reset: false }
+        };
+        let a = args;
+        state.update(args.name, opt, vals => vals.set(a.name, a.value));
+    }
     return [undefined, state];
 }
 
@@ -223,7 +262,7 @@ export function activate(context: vscode.ExtensionContext){
     vscode.workspace.onDidChangeConfiguration(updateConfig);
 
     context.subscriptions.push(vscode.commands.registerCommand('master-key.setFlag',
-        wrapStateful(setFlag)));
+        statefulFunction(setFlag)));
 
     vscode.window.onDidChangeTextEditorSelection(async e => {
         let selCount = 0;
@@ -231,24 +270,27 @@ export function activate(context: vscode.ExtensionContext){
             if(!sel.isEmpty){ selCount += 1; }
             if(selCount > 1){ break; }
         }
-        let state_ = await state;
-        state_.set('editorHasSelection', selCount > 0, {});
-        state_.set('editorHasMultipleSelections', selCount > 1, {});
-        let doc = e.textEditor.document;
+        setState(async state => {
+            return state.withMutations(state => {
+                state.update('editorHasSelection', x => selCount > 0);
+                state.update('editorHasMultipleSelections', x => selCount > 1);
+                let doc = e.textEditor.document;
 
-        let firstSelectionOrWord;
-        if(e.selections[0].isEmpty){
-            let wordRange = doc.getWordRangeAtPosition(e.selections[0].start);
-            firstSelectionOrWord = doc.getText(wordRange);
-        }else{
-            firstSelectionOrWord = doc.getText(e.selections[0]);
-        }
-        state_.set('firstSelectionOrWord', firstSelectionOrWord, {public: true});
-        vscode.commands.executeCommand('setContext', 'master-key.firstSelectionOrWord',
-            firstSelectionOrWord);
+                let firstSelectionOrWord: string;
+                if(e.selections[0].isEmpty){
+                    let wordRange = doc.getWordRangeAtPosition(e.selections[0].start);
+                    firstSelectionOrWord = doc.getText(wordRange);
+                }else{
+                    firstSelectionOrWord = doc.getText(e.selections[0]);
+                }
+                state.update('firstSelectionOrWord', {public: true}, x => firstSelectionOrWord);
+            });
+        });
     });
 
     vscode.window.onDidChangeActiveTextEditor(e => {
-        setState('editorLangId', '', {}, val => e?.document?.languageId || '');
+        setState(async state =>
+            state.update('editorLangId', val => (e?.document?.languageId || ''))
+        );
     });
 }

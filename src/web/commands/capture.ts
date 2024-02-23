@@ -4,7 +4,7 @@ import { doArgs } from '../keybindings/parsing';
 import { validateInput } from '../utils';
 import { CommandResult, CommandState } from '../state';
 import { MODE } from './mode';
-import { wrapStateful } from '../state';
+import { statefulFunction } from '../state';
 
 let typeSubscription: vscode.Disposable | undefined;
 let onTypeFn: (text: string) => void = async function(text: string){
