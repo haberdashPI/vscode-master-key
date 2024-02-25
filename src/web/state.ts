@@ -151,15 +151,6 @@ export class CommandState {
     }
 
     get values(){ return this.record.values.toJS(); }
-
-    async nest<T>(fn: (state: CommandState) => Promise<[T, CommandState]>): Promise<[T, CommandState]> {
-        let oldNest = this.record.nesting;
-        let [others, state] = await fn(new CommandState(this.record.set('nesting', true)));
-        if(!oldNest){
-            state = state.resolve().reset();
-        }
-        return [others, new CommandState(state.record.set('nesting', oldNest))];
-    }
 }
 
 type StateSetter = (x: CommandState) => Promise<CommandState>;
@@ -176,51 +167,37 @@ export async function onResolve(key: string, listener: Listener){
     return await stateStream.next(async state => state.onResolve(key, listener));
 }
 
-// TODO: stopped here
+export async function onSet(name: string, listener: Listener){
+    return await stateStream.next(async state => state.onSet(name, listener));
+}
 
-export async function setState<T>(fn: StateSetter): Promise<void>{
-    await stateStream.next(fn);
-    return;
+export async function withState(fn: StateSetter = async x => x): Promise<CommandState | void>{
+    let result = await stateStream.next(fn);
+    if(!result.done){
+        return result.value;
+    }else{
+        return;
+    }
 }
 
 const WRAPPED_UUID = "28509bd6-8bde-4eef-8406-afd31ad11b43";
 export type WrappedCommandResult = {
     id: "28509bd6-8bde-4eef-8406-afd31ad11b43",
     args?: object | "cancel"
-    state: CommandState
 };
 export function commandArgs(x: unknown): undefined | object | "cancel" {
     if((<any>x)?.id === WRAPPED_UUID){
         return (<WrappedCommandResult>x).args;
     }
 }
-export function commandState(x: unknown): undefined | CommandState {
-    if((<any>x)?.id === WRAPPED_UUID){
-        return (<WrappedCommandResult>x).state;
-    }
-}
 
-export type CommandResult = [object | undefined | "cancel", CommandState];
-type CommandFn = (args: any, state: CommandState) => Promise<CommandResult>;
-export function statefulFunction(fn: CommandFn) {
-    return async function (args: any, state?: CommandState): Promise<WrappedCommandResult | undefined> {
-        let finalState;
+export type CommandResult = object | undefined | "cancel";
+type CommandFn = (...args: any[]) => Promise<CommandResult>;
+export function recordedCommand(fn: CommandFn) {
+    return async function (...args: any[]): Promise<WrappedCommandResult | undefined> {
         let rargs;
-        if(state !== undefined){
-            [rargs, state] = await fn(args, state);
-            return { id: WRAPPED_UUID, args: rargs, state };
-        }else{
-            finalState = await stateStream.next(async state => {
-                [rargs, state] = await state.nest(async state => {
-                    return await fn(args, state);
-                });
-                return state;
-            });
-        }
-
-        if(!finalState.done){
-            return { id: WRAPPED_UUID, args: rargs, state: finalState.value };
-        }
+        rargs = await fn(...args);
+        return { id: WRAPPED_UUID, args: rargs };
     };
 }
 
@@ -238,7 +215,7 @@ function updateConfig(event?: vscode.ConfigurationChangeEvent){
     if(!event || event?.affectsConfiguration('master-key')){
         let config = vscode.workspace.getConfiguration('master-key');
         let definitions = config.get<object[]>('definitions');
-        setState(async state => addDefinitions(state, definitions));
+        withState(async state => addDefinitions(state, definitions));
     }
 }
 
@@ -249,16 +226,18 @@ const setFlagArgs = z.object({
 }).strict();
 type SetFlagArgs = z.infer<typeof setFlagArgs>;
 
-async function setFlag(args_: unknown, state: CommandState): Promise<CommandResult> {
+async function setFlag(args_: unknown): Promise<CommandResult> {
     let args = validateInput('master-key.setFlag', args_, setFlagArgs);
     if (args) {
         let opt = !args.transient ? {} : {
             transient: { reset: false }
         };
         let a = args;
-        state.update(args.name, opt, vals => vals.set(a.name, a.value));
+        withState(async state => {
+            return state.update(a.name, opt, vals => vals.set(a.name, a.value));
+        });
     }
-    return [undefined, state];
+    return;
 }
 
 export function activate(context: vscode.ExtensionContext){
@@ -266,7 +245,7 @@ export function activate(context: vscode.ExtensionContext){
     vscode.workspace.onDidChangeConfiguration(updateConfig);
 
     context.subscriptions.push(vscode.commands.registerCommand('master-key.setFlag',
-        statefulFunction(setFlag)));
+        recordedCommand(setFlag)));
 
     vscode.window.onDidChangeTextEditorSelection(async e => {
         let selCount = 0;
@@ -274,7 +253,7 @@ export function activate(context: vscode.ExtensionContext){
             if(!sel.isEmpty){ selCount += 1; }
             if(selCount > 1){ break; }
         }
-        setState(async state => {
+        withState(async state => {
             return state.withMutations(state => {
                 state.update('editorHasSelection', x => selCount > 0);
                 state.update('editorHasMultipleSelections', x => selCount > 1);
@@ -293,7 +272,7 @@ export function activate(context: vscode.ExtensionContext){
     });
 
     vscode.window.onDidChangeActiveTextEditor(e => {
-        setState(async state =>
+        withState(async state =>
             state.update('editorLangId', val => (e?.document?.languageId || ''))
         );
     });

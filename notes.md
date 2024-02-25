@@ -7,6 +7,14 @@ we need a coherent state change model
 Idea: each modifier to state gets queue up, and is executed one by one in a channel
 each change to state is represented by a promise
 
+NOTE: actually we can't use the idea below at all; state should be entirely
+managd by the queue and changes to it should be short calls that make
+simple changes (and ideally figure out how to ensure these are atomic)
+so state isn't passed around functionally, it's managed globally
+via e.g. `setState` (maybe renamed to `updateState`) and perhaps
+some read method as well; the only thing we pass around in the wrapper
+is the command history setup
+
 wrapStateful has to help with this carefully: it is called within async chains,
 they only initiate queued change in the outer step, and they resolve the promise
 chain in the outer layer

@@ -2,14 +2,14 @@ import * as vscode from 'vscode';
 import z from 'zod';
 import { validateInput } from '../utils';
 import { BindingCommand, DoArgs, doArgs } from '../keybindings/parsing';
-import { CommandResult, CommandState, WrappedCommandResult, commandState, commandArgs, wrapStateful } from '../state';
+import { withState, CommandResult, CommandState, WrappedCommandResult, commandArgs, recordedCommand } from '../state';
 import { cloneDeep, merge } from 'lodash';
 import { evalContext, reifyStrings } from '../expressions';
 import { keySuffix } from './prefix';
 import { isSingleCommand } from '../keybindings/processing';
 import { MODE } from './mode';
 
-async function doCommand(state: CommandState, command: BindingCommand):
+async function doCommand(command: BindingCommand):
     Promise<[BindingCommand | undefined, CommandState]> {
 
     let reifiedCommand = cloneDeep(command);
@@ -17,7 +17,12 @@ async function doCommand(state: CommandState, command: BindingCommand):
         let doRun: unknown = undefined;
         if (typeof command.if === 'boolean') { doRun = command.if; }
         else {
-            doRun = evalContext.evalStr(command.if, state.evalContext());
+            let cif = command.if;
+            await withState(async state => {
+                doRun = evalContext.evalStr(cif, state.values);
+                return state;
+            });
+            // TODO: stopped here
         }
         reifiedCommand.if = !!doRun;
         if (!doRun) {
@@ -29,7 +34,7 @@ async function doCommand(state: CommandState, command: BindingCommand):
     let reifyArgs: Record<string, any> = command.args || {};
     if (command.computedArgs !== undefined) {
         let computed = reifyStrings(command.computedArgs,
-            str => evalContext.evalStr(str, state.evalContext()));
+            str => evalContext.evalStr(str, state.values));
         reifyArgs = merge(reifyArgs, computed);
         reifiedCommand.args = reifyArgs;
         reifiedCommand.computedArgs = undefined;
@@ -66,7 +71,7 @@ export type RecordedCommandArgs = RunCommandsArgs & {
 
 function resolveRepeat(state: CommandState, args: RunCommandsArgs): number {
     if(typeof args.repeat === 'string'){
-        let repeatEval = evalContext.evalStr(args.repeat, state.evalContext());
+        let repeatEval = evalContext.evalStr(args.repeat, state.values);
         let repeatNum = z.number().safeParse(repeatEval);
         if(repeatNum.success){
             return repeatNum.data;
@@ -82,8 +87,7 @@ function resolveRepeat(state: CommandState, args: RunCommandsArgs): number {
 
 // TODO: handle search usage functions
 // they should become part of state listeners in `search` file
-export async function doCommands(state: CommandState, args: RunCommandsArgs):
-    Promise<[CommandState, RunCommandsArgs]>{
+export async function doCommands(args: RunCommandsArgs): Promise<CommandResult>{
 
     // run the commands
 
@@ -150,7 +154,7 @@ function updateConfig(event?: vscode.ConfigurationChangeEvent){
 
 export function activate(context: vscode.ExtensionContext){
     context.subscriptions.push(vscode.commands.registerCommand('master-key.do',
-        wrapStateful(doCommandsCmd)));
+        recordedCommand(doCommandsCmd)));
 
     updateConfig();
     vscode.workspace.onDidChangeConfiguration(updateConfig);
