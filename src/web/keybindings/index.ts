@@ -6,7 +6,7 @@ import { uniq, pick } from 'lodash';
 import replaceAll from 'string.prototype.replaceall';
 import { Utils } from 'vscode-uri';
 import z from 'zod';
-import { setState } from '../state';
+import { withState } from '../state';
 import { MODE } from '../commands/mode';
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -227,7 +227,7 @@ async function queryPreset(): Promise<Preset | undefined> {
 async function importBindings(file: vscode.Uri, preset: Bindings) {
     insertKeybindingsIntoConfig(file, preset.bind);
     let config = vscode.workspace.getConfiguration('master-key');
-    setState(async state => state.update(MODE, x => 'insert'));
+    withState(async state => state.update(MODE, x => 'insert'));
     config.update('definitions', preset.define, vscode.ConfigurationTarget.Global);
 }
 

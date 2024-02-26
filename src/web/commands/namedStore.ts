@@ -1,8 +1,9 @@
 import * as vscode from 'vscode';
 import z from 'zod';
 import { validateInput } from '../utils';
-import { CommandResult, CommandState, wrapStateful } from '../state';
+import { CommandResult, CommandState, recordedCommand } from '../state';
 import { evalContext } from '../expressions';
+import { withState } from '../state';
 
 const restoreNamedArgs = z.object({
     description: z.string().optional(),
@@ -22,7 +23,13 @@ async function restoreNamed(state: CommandState, args_: unknown): Promise<Comman
         let items = Object.keys(stored[args.name]).map(x => ({label: x}));
         let selected = await vscode.window.showQuickPick(items);
         if(selected !== undefined){
-            state.set(CAPTURED, stored[args.name][selected.label], {public: true});
+            let a = args;
+            let s = selected;
+            withState(async state => {
+                return state.update(CAPTURED, {public: true}, (_) => {
+                    stored[a.name][s.label];
+                });
+            });
         }
     }
     return [undefined, state];
@@ -78,7 +85,7 @@ function storeNamed(state: CommandState, args_: unknown): Promise<CommandResult>
 
 export function activate(context: vscode.ExtensionContext){
     context.subscriptions.push(vscode.commands.registerCommand('master-key.storeNamed',
-        wrapStateful(storeNamed)));
+        recordedCommand(storeNamed)));
     context.subscriptions.push(vscode.commands.registerCommand('master-key.restoreNamed',
-        wrapStateful(restoreNamed)));
+        recordedCommand(restoreNamed)));
 }

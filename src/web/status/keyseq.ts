@@ -3,6 +3,7 @@ import { CommandState, onResolve } from '../state';
 import replaceAll from 'string.prototype.replaceall';
 import { PREFIX } from '../commands/prefix';
 import { COUNT } from '../commands/count';
+import { Map } from 'immutable';
 
 function prettifyPrefix(str: string){
     str = str.toUpperCase();
@@ -20,10 +21,10 @@ function prettifyPrefix(str: string){
 let keyStatusBar: vscode.StatusBarItem | undefined = undefined;
 
 let statusUpdates = Number.MIN_SAFE_INTEGER;
-async function updateKeyStatus(state: CommandState){
-    let count = state.get<number>(COUNT);
+function updateKeyStatus(values: Map<string, unknown>){
+    let count = <number>values.get(COUNT, 0);
     let plannedUpdate = count ? count + "× " : '';
-    plannedUpdate += prettifyPrefix(state.get(PREFIX) || '');
+    plannedUpdate += prettifyPrefix(<string>values.get(PREFIX, ''));
     if(keyStatusBar !== undefined){
         if(plannedUpdate.length > 0){
             keyStatusBar.text = plannedUpdate;

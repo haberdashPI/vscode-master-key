@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import z from 'zod';
 import { onResolve } from '../state';
 import { validateInput } from '../utils';
-import { wrapStateful, CommandState, CommandResult } from '../state';
+import { withState, recordedCommand, CommandState, CommandResult } from '../state';
 
 export const MODE = 'mode';
 
@@ -22,15 +22,18 @@ const setModeArgs = z.object({ value: z.string() }).strict();
 async function setMode(state: CommandState, args_: unknown): Promise<CommandResult> {
     let args = validateInput('master-key.setMode', args_, setModeArgs);
     if(args){
-        state.set(MODE, args.value, {public: true});
+        let a = args;
+        withState(async state => {
+            return state.update(MODE, {public: true}, x => a.value);
+        });
     }
     return [undefined, state];
 };
 
 let currentMode = 'insert';
 export function activate(context: vscode.ExtensionContext){
-    onResolve('mode', async state => {
-        currentMode = state.get<string>(MODE, 'insert')!;
+    onResolve('mode', values => {
+        currentMode = <string>values.get(MODE, 'insert');
         updateCursorAppearance(vscode.window.activeTextEditor, currentMode);
         return true;
     });
@@ -39,9 +42,9 @@ export function activate(context: vscode.ExtensionContext){
     });
 
     context.subscriptions.push(vscode.commands.registerCommand('master-key.setMode',
-        wrapStateful(setMode)));
+        recordedCommand(setMode)));
     context.subscriptions.push(vscode.commands.registerCommand('master-key.enterInsert',
-        wrapStateful(s => setMode(s, {value: 'insert'}))));
+        recordedCommand(s => setMode(s, {value: 'insert'}))));
     context.subscriptions.push(vscode.commands.registerCommand('master-key.enterNormal',
-        wrapStateful(s => setMode(s, {value: 'normal'}))));
+        recordedCommand(s => setMode(s, {value: 'normal'}))));
 }

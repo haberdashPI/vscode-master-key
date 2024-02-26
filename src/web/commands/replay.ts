@@ -2,9 +2,10 @@ import * as vscode from 'vscode';
 import z from 'zod';
 import { validateInput } from '../utils';
 import { EvalContext } from '../expressions';
-import { setState, onResolve, CommandResult, CommandState, wrapStateful } from '../state';
+import { withState, onResolve, CommandResult, CommandState, recordedCommand } from '../state';
 import { doCommands, RecordedCommandArgs, RunCommandsArgs, COMMAND_HISTORY } from './do';
 import { uniq } from 'lodash';
+import { List } from 'immutable';
 
 const selectHistoryArgs = z.object({
     range: z.object({
@@ -106,22 +107,27 @@ async function runCommandHistory(state: CommandState,
     return [undefined, state];
 }
 
-async function pushHistoryToStack(state: CommandState, args: unknown): Promise<CommandResult> {
+async function pushHistoryToStack(args: unknown): Promise<CommandResult> {
     let commands = await selectHistoryCommand(state, 'master-key.pushHistoryToStack', args);
     if(commands){
-        let macro = state.get<RecordedCommandArgs[][]>(MACRO, [])!;
-        macro.push(commands);
-        state.set(MACRO, macro, {public: true});
+        let cs = commands;
+        withState(async state => {
+            state.update(MACRO, values => {
+                values.update(MACRO, List(), macro => {
+                    return (<List<RecordedCommandArgs[]>>macro).push(cs);
+                });
+            });
+        });
     }
-    return [undefined, state];
+    return;
 };
 
-async function replayFromHistory(state: CommandState, args: unknown): Promise<CommandResult> {
+async function replayFromHistory(args: unknown): Promise<CommandResult> {
     let commands = await selectHistoryCommand(state, 'master-key.replayFromHistory', args);
     if(commands){
-        [, state] = await runCommandHistory(state, commands);
+        await runCommandHistory(state, commands);
     }
-    return [undefined, state];
+    return;
 };
 
 const replayFromStackArgs = z.object({
@@ -129,7 +135,7 @@ const replayFromStackArgs = z.object({
     register: z.string().optional()
 }).strict();
 
-async function replayFromStack(state: CommandState, args_: unknown): Promise<CommandResult> {
+async function replayFromStack(args_: unknown): Promise<CommandResult> {
     let args = validateInput('master-key.replayFromStack', args_, replayFromStackArgs);
     if(args){
         let macros = state.get<RecordedCommandArgs[][]>(MACRO, [])!;
@@ -146,7 +152,7 @@ const recordArgs = z.object({
     on: z.boolean()
 }).strict();
 
-async function record(state: CommandState, args_: unknown): Promise<CommandResult>{
+async function record(args_: unknown): Promise<CommandResult>{
     let args = validateInput('master-key.record', args_, recordArgs);
     if(args){
         state.set(RECORD, args.on, {public: true});
@@ -158,19 +164,19 @@ const MACRO = 'macro';
 let commandHistory: RecordedCommandArgs[] = [];
 export function activate(context: vscode.ExtensionContext){
     context.subscriptions.push(vscode.commands.registerCommand('master-key.pushHistoryToStack',
-        wrapStateful(pushHistoryToStack)));
+        recordedCommand(pushHistoryToStack)));
 
     context.subscriptions.push(vscode.commands.registerCommand('master-key.replayFromHistory',
-        wrapStateful(replayFromHistory)));
+        recordedCommand(replayFromHistory)));
 
     context.subscriptions.push(vscode.commands.registerCommand('master-key.replayFromStack',
-        wrapStateful(replayFromStack)));
+        recordedCommand(replayFromStack)));
 
      context.subscriptions.push(vscode.commands.registerCommand('master-key.record',
-        wrapStateful(record)));
+        recordedCommand(record)));
 
     vscode.workspace.onDidChangeTextDocument(e => {
-        setState<RecordedCommandArgs[]>(COMMAND_HISTORY, [], {}, history => {
+        withState<RecordedCommandArgs[]>(COMMAND_HISTORY, [], {}, history => {
             let lastCommand = history[history.length - 1];
             if (lastCommand && typeof lastCommand.edits !== 'string' && lastCommand.recordEdits) {
                 lastCommand.edits = lastCommand.edits.concat(e);
