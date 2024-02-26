@@ -8,6 +8,7 @@ import { evalContext, reifyStrings } from '../expressions';
 import { keySuffix } from './prefix';
 import { isSingleCommand } from '../keybindings/processing';
 import { MODE } from './mode';
+import { List } from 'immutable';
 
 async function doCommand(command: BindingCommand):
     Promise<BindingCommand | undefined> {
@@ -49,7 +50,7 @@ async function doCommand(command: BindingCommand):
     // sometime, based on user input, a command can change its final argument values we need
     // to capture this result and save it as part of the `reifiedCommand` (for example, see
     // `replaceChar` in `capture.ts`)
-    let result = await vscode.commands.executeCommand<WrappedCommandResult | void>(command.command, reifyArgs, state);
+    let result = await vscode.commands.executeCommand<WrappedCommandResult | void>(command.command, reifyArgs);
     let args = commandArgs(result);
     if(args === "cancel"){ return undefined; }
     if(args){ reifiedCommand.args = args; }
@@ -142,19 +143,21 @@ let maxHistory = 0;
 async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
     let args = validateInput('master-key.do', args_, runCommandArgs);
     if(args){
-        let command;
+        let command: any;
         command = await doCommands(args);
         if(!isSingleCommand(args.do, 'master-key.prefix')){
             withState(async state => {
-                // TODO: stopped here
-                let history = state.get<RecordedCommandArgs[]>(COMMAND_HISTORY, [])!;
-                let recordEdits = state.get<string>(MODE, 'insert') === 'insert';
-                history.push({ ...command, edits: [], recordEdits });
-                state.set(COMMAND_HISTORY, history, {});
+                return state.update(COMMAND_HISTORY, values => {
+                    let history = <List<unknown>>(values.get(COMMAND_HISTORY, List()));
+                    let recordEdits = values.get(MODE, 'insert') === 'insert';
+                    return values.set(COMMAND_HISTORY,
+                        history.push({ ...command, edits: [], recordEdits }));
+                });
             });
         }
     }
-    return [undefined, state];
+    // TODO: think about whether it is cool to nest `do` commands
+    return args;
 }
 
 function updateConfig(event?: vscode.ConfigurationChangeEvent){
