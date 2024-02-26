@@ -10,7 +10,7 @@ import { isSingleCommand } from '../keybindings/processing';
 import { MODE } from './mode';
 
 async function doCommand(command: BindingCommand):
-    Promise<[BindingCommand | undefined, CommandState]> {
+    Promise<BindingCommand | undefined> {
 
     let reifiedCommand = cloneDeep(command);
     if (command.if !== undefined) {
@@ -19,22 +19,28 @@ async function doCommand(command: BindingCommand):
         else {
             let cif = command.if;
             await withState(async state => {
+                // TODO: ideally we would move string compilation outside
+                // of this function, and only have evaluation of the compiled result
+                // inside this call to `withState`
                 doRun = evalContext.evalStr(cif, state.values);
                 return state;
             });
-            // TODO: stopped here
         }
         reifiedCommand.if = !!doRun;
         if (!doRun) {
             reifiedCommand.computedArgs = undefined;
-            return [reifiedCommand, state]; // if the if check fails, don't run the command
+            return reifiedCommand; // if the if check fails, don't run the command
         }
     }
 
     let reifyArgs: Record<string, any> = command.args || {};
     if (command.computedArgs !== undefined) {
-        let computed = reifyStrings(command.computedArgs,
-            str => evalContext.evalStr(str, state.values));
+        let computed;
+        await withState(async state => {
+            computed = reifyStrings(command.computedArgs,
+                str => evalContext.evalStr(str, state.values));
+            return state;
+        });
         reifyArgs = merge(reifyArgs, computed);
         reifiedCommand.args = reifyArgs;
         reifiedCommand.computedArgs = undefined;
@@ -45,11 +51,9 @@ async function doCommand(command: BindingCommand):
     // `replaceChar` in `capture.ts`)
     let result = await vscode.commands.executeCommand<WrappedCommandResult | void>(command.command, reifyArgs, state);
     let args = commandArgs(result);
-    if(args === "cancel"){ return [undefined, state]; }
+    if(args === "cancel"){ return undefined; }
     if(args){ reifiedCommand.args = args; }
-    let newState = commandState(result);
-    if(newState){ state = newState; }
-    return [reifiedCommand, state];
+    return reifiedCommand;
 }
 
 const runCommandArgs = z.object({
@@ -69,9 +73,14 @@ export type RecordedCommandArgs = RunCommandsArgs & {
     edits: vscode.TextDocumentChangeEvent[] | string
 };
 
-function resolveRepeat(state: CommandState, args: RunCommandsArgs): number {
+async function resolveRepeat(args: RunCommandsArgs): Promise<number> {
     if(typeof args.repeat === 'string'){
-        let repeatEval = evalContext.evalStr(args.repeat, state.values);
+        let repeatEval;
+        let repeatStr = args.repeat;
+        await withState(async state => {
+            repeatEval = evalContext.evalStr(repeatStr, state.values);
+            return state;
+        });
         let repeatNum = z.number().safeParse(repeatEval);
         if(repeatNum.success){
             return repeatNum.data;
@@ -97,15 +106,14 @@ export async function doCommands(args: RunCommandsArgs): Promise<CommandResult>{
     try{
         reifiedCommands = [];
         for(const cmd of args.do){
-            let command;
-            [command, state] = await doCommand(state, cmd);
+            let command = await doCommand(cmd);
             if(command){ reifiedCommands.push(command); }
         }
-        repeat = resolveRepeat(state, args);
+        repeat = await resolveRepeat(args);
         if(repeat > 0){
             for(let i = 0; i < repeat; i++){
                 for(const cmd of reifiedCommands){
-                    [, state] = await doCommand(state, cmd);
+                    await doCommand(cmd);
                 }
             }
         }
@@ -114,32 +122,36 @@ export async function doCommands(args: RunCommandsArgs): Promise<CommandResult>{
             // this will be immediately cleared by `reset` but
             // its display will persist in the status bar for a little bit
             // (see `status/keyseq.ts`)
-            if(args.key){ keySuffix(state, args.key); }
-            state.resolve();
-            state.reset();
+            if(args.key){ keySuffix(args.key); }
+            withState(async state => {
+                return state.resolve().reset();
+            });
             // if(!wasSearchUsed() && vscode.window.activeTextEditor){
             //     clearSearchDecorations(vscode.window.activeTextEditor) ;
             // }
         }
     }
     evalContext.reportErrors();
-    return [state, { ...args, do: reifiedCommands, repeat }];
+    return { ...args, do: reifiedCommands, repeat };
 }
 
 export const COMMAND_HISTORY = 'commandHistory';
 
 let maxHistory = 0;
 
-async function doCommandsCmd(state: CommandState, args_: unknown): Promise<CommandResult> {
+async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
     let args = validateInput('master-key.do', args_, runCommandArgs);
     if(args){
         let command;
-        [state, command] = await doCommands(state, args);
+        command = await doCommands(args);
         if(!isSingleCommand(args.do, 'master-key.prefix')){
-            let history = state.get<RecordedCommandArgs[]>(COMMAND_HISTORY, [])!;
-            let recordEdits = state.get<string>(MODE, 'insert') === 'insert';
-            history.push({ ...command, edits: [], recordEdits });
-            state.set(COMMAND_HISTORY, history, {});
+            withState(async state => {
+                // TODO: stopped here
+                let history = state.get<RecordedCommandArgs[]>(COMMAND_HISTORY, [])!;
+                let recordEdits = state.get<string>(MODE, 'insert') === 'insert';
+                history.push({ ...command, edits: [], recordEdits });
+                state.set(COMMAND_HISTORY, history, {});
+            });
         }
     }
     return [undefined, state];
