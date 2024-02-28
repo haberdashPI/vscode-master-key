@@ -185,7 +185,7 @@ async function queryPreset(): Promise<Preset | undefined> {
         }
     }else if(picked?.command === 'file'){
         let file = await vscode.window.showOpenDialog({
-            openLabel: "Import Modal-Key-Binding Spec",
+            openLabel: "Import Master-Key-Binding Spec",
             // eslint-disable-next-line @typescript-eslint/naming-convention
             filters: { Preset: ["json", "jsonc", "toml", "yml", "yaml"] },
             canSelectFiles: true,

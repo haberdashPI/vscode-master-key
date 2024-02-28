@@ -21,8 +21,12 @@ const selectHistoryArgs = z.object({
 
 let evalContext = new EvalContext();
 
-async function evalMatcher(state: CommandState, matcher: string, i: number) {
-    let result_ = await evalContext.evalStr(matcher, state.evalContext({i}));
+async function evalMatcher(matcher: string, i: number) {
+    let result_;
+    await withState(async state => {
+        result_ = evalContext.evalStr(matcher, {...state.values, i});
+        return state;
+    });
     if(typeof result_ !== 'number'){
         if(result_){ return i; }
         else{ return -1; }
@@ -31,13 +35,15 @@ async function evalMatcher(state: CommandState, matcher: string, i: number) {
     }
 }
 
-async function selectHistoryCommand<T>(state: CommandState, cmd: string, args_: unknown){
+async function selectHistoryCommand<T>(cmd: string, args_: unknown){
     let args = validateInput(cmd, args_, selectHistoryArgs);
     if(args){
         let value: RecordedCommandArgs[] | undefined = undefined;
         if(args.value){ value = <RecordedCommandArgs[]>args.value; }
         else{
             // find the range of commands we want to replay
+            let state = await withState(async x => x);
+            if(!state){ return; }
             let history = state.get<RecordedCommandArgs[]>(COMMAND_HISTORY, [])!;
             let from = -1;
             let to = -1;
@@ -48,10 +54,10 @@ async function selectHistoryCommand<T>(state: CommandState, cmd: string, args_: 
                 // `at` undefined, so at least one of `toMatcher` and `fromMatcher` are not
                 // undefined
                 if(to < 0 && toMatcher){
-                    to = await evalMatcher(state, toMatcher, i);
+                    to = await evalMatcher(toMatcher, i);
                     if(args.at){ from = to; }
                 }
-                if(from < 0 && fromMatcher){ from = await evalMatcher(state, fromMatcher, i); }
+                if(from < 0 && fromMatcher){ from = await evalMatcher(fromMatcher, i); }
                 if(from > 0 && to > 0){
                     value = history.slice(from, to+1);
                     break;
@@ -80,11 +86,10 @@ function cleanupEdits(edits: vscode.TextDocumentChangeEvent[] | string){
 
 const REPLAY_DELAY = 50;
 // TODO: does `commands` require the `RunCommandsArgs` type?
-async function runCommandHistory(state: CommandState,
-    commands: (RunCommandsArgs | RecordedCommandArgs)[]): Promise<CommandResult> {
+async function runCommandHistory(commands: (RunCommandsArgs | RecordedCommandArgs)[]): Promise<CommandResult> {
 
     for(let cmd of commands){
-        [state, ] = await doCommands(state, cmd);
+        await doCommands(cmd);
 
         if((<any>cmd).edits){
             let editor = vscode.window.activeTextEditor;
@@ -104,15 +109,15 @@ async function runCommandHistory(state: CommandState,
         // replaying actions too fast messes up selection
         await new Promise(res => setTimeout(res, REPLAY_DELAY));
     }
-    return [undefined, state];
+    return;
 }
 
 async function pushHistoryToStack(args: unknown): Promise<CommandResult> {
-    let commands = await selectHistoryCommand(state, 'master-key.pushHistoryToStack', args);
+    let commands = await selectHistoryCommand('master-key.pushHistoryToStack', args);
     if(commands){
         let cs = commands;
         withState(async state => {
-            state.update(MACRO, values => {
+            return state.update(MACRO, values => {
                 values.update(MACRO, List(), macro => {
                     return (<List<RecordedCommandArgs[]>>macro).push(cs);
                 });
@@ -123,9 +128,9 @@ async function pushHistoryToStack(args: unknown): Promise<CommandResult> {
 };
 
 async function replayFromHistory(args: unknown): Promise<CommandResult> {
-    let commands = await selectHistoryCommand(state, 'master-key.replayFromHistory', args);
+    let commands = await selectHistoryCommand('master-key.replayFromHistory', args);
     if(commands){
-        await runCommandHistory(state, commands);
+        await runCommandHistory(commands);
     }
     return;
 };
@@ -138,13 +143,15 @@ const replayFromStackArgs = z.object({
 async function replayFromStack(args_: unknown): Promise<CommandResult> {
     let args = validateInput('master-key.replayFromStack', args_, replayFromStackArgs);
     if(args){
+        let state = (await withState(async s => s));
+        if(!state){ return; }
         let macros = state.get<RecordedCommandArgs[][]>(MACRO, [])!;
         let commands = macros[macros.length-args.index-1];
         if(commands){
-            [, state] = await runCommandHistory(state, commands);
+            await runCommandHistory(commands);
         }
     }
-    return [undefined, state];
+    return;
 };
 
 export const RECORD = 'record';
@@ -155,13 +162,15 @@ const recordArgs = z.object({
 async function record(args_: unknown): Promise<CommandResult>{
     let args = validateInput('master-key.record', args_, recordArgs);
     if(args){
-        state.set(RECORD, args.on, {public: true});
+        let a = args;
+        withState(async state => {
+            return state.update(RECORD, {public: true}, x => a.on);
+        });
     }
-    return [undefined, state];
+    return;
 }
 
 const MACRO = 'macro';
-let commandHistory: RecordedCommandArgs[] = [];
 export function activate(context: vscode.ExtensionContext){
     context.subscriptions.push(vscode.commands.registerCommand('master-key.pushHistoryToStack',
         recordedCommand(pushHistoryToStack)));
@@ -176,12 +185,17 @@ export function activate(context: vscode.ExtensionContext){
         recordedCommand(record)));
 
     vscode.workspace.onDidChangeTextDocument(e => {
-        withState<RecordedCommandArgs[]>(COMMAND_HISTORY, [], {}, history => {
-            let lastCommand = history[history.length - 1];
-            if (lastCommand && typeof lastCommand.edits !== 'string' && lastCommand.recordEdits) {
-                lastCommand.edits = lastCommand.edits.concat(e);
-            }
-            return history;
+        withState(async state => {
+            return state.update(COMMAND_HISTORY, values => {
+                let len = (<List<object>>(values.get(COMMAND_HISTORY, List()))).count();
+                return values.updateIn([COMMAND_HISTORY, len-1], lastCommand_ => {
+                    let lastCommand = <RecordedCommandArgs>lastCommand_;
+                    if (lastCommand && typeof lastCommand.edits !== 'string' && lastCommand.recordEdits) {
+                        lastCommand.edits = lastCommand.edits.concat(e);
+                    }
+                    return lastCommand;
+                });
+            });
         });
     });
 }

@@ -2,8 +2,9 @@ import * as vscode from 'vscode';
 import { CommandState, onResolve } from '../state';
 import { RECORD } from '../commands/replay';
 import { MODE } from '../commands/mode';
+import { Map } from 'immutable';
 
-async function updateModeStatus(state: CommandState){
+function updateModeStatus(state: Map<string, unknown>){
     if(modeStatusBar !== undefined){
         modeStatusBar.text = (state.get<boolean>(RECORD, false) ? "rec: " : "") +
             (state.get<string>(MODE, 'insert'))!;

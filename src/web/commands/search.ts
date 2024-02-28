@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import z from 'zod';
 import { validateInput, wrappedTranslate } from '../utils';
 import { doArgs } from '../keybindings/parsing';
-import { CommandResult, CommandState, wrapStateful } from '../state';
+import { withState, CommandResult, CommandState, recordedCommand } from '../state';
 import { MODE } from './mode';
 import { captureKeys } from './capture';
 
@@ -295,25 +295,26 @@ function clearSearchDecorations(editor: vscode.TextEditor){
 
 const SEARCH_CHANGED = 'searchChanged';
 
-async function search(commandState: CommandState, editor: vscode.TextEditor,
+async function search(editor: vscode.TextEditor,
     edit: vscode.TextEditorEdit, args_: any[]): Promise<CommandResult> {
 
     let args = validateInput('master-key.search', args_, searchArgs);
-    if(!args){ return [undefined, commandState]; }
+    if(!args){ return; }
 
-    // clear old search decorators if they exist
-    commandState.set(SEARCH_CHANGED, false, {});
-    commandState.resolve();
-
-    // set up to clear search decorators on a future command that doesn't set
-    // `SEARCH_CHANGED`
-    commandState.set(SEARCH_CHANGED, true, {transient: true});
-    commandState.onResolve('search', async (state: CommandState) => {
-        if(state.get<boolean>(SEARCH_CHANGED, false)){ clearSearchDecorations(editor); }
-        return true;
+    await withState(async state => {
+        // clear old search decorators if they exist, and prepare
+        state = state.update(SEARCH_CHANGED, x => false).resolve();
+        // set up to clear search decorators on a future command that doesn't set
+        // `SEARCH_CHANGED`
+        return state.update(SEARCH_CHANGED, {transient: {reset: false}}, x => true).
+            onResolve('search', values => {
+                if(values.get<boolean>(SEARCH_CHANGED, false)){ clearSearchDecorations(editor); }
+                return true;
+            });
     });
 
     currentSearch = args.register;
+    // TODO: stopped here
     let state = getSearchState(commandState, editor, args.register);
     state.args = args;
     state.text = args.text || "";
@@ -419,9 +420,9 @@ async function previousMatch(commandState: CommandState, editor: vscode.TextEdit
 }
 
 export function activate(context: vscode.ExtensionContext) {
-    context.subscriptions.push(vscode.commands.registerTextEditorCommand('master-key.search', wrapStateful(search)));
-    context.subscriptions.push(vscode.commands.registerTextEditorCommand('master-key.nextMatch', wrapStateful(nextMatch)));
-    context.subscriptions.push(vscode.commands.registerTextEditorCommand('master-key.previousMatch', wrapStateful(previousMatch)));
+    context.subscriptions.push(vscode.commands.registerTextEditorCommand('master-key.search', recordedCommand(search)));
+    context.subscriptions.push(vscode.commands.registerTextEditorCommand('master-key.nextMatch', recordedCommand(nextMatch)));
+    context.subscriptions.push(vscode.commands.registerTextEditorCommand('master-key.previousMatch', recordedCommand(previousMatch)));
     context.subscriptions.push(vscode.commands.registerTextEditorCommand('master-key.clearSearchDecorations', clearSearchDecorations));
     updateSearchHighlights();
     vscode.workspace.onDidChangeConfiguration(updateSearchHighlights);

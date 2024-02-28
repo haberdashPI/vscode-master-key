@@ -14,7 +14,7 @@ let stored: Record<string, Record<string, unknown>> = {};
 
 const CAPTURED = 'captured';
 
-async function restoreNamed(state: CommandState, args_: unknown): Promise<CommandResult> {
+async function restoreNamed(args_: unknown): Promise<CommandResult> {
     let args = validateInput('master-key.restoreNamed', args_, restoreNamedArgs);
     if(args){
         if(!stored[args.name]){
@@ -32,7 +32,7 @@ async function restoreNamed(state: CommandState, args_: unknown): Promise<Comman
             });
         }
     }
-    return [undefined, state];
+    return;
 }
 
 const storeNamedArgs = z.object({
@@ -41,11 +41,15 @@ const storeNamedArgs = z.object({
     contents: z.string(),
 });
 
-function storeNamed(state: CommandState, args_: unknown): Promise<CommandResult> {
+async function storeNamed(args_: unknown): Promise<CommandResult> {
     let argsNow = validateInput('master-key.storeNamed', args_, storeNamedArgs);
     if(argsNow){
         let args = argsNow;
-        let value = evalContext.evalStr(args.contents, state.evalContext());
+        let value: unknown = undefined;
+        await withState(async state => {
+            value = evalContext.evalStr(args.contents, state.values);
+            return state;
+        });
         if(value !== undefined){
             return new Promise<CommandResult>((resolve, reject) => {
                 try{
@@ -74,13 +78,13 @@ function storeNamed(state: CommandState, args_: unknown): Promise<CommandResult>
                         stored[args.name][name] = value;
                         picker.hide();
                     });
-                    picker.onDidHide(e => { resolve([undefined, state]); });
+                    picker.onDidHide(e => { resolve(undefined); });
                     picker.show();
                 }catch(e){ reject(e); }
             });
         }
     }
-    return Promise.resolve([undefined, state]);
+    return Promise.resolve(undefined);
 }
 
 export function activate(context: vscode.ExtensionContext){
