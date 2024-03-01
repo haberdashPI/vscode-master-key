@@ -118,9 +118,7 @@ async function pushHistoryToStack(args: unknown): Promise<CommandResult> {
         let cs = commands;
         withState(async state => {
             return state.update(MACRO, values => {
-                values.update(MACRO, List(), macro => {
-                    return (<List<RecordedCommandArgs[]>>macro).push(cs);
-                });
+                return (<List<RecordedCommandArgs[]>>values.get(MACRO, List())).push(cs);
             });
         });
     }
@@ -145,8 +143,8 @@ async function replayFromStack(args_: unknown): Promise<CommandResult> {
     if(args){
         let state = (await withState(async s => s));
         if(!state){ return; }
-        let macros = state.get<RecordedCommandArgs[][]>(MACRO, [])!;
-        let commands = macros[macros.length-args.index-1];
+        let macros = state.get<List<RecordedCommandArgs[]>>(MACRO, List())!;
+        let commands = macros.last();
         if(commands){
             await runCommandHistory(commands);
         }

@@ -150,8 +150,7 @@ async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
                 return state.update(COMMAND_HISTORY, values => {
                     let history = <List<unknown>>(values.get(COMMAND_HISTORY, List()));
                     let recordEdits = values.get(MODE, 'insert') === 'insert';
-                    return values.set(COMMAND_HISTORY,
-                        history.push({ ...command, edits: [], recordEdits }));
+                    return history.push({ ...command, edits: [], recordEdits });
                 });
             });
         }

@@ -41,7 +41,7 @@ export function keySuffix(key: string) {
         return state.update(PREFIX, { transient: { reset: "" }, public: true }, values => {
             let newPrefix = <string>(values.get(PREFIX, ''));
             newPrefix = newPrefix.length > 0 ? newPrefix + " " + key : key;
-            return values.set(PREFIX, newPrefix);
+            return newPrefix;
         });
     });
 }
