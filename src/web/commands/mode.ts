@@ -31,12 +31,7 @@ async function setMode(state: CommandState, args_: unknown): Promise<CommandResu
 };
 
 let currentMode = 'insert';
-export function activate(context: vscode.ExtensionContext){
-    onResolve('mode', values => {
-        currentMode = <string>values.get(MODE, 'insert');
-        updateCursorAppearance(vscode.window.activeTextEditor, currentMode);
-        return true;
-    });
+export async function activate(context: vscode.ExtensionContext){
     vscode.window.onDidChangeActiveTextEditor(e => {
         updateCursorAppearance(e, currentMode);
     });
@@ -47,4 +42,11 @@ export function activate(context: vscode.ExtensionContext){
         recordedCommand(s => setMode(s, {value: 'insert'}))));
     context.subscriptions.push(vscode.commands.registerCommand('master-key.enterNormal',
         recordedCommand(s => setMode(s, {value: 'normal'}))));
+
+    await onResolve('mode', values => {
+        currentMode = <string>values.get(MODE, 'insert');
+        updateCursorAppearance(vscode.window.activeTextEditor, currentMode);
+        return true;
+    });
+
 }
