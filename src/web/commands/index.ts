@@ -8,15 +8,15 @@ import * as replay from './replay';
 import * as search from './search';
 import * as prefix from "./prefix";
 
-export function activate(context: vscode.ExtensionContext){
-    capture.activate(context);
-    count.activate(context);
-    doCommand.activate(context);
-    mode.activate(context);
-    namedStore.activate(context);
-    replay.activate(context);
-    search.activate(context);
-    prefix.activate(context);
+export async function activate(context: vscode.ExtensionContext){
+    await capture.activate(context);
+    await count.activate(context);
+    await doCommand.activate(context);
+    await mode.activate(context);
+    await namedStore.activate(context);
+    await replay.activate(context);
+    await search.activate(context);
+    await prefix.activate(context);
 
     context.subscriptions.push(vscode.commands.registerCommand('master-key.ignore',
         () => undefined));

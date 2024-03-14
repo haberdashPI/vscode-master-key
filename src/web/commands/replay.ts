@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import z from 'zod';
 import { validateInput } from '../utils';
 import { EvalContext } from '../expressions';
-import { withState, onResolve, CommandResult, CommandState, recordedCommand } from '../state';
+import { withState, CommandResult, recordedCommand } from '../state';
 import { doCommands, RecordedCommandArgs, RunCommandsArgs, COMMAND_HISTORY } from './do';
 import { uniq } from 'lodash';
 import { List } from 'immutable';

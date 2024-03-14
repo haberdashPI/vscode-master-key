@@ -19,7 +19,7 @@ function updateCursorAppearance(editor: vscode.TextEditor | undefined, mode: str
 }
 
 const setModeArgs = z.object({ value: z.string() }).strict();
-async function setMode(state: CommandState, args_: unknown): Promise<CommandResult> {
+async function setMode(args_: unknown): Promise<CommandResult> {
     let args = validateInput('master-key.setMode', args_, setModeArgs);
     if(args){
         let a = args;
@@ -27,7 +27,7 @@ async function setMode(state: CommandState, args_: unknown): Promise<CommandResu
             return state.update(MODE, {public: true}, x => a.value);
         });
     }
-    return [undefined, state];
+    return args;
 };
 
 let currentMode = 'insert';
@@ -39,9 +39,9 @@ export async function activate(context: vscode.ExtensionContext){
     context.subscriptions.push(vscode.commands.registerCommand('master-key.setMode',
         recordedCommand(setMode)));
     context.subscriptions.push(vscode.commands.registerCommand('master-key.enterInsert',
-        recordedCommand(s => setMode(s, {value: 'insert'}))));
+        recordedCommand(() => setMode({value: 'insert'}))));
     context.subscriptions.push(vscode.commands.registerCommand('master-key.enterNormal',
-        recordedCommand(s => setMode(s, {value: 'normal'}))));
+        recordedCommand(() => setMode({value: 'normal'}))));
 
     await onResolve('mode', values => {
         currentMode = <string>values.get(MODE, 'insert');

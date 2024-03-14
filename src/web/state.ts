@@ -106,7 +106,14 @@ export class CommandState {
     }
 
     reset(){
-        let values = this.record.options.map(x => x.transient?.reset || x);
+        let values = this.record.values.map((v, k) => {
+            let transient = this.record.options.get(k)?.transient;
+            if(transient){
+                return transient.reset;
+            }else{
+                return v;
+            }
+        });
         let record = this.record.set('values', values);
         if(record.wasAltered()){
             return this;
