@@ -147,11 +147,13 @@ async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
         command = await doCommands(args);
         if(!isSingleCommand(args.do, 'master-key.prefix')){
             withState(async state => {
-                return state.update(COMMAND_HISTORY, values => {
-                    let history = <List<unknown>>(values.get(COMMAND_HISTORY, List()));
-                    let recordEdits = values.get(MODE, 'insert') === 'insert';
-                    return history.push({ ...command, edits: [], recordEdits });
-                });
+                return state.update<List<unknown>>(COMMAND_HISTORY,
+                    { notSetValue: List() },
+                    history => {
+                        let recordEdits = state.get(MODE, 'insert') === 'insert';
+                        return history.push({ ...command, edits: [], recordEdits });
+                    }
+                );
             });
         }
     }

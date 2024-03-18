@@ -69,6 +69,10 @@ export class CommandState {
         }
 
         let values = this.record.values.set(key, val);
+        return this.setHelper_(key, opt, values);
+    }
+
+    private setHelper_(key: string, opt: ISetOptions, values: Map<string, unknown>){
         let listeners = this.record.options.get(key, StateOptions()).listeners;
         listeners = listeners.filter((listener) => listener(values));
 
@@ -92,40 +96,20 @@ export class CommandState {
         }
     }
 
-    update<T>(key: string, opt: ISetOptions, change: ChangeFn<T>): CommandState;
-    update<T>(key: string, change: ChangeFn<T>): CommandState;
-    update<T>(key: string, optOrChange: ISetOptions | ChangeFn<T>, change_?: ChangeFn<T>){
-        let opt: ISetOptions;
-        let change: ChangeFn<T>;
-        if(typeof optOrChange === 'function'){
+    update<T>(key: string, opt: ISetOptions & { notSetValue?: T }, change: (x: T) => T): CommandState;
+    update<T>(key: string, change: (x: T) => T): CommandState;
+    update<T>(key: string, optOrChange: ISetOptions | ((x: T) => T), change_?: (x: T) => T){
+        let opt: ISetOptions & { notSetValue?: T };
+        let change: (x: T) => T;
+        if(arguments.length === 2){
             opt = {};
-            change = optOrChange;
+            change = <(x: T) => T>(optOrChange);
         }else{
-            opt = optOrChange;
-            change = <ChangeFn<T>>(change_);
+            opt = <ISetOptions | {notSetValue: T }>optOrChange;
+            change = <(x: T) => T>(change_);
         }
-        let values = this.record.values.set(key, change(this.record.values));
-        let listeners = this.record.options.get(key, StateOptions()).listeners;
-        listeners = listeners.filter((listener) => listener(values));
-
-        let options = this.record.options.set(key, StateOptions({
-            transient: opt.transient,
-            listeners,
-            public: opt.public
-        }));
-
-        let resolveListeners = this.record.resolveListeners;
-        // NOTE: we set `record` in this way so that `update` can be used
-        // both inside and outside of `withMutations`;
-        let record = this.record.
-            set('options', options).
-            set('resolveListeners', resolveListeners).
-            set('values', values);
-        if(record.wasAltered()){
-            return this;
-        }else{
-            return new CommandState(record);
-        }
+        let values = this.record.values.update(key, opt.notSetValue, x => change(<T>x));
+        return this.setHelper_(key, opt, values);
     }
 
     get<T>(key: string, defaultValue?: T): T | undefined {
@@ -191,8 +175,14 @@ type StateSetter = (x: CommandState) => Promise<CommandState>;
 async function* generateStateStream(): AsyncGenerator<CommandState, void, StateSetter>{
     let state = Promise.resolve(new CommandState());
     while(true){
-        let setter = yield state;
-        state = state.then(setter);
+        try{
+            let setter = yield state;
+            state = state.then(setter);
+        }catch(e){
+            vscode.window.showErrorMessage("Error while processing master-key state: "+e);
+            console.dir(e);
+            throw e;
+        }
     }
 }
 let stateStream = generateStateStream();

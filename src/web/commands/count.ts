@@ -15,9 +15,11 @@ async function updateCount(args_: unknown): Promise<CommandResult> {
     if(args !== undefined){
         let a = args;
         withState(async state => {
-            return state.update(COUNT, { public: true, transient: {reset: 0}}, values => {
-                <number>(values.get(COUNT, 0)) * 10 + a.value;
-            });
+            return state.update<number>(
+                COUNT,
+                { public: true, transient: {reset: 0}, notSetValue: 0},
+                count => count * 10 + a.value
+            );
         });
     }
     return;

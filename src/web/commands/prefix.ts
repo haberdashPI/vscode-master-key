@@ -23,11 +23,11 @@ async function prefix(args_: unknown): Promise<CommandResult>{
             return state.withMutations(state => {
                 let prefixCodes = state.get<PrefixCodes>(PREFIX_CODES)!;
                 let prefix = prefixCodes.nameFor(a.code);
-                state.update(PREFIX_CODE, {transient: {reset: 0}, public: true}, x => a.code);
-                state.update(PREFIX, {transient: {reset: ''}, public: true}, x => prefix);
+                state.set(PREFIX_CODE, {transient: {reset: 0}, public: true}, a.code);
+                state.set(PREFIX, {transient: {reset: ''}, public: true}, prefix);
 
                 if (a.flag) {
-                    state.update(a.flag, { transient: { reset: false }, public: true }, x => true);
+                    state.set(a.flag, { transient: { reset: false }, public: true }, true);
                 };
             });
         });
@@ -38,17 +38,16 @@ async function prefix(args_: unknown): Promise<CommandResult>{
 
 export function keySuffix(key: string) {
     withState(async state => {
-        return state.update(PREFIX, { transient: { reset: "" }, public: true }, values => {
-            let newPrefix = <string>(values.get(PREFIX, ''));
-            newPrefix = newPrefix.length > 0 ? newPrefix + " " + key : key;
-            return newPrefix;
-        });
+        return state.update<string>(
+            PREFIX,
+            { transient: { reset: "" }, public: true, notSetValue: "" },
+            prefix => prefix.length > 0 ? prefix + " " + key : key);
     });
 }
 
 export function activate(context: vscode.ExtensionContext){
     withState(async state => {
-        return state.update(PREFIX_CODE, {public: true}, val => 0);
+        return state.set(PREFIX_CODE, {public: true}, 0);
     });
     context.subscriptions.push(vscode.commands.registerCommand('master-key.prefix',
         recordedCommand(prefix)));

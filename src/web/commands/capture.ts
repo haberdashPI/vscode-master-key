@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 import z from 'zod';
-import { doArgs } from '../keybindings/parsing';
 import { validateInput } from '../utils';
 import { CommandResult, CommandState } from '../state';
 import { MODE } from './mode';
@@ -31,7 +30,7 @@ export async function captureKeys(onUpdate: UpdateFn) {
         if(!typeSubscription){
             try{
                 typeSubscription = vscode.commands.registerCommand('type', onType);
-                return state.update(MODE, {public: true}, x => 'capture').resolve();
+                return state.set(MODE, {public: true}, 'capture').resolve();
             }catch(e){
                 vscode.window.showErrorMessage(`Failed to capture keyboard input. You
                     might have an extension that is already listening to type events
@@ -60,7 +59,7 @@ export async function captureKeys(onUpdate: UpdateFn) {
                 if(stop){
                     clearTypeSubscription();
                     withState(async state =>
-                        state.update(MODE, {public: true}, x => oldMode).resolve()
+                        state.set(MODE, {public: true}, oldMode).resolve()
                     );
                     resolve(result);
                 }
@@ -95,7 +94,7 @@ async function captureKeysCmd(args_: unknown): Promise<CommandResult> {
             });
         }
         withState(async state => {
-            return state.update(CAPTURE, {transient: {reset: ""}}, x => text);
+            return state.set(CAPTURE, {transient: {reset: ""}}, text);
         });
         args = {...args, text};
     }

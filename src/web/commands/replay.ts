@@ -118,9 +118,8 @@ async function pushHistoryToStack(args: unknown): Promise<CommandResult> {
         let cs = commands;
         withState(async state => {
             // TODO: change semantics of update and use it here
-            return state.update(MACRO, values => {
-                return (<List<RecordedCommandArgs[]>>values.get(MACRO, List())).push(cs);
-            });
+            return state.update<List<RecordedCommandArgs[]>>(MACRO, { notSetValue: List() },
+                macro => macro.push(cs));
         });
     }
     return;
@@ -163,7 +162,7 @@ async function record(args_: unknown): Promise<CommandResult>{
     if(args){
         let a = args;
         withState(async state => {
-            return state.update(RECORD, {public: true}, x => a.on);
+            return state.set(RECORD, {public: true}, a.on);
         });
     }
     return;
@@ -185,8 +184,8 @@ export function activate(context: vscode.ExtensionContext){
 
     vscode.workspace.onDidChangeTextDocument(e => {
         withState(async state => {
-            return state.update(COMMAND_HISTORY, values => {
-                let history = <List<object>>(values.get(COMMAND_HISTORY, List()))
+            // TODO: handle the empty history case
+            return state.update<List<object>>(COMMAND_HISTORY, history => {
                 let len = history.count();
 
                 return history.update(len-1, lastCommand_ => {

@@ -26,9 +26,7 @@ async function restoreNamed(args_: unknown): Promise<CommandResult> {
             let a = args;
             let s = selected;
             withState(async state => {
-                return state.update(CAPTURED, {public: true}, (_) => {
-                    stored[a.name][s.label];
-                });
+                return state.set(CAPTURED, {public: true}, stored[a.name][s.label]);
             });
         }
     }
