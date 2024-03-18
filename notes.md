@@ -1,29 +1,10 @@
 current issue I'm working on:
 
-okya, what we have doesn't work with the "threaded" nature of the execution model
-
-we need a coherent state change model
-
-Idea: each modifier to state gets queue up, and is executed one by one in a channel
-each change to state is represented by a promise
-
-NOTE: actually we can't use the idea below at all; state should be entirely
-managd by the queue and changes to it should be short calls that make
-simple changes (and ideally figure out how to ensure these are atomic)
-so state isn't passed around functionally, it's managed globally
-via e.g. `setState` (maybe renamed to `updateState`) and perhaps
-some read method as well; the only thing we pass around in the wrapper
-is the command history setup
-
-wrapStateful has to help with this carefully: it is called within async chains,
-they only initiate queued change in the outer step, and they resolve the promise
-chain in the outer layer
-
-this implies that the building blocks of the state change queue have to be promises
-  - this means that the wrappedStateful contains many steps of state chain
-    that are built up
-
-the key point here is that this model should sequentialize the changes
+debugging current state model
+  - i think we should re-write `update`: it can just be `set`
+    since this is always called inside of `withState`
+  - sometimes we want update, just need to change it to work more like
+    how update normally works for Immutable
 
 re-organizing command state management (see plan below)
 

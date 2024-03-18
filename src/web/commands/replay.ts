@@ -117,6 +117,7 @@ async function pushHistoryToStack(args: unknown): Promise<CommandResult> {
     if(commands){
         let cs = commands;
         withState(async state => {
+            // TODO: change semantics of update and use it here
             return state.update(MACRO, values => {
                 return (<List<RecordedCommandArgs[]>>values.get(MACRO, List())).push(cs);
             });
@@ -185,10 +186,13 @@ export function activate(context: vscode.ExtensionContext){
     vscode.workspace.onDidChangeTextDocument(e => {
         withState(async state => {
             return state.update(COMMAND_HISTORY, values => {
-                let len = (<List<object>>(values.get(COMMAND_HISTORY, List()))).count();
-                return values.updateIn([COMMAND_HISTORY, len-1], lastCommand_ => {
+                let history = <List<object>>(values.get(COMMAND_HISTORY, List()))
+                let len = history.count();
+
+                return history.update(len-1, lastCommand_ => {
                     let lastCommand = <RecordedCommandArgs>lastCommand_;
-                    if (lastCommand && typeof lastCommand.edits !== 'string' && lastCommand.recordEdits) {
+                    if (lastCommand && typeof lastCommand.edits !== 'string' &&
+                        lastCommand.recordEdits) {
                         lastCommand.edits = lastCommand.edits.concat(e);
                     }
                     return lastCommand;

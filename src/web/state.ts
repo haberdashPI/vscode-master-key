@@ -1,13 +1,7 @@
 import * as vscode from 'vscode';
 import z from 'zod';
-import { cloneDeep, mapValues } from 'lodash';
 import { validateInput } from './utils';
 import { Map, List, RecordOf, Record as IRecord } from 'immutable';
-import { RunCommandsArgs } from './commands/do';
-
-// OLD THINGS THAT GOT UPDATED IN `set` THAT MUST GO ELSEWHERE
-// - status bar / various other ux changes that happen due to state changes
-// - update cursor appearance
 
 export type Listener = (states: Map<string, unknown>) => boolean;
 
@@ -24,8 +18,6 @@ const StateOptions = IRecord<IStateOptions>({
 });
 type RStateOptions = RecordOf<IStateOptions>;
 
-const UNDEFINED_RESET_UUID = "21c64688-c3e6-4f44-bf57-d17f8d3a2d50";
-
 interface ISetOptions {
     transient?: { reset: unknown },
     public?: boolean
@@ -37,16 +29,13 @@ interface ICommandState{
     options: Map<string, RStateOptions>;
     resolveListeners: Map<string, Listener>;
     values: Map<string, unknown>;
-    nesting: boolean;
 }
-
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 const CommandStateFactory = IRecord({
     options: Map<string, RStateOptions>(),
     resolveListeners: Map<string, Listener>(),
     values: Map<string, unknown>(),
-    nesting: false
 });
 type RCommandState = RecordOf<ICommandState>;
 
@@ -63,6 +52,44 @@ export class CommandState {
             rec.update('values', v => v.asImmutable());
         });
         return new CommandState(rec);
+    }
+
+    // todo: re-write `update` as set, find all calls to `update` and replace
+    set<T>(key: string, opt: ISetOptions, val: T): CommandState;
+    set<T>(key: string, val: T): CommandState;
+    set<T>(key: string, optOrVal: ISetOptions | T, val_?: T){
+        let opt: ISetOptions;
+        let val: T;
+        if(arguments.length === 2){
+            opt = {};
+            val = <T>optOrVal;
+        }else{
+            opt = <ISetOptions>optOrVal;
+            val = <T>(val_);
+        }
+
+        let values = this.record.values.set(key, val);
+        let listeners = this.record.options.get(key, StateOptions()).listeners;
+        listeners = listeners.filter((listener) => listener(values));
+
+        let options = this.record.options.set(key, StateOptions({
+            transient: opt.transient,
+            listeners,
+            public: opt.public
+        }));
+
+        let resolveListeners = this.record.resolveListeners;
+        // NOTE: we set `record` in this way so that `update` can be used
+        // both inside and outside of `withMutations`;
+        let record = this.record.
+            set('options', options).
+            set('resolveListeners', resolveListeners).
+            set('values', values);
+        if(record.wasAltered()){
+            return this;
+        }else{
+            return new CommandState(record);
+        }
     }
 
     update<T>(key: string, opt: ISetOptions, change: ChangeFn<T>): CommandState;
@@ -211,9 +238,7 @@ export function recordedCommand(fn: CommandFn) {
 function addDefinitions(state: CommandState, definitions: any){
     return state.withMutations(state => {
         for(let [k, v] of Object.entries(definitions || {})){
-            state.update(k, { public: true }, vals => {
-                vals.set(k, v);
-            });
+            state.set(k, { public: true }, v);
         }
     });
 }
@@ -240,9 +265,7 @@ async function setFlag(args_: unknown): Promise<CommandResult> {
             transient: { reset: false }
         };
         let a = args;
-        withState(async state => {
-            return state.update(a.name, opt, vals => vals.set(a.name, a.value));
-        });
+        withState(async state => { return state.set(a.name, opt, a.value); });
     }
     return;
 }
@@ -262,8 +285,8 @@ export function activate(context: vscode.ExtensionContext){
         }
         withState(async state => {
             return state.withMutations(state => {
-                state.update('editorHasSelection', x => selCount > 0);
-                state.update('editorHasMultipleSelections', x => selCount > 1);
+                state.set('editorHasSelection', selCount > 0);
+                state.set('editorHasMultipleSelections', selCount > 1);
                 let doc = e.textEditor.document;
 
                 let firstSelectionOrWord: string;
@@ -273,14 +296,14 @@ export function activate(context: vscode.ExtensionContext){
                 }else{
                     firstSelectionOrWord = doc.getText(e.selections[0]);
                 }
-                state.update('firstSelectionOrWord', {public: true}, x => firstSelectionOrWord);
+                state.set('firstSelectionOrWord', firstSelectionOrWord);
             });
         });
     });
 
     vscode.window.onDidChangeActiveTextEditor(e => {
         withState(async state =>
-            state.update('editorLangId', val => (e?.document?.languageId || ''))
+            state.set('editorLangId', (e?.document?.languageId || ''))
         );
     });
 }
