@@ -6,7 +6,7 @@ import * as state from './state';
 
 export async function activate(context: vscode.ExtensionContext) {
     keybindings.activate(context);
-    state.activate(context);
+    await state.activate(context);
     await commands.activate(context);
     await status.activate(context);
 }

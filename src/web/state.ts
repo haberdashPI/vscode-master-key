@@ -260,8 +260,8 @@ async function setFlag(args_: unknown): Promise<CommandResult> {
     return;
 }
 
-export function activate(context: vscode.ExtensionContext){
-    updateConfig();
+export async function activate(context: vscode.ExtensionContext){
+    await updateConfig();
     vscode.workspace.onDidChangeConfiguration(updateConfig);
 
     context.subscriptions.push(vscode.commands.registerCommand('master-key.setFlag',
