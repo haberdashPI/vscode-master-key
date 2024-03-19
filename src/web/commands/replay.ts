@@ -116,8 +116,7 @@ async function pushHistoryToStack(args: unknown): Promise<CommandResult> {
     let commands = await selectHistoryCommand('master-key.pushHistoryToStack', args);
     if(commands){
         let cs = commands;
-        withState(async state => {
-            // TODO: change semantics of update and use it here
+        await withState(async state => {
             return state.update<List<RecordedCommandArgs[]>>(MACRO, { notSetValue: List() },
                 macro => macro.push(cs));
         });
@@ -161,7 +160,7 @@ async function record(args_: unknown): Promise<CommandResult>{
     let args = validateInput('master-key.record', args_, recordArgs);
     if(args){
         let a = args;
-        withState(async state => {
+        await withState(async state => {
             return state.set(RECORD, {public: true}, a.on);
         });
     }
@@ -182,8 +181,8 @@ export function activate(context: vscode.ExtensionContext){
      context.subscriptions.push(vscode.commands.registerCommand('master-key.record',
         recordedCommand(record)));
 
-    vscode.workspace.onDidChangeTextDocument(e => {
-        withState(async state => {
+    vscode.workspace.onDidChangeTextDocument(async e => {
+        await withState(async state => {
             // TODO: handle the empty history case
             return state.update<List<object>>(COMMAND_HISTORY, history => {
                 let len = history.count();

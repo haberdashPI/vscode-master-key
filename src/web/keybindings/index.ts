@@ -227,13 +227,13 @@ async function queryPreset(): Promise<Preset | undefined> {
 async function importBindings(file: vscode.Uri, preset: Bindings) {
     insertKeybindingsIntoConfig(file, preset.bind);
     let config = vscode.workspace.getConfiguration('master-key');
-    withState(async state => state.set(MODE, 'insert'));
-    config.update('definitions', preset.define, vscode.ConfigurationTarget.Global);
+    await withState(async state => state.set(MODE, 'insert'));
+    await config.update('definitions', preset.define, vscode.ConfigurationTarget.Global);
 }
 
 export async function selectPreset(preset?: Preset){
     if(!preset){ preset = await queryPreset(); }
-    if(preset){ importBindings(preset.uri, preset.bindings); }
+    if(preset){ await importBindings(preset.uri, preset.bindings); }
 }
 
 // TODO: we also evenutally want to have a way to customize presets

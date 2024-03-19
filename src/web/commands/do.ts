@@ -123,10 +123,8 @@ export async function doCommands(args: RunCommandsArgs): Promise<CommandResult>{
             // this will be immediately cleared by `reset` but
             // its display will persist in the status bar for a little bit
             // (see `status/keyseq.ts`)
-            if(args.key){ keySuffix(args.key); }
-            withState(async state => {
-                return state.resolve().reset();
-            });
+            if(args.key){ await keySuffix(args.key); }
+            await withState(async state => { return state.resolve().reset(); });
             // if(!wasSearchUsed() && vscode.window.activeTextEditor){
             //     clearSearchDecorations(vscode.window.activeTextEditor) ;
             // }
@@ -146,7 +144,7 @@ async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
         let command: any;
         command = await doCommands(args);
         if(!isSingleCommand(args.do, 'master-key.prefix')){
-            withState(async state => {
+            await withState(async state => {
                 return state.update<List<unknown>>(COMMAND_HISTORY,
                     { notSetValue: List() },
                     history => {

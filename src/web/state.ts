@@ -273,7 +273,7 @@ export async function activate(context: vscode.ExtensionContext){
             if(!sel.isEmpty){ selCount += 1; }
             if(selCount > 1){ break; }
         }
-        withState(async state => {
+        await withState(async state => {
             return state.withMutations(state => {
                 state.set('editorHasSelection', selCount > 0);
                 state.set('editorHasMultipleSelections', selCount > 1);
@@ -291,8 +291,8 @@ export async function activate(context: vscode.ExtensionContext){
         });
     });
 
-    vscode.window.onDidChangeActiveTextEditor(e => {
-        withState(async state =>
+    vscode.window.onDidChangeActiveTextEditor(async e => {
+        await withState(async state =>
             state.set('editorLangId', (e?.document?.languageId || ''))
         );
     });

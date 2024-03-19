@@ -23,7 +23,7 @@ async function setMode(args_: unknown): Promise<CommandResult> {
     let args = validateInput('master-key.setMode', args_, setModeArgs);
     if(args){
         let a = args;
-        withState(async state => state.set(MODE, {public: true}, a.value));
+        await withState(async state => state.set(MODE, {public: true}, a.value));
     }
     return args;
 };

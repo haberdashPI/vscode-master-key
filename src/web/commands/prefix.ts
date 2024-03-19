@@ -19,7 +19,7 @@ async function prefix(args_: unknown): Promise<CommandResult>{
     let args = validateInput('master-key.prefix', args_, prefixArgs);
     if(args !== undefined){
         let a = args;
-        withState(async state => {
+        await withState(async state => {
             return state.withMutations(state => {
                 let prefixCodes = state.get<PrefixCodes>(PREFIX_CODES)!;
                 let prefix = prefixCodes.nameFor(a.code);
@@ -36,8 +36,8 @@ async function prefix(args_: unknown): Promise<CommandResult>{
     return args;
 }
 
-export function keySuffix(key: string) {
-    withState(async state => {
+export async function keySuffix(key: string) {
+    await withState(async state => {
         return state.update<string>(
             PREFIX,
             { transient: { reset: "" }, public: true, notSetValue: "" },
@@ -45,8 +45,8 @@ export function keySuffix(key: string) {
     });
 }
 
-export function activate(context: vscode.ExtensionContext){
-    withState(async state => {
+export async function activate(context: vscode.ExtensionContext){
+    await withState(async state => {
         return state.set(PREFIX_CODE, {public: true}, 0);
     });
     context.subscriptions.push(vscode.commands.registerCommand('master-key.prefix',

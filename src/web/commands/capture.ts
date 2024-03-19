@@ -10,7 +10,7 @@ let onTypeFn: (text: string) => void = async function(text: string){
     return;
 };
 async function onType(event: {text: string}){
-    return onTypeFn(event.text);
+    return await onTypeFn(event.text);
 }
 
 const CAPTURE = 'capture';
@@ -40,28 +40,33 @@ export async function captureKeys(onUpdate: UpdateFn) {
         return state;
     });
 
+    let resolveFn: ((x: string | PromiseLike<string>) => void) | undefined = undefined;
+    let stringResult = '';
+    await withState(async state => {
+        return state.onSet(MODE, state => {
+            if(state.get(MODE, 'insert') !== 'capture'){
+                clearTypeSubscription();
+                if(resolveFn){
+                    resolveFn(stringResult);
+                    return false;
+                }
+            }
+            return true;
+        });
+    });
+
     return new Promise<string>((resolve, reject) => {
         try{
-            let result = '';
-            withState(async state => {
-                return state.onSet(MODE, state => {
-                    if(state.get(MODE, 'insert') !== 'capture'){
-                        clearTypeSubscription();
-                        resolve(result);
-                        return false;
-                    }
-                    return true;
-                });
-            });
-            onTypeFn = (str: string) => {
+            resolveFn = resolve;
+            onTypeFn = async (str: string) => {
                 let stop;
-                [result, stop] = onUpdate(result, str);
+                [stringResult, stop] = onUpdate(stringResult, str);
                 if(stop){
                     clearTypeSubscription();
-                    withState(async state =>
+                    await withState(async state =>
                         state.set(MODE, {public: true}, oldMode).resolve()
                     );
-                    resolve(result);
+                    resolve(stringResult);
                 }
             };
         }catch(e){
@@ -93,7 +98,7 @@ async function captureKeysCmd(args_: unknown): Promise<CommandResult> {
                 return [result, stop];
             });
         }
-        withState(async state => {
+        await withState(async state => {
             return state.set(CAPTURE, {transient: {reset: ""}}, text);
         });
         args = {...args, text};

@@ -14,7 +14,7 @@ async function updateCount(args_: unknown): Promise<CommandResult> {
     let args = validateInput('master-key.updateCount', args_, updateCountArgs);
     if(args !== undefined){
         let a = args;
-        withState(async state => {
+        await withState(async state => {
             return state.update<number>(
                 COUNT,
                 { public: true, transient: {reset: 0}, notSetValue: 0},
