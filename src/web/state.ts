@@ -233,11 +233,11 @@ function addDefinitions(state: CommandState, definitions: any){
     });
 }
 
-function updateConfig(event?: vscode.ConfigurationChangeEvent){
+async function updateConfig(event?: vscode.ConfigurationChangeEvent){
     if(!event || event?.affectsConfiguration('master-key')){
         let config = vscode.workspace.getConfiguration('master-key');
         let definitions = config.get<object[]>('definitions');
-        withState(async state => addDefinitions(state, definitions));
+        await withState(async state => addDefinitions(state, definitions));
     }
 }
 
@@ -255,7 +255,7 @@ async function setFlag(args_: unknown): Promise<CommandResult> {
             transient: { reset: false }
         };
         let a = args;
-        withState(async state => { return state.set(a.name, opt, a.value); });
+        await withState(async state => { return state.set(a.name, opt, a.value); });
     }
     return;
 }
