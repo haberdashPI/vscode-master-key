@@ -1880,6 +1880,18 @@ commandHistory[i+1].path.startsWith("edit.action") &&
   commandHistory[i+1].path.startsWith("edit.action.history"))
 """
 
+[[bind]]
+path = "edit.action.history"
+name = "repeat last motion"
+description = """
+Repeat the last motion command. Motions usually move the cursor or change the selection.
+"""
+key = "ctrl+,"
+command = "master-key.repeat"
+computedArgs.repeat = "count"
+args.command = "master-key.replayFromHistory"
+args.args.at = "commandHistory[i].path.startsWith('edit.motion')"
+
 [[path]]
 id = "edit.action.comment"
 name = "Comments"
@@ -2840,7 +2852,7 @@ path = "edit.select_edit.split"
 name = "character"
 description = "split by a given character"
 key = "s c"
-command = "master-key.captureChar"
+command = "master-key.captureKeys"
 args.acceptAfter = 1
 args.doAfter = [{ command = "selection-utilities.splitBy", computedArgs = { text = "capture" } }]
 
