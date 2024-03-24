@@ -173,11 +173,11 @@ export class CommandState {
 
 type StateSetter = (x: CommandState) => Promise<CommandState>;
 async function* generateStateStream(): AsyncGenerator<CommandState, void, StateSetter>{
-    let state = Promise.resolve(new CommandState());
+    let state = new CommandState();
     while(true){
         try{
             let setter = yield state;
-            state = state.then(setter);
+            state = await setter(state);
         }catch(e){
             vscode.window.showErrorMessage("Error while processing master-key state: "+e);
             console.dir(e);
