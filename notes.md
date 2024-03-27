@@ -1,14 +1,10 @@
 current issue I'm working on:
 
 debugging current state model
-  - i think we should re-write `update`: it can just be `set`
-    since this is always called inside of `withState`
-  - sometimes we want update, just need to change it to work more like
-    how update normally works for Immutable
-
-re-organizing command state management (see plan below)
+ - just got `addDefinitions` to run. now need to figure out why the prefixes aren't loaded
 
 NOTE: we're using a revised version of vscod-extension-tester (https://github.com/redhat-developer/vscode-extension-tester/pull/1084) after fixing a bug on MacOS ARM
+NOTE: this has now merged (can use the most recent version with this update (is it in a release??))
 
 NEXT UP:
 
