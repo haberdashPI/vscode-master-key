@@ -113,7 +113,7 @@ export class CommandState {
     }
 
     get<T>(key: string, defaultValue?: T): T | undefined {
-        return this.record.get(key, defaultValue);
+        return <T | undefined>(this.record.values.get(key, defaultValue));
     }
 
     reset(){
