@@ -3,6 +3,10 @@ current issue I'm working on:
 debugging current state model
  - prefixes now update
  - debugging why (at least some) prefixes don't reset
+    - looks like one of the problems is that `d` is hitting `master-key.ignore`
+    rather than delete
+    - need to look at prefix and see if the logic for clearing the prefix status is
+      right
 
 NOTE: we're using a revised version of vscod-extension-tester (https://github.com/redhat-developer/vscode-extension-tester/pull/1084) after fixing a bug on MacOS ARM
 NOTE: this has now merged (can use the most recent version with this update (is it in a release??))
