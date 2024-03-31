@@ -22,7 +22,7 @@ function clearTypeSubscription(){
     }
 }
 
-type UpdateFn = (captured: string, nextChar: string) => [string, boolean];
+type UpdateFn = (captured: string, nextChar: string) => Promise<[string, boolean]>;
 export async function captureKeys(onUpdate: UpdateFn) {
     let oldMode: string;
     await withState(async state => {
@@ -40,39 +40,46 @@ export async function captureKeys(onUpdate: UpdateFn) {
         return state;
     });
 
-    let resolveFn: ((x: string | PromiseLike<string>) => void) | undefined = undefined;
     let stringResult = '';
+    let isResolved = false;
+    let resolveFn: ((str: string) => void);
+    let stringPromise = new Promise<string>((res, rej) => {
+        resolveFn = res;
+    });
+
     await withState(async state => {
         return state.onSet(MODE, state => {
             if(state.get(MODE, 'insert') !== 'capture'){
                 clearTypeSubscription();
-                if(resolveFn){
+                if(!isResolved){
+                    isResolved = true;
                     resolveFn(stringResult);
                     return false;
                 }
             }
-            return true;
+            return !isResolved;
         });
     });
 
-    return new Promise<string>((resolve, reject) => {
-        try{
-            resolveFn = resolve;
-            onTypeFn = async (str: string) => {
-                let stop;
-                [stringResult, stop] = onUpdate(stringResult, str);
-                if(stop){
-                    clearTypeSubscription();
-                    await withState(async state =>
-                        state.set(MODE, {public: true}, oldMode).resolve()
-                    );
-                    resolve(stringResult);
-                }
-            };
-        }catch(e){
-            reject(e);
+    onTypeFn = async (str: string) => {
+        let stop;
+        [stringResult, stop] = await onUpdate(stringResult, str);
+        if(stop){
+            clearTypeSubscription();
+            // setting the mode will call `resolveFn`
+            await withState(async state =>
+                state.set(MODE, {public: true}, oldMode).resolve()
+            );
+            // if the old mode wasn't 'capture', `resolveFn` will have already been called
+            // (in the `onSet` block above)
+            if(!isResolved){
+                isResolved = true;
+                resolveFn(stringResult);
+            }
         }
-    });
+    };
+
+    return stringPromise;
 }
 
 const captureKeysArgs = z.object({
@@ -88,7 +95,7 @@ async function captureKeysCmd(args_: unknown): Promise<CommandResult> {
         if(args.text){
             text = args.text;
         }else{
-            text = await captureKeys((result, char) => {
+            text = await captureKeys(async (result, char) => {
                 let stop = false;
                 if(char === "\n"){ stop = true; }
                 else{
@@ -107,7 +114,7 @@ async function captureKeysCmd(args_: unknown): Promise<CommandResult> {
 }
 
 function captureOneKey(){
-    return captureKeys((result, char) => [char, true]);
+    return captureKeys(async (result, char) => [char, true]);
 }
 
 const charArgs = z.object({

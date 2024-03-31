@@ -1,7 +1,11 @@
 current issue I'm working on:
 
 debugging current state model
-- debugging why capture keys doesn't work
+- debugging 'searchChanged' state; it doesn't quite work with the
+  current setup where `resolve` occurs after `reset` at the end of
+  a `do` command that resets transients. (This order makes intuitive sense).
+  so we need to somehow clear search changed for any other command
+  *after* resolving; or come up with some other mechanism
 
 NOTE: we're using a revised version of vscod-extension-tester (https://github.com/redhat-developer/vscode-extension-tester/pull/1084) after fixing a bug on MacOS ARM
 NOTE: this has now merged (can use the most recent version with this update (is it in a release??))

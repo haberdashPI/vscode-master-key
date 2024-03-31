@@ -157,7 +157,7 @@ async function getSearchState(editor: vscode.TextEditor, register: string): Prom
  * matches are unique. In case the matches overlap, the number of selections
  * will decrease.
  */
-function navigateTo(state: SearchState, editor: vscode.TextEditor, updateSearchFrom: boolean = true) {
+async function navigateTo(state: SearchState, editor: vscode.TextEditor, updateSearchFrom: boolean = true) {
     if (state.text === ""){
         /**
          * If search string is empty, we return to the start positions.
@@ -167,6 +167,9 @@ function navigateTo(state: SearchState, editor: vscode.TextEditor, updateSearchF
         editor.setDecorations(searchDecorator, []);
         editor.setDecorations(searchOtherDecorator, []);
     }else {
+        await withState(async state =>
+            state.set(SEARCH_CHANGED, {transient: {reset: false}}, true));
+
         let doc = editor.document;
 
         /**
@@ -313,34 +316,31 @@ async function search(editor: vscode.TextEditor,
         // `SEARCH_CHANGED`
         return state.set(SEARCH_CHANGED, {transient: {reset: false}}, true).
             onResolve('search', values => {
-                if(values.get<boolean>(SEARCH_CHANGED, false)){ clearSearchDecorations(editor); }
+                if(!values.get<boolean>(SEARCH_CHANGED, false)){ clearSearchDecorations(editor); }
                 return true;
             });
     });
 
     currentSearch = args.register;
-    // TODO: stopped here
     let state = await getSearchState(editor, args.register);
     state.args = args;
     state.text = args.text || "";
     state.searchFrom = editor.selections;
 
     if(state.text.length > 0){
-        navigateTo(state, editor);
+        await navigateTo(state, editor);
         state.searchFrom = editor.selections;
     } else {
-        await withState(async state => {
-            return state.set(MODE, {public: true}, 'capture').resolve();
-        });
         // when there are a fixed number of keys use `type` command
         if (state.args.acceptAfter) {
             let acceptAfter = state.args.acceptAfter;
             let stop = false;
-            state.text = await captureKeys((result, char) => {
+            state.text = await captureKeys(async (result, char) => {
                 if (char === "\n") { stop = true; }
                 else {
                     result += char;
-                    navigateTo(state, editor, false);
+                    state.text = result;
+                    await navigateTo(state, editor, false);
                     if (state.text.length >= acceptAfter) { stop = true; }
                     // there are other-ways to cancel key capturing so we need to update
                     // the arguments on every keypress
@@ -349,9 +349,11 @@ async function search(editor: vscode.TextEditor,
             });
             if (!state.text) { return "cancel"; }
         } else {
+            await withState(async state => {
+                return state.set(MODE, {public: true}, 'capture').resolve();
+            });
             let accepted = false;
             let inputResult = new Promise<string>((resolve, reject) => {
-                let text = "";
                 try {
                     let inputBox = vscode.window.createInputBox();
                     if (state.args.regex) {
@@ -361,23 +363,23 @@ async function search(editor: vscode.TextEditor,
                         inputBox.title = "Search";
                         inputBox.prompt = "Enter text to search for";
                     }
-                    inputBox.onDidChangeValue((str: string) => {
-                        text = str;
-                        navigateTo(state, editor, false);
+                    inputBox.onDidChangeValue(async (str: string) => {
+                        state.text = str;
+                        await navigateTo(state, editor, false);
                     });
                     inputBox.onDidAccept(() => {
                         state.searchFrom = editor.selections;
                         inputBox.dispose();
                         accepted = true;
-                        resolve(text);
+                        resolve(state.text);
                     });
-                    inputBox.onDidHide(() => { if (!accepted) { text = ""; } });
+                    inputBox.onDidHide(() => { if (!accepted) { state.text = ""; } });
                     inputBox.show();
                 } catch (e) {
                     reject(e);
                 }
             });
-            state.text = await inputResult;
+            await inputResult;
         }
         await withState(async st => {
             return st.set(MODE, {public: true}, state.oldMode).resolve();
@@ -405,11 +407,9 @@ async function nextMatch(editor: vscode.TextEditor,
 
     let args = validateInput('master-key.nextMatch', args_, matchStepArgs);
     if(!args) { return; }
-    await withState(async state => state.set(SEARCH_CHANGED, {transient: {reset: false}},
-        true));
     let state = await getSearchState(editor, args!.register);
     if (state.text) {
-        for(let i=0; i<(args.repeat || 1); i++){ navigateTo(state, editor); }
+        for(let i=0; i<(args.repeat || 1); i++){ await navigateTo(state, editor); }
         revealActive(editor);
     }
     return;
@@ -425,7 +425,7 @@ async function previousMatch(commandState: CommandState, editor: vscode.TextEdit
     let state = await getSearchState(editor, args!.register);
     if (state.text) {
         state.args.backwards = !state.args.backwards;
-        for(let i=0; i<(args.repeat || 1); i++){ navigateTo(state, editor); }
+        for(let i=0; i<(args.repeat || 1); i++){ await navigateTo(state, editor); }
         revealActive(editor);
         state.args.backwards = !state.args.backwards;
     }

@@ -128,6 +128,8 @@ export async function doCommands(args: RunCommandsArgs): Promise<CommandResult>{
             // if(!wasSearchUsed() && vscode.window.activeTextEditor){
             //     clearSearchDecorations(vscode.window.activeTextEditor) ;
             // }
+        }else{
+            await withState(async state => state.resolve());
         }
     }
     evalContext.reportErrors();
