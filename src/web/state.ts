@@ -125,7 +125,15 @@ export class CommandState {
                 return v;
             }
         });
-        let record = this.record.set('values', values);
+        let options = this.record.options.withMutations(opt =>
+            opt.map((v, k) => v.update('listeners', l => {
+                console.log(k);
+                return l.filter((listener) => listener(values));
+            })));
+
+        let record = this.record.
+            set('options', options).
+            set('values', values);
         if(record.wasAltered()){
             return this;
         }else{
@@ -135,7 +143,7 @@ export class CommandState {
 
     onSet(key: string, listener: Listener){
         let options = this.record.options.get(key, StateOptions());
-        options.update('listeners', ls => ls.push(listener));
+        options = options.update('listeners', ls => ls.push(listener));
         let record = this.record.setIn(['options', key], options);
         if(record.wasAltered()){
             return this;
@@ -160,7 +168,7 @@ export class CommandState {
                 vscode.commands.executeCommand('setContext', 'master-key.' + k, v);
             }
         });
-        let record = this.record.setIn(['options', 'resolveListeners'], listeners);
+        let record = this.record.set('resolveListeners', listeners);
         if(record.wasAltered()){
             return this;
         }else{

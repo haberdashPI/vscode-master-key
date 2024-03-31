@@ -124,7 +124,7 @@ export async function doCommands(args: RunCommandsArgs): Promise<CommandResult>{
             // its display will persist in the status bar for a little bit
             // (see `status/keyseq.ts`)
             if(args.key){ await keySuffix(args.key); }
-            await withState(async state => { return state.resolve().reset(); });
+            await withState(async state => { return state.reset().resolve(); });
             // if(!wasSearchUsed() && vscode.window.activeTextEditor){
             //     clearSearchDecorations(vscode.window.activeTextEditor) ;
             // }

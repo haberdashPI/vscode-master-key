@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { CommandState, onResolve } from '../state';
+import { onSet } from '../state';
 import replaceAll from 'string.prototype.replaceall';
 import { PREFIX } from '../commands/prefix';
 import { COUNT } from '../commands/count';
@@ -20,6 +20,7 @@ function prettifyPrefix(str: string){
 
 let keyStatusBar: vscode.StatusBarItem | undefined = undefined;
 
+const UPDATE_DELAY = 500;
 let statusUpdates = Number.MIN_SAFE_INTEGER;
 function updateKeyStatus(values: Map<string, unknown>){
     let count = <number>values.get(COUNT, 0);
@@ -41,7 +42,7 @@ function updateKeyStatus(values: Map<string, unknown>){
 
                     if(keyStatusBar){ keyStatusBar.text = plannedUpdate; }
                 }
-            });
+            }, UPDATE_DELAY);
         }
     }
     return true;
@@ -51,5 +52,6 @@ export async function activate(context: vscode.ExtensionContext){
     keyStatusBar = vscode.window.createStatusBarItem('keys', vscode.StatusBarAlignment.Left, -10000);
     keyStatusBar.accessibilityInformation = { label: "Keys Typed" };
     keyStatusBar.show();
-    await onResolve('keySequence', updateKeyStatus);
+    await onSet(PREFIX, updateKeyStatus);
+    await onSet(COUNT, updateKeyStatus);
 }
