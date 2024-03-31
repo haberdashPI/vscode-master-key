@@ -6,6 +6,10 @@ debugging current state model
   a `do` command that resets transients. (This order makes intuitive sense).
   so we need to somehow clear search changed for any other command
   *after* resolving; or come up with some other mechanism
+  - solution: check for changes to and update a flag of the search state inside the
+    resolve listener; rather than updating the state, this search flag is updated
+    each time we call navigateTo, and we can therefore clear the decorators when
+    this doesn't update
 
 NOTE: we're using a revised version of vscod-extension-tester (https://github.com/redhat-developer/vscode-extension-tester/pull/1084) after fixing a bug on MacOS ARM
 NOTE: this has now merged (can use the most recent version with this update (is it in a release??))
