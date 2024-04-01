@@ -22,7 +22,7 @@ function clearTypeSubscription(){
     }
 }
 
-type UpdateFn = (captured: string, nextChar: string) => Promise<[string, boolean]>;
+type UpdateFn = (captured: string, nextChar: string) => [string, boolean];
 export async function captureKeys(onUpdate: UpdateFn) {
     let oldMode: string;
     await withState(async state => {
@@ -63,7 +63,7 @@ export async function captureKeys(onUpdate: UpdateFn) {
 
     onTypeFn = async (str: string) => {
         let stop;
-        [stringResult, stop] = await onUpdate(stringResult, str);
+        [stringResult, stop] = onUpdate(stringResult, str);
         if(stop){
             clearTypeSubscription();
             // setting the mode will call `resolveFn`
@@ -95,7 +95,7 @@ async function captureKeysCmd(args_: unknown): Promise<CommandResult> {
         if(args.text){
             text = args.text;
         }else{
-            text = await captureKeys(async (result, char) => {
+            text = await captureKeys((result, char) => {
                 let stop = false;
                 if(char === "\n"){ stop = true; }
                 else{
@@ -114,7 +114,7 @@ async function captureKeysCmd(args_: unknown): Promise<CommandResult> {
 }
 
 function captureOneKey(){
-    return captureKeys(async (result, char) => [char, true]);
+    return captureKeys((result, char) => [char, true]);
 }
 
 const charArgs = z.object({

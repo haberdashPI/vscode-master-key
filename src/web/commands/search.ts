@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import z from 'zod';
 import { validateInput, wrappedTranslate } from '../utils';
 import { doArgs } from '../keybindings/parsing';
-import { withState, CommandResult, CommandState, recordedCommand } from '../state';
+import { onResolve, withState, CommandResult, CommandState, recordedCommand } from '../state';
 import { MODE } from './mode';
 import { captureKeys } from './capture';
 
@@ -109,11 +109,26 @@ function* stringMatches(matcher: string, caseSensitive: boolean, line: string, f
 let searchDecorator: vscode.TextEditorDecorationType;
 let searchOtherDecorator: vscode.TextEditorDecorationType;
 
-interface SearchState{
+class SearchState{
     args: SearchArgs;
-    text: string;
-    searchFrom: readonly vscode.Selection[];
+    _text: string = '';
+    _searchFrom: readonly vscode.Selection[] = [];
     oldMode: string;
+    modified = false;
+    constructor(args: SearchArgs, mode: string){
+        this.args = args;
+        this.oldMode = mode;
+    }
+    get text() { return this._text; }
+    set text(str: string){
+        this._text = str;
+        this.modified = true;
+    }
+    get searchFrom() { return this._searchFrom; }
+    set searchFrom(sel: readonly vscode.Selection[]){
+        this._searchFrom = sel || [];
+        this.modified = true;
+    }
 }
 
 let searchStates: Map<vscode.TextEditor, Record<string, SearchState>> = new Map();
@@ -121,26 +136,16 @@ let currentSearch: string = "default";
 let searchStateUsed = false;
 export function trackSearchUsage(){ searchStateUsed = false; }
 export function wasSearchUsed(){ return searchStateUsed; }
-async function getSearchState(editor: vscode.TextEditor, register: string): Promise<SearchState>{
+function getSearchState(editor: vscode.TextEditor, mode: string, register: string): SearchState {
     searchStateUsed = true;
     let statesForEditor = searchStates.get(editor);
     statesForEditor = statesForEditor ? statesForEditor : {};
-    if(!statesForEditor[register]){
-        let mode = '';
-        await withState(async state => {
-            mode = state.get(MODE, 'insert')!;
-            return state;
-        });
-        let searchState: SearchState = {
-            args: searchArgs.parse({}),
-            text: "",
-            searchFrom: [],
-            oldMode: mode,
-        };
+    if (!statesForEditor[register]) {
+        let searchState = new SearchState(searchArgs.parse({}), mode);
         statesForEditor[register] = searchState;
         searchStates.set(editor, statesForEditor);
         return searchState;
-    }else{
+    } else {
         return statesForEditor[register];
     }
 }
@@ -157,7 +162,7 @@ async function getSearchState(editor: vscode.TextEditor, register: string): Prom
  * matches are unique. In case the matches overlap, the number of selections
  * will decrease.
  */
-async function navigateTo(state: SearchState, editor: vscode.TextEditor, updateSearchFrom: boolean = true) {
+function navigateTo(state: SearchState, editor: vscode.TextEditor, updateSearchFrom: boolean = true) {
     if (state.text === ""){
         /**
          * If search string is empty, we return to the start positions.
@@ -167,9 +172,6 @@ async function navigateTo(state: SearchState, editor: vscode.TextEditor, updateS
         editor.setDecorations(searchDecorator, []);
         editor.setDecorations(searchOtherDecorator, []);
     }else {
-        await withState(async state =>
-            state.set(SEARCH_CHANGED, {transient: {reset: false}}, true));
-
         let doc = editor.document;
 
         /**
@@ -301,46 +303,48 @@ function clearSearchDecorations(editor: vscode.TextEditor){
     editor.setDecorations(searchOtherDecorator, []);
 }
 
-const SEARCH_CHANGED = 'searchChanged';
-
 async function search(editor: vscode.TextEditor,
     edit: vscode.TextEditorEdit, args_: any[]): Promise<CommandResult> {
 
     let args = validateInput('master-key.search', args_, searchArgs);
     if(!args){ return; }
+    currentSearch = args.register;
 
-    await withState(async state => {
-        // clear old search decorators if they exist, and prepare
-        state = state.set(SEARCH_CHANGED, false).resolve();
-        // set up to clear search decorators on a future command that doesn't set
-        // `SEARCH_CHANGED`
-        return state.set(SEARCH_CHANGED, {transient: {reset: false}}, true).
-            onResolve('search', values => {
-                if(!values.get<boolean>(SEARCH_CHANGED, false)){ clearSearchDecorations(editor); }
-                return true;
-            });
+    await onResolve('search', values => {
+        let editor = vscode.window.activeTextEditor;
+        if (editor) {
+            let searchState = getSearchState(editor, <string>values.get(MODE, 'insert'),
+                    currentSearch);
+            if(!searchState.modified){ clearSearchDecorations(editor); }
+            searchState.modified = false;
+        }
+        return true;
     });
 
-    currentSearch = args.register;
-    let state = await getSearchState(editor, args.register);
+    let mode = '';
+    await withState(async state => {
+        mode = state.get(MODE, 'insert')!;
+        return state;
+    });
+    let state = getSearchState(editor, mode, currentSearch);
     state.args = args;
     state.text = args.text || "";
     state.searchFrom = editor.selections;
 
     if(state.text.length > 0){
-        await navigateTo(state, editor);
+        navigateTo(state, editor);
         state.searchFrom = editor.selections;
     } else {
         // when there are a fixed number of keys use `type` command
         if (state.args.acceptAfter) {
             let acceptAfter = state.args.acceptAfter;
             let stop = false;
-            state.text = await captureKeys(async (result, char) => {
+            state.text = await captureKeys((result, char) => {
                 if (char === "\n") { stop = true; }
                 else {
                     result += char;
                     state.text = result;
-                    await navigateTo(state, editor, false);
+                    navigateTo(state, editor, false);
                     if (state.text.length >= acceptAfter) { stop = true; }
                     // there are other-ways to cancel key capturing so we need to update
                     // the arguments on every keypress
@@ -365,7 +369,7 @@ async function search(editor: vscode.TextEditor,
                     }
                     inputBox.onDidChangeValue(async (str: string) => {
                         state.text = str;
-                        await navigateTo(state, editor, false);
+                        navigateTo(state, editor, false);
                     });
                     inputBox.onDidAccept(() => {
                         state.searchFrom = editor.selections;
@@ -407,9 +411,14 @@ async function nextMatch(editor: vscode.TextEditor,
 
     let args = validateInput('master-key.nextMatch', args_, matchStepArgs);
     if(!args) { return; }
-    let state = await getSearchState(editor, args!.register);
+    let mode = '';
+    await withState(async state => {
+        mode = state.get(MODE, 'insert')!;
+        return state;
+    });
+    let state = getSearchState(editor, mode, args!.register);
     if (state.text) {
-        for(let i=0; i<(args.repeat || 1); i++){ await navigateTo(state, editor); }
+        for(let i=0; i<(args.repeat || 1); i++){ navigateTo(state, editor); }
         revealActive(editor);
     }
     return;
@@ -420,12 +429,15 @@ async function previousMatch(commandState: CommandState, editor: vscode.TextEdit
 
     let args = validateInput('master-key.previousMatch', args_, matchStepArgs);
     if(!args) { return; }
-    await withState(async state => state.set(SEARCH_CHANGED, {transient: {reset: false}},
-        true));
-    let state = await getSearchState(editor, args!.register);
+    let mode = '';
+    await withState(async state => {
+        mode = state.get(MODE, 'insert')!;
+        return state;
+    });
+    let state = getSearchState(editor, mode, args!.register);
     if (state.text) {
         state.args.backwards = !state.args.backwards;
-        for(let i=0; i<(args.repeat || 1); i++){ await navigateTo(state, editor); }
+        for(let i=0; i<(args.repeat || 1); i++){ navigateTo(state, editor); }
         revealActive(editor);
         state.args.backwards = !state.args.backwards;
     }
