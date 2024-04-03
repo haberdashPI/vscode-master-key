@@ -61,6 +61,19 @@ maybe we should implement an edit and a navigation history since the built-in co
 
 wishlist:
 
+- would be nice if each key past the first shows up in a quick pick menu
+  rather than just being a separate keybinding
+
+- would be nice if each key sequence that mapped to a *single* command
+  could be added as a keybinding full keybinding for that command
+  with a `when` clause that is never true; that way
+  all single commands that are mapped can be looked up
+  using the command palette. NOTE: this might not work
+  because it could interfere with mappings that use shorter key
+  sequences (e.g. I think VSCode might just sit around waiting
+  for the subsequent keys, even if the binding doesn't apply??
+  will have to check this)
+
 - quick win: we really shouldn't allow macro recording inside of macro recording
   unless this is what a user explicitly requests, by default calling
   macro recording commands in this way should raise an error
