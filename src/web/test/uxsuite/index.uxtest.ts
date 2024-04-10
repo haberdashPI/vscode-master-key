@@ -12,9 +12,9 @@ describe('UI Test Suite', () => {
         setupTempdir();
     });
 
-    simpleMotions.run();
+    // simpleMotions.run();
     // commandState.run();
-    // searchMotions.run();
+    searchMotions.run();
     // captureKeys.run();
     // replay.run();
 

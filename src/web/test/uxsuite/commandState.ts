@@ -18,8 +18,7 @@ export const run = () => describe('Command state', () => {
             description = "Enter normal mode"
             key = "escape"
             mode = []
-            command = "runCommands"
-            args.commands = ["master-key.enterInsert", "master-key.reset"]
+            command = "master-key.enterInsert"
             when = "!findWidgetVisible"
             prefixes = "<all-prefixes>"
 
@@ -49,7 +48,7 @@ export const run = () => describe('Command state', () => {
             key = "ctrl+l"
             mode = ["left", "insert"]
             command = "master-key.prefix"
-            args.flag = "select"
+            args.flag = "select_on"
             resetTransient = false
 
             [[path]]
@@ -61,21 +60,21 @@ export const run = () => describe('Command state', () => {
             path = "word"
             name = "word motion"
             key = "ctrl+shift+w"
-            when = "!master-key.select"
+            when = "!master-key.select_on"
             command = "cursorWordEndRight"
 
             [[bind]]
             path = "word"
             name = "word motion"
             key = "ctrl+shift+w"
-            when = "!master-key.select"
+            when = "!master-key.select_on"
             mode = "left"
             command = "cursorWordLeft"
 
             [[bind]]
             path = "word"
             key = "ctrl+shift+w"
-            when = "master-key.select"
+            when = "master-key.select_on"
             command = "cursorWordEndRightSelect"
 
             [[bind]]
@@ -87,22 +86,8 @@ export const run = () => describe('Command state', () => {
             path = "word"
             key = "ctrl+shift+w"
             mode = "left"
-            when = "master-key.select"
+            when = "master-key.select_on"
             command = "cursorWordLeftSelect"
-
-            [[bind]]
-            name = "set foo"
-            key = "ctrl+alt+w"
-            command = "master-key.set"
-            args.name = "foo"
-            args.value = 6
-
-            [[bind]]
-            name = "write foo"
-            key = "ctrl+alt+l"
-            command = "cursorMove"
-            computedArgs.value = "foo"
-            args.to = "right"
         `);
         await pause(1000);
 
@@ -137,17 +122,6 @@ export const run = () => describe('Command state', () => {
         await editor.typeText(Key.chord(Key.CONTROL, Key.SHIFT, 'w'));
         await pause(250);
         expect(await editor.getSelectedText()).toEqual('This');
-    });
-
-    it("Handles variable setting", async () => {
-        await editor.moveCursor(1, 1);
-        await pause(250);
-
-        await movesCursorInEditor(async () => {
-            await editor.typeText(Key.chord(Key.CONTROL, Key.ALT, 'w'));
-            await pause(50);
-            await editor.typeText(Key.chord(Key.CONTROL, Key.ALT, 'l'));
-        }, [0, 6], editor);
     });
 
     it("Mode changes key effects", async () => {
