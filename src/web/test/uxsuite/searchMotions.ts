@@ -18,8 +18,7 @@ export const run = () => describe('Search motions', () => {
             description = "Enter normal mode"
             key = "escape"
             mode = []
-            command = "runCommands"
-            args.commands = ["master-key.enterNormal", "master-key.reset"]
+            command = "master-key.enterNormal"
             prefixes = "<all-prefixes>"
 
             [[path]]

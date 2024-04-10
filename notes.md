@@ -5,7 +5,7 @@ NOTE: this has now merged (can use the most recent version with this update (is 
 
 NEXT UP:
 
-- debug the new refactoring
+- debug search motion unit tests
 - get all existing unit tests to work again
 
 unit tests: macro replay

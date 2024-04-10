@@ -303,6 +303,13 @@ function clearSearchDecorations(editor: vscode.TextEditor){
     editor.setDecorations(searchOtherDecorator, []);
 }
 
+function skipTo(state: SearchState, editor: vscode.TextEditor){
+    let skip = state.args.skip || 0;
+    if(skip > 0){
+        for(let i=0; i<skip; i++){ navigateTo(state, editor); }
+    }
+}
+
 async function search(editor: vscode.TextEditor,
     edit: vscode.TextEditorEdit, args_: any[]): Promise<CommandResult> {
 
@@ -333,6 +340,7 @@ async function search(editor: vscode.TextEditor,
 
     if(state.text.length > 0){
         navigateTo(state, editor);
+        skipTo(state, editor);
         state.searchFrom = editor.selections;
     } else {
         // when there are a fixed number of keys use `type` command
@@ -352,6 +360,7 @@ async function search(editor: vscode.TextEditor,
                 return [result, stop];
             });
             if (!state.text) { return "cancel"; }
+            skipTo(state, editor);
         } else {
             await withState(async state => {
                 return state.set(MODE, {public: true}, 'capture').resolve();
@@ -373,17 +382,20 @@ async function search(editor: vscode.TextEditor,
                     });
                     inputBox.onDidAccept(() => {
                         state.searchFrom = editor.selections;
-                        inputBox.dispose();
                         accepted = true;
+                        inputBox.dispose();
+                    });
+                    inputBox.onDidHide(() => {
+                        if (!accepted) { state.text = ""; }
                         resolve(state.text);
                     });
-                    inputBox.onDidHide(() => { if (!accepted) { state.text = ""; } });
                     inputBox.show();
                 } catch (e) {
                     reject(e);
                 }
             });
             await inputResult;
+            await skipTo(state, editor);
         }
         await withState(async st => {
             return st.set(MODE, {public: true}, state.oldMode).resolve();
@@ -392,6 +404,8 @@ async function search(editor: vscode.TextEditor,
     if(state.text){
         return {...state.args, text: state.text};
     }else{
+        editor.selections = state.searchFrom;
+        revealActive(editor, vscode.TextEditorRevealType.InCenterIfOutsideViewport);
         await withState(async st => {
             return st.set(MODE, {public: true}, state.oldMode).resolve();
         });
@@ -399,10 +413,10 @@ async function search(editor: vscode.TextEditor,
     }
 }
 
-export function revealActive(editor: vscode.TextEditor){
+export function revealActive(editor: vscode.TextEditor, revealType?: vscode.TextEditorRevealType){
     let act = new vscode.Range(editor.selection.active, editor.selection.active);
     // TODO: make this customizable
-    editor.revealRange(act, vscode.TextEditorRevealType.InCenter);
+    editor.revealRange(act, revealType);
 }
 
 const matchStepArgs = z.object({register: z.string().default("default"), repeat: z.number().min(0).optional() });
