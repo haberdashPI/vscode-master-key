@@ -44,11 +44,16 @@ async function selectHistoryCommand<T>(cmd: string, args_: unknown){
             // find the range of commands we want to replay
             let state = await withState(async x => x);
             if(!state){ return; }
-            let history = state.get<RecordedCommandArgs[]>(COMMAND_HISTORY, [])!;
+            let history_ = state.get<List<RecordedCommandArgs>>(COMMAND_HISTORY, List())!;
+            let history = history_.toArray();
             let from = -1;
             let to = -1;
             let toMatcher = args.range?.to || args.at;
             let fromMatcher = args.range?.from;
+            // TODO: the problem here is that we're treating history as an array but its a
+            // `immutablejs.List`. Don't really want to expose that to the user... also
+            // sounds expensive to convert to javascript array every time a repeat is
+            // performed
             for(let i=history.length-1;i>=0;i--){
                 // NOTE: remember that `selectHistoryArgs` cannot leave both `range` and
                 // `at` undefined, so at least one of `toMatcher` and `fromMatcher` are not

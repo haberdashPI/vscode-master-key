@@ -1,8 +1,5 @@
 current issue I'm working on:
 
-search seems to be working
-no test out repeat commands ('.' and ',')
-
 NOTE: we're using a revised version of vscod-extension-tester (https://github.com/redhat-developer/vscode-extension-tester/pull/1084) after fixing a bug on MacOS ARM
 NOTE: this has now merged (can use the most recent version with this update (is it in a release??))
 

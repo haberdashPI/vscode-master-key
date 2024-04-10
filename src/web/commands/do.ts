@@ -95,13 +95,8 @@ async function resolveRepeat(args: RunCommandsArgs): Promise<number> {
     }
 }
 
-// TODO: handle search usage functions
-// they should become part of state listeners in `search` file
 export async function doCommands(args: RunCommandsArgs): Promise<CommandResult>{
-
     // run the commands
-
-    // trackSearchUsage();
     let reifiedCommands: BindingCommand[] | undefined = undefined;
     let repeat = 0;
     try{
@@ -125,9 +120,6 @@ export async function doCommands(args: RunCommandsArgs): Promise<CommandResult>{
             // (see `status/keyseq.ts`)
             if(args.key){ await keySuffix(args.key); }
             await withState(async state => { return state.reset().resolve(); });
-            // if(!wasSearchUsed() && vscode.window.activeTextEditor){
-            //     clearSearchDecorations(vscode.window.activeTextEditor) ;
-            // }
         }else{
             await withState(async state => state.resolve());
         }
@@ -151,7 +143,11 @@ async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
                     { notSetValue: List() },
                     history => {
                         let recordEdits = state.get(MODE, 'insert') === 'insert';
-                        return history.push({ ...command, edits: [], recordEdits });
+                        history = history.push({ ...command, edits: [], recordEdits });
+                        if(history.count() > maxHistory){
+                            history = history.shift();
+                        }
+                        return history;
                     }
                 );
             });
