@@ -17,6 +17,7 @@ unit tests: edge cases with recording edits
   - what about multiple cursors?
 unit tests: store/restore named
 
+DEBUG: get macro replay working with selection utility commands
 REFACTOR: cleanup up and document code, make it nice and readable
 REFACTOR: add prettier config and apply new style to all files
 
@@ -55,6 +56,8 @@ maybe we should implement an edit and a navigation history since the built-in co
 
 - require parsing to validate modes to be all negations or all positive mode specifications
 - add more to symmetric insert setup
+
+EDGE CASE: check that changing keybingings doesn't much with state (e.g. reset mode)
 
 wishlist:
 

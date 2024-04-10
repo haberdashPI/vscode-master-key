@@ -41,6 +41,7 @@ export async function activate(context: vscode.ExtensionContext){
     context.subscriptions.push(vscode.commands.registerCommand('master-key.enterNormal',
         recordedCommand(() => setMode({value: 'normal'}))));
 
+    await withState(async state => state.set(MODE, {public: true}, 'insert').resolve());
     await onResolve('mode', values => {
         currentMode = <string>values.get(MODE, 'insert');
         updateCursorAppearance(vscode.window.activeTextEditor, currentMode);
