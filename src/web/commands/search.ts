@@ -438,7 +438,7 @@ async function nextMatch(editor: vscode.TextEditor,
     return;
 }
 
-async function previousMatch(commandState: CommandState, editor: vscode.TextEditor,
+async function previousMatch(editor: vscode.TextEditor,
     edit: vscode.TextEditorEdit, args_: unknown): Promise<CommandResult> {
 
     let args = validateInput('master-key.previousMatch', args_, matchStepArgs);

@@ -5,7 +5,8 @@ NOTE: this has now merged (can use the most recent version with this update (is 
 
 NEXT UP:
 
-- debug search motion unit tests
+- debug search motion unit tests:
+  - I've got everything but "Handles post-search commands" working
 - get all existing unit tests to work again
 
 unit tests: macro replay
