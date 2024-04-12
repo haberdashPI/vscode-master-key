@@ -17,8 +17,7 @@ export const run = () => describe('Replay commands', () => {
         description = "Enter normal mode"
         key = "escape"
         mode = []
-        command = "runCommands"
-        args.commands = ["master-key.enterNormal", "master-key.reset"]
+        command = "master-key.enterNormal"
         prefixes = "<all-prefixes>"
 
         [[path]]
@@ -105,7 +104,7 @@ export const run = () => describe('Replay commands', () => {
         name = "1"
         key = "s"
         path = "capture"
-        commands = "runCommands"
+        command = "runCommands"
 
         [[bind.args.commands]]
         command = "master-key.captureKeys"
@@ -154,9 +153,8 @@ export const run = () => describe('Replay commands', () => {
         name = "record"
         key = "shift+q"
         when = "!master-key.record"
-        command = "master-key.set"
-        args.name = "record"
-        args.value = true
+        command = "master-key.record"
+        args.on = true
 
         [[bind]]
         path = "replay"
@@ -166,14 +164,13 @@ export const run = () => describe('Replay commands', () => {
         command = "runCommands"
 
         [[bind.args.commands]]
-        command = "master-key.set"
-        args.name = "record"
-        args.value = false
+        command = "master-key.record"
+        args.on = false
 
         [[bind.args.commands]]
         command = "master-key.pushHistoryToStack"
         args.range.from = 'commandHistory[i-1].name === "record"'
-        args.range.to = "i-1"
+        args.range.to = "i"
 
         [[bind]]
         path = "replay"
