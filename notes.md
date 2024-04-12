@@ -5,12 +5,10 @@ NOTE: this has now merged (can use the most recent version with this update (is 
 
 NEXT UP:
 
-- debugging replay ux tests
-  - make sure recording still gets displayed
-- get all existing unit tests to work again
+- debugging ux tests
+  - running all the tests together seems to cause something weird to happen
+    (an input box stays open and all tests start failing)
 
-unit tests: macro replay
-  - get the two broken tests working
 unit tests: edge cases with recording edits
   - how about when I switch documents?
   - how about when we don't start with normal mode commands?
@@ -24,7 +22,10 @@ REFACTOR: add prettier config and apply new style to all files
 
 thoughts: things I must have to release:
 - good documentation of the code
-- the command palette like feature
+- the command palette like feature: OR
+  - make single commands visible in pallet (need to test that this would work!)
+  - and have all multi key commands show up in quick picker
+    (ideally after some delay)
 - keybinding documentation features
 - mode customization
 - modernized selection utilities
