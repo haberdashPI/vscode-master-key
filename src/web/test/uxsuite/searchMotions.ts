@@ -125,9 +125,8 @@ export const run = () => describe('Search motions', () => {
             name = "select word search"
             key = "e /"
             path = "search"
-
-            [[bind.args.doAfter]]
-            command = "cursorWordEndRightSelect"
+            command = "runCommands"
+            args.commands = ["master-key.search", "cursorWordEndRightSelect"]
 
             [[bind]]
             name = "skip search"

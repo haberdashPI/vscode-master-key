@@ -828,10 +828,13 @@ Select between pairs of identical N characters, where N is the count e.g.
 3uc''' would search for a string between ''' and '''.
 """
 key = "u c"
+command = "runCommands"
+
+[[bind.args.commands]]
 command = "master-key.captureKeys"
 computedArgs.acceptAfter = "count || 1"
 
-[[bind.args.doAfter]]
+[[bind.args.commands]]
 command = "selection-utilities.selectBetween"
 computedArgs.str = "captured"
 args.inclusive = false
@@ -844,10 +847,13 @@ Select between pairs of identical N characters, where N is the count e.g.
 3uc''' would search for a string between ''' and '''.
 """
 key = "u v"
+command = "runCommands"
+
+[[bind.args.commands]]
 command = "master-key.captureKeys"
 computedArgs.acceptAfter = "2*(count || 1)"
 
-[[bind.args.doAfter]]
+[[bind.args.commands]]
 command = "selection-utilities.selectBetween"
 computedArgs.between.from = "captured.slice(0, captured.length/2)"
 computedArgs.between.to = "captured.slice(captured.length/2)"
@@ -1816,13 +1822,20 @@ Replay a recorded Master Key command sequence from a named register, pushing
 it to the front of the history stack.
 """
 key = "q r"
+command = "runCommands"
+
+[[bind.args.commands]]
 command = "master-key.restoreNamed"
 args.description = "Macro"
 args.name = "macro"
-args.doAfter = [
-      { command = "master-key.pushHistoryToStack", computedArgs = { value = "captured" } },
-      { command = "master-key.replayFromStack", args = { index = 0 } }
-]
+
+[[bind.args.commands]]
+command = "master-key.pushHistoryToStack"
+computedArgs.value = "captured"
+
+[[bind.args.commands]]
+command = "master-key.replayFromStack"
+args.index = 0
 
 [[bind]]
 path = "edit.action.history"
@@ -1840,7 +1853,7 @@ path = "edit.action.history"
 name = "repeat action"
 description = """
 Repeat the last action command. Actions usually modify the text of a document in one way or
-antoher. (But, e.g. sending text to the REPL is also considered an editor action).
+another. (But, e.g. sending text to the REPL is also considered an editor action).
 """
 key = "."
 command = "runCommands"
@@ -2816,9 +2829,15 @@ path = "edit.select_edit.split"
 name = "character"
 description = "split by a given character"
 key = "s c"
-command = "master-key.captureChar"
+command = "runCommands"
+
+[[bind.args.commands]]
+command = "master-key.captureKeys"
 args.acceptAfter = 1
-args.doAfter = [{ command = "selection-utilities.splitBy", computedArgs = { text = "capture" } }]
+
+[[bind.args.commands]]
+command = "selection-utilities.splitBy"
+computedArgs.text = "capture"
 
 [[path]]
 id = "edit.select_edit.create"

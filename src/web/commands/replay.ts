@@ -189,7 +189,7 @@ export function activate(context: vscode.ExtensionContext){
     vscode.workspace.onDidChangeTextDocument(async e => {
         await withState(async state => {
             // TODO: handle the empty history case
-            let opts = { notSetValue: List<object>() }
+            let opts = { notSetValue: List<object>() };
             return state.update<List<object>>(COMMAND_HISTORY, opts, history => {
                 let len = history.count();
 

@@ -105,10 +105,13 @@ export const run = () => describe('Replay commands', () => {
         name = "1"
         key = "s"
         path = "capture"
+        commands = "runCommands"
+
+        [[bind.args.commands]]
         command = "master-key.captureKeys"
         args.acceptAfter = 2
 
-        [[bind.args.doAfter]]
+        [[bind.args.commands]]
         command = "master-key.search"
         computedArgs.text = "captured"
 

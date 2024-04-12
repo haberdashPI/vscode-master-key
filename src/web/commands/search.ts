@@ -18,7 +18,6 @@ export const searchArgs = z.object({
     regex: z.boolean().optional(),
     register: z.string().default("default"),
     skip: z.number().optional().default(0),
-    doAfter: doArgs.optional(),
 }).strict();
 export type SearchArgs = z.infer<typeof searchArgs>;
 
@@ -310,8 +309,10 @@ function skipTo(state: SearchState, editor: vscode.TextEditor){
     }
 }
 
-async function search(editor: vscode.TextEditor,
-    edit: vscode.TextEditorEdit, args_: any[]): Promise<CommandResult> {
+async function search(args_: any[]): Promise<CommandResult> {
+    let editor_ = vscode.window.activeTextEditor;
+    if(!editor_){ return; }
+    let editor = editor_!;
 
     let args = validateInput('master-key.search', args_, searchArgs);
     if(!args){ return; }
@@ -459,7 +460,9 @@ async function previousMatch(editor: vscode.TextEditor,
 }
 
 export function activate(context: vscode.ExtensionContext) {
-    context.subscriptions.push(vscode.commands.registerTextEditorCommand('master-key.search', recordedCommand(search)));
+    // NOTE: `search` must be registered as a normal command, so that its result is returned
+    // we need it when call `executeCommand` in `doCommand`.
+    context.subscriptions.push(vscode.commands.registerCommand('master-key.search', recordedCommand(search)));
     context.subscriptions.push(vscode.commands.registerTextEditorCommand('master-key.nextMatch', recordedCommand(nextMatch)));
     context.subscriptions.push(vscode.commands.registerTextEditorCommand('master-key.previousMatch', recordedCommand(previousMatch)));
     context.subscriptions.push(vscode.commands.registerTextEditorCommand('master-key.clearSearchDecorations', clearSearchDecorations));

@@ -117,7 +117,7 @@ wishlist:
   that there is the empty-name path at the top (perhaps this should be the default,
   and it doesn't need to be explicitly defined)
 
-- `{defined}` commands should work inside `doAfter`
+- `{defined}` commands should work inside `runCommands`
 
 - insert character can be repeated
 
