@@ -13,7 +13,7 @@ async function onType(event: {text: string}){
     return await onTypeFn(event.text);
 }
 
-const CAPTURE = 'capture';
+const CAPTURE = 'captured';
 
 function clearTypeSubscription(){
     if(typeSubscription){

@@ -14,8 +14,8 @@ describe('UI Test Suite', () => {
 
     // simpleMotions.run();
     // commandState.run();
-    searchMotions.run();
-    // captureKeys.run();
+    // searchMotions.run();
+    captureKeys.run();
     // replay.run();
 
     after(() => { cleanupTempdir(); });
