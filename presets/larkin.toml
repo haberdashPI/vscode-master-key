@@ -1788,7 +1788,7 @@ args.on = false
 [[bind.args.commands]]
 command = "master-key.pushHistoryToStack"
 args.range.from = 'commandHistory[i-1].name === "record"'
-args.range.to = "i-1"
+args.range.to = "i"
 
 [[bind]]
 path = "edit.action.history"
@@ -1845,8 +1845,8 @@ Store the N most recently run commands as a macro, where N is the count (default
 """
 key = "q l"
 command = "master-key.pushHistoryToStack"
-args.range.from = "i-(count || 1)"
-args.range.to = "i-1"
+args.range.from = "i-(count || 0)"
+args.range.to = "i"
 
 [[bind]]
 path = "edit.action.history"

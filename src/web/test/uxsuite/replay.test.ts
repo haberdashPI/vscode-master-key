@@ -184,7 +184,7 @@ export const run = () => describe('Replay commands', () => {
         name = "replay last"
         key = "q l"
         command = "master-key.replayFromHistory"
-        args.at = "i-1"
+        args.at = "i"
         `);
         await pause(250);
 
@@ -330,7 +330,7 @@ i j k l`, 'replay');
     });
 
     // broken test!!
-    it.skip('Replays capture keys', async () => {
+    it('Replays capture keys', async () => {
         await editor.moveCursor(1, 1);
         await pause(250);
         editor.typeText(Key.ESCAPE);
@@ -354,7 +354,7 @@ i j k l`, 'replay');
     });
 
     // because the above is broken, this one is also broken
-    it.skip('Replays capture keys', async () => {
+    it('Replays capture keys', async () => {
         await editor.moveCursor(1, 1);
         await pause(250);
         editor.typeText(Key.ESCAPE);
