@@ -121,8 +121,10 @@ const charArgs = z.object({
     char: z.string().optional()
 }).strict();
 
-async function replaceChar(editor: vscode.TextEditor,
-    edit: vscode.TextEditorEdit, args_: unknown): Promise<CommandResult> {
+async function replaceChar(args_: unknown): Promise<CommandResult> {
+    let editor_ = vscode.window.activeTextEditor;
+    if(!editor_){ return; }
+    let editor = editor_!;
 
     let args = validateInput(name, args_, charArgs);
     if(args){
@@ -137,8 +139,10 @@ async function replaceChar(editor: vscode.TextEditor,
     return args;
 }
 
-async function insertChar(editor: vscode.TextEditor,
-    edit: vscode.TextEditorEdit, args_: unknown): Promise<CommandResult> {
+async function insertChar(args_: unknown): Promise<CommandResult> {
+    let editor_ = vscode.window.activeTextEditor;
+    if(!editor_){ return; }
+    let editor = editor_!;
 
     let args = validateInput(name, args_, charArgs);
     if(args){
