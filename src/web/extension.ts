@@ -1,14 +1,14 @@
 import * as vscode from 'vscode';
 import * as keybindings from './keybindings';
-import * as commands from './commands';
-import * as searching from './searching';
-import * as captureKeys from './captureKeys';
+import * as commands from './commands/index';
+import * as status from './status/index';
+import * as state from './state';
 
-export function activate(context: vscode.ExtensionContext) {
-	keybindings.activate(context);
-	commands.activate(context);
-	searching.activate(context);
-	captureKeys.activate(context);
+export async function activate(context: vscode.ExtensionContext) {
+    keybindings.activate(context);
+    await state.activate(context);
+    await commands.activate(context);
+    await status.activate(context);
 }
 
 // This method is called when your extension is deactivated

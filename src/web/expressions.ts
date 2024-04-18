@@ -57,7 +57,7 @@ export class EvalContext {
                 evaled = undefined;
             }
             if (evaled === undefined) {
-                this.errors.push(`The expression 
+                this.errors.push(`The expression
                 ${match[0]}, found in ${str}, could not be evaluated.`);
                 evaled = match[0];
             }
@@ -91,3 +91,5 @@ export class EvalContext {
         return result;
     }
 }
+
+export const evalContext = new EvalContext();

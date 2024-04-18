@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import z from 'zod';
-import { showParseError } from './keybindingParsing';
+import { showParseError } from './keybindings/parsing';
 
 // function validateInput(command: string, args_: unknown,
 //     using: z.ZodUn);

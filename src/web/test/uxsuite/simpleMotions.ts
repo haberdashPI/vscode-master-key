@@ -17,8 +17,7 @@ export const run = () => describe('Simple motions', () => {
             [[bind]]
             name = "normal mode"
             key = "escape"
-            command = "runCommands"
-            args.commands = ["master-key.enterNormal", "master-key.reset"]
+            command = "master-key.enterNormal"
             prefixes = "<all-prefixes>"
 
             [[path]]
@@ -56,11 +55,10 @@ export const run = () => describe('Simple motions', () => {
             [[bind]]
             name = "double right"
             key = "shift+l"
-            command = "master-key.repeat"
             mode = "normal"
-            args.command = "cursorMove"
-            args.args.to = "right"
-            args.repeat = 2
+            command = "cursorMove"
+            args.to = "right"
+            repeat = 1
 
             [[bind]]
             name = "insert mode"
@@ -69,6 +67,7 @@ export const run = () => describe('Simple motions', () => {
             mode = "normal"
 
             [define.keyNumber]
+            mode = "normal"
             "shift+0" = 0
             "shift+1" = 1
             "shift+2" = 2
@@ -77,7 +76,7 @@ export const run = () => describe('Simple motions', () => {
             [[bind]]
             # NOTE: because of how vscode-extension-tester is implemented
             # numeric values get typed, so we use other keybindings here
-            # to avoid picking up this typed keys
+            # to avoid picking up these typed keys
             key = ["shift+0", "shift+1", "shift+2", "shift+3"]
             mode = "normal"
             name = "count {keyNumber[key]}"
@@ -145,7 +144,7 @@ laborum ad. Dolore exercitation cillum eiusmod culpa minim duis`, "simple");
         }, [0, 10], editor);
     });
 
-    after(async () => await editor.typeText('i'));
+    after(async () => { await editor.typeText('i'); });
 });
 
 export default { run };

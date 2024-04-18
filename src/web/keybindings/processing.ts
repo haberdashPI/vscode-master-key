@@ -1,10 +1,10 @@
 import hash from 'object-hash';
 import { parseWhen, bindingItem, DoArgs, DefinedCommand, BindingItem, BindingSpec,
-         rawBindingItem, RawBindingItem } from "./keybindingParsing";
+         rawBindingItem, RawBindingItem } from "./parsing";
 import z from 'zod';
 import { sortBy, pick, isEqual, omit, mergeWith, cloneDeep, flatMap, merge } from 'lodash';
-import { reifyStrings, EvalContext } from './expressions';
-import { validateInput } from './utils';
+import { reifyStrings, EvalContext } from '../expressions';
+import { validateInput } from '../utils';
 import { fromZodError } from 'zod-validation-error';
 
 export interface Bindings{
@@ -87,6 +87,7 @@ const partialRawBindingItem = rawBindingItem.partial();
 type PartialRawBindingItem = z.infer<typeof partialRawBindingItem>;
 
 function expandDefaultsAndDefinedCommands(spec: BindingSpec, problems: string[]): BindingItem[] {
+    // eslint-disable-next-line @typescript-eslint/naming-convention
     let pathDefaults: Record<string, PartialRawBindingItem> = {"": {}};
     for(let path of spec.path){
         let parts = path.id.split('.');
@@ -133,6 +134,7 @@ function expandDefaultsAndDefinedCommands(spec: BindingSpec, problems: string[])
                     description: item.description,
                     kind: item.kind,
                     resetTransient: item.resetTransient,
+                    repeat: item.repeat
                 }
             });
             if(!result.success){
@@ -318,6 +320,7 @@ function updatePrefixItemAndPrefix(item: BindingItem, key: string, prefix: strin
             name: "Command Prefix: "+prefix,
             kind: "prefix",
             resetTransient: false,
+            repeat: 0
         },
         when: item.when,
         prefixes: [oldPrefix],

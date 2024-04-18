@@ -1,51 +1,32 @@
 current issue I'm working on:
 
-NOTE: we're using a revised version of vscod-extension-tester (https://github.com/redhat-developer/vscode-extension-tester/pull/1084) after fixing a bug on MacOS ARM
-
 NEXT UP:
 
-we need to clean up how commands get recorded, this is the cause of the broken tests
-  (I have a notion of how to do this already by using a more functional approach
-   to command recording; there are some tricks to getting this right with the
-   many asynchronous elements; we can't make it *completely* functional, but
-   there can be less global state mutation than there is)
+merge with main
 
-unit tests: macro replay
-unit tests: edges cases for command recording
-  - I think it may currently be possible to edit wrong command
-    if a second command is executed in the process of awaiting
-    for input from the first (e.g. the input text for search is open
-    and a command combination that has a poorly defined when clause
-    triggers a new command)
-
-    YES: we found this edge case by working testing out the recording
-    of a `doAfter` block in `captureKeys`.
-
-    time to re-organize this bit
-
-    we probably need to take on a more functional style in the commands,
-    this would likely require returning both a promise and a result
-    (but maybe we can get away with returning something int he promise
-    and just await on this result in the final command wrapper)
 unit tests: edge cases with recording edits
   - how about when I switch documents?
   - how about when we don't start with normal mode commands?
   - how about long edits with lots of insert mode commands intersprsed with the edits?
   - what about multiple cursors?
+unit tests: parsing of YAML and JSON(C)
 unit tests: store/restore named
 
+DEBUG: get macro replay working with selection utility commands
 REFACTOR: cleanup up and document code, make it nice and readable
+REFACTOR: add prettier config and apply new style to all files
 
 thoughts: things I must have to release:
 - good documentation of the code
-- the command palette like feature
+- the command palette like feature: OR
+  - make single commands visible in pallet (need to test that this would work!)
+  - and have all multi key commands show up in quick picker
+    (ideally after some delay)
 - keybinding documentation features
 - mode customization
 - modernized selection utilities
   - good documentation
   - modern build setup
-+ improved mode UX
-+ macro recoridng UX
 - anything else that has to be here? (check below wishlist and issues under the project)
 
 **TODO**: in documenting macro playback note the limitations of recording the keyboard
@@ -74,7 +55,22 @@ maybe we should implement an edit and a navigation history since the built-in co
 - require parsing to validate modes to be all negations or all positive mode specifications
 - add more to symmetric insert setup
 
+EDGE CASE: check that changing keybingings doesn't much with state (e.g. reset mode)
+
 wishlist:
+
+- would be nice if each key past the first shows up in a quick pick menu
+  rather than just being a separate keybinding
+
+- would be nice if each key sequence that mapped to a *single* command
+  could be added as a keybinding full keybinding for that command
+  with a `when` clause that is never true; that way
+  all single commands that are mapped can be looked up
+  using the command palette. NOTE: this might not work
+  because it could interfere with mappings that use shorter key
+  sequences (e.g. I think VSCode might just sit around waiting
+  for the subsequent keys, even if the binding doesn't apply??
+  will have to check this)
 
 - quick win: we really shouldn't allow macro recording inside of macro recording
   unless this is what a user explicitly requests, by default calling
@@ -118,7 +114,7 @@ wishlist:
   that there is the empty-name path at the top (perhaps this should be the default,
   and it doesn't need to be explicitly defined)
 
-- `{defined}` commands should work inside `doAfter`
+- `{defined}` commands should work inside `runCommands`
 
 - insert character can be repeated
 

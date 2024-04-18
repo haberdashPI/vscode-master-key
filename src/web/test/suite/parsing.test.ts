@@ -2,8 +2,8 @@ import assert from 'assert';
 
 // You can import and use all API from the 'vscode' module
 // as well as import your extension to test it
-import { processBindings } from '../../keybindingProcessing';
-import { parseBindings } from '../../keybindingParsing';
+import { processBindings } from '../../keybindings/processing';
+import { parseBindings } from '../../keybindings/parsing';
 import { fromZodError } from 'zod-validation-error';
 import { sortBy, isEqual } from 'lodash';
 

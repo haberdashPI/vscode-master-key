@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
 import z from 'zod';
-import { validateInput } from './utils';
-import { setKeyContext, runCommands, state as keyState, updateArgs } from "./commands";
-import { doArgs } from './keybindingParsing';
-import { wrappedTranslate } from './utils';
-import { captureKeys } from './captureKeys';
+import { validateInput, wrappedTranslate } from '../utils';
+import { doArgs } from '../keybindings/parsing';
+import { onResolve, withState, CommandResult, CommandState, recordedCommand } from '../state';
+import { MODE } from './mode';
+import { captureKeys } from './capture';
 
 export const searchArgs = z.object({
     backwards: z.boolean().optional(),
@@ -18,7 +18,6 @@ export const searchArgs = z.object({
     regex: z.boolean().optional(),
     register: z.string().default("default"),
     skip: z.number().optional().default(0),
-    doAfter: doArgs.optional(),
 }).strict();
 export type SearchArgs = z.infer<typeof searchArgs>;
 
@@ -106,12 +105,29 @@ function* stringMatches(matcher: string, caseSensitive: boolean, line: string, f
     }
 }
 
-interface SearchState{
+let searchDecorator: vscode.TextEditorDecorationType;
+let searchOtherDecorator: vscode.TextEditorDecorationType;
+
+class SearchState{
     args: SearchArgs;
-    text: string;
-    searchFrom: readonly vscode.Selection[];
+    _text: string = '';
+    _searchFrom: readonly vscode.Selection[] = [];
     oldMode: string;
-    stop?: (() => void);
+    modified = false;
+    constructor(args: SearchArgs, mode: string){
+        this.args = args;
+        this.oldMode = mode;
+    }
+    get text() { return this._text; }
+    set text(str: string){
+        this._text = str;
+        this.modified = true;
+    }
+    get searchFrom() { return this._searchFrom; }
+    set searchFrom(sel: readonly vscode.Selection[]){
+        this._searchFrom = sel || [];
+        this.modified = true;
+    }
 }
 
 let searchStates: Map<vscode.TextEditor, Record<string, SearchState>> = new Map();
@@ -119,166 +135,19 @@ let currentSearch: string = "default";
 let searchStateUsed = false;
 export function trackSearchUsage(){ searchStateUsed = false; }
 export function wasSearchUsed(){ return searchStateUsed; }
-function getSearchState(editor: vscode.TextEditor, register: string = currentSearch): SearchState{
+function getSearchState(editor: vscode.TextEditor, mode: string, register: string): SearchState {
     searchStateUsed = true;
     let statesForEditor = searchStates.get(editor);
     statesForEditor = statesForEditor ? statesForEditor : {};
-    if(!statesForEditor[register]){
-        let searchState: SearchState = {
-            args: searchArgs.parse({}),
-            text: "",
-            searchFrom: [],
-            oldMode: keyState.values.mode,
-        };
+    if (!statesForEditor[register]) {
+        let searchState = new SearchState(searchArgs.parse({}), mode);
         statesForEditor[register] = searchState;
         searchStates.set(editor, statesForEditor);
         return searchState;
-    }else{
+    } else {
         return statesForEditor[register];
     }
 }
-
-async function search(editor: vscode.TextEditor, edit: vscode.TextEditorEdit, args_: any[]){
-    let args = validateInput('master-key.search', args_, searchArgs);
-    if(!args){ return; }
-
-    currentSearch = args.register;
-    let state = getSearchState(editor);
-    state.args = args;
-    state.text = args.text || "";
-    state.searchFrom = editor.selections;
-
-    if(state.text.length > 0){
-        navigateTo(state, editor);
-        await acceptSearch(editor, edit, state);
-        return;
-    }
-
-    setKeyContext({name: 'mode', value: 'capture', transient: false});
-    // when there are a fixed number of keys use `type` command
-    if(state.args.acceptAfter){
-        let acceptAfter = state.args.acceptAfter;
-        captureKeys((key, stop) => {
-            state.stop = stop;
-            if(key === "\n") { acceptSearch(editor, edit, state); }
-            else {
-                state.text += key;
-                navigateTo(state, editor, false);
-                if(state.text.length >= acceptAfter){ acceptSearch(editor, edit, state); }
-                // there are other-ways to cancel key capturing so we need to update
-                // the arguments on every keypress
-                else{ updateArgs( {...state.args, text: state.text }); }
-            }
-        });
-    }else{
-        // if there are not a fixed number of characters use a UX element that makes the
-        // keys visible
-        state.stop = undefined;
-        let inputBox = vscode.window.createInputBox();
-        if(state.args.regex){
-            inputBox.title = "Regex Search";
-            inputBox.prompt = "Enter regex to search for";
-        }else{
-            inputBox.title = "Search";
-            inputBox.prompt = "Enter text to search for";
-        }
-        inputBox.onDidChangeValue((str: string) => {
-            state.text = str;
-            updateArgs({ ...state.args, text: state.text });
-            navigateTo(state, editor, false);
-        });
-        inputBox.onDidAccept(() => {
-            acceptSearch(editor, edit, state);
-            inputBox.dispose();
-        });
-        inputBox.onDidHide(() => {
-            if(state.stop){
-                updateArgs("CANCEL");
-                cancelSearch(editor, edit);
-            }
-        });
-        inputBox.show();
-    }
-}
-
-async function acceptSearch(editor: vscode.TextEditor, edit: vscode.TextEditorEdit, state: SearchState) {
-    updateArgs({ ...state.args, text: state.text });
-    if(state.stop){ state.stop(); }
-    state.searchFrom = editor.selections;
-    await setKeyContext({name: 'mode', value: state.oldMode, transient: false});
-
-    let skip = (state.args.skip || 0);
-    if(skip > 0){
-        await nextMatch(editor, edit, {register: state.args.register, repeat: state.args.skip});
-    }
-    if(state.args.doAfter){
-        await runCommands({do: state.args.doAfter});
-    }
-}
-
-export function activate(context: vscode.ExtensionContext){
-    context.subscriptions.push(vscode.commands.registerTextEditorCommand('master-key.search', search));
-    context.subscriptions.push(vscode.commands.registerTextEditorCommand('master-key.acceptSearch', acceptSearch));
-    context.subscriptions.push(vscode.commands.registerTextEditorCommand('master-key.cancelSearch', cancelSearch));
-    context.subscriptions.push(vscode.commands.registerTextEditorCommand('master-key.deleteLastSearchChar', deleteLastSearchCharacter));
-    context.subscriptions.push(vscode.commands.registerTextEditorCommand('master-key.nextMatch', nextMatch));
-    context.subscriptions.push(vscode.commands.registerTextEditorCommand('master-key.previousMatch', previousMatch));
-    context.subscriptions.push(vscode.commands.registerTextEditorCommand('master-key.clearSearchDecorations', clearSearchDecorations));
-    updateSearchHighlights();
-    vscode.workspace.onDidChangeConfiguration(updateSearchHighlights);
-}
-
-async function cancelSearch(editor: vscode.TextEditor, edit: vscode.TextEditorEdit) {
-    let state = getSearchState(editor);
-    if (keyState.values.mode === 'capture'){
-        setKeyContext({name: 'mode', value: state.oldMode, transient: false});
-        let editor = vscode.window.activeTextEditor;
-        if (editor) {
-            if(state.searchFrom){ editor.selections = state.searchFrom; }
-            revealActive(editor);
-        }
-    }
-    if(state.stop){ state.stop(); }
-}
-
-function deleteLastSearchCharacter(editor: vscode.TextEditor, edit: vscode.TextEditorEdit) {
-    let state = getSearchState(editor);
-    state.text = state.text.slice(0, -1);
-    navigateTo(state, editor);
-}
-
-
-export function revealActive(editor: vscode.TextEditor){
-    let act = new vscode.Range(editor.selection.active, editor.selection.active);
-    // TODO: make this customizable
-    editor.revealRange(act, vscode.TextEditorRevealType.InCenter);
-}
-
-const matchStepArgs = z.object({register: z.string().default("default"), repeat: z.number().min(0).optional() });
-async function nextMatch(editor: vscode.TextEditor, edit: vscode.TextEditorEdit, args_: unknown){
-    let args = validateInput('master-key.nextMatch', args_, matchStepArgs);
-    if(!args) { return; }
-    let state = getSearchState(editor, args!.register);
-    if (state.text) {
-        for(let i=0; i<(args.repeat || 1); i++){ navigateTo(state, editor); }
-        revealActive(editor);
-    }
-}
-
-async function previousMatch(editor: vscode.TextEditor, edit: vscode.TextEditorEdit, args_: unknown){
-    let args = validateInput('master-key.previousMatch', args_, matchStepArgs);
-    if(!args) { return; }
-    let state = getSearchState(editor, args!.register);
-    if (state.text) {
-        state.args.backwards = !state.args.backwards;
-        for(let i=0; i<(args.repeat || 1); i++){ navigateTo(state, editor); }
-        revealActive(editor);
-        state.args.backwards = !state.args.backwards;
-    }
-}
-
-let searchDecorator: vscode.TextEditorDecorationType;
-let searchOtherDecorator: vscode.TextEditorDecorationType;
 
 /**
  * The actual search functionality is located in this helper function. It is
@@ -428,7 +297,175 @@ function adjustSearchPosition(sel: vscode.Selection, doc: vscode.TextDocument, l
     return sel;
 }
 
-export function clearSearchDecorations(editor: vscode.TextEditor){
+function clearSearchDecorations(editor: vscode.TextEditor){
     editor.setDecorations(searchDecorator, []);
     editor.setDecorations(searchOtherDecorator, []);
+}
+
+function skipTo(state: SearchState, editor: vscode.TextEditor){
+    let skip = state.args.skip || 0;
+    if(skip > 0){
+        for(let i=0; i<skip; i++){ navigateTo(state, editor); }
+    }
+}
+
+async function search(args_: any[]): Promise<CommandResult> {
+    let editor_ = vscode.window.activeTextEditor;
+    if(!editor_){ return; }
+    let editor = editor_!;
+
+    let args = validateInput('master-key.search', args_, searchArgs);
+    if(!args){ return; }
+    currentSearch = args.register;
+
+    await onResolve('search', values => {
+        let editor = vscode.window.activeTextEditor;
+        if (editor) {
+            let searchState = getSearchState(editor, <string>values.get(MODE, 'insert'),
+                    currentSearch);
+            if(!searchState.modified){ clearSearchDecorations(editor); }
+            searchState.modified = false;
+        }
+        return true;
+    });
+
+    let mode = '';
+    await withState(async state => {
+        mode = state.get(MODE, 'insert')!;
+        return state;
+    });
+    let state = getSearchState(editor, mode, currentSearch);
+    state.args = args;
+    state.text = args.text || "";
+    state.searchFrom = editor.selections;
+
+    if(state.text.length > 0){
+        navigateTo(state, editor);
+        skipTo(state, editor);
+        state.searchFrom = editor.selections;
+    } else {
+        // when there are a fixed number of keys use `type` command
+        if (state.args.acceptAfter) {
+            let acceptAfter = state.args.acceptAfter;
+            let stop = false;
+            state.text = await captureKeys((result, char) => {
+                if (char === "\n") { stop = true; }
+                else {
+                    result += char;
+                    state.text = result;
+                    navigateTo(state, editor, false);
+                    if (state.text.length >= acceptAfter) { stop = true; }
+                    // there are other-ways to cancel key capturing so we need to update
+                    // the arguments on every keypress
+                }
+                return [result, stop];
+            });
+            if (!state.text) { return "cancel"; }
+            skipTo(state, editor);
+        } else {
+            await withState(async state => {
+                return state.set(MODE, {public: true}, 'capture').resolve();
+            });
+            let accepted = false;
+            let inputResult = new Promise<string>((resolve, reject) => {
+                try {
+                    let inputBox = vscode.window.createInputBox();
+                    if (state.args.regex) {
+                        inputBox.title = "Regex Search";
+                        inputBox.prompt = "Enter regex to search for";
+                    } else {
+                        inputBox.title = "Search";
+                        inputBox.prompt = "Enter text to search for";
+                    }
+                    inputBox.onDidChangeValue(async (str: string) => {
+                        state.text = str;
+                        navigateTo(state, editor, false);
+                    });
+                    inputBox.onDidAccept(() => {
+                        state.searchFrom = editor.selections;
+                        accepted = true;
+                        inputBox.dispose();
+                    });
+                    inputBox.onDidHide(() => {
+                        if (!accepted) { state.text = ""; }
+                        resolve(state.text);
+                    });
+                    inputBox.show();
+                } catch (e) {
+                    reject(e);
+                }
+            });
+            await inputResult;
+            await skipTo(state, editor);
+        }
+        await withState(async st => {
+            return st.set(MODE, {public: true}, state.oldMode).resolve();
+        });
+    }
+    if(state.text){
+        return {...state.args, text: state.text};
+    }else{
+        editor.selections = state.searchFrom;
+        revealActive(editor, vscode.TextEditorRevealType.InCenterIfOutsideViewport);
+        await withState(async st => {
+            return st.set(MODE, {public: true}, state.oldMode).resolve();
+        });
+        return "cancel";
+    }
+}
+
+export function revealActive(editor: vscode.TextEditor, revealType?: vscode.TextEditorRevealType){
+    let act = new vscode.Range(editor.selection.active, editor.selection.active);
+    // TODO: make this customizable
+    editor.revealRange(act, revealType);
+}
+
+const matchStepArgs = z.object({register: z.string().default("default"), repeat: z.number().min(0).optional() });
+async function nextMatch(editor: vscode.TextEditor,
+    edit: vscode.TextEditorEdit, args_: unknown): Promise<CommandResult> {
+
+    let args = validateInput('master-key.nextMatch', args_, matchStepArgs);
+    if(!args) { return; }
+    let mode = '';
+    await withState(async state => {
+        mode = state.get(MODE, 'insert')!;
+        return state;
+    });
+    let state = getSearchState(editor, mode, args!.register);
+    if (state.text) {
+        for(let i=0; i<(args.repeat || 1); i++){ navigateTo(state, editor); }
+        revealActive(editor);
+    }
+    return;
+}
+
+async function previousMatch(editor: vscode.TextEditor,
+    edit: vscode.TextEditorEdit, args_: unknown): Promise<CommandResult> {
+
+    let args = validateInput('master-key.previousMatch', args_, matchStepArgs);
+    if(!args) { return; }
+    let mode = '';
+    await withState(async state => {
+        mode = state.get(MODE, 'insert')!;
+        return state;
+    });
+    let state = getSearchState(editor, mode, args!.register);
+    if (state.text) {
+        state.args.backwards = !state.args.backwards;
+        for(let i=0; i<(args.repeat || 1); i++){ navigateTo(state, editor); }
+        revealActive(editor);
+        state.args.backwards = !state.args.backwards;
+    }
+    return;
+}
+
+export function activate(context: vscode.ExtensionContext) {
+    // NOTE: `search` must be registered as a normal command, so that its result is returned
+    // we need it when call `executeCommand` in `doCommand`.
+    context.subscriptions.push(vscode.commands.registerCommand('master-key.search', recordedCommand(search)));
+    context.subscriptions.push(vscode.commands.registerTextEditorCommand('master-key.nextMatch', recordedCommand(nextMatch)));
+    context.subscriptions.push(vscode.commands.registerTextEditorCommand('master-key.previousMatch', recordedCommand(previousMatch)));
+    context.subscriptions.push(vscode.commands.registerTextEditorCommand('master-key.clearSearchDecorations', clearSearchDecorations));
+    updateSearchHighlights();
+    vscode.workspace.onDidChangeConfiguration(updateSearchHighlights);
 }

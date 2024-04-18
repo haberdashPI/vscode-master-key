@@ -8,7 +8,7 @@ import * as semver from 'semver';
 import { TextDecoder } from 'web-encoding';
 import z, { ZodIssue } from "zod";
 import { ZodError, fromZodError, fromZodIssue } from 'zod-validation-error';
-import { expressionId } from './expressions';
+import { expressionId } from '../expressions';
 import { uniqBy } from 'lodash';
 export const INPUT_CAPTURE_COMMANDS = ['captureKeys', 'replaceChar', 'insertChar', 'search'];
 
@@ -29,7 +29,7 @@ const rawBindingCommand = z.object({
     command: z.string().optional(), // only optional before default expansion
     args: z.any(),
     computedArgs: z.object({}).passthrough().optional(),
-    if: z.string().or(z.boolean()).default(true).optional()
+    if: z.string().or(z.boolean()).default(true).optional(),
 }).strict();
 export type RawBindingCommand = z.infer<typeof rawBindingCommand>;
 
@@ -141,7 +141,8 @@ export const rawBindingItem = z.object({
     mode: z.union([z.string(), z.string().array()]).optional(),
     prefixes: z.preprocess(x => x === "<all-prefixes>" ? [] : x,
         z.string().array()).optional(),
-    resetTransient: z.boolean().optional()
+    resetTransient: z.boolean().optional(),
+    repeat: z.number().min(0).or(z.string()).default(0).optional()
 }).merge(rawBindingCommand).strict();
 export type RawBindingItem = z.output<typeof rawBindingItem>;
 
@@ -171,6 +172,7 @@ export const bindingItem = z.object({
         path: z.string().optional().default(""),
         resetTransient: rawBindingItem.shape.resetTransient.default(true),
         kind: z.string().optional().default(""),
+        repeat: z.number().min(0).or(z.string()).default(0)
     }).merge(rawBindingItem.pick({name: true, description: true}))
 }).required({key: true, when: true, args: true}).strict();
 export type BindingItem = z.output<typeof bindingItem>;

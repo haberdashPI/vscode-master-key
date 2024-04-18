@@ -1,12 +1,13 @@
 import * as vscode from 'vscode';
-import { searchArgs, searchMatches } from './searching';
-import { parseBindings, BindingSpec, showParseError, parseBindingFile, bindingSpec } from './keybindingParsing';
-import { processBindings, IConfigKeyBinding, Bindings } from './keybindingProcessing';
+import { searchArgs, searchMatches } from '../commands/search';
+import { parseBindings, BindingSpec, showParseError, parseBindingFile, bindingSpec } from './parsing';
+import { processBindings, IConfigKeyBinding, Bindings } from './processing';
 import { uniq, pick } from 'lodash';
 import replaceAll from 'string.prototype.replaceall';
 import { Utils } from 'vscode-uri';
 import z from 'zod';
-import { setKeyContext } from './commands';
+import { withState } from '../state';
+import { MODE } from '../commands/mode';
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 // Keybinding Generation
@@ -184,7 +185,7 @@ async function queryPreset(): Promise<Preset | undefined> {
         }
     }else if(picked?.command === 'file'){
         let file = await vscode.window.showOpenDialog({
-            openLabel: "Import Modal-Key-Binding Spec",
+            openLabel: "Import Master-Key-Binding Spec",
             // eslint-disable-next-line @typescript-eslint/naming-convention
             filters: { Preset: ["json", "jsonc", "toml", "yml", "yaml"] },
             canSelectFiles: true,
@@ -226,13 +227,13 @@ async function queryPreset(): Promise<Preset | undefined> {
 async function importBindings(file: vscode.Uri, preset: Bindings) {
     insertKeybindingsIntoConfig(file, preset.bind);
     let config = vscode.workspace.getConfiguration('master-key');
-    setKeyContext({name: 'mode', value: 'insert'});
-    config.update('definitions', preset.define, vscode.ConfigurationTarget.Global);
+    await withState(async state => state.set(MODE, 'insert'));
+    await config.update('definitions', preset.define, vscode.ConfigurationTarget.Global);
 }
 
 export async function selectPreset(preset?: Preset){
     if(!preset){ preset = await queryPreset(); }
-    if(preset){ importBindings(preset.uri, preset.bindings); }
+    if(preset){ await importBindings(preset.uri, preset.bindings); }
 }
 
 // TODO: we also evenutally want to have a way to customize presets

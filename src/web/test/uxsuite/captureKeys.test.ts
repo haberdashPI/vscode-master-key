@@ -14,8 +14,7 @@ export const run = () => describe('Capture key commands', () => {
             description = "Enter normal mode"
             key = "escape"
             mode = []
-            command = "runCommands"
-            args.commands = ["master-key.enterNormal", "master-key.reset"]
+            command = "master-key.enterNormal"
             prefixes = "<all-prefixes>"
 
             [[path]]
@@ -27,10 +26,13 @@ export const run = () => describe('Capture key commands', () => {
             name = "1"
             key = "t"
             path = "capture"
+            command = "runCommands"
+
+            [[bind.args.commands]]
             command = "master-key.captureKeys"
             args.acceptAfter = 2
 
-            [[bind.args.doAfter]]
+            [[bind.args.commands]]
             command = "master-key.search"
             computedArgs.text = "captured"
 
@@ -38,11 +40,14 @@ export const run = () => describe('Capture key commands', () => {
             name = "1"
             key = "f"
             path = "capture"
+            command = "runCommands"
+
+            [[bind.args.commands]]
             command = "master-key.captureKeys"
             args.text = "po"
             args.acceptAfter = 2
 
-            [[bind.args.doAfter]]
+            [[bind.args.commands]]
             command = "master-key.search"
             computedArgs.text = "captured"
 

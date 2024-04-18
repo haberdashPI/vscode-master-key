@@ -18,8 +18,7 @@ export const run = () => describe('Search motions', () => {
             description = "Enter normal mode"
             key = "escape"
             mode = []
-            command = "runCommands"
-            args.commands = ["master-key.enterNormal", "master-key.reset"]
+            command = "master-key.enterNormal"
             prefixes = "<all-prefixes>"
 
             [[path]]
@@ -126,9 +125,8 @@ export const run = () => describe('Search motions', () => {
             name = "select word search"
             key = "e /"
             path = "search"
-
-            [[bind.args.doAfter]]
-            command = "cursorWordEndRightSelect"
+            command = "runCommands"
+            args.commands = ["master-key.search", "cursorWordEndRightSelect"]
 
             [[bind]]
             name = "skip search"
