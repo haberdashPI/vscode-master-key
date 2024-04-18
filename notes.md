@@ -2,7 +2,12 @@ current issue I'm working on:
 
 NEXT UP:
 
-merge with main
+start adding keybinding discoverability
+  - for single commands: test out adding bindings that don't activate when the extension
+    is active but do when it isn't, do the prefixes get messed up here? or do
+    the when clauses save us?
+  - open menu for multi-key commands after a short delay
+  - show keybindings in webview (copy from old extension)
 
 unit tests: edge cases with recording edits
   - how about when I switch documents?
@@ -12,12 +17,12 @@ unit tests: edge cases with recording edits
 unit tests: parsing of YAML and JSON(C)
 unit tests: store/restore named
 
-DEBUG: get macro replay working with selection utility commands
 REFACTOR: cleanup up and document code, make it nice and readable
 REFACTOR: add prettier config and apply new style to all files
 
 thoughts: things I must have to release:
 - good documentation of the code
+- user documentation
 - the command palette like feature: OR
   - make single commands visible in pallet (need to test that this would work!)
   - and have all multi key commands show up in quick picker
@@ -50,7 +55,7 @@ command = "master-key.updateCount"
 args.value = "{i}"
 ```
 
-maybe we should implement an edit and a navigation history since the built-in commands aren't particularly satisfying
+maybe we should
 
 - require parsing to validate modes to be all negations or all positive mode specifications
 - add more to symmetric insert setup
@@ -58,6 +63,8 @@ maybe we should implement an edit and a navigation history since the built-in co
 EDGE CASE: check that changing keybingings doesn't much with state (e.g. reset mode)
 
 wishlist:
+
+- get macro replay working with selection utility commands
 
 - would be nice if each key past the first shows up in a quick pick menu
   rather than just being a separate keybinding
@@ -77,6 +84,8 @@ wishlist:
   macro recording commands in this way should raise an error
   (it is an easy mistake to make when specifying the range of command to store
    on the stack when defining a keybinding)
+
+- implement an edit and a navigation history since the built-in commands aren't particularly satisfying
 
 - maybe the parse errors can be added to the problems window? (and just have one error
   message for all problems)
