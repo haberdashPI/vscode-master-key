@@ -46,10 +46,19 @@ export async function setBindings(str: string){
     let input = await InputBox.create();
     await input.setText('File...');
     await input.confirm();
+    await pause(250);
 
     input = await InputBox.create();
     await input.setText(config);
     await input.confirm();
-
-    await pause(500);
+    // hacky kludge: try and confirm the input again this is a work-around of what appears
+    // to be a bug. I don't want to bother tracking down how vscode-extension-tester is
+    // hitting the "Ok" button to see if I can fix it.
+    try{
+        await pause(500);
+        await input.confirm();
+    }finally{
+        await pause(250);
+        return;
+    }
 }

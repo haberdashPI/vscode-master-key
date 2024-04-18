@@ -67,6 +67,7 @@ export const run = () => describe('Simple motions', () => {
             mode = "normal"
 
             [define.keyNumber]
+            mode = "normal"
             "shift+0" = 0
             "shift+1" = 1
             "shift+2" = 2
@@ -143,7 +144,7 @@ laborum ad. Dolore exercitation cillum eiusmod culpa minim duis`, "simple");
         }, [0, 10], editor);
     });
 
-    after(async () => await editor.typeText('i'));
+    after(async () => { await editor.typeText('i'); });
 });
 
 export default { run };

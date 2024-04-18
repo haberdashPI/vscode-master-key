@@ -1,8 +1,5 @@
 current issue I'm working on:
 
-NOTE: we're using a revised version of vscod-extension-tester (https://github.com/redhat-developer/vscode-extension-tester/pull/1084) after fixing a bug on MacOS ARM
-NOTE: this has now merged (can use the most recent version with this update (is it in a release??))
-
 NEXT UP:
 
 - debugging ux tests
@@ -14,6 +11,7 @@ unit tests: edge cases with recording edits
   - how about when we don't start with normal mode commands?
   - how about long edits with lots of insert mode commands intersprsed with the edits?
   - what about multiple cursors?
+unit tests: parsing of YAML and JSON(C)
 unit tests: store/restore named
 
 DEBUG: get macro replay working with selection utility commands
