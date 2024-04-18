@@ -1129,6 +1129,40 @@ mode = ["normal", "selectedit"]
 key = "g y"
 command = "editor.action.joinLines"
 
+[[bind]]
+path = "edit.action.basic"
+key = "g ."
+name = 'sent. lines'
+description = "Split paragraph into one line per sentence"
+mode = "normal"
+command = "runCommands"
+
+[[bind.args.commands]]
+command = "selection-utilities.moveBy"
+args.unit = "paragraph"
+args.boundary = "both"
+args.selectWhole = true
+
+[[bind.args.commands]]
+command = "editor.action.joinLines"
+
+[[bind.args.commands]]
+command = "selection-utilities.createBy"
+args.text = "."
+
+[[bind.args.commands]]
+command = "selection-utilities.shrinkToActive"
+
+[[bind.args.commands]]
+command = "cursorRight"
+
+[[bind.args.commands]]
+command = "type"
+args.text = "\n"
+
+[[bind.args.commands]]
+command = "selection-utilities.cancelSelection"
+
 [[path]]
 id = "edit.action.capitals"
 name = "Capitlization Actions"
