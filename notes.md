@@ -2,9 +2,7 @@ current issue I'm working on:
 
 NEXT UP:
 
-- debugging ux tests
-  - running all the tests together seems to cause something weird to happen
-    (an input box stays open and all tests start failing)
+merge with main
 
 unit tests: edge cases with recording edits
   - how about when I switch documents?
