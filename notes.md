@@ -2,6 +2,8 @@ current issue I'm working on:
 
 NEXT UP:
 
+debugging: prefixCode isn't allowed in binding when calling command (validation needs to be changed)
+
 step 1: store keybindings in a global storage
   inside of `insertKeybindingsIntoCongi`
   so that we can retrieve it without doing a bunch of shennangians
@@ -23,6 +25,11 @@ start adding keybinding discoverability
       - NOTE: could still be helpful to have, even with the quick pick so it shows up with other commands (do only for things in the default mode maybe??)
   - open menu for multi-key commands after a short delay
   - show keybindings in webview (copy from old extension)
+
+- add: visualPriority (which overrides the index priority) for
+       quick pick (maybe pick a better name)
+- add: remove keybinding command
+- add: insert default bindings into a new file
 
 - idea: we want the default mode (which can be set by the user)
   to require no when clause for it; in this way

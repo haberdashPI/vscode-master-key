@@ -18,7 +18,7 @@
     "onCommand:master-key.do",
     "onCommand:modlakeys.selectPreset",
     "onCommand:master-key.prefix",
-    "onCommand:master-key.set"
+    "onCommand:contextualCommandPalette"
   ],
   "browser": "./dist/web/extension.js",
   "contributes": {
@@ -27,6 +27,17 @@
         "command": "master-key.selectPreset",
         "category": "Master Key",
         "title": "Select Keybinding Preset"
+      },
+      {
+        "command": "master-key.contextualCommandPalette",
+        "category": "Master Key",
+        "title": "Contextual Command Palette"
+      }
+    ],
+    "keybindings": [
+      {
+        "key": "ctrl+shift+;",
+        "command": "master-key.contextualCommandPalette"
       }
     ],
     "configuration": {
@@ -86,7 +97,6 @@
   "devDependencies": {
     "@types/assert": "^1.5.10",
     "@types/chai": "^4.3.11",
-    "@types/fastestsmallesttextencoderdecoder": "^1.0.2",
     "@types/lodash": "^4.14.202",
     "@types/mocha": "^10.0.6",
     "@types/object-hash": "^3.0.6",
@@ -120,6 +130,7 @@
     "smol-toml": "^1.1.3",
     "string.prototype.replaceall": "^1.0.8",
     "vscode-extension-tester": "^8.0.2",
+    "web-encoding": "^1.1.5",
     "yaml": "^2.3.4",
     "zod": "^3.22.4",
     "zod-validation-error": "^2.1.0"

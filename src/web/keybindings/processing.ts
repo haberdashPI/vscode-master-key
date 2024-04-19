@@ -228,6 +228,8 @@ export interface IConfigKeyBinding {
         resetTransient?: boolean,
         kind: string,
         path: string
+        mode: string | undefined,
+        prefixCode: number | undefined,
     }
 }
 
@@ -241,7 +243,12 @@ function itemToConfigBinding(item: BindingItem, defs: Record<string, any>): ICon
         prefixDescriptions,
         when: "(" + item.when.map(w => w.str).join(") && (") + ")",
         command: "master-key.do",
-        args: {...item.args, key: <string>item.key}
+        args: {
+            ...item.args,
+            prefixCode: item.prefixes.length > 0 ? defs['prefixCodes'][item.prefixes[0]] : undefined,
+            mode: item.mode && item.mode.length > 0 ? item.mode[1] : undefined,
+            key: <string>item.key
+        }
     };
 }
 

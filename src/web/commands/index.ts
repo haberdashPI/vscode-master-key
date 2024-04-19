@@ -7,6 +7,7 @@ import * as namedStore from './namedStore';
 import * as replay from './replay';
 import * as search from './search';
 import * as prefix from "./prefix";
+import * as palette from "./palette";
 
 export async function activate(context: vscode.ExtensionContext){
     await capture.activate(context);
@@ -17,6 +18,7 @@ export async function activate(context: vscode.ExtensionContext){
     await replay.activate(context);
     await search.activate(context);
     await prefix.activate(context);
+    await palette.activate(context);
 
     context.subscriptions.push(vscode.commands.registerCommand('master-key.ignore',
         () => undefined));

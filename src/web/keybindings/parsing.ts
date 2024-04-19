@@ -5,7 +5,6 @@ import { Utils } from 'vscode-uri';
 const TOML = require("smol-toml");
 import YAML from 'yaml';
 import * as semver from 'semver';
-import { decoder } from '../utils';
 import z, { ZodIssue } from "zod";
 import { ZodError, fromZodError, fromZodIssue } from 'zod-validation-error';
 import { expressionId } from '../expressions';
@@ -221,7 +220,7 @@ export function parseBindings<T>(text: string, parse: string | ((data: string) =
 
 export async function parseBindingFile(file: vscode.Uri){
     let fileData = await vscode.workspace.fs.readFile(file);
-    let fileText = decoder.decode(fileData);
+    let fileText = new TextDecoder().decode(fileData);
     let ext = Utils.extname(file);
     return parseBindings(fileText, ext);
 }

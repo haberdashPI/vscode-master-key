@@ -1,10 +1,6 @@
 import * as vscode from 'vscode';
 import z from 'zod';
 import { showParseError } from './keybindings/parsing';
-import { TextDecoder } from 'fastestsmallesttextencoderdecoder';
-
-export let decoder = new TextDecoder();
-export let encoder = new TextEncoder();
 
 // function validateInput(command: string, args_: unknown,
 //     using: z.ZodUn);

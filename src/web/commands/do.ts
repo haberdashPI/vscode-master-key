@@ -132,7 +132,7 @@ export const COMMAND_HISTORY = 'commandHistory';
 
 let maxHistory = 0;
 
-async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
+export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
     let args = validateInput('master-key.do', args_, runCommandArgs);
     if(args){
         let command: any;

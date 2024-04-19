@@ -6,7 +6,6 @@ import { uniq, pick, words } from 'lodash';
 import replaceAll from 'string.prototype.replaceall';
 import { Utils } from 'vscode-uri';
 import z from 'zod';
-import { decoder, encoder } from '../utils';
 import { withState } from '../state';
 import { MODE } from '../commands/mode';
 
@@ -49,7 +48,10 @@ function formatBindings(file: vscode.Uri, items: IConfigKeyBinding[]){
     let json = "";
     for(let item of items){
         if(item.prefixDescriptions.length > 0){
-            let comment = "Prefix Codes:\n";
+            let comment = "Automated binding; avoid editing manually, instead use one of these commands";
+            comment += "'Master Key: Select Binding Preset";
+            comment += "'Master Key: Remove Bindings";
+            comment += "Prefix Codes:\n";
             comment += item.prefixDescriptions.join("\n");
             json += replaceAll(comment, /^\s*(?=\S+)/mg, "    // ")+"\n";
         }
@@ -71,7 +73,7 @@ async function saveKeybindingsToStorage(config: any){
     keybindings = config;
     vscode.workspace.fs.createDirectory(storageUri);
     let configFile = vscode.Uri.joinPath(storageUri, 'config.json');
-    let data = encoder.encode(JSON.stringify(config));
+    let data = new TextEncoder().encode(JSON.stringify(config));
     vscode.workspace.fs.writeFile(configFile, data);
 }
 
@@ -80,11 +82,15 @@ async function restoreKeybindingsFromStorage(){
     try{
         await vscode.workspace.fs.stat(configFile);
         let data = await vscode.workspace.fs.readFile(configFile);
-        keybindings = JSON.parse(decoder.decode(data));
+        keybindings = JSON.parse(new TextDecoder().decode(data));
     }catch{
         console.log("No keybindings found at: "+configFile);
         return;
     }
+}
+
+export function currentKeybindings(){
+    return keybindings;
 }
 
 async function insertKeybindingsIntoConfig(file: vscode.Uri, config: any) {

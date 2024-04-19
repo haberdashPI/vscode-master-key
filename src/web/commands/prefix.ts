@@ -11,7 +11,7 @@ const prefixArgs = z.object({
     automated: z.boolean().optional()
 }).strict();
 
-const PREFIX_CODE = 'prefixCode';
+export const PREFIX_CODE = 'prefixCode';
 const PREFIX_CODES = 'prefixCodes';
 export const PREFIX = 'prefix';
 
