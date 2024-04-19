@@ -1,5 +1,7 @@
 current issue I'm working on:
 
+BUG: switch to insert mode after seek to char in some cases
+
 NEXT UP:
 
 start adding keybinding discoverability
