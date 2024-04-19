@@ -5,14 +5,12 @@ import { Utils } from 'vscode-uri';
 const TOML = require("smol-toml");
 import YAML from 'yaml';
 import * as semver from 'semver';
-import { TextDecoder } from 'web-encoding';
+import { decoder } from '../utils';
 import z, { ZodIssue } from "zod";
 import { ZodError, fromZodError, fromZodIssue } from 'zod-validation-error';
 import { expressionId } from '../expressions';
 import { uniqBy } from 'lodash';
 export const INPUT_CAPTURE_COMMANDS = ['captureKeys', 'replaceChar', 'insertChar', 'search'];
-
-let decoder = new TextDecoder("utf-8");
 
 const bindingHeader = z.object({
     version: z.string().

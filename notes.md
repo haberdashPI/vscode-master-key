@@ -2,12 +2,31 @@ current issue I'm working on:
 
 NEXT UP:
 
+step 1: store keybindings in a global storage
+  inside of `insertKeybindingsIntoCongi`
+  so that we can retrieve it without doing a bunch of shennangians
+  with the keybinding file
+  (this means we must accept that they could be out of sync)
+    - in the future any edits to the users keybindings could update
+      this but it would be a somewhat futile effort (other things can change bindings)
+
+step 2: generate a quick picker that retrieves this state
+  to populate its entries; the picker should narrow things down by
+  the current prefix
+
 start adding keybinding discoverability
   - for single commands: test out adding bindings that don't activate when the extension
     is active but do when it isn't, do the prefixes get messed up here? or do
     the when clauses save us?
+      - problem: we can't show the mode
+      - let's see how making a quick pick goes, maybe it's okay
+      - NOTE: could still be helpful to have, even with the quick pick so it shows up with other commands (do only for things in the default mode maybe??)
   - open menu for multi-key commands after a short delay
   - show keybindings in webview (copy from old extension)
+
+- idea: we want the default mode (which can be set by the user)
+  to require no when clause for it; in this way
+  we can activate the extension on the first relevant keypress
 
 unit tests: edge cases with recording edits
   - how about when I switch documents?
