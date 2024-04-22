@@ -37,7 +37,6 @@ These bindings are named after the middle name of my first child (Larkin).
 [define]
 validModes = ["insert", "capture", "normal", "syminsert", "selectedit"]
 select_on = false
-around_on = false
 
 [[define.selectLinesDown]]
 command = "selection-utilities.shrinkToActive"
@@ -92,6 +91,7 @@ prefixes = "<all-prefixes>"
 
 [[bind]]
 path = "modes"
+name = "normal"
 key = ["escape", "ctrl+["]
 when = "suggsetWidgetVisible && editorTextFocus && !findWidgetVisible"
 command = "runCommands"
@@ -153,7 +153,7 @@ name = "Primitive Motions"
 description = "Motions fundamental to moving around in the editor."
 default.command = "cursorMove"
 default.computedArgs.value = "count"
-default.computedArgs.around = "around_on"
+default.computedArgs.around = "keyPrefixIs('u')"
 default.computedArgs.select = "editorHasSelection || select_on"
 
 [[bind]]
@@ -363,7 +363,6 @@ kind = "prefix"
 resetTransient = false
 mode = ["normal", "selectedit"]
 command = "master-key.prefix"
-args = { flag = "around_on" }
 
 [[bind]]
 path = "edit.motion.mod"
@@ -400,8 +399,8 @@ selection commands that move by a predefined syntactic object (e.g. word, paragr
 default.command = "selection-utilities.moveBy"
 default.args.boundary = "start"
 default.prefixes = ["", "u"]
-default.computedArgs.select = "!around_on"
-default.computedArgs.selectWhole = "around_on"
+default.computedArgs.select = "!keyPrefixIs('u')"
+default.computedArgs.selectWhole = "keyPrefixIs('u')"
 default.mode = ["normal", "selectedit"]
 
 [[bind]]
@@ -418,7 +417,7 @@ key = "e"
 name = "subwrd end"
 description = "next subword (camel/snake case) end"
 args.unit = "subword"
-computedArgs.boundary = "around_on ? 'both' : 'end'"
+computedArgs.boundary = "keyPrefixIs('u') ? 'both' : 'end'"
 computedArgs.value = "count || 1"
 
 [[bind]]
@@ -435,7 +434,7 @@ key = "shift+e"
 name = "word end"
 description = "next word end"
 args.unit = "word"
-computedArgs.boundary = "around_on ? 'both' : 'end'"
+computedArgs.boundary = "keyPrefixIs('u') ? 'both' : 'end'"
 computedArgs.value = "count || 1"
 
 [[bind]]
@@ -476,7 +475,7 @@ key = "' e"
 name = "WORD end →"
 description = "next WORD end; e.g. contiguous non-whitespace region"
 args.unit = "WORD"
-computedArgs.boundary = "around_on ? 'both' : 'end'"
+computedArgs.boundary = "keyPrefixIs('u') ? 'both' : 'end'"
 computedArgs.value = "-count || -1"
 
 [[bind]]
@@ -575,7 +574,7 @@ computedArgs.value = "-(count || 1)"
 path = "edit.motion.obj"
 key = "' shift+0"
 name = "sec →"
-description = "next seciont"
+description = "next section"
 args.unit = "section"
 computedArgs.value = "count || 1"
 
@@ -583,7 +582,7 @@ computedArgs.value = "count || 1"
 path = "edit.motion.obj"
 key = "' shift+p"
 name = "sec ←"
-description = "previous seciont"
+description = "previous section"
 args.unit = "section"
 computedArgs.value = "-(count || 1)"
 
@@ -1930,10 +1929,9 @@ description = """
 Repeat the last motion command. Motions usually move the cursor or change the selection.
 """
 key = "ctrl+,"
-command = "master-key.repeat"
-computedArgs.repeat = "count"
-args.command = "master-key.replayFromHistory"
-args.args.at = "commandHistory[i].path.startsWith('edit.motion')"
+command = "master-key.replayFromHistory"
+repeat = "count"
+args.at = "commandHistory[i].path.startsWith('edit.motion')"
 
 [[path]]
 id = "edit.action.comment"

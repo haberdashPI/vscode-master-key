@@ -68,7 +68,7 @@ function formatBindings(file: vscode.Uri, items: IConfigKeyBinding[]){
     );
 }
 
-let keybindings: any = {};
+let keybindings: IConfigKeyBinding[] = [];
 async function saveKeybindingsToStorage(config: any){
     keybindings = config;
     vscode.workspace.fs.createDirectory(storageUri);

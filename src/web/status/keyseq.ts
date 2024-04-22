@@ -1,27 +1,15 @@
 import * as vscode from 'vscode';
 import { onSet } from '../state';
-import replaceAll from 'string.prototype.replaceall';
 import { PREFIX } from '../commands/prefix';
 import { COUNT } from '../commands/count';
 import { Map } from 'immutable';
-
-function prettifyPrefix(str: string){
-    str = str.toUpperCase();
-    str = replaceAll(str, /shift\+/gi, '⇧');
-    str = replaceAll(str, /ctrl\+/gi, '^');
-    str = replaceAll(str, /alt\+/gi, '⌥');
-    str = replaceAll(str, /meta\+/gi, '◆');
-    str = replaceAll(str, /win\+/gi, '⊞');
-    str = replaceAll(str, /cmd\+/gi, '⌘');
-    str = replaceAll(str, / /g, ", ");
-    str = replaceAll(str, /escape/gi, "ESC");
-    return str;
-}
+import { prettifyPrefix } from '../utils';
 
 let keyStatusBar: vscode.StatusBarItem | undefined = undefined;
 
 const UPDATE_DELAY = 500;
 let statusUpdates = Number.MIN_SAFE_INTEGER;
+
 function updateKeyStatus(values: Map<string, unknown>){
     let count = <number>values.get(COUNT, 0);
     let plannedUpdate = count ? count + "× " : '';

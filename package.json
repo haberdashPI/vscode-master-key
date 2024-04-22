@@ -18,7 +18,8 @@
     "onCommand:master-key.do",
     "onCommand:modlakeys.selectPreset",
     "onCommand:master-key.prefix",
-    "onCommand:contextualCommandPalette"
+    "onCommand:master-key.contextualCommandPalette",
+    "onCommand:master-key.commandPalette"
   ],
   "browser": "./dist/web/extension.js",
   "contributes": {
@@ -32,12 +33,21 @@
         "command": "master-key.contextualCommandPalette",
         "category": "Master Key",
         "title": "Contextual Command Palette"
+      },
+      {
+        "command": "master-key.commandPalette",
+        "category": "Master Key",
+        "title": "Command Palette"
       }
     ],
     "keybindings": [
       {
         "key": "ctrl+shift+;",
         "command": "master-key.contextualCommandPalette"
+      },
+      {
+        "key": "ctrl+shift+cmd+;",
+        "command": "master-key.commandPalette"
       }
     ],
     "configuration": {

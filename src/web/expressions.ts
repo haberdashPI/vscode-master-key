@@ -4,6 +4,7 @@ import jsep from 'jsep';
 const jsepRegex = require('@jsep-plugin/regex');
 import hash from 'object-hash';
 import { mapValues } from 'lodash';
+import { withState } from './state';
 
 jsep.addBinaryOp("=~", 6);
 jsep.plugins.register(jsepRegex.default);
@@ -77,6 +78,20 @@ export class EvalContext {
                 Your expressions are not permitted to set any values. You should
                 use 'master-key.set' to do that.`);
                 return undefined;
+            }
+            // TODO: special case for `keyPrefixIs` that translates it to
+            // `prefixCode ==`
+            // NOTE: we evetually replace eval here but this is technically
+            // bug for elaborate expressions that use nested parens here
+            // (we can simply note in the docs that this is not yet supported)
+            // (also doesn't handle repeated calls)
+            let prefixExpr = /keyPrefixIs\(('.*?')\)/;
+            let prefixMatch = str.match(prefixExpr);
+            if (prefixMatch){
+                // TODO: right here I need to get the prefix codes
+                // (NOTE!!! these can change)
+                let newExpr = 'key';
+                str.replace()
             }
             this.cache[str] = exec = buildEvaled(str);
         }

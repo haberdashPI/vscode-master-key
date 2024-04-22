@@ -66,6 +66,8 @@ const runCommandArgs = z.object({
     path: z.string().optional(),
     name: z.string().optional(),
     description: z.string().optional(),
+    prefixCode: z.number().optional(),
+    mode: z.string().optional()
 }).strict();
 export type RunCommandsArgs = z.input<typeof runCommandArgs>;
 
