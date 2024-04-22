@@ -1,5 +1,7 @@
 current issue I'm working on:
 
+BUG: switch to insert mode after seek to char in some cases
+
 NEXT UP:
 
 - implement the palette that shows up after a delay for sequences

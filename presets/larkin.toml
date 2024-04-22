@@ -723,6 +723,7 @@ name = "→ search"
 description = "Go to the next match of the search query"
 command = "master-key.nextMatch"
 args.register = "search"
+computedArgs.repeat = "(count || 1)-1"
 
 [[bind]]
 path = "edit.motion.search"
@@ -731,6 +732,7 @@ name = "← search"
 description = "Go to the previous match of the search query"
 command = "master-key.previousMatch"
 args.register = "search"
+computedArgs.repeat = "(count || 1)-1"
 
 [[bind]]
 path = "edit.motion.search"
