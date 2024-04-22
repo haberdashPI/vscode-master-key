@@ -15,6 +15,11 @@ NEXT UP:
   and only show things that make sense in that context (*BUT*
   this prevents non-default mode commands from being identified)
 
+- organize commands by:
+  - kind (use a separator)
+  - custom user priority (if specified)
+  - recently used?? (or maybe this lowers the priority?? could be an option to hide recently used)
+
 start adding keybinding discoverability
   - open menu for multi-key commands after a short delay
   - for single commands: test out adding bindings that don't activate when the extension
