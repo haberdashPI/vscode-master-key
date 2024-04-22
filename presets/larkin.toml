@@ -37,6 +37,7 @@ These bindings are named after the middle name of my first child (Larkin).
 [define]
 validModes = ["insert", "capture", "normal", "syminsert", "selectedit"]
 select_on = false
+around_on = false
 
 [[define.selectLinesDown]]
 command = "selection-utilities.shrinkToActive"
@@ -153,7 +154,7 @@ name = "Primitive Motions"
 description = "Motions fundamental to moving around in the editor."
 default.command = "cursorMove"
 default.computedArgs.value = "count"
-default.computedArgs.around = "keyPrefixIs('u')"
+default.computedArgs.around = "around_on"
 default.computedArgs.select = "editorHasSelection || select_on"
 
 [[bind]]
@@ -363,6 +364,7 @@ kind = "prefix"
 resetTransient = false
 mode = ["normal", "selectedit"]
 command = "master-key.prefix"
+args = { flag = "around_on" }
 
 [[bind]]
 path = "edit.motion.mod"
@@ -399,8 +401,8 @@ selection commands that move by a predefined syntactic object (e.g. word, paragr
 default.command = "selection-utilities.moveBy"
 default.args.boundary = "start"
 default.prefixes = ["", "u"]
-default.computedArgs.select = "!keyPrefixIs('u')"
-default.computedArgs.selectWhole = "keyPrefixIs('u')"
+default.computedArgs.select = "!around_on"
+default.computedArgs.selectWhole = "around_on"
 default.mode = ["normal", "selectedit"]
 
 [[bind]]
@@ -417,7 +419,7 @@ key = "e"
 name = "subwrd end"
 description = "next subword (camel/snake case) end"
 args.unit = "subword"
-computedArgs.boundary = "keyPrefixIs('u') ? 'both' : 'end'"
+computedArgs.boundary = "around_on ? 'both' : 'end'"
 computedArgs.value = "count || 1"
 
 [[bind]]
@@ -434,7 +436,7 @@ key = "shift+e"
 name = "word end"
 description = "next word end"
 args.unit = "word"
-computedArgs.boundary = "keyPrefixIs('u') ? 'both' : 'end'"
+computedArgs.boundary = "around_on ? 'both' : 'end'"
 computedArgs.value = "count || 1"
 
 [[bind]]
@@ -475,7 +477,7 @@ key = "' e"
 name = "WORD end →"
 description = "next WORD end; e.g. contiguous non-whitespace region"
 args.unit = "WORD"
-computedArgs.boundary = "keyPrefixIs('u') ? 'both' : 'end'"
+computedArgs.boundary = "around_on ? 'both' : 'end'"
 computedArgs.value = "-count || -1"
 
 [[bind]]

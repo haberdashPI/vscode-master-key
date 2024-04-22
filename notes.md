@@ -2,10 +2,14 @@ current issue I'm working on:
 
 NEXT UP:
 
-- handling the general command palette — we need to set up prefixes properly
-  (see comments in palette)
 - implement the palette that shows up after a delay for sequences
   (it is only a visual aid, hitting keys still works the same)
+  TODO: to get key bindings to work we need the `when` clause to
+  work *only* for this particular quick pick, this should set some
+  context, and then key bindings should check if this clause is true
+- filter general command palette to specific types of commands
+  (certain commands are literally impossible to execute because of how
+  when clauses work)
 
 start adding keybinding discoverability
   - open menu for multi-key commands after a short delay

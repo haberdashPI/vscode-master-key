@@ -5,7 +5,7 @@ import { BindingCommand, DoArgs, doArgs } from '../keybindings/parsing';
 import { withState, CommandResult, CommandState, WrappedCommandResult, commandArgs, recordedCommand } from '../state';
 import { cloneDeep, merge } from 'lodash';
 import { evalContext, reifyStrings } from '../expressions';
-import { keySuffix } from './prefix';
+import { PREFIX_CODE, keySuffix } from './prefix';
 import { isSingleCommand } from '../keybindings/processing';
 import { MODE } from './mode';
 import { List } from 'immutable';
@@ -97,6 +97,9 @@ async function resolveRepeat(args: RunCommandsArgs): Promise<number> {
     }
 }
 
+const PALETTE_DELAY = 500;
+let paletteUpdate = Number.MIN_SAFE_INTEGER;
+
 export async function doCommands(args: RunCommandsArgs): Promise<CommandResult>{
     // run the commands
     let reifiedCommands: BindingCommand[] | undefined = undefined;
@@ -113,6 +116,19 @@ export async function doCommands(args: RunCommandsArgs): Promise<CommandResult>{
                 for(const cmd of reifiedCommands){
                     await doCommand(cmd);
                 }
+            }
+        }
+        if(!args.resetTransient){
+            let oldState_ = await withState(async s => s);
+            if(oldState_){
+                let oldState = oldState_;
+                setTimeout(async () => {
+                    await withState(async s => {
+                        if(oldState === s){
+
+                        }
+                    });
+                }, PALETTE_DELAY);
             }
         }
     }finally{

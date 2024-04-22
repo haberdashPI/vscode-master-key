@@ -79,20 +79,6 @@ export class EvalContext {
                 use 'master-key.set' to do that.`);
                 return undefined;
             }
-            // TODO: special case for `keyPrefixIs` that translates it to
-            // `prefixCode ==`
-            // NOTE: we evetually replace eval here but this is technically
-            // bug for elaborate expressions that use nested parens here
-            // (we can simply note in the docs that this is not yet supported)
-            // (also doesn't handle repeated calls)
-            let prefixExpr = /keyPrefixIs\(('.*?')\)/;
-            let prefixMatch = str.match(prefixExpr);
-            if (prefixMatch){
-                // TODO: right here I need to get the prefix codes
-                // (NOTE!!! these can change)
-                let newExpr = 'key';
-                str.replace()
-            }
             this.cache[str] = exec = buildEvaled(str);
         }
         let result = str;

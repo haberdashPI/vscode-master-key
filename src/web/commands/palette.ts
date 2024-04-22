@@ -29,22 +29,24 @@ function filterBindingFn(mode?: string, prefixCode?: number) {
 }
 
 async function commandPalette(args_: unknown,
-    opt: {context: boolean} = {context: true}): Promise<CommandResult> {
+    opt: {context: boolean, useKey: boolean} = {context: true, useKey: false}): Promise<CommandResult> {
 
     let state = await withState(async s => s);
     if(state){
         let bindings = currentKeybindings();
         let availableBindings: IConfigKeyBinding[];
         let codes: PrefixCodes | undefined = undefined;
+        let prefixCode = state.get<number>(PREFIX_CODE, 0)!;
+        let mode = state.get<string>(MODE, 'insert')!;
         if(opt.context){
-            let mode = state.get<string>(MODE, 'insert')!;
-            let prefixCode = state.get<number>(PREFIX_CODE, 0)!;
             availableBindings = <IConfigKeyBinding[]>bindings.filter(filterBindingFn(mode, prefixCode));
         }else{
             await withState(async state => {
                 [state, codes] = prefixCodes(state);
                 return state;
             });
+            // TODO: filter to commands that are actually usable in the command palette
+            // (atlernatively, commands can set their own state somehow)
             availableBindings = <IConfigKeyBinding[]>bindings.filter(filterBindingFn());
         }
         availableBindings = uniqBy(availableBindings, b =>
@@ -70,13 +72,6 @@ async function commandPalette(args_: unknown,
 
         let pick = await vscode.window.showQuickPick(picks, {matchOnDescription: true});
         if(pick){
-            // TODO: we want to be able to setup state (e.g. set the prefix properly) before
-            // running the command so that running it does the right thing COMPLICATION: we
-            // allow `flag` options for prefixes, so this is sort of non-trivial; the
-            // obvious solution of removing this flag and requiring a check on the prefix
-            // has non-trivial performance implications (we could also remove the flag and
-            // require the command to be duplicated with a different option) OR we could
-            // have a `hasPrefix` function that can translate to a proper prefixCode check
             await doCommandsCmd(pick.args);
             return;
         }
