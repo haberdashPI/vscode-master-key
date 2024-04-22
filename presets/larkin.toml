@@ -92,6 +92,26 @@ prefixes = "<all-prefixes>"
 
 [[bind]]
 path = "modes"
+name = "ctx palette"
+key = "cmd+;"
+description = "Show a palette specific to the mode and current key prefix"
+mode = []
+command = "master-key.contextualCommandPalette"
+when = "!findWidgetVisible"
+prefixes = "<all-prefixes>"
+
+[[bind]]
+path = "modes"
+name = "palette"
+key = "cmd+shift+;"
+description = "Show a palette of all simple commands (those that don't have computedArgs)"
+mode = []
+command = "master-key.commandPalette"
+when = "!findWidgetVisible"
+prefixes = "<all-prefixes>"
+
+[[bind]]
+path = "modes"
 name = "normal"
 key = ["escape", "ctrl+["]
 when = "suggsetWidgetVisible && editorTextFocus && !findWidgetVisible"

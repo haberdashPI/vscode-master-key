@@ -85,13 +85,20 @@ export async function commandPalette(args_: unknown,
         });
 
         let picker = vscode.window.createQuickPick<{label: string, args: RunCommandsArgs}>();
+        let accepted = false;
         picker.items = picks;
         picker.matchOnDescription = true;
         picker.onDidAccept(async _ => {
-            vscode.commands.executeCommand('setContext', 'master-key.keybindingPaletteOpen', false);
             let pick = picker.selectedItems[0];
             if(pick){
+                accepted = true;
                 await doCommandsCmd(pick.args);
+            }
+        });
+        picker.onDidHide(async _ => {
+            vscode.commands.executeCommand('setContext', 'master-key.keybindingPaletteOpen', false);
+            if(!accepted){
+                await withState(async s => s.reset().resolve());
             }
         });
         picker.show();
