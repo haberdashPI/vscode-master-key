@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
-import z from 'zod';
-import { validateInput, prettifyPrefix } from '../utils';
-import { CommandResult, CommandState, recordedCommand } from '../state';
+import { prettifyPrefix } from '../utils';
+import { CommandResult } from '../state';
 import { withState } from '../state';
 import { currentKeybindings } from '../keybindings';
 import { PREFIX_CODE, prefixCodes } from './prefix';
@@ -9,9 +8,7 @@ import { MODE } from './mode';
 import { IConfigKeyBinding, PrefixCodes } from '../keybindings/processing';
 import { RunCommandsArgs, doCommandsCmd } from './do';
 import { isSingleCommand } from '../keybindings/processing';
-import { bind, uniqBy } from 'lodash';
-import { QuickPickItem } from 'vscode-extension-tester';
-import { DoArgs } from '../keybindings/parsing';
+import { uniqBy } from 'lodash';
 
 function filterBindingFn(mode?: string, prefixCode?: number) {
     return function filterBinding(binding_: any) {
@@ -36,7 +33,7 @@ function filterBindingFn(mode?: string, prefixCode?: number) {
 }
 
 export async function commandPalette(args_: unknown,
-    opt: {context?: boolean, useKey?: boolean} = {}): Promise<CommandResult> {
+    opt: {context?: boolean, useKey?: boolean} = {}) {
 
     let context = opt.context === undefined ? true : opt.context;
     let useKey = opt.useKey || false;
@@ -108,10 +105,12 @@ export async function commandPalette(args_: unknown,
         if(useKey){
             await withState(async state => {
                 state = state.onSet(PREFIX_CODE, values => {
+                    accepted = true;
                     picker.dispose();
                     return false;
                 });
                 state = state.onResolve('keybindingPalette', values => {
+                    accepted = true;
                     picker.dispose();
                     return false;
                 });
@@ -127,8 +126,8 @@ export async function commandPalette(args_: unknown,
 export function activate(context: vscode.ExtensionContext){
     vscode.commands.executeCommand('setContext', 'master-key.keybindingPaletteOpen', false);
     context.subscriptions.push(vscode.commands.registerCommand('master-key.contextualCommandPalette',
-        recordedCommand(x => commandPalette(x, {context: true}))));
+        x => commandPalette(x, {context: true})));
     context.subscriptions.push(vscode.commands.registerCommand('master-key.commandPalette',
-        recordedCommand(x => commandPalette(x, {context: false}))));
+        x => commandPalette(x, {context: false})));
     // TODO: also show a full command palette that lets you search all commands
 }

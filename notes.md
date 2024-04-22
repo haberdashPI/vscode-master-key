@@ -11,11 +11,17 @@ NEXT UP:
   context, and then key bindings should check if this clause is true
   (basically anywhere we see `editorTextFocus` in a when, replace it
   with `(editorTextFocus || master-key.keybindingPaletteOpen`)
+
 - filter general command palette to specific types of commands
   (certain commands are literally impossible to execute because of how
   when clauses work) maybe we just leverage the global palette here
   and only show things that make sense in that context (*BUT*
   this prevents non-default mode commands from being identified)
+  IDEA: we can solve this problem by prepending all prefix commands
+  to the final suffix key (in the exported keybindings), we already
+  export a key per possible prefix, so this shouldn't be a problem
+  (we'll need to properly handle bindings that can interrupt)
+  so this involves a transformation during keybinding processing
 
 - organize commands by:
   - kind (use a separator)
@@ -32,6 +38,8 @@ start adding keybinding discoverability
       - NOTE: could still be helpful to have, even with the quick pick so it shows up with other commands (do only for things in the default mode maybe?? otherwise this
       would get confusing)
   - show keybindings in webview (copy from old extension)
+    - get it working with additional modifiers
+    - get working with KeyboardLayoutMap
 
 - add: visualPriority (which overrides the index priority) for
        quick pick (maybe pick a better name)
@@ -54,6 +62,8 @@ unit tests: edge cases with recording edits
   - how about when we don't start with normal mode commands?
   - how about long edits with lots of insert mode commands intersprsed with the edits?
   - what about multiple cursors?
+  - how do recorded commands interact with the palette?
+  - does the command palette show up / not show up with the proper timing?
 unit tests: parsing of YAML and JSON(C)
 unit tests: store/restore named
 

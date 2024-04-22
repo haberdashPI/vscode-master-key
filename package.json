@@ -16,10 +16,7 @@
   ],
   "activationEvents": [
     "onCommand:master-key.do",
-    "onCommand:modlakeys.selectPreset",
-    "onCommand:master-key.prefix",
-    "onCommand:master-key.contextualCommandPalette",
-    "onCommand:master-key.commandPalette"
+    "onCommand:master-key.prefix"
   ],
   "browser": "./dist/web/extension.js",
   "contributes": {
@@ -38,8 +35,34 @@
         "command": "master-key.commandPalette",
         "category": "Master Key",
         "title": "Command Palette"
+      },
+      {
+        "command": "master-key.showVisualDoc",
+        "category": "Master Key",
+        "title": "Show Visual Documentation"
       }
     ],
+    "views": {
+      "masterKeyVisualDoc": [
+        {
+          "type": "webview",
+          "id": "masterkey.visualDoc",
+          "name": "Master Key Bindings",
+          "contextualTitle": "Keys",
+          "icon": "icon.svg",
+          "visibility": "visible"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "panel": [
+        {
+          "id": "masterKeyBindingView",
+          "title": "Master Key Bindings",
+          "icon": "icon.svg"
+        }
+      ]
+    },
     "keybindings": [
       {
         "key": "ctrl+shift+;",
