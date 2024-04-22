@@ -95,9 +95,8 @@ path = "modes"
 name = "normal"
 key = ["escape", "ctrl+["]
 when = "suggsetWidgetVisible && editorTextFocus && !findWidgetVisible"
-command = "runCommands"
+command = "master-key.enterNormal"
 mode = []
-args.commands = ["master-key.enterNormal"]
 prefixes = "<all-prefixes>"
 
 [[bind]]

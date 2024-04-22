@@ -7,9 +7,13 @@ NEXT UP:
   TODO: to get key bindings to work we need the `when` clause to
   work *only* for this particular quick pick, this should set some
   context, and then key bindings should check if this clause is true
+  (basically anywhere we see `editorTextFocus` in a when, replace it
+  with `(editorTextFocus || master-key.keybindingPaletteOpen`)
 - filter general command palette to specific types of commands
   (certain commands are literally impossible to execute because of how
-  when clauses work)
+  when clauses work) maybe we just leverage the global palette here
+  and only show things that make sense in that context (*BUT*
+  this prevents non-default mode commands from being identified)
 
 start adding keybinding discoverability
   - open menu for multi-key commands after a short delay
@@ -30,6 +34,13 @@ start adding keybinding discoverability
 - idea: we want the default mode (which can be set by the user)
   to require no when clause for it; in this way
   we can activate the extension on the first relevant keypress
+  - whenever we do this we'll need to properly handle `keybindingPaletteOpen`
+  (does a failure for this context to exist cause the when clause to fail
+  even if it is inside an ||, I think it does)
+  - each key will need to check for activation of the extension (e.g. using a context)
+    and a separate version of the keybinding without this context or a mode check
+    can implementing the binding when the extension isn't active (and do this
+    for *only* the default mode bindings)
 
 unit tests: edge cases with recording edits
   - how about when I switch documents?

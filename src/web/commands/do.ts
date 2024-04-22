@@ -9,6 +9,7 @@ import { PREFIX_CODE, keySuffix } from './prefix';
 import { isSingleCommand } from '../keybindings/processing';
 import { MODE } from './mode';
 import { List } from 'immutable';
+import { commandPalette } from './palette';
 
 async function doCommand(command: BindingCommand):
     Promise<BindingCommand | undefined> {
@@ -100,7 +101,17 @@ async function resolveRepeat(args: RunCommandsArgs): Promise<number> {
 const PALETTE_DELAY = 500;
 let paletteUpdate = Number.MIN_SAFE_INTEGER;
 
+function registerPaletteUpdate(){
+    if(paletteUpdate < Number.MAX_SAFE_INTEGER){
+        paletteUpdate += 1;
+    }else{
+        paletteUpdate = Number.MIN_SAFE_INTEGER;
+    }
+}
+
 export async function doCommands(args: RunCommandsArgs): Promise<CommandResult>{
+    registerPaletteUpdate();
+
     // run the commands
     let reifiedCommands: BindingCommand[] | undefined = undefined;
     let repeat = 0;
@@ -119,17 +130,13 @@ export async function doCommands(args: RunCommandsArgs): Promise<CommandResult>{
             }
         }
         if(!args.resetTransient){
-            let oldState_ = await withState(async s => s);
-            if(oldState_){
-                let oldState = oldState_;
-                setTimeout(async () => {
-                    await withState(async s => {
-                        if(oldState === s){
-
-                        }
-                    });
-                }, PALETTE_DELAY);
-            }
+            let currentPaletteUpdate = paletteUpdate;
+            setTimeout(async () => {
+                if(currentPaletteUpdate === paletteUpdate){
+                    registerPaletteUpdate();
+                    commandPalette(undefined, {context: true, useKey: true});
+                }
+            }, PALETTE_DELAY);
         }
     }finally{
         if(args.resetTransient){

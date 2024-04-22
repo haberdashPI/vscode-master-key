@@ -9,6 +9,7 @@ import z, { ZodIssue } from "zod";
 import { ZodError, fromZodError, fromZodIssue } from 'zod-validation-error';
 import { expressionId } from '../expressions';
 import { uniqBy } from 'lodash';
+import replaceAll from 'string.prototype.replaceall';
 export const INPUT_CAPTURE_COMMANDS = ['captureKeys', 'replaceChar', 'insertChar', 'search'];
 
 const bindingHeader = z.object({
@@ -121,7 +122,8 @@ export type ParsedWhen = z.infer<typeof parsedWhen>;
 export function parseWhen(when_: string | string[] | undefined): ParsedWhen[] {
     let when = when_ === undefined ? [] : !Array.isArray(when_) ? [when_] : when_;
     return when.map(w => {
-        let p = jsep(w);
+        w = replaceAll(w, /editorTextFocus/g, "(editorTextFocus || master-key.keybindingPaletteOpen)");
+        // let p = jsep(w);
         return { str: w, id: expressionId(w) };
     });
 }

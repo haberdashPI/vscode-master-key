@@ -246,7 +246,7 @@ function itemToConfigBinding(item: BindingItem, defs: Record<string, any>): ICon
         args: {
             ...item.args,
             prefixCode: item.prefixes.length > 0 ? defs['prefixCodes'][item.prefixes[0]] : undefined,
-            mode: item.mode && item.mode.length > 0 ? item.mode[1] : undefined,
+            mode: item.mode && item.mode.length > 0 ? item.mode[0] : undefined,
             key: <string>item.key
         }
     };
