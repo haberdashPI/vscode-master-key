@@ -2,35 +2,12 @@ import * as vscode from 'vscode';
 import { prettifyPrefix } from '../utils';
 import { CommandResult } from '../state';
 import { withState } from '../state';
-import { currentKeybindings } from '../keybindings';
+import { currentKeybindings, filterBindingFn } from '../keybindings';
 import { PREFIX_CODE, prefixCodes } from './prefix';
 import { MODE } from './mode';
 import { IConfigKeyBinding, PrefixCodes } from '../keybindings/processing';
 import { RunCommandsArgs, doCommandsCmd } from './do';
-import { isSingleCommand } from '../keybindings/processing';
 import { uniqBy } from 'lodash';
-
-function filterBindingFn(mode?: string, prefixCode?: number) {
-    return function filterBinding(binding_: any) {
-        let binding = <IConfigKeyBinding>binding_;
-        if (isSingleCommand(binding.args.do, 'master-key.ignore')) {
-            return false;
-        }
-        if (mode !== undefined && binding.args.mode !== undefined && binding.args.mode !== mode) {
-            return false;
-        }
-        if (prefixCode !== undefined && binding.args.prefixCode !== undefined &&
-            binding.args.prefixCode !== prefixCode) {
-            return false;
-        }
-        if (mode === undefined && prefixCode === undefined){
-            if(!binding.args.do.every(c => c.computedArgs === undefined)){
-                return false;
-            }
-        }
-        return true;
-    };
-}
 
 export async function commandPalette(args_: unknown,
     opt: {context?: boolean, useKey?: boolean} = {}) {

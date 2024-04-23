@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { searchArgs, searchMatches } from '../commands/search';
 import { parseBindings, BindingSpec, showParseError, parseBindingFile, bindingSpec } from './parsing';
-import { processBindings, IConfigKeyBinding, Bindings } from './processing';
+import { processBindings, IConfigKeyBinding, Bindings, isSingleCommand } from './processing';
 import { uniq, pick, words } from 'lodash';
 import replaceAll from 'string.prototype.replaceall';
 import { Utils } from 'vscode-uri';
@@ -87,6 +87,28 @@ async function restoreKeybindingsFromStorage(){
         console.log("No keybindings found at: "+configFile);
         return;
     }
+}
+
+export function filterBindingFn(mode?: string, prefixCode?: number) {
+    return function filterBinding(binding_: any) {
+        let binding = <IConfigKeyBinding>binding_;
+        if (isSingleCommand(binding.args.do, 'master-key.ignore')) {
+            return false;
+        }
+        if (mode !== undefined && binding.args.mode !== undefined && binding.args.mode !== mode) {
+            return false;
+        }
+        if (prefixCode !== undefined && binding.args.prefixCode !== undefined &&
+            binding.args.prefixCode !== prefixCode) {
+            return false;
+        }
+        if (mode === undefined && prefixCode === undefined){
+            if(!binding.args.do.every(c => c.computedArgs === undefined)){
+                return false;
+            }
+        }
+        return true;
+    };
 }
 
 export function currentKeybindings(){

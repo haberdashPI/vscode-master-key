@@ -1,9 +1,14 @@
-import { CommandResult, CommandState } from '../state';
+import { CommandResult, CommandState, DEFINITIONS } from '../state';
 import { withState } from '../state';
 import * as vscode from 'vscode';
+import { MODE } from './mode';
+import z from 'zod';
 import { merge, cloneDeep } from 'lodash';
 import { IConfigKeyBinding } from '../keybindings/processing';
-import { currentKeybindings } from '../keybindings';
+import { currentKeybindings, filterBindingFn } from '../keybindings';
+import { PREFIX_CODE } from './prefix';
+import { uniqBy } from 'lodash';
+import { prettifyPrefix, validateInput } from '../utils';
 
 // TODO: use KeyboardLayoutMap to improve behavior
 // across different layouts
@@ -78,27 +83,6 @@ const keyRows = [
     ]
 ];
 
-// TODO: update from old setup copies from modal-keys
-interface KeyKind {
-    name: string,
-    description?: string
-}
-interface MappedKeyKind {
-    index: number,
-    description?: string
-}
-let docKinds: IHash<MappedKeyKind> | undefined;
-let useColorBlind = false
-export function updateFromConfig(): void {
-    const config = vscode.workspace.getConfiguration("modalkeys")
-    let kinds = config.get<KeyKind[]>("docKinds", []);
-    docKinds = {}
-    useColorBlind = config.get<boolean>("colorBlindDocs", false);
-    for(let i=0; i<kinds.length; i++){
-        docKinds[kinds[i].name] = {index: i, description: kinds[i].description}
-    }
-}
-
 function get(x: any, key: string, def: any){
     if(key in x){
         return x[key];
@@ -107,11 +91,18 @@ function get(x: any, key: string, def: any){
     }
 }
 
+const kindDoc = z.array(z.object({
+    name: z.string(),
+    description: z.string(),
+}));
+type KindDoc = z.input<typeof kindDoc>;
+
 // generates the webview for a provider
 export class DocViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'masterkey.visualDoc';
-    public _view?: vscode.WebviewView;
-    public _helpMap?: Record<string, IConfigKeyBinding>;
+    _view?: vscode.WebviewView;
+    _helpMap?: Record<string, IConfigKeyBinding> = {};
+    _kinds?: KindDoc = [];
 
     constructor(
         private readonly _extensionUri: vscode.Uri,
@@ -121,23 +112,28 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
         if(this._view?.webview){
             this._view?.webview.postMessage({
                 keymap: this._helpMap,
-                kinds: docKinds,
-                config: {colorBlind: useColorBlind}
+                kinds: this._kinds,
+                config: {colorBlind: false} // TODO: remove or customize
             });
         }
     }
-    public update(state: CommandState){
+    // TODO: create specific listeners for each of these variables
+    // rather than updating them all everytime
+    public update(values: Map<string, unknown>){
         this._helpMap = {};
         let bindings = currentKeybindings();
-        // TODO: filter out bindings and send them to the key map
-        // TODO: add kinds to setup for keybindings/[processing,parsing].ts
-        // and get them here (probably as a part of the config)
+        bindings = bindings.filter(filterBindingFn(<string>(values.get(MODE)),
+            <number>(values.get(PREFIX_CODE))));
+        bindings = uniqBy(bindings, b => b.args.key);
+        for(let bind of bindings){
+            this._helpMap[prettifyPrefix(bind.args.key)] = bind;
+        }
+        this._kinds = validateInput('visual-documentation', values.get(DEFINITIONS),
+            kindDoc) || [];
         this.refresh();
     }
 
-    public visible(){
-        return this._view && this._view.visible;
-    }
+    public visible(){ this._view?.visible; }
 
     public resolveWebviewView(
         webviewView: vscode.WebviewView,
@@ -217,7 +213,10 @@ export function activate(context: vscode.ExtensionContext){
     context.subscriptions.push(vscode.commands.registerCommand('master-key.showVisualDoc',
         showVisualDoc));
 	const docProvider = new DocViewProvider(context.extensionUri);
-    // TODO: add listeners here for various state changes, which should update
-    // the DocViewProvider
+    await withState(async state => {
+        state.onSet(MODE, values => {
+
+        });
+    })
     vscode.window.registerWebviewViewProvider(DocViewProvider.viewType, docProvider);
 }

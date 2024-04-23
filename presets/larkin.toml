@@ -39,6 +39,15 @@ validModes = ["insert", "capture", "normal", "syminsert", "selectedit"]
 select_on = false
 around_on = false
 
+kind = [
+    { name = "select",   description = "Select commands move the cursor and/or selections." },
+    { name = "window",   description = "Window commands change window layout/focus" },
+    { name = "action",   description = "Actions do something with the selected text (e.g. delete it). Unless otherwise noted, in the absence of a selection, an action will modify an entire line, and a count argument indicates the number of lines (e.g. 3d deletes this line and the next 3 lines)." },
+    { name = "mode",     description = "Mode commands change the key mode, possibly completely changing what all of the keys do." },
+    { name = "count",    description = "Counts serve as prefix arguments to other commands, and usually determine how many times to repeat the commnad, unless otherwise specified." },
+    { name = "prefix",   description = "Prefix to an entire list of key commands" }
+]
+
 [[define.selectLinesDown]]
 command = "selection-utilities.shrinkToActive"
 
