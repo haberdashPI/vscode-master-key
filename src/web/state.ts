@@ -246,11 +246,10 @@ function addDefinitions(state: CommandState, definitions: any){
     });
 }
 
-export const DEFINITIONS = 'definitions'
 async function updateConfig(event?: vscode.ConfigurationChangeEvent){
     if(!event || event?.affectsConfiguration('master-key')){
         let config = vscode.workspace.getConfiguration('master-key');
-        let definitions = config.get<object[]>(DEFINITIONS);
+        let definitions = config.get<object[]>('definitions');
         await withState(async state => addDefinitions(state, definitions));
     }
 }

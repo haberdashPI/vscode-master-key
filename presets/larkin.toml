@@ -39,7 +39,7 @@ validModes = ["insert", "capture", "normal", "syminsert", "selectedit"]
 select_on = false
 around_on = false
 
-kind = [
+kinds = [
     { name = "select",   description = "Select commands move the cursor and/or selections." },
     { name = "window",   description = "Window commands change window layout/focus" },
     { name = "action",   description = "Actions do something with the selected text (e.g. delete it). Unless otherwise noted, in the absence of a selection, an action will modify an entire line, and a count argument indicates the number of lines (e.g. 3d deletes this line and the next 3 lines)." },

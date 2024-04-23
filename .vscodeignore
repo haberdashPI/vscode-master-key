@@ -2,6 +2,7 @@
 .vscode-test-web/**
 src/**
 out/**
+test/**
 uxtest/**
 node_modules/**
 .gitignore

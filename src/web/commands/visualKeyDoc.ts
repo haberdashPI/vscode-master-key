@@ -1,36 +1,37 @@
-import { CommandResult, CommandState, DEFINITIONS } from '../state';
+import { CommandState } from '../state';
 import { withState } from '../state';
 import * as vscode from 'vscode';
 import { MODE } from './mode';
 import z from 'zod';
-import { merge, cloneDeep } from 'lodash';
 import { IConfigKeyBinding } from '../keybindings/processing';
 import { currentKeybindings, filterBindingFn } from '../keybindings';
 import { PREFIX_CODE } from './prefix';
 import { uniqBy } from 'lodash';
 import { prettifyPrefix, validateInput } from '../utils';
+import { Map } from 'immutable';
 
 // TODO: use KeyboardLayoutMap to improve behavior
 // across different layouts
+
 const keyRows = [
     [
-        {topId: "tilde", top: "⇧`", bottomId: "tick", bottom: "`"},
-        {topId: "bang", top: "⇧1", bottom: "1"},
-        {topId: "at", top: "⇧2", bottom: "2"},
-        {topId: "hash", top: "⇧3", bottom: "3"},
-        {topId: "dollar", top: "⇧4", bottom: "4"},
-        {topId: "percent", top: "⇧5", bottom: "5"},
-        {topId: "karat", top: "⇧6", bottom: "6"},
-        {topId: "amper", top: "⇧7", bottom: "7"},
-        {topId: "star", top: "⇧8", bottom: "8"},
-        {topId: "paren-left", top: "⇧9", bottom: "9"},
-        {topId: "paren-right", top: "⇧0", bottom: "0"},
-        {topId: "underscore", top: "⇧-", bottom: "-"},
-        {topId: "plus", top: "⇧=", bottomId: "equals", bottom: "="},
-        {bottom: "delete", length: '1-5'}
+        {top: "⇧`", bottom: "`"},
+        {top: "⇧1", bottom: "1"},
+        {top: "⇧2", bottom: "2"},
+        {top: "⇧3", bottom: "3"},
+        {top: "⇧4", bottom: "4"},
+        {top: "⇧5", bottom: "5"},
+        {top: "⇧6", bottom: "6"},
+        {top: "⇧7", bottom: "7"},
+        {top: "⇧8", bottom: "8"},
+        {top: "⇧9", bottom: "9"},
+        {top: "⇧0", bottom: "0"},
+        {top: "⇧-", bottom: "-"},
+        {top: "⇧=", bottom: "="},
+        {bottom: "DELETE", length: '1-5'}
     ],
     [
-        {bottom: 'tab', length: '1-5'},
+        {bottom: 'TAB', length: '1-5'},
         {top: "⇧Q", bottom: "Q"},
         {top: "⇧W", bottom: "W"},
         {top: "⇧E", bottom: "E"},
@@ -41,12 +42,12 @@ const keyRows = [
         {top: "⇧I", bottom: "I"},
         {top: "⇧O", bottom: "O"},
         {top: "⇧P", bottom: "P"},
-        {topId: "bracket-left", top: "⇧[", bottomId: "brace-left", bottom: "["},
-        {topId: "bracket-right", top: "⇧]", bottomId: "brace-right", bottom: "]"},
-        {topId: "pipe", top: "⇧\\", bottomId: "back_slash", bottom: "\\"}
+        {top: "⇧[", bottom: "["},
+        {top: "⇧]", bottom: "]"},
+        {top: "⇧\\", bottom: "\\"}
     ],
     [
-        {bottomId: "caps-lock", bottom: "caps lock", length: '1-75'},
+        {bottom: "CAPS LOCK", length: '1-75'},
         {top: "⇧A", bottom: "A"},
         {top: "⇧S", bottom: "S"},
         {top: "⇧D", bottom: "D"},
@@ -56,12 +57,12 @@ const keyRows = [
         {top: "⇧J", bottom: "J"},
         {top: "⇧K", bottom: "K"},
         {top: "⇧L", bottom: "L"},
-        {topId: "colon", top: ":", bottomId: "semicolon", bottom: ";"},
-        {topId: 'quote', top: '"', bottom: "'"},
-        {bottom: "return", length: '1-75'}
+        {top: ":", bottom: ";"},
+        {top: '"', bottom: "'"},
+        {bottom: "RETURN", length: '1-75'}
     ],
     [
-        {bottomId: "shift-left", bottom: "shift", length: '2-25'},
+        {bottom: "shift", length: '2-25'},
         {top: "⇧Z", bottom: "Z"},
         {top: "⇧X", bottom: "X"},
         {top: "⇧C", bottom: "C"},
@@ -69,15 +70,15 @@ const keyRows = [
         {top: "⇧B", bottom: "B"},
         {top: "⇧N", bottom: "N"},
         {top: "⇧M", bottom: "M"},
-        {topId: "karet-left", top: "⇧,", bottomId: "comma", bottom: ","},
-        {topId: "karet-right", top: "⇧.", bottomId: "period", bottom: "."},
-        {topId: "question", top: "⇧/", bottomId: "slash", bottom: "/"},
-        {bottomId: "shift-right", bottom: "shift", length: '2-25'}
+        {top: "⇧,", bottom: ","},
+        {top: "⇧.", bottom: "."},
+        {top: "⇧/", bottom: "/"},
+        {bottom: "SHIFT", length: '2-25'}
     ],
     [
         {}, {}, {},
         {length: '1-25'},
-        {length: '5', bottomId: "space", bottom: ""},
+        {length: '5', bottom: ""},
         {length: '1-25'},
         {}, {}, {}, {}
     ]
@@ -101,7 +102,7 @@ type KindDoc = z.input<typeof kindDoc>;
 export class DocViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'masterkey.visualDoc';
     _view?: vscode.WebviewView;
-    _helpMap?: Record<string, IConfigKeyBinding> = {};
+    _keymap?: Record<string, IConfigKeyBinding> = {};
     _kinds?: KindDoc = [];
 
     constructor(
@@ -111,26 +112,48 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
     private refresh(){
         if(this._view?.webview){
             this._view?.webview.postMessage({
-                keymap: this._helpMap,
+                keymap: this._keymap,
                 kinds: this._kinds,
                 config: {colorBlind: false} // TODO: remove or customize
             });
         }
     }
-    // TODO: create specific listeners for each of these variables
-    // rather than updating them all everytime
-    public update(values: Map<string, unknown>){
-        this._helpMap = {};
+
+    private updateKeys(values: CommandState | Map<string, unknown>){
+        this._keymap = {};
         let bindings = currentKeybindings();
         bindings = bindings.filter(filterBindingFn(<string>(values.get(MODE)),
             <number>(values.get(PREFIX_CODE))));
         bindings = uniqBy(bindings, b => b.args.key);
         for(let bind of bindings){
-            this._helpMap[prettifyPrefix(bind.args.key)] = bind;
+            // TODO: convert to ids rather than using the name
+            this._keymap[prettifyPrefix(bind.args.key)] = bind;
         }
-        this._kinds = validateInput('visual-documentation', values.get(DEFINITIONS),
-            kindDoc) || [];
         this.refresh();
+    }
+
+    private updateKinds(values: CommandState | Map<string, unknown>){
+        this._kinds = validateInput('visual-documentation',
+            (<any>values.get('kinds')) || [], kindDoc);
+        this.refresh();
+    }
+
+    public async attach(state: CommandState){
+        this.updateKeys(state);
+        state = state.onSet(MODE, vals => {
+            this.updateKeys(vals);
+            return true;
+        });
+        state = state.onSet(PREFIX_CODE, vals => {
+            this.updateKeys(vals);
+            return true;
+        });
+        this.updateKinds(state);
+        state = state.onSet('kinds', vals => {
+            this.updateKinds(state);
+            return true;
+        });
+        return state;
     }
 
     public visible(){ this._view?.visible; }
@@ -209,14 +232,12 @@ async function showVisualDoc(){
     editor && vscode.window.showTextDocument(editor.document);
 }
 
-export function activate(context: vscode.ExtensionContext){
+export async function activate(context: vscode.ExtensionContext){
     context.subscriptions.push(vscode.commands.registerCommand('master-key.showVisualDoc',
         showVisualDoc));
 	const docProvider = new DocViewProvider(context.extensionUri);
     await withState(async state => {
-        state.onSet(MODE, values => {
-
-        });
-    })
+        return await docProvider.attach(state);
+    });
     vscode.window.registerWebviewViewProvider(DocViewProvider.viewType, docProvider);
 }

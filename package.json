@@ -57,7 +57,7 @@
     "viewsContainers": {
       "panel": [
         {
-          "id": "masterKeyBindingView",
+          "id": "masterKeyVisualDoc",
           "title": "Master Key Bindings",
           "icon": "icon.svg"
         }

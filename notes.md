@@ -1,16 +1,8 @@
 current issue I'm working on:
 
-BUG: switch to insert mode after seek to char in some cases
-
 NEXT UP:
 
-- implement the palette that shows up after a delay for sequences
-  (it is only a visual aid, hitting keys still works the same)
-  TODO: to get key bindings to work we need the `when` clause to
-  work *only* for this particular quick pick, this should set some
-  context, and then key bindings should check if this clause is true
-  (basically anywhere we see `editorTextFocus` in a when, replace it
-  with `(editorTextFocus || master-key.keybindingPaletteOpen`)
+- visual docs: see todo about proper ids in keyboard layout
 
 - filter general command palette to specific types of commands
   (certain commands are literally impossible to execute because of how
@@ -40,6 +32,12 @@ start adding keybinding discoverability
   - show keybindings in webview (copy from old extension)
     - get it working with additional modifiers
     - get working with KeyboardLayoutMap
+
+UNIT TESTS for palette / and visual binding display
+
+BUG: I noticed that definitions are updated internally on some kind of delay
+  (the config updates, but the state has an old value)
+BUG: sometimes the state of search always returns to insert (scrutize the code for oldMode resetting)
 
 - add: visualPriority (which overrides the index priority) for
        quick pick (maybe pick a better name)

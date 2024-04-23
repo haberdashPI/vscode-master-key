@@ -8,6 +8,7 @@ import * as replay from './replay';
 import * as search from './search';
 import * as prefix from "./prefix";
 import * as palette from "./palette";
+import * as visualKeyDoc from "./visualKeyDoc";
 
 export async function activate(context: vscode.ExtensionContext){
     await capture.activate(context);
@@ -19,6 +20,7 @@ export async function activate(context: vscode.ExtensionContext){
     await search.activate(context);
     await prefix.activate(context);
     await palette.activate(context);
+    await visualKeyDoc.activate(context);
 
     context.subscriptions.push(vscode.commands.registerCommand('master-key.ignore',
         () => undefined));
