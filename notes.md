@@ -2,9 +2,14 @@ current issue I'm working on:
 
 NEXT UP:
 
-- get space to show a command
-
 - prioritize what needs to be done in this branch
+
+start adding keybinding discoverability
+  - show keybindings in webview (copy from old extension)
+    - get it working with additional modifiers
+      - we can have some key sequences to change the modifier
+        e.g. ct^` could change the top modifier to be control
+      - we need to make the IKeyRow data programmatic-ish
 
 - we can solve problem with global command palette, avoiding the need to filter anything
   with computed args by prepending all prefix commands to the final suffix key (in the
@@ -16,10 +21,6 @@ NEXT UP:
   - kind (use a separator)
   - custom user priority (if specified)
   - recently used?? (or maybe this lowers the priority?? could be an option to hide recently used)
-
-start adding keybinding discoverability
-  - show keybindings in webview (copy from old extension)
-    - get it working with additional modifiers
 
 UNIT TESTS for palette / and visual binding display
 
