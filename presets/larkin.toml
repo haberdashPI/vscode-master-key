@@ -506,7 +506,7 @@ name = "WORD end →"
 description = "next WORD end; e.g. contiguous non-whitespace region"
 args.unit = "WORD"
 computedArgs.boundary = "around_on ? 'both' : 'end'"
-computedArgs.value = "-count || -1"
+computedArgs.value = "count || 1"
 
 [[bind]]
 path = "edit.motion.obj"
