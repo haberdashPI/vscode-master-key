@@ -2,6 +2,8 @@ current issue I'm working on:
 
 NEXT UP:
 
+- get space to show a command
+
 - prioritize what needs to be done in this branch
 
 - we can solve problem with global command palette, avoiding the need to filter anything

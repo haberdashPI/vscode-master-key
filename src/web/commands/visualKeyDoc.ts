@@ -84,7 +84,7 @@ const keyRows: IKeyRow[][] = [
     [
         {}, {}, {},
         {length: '1-25'},
-        {length: '5', bottom: ""},
+        {length: '5', top: "⇧SPACE", bottom: "SPACE"},
         {length: '1-25'},
         {}, {}, {}, {}
     ]
