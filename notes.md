@@ -104,6 +104,9 @@ EDGE CASE: check that changing keybingings doesn't much with state (e.g. reset m
 
 wishlist:
 
+- choose which modifiers to default to in the visual documentation based
+  on modifier frequency
+
 - get macro replay working with selection utility commands
 
 - would be nice if each key past the first shows up in a quick pick menu

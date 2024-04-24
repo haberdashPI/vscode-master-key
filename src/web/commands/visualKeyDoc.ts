@@ -135,8 +135,11 @@ interface KindDocEl {
 export class DocViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'masterkey.visualDoc';
     _view?: vscode.WebviewView;
+    _bindingMap: Record<string, IConfigKeyBinding> = {};
     _keymap?: (IConfigKeyBinding | {empty: true})[] = [];
     _kinds?: Record<string, KindDocEl> = {};
+    _topModifier: string = "⇧";
+    _bottomModifier: string = "";
 
     constructor(
         private readonly _extensionUri: vscode.Uri,
@@ -152,35 +155,51 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
         }
     }
 
+    public set topModifier(str: string){
+        this._topModifier = str;
+        this.updateKeyHelper();
+        this.refresh();
+    }
+
+    public set bottomModifier(str: string){
+        this._bottomModifier = str;
+        this.updateKeyHelper();
+        this.refresh();
+    }
+
     private updateKeys(values: CommandState | Map<string, unknown>){
         // TODO: prevent this from being updated on every keypress
+        // e.g. when pressing single-key commands
         let bindings = currentKeybindings();
         bindings = bindings.filter(filterBindingFn(<string>(values.get(MODE)),
             <number>(values.get(PREFIX_CODE))));
         bindings = uniqBy(bindings, b => b.args.key);
-        let bindingMap: Record<string, IConfigKeyBinding> = {};
+        this._bindingMap = {};
         for(let binding of bindings){
-            bindingMap[prettifyPrefix(binding.args.key)] = binding;
+            this._bindingMap[prettifyPrefix(binding.args.key)] = binding;
         }
 
+        this.updateKeyHelper();
+        this.refresh();
+    }
+
+    private updateKeyHelper(){
         let i = 0;
         this._keymap = [];
-        // TODO: setup different modifiers
-        for(let row of keyRows){
+        for(let row of keyRows(this._topModifier, this._bottomModifier)){
             for(let key of row){
                 if(key.top){
-                    this._keymap[i++] = bindingMap[key.top];
+                    this._keymap[i++] = this._bindingMap[key.top];
                 }else{
                     this._keymap[i++] = {empty: true};
                 }
                 if(key.bottom){
-                    this._keymap[i++] = bindingMap[key.bottom];
+                    this._keymap[i++] = this._bindingMap[key.bottom];
                 }else{
                     this._keymap[i++] = {empty: true};
                 }
             }
         }
-        this.refresh();
     }
 
     private updateKinds(values: CommandState | Map<string, unknown>){
@@ -297,4 +316,13 @@ export async function activate(context: vscode.ExtensionContext){
         return await docProvider.attach(state);
     });
     vscode.window.registerWebviewViewProvider(DocViewProvider.viewType, docProvider);
+    // TODO: only show command in os x
+    // TODO: make a meta key for linux (and windows for windows)
+    for(let key of [{id: 'ctrl', name: '^'}, {id: 'cmd', name: '⌘'},
+        {id: 'shift', name: '⇧'}, {id: 'alt', name: '⌥'}]){
+        for(let pos of ['top', 'bottom']){
+            // TODO: generify and call the right setter of `docProvider`
+            context.subscriptions.push(vscode.commands.registerCommand('master-key.visualDocCtrlTop'))
+        }
+    }
 }
