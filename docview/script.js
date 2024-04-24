@@ -27,10 +27,6 @@ function capitalizeFirstLetter(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
-function cleanName(key){
-    key.replace(/⇧/, "shift");
-}
-
 window.addEventListener('message', event => {
     const message = event.data;
     let keymap = message.keymap;
@@ -38,27 +34,29 @@ window.addEventListener('message', event => {
     let config = message.config;
 
     // update keys
-    for(i in allKeys){
-        let name = document.getElementById('key-name-'+allKeys[i]);
-        let label = document.getElementById('key-label-'+allKeys[i]);
-        let detail = document.getElementById('key-detail-'+allKeys[i]);
-        if(keymap && keymap[allKeys[i]]){
-            let binding = keymap[names[i]];
-            name.innerHTML = binding.args.name;
-            let kind = (kinds && kinds[binding.args.kind]) || {index: 'none', description: '', colorBlind: false}
+    let i = 0;
+    for(let key of keymap){
+        let name = document.getElementById('key-name-'+i);
+        let label = document.getElementById('key-label-'+i);
+        let detail = document.getElementById('key-detail-'+i);
+        i++;
+
+        if(name && key && !key.empty){
+            name.innerHTML = key.args.name;
+            let kind = (kinds && kinds[key.args.kind]) || {index: 'none', description: '', colorBlind: false};
             detail.innerHTML = `
                 <div class="detail-text">
-                    ${binding.args.kind ?
-                        `${capitalizeFirstLetter(binding.args.kind)} command (<div class="detail-kind-color ${findColor(kind, config)}-opaque"></div>): `
+                    ${key.args.kind ?
+                        `${capitalizeFirstLetter(key.args.kind)} command (<div class="detail-kind-color ${findColor(kind, config)}-opaque"></div>): `
                     : ''}
-                    ${binding.args.description}
+                    ${key.args.description}
                 </div>
                 <div class="detail-kind">${kind.description}</div>
             `;
             detail.classList.remove('empty');
             if(kinds){
-                setColor(name, kinds[binding.kind], config);
-                setColor(label, kinds[binding.kind], config);
+                setColor(name, kinds[key.kind], config);
+                setColor(label, kinds[key.kind], config);
             }
         }else{
             if(detail){
@@ -72,4 +70,4 @@ window.addEventListener('message', event => {
             if(label){ setColor(label); }
         }
     }
-})
+});

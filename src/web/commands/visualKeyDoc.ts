@@ -13,7 +13,13 @@ import { Map } from 'immutable';
 // TODO: use KeyboardLayoutMap to improve behavior
 // across different layouts
 
-const keyRows = [
+interface IKeyRow{
+    top?: string
+    bottom?: string
+    length?: string
+}
+
+const keyRows: IKeyRow[][] = [
     [
         {top: "⇧`", bottom: "`"},
         {top: "⇧1", bottom: "1"},
@@ -102,7 +108,7 @@ type KindDoc = z.input<typeof kindDoc>;
 export class DocViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'masterkey.visualDoc';
     _view?: vscode.WebviewView;
-    _keymap?: Record<string, IConfigKeyBinding> = {};
+    _keymap?: (IConfigKeyBinding | {empty: true})[] = [];
     _kinds?: KindDoc = [];
 
     constructor(
@@ -120,14 +126,31 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
     }
 
     private updateKeys(values: CommandState | Map<string, unknown>){
-        this._keymap = {};
+        // TODO: prevent this from being updated on every keypress
         let bindings = currentKeybindings();
         bindings = bindings.filter(filterBindingFn(<string>(values.get(MODE)),
             <number>(values.get(PREFIX_CODE))));
         bindings = uniqBy(bindings, b => b.args.key);
-        for(let bind of bindings){
-            // TODO: convert to ids rather than using the name
-            this._keymap[prettifyPrefix(bind.args.key)] = bind;
+        let bindingMap: Record<string, IConfigKeyBinding> = {};
+        for(let binding of bindings){
+            bindingMap[prettifyPrefix(binding.args.key)] = binding;
+        }
+
+        let i = 0;
+        this._keymap = [];
+        for(let row of keyRows){
+            for(let key of row){
+                if(key.top){
+                    this._keymap[i++] = bindingMap[key.top];
+                }else{
+                    this._keymap[i++] = {empty: true};
+                }
+                if(key.bottom){
+                    this._keymap[i++] = bindingMap[key.bottom];
+                }else{
+                    this._keymap[i++] = {empty: true};
+                }
+            }
         }
         this.refresh();
     }
@@ -176,15 +199,15 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
     public _getHtml(webview: vscode.Webview){
         let style = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'docview', 'style.css'));
         let script = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'docview', 'script.js'));
-        let num = 0
+        let num = 0;
         let keys = `
         <div class="container">
             <div class="keyboard">
                 ${keyRows.map(row => `
                     <div class="keyboard-row">
                         ${row.map((key: any) => {
-                            let topId = get(key, 'topId', get(key, 'top', "blank"+num++));
-                            let bottomId = get(key, 'bottomId', get(key, 'bottom', "blank"+num++));
+                            let topId = num++;
+                            let bottomId = num++;
                             let topLabel = get(key, 'top', '');
                             return `
                                 <div class="key key-length-${get(key, 'length', 1)}">
