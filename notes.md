@@ -2,38 +2,27 @@ current issue I'm working on:
 
 NEXT UP:
 
-- visual docs: see todo about proper ids in keyboard layout
+- prioritize what needs to be done in this branch
 
-- filter general command palette to specific types of commands
-  (certain commands are literally impossible to execute because of how
-  when clauses work) maybe we just leverage the global palette here
-  and only show things that make sense in that context (*BUT*
-  this prevents non-default mode commands from being identified)
-  IDEA: we can solve this problem by prepending all prefix commands
-  to the final suffix key (in the exported keybindings), we already
-  export a key per possible prefix, so this shouldn't be a problem
-  (we'll need to properly handle bindings that can interrupt)
-  so this involves a transformation during keybinding processing
+- we can solve problem with global command palette, avoiding the need to filter anything
+  with computed args by prepending all prefix commands to the final suffix key (in the
+  exported keybindings), we already export a key per possible prefix, so this shouldn't be a
+  problem (we'll need to properly handle bindings that can interrupt) so this involves a
+  transformation during keybinding processing
 
-- organize commands by:
+- organize commands listed in the palette by:
   - kind (use a separator)
   - custom user priority (if specified)
   - recently used?? (or maybe this lowers the priority?? could be an option to hide recently used)
 
 start adding keybinding discoverability
-  - open menu for multi-key commands after a short delay
-  - for single commands: test out adding bindings that don't activate when the extension
-    is active but do when it isn't, do the prefixes get messed up here? or do
-    the when clauses save us?
-      - problem: we can't show the mode
-      - let's see how making a quick pick goes, maybe it's okay
-      - NOTE: could still be helpful to have, even with the quick pick so it shows up with other commands (do only for things in the default mode maybe?? otherwise this
-      would get confusing)
   - show keybindings in webview (copy from old extension)
     - get it working with additional modifiers
-    - get working with KeyboardLayoutMap
 
 UNIT TESTS for palette / and visual binding display
+
+IMPROVE KEYBINDINGS: I have thoughts about how to change my keymap now (maybe prioritize
+  any keybinding redesign before doing this)
 
 BUG: I noticed that definitions are updated internally on some kind of delay
   (the config updates, but the state has an old value)
@@ -186,6 +175,10 @@ wishlist:
   capture input outside of the text editor
   OR
   all non-modifier keys (k or shift+k) get a condition added to them so they don't mess up input boxes ???
+
+- support multiple keyboard layouts in the visual documentation
+
+- use the theme colors in the visual documentation
 
 quick win: store clipboard to a register
 

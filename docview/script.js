@@ -55,8 +55,8 @@ window.addEventListener('message', event => {
             `;
             detail.classList.remove('empty');
             if(kinds){
-                setColor(name, kinds[key.kind], config);
-                setColor(label, kinds[key.kind], config);
+                setColor(name, kinds[key.args.kind], config);
+                setColor(label, kinds[key.args.kind], config);
             }
         }else{
             if(detail){

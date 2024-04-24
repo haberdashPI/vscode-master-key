@@ -46,9 +46,12 @@ export async function commandPalette(args_: unknown,
                 if(seq && seq.length > 0){
                     key = seq + " " + key;
                 }
+                key = prettifyPrefix(key);
                 if(binding.args.mode){
-                    key = binding.args.mode.toLocaleLowerCase() + ": " + prettifyPrefix(key);
+                    key = binding.args.mode.toLocaleLowerCase() + ": " + key;
                 }
+            }else{
+                key = prettifyPrefix(key);
             }
 
             return {
@@ -68,6 +71,7 @@ export async function commandPalette(args_: unknown,
                 accepted = true;
                 await doCommandsCmd(pick.args);
             }
+            picker.dispose();
         });
         picker.onDidHide(async _ => {
             vscode.commands.executeCommand('setContext', 'master-key.keybindingPaletteOpen', false);

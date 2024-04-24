@@ -68,7 +68,7 @@ const keyRows: IKeyRow[][] = [
         {bottom: "RETURN", length: '1-75'}
     ],
     [
-        {bottom: "shift", length: '2-25'},
+        {bottom: "SHIFT", length: '2-25'},
         {top: "⇧Z", bottom: "Z"},
         {top: "⇧X", bottom: "X"},
         {top: "⇧C", bottom: "C"},
@@ -102,14 +102,18 @@ const kindDoc = z.array(z.object({
     name: z.string(),
     description: z.string(),
 }));
-type KindDoc = z.input<typeof kindDoc>;
+interface KindDocEl {
+    name: string,
+    description: string,
+    index: number
+}
 
 // generates the webview for a provider
 export class DocViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'masterkey.visualDoc';
     _view?: vscode.WebviewView;
     _keymap?: (IConfigKeyBinding | {empty: true})[] = [];
-    _kinds?: KindDoc = [];
+    _kinds?: Record<string, KindDocEl> = {};
 
     constructor(
         private readonly _extensionUri: vscode.Uri,
@@ -156,8 +160,14 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
     }
 
     private updateKinds(values: CommandState | Map<string, unknown>){
-        this._kinds = validateInput('visual-documentation',
+        let kinds = validateInput('visual-documentation',
             (<any>values.get('kinds')) || [], kindDoc);
+        this._kinds = {};
+        let index = 0;
+        for(let kind of (kinds || [])){
+            this._kinds[kind.name] = {...kind, index};
+            index++;
+        }
         this.refresh();
     }
 
@@ -223,7 +233,7 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
                                     <div id="key-name-${bottomId}" class="bottom name ${topLabel ? '' : 'no-top'}">
                                     </div>
                                     <div id="key-detail-${bottomId}" class="detail"></div>
-                                </div>`
+                                </div>`;
                         }).join('\n')}
                     </div>
                 `).join('\n')}
