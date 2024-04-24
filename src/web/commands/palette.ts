@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 import { prettifyPrefix } from '../utils';
-import { CommandResult } from '../state';
 import { withState } from '../state';
 import { currentKeybindings, filterBindingFn } from '../keybindings';
 import { PREFIX_CODE, prefixCodes } from './prefix';

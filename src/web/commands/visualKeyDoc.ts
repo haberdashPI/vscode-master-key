@@ -13,82 +13,105 @@ import { Map } from 'immutable';
 // TODO: use KeyboardLayoutMap to improve behavior
 // across different layouts
 
+interface IKeyTemplate{
+    name?: string
+    length?: string
+    modifier?: true
+}
+
 interface IKeyRow{
     top?: string
     bottom?: string
     length?: string
 }
 
-const keyRows: IKeyRow[][] = [
+const keyRowsTemplate: IKeyTemplate[][] = [
     [
-        {top: "⇧`", bottom: "`"},
-        {top: "⇧1", bottom: "1"},
-        {top: "⇧2", bottom: "2"},
-        {top: "⇧3", bottom: "3"},
-        {top: "⇧4", bottom: "4"},
-        {top: "⇧5", bottom: "5"},
-        {top: "⇧6", bottom: "6"},
-        {top: "⇧7", bottom: "7"},
-        {top: "⇧8", bottom: "8"},
-        {top: "⇧9", bottom: "9"},
-        {top: "⇧0", bottom: "0"},
-        {top: "⇧-", bottom: "-"},
-        {top: "⇧=", bottom: "="},
-        {bottom: "DELETE", length: '1-5'}
+        {name: "`"},
+        {name: "1"},
+        {name: "2"},
+        {name: "3"},
+        {name: "4"},
+        {name: "5"},
+        {name: "6"},
+        {name: "7"},
+        {name: "8"},
+        {name: "9"},
+        {name: "0"},
+        {name: "-"},
+        {name: "="},
+        {name: "DELETE", length: '1-5', modifier: true}
     ],
     [
-        {bottom: 'TAB', length: '1-5'},
-        {top: "⇧Q", bottom: "Q"},
-        {top: "⇧W", bottom: "W"},
-        {top: "⇧E", bottom: "E"},
-        {top: "⇧R", bottom: "R"},
-        {top: "⇧T", bottom: "T"},
-        {top: "⇧Y", bottom: "Y"},
-        {top: "⇧U", bottom: "U"},
-        {top: "⇧I", bottom: "I"},
-        {top: "⇧O", bottom: "O"},
-        {top: "⇧P", bottom: "P"},
-        {top: "⇧[", bottom: "["},
-        {top: "⇧]", bottom: "]"},
-        {top: "⇧\\", bottom: "\\"}
+        {name: 'TAB', length: '1-5', modifier: true},
+        {name: "Q"},
+        {name: "W"},
+        {name: "E"},
+        {name: "R"},
+        {name: "T"},
+        {name: "Y"},
+        {name: "U"},
+        {name: "I"},
+        {name: "O"},
+        {name: "P"},
+        {name: "["},
+        {name: "]"},
+        {name: "\\"}
     ],
     [
-        {bottom: "CAPS LOCK", length: '1-75'},
-        {top: "⇧A", bottom: "A"},
-        {top: "⇧S", bottom: "S"},
-        {top: "⇧D", bottom: "D"},
-        {top: "⇧F", bottom: "F"},
-        {top: "⇧G", bottom: "G"},
-        {top: "⇧H", bottom: "H"},
-        {top: "⇧J", bottom: "J"},
-        {top: "⇧K", bottom: "K"},
-        {top: "⇧L", bottom: "L"},
-        {top: ":", bottom: ";"},
-        {top: '"', bottom: "'"},
-        {bottom: "RETURN", length: '1-75'}
+        {name: "CAPS LOCK", length: '1-75', modifier: true},
+        {name: "A"},
+        {name: "S"},
+        {name: "D"},
+        {name: "F"},
+        {name: "G"},
+        {name: "H"},
+        {name: "J"},
+        {name: "K"},
+        {name: "L"},
+        {name: ";"},
+        {name: "'"},
+        {name: "RETURN", length: '1-75', modifier: true}
     ],
     [
-        {bottom: "SHIFT", length: '2-25'},
-        {top: "⇧Z", bottom: "Z"},
-        {top: "⇧X", bottom: "X"},
-        {top: "⇧C", bottom: "C"},
-        {top: "⇧V", bottom: "V"},
-        {top: "⇧B", bottom: "B"},
-        {top: "⇧N", bottom: "N"},
-        {top: "⇧M", bottom: "M"},
-        {top: "⇧,", bottom: ","},
-        {top: "⇧.", bottom: "."},
-        {top: "⇧/", bottom: "/"},
-        {bottom: "SHIFT", length: '2-25'}
+        {name: "SHIFT", length: '2-25', modifier: true},
+        {name: "Z"},
+        {name: "X"},
+        {name: "C"},
+        {name: "V"},
+        {name: "B"},
+        {name: "N"},
+        {name: "M"},
+        {name: ","},
+        {name: "."},
+        {name: "/"},
+        {name: "SHIFT", length: '2-25', modifier: true}
     ],
     [
         {}, {}, {},
         {length: '1-25'},
-        {length: '5', top: "⇧SPACE", bottom: "SPACE"},
+        {length: '5', name: "SPACE"},
         {length: '1-25'},
         {}, {}, {}, {}
     ]
 ];
+
+function keyRows(topModifier?: string, bottomModifier?: string): IKeyRow[][]{
+    return keyRowsTemplate.map(row => row.map(key => {
+        if(key.name && !key.modifier){
+            return {
+                top: topModifier+key.name,
+                bottom: bottomModifier+key.name,
+                length: key.length
+            };
+        }else{
+            return {
+                top: key.name,
+                length: key.length
+            };
+        }
+    }));
+}
 
 function get(x: any, key: string, def: any){
     if(key in x){
@@ -142,6 +165,7 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
 
         let i = 0;
         this._keymap = [];
+        // TODO: setup different modifiers
         for(let row of keyRows){
             for(let key of row){
                 if(key.top){
