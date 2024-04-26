@@ -32,6 +32,7 @@ window.addEventListener('message', event => {
     let keymap = message.keymap;
     let kinds = message.kinds;
     let config = message.config;
+    let keyRows = message.keyRows;
 
     // update keys
     let i = 0;
@@ -42,21 +43,23 @@ window.addEventListener('message', event => {
         i++;
 
         if(name && key && !key.empty){
-            name.innerHTML = key.args.name;
-            let kind = (kinds && kinds[key.args.kind]) || {index: 'none', description: '', colorBlind: false};
+            label.innerHTML = key.label || "";
+            let args = key.args || {name: "", kind: "", description: ""};
+            name.innerHTML = args.name;
+            let kind = (kinds && kinds[args.kind]) || {index: 'none', description: '', colorBlind: false};
             detail.innerHTML = `
                 <div class="detail-text">
-                    ${key.args.kind ?
-                        `${capitalizeFirstLetter(key.args.kind)} command (<div class="detail-kind-color ${findColor(kind, config)}-opaque"></div>): `
+                    ${args.kind ?
+                        `${capitalizeFirstLetter(args.kind)} command (<div class="detail-kind-color ${findColor(kind, config)}-opaque"></div>): `
                     : ''}
-                    ${key.args.description}
+                    ${args.description}
                 </div>
                 <div class="detail-kind">${kind.description}</div>
             `;
             detail.classList.remove('empty');
             if(kinds){
-                setColor(name, kinds[key.args.kind], config);
-                setColor(label, kinds[key.args.kind], config);
+                setColor(name, kinds[args.kind], config);
+                setColor(label, kinds[args.kind], config);
             }
         }else{
             if(detail){
@@ -67,7 +70,10 @@ window.addEventListener('message', event => {
                 name.innerHTML = "";
                 setColor(name);
             }
-            if(label){ setColor(label); }
+            if(label){
+                label.innerHTML = "";
+                setColor(label);
+            }
         }
     }
 });

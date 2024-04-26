@@ -114,7 +114,7 @@ function keyRows(topModifier?: readonly string[], bottomModifier?: readonly stri
 }
 
 function get(x: any, key: string, def: any){
-    if(key in x){
+    if(key in x && x[key] !== undefined){
         return x[key];
     }else{
         return def;
@@ -136,7 +136,7 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'masterkey.visualDoc';
     _view?: vscode.WebviewView;
     _bindingMap: Record<string, IConfigKeyBinding> = {};
-    _keymap?: (IConfigKeyBinding | {empty: true})[] = [];
+    _keymap?: (IConfigKeyBinding & {label: string} | {empty: true})[] = [];
     _kinds?: Record<string, KindDocEl> = {};
     _topModifier: readonly string[] = ["⇧"];
     _bottomModifier: readonly string[] = [];
@@ -196,12 +196,12 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
         for(let row of keyRows(this._topModifier, this._bottomModifier)){
             for(let key of row){
                 if(key.top){
-                    this._keymap[i++] = this._bindingMap[key.top];
+                    this._keymap[i++] = {label: key.top, ...this._bindingMap[key.top]};
                 }else{
                     this._keymap[i++] = {empty: true};
                 }
                 if(key.bottom){
-                    this._keymap[i++] = this._bindingMap[key.bottom];
+                    this._keymap[i++] = {label: key.bottom, ...this._bindingMap[key.bottom]};
                 }else{
                     this._keymap[i++] = {empty: true};
                 }
@@ -265,7 +265,7 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
         let keys = `
         <div class="container">
             <div class="keyboard">
-                ${keyRowsTemplate.map(row => `
+                ${keyRows(['⇧'], ['']).map(row => `
                     <div class="keyboard-row">
                         ${row.map((key: any) => {
                             let topId = num++;
