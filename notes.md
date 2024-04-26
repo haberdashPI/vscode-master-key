@@ -2,6 +2,8 @@ current issue I'm working on:
 
 NEXT UP:
 
+- add ability to show different modifiers in the visual documentation
+
 - prioritize what needs to be done in this branch
 
 start adding keybinding discoverability
@@ -27,6 +29,9 @@ UNIT TESTS for palette / and visual binding display
 IMPROVE KEYBINDINGS: I have thoughts about how to change my keymap now (maybe prioritize
   any keybinding redesign before doing this)
 
+IMPROVEMENT: once in a pop-up context, you can switch to searching with a command
+  (the context palette doesn't actually ever show up right now, and it would be confusing as worded right now anyways)
+BUG: commands that change the viewport don't work when activated through the palette
 BUG: I noticed that definitions are updated internally on some kind of delay
   (the config updates, but the state has an old value)
 BUG: sometimes the state of search always returns to insert (scrutize the code for oldMode resetting)

@@ -40,6 +40,16 @@
         "command": "master-key.showVisualDoc",
         "category": "Master Key",
         "title": "Show Visual Documentation"
+      },
+      {
+        "command": "master-key.setVisualDocTopModifiers",
+        "category": "Master Key",
+        "title": "Toggle Visual Doc Modifier for Top of Key"
+      },
+      {
+        "command": "master-key.setVisualDocBottomModifiers",
+        "category": "Master Key",
+        "title": "Toggle Visual Doc Modifier for Bottom of Key"
       }
     ],
     "views": {

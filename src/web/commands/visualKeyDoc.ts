@@ -96,12 +96,12 @@ const keyRowsTemplate: IKeyTemplate[][] = [
     ]
 ];
 
-function keyRows(topModifier?: string, bottomModifier?: string): IKeyRow[][]{
+function keyRows(topModifier?: readonly string[], bottomModifier?: readonly string[]): IKeyRow[][]{
     return keyRowsTemplate.map(row => row.map(key => {
         if(key.name && !key.modifier){
             return {
-                top: topModifier+key.name,
-                bottom: bottomModifier+key.name,
+                top: topModifier?.join()+key.name,
+                bottom: bottomModifier?.join()+key.name,
                 length: key.length
             };
         }else{
@@ -138,8 +138,8 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
     _bindingMap: Record<string, IConfigKeyBinding> = {};
     _keymap?: (IConfigKeyBinding | {empty: true})[] = [];
     _kinds?: Record<string, KindDocEl> = {};
-    _topModifier: string = "⇧";
-    _bottomModifier: string = "";
+    _topModifier: readonly string[] = ["⇧"];
+    _bottomModifier: readonly string[] = [];
 
     constructor(
         private readonly _extensionUri: vscode.Uri,
@@ -155,14 +155,21 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
         }
     }
 
-    public set topModifier(str: string){
-        this._topModifier = str;
+    public get topModifier(): readonly string[] {
+        return this._topModifier;
+    }
+    public get bottomModifier(): readonly string[] {
+        return this._bottomModifier;
+    }
+
+    public set topModifier(strs: string[]){
+        this._topModifier = strs.sort();
         this.updateKeyHelper();
         this.refresh();
     }
 
-    public set bottomModifier(str: string){
-        this._bottomModifier = str;
+    public set bottomModifier(strs: string[]){
+        this._bottomModifier = strs.sort();
         this.updateKeyHelper();
         this.refresh();
     }
@@ -253,10 +260,12 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
         let style = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'docview', 'style.css'));
         let script = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'docview', 'script.js'));
         let num = 0;
+        // TODO: we need to dynamically update the top and bottom labels depending on
+        // modifiers this will require updating the key-label- divs in `script.js`
         let keys = `
         <div class="container">
             <div class="keyboard">
-                ${keyRows.map(row => `
+                ${keyRowsTemplate.map(row => `
                     <div class="keyboard-row">
                         ${row.map((key: any) => {
                             let topId = num++;
@@ -301,6 +310,42 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
     }
 }
 
+const visualDocModifierArgs = z.object({
+    modifiers: z.array(z.string()).optional()
+});
+async function setVisualDocModifier(pos: 'top' | 'bottom', provider: DocViewProvider, args_: unknown) {
+    let modifiers: string[];
+    if(args_){
+        let args = validateInput(`master-key.setVisualDoc${pos}Modifiers`, args_, visualDocModifierArgs);
+        if(args?.modifiers){
+            modifiers = args.modifiers;
+        }else{
+            return;
+        }
+    }else{
+        // TODO: make this list specific to the platform
+        let items: vscode.QuickPickItem[] = [
+            { label: "^", description: "control" },
+            { label: "⌘", description: "command" },
+            { label: "⌥", description: "alt" },
+            { label: "⇧", description: "shift" }
+        ];
+        let picked = pos === 'top' ? provider.topModifier : provider.bottomModifier;
+        for(let item of items){
+            item.picked = picked.some(x => x === item.label);
+        }
+        let selections = await vscode.window.showQuickPick(items,
+            { canPickMany: true, matchOnDescription: true });
+        if(selections){
+            modifiers = selections.map(sel => sel.label);
+        }else{
+            return;
+        }
+    }
+    if(pos === 'top'){ provider.topModifier = modifiers; }
+    else{ provider.bottomModifier = modifiers; }
+}
+
 async function showVisualDoc(){
     let editor = vscode.window.activeTextEditor;
     await vscode.commands.executeCommand('workbench.view.extension.masterKeyVisualDoc');
@@ -318,11 +363,9 @@ export async function activate(context: vscode.ExtensionContext){
     vscode.window.registerWebviewViewProvider(DocViewProvider.viewType, docProvider);
     // TODO: only show command in os x
     // TODO: make a meta key for linux (and windows for windows)
-    for(let key of [{id: 'ctrl', name: '^'}, {id: 'cmd', name: '⌘'},
-        {id: 'shift', name: '⇧'}, {id: 'alt', name: '⌥'}]){
-        for(let pos of ['top', 'bottom']){
-            // TODO: generify and call the right setter of `docProvider`
-            context.subscriptions.push(vscode.commands.registerCommand('master-key.visualDocCtrlTop'))
-        }
-    }
+    // TODO: the modifiers need to be able to be combined...
+    context.subscriptions.push(vscode.commands.registerCommand(`master-key.setVisualDocTopModifiers`,
+        args => setVisualDocModifier('top', docProvider, args)));
+    context.subscriptions.push(vscode.commands.registerCommand(`master-key.setVisualDocBottomModifiers`,
+        args => setVisualDocModifier('bottom', docProvider, args)));
 }
