@@ -440,9 +440,15 @@ function movePrefixActionsToSuffix(result: BindingMap){
                 });
                 let prefixItem = result[itemKey];
 
+                // NOTE: this doesn't work because users can customize prefixes
+                // and then they don't necessarily have the same when clause
                 let command = prefixItem.item.args.do[0];
                 // TODO: in the future when prefix commands can do more than set a flag
                 // we'll need to move those commands to the suffix as well
+                // we can do this as a completely separate pass after removing
+                // duplicates, since we need to index bindings by a list of those
+                // that have a given prefix
+                // BUT WAIT: this doesn't work
                 let flag = command.args.flag;
                 // remove flag argument from this prefix command
                 command.args = { code: command.args.code, automated: command.args.automated };

@@ -4,6 +4,7 @@ NEXT UP:
 
 - move all flag setting for prefix commands to the suffix command upon pre-processing
   keybindings
+    - see notes under processing.ts
     - write unit tests for pre-processing
     - require prefix commands to be isolated from all others
     - test out the command palette for something that depends on the flags
