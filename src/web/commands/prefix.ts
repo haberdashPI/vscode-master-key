@@ -6,7 +6,9 @@ import { PrefixCodes } from '../keybindings/processing';
 
 const prefixArgs = z.object({
     code: z.number(),
-    flag: z.string().min(1).endsWith('_on').optional(),
+    // NOTE: even though flag isn't actually an argument here it must be documented as such,
+    // because these flags are moved to the suffix command during keybinding pre-processing
+    // flag: z.string().min(1).endsWith('_on').optional(),
     // `automated` is used during keybinding preprocessing and is not normally used otherwise
     automated: z.boolean().optional()
 }).strict();
@@ -45,9 +47,9 @@ async function prefix(args_: unknown): Promise<CommandResult>{
                 state.set(PREFIX_CODE, {transient: {reset: 0}, public: true}, a.code);
                 state.set(PREFIX, {transient: {reset: ''}, public: true}, prefix);
 
-                if (a.flag) {
-                    state.set(a.flag, { transient: { reset: false }, public: true }, true);
-                };
+                // if (a.flag) {
+                //     state.set(a.flag, { transient: { reset: false }, public: true }, true);
+                // };
             });
         });
         return args;

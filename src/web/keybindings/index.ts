@@ -102,11 +102,6 @@ export function filterBindingFn(mode?: string, prefixCode?: number) {
             binding.args.prefixCode !== prefixCode) {
             return false;
         }
-        if (mode === undefined && prefixCode === undefined){
-            if(!binding.args.do.every(c => c.computedArgs === undefined)){
-                return false;
-            }
-        }
         return true;
     };
 }

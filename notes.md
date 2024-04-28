@@ -2,14 +2,16 @@ current issue I'm working on:
 
 NEXT UP:
 
-- we can solve problem with global command palette, avoiding the need to filter anything
-  with computed args by prepending all prefix commands to the final suffix key (in the
-  exported keybindings), we already export a key per possible prefix, so this shouldn't be a
-  problem (we'll need to properly handle bindings that can interrupt) so this involves a
-  transformation during keybinding processing
-  - we should make it explicitly not allowed to have anything *but* a prefix key
-    in the format, and have this allow setting of flags or values
-    (in this way we prevent visible state changes until the final key is pressed)
+- move all flag setting for prefix commands to the suffix command upon pre-processing
+  keybindings
+    - write unit tests for pre-processing
+    - require prefix commands to be isolated from all others
+    - test out the command palette for something that depends on the flags
+      (e.g. "uwd")
+
+  NOTE: we'll need to remember to document the `flag` argument to prefix
+  for purposes of user docs, even though it isn't actually an argument to this
+  command!!
 
 IMPROVEMENT: palette should show a description of what it is displaying for the user
 IMPROVEMENT: once in a pop-up context, you can switch to searching with a command
@@ -100,6 +102,9 @@ maybe we should
 EDGE CASE: check that changing keybingings doesn't much with state (e.g. reset mode)
 
 wishlist:
+
+- enable vim style command queue during the prefix
+  (this will require changing `movePrefixActionsToSuffix` as well)
 
 - choose which modifiers to default to in the visual documentation based
   on modifier frequency

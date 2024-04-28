@@ -417,8 +417,49 @@ function expandKeySequencesAndResolveDuplicates(items: BindingItem[], problems: 
             throw Error("Unexpected operation");
         }
     }
+    result = movePrefixActionsToSuffix(result);
     let sortedResult = sortBy(Object.values(result), i => i.index);
     return [sortedResult.map(i => i.item), prefixCodes];
+}
+
+function movePrefixActionsToSuffix(result: BindingMap){
+    for(let key of Object.keys(result)){
+        let item = result[key].item;
+        if(!isSingleCommand(item.args.do, 'master-key.prefix')){
+            let prefix = item.prefixes[0] || ""; // safely occurs after we have one prefix per item
+            let keys = prefix.split(" ");
+            let flags: string[] = [];
+            while(keys.length > 0){
+                let key = keys[keys.length-1];
+                keys = keys.slice(0, -1);
+                let itemKey = hash({
+                    key,
+                    mode: item.mode,
+                    when: item.when?.map(w => w.id)?.sort(),
+                    prefixes: keys
+                });
+                let prefixItem = result[itemKey];
+
+                let command = prefixItem.item.args.do[0];
+                // TODO: in the future when prefix commands can do more than set a flag
+                // we'll need to move those commands to the suffix as well
+                let flag = command.args.flag;
+                // remove flag argument from this prefix command
+                command.args = { code: command.args.code, automated: command.args.automated };
+                if(flag){ flags.push(flag); }
+            }
+
+            // move all of the flags that were set in a prefix to the flag setting commands
+            // upon the final command
+            for(let flag of flags){
+                item.args.do.unshift({
+                    command: 'master-key.setFlag',
+                    args: { value: true, name: flag, transient: true }
+                });
+            }
+        }
+    }
+    return result;
 }
 
 
