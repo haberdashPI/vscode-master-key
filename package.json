@@ -50,6 +50,11 @@
         "command": "master-key.setVisualDocBottomModifiers",
         "category": "Master Key",
         "title": "Toggle Visual Doc Modifier for Bottom of Key"
+      },
+      {
+        "command": "master-key.toggleVisualDocModifiers",
+        "category": "Master Key",
+        "title": "Toggle visual doc keys from most to least common keybinding modifiers"
       }
     ],
     "views": {

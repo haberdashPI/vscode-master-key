@@ -7,7 +7,7 @@ import { IConfigKeyBinding } from '../keybindings/processing';
 import { currentKeybindings, filterBindingFn } from '../keybindings';
 import { PREFIX_CODE } from './prefix';
 import { uniqBy } from 'lodash';
-import { prettifyPrefix, validateInput } from '../utils';
+import { modifierKey, prettifyPrefix, validateInput } from '../utils';
 import { Map } from 'immutable';
 
 // TODO: use KeyboardLayoutMap to improve behavior
@@ -40,10 +40,10 @@ const keyRowsTemplate: IKeyTemplate[][] = [
         {name: "0"},
         {name: "-"},
         {name: "="},
-        {name: "DELETE", length: '1-5', modifier: true}
+        {name: "DELETE", length: '1-5'}
     ],
     [
-        {name: 'TAB', length: '1-5', modifier: true},
+        {name: 'TAB', length: '1-5'},
         {name: "Q"},
         {name: "W"},
         {name: "E"},
@@ -71,7 +71,7 @@ const keyRowsTemplate: IKeyTemplate[][] = [
         {name: "L"},
         {name: ";"},
         {name: "'"},
-        {name: "RETURN", length: '1-75', modifier: true}
+        {name: "ENTER", length: '1-75'}
     ],
     [
         {name: "SHIFT", length: '2-25', modifier: true},
@@ -140,6 +140,9 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
     _kinds?: Record<string, KindDocEl> = {};
     _topModifier: readonly string[] = ["⇧"];
     _bottomModifier: readonly string[] = [];
+    _oldBindings: IConfigKeyBinding[] = [];
+    _modifierSetIndex: number = -1;
+    _modifierOrder: string[][] = [];
 
     constructor(
         private readonly _extensionUri: vscode.Uri,
@@ -164,12 +167,30 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
 
     public set topModifier(strs: string[]){
         this._topModifier = strs.sort();
+        this._modifierSetIndex = -1;
         this.updateKeyHelper();
         this.refresh();
     }
 
     public set bottomModifier(strs: string[]){
         this._bottomModifier = strs.sort();
+        this._modifierSetIndex = -1;
+        this.updateKeyHelper();
+        this.refresh();
+    }
+
+    public toggleModifier(){
+        if(this._modifierSetIndex+1 >= this._modifierOrder.length){
+            this._modifierSetIndex = 0;
+        }else{
+            if(this._modifierSetIndex+2 >= this._modifierOrder.length){
+                this._modifierSetIndex++;
+            }else{
+                this._modifierSetIndex+=2;
+            }
+        }
+        this._bottomModifier = this._modifierOrder[this._modifierSetIndex];
+        this._topModifier = this._modifierOrder[(this._modifierSetIndex + 1) % this._modifierOrder.length];
         this.updateKeyHelper();
         this.refresh();
     }
@@ -177,8 +198,22 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
     private updateKeys(values: CommandState | Map<string, unknown>){
         // TODO: prevent this from being updated on every keypress
         // e.g. when pressing single-key commands
-        let bindings = currentKeybindings();
-        bindings = bindings.filter(filterBindingFn(<string>(values.get(MODE)),
+        let allBindings = currentKeybindings();
+        if(this._oldBindings !== allBindings){
+            this._modifierSetIndex = 0;
+            let modifierCounts: Record<string, number> = {};
+            for(let binding of allBindings){
+                let key = modifierKey(binding.args.key).sort().join('.');
+                modifierCounts[key] = get(modifierCounts, key, 0) + 1;
+            }
+            let modifiers = Object.keys(modifierCounts);
+            modifiers.sort((x, y) => modifierCounts[y] - modifierCounts[x]);
+            this._modifierOrder = modifiers.map(x => x.split('.'));
+            this._bottomModifier = this._modifierOrder[0];
+            this._topModifier = this._modifierOrder[(0+1) % this._modifierOrder.length];
+        }
+
+        let bindings = allBindings.filter(filterBindingFn(<string>(values.get(MODE)),
             <number>(values.get(PREFIX_CODE))));
         bindings = uniqBy(bindings, b => b.args.key);
         this._bindingMap = {};
@@ -364,8 +399,10 @@ export async function activate(context: vscode.ExtensionContext){
     // TODO: only show command in os x
     // TODO: make a meta key for linux (and windows for windows)
     // TODO: the modifiers need to be able to be combined...
-    context.subscriptions.push(vscode.commands.registerCommand(`master-key.setVisualDocTopModifiers`,
+    context.subscriptions.push(vscode.commands.registerCommand('master-key.setVisualDocTopModifiers',
         args => setVisualDocModifier('top', docProvider, args)));
-    context.subscriptions.push(vscode.commands.registerCommand(`master-key.setVisualDocBottomModifiers`,
+    context.subscriptions.push(vscode.commands.registerCommand('master-key.setVisualDocBottomModifiers',
         args => setVisualDocModifier('bottom', docProvider, args)));
+    context.subscriptions.push(vscode.commands.registerCommand('master-key.toggleVisualDocModifiers',
+        args => docProvider.toggleModifier()));
 }

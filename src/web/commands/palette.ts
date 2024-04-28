@@ -68,9 +68,11 @@ export async function commandPalette(args_: unknown,
             let pick = picker.selectedItems[0];
             if(pick){
                 accepted = true;
+                picker.dispose();
                 await doCommandsCmd(pick.args);
+            }else{
+                picker.dispose();
             }
-            picker.dispose();
         });
         picker.onDidHide(async _ => {
             vscode.commands.executeCommand('setContext', 'master-key.keybindingPaletteOpen', false);
