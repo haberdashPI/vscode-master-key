@@ -4,7 +4,7 @@ import { parseWhen, bindingItem, DoArgs, DefinedCommand, BindingItem, BindingSpe
 import z from 'zod';
 import { sortBy, pick, isEqual, omit, mergeWith, cloneDeep, flatMap, merge } from 'lodash';
 import { reifyStrings, EvalContext } from '../expressions';
-import { validateInput } from '../utils';
+import { validateInput, get } from '../utils';
 import { fromZodError } from 'zod-validation-error';
 
 export interface Bindings{
@@ -22,6 +22,7 @@ export function processBindings(spec: BindingSpec): [Bindings, string[]]{
     items = expandModes(items, spec.define);
     let prefixCodes: PrefixCodes;
     [items, prefixCodes] = expandKeySequencesAndResolveDuplicates(items, problems);
+    items = movePrefixActionsToSuffix(items);
     items = items.map(moveModeToWhenClause);
     let newItems = items.map(i => movePrefixesToWhenClause(i, prefixCodes));
     let definitions = {...spec.define, prefixCodes: prefixCodes.codes};
@@ -417,28 +418,39 @@ function expandKeySequencesAndResolveDuplicates(items: BindingItem[], problems: 
             throw Error("Unexpected operation");
         }
     }
-    result = movePrefixActionsToSuffix(result);
     let sortedResult = sortBy(Object.values(result), i => i.index);
     return [sortedResult.map(i => i.item), prefixCodes];
 }
 
-function movePrefixActionsToSuffix(result: BindingMap){
-    for(let key of Object.keys(result)){
-        let item = result[key].item;
+function movePrefixActionsToSuffix(items: BindingItem[]){
+    let byPrefix: Record<string, {index: number, item: BindingItem}> = {};
+    for(let i=0; i<items.length; i++){
+        let item = items[i];
+        if(isSingleCommand(item.args.do, 'master-key.prefix')){
+            for(let prefix of item.prefixes){
+                let k = (item.mode || "") + ": ";
+                if(prefix.length > 0){
+                    k += prefix + " " + item.key[0];
+                }else{
+                    k += item.key[0];
+                }
+                if(byPrefix[k]){
+                    throw Error(`Expected a single prefix binding for ${prefix} for this mode (${item.mode})`)
+                }
+                byPrefix[k] = {index: i, item};
+            }
+        }
+    }
+    for(let item of items){
         if(!isSingleCommand(item.args.do, 'master-key.prefix')){
             let prefix = item.prefixes[0] || ""; // safely occurs after we have one prefix per item
             let keys = prefix.split(" ");
             let flags: string[] = [];
-            while(keys.length > 0){
-                let key = keys[keys.length-1];
+            while(keys.length > 1){
                 keys = keys.slice(0, -1);
-                let itemKey = hash({
-                    key,
-                    mode: item.mode,
-                    when: item.when?.map(w => w.id)?.sort(),
-                    prefixes: keys
-                });
-                let prefixItem = result[itemKey];
+                prefix = keys.join(" ");
+                let k = (item.mode || "") + ": " + prefix;
+                let prefixItem = byPrefix[k];
 
                 // NOTE: this doesn't work because users can customize prefixes
                 // and then they don't necessarily have the same when clause
@@ -450,8 +462,6 @@ function movePrefixActionsToSuffix(result: BindingMap){
                 // that have a given prefix
                 // BUT WAIT: this doesn't work
                 let flag = command.args.flag;
-                // remove flag argument from this prefix command
-                command.args = { code: command.args.code, automated: command.args.automated };
                 if(flag){ flags.push(flag); }
             }
 
@@ -465,9 +475,16 @@ function movePrefixActionsToSuffix(result: BindingMap){
             }
         }
     }
-    return result;
-}
 
+    for(let item of items){
+        if(isSingleCommand(item.args.do, 'master-key.prefix')){
+            // remove flag argument from this prefix command
+            let command = item.args.do[0];
+            command.args = { code: command.args.code, automated: command.args.automated };
+        }
+    }
+    return items;
+}
 
 export function isSingleCommand(x: DoArgs, cmd: string){
     if(x.length > 1){ return false; }

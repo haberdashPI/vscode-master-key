@@ -54,3 +54,11 @@ export function prettifyPrefix(str: string){
     str = replaceAll(str, /escape/gi, "ESC");
     return str;
 }
+
+export function get(x: any, key: string, def: any){
+    if(key in x && x[key] !== undefined){
+        return x[key];
+    }else{
+        return def;
+    }
+}

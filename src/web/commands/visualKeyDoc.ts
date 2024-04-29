@@ -7,7 +7,7 @@ import { IConfigKeyBinding } from '../keybindings/processing';
 import { currentKeybindings, filterBindingFn } from '../keybindings';
 import { PREFIX_CODE } from './prefix';
 import { uniqBy } from 'lodash';
-import { modifierKey, prettifyPrefix, validateInput } from '../utils';
+import { modifierKey, prettifyPrefix, validateInput, get } from '../utils';
 import { Map } from 'immutable';
 
 // TODO: use KeyboardLayoutMap to improve behavior
@@ -111,14 +111,6 @@ function keyRows(topModifier?: readonly string[], bottomModifier?: readonly stri
             };
         }
     }));
-}
-
-function get(x: any, key: string, def: any){
-    if(key in x && x[key] !== undefined){
-        return x[key];
-    }else{
-        return def;
-    }
 }
 
 const kindDoc = z.array(z.object({

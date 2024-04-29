@@ -4,6 +4,24 @@ NEXT UP:
 
 - move all flag setting for prefix commands to the suffix command upon pre-processing
   keybindings
+    - thinking on this more: we do want when clauses sometimes, e.g.
+      to prevent the binding from working in an irrelevant editor context
+      we could codify the contexts we allow and essentially "implement" them
+      as when clauses later on, but that feels kludgy
+      another option would be to have the when clauses moved
+      to the suffix as well, but then timing is weird
+      - could the constraint be: a single when clause for a given
+        mode, ignoring automated prefixes??
+      - OR there could be no constraint, and we only push flags etc.. to
+      the suffix if there is an unambiguous prefix sequence
+      for a given key / mode combination
+      in this way all bindings work, but only the bindings that are impossible
+      to handle in the command palette don't show up
+
+      - NOTE: this feels like an easy thing to do LATER
+        rather than now. it would improve the global command palette but not in
+        ways I particularly care about
+        (but its limitations should be well documented)
     - see notes under processing.ts
     - write unit tests for pre-processing
     - require prefix commands to be isolated from all others
