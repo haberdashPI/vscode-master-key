@@ -8,6 +8,36 @@ import { IConfigKeyBinding, PrefixCodes } from '../keybindings/processing';
 import { RunCommandsArgs, doCommandsCmd } from './do';
 import { uniqBy } from 'lodash';
 
+let paletteBindingMode = false;
+let paletteBindingContext = false;
+let currentPicker: vscode.QuickPick<{label: string, args: RunCommandsArgs}> | undefined = undefined;
+function setPickerText(){
+    if(currentPicker){
+        if(paletteBindingMode){
+            currentPicker.placeholder = `Run a command by pressing its keybinding.`;
+        }else{
+            currentPicker.placeholder = `Search the command by their description.`;
+        }
+        let mode;
+        if(paletteBindingMode){
+            mode = "Press a Binding";
+        }else{
+            mode = "Search";
+        }
+        let context = "";
+        if(paletteBindingContext){
+            context = "Context Specific ";
+        }
+        currentPicker.title = `Master Key ${context}Palette: ${mode} (use ^. to change mode)`;
+    }
+}
+
+function togglePaletteMode(){
+    paletteBindingMode = !paletteBindingMode;
+    vscode.commands.executeCommand('setContext', 'master-key.keybindingPaletteBindingMode', paletteBindingMode);
+    setPickerText();
+}
+
 export async function commandPalette(args_: unknown,
     opt: {context?: boolean, useKey?: boolean} = {}) {
 
@@ -21,9 +51,9 @@ export async function commandPalette(args_: unknown,
         let codes: PrefixCodes | undefined = undefined;
         let prefixCode = state.get<number>(PREFIX_CODE, 0)!;
         let mode = state.get<string>(MODE, 'insert')!;
-        if(useKey){
-            vscode.commands.executeCommand('setContext', 'master-key.keybindingPaletteOpen', true);
-        }
+        vscode.commands.executeCommand('setContext', 'master-key.keybindingPaletteOpen', true);
+        paletteBindingMode = useKey;
+        vscode.commands.executeCommand('setContext', 'master-key.keybindingPaletteBindingMode', paletteBindingMode);
         if(context){
             availableBindings = <IConfigKeyBinding[]>bindings.filter(filterBindingFn(mode, prefixCode));
         }else{
@@ -61,7 +91,10 @@ export async function commandPalette(args_: unknown,
         });
 
         let picker = vscode.window.createQuickPick<{label: string, args: RunCommandsArgs}>();
+        currentPicker = picker;
         let accepted = false;
+        paletteBindingContext = context;
+        setPickerText();
         picker.items = picks;
         picker.matchOnDescription = true;
         picker.onDidAccept(async _ => {
@@ -75,40 +108,39 @@ export async function commandPalette(args_: unknown,
             }
         });
         picker.onDidHide(async _ => {
-            vscode.commands.executeCommand('setContext', 'master-key.keybindingPaletteOpen', false);
+            vscode.commands.executeCommand('setContext', 'master-key.keybindingBindingMode', false);
             if(!accepted){
                 await withState(async s => s.reset().resolve());
             }
         });
         picker.show();
-        // when this is a palette that shows up during key pressing, dispose of the palette
-        // any time a normal key binding key is pressed (e.g. ones that add to the prefix or
-        // execute a command)
-        if(useKey){
-            await withState(async state => {
-                state = state.onSet(PREFIX_CODE, values => {
+        // when this the palette accepts keybinding presses (rather than searchbing
+        // bindings), dispose of the palette any time a normal key binding key is pressed
+        // (e.g. ones that add to the prefix or execute a command)
+        await withState(async state => {
+            if(paletteBindingMode){
+                state = state.onSet(PREFIX_CODE, _ => {
                     accepted = true;
                     picker.dispose();
                     return false;
                 });
-                state = state.onResolve('keybindingPalette', values => {
+                state = state.onResolve('keybindingPalette', _ => {
                     accepted = true;
                     picker.dispose();
                     return false;
                 });
-                return state;
-            });
-        }else{
-            // TODO: do we need to await on the selection in this case?? (I don't think so...)
-        }
+            }
+            return state;
+        });
     }
     return;
 }
 
 export function activate(context: vscode.ExtensionContext){
-    vscode.commands.executeCommand('setContext', 'master-key.keybindingPaletteOpen', false);
-    context.subscriptions.push(vscode.commands.registerCommand('master-key.contextualCommandPalette',
-        x => commandPalette(x, {context: true})));
+    vscode.commands.executeCommand('setContext', 'master-key.keybindingBindingMode', false);
+    vscode.commands.executeCommand('setContext', 'master-key.keybindingOpen', false);
+    context.subscriptions.push(vscode.commands.registerCommand('master-key.togglePaletteMode',
+        togglePaletteMode));
     context.subscriptions.push(vscode.commands.registerCommand('master-key.commandPalette',
         x => commandPalette(x, {context: false})));
     // TODO: also show a full command palette that lets you search all commands

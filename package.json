@@ -55,6 +55,11 @@
         "command": "master-key.toggleVisualDocModifiers",
         "category": "Master Key",
         "title": "Toggle visual doc keys from most to least common keybinding modifiers"
+      },
+      {
+        "command": "master-key.togglePaletteMode",
+        "category": "Master Key",
+        "title": "Toggle palette input mode"
       }
     ],
     "views": {
@@ -81,11 +86,12 @@
     "keybindings": [
       {
         "key": "ctrl+shift+;",
-        "command": "master-key.contextualCommandPalette"
+        "command": "master-key.commandPalette"
       },
       {
-        "key": "ctrl+shift+cmd+;",
-        "command": "master-key.commandPalette"
+        "key": "ctrl+.",
+        "when": "master-key.keybindingPaletteOpen",
+        "command": "master-key.togglePaletteMode"
       }
     ],
     "configuration": {

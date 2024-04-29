@@ -2,36 +2,20 @@ current issue I'm working on:
 
 NEXT UP:
 
-- we can solve problem with global command palette, avoiding the need to filter anything
-  with computed args by prepending all prefix commands to the final suffix key (in the
-  exported keybindings), we already export a key per possible prefix, so this shouldn't be a
-  problem (we'll need to properly handle bindings that can interrupt) so this involves a
-  transformation during keybinding processing
-  - we should make it explicitly not allowed to have anything *but* a prefix key
-    in the format, and have this allow setting of flags or values
-    (in this way we prevent visible state changes until the final key is pressed)
-
-IMPROVEMENT: palette should show a description of what it is displaying for the user
-IMPROVEMENT: once in a pop-up context, you can switch to searching with a command
-  (the context palette doesn't actually ever show up right now, and it would be confusing as worded right now anyways) this short cut should be shown in the description of the palette
-BUG: commands that change the viewport don't work when activated through the palette
-BUG: I noticed that definitions are updated internally on some kind of delay
-  (the config updates, but the state has an old value)
-BUG: sometimes the state of search always returns to insert (scrutize the code for oldMode resetting)
-
-- organize commands listed in the palette by:
+IMPREOVEMENT: organize commands listed in the palette by:
   - keybinding defined priority (if specified)
-  - recently used?? (or maybe this lowers the priority?? could be an option to hide recently used)
+  - place frequently used commands near the bottom
+
+BUG: sometimes the state of search always returns to insert (scrutize the code for oldMode resetting)
 
 UNIT TESTS for palette / and visual binding display
 
 IMPROVE KEYBINDINGS: I have thoughts about how to change my keymap now (maybe prioritize
   any keybinding redesign before doing this)
+  (maybe this is a good time to redesign the repeated keys setup)
 
-- add: visualPriority (which overrides the index priority) for
-       quick pick (maybe pick a better name)
-- add: remove keybinding command
-- add: insert default bindings into a new file
+- add: command to remove keybindings
+- add: command to insert bindings in a new file (so they can be easily edited)
 
 - idea: we want the default mode (which can be set by the user)
   to require no when clause for it; in this way
@@ -53,6 +37,10 @@ unit tests: edge cases with recording edits
   - does the command palette show up / not show up with the proper timing?
 unit tests: parsing of YAML and JSON(C)
 unit tests: store/restore named
+
+BUG: I noticed that definitions are updated internally on some kind of delay
+  (the config updates, but the state has an old value)
+  (search for this edge case a little bit)
 
 REFACTOR: cleanup up and document code, make it nice and readable
 REFACTOR: add prettier config and apply new style to all files
@@ -101,6 +89,14 @@ EDGE CASE: check that changing keybingings doesn't much with state (e.g. reset m
 
 wishlist:
 
+- turn keybinding file into markdown documentation of the bindings
+
+- make it possible to customize when the contextual palette shows up
+  (or have it be hidden entirely unless a keybinding is pressed)
+
+- enable vim style command queue during the prefix
+  (this will require changing `movePrefixActionsToSuffix` as well)
+
 - choose which modifiers to default to in the visual documentation based
   on modifier frequency
 
@@ -108,6 +104,13 @@ wishlist:
 
 - would be nice if each key past the first shows up in a quick pick menu
   rather than just being a separate keybinding
+
+- reduce the commands that have to be excluded from the global command palette
+
+- move all flag setting for prefix commands to the suffix command upon pre-processing
+  - we need to examine which variables `computedArgs` depend on
+  and only eliminate those commands that depend on variables modified in the
+  prefix
 
 - would be nice if each key sequence that mapped to a *single* command
   could be added as a keybinding full keybinding for that command

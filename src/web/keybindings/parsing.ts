@@ -122,7 +122,7 @@ export type ParsedWhen = z.infer<typeof parsedWhen>;
 export function parseWhen(when_: string | string[] | undefined): ParsedWhen[] {
     let when = when_ === undefined ? [] : !Array.isArray(when_) ? [when_] : when_;
     return when.map(w => {
-        w = replaceAll(w, /editorTextFocus/g, "(editorTextFocus || master-key.keybindingPaletteOpen)");
+        w = replaceAll(w, /editorTextFocus/g, "(editorTextFocus || master-key.keybindingPaletteBindingMode)");
         // let p = jsep(w);
         return { str: w, id: expressionId(w) };
     });
