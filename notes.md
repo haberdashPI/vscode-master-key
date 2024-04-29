@@ -41,6 +41,8 @@ unit tests: store/restore named
 BUG: I noticed that definitions are updated internally on some kind of delay
   (the config updates, but the state has an old value)
   (search for this edge case a little bit)
+BUG: switching out of the binding mode after closing the window
+  doesn't always seem to work
 
 REFACTOR: cleanup up and document code, make it nice and readable
 REFACTOR: add prettier config and apply new style to all files

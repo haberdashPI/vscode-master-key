@@ -108,7 +108,7 @@ export async function commandPalette(args_: unknown,
             }
         });
         picker.onDidHide(async _ => {
-            vscode.commands.executeCommand('setContext', 'master-key.keybindingBindingMode', false);
+            vscode.commands.executeCommand('setContext', 'master-key.keybindingPaletteBindingMode', false);
             vscode.commands.executeCommand('setContext', 'master-key.keybindingPaletteOpen', false);
             if(!accepted){
                 await withState(async s => s.reset().resolve());
@@ -138,7 +138,7 @@ export async function commandPalette(args_: unknown,
 }
 
 export function activate(context: vscode.ExtensionContext){
-    vscode.commands.executeCommand('setContext', 'master-key.keybindingBindingMode', false);
+    vscode.commands.executeCommand('setContext', 'master-key.keybindingPaletteBindingMode', false);
     vscode.commands.executeCommand('setContext', 'master-key.keybindingOpen', false);
     context.subscriptions.push(vscode.commands.registerCommand('master-key.togglePaletteMode',
         togglePaletteMode));
