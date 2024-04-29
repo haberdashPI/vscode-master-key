@@ -109,6 +109,7 @@ export async function commandPalette(args_: unknown,
         });
         picker.onDidHide(async _ => {
             vscode.commands.executeCommand('setContext', 'master-key.keybindingBindingMode', false);
+            vscode.commands.executeCommand('setContext', 'master-key.keybindingPaletteOpen', false);
             if(!accepted){
                 await withState(async s => s.reset().resolve());
             }
