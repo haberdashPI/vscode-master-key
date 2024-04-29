@@ -22,9 +22,15 @@ NEXT UP:
         rather than now. it would improve the global command palette but not in
         ways I particularly care about
         (but its limitations should be well documented)
+
+      - NOTE: is there a simpler way to include more?
+        e.g. allow computedArgs that only include count
+        allow anything with a sequence of prefixes
+          that do not include any state changes
+        (again, still feels like a nice to have, we can punt)
+
     - see notes under processing.ts
     - write unit tests for pre-processing
-    - require prefix commands to be isolated from all others
     - test out the command palette for something that depends on the flags
       (e.g. "uwd")
 
@@ -35,7 +41,6 @@ NEXT UP:
 IMPROVEMENT: palette should show a description of what it is displaying for the user
 IMPROVEMENT: once in a pop-up context, you can switch to searching with a command
   (the context palette doesn't actually ever show up right now, and it would be confusing as worded right now anyways) this short cut should be shown in the description of the palette
-BUG: commands that change the viewport don't work when activated through the palette
 BUG: I noticed that definitions are updated internally on some kind of delay
   (the config updates, but the state has an old value)
 BUG: sometimes the state of search always returns to insert (scrutize the code for oldMode resetting)
