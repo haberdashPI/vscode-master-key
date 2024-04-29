@@ -47,17 +47,16 @@ BUG: sometimes the state of search always returns to insert (scrutize the code f
 
 - organize commands listed in the palette by:
   - keybinding defined priority (if specified)
-  - recently used?? (or maybe this lowers the priority?? could be an option to hide recently used)
+  - place frequently used commands near the bottom
 
 UNIT TESTS for palette / and visual binding display
 
 IMPROVE KEYBINDINGS: I have thoughts about how to change my keymap now (maybe prioritize
   any keybinding redesign before doing this)
+  (maybe this is a good time to redesign the repeated keys setup)
 
-- add: visualPriority (which overrides the index priority) for
-       quick pick (maybe pick a better name)
-- add: remove keybinding command
-- add: insert default bindings into a new file
+- add: command to remove keybindings
+- add: command to insert bindings in a new file (so they can be easily edited)
 
 - idea: we want the default mode (which can be set by the user)
   to require no when clause for it; in this way
