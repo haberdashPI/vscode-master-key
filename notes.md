@@ -2,61 +2,36 @@ current issue I'm working on:
 
 NEXT UP:
 
-- move all flag setting for prefix commands to the suffix command upon pre-processing
-  keybindings
-    - thinking on this more: we do want when clauses sometimes, e.g.
-      to prevent the binding from working in an irrelevant editor context
-      we could codify the contexts we allow and essentially "implement" them
-      as when clauses later on, but that feels kludgy
-      another option would be to have the when clauses moved
-      to the suffix as well, but then timing is weird
-      - could the constraint be: a single when clause for a given
-        mode, ignoring automated prefixes??
-      - OR there could be no constraint, and we only push flags etc.. to
-      the suffix if there is an unambiguous prefix sequence
-      for a given key / mode combination
-      in this way all bindings work, but only the bindings that are impossible
-      to handle in the command palette don't show up
-
-      - NOTE: this feels like an easy thing to do LATER
-        rather than now. it would improve the global command palette but not in
-        ways I particularly care about
-        (but its limitations should be well documented)
-
-      - NOTE: is there a simpler way to include more?
-        e.g. allow computedArgs that only include count
-        allow anything with a sequence of prefixes
-          that do not include any state changes
-        (again, still feels like a nice to have, we can punt)
-
-    - see notes under processing.ts
-    - write unit tests for pre-processing
-    - test out the command palette for something that depends on the flags
-      (e.g. "uwd")
-
-  NOTE: we'll need to remember to document the `flag` argument to prefix
-  for purposes of user docs, even though it isn't actually an argument to this
-  command!!
+- we can solve problem with global command palette, avoiding the need to filter anything
+  with computed args by prepending all prefix commands to the final suffix key (in the
+  exported keybindings), we already export a key per possible prefix, so this shouldn't be a
+  problem (we'll need to properly handle bindings that can interrupt) so this involves a
+  transformation during keybinding processing
+  - we should make it explicitly not allowed to have anything *but* a prefix key
+    in the format, and have this allow setting of flags or values
+    (in this way we prevent visible state changes until the final key is pressed)
 
 IMPROVEMENT: palette should show a description of what it is displaying for the user
 IMPROVEMENT: once in a pop-up context, you can switch to searching with a command
   (the context palette doesn't actually ever show up right now, and it would be confusing as worded right now anyways) this short cut should be shown in the description of the palette
+BUG: commands that change the viewport don't work when activated through the palette
 BUG: I noticed that definitions are updated internally on some kind of delay
   (the config updates, but the state has an old value)
 BUG: sometimes the state of search always returns to insert (scrutize the code for oldMode resetting)
 
 - organize commands listed in the palette by:
   - keybinding defined priority (if specified)
-  - place frequently used commands near the bottom
+  - recently used?? (or maybe this lowers the priority?? could be an option to hide recently used)
 
 UNIT TESTS for palette / and visual binding display
 
 IMPROVE KEYBINDINGS: I have thoughts about how to change my keymap now (maybe prioritize
   any keybinding redesign before doing this)
-  (maybe this is a good time to redesign the repeated keys setup)
 
-- add: command to remove keybindings
-- add: command to insert bindings in a new file (so they can be easily edited)
+- add: visualPriority (which overrides the index priority) for
+       quick pick (maybe pick a better name)
+- add: remove keybinding command
+- add: insert default bindings into a new file
 
 - idea: we want the default mode (which can be set by the user)
   to require no when clause for it; in this way
@@ -125,9 +100,6 @@ maybe we should
 EDGE CASE: check that changing keybingings doesn't much with state (e.g. reset mode)
 
 wishlist:
-
-- enable vim style command queue during the prefix
-  (this will require changing `movePrefixActionsToSuffix` as well)
 
 - choose which modifiers to default to in the visual documentation based
   on modifier frequency

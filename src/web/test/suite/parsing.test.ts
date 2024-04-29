@@ -366,46 +366,6 @@ suite('Keybinding Test Suite', () => {
                        [false, true, true, false, true, false]));
     });
 
-    test('Automated prefixes are properly ordered', () => {
-        let spec = specForBindings(`
-        [header]
-        version = "1.0"
-
-        [[bind]]
-        name = "before"
-        key = "d"
-        command = "bar"
-
-        [[bind]]
-        name = "1"
-        key = "a b c"
-        when = "bar"
-        command = "foo"
-
-        [[bind]]
-        name = "2p"
-        key = "a"
-        command = "modal-key.prefix"
-        args.flag = "a_prefix_on"
-
-        [[bind]]
-        name = "2"
-        key = "a b"
-        command = "modal-key.prefix"
-        args.flag = "ab_prefix_on"
-
-        `);
-        assert.equal(spec.length, 6);
-        assert(isEqual(spec.filter(i => i.key === "c")[0].args.do, [
-            {command: "moal-key.setFlag", args: { flag: "a_prefix_on" }},
-            {command: "moal-key.setFlag", args: { flag: "ab_prefix_on" }},
-            {command: "foo"}
-        ]));
-        assert(isEqual(spec.map(i => i.key), ["d", "a", "b", "c", "a", "b"]));
-        assert(isEqual(spec.map(i => !!(i.args.do[0]?.args?.automated)),
-                       [false, true, true, false, true, false]));
-    });
-
     test('Keybindings properly resolve `<all-pefixes>` cases', () => {
         let spec = specForBindings(`
         [header]
