@@ -63,6 +63,7 @@ const runCommandArgs = z.object({
     key: z.string().optional(),
     resetTransient: z.boolean().optional().default(true),
     repeat: z.number().min(0).or(z.string()).optional(),
+    priority: z.number().optional(),
     kind: z.string().optional(),
     path: z.string().optional(),
     name: z.string().optional(),

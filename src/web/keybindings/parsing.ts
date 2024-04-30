@@ -132,6 +132,7 @@ export const rawBindingItem = z.object({
     name: z.string().optional(),
     description: z.string().optional(),
     path: z.string().optional(),
+    priority: z.number().default(0).optional(),
     kind: z.string().optional(),
     key: z.union([bindingKey, bindingKey.array()]).optional(),
     when: z.union([z.string(), z.string().array()]).optional().
@@ -169,6 +170,7 @@ export const bindingItem = z.object({
     args: z.object({
         do: doArgs,
         path: z.string().optional().default(""),
+        priority: z.number().optional().default(0),
         resetTransient: rawBindingItem.shape.resetTransient.default(true),
         kind: z.string().optional().default(""),
         repeat: z.number().min(0).or(z.string()).default(0)

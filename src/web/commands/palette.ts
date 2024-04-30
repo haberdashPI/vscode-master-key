@@ -6,7 +6,7 @@ import { PREFIX_CODE, prefixCodes } from './prefix';
 import { MODE } from './mode';
 import { IConfigKeyBinding, PrefixCodes } from '../keybindings/processing';
 import { RunCommandsArgs, doCommandsCmd } from './do';
-import { uniqBy } from 'lodash';
+import { uniqBy, sortBy } from 'lodash';
 
 let paletteBindingMode = false;
 let paletteBindingContext = false;
@@ -89,6 +89,8 @@ export async function commandPalette(args_: unknown,
                 args: binding.args,
             };
         });
+
+        picks = sortBy(picks, x => -x.args.priority);
 
         let picker = vscode.window.createQuickPick<{label: string, args: RunCommandsArgs}>();
         currentPicker = picker;
