@@ -3,12 +3,10 @@ current issue I'm working on:
 NEXT UP:
 
 IMPREOVEMENT: organize commands listed in the palette by:
-  - keybinding defined priority (if specified)
   - place frequently used commands near the bottom
 
-BUG: sometimes the state of search always returns to insert (scrutize the code for oldMode resetting)
-
 UNIT TESTS for palette / and visual binding display
+UNIT TESTS for newly added
 
 IMPROVE KEYBINDINGS: I have thoughts about how to change my keymap now (maybe prioritize
   any keybinding redesign before doing this)
@@ -45,6 +43,10 @@ BUG: I noticed that definitions are updated internally on some kind of delay
 REFACTOR: cleanup up and document code, make it nice and readable
 REFACTOR: add prettier config and apply new style to all files
 
+- BUG/IMPROVEMENT: for any non-prefix binding (e.g. prefixCode==0)
+  that has no modifier (other than shift), require that the editor
+  be in focus
+
 thoughts: things I must have to release:
 - good documentation of the code
 - user documentation
@@ -53,10 +55,15 @@ thoughts: things I must have to release:
   - and have all multi key commands show up in quick picker
     (ideally after some delay)
 - keybinding documentation features
+  - visual documentation
+  - markdown output / html
 - mode customization
 - modernized selection utilities
   - good documentation
   - modern build setup
+- final design of keybinding file that I'm relatively satisfied with
+  - fix the repat keybindings
+- vim style bindings? (I think this could come in a separate release)
 - anything else that has to be here? (check below wishlist and issues under the project)
 
 **TODO**: in documenting macro playback note the limitations of recording the keyboard
@@ -67,9 +74,6 @@ that are recorded)
 field e.g. `extend` (or `concat`?) for the fancier situation
 
 **TODO**: anything beyond this point needs to be organized and prioritized
-
-- REDESIGN!! I think the the way repeated keys works is a little unwieldy in many cases
-  (maybe we should express it explicitly as a loop somehow...🤔)
 
 ```toml
 [[bind]]
@@ -84,6 +88,9 @@ maybe we should
 
 - require parsing to validate modes to be all negations or all positive mode specifications
 - add more to symmetric insert setup
+
+- REDESIGN!! I think the the way repeated keys works is a little unwieldy in many cases
+  (maybe we should express it explicitly as a loop somehow...🤔)
 
 EDGE CASE: check that changing keybingings doesn't much with state (e.g. reset mode)
 
