@@ -2204,7 +2204,7 @@ name = "Window Manipulation"
 description = "Commands for navigating and manipulating the window/editor panes in some way"
 default.kind = "window"
 default.mode = "normal"
-default.when = "(!inputFocus && !textInputFocus && !sideBarFocus) || editorTextFocus"
+default.when = "editorTextFocus && !findWidgetVisible"
 
 [[bind]]
 path = "window"
