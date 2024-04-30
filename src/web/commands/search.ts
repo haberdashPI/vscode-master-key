@@ -145,7 +145,9 @@ function getSearchState(editor: vscode.TextEditor, mode: string, register: strin
         searchStates.set(editor, statesForEditor);
         return searchState;
     } else {
-        return statesForEditor[register];
+        let state =  statesForEditor[register];
+        state.oldMode = mode;
+        return state;
     }
 }
 
