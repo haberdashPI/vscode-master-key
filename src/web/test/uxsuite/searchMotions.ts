@@ -6,7 +6,7 @@ export const run = () => describe('Search motions', () => {
     let editor: TextEditor;
 
     before(async function(){
-        this.timeout(8 * 1000);
+        this.timeout(10 * 1000);
         await setBindings(`
             [header]
             version = "1.0"

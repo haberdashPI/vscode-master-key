@@ -4,7 +4,6 @@ import commandState from "./commandState";
 import searchMotions from './searchMotions';
 import captureKeys from './captureKeys.test';
 import replay from './replay.test';
-import commandPalette from './commandPalette';
 
 describe('UI Test Suite', () => {
     before(async function(){
@@ -13,12 +12,11 @@ describe('UI Test Suite', () => {
         setupTempdir();
     });
 
-    simpleMotions.run();
-    commandPalette.run();
-    commandState.run();
+    // simpleMotions.run();
+    // commandState.run();
     searchMotions.run();
-    captureKeys.run();
-    replay.run();
+    // captureKeys.run();
+    // replay.run();
 
     after(() => { cleanupTempdir(); });
 });

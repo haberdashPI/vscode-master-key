@@ -87,6 +87,8 @@ errors.
 
 ## Developer Notes
 
+**TODO**: reference a separate file here
+
 This repository relies on a working versions of `nvm` installed in bash and a npm version
 matching the version specified in `.nvmrc`. You can satisfy this requirement by copying and
 running the following in bash.
@@ -106,3 +108,5 @@ npm i
 ```
 
 **TODO**: this should really document the use of the debug-profile file
+
+**TODO**: this should document the limitations of ux testing (e.g. can't test palette, and why that's okay)
