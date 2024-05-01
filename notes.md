@@ -40,8 +40,8 @@ BUG: I noticed that definitions are updated internally on some kind of delay
   (the config updates, but the state has an old value)
   (search for this edge case a little bit)
 
-REFACTOR: cleanup up and document code, make it nice and readable
 REFACTOR: add prettier config and apply new style to all files
+REFACTOR: cleanup up and document code, make it nice and readable
 
 - BUG/IMPROVEMENT: for any non-prefix binding (e.g. prefixCode==0)
   that has no modifier (other than shift), require that the editor
