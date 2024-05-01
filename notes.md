@@ -2,11 +2,8 @@ current issue I'm working on:
 
 NEXT UP:
 
-IMPREOVEMENT: organize commands listed in the palette by:
-  - place frequently used commands near the bottom
-
 UNIT TESTS for palette / and visual binding display
-UNIT TESTS for newly added
+UNIT TESTS for newly added properties
 
 IMPROVE KEYBINDINGS: I have thoughts about how to change my keymap now (maybe prioritize
   any keybinding redesign before doing this)
@@ -95,6 +92,11 @@ maybe we should
 EDGE CASE: check that changing keybingings doesn't much with state (e.g. reset mode)
 
 wishlist:
+
+- unit tests for visual doc?? (what would this even look like?? sounds time consuming
+  and not very much gain would be had)
+
+- place frequently used commands near the bottom of the command palette
 
 - turn keybinding file into markdown documentation of the bindings
 

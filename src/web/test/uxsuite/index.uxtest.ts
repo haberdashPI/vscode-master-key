@@ -4,6 +4,7 @@ import commandState from "./commandState";
 import searchMotions from './searchMotions';
 import captureKeys from './captureKeys.test';
 import replay from './replay.test';
+import commandPalette from './commandPalette';
 
 describe('UI Test Suite', () => {
     before(async function(){
@@ -13,6 +14,7 @@ describe('UI Test Suite', () => {
     });
 
     simpleMotions.run();
+    commandPalette.run();
     commandState.run();
     searchMotions.run();
     captureKeys.run();
