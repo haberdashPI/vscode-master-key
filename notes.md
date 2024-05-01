@@ -2,8 +2,6 @@ current issue I'm working on:
 
 NEXT UP:
 
-UNIT TESTS for palette / and visual binding display
-
 IMPROVE KEYBINDINGS: I have thoughts about how to change my keymap now (maybe prioritize
   any keybinding redesign before doing this)
   (maybe this is a good time to redesign the repeated keys setup)
