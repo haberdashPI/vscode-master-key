@@ -3,7 +3,6 @@ current issue I'm working on:
 NEXT UP:
 
 UNIT TESTS for palette / and visual binding display
-UNIT TESTS for newly added properties
 
 IMPROVE KEYBINDINGS: I have thoughts about how to change my keymap now (maybe prioritize
   any keybinding redesign before doing this)
@@ -39,6 +38,7 @@ BUG: I noticed that definitions are updated internally on some kind of delay
 
 REFACTOR: add prettier config and apply new style to all files
 REFACTOR: cleanup up and document code, make it nice and readable
+REFACTOR: change name of test files to be more consistent
 
 - BUG/IMPROVEMENT: for any non-prefix binding (e.g. prefixCode==0)
   that has no modifier (other than shift), require that the editor
