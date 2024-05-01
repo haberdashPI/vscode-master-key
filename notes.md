@@ -36,32 +36,31 @@ BUG: I noticed that definitions are updated internally on some kind of delay
   (the config updates, but the state has an old value)
   (search for this edge case a little bit)
 
-REFACTOR: add prettier config and apply new style to all files
-REFACTOR: cleanup up and document code, make it nice and readable
-REFACTOR: change name of test files to be more consistent
-
 - BUG/IMPROVEMENT: for any non-prefix binding (e.g. prefixCode==0)
   that has no modifier (other than shift), require that the editor
   be in focus
 
 thoughts: things I must have to release:
-- good documentation of the code
 - user documentation
-- the command palette like feature: OR
-  - make single commands visible in pallet (need to test that this would work!)
-  - and have all multi key commands show up in quick picker
-    (ideally after some delay)
+- well documented default keybindings
 - keybinding documentation features
-  - visual documentation
   - markdown output / html
 - mode customization
 - modernized selection utilities
   - good documentation
   - modern build setup
 - final design of keybinding file that I'm relatively satisfied with
-  - fix the repat keybindings
+  - fix the repeat keybindings
+  - fix default expansion
+
+after first release
+
+- good documentation of the code
 - vim style bindings? (I think this could come in a separate release)
-- anything else that has to be here? (check below wishlist and issues under the project)
+
+REFACTOR: add prettier config and apply new style to all files
+REFACTOR: cleanup up and document code, make it nice and readable
+REFACTOR: change name of test files to be more consistent
 
 **TODO**: in documenting macro playback note the limitations of recording the keyboard
 (e.g. that it only records inserts; any modifiers are espected to be commands
@@ -71,6 +70,9 @@ that are recorded)
 field e.g. `extend` (or `concat`?) for the fancier situation
 
 **TODO**: anything beyond this point needs to be organized and prioritized
+
+- REDESIGN!! I think the the way repeated keys works is a little unwieldy in many cases
+  (maybe we should express it explicitly as a loop somehow...🤔)
 
 ```toml
 [[bind]]
@@ -86,12 +88,12 @@ maybe we should
 - require parsing to validate modes to be all negations or all positive mode specifications
 - add more to symmetric insert setup
 
-- REDESIGN!! I think the the way repeated keys works is a little unwieldy in many cases
-  (maybe we should express it explicitly as a loop somehow...🤔)
-
 EDGE CASE: check that changing keybingings doesn't much with state (e.g. reset mode)
 
 wishlist:
+
+- careful optimization: clean up code to do fewer dumb repetivie things
+  that slow down performance
 
 - unit tests for visual doc?? (what would this even look like?? sounds time consuming
   and not very much gain would be had)
@@ -102,9 +104,6 @@ wishlist:
 
 - make it possible to customize when the contextual palette shows up
   (or have it be hidden entirely unless a keybinding is pressed)
-
-- enable vim style command queue during the prefix
-  (this will require changing `movePrefixActionsToSuffix` as well)
 
 - choose which modifiers to default to in the visual documentation based
   on modifier frequency
