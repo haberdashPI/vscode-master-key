@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import { searchArgs, searchMatches } from '../commands/search';
 import { parseBindings, BindingSpec, showParseError, parseBindingFile, bindingSpec } from './parsing';
-import { processBindings, IConfigKeyBinding, Bindings } from './processing';
-import { uniq, pick } from 'lodash';
+import { processBindings, IConfigKeyBinding, Bindings, isSingleCommand } from './processing';
+import { uniq, pick, words } from 'lodash';
 import replaceAll from 'string.prototype.replaceall';
 import { Utils } from 'vscode-uri';
 import z from 'zod';
@@ -48,7 +48,10 @@ function formatBindings(file: vscode.Uri, items: IConfigKeyBinding[]){
     let json = "";
     for(let item of items){
         if(item.prefixDescriptions.length > 0){
-            let comment = "Prefix Codes:\n";
+            let comment = "Automated binding; avoid editing manually, instead use one of these commands";
+            comment += "'Master Key: Select Binding Preset";
+            comment += "'Master Key: Remove Bindings";
+            comment += "Prefix Codes:\n";
             comment += item.prefixDescriptions.join("\n");
             json += replaceAll(comment, /^\s*(?=\S+)/mg, "    // ")+"\n";
         }
@@ -63,6 +66,53 @@ function formatBindings(file: vscode.Uri, items: IConfigKeyBinding[]){
         "\n" + json +
         AUTOMATED_COMMENT_END
     );
+}
+
+let keybindings: IConfigKeyBinding[] = [];
+async function saveKeybindingsToStorage(config: any){
+    keybindings = config;
+    vscode.workspace.fs.createDirectory(storageUri);
+    let configFile = vscode.Uri.joinPath(storageUri, 'config.json');
+    let data = new TextEncoder().encode(JSON.stringify(config));
+    vscode.workspace.fs.writeFile(configFile, data);
+}
+
+async function restoreKeybindingsFromStorage(){
+    let configFile = vscode.Uri.joinPath(storageUri, 'config.json');
+    try{
+        await vscode.workspace.fs.stat(configFile);
+        let data = await vscode.workspace.fs.readFile(configFile);
+        keybindings = JSON.parse(new TextDecoder().decode(data));
+    }catch{
+        console.log("No keybindings found at: "+configFile);
+        return;
+    }
+}
+
+export function filterBindingFn(mode?: string, prefixCode?: number) {
+    return function filterBinding(binding_: any) {
+        let binding = <IConfigKeyBinding>binding_;
+        if (isSingleCommand(binding.args.do, 'master-key.ignore')) {
+            return false;
+        }
+        if (mode !== undefined && binding.args.mode !== undefined && binding.args.mode !== mode) {
+            return false;
+        }
+        if (prefixCode !== undefined && binding.args.prefixCode !== undefined &&
+            binding.args.prefixCode !== prefixCode) {
+            return false;
+        }
+        if (mode === undefined && prefixCode === undefined){
+            if(!binding.args.do.every(c => c.computedArgs === undefined)){
+                return false;
+            }
+        }
+        return true;
+    };
+}
+
+export function currentKeybindings(){
+    return keybindings;
 }
 
 async function insertKeybindingsIntoConfig(file: vscode.Uri, config: any) {
@@ -92,7 +142,8 @@ async function insertKeybindingsIntoConfig(file: vscode.Uri, config: any) {
                     builder.replace(range, bindingsToInsert);
                 });
                 ed.revealRange(new vscode.Range(range.start, range.start));
-                vscode.commands.executeCommand('workbench.action.files.save');
+                await vscode.commands.executeCommand('workbench.action.files.save');
+                await saveKeybindingsToStorage(config);
                 vscode.window.showInformationMessage(`Your master keybindings have
                     been updated in \`keybindings.json\`.`);
             } else if (oldBindingsEnd || oldBindingsStart){
@@ -105,7 +156,8 @@ async function insertKeybindingsIntoConfig(file: vscode.Uri, config: any) {
                     builder.insert(insertAt, "\n" + bindingsToInsert);
                 });
                 ed.revealRange(new vscode.Range(insertAt, insertAt));
-                vscode.commands.executeCommand('workbench.action.files.save');
+                await vscode.commands.executeCommand('workbench.action.files.save');
+                await saveKeybindingsToStorage(config);
                 vscode.window.showInformationMessage(`Your master keybindings have
                     been inserted into \`keybindings.json\`.`);
             }
@@ -282,12 +334,17 @@ async function loadPresets(allDirs: vscode.Uri[]){
 }
 
 let extensionPresetsDir: vscode.Uri;
-export function activate(context: vscode.ExtensionContext) {
+let storageUri: vscode.Uri;
+
+export async function activate(context: vscode.ExtensionContext) {
+    storageUri = context.globalStorageUri;
     context.subscriptions.push(vscode.commands.registerCommand(
         'master-key.selectPreset',
         selectPreset
     ));
     extensionPresetsDir = Utils.joinPath(context.extensionUri, "presets");
+    await restoreKeybindingsFromStorage();
+
     updatePresets();
     vscode.workspace.onDidChangeConfiguration(updatePresets);
 }

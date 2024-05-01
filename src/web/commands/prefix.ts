@@ -11,9 +11,27 @@ const prefixArgs = z.object({
     automated: z.boolean().optional()
 }).strict();
 
-const PREFIX_CODE = 'prefixCode';
-const PREFIX_CODES = 'prefixCodes';
+export const PREFIX_CODE = 'prefixCode';
+export const PREFIX_CODES = 'prefixCodes';
 export const PREFIX = 'prefix';
+
+// HOLD ON!! this feels broken — really when the prefix codes get LOADED
+// we should translate them into the proper type of object
+// (and this would keep us from having this weird async api within `withState`)
+export function prefixCodes(state: CommandState): [CommandState, PrefixCodes]{
+    let prefixCodes_ = state.get(PREFIX_CODES);
+    let prefixCodes: PrefixCodes;
+    if(!prefixCodes_){
+        prefixCodes = new PrefixCodes();
+        state = state.set(PREFIX_CODES, prefixCodes);
+    }else if(!(prefixCodes_ instanceof PrefixCodes)){
+        prefixCodes = new PrefixCodes(<Record<string, number>>prefixCodes_);
+        state = state.set(PREFIX_CODES, prefixCodes);
+    }else{
+        prefixCodes = prefixCodes_;
+    }
+    return [state, prefixCodes];
+}
 
 async function prefix(args_: unknown): Promise<CommandResult>{
     let args = validateInput('master-key.prefix', args_, prefixArgs);
@@ -21,18 +39,9 @@ async function prefix(args_: unknown): Promise<CommandResult>{
         let a = args;
         await withState(async state => {
             return state.withMutations(state => {
-                let prefixCodes_ = state.get(PREFIX_CODES);
-                let prefixCodes: PrefixCodes;
-                if(!prefixCodes_){
-                    prefixCodes = new PrefixCodes();
-                    state.set(PREFIX_CODES, prefixCodes);
-                }else if(!(prefixCodes_ instanceof PrefixCodes)){
-                    prefixCodes = new PrefixCodes(<Record<string, number>>prefixCodes_);
-                    state.set(PREFIX_CODES, prefixCodes);
-                }else{
-                    prefixCodes = prefixCodes_;
-                }
-                let prefix = prefixCodes.nameFor(a.code);
+                let codes;
+                [state, codes] = prefixCodes(state);
+                let prefix = codes.nameFor(a.code);
                 state.set(PREFIX_CODE, {transient: {reset: 0}, public: true}, a.code);
                 state.set(PREFIX, {transient: {reset: ''}, public: true}, prefix);
 

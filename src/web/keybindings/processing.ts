@@ -132,6 +132,7 @@ function expandDefaultsAndDefinedCommands(spec: BindingSpec, problems: string[])
                     path: item.path,
                     name: item.name,
                     description: item.description,
+                    priority: item.priority,
                     kind: item.kind,
                     resetTransient: item.resetTransient,
                     repeat: item.repeat
@@ -226,8 +227,11 @@ export interface IConfigKeyBinding {
         name?: string,
         description?: string,
         resetTransient?: boolean,
+        priority: number,
         kind: string,
         path: string
+        mode: string | undefined,
+        prefixCode: number | undefined,
     }
 }
 
@@ -241,7 +245,12 @@ function itemToConfigBinding(item: BindingItem, defs: Record<string, any>): ICon
         prefixDescriptions,
         when: "(" + item.when.map(w => w.str).join(") && (") + ")",
         command: "master-key.do",
-        args: {...item.args, key: <string>item.key}
+        args: {
+            ...item.args,
+            prefixCode: item.prefixes.length > 0 ? defs['prefixCodes'][item.prefixes[0]] : undefined,
+            mode: item.mode && item.mode.length > 0 ? item.mode[0] : undefined,
+            key: <string>item.key
+        }
     };
 }
 
@@ -319,6 +328,7 @@ function updatePrefixItemAndPrefix(item: BindingItem, key: string, prefix: strin
             path: item.args.path,
             name: "Command Prefix: "+prefix,
             kind: "prefix",
+            priority: 0,
             resetTransient: false,
             repeat: 0
         },

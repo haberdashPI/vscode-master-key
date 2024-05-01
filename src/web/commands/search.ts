@@ -132,11 +132,7 @@ class SearchState{
 
 let searchStates: Map<vscode.TextEditor, Record<string, SearchState>> = new Map();
 let currentSearch: string = "default";
-let searchStateUsed = false;
-export function trackSearchUsage(){ searchStateUsed = false; }
-export function wasSearchUsed(){ return searchStateUsed; }
 function getSearchState(editor: vscode.TextEditor, mode: string, register: string): SearchState {
-    searchStateUsed = true;
     let statesForEditor = searchStates.get(editor);
     statesForEditor = statesForEditor ? statesForEditor : {};
     if (!statesForEditor[register]) {
@@ -145,10 +141,17 @@ function getSearchState(editor: vscode.TextEditor, mode: string, register: strin
         searchStates.set(editor, statesForEditor);
         return searchState;
     } else {
-        return statesForEditor[register];
+        let state =  statesForEditor[register];
+        state.oldMode = mode !== 'capture' ? mode : state.oldMode;
+        return state;
     }
 }
 
+function getOldSearchState(editor: vscode.TextEditor, register: string): SearchState | undefined {
+    let statesForEditor = searchStates.get(editor);
+    statesForEditor = statesForEditor ? statesForEditor : {};
+    return statesForEditor[register];
+}
 /**
  * The actual search functionality is located in this helper function. It is
  * used by the actual search command plus the commands that jump to next and
@@ -321,10 +324,11 @@ async function search(args_: any[]): Promise<CommandResult> {
     await onResolve('search', values => {
         let editor = vscode.window.activeTextEditor;
         if (editor) {
-            let searchState = getSearchState(editor, <string>values.get(MODE, 'insert'),
-                    currentSearch);
-            if(!searchState.modified){ clearSearchDecorations(editor); }
-            searchState.modified = false;
+            let searchState = getOldSearchState(editor, currentSearch);
+            if(searchState){
+                if(!searchState.modified){ clearSearchDecorations(editor); }
+                searchState.modified = false;
+            }
         }
         return true;
     });

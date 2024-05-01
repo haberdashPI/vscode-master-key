@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import z from 'zod';
 import { showParseError } from './keybindings/parsing';
+import replaceAll from 'string.prototype.replaceall';
 
 // function validateInput(command: string, args_: unknown,
 //     using: z.ZodUn);
@@ -31,4 +32,25 @@ export function wrappedTranslate(x: vscode.Position, doc: vscode.TextDocument, v
         }
         return result.translate(0, val);
     }
+}
+
+// splits out the modifier key
+export function modifierKey(str: string){
+    if(str.match(/\+/)){
+        return str.split("+").slice(0, -1).map(x => prettifyPrefix(x));
+    }
+    return [""];
+}
+
+export function prettifyPrefix(str: string){
+    str = str.toUpperCase();
+    str = replaceAll(str, /shift(\+|$)/gi, '⇧');
+    str = replaceAll(str, /ctrl(\+|$)/gi, '^');
+    str = replaceAll(str, /alt(\+|$)/gi, '⌥');
+    str = replaceAll(str, /meta(\+|$)/gi, '◆');
+    str = replaceAll(str, /win(\+|$)/gi, '⊞');
+    str = replaceAll(str, /cmd(\+|$)/gi, '⌘');
+    str = replaceAll(str, / /g, ", ");
+    str = replaceAll(str, /escape/gi, "ESC");
+    return str;
 }

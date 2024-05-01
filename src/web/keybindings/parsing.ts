@@ -5,14 +5,12 @@ import { Utils } from 'vscode-uri';
 const TOML = require("smol-toml");
 import YAML from 'yaml';
 import * as semver from 'semver';
-import { TextDecoder } from 'web-encoding';
 import z, { ZodIssue } from "zod";
 import { ZodError, fromZodError, fromZodIssue } from 'zod-validation-error';
 import { expressionId } from '../expressions';
 import { uniqBy } from 'lodash';
+import replaceAll from 'string.prototype.replaceall';
 export const INPUT_CAPTURE_COMMANDS = ['captureKeys', 'replaceChar', 'insertChar', 'search'];
-
-let decoder = new TextDecoder("utf-8");
 
 const bindingHeader = z.object({
     version: z.string().
@@ -124,7 +122,8 @@ export type ParsedWhen = z.infer<typeof parsedWhen>;
 export function parseWhen(when_: string | string[] | undefined): ParsedWhen[] {
     let when = when_ === undefined ? [] : !Array.isArray(when_) ? [when_] : when_;
     return when.map(w => {
-        let p = jsep(w);
+        w = replaceAll(w, /editorTextFocus/g, "(editorTextFocus || master-key.keybindingPaletteBindingMode)");
+        // let p = jsep(w);
         return { str: w, id: expressionId(w) };
     });
 }
@@ -133,6 +132,7 @@ export const rawBindingItem = z.object({
     name: z.string().optional(),
     description: z.string().optional(),
     path: z.string().optional(),
+    priority: z.number().default(0).optional(),
     kind: z.string().optional(),
     key: z.union([bindingKey, bindingKey.array()]).optional(),
     when: z.union([z.string(), z.string().array()]).optional().
@@ -170,6 +170,7 @@ export const bindingItem = z.object({
     args: z.object({
         do: doArgs,
         path: z.string().optional().default(""),
+        priority: z.number().optional().default(0),
         resetTransient: rawBindingItem.shape.resetTransient.default(true),
         kind: z.string().optional().default(""),
         repeat: z.number().min(0).or(z.string()).default(0)
@@ -223,7 +224,7 @@ export function parseBindings<T>(text: string, parse: string | ((data: string) =
 
 export async function parseBindingFile(file: vscode.Uri){
     let fileData = await vscode.workspace.fs.readFile(file);
-    let fileText = decoder.decode(fileData);
+    let fileText = new TextDecoder().decode(fileData);
     let ext = Utils.extname(file);
     return parseBindings(fileText, ext);
 }

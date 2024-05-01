@@ -4,6 +4,7 @@ import jsep from 'jsep';
 const jsepRegex = require('@jsep-plugin/regex');
 import hash from 'object-hash';
 import { mapValues } from 'lodash';
+import { withState } from './state';
 
 jsep.addBinaryOp("=~", 6);
 jsep.plugins.register(jsepRegex.default);

@@ -5,10 +5,11 @@ import { BindingCommand, DoArgs, doArgs } from '../keybindings/parsing';
 import { withState, CommandResult, CommandState, WrappedCommandResult, commandArgs, recordedCommand } from '../state';
 import { cloneDeep, merge } from 'lodash';
 import { evalContext, reifyStrings } from '../expressions';
-import { keySuffix } from './prefix';
+import { PREFIX_CODE, keySuffix } from './prefix';
 import { isSingleCommand } from '../keybindings/processing';
 import { MODE } from './mode';
 import { List } from 'immutable';
+import { commandPalette } from './palette';
 
 async function doCommand(command: BindingCommand):
     Promise<BindingCommand | undefined> {
@@ -62,10 +63,13 @@ const runCommandArgs = z.object({
     key: z.string().optional(),
     resetTransient: z.boolean().optional().default(true),
     repeat: z.number().min(0).or(z.string()).optional(),
+    priority: z.number().optional(),
     kind: z.string().optional(),
     path: z.string().optional(),
     name: z.string().optional(),
     description: z.string().optional(),
+    prefixCode: z.number().optional(),
+    mode: z.string().optional()
 }).strict();
 export type RunCommandsArgs = z.input<typeof runCommandArgs>;
 
@@ -95,7 +99,20 @@ async function resolveRepeat(args: RunCommandsArgs): Promise<number> {
     }
 }
 
+const PALETTE_DELAY = 500;
+let paletteUpdate = Number.MIN_SAFE_INTEGER;
+
+function registerPaletteUpdate(){
+    if(paletteUpdate < Number.MAX_SAFE_INTEGER){
+        paletteUpdate += 1;
+    }else{
+        paletteUpdate = Number.MIN_SAFE_INTEGER;
+    }
+}
+
 export async function doCommands(args: RunCommandsArgs): Promise<CommandResult>{
+    registerPaletteUpdate();
+
     // run the commands
     let reifiedCommands: BindingCommand[] | undefined = undefined;
     let repeat = 0;
@@ -112,6 +129,15 @@ export async function doCommands(args: RunCommandsArgs): Promise<CommandResult>{
                     await doCommand(cmd);
                 }
             }
+        }
+        if(!args.resetTransient){
+            let currentPaletteUpdate = paletteUpdate;
+            setTimeout(async () => {
+                if(currentPaletteUpdate === paletteUpdate){
+                    registerPaletteUpdate();
+                    commandPalette(undefined, {context: true, useKey: true});
+                }
+            }, PALETTE_DELAY);
         }
     }finally{
         if(args.resetTransient){
@@ -132,7 +158,7 @@ export const COMMAND_HISTORY = 'commandHistory';
 
 let maxHistory = 0;
 
-async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
+export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
     let args = validateInput('master-key.do', args_, runCommandArgs);
     if(args){
         let command: any;

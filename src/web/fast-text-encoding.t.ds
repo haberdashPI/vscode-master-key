@@ -1,0 +1,10 @@
+declare module 'fast-text-encoding' {
+    export class TextDecoder{
+        decode(bytes: Uint8Array): string;
+    }
+    export class TextEncoder{
+        encode(string: string): Uint8Array;
+    }
+    // export function decode(bytes: Uint8Array): string
+    // export function encode(string: string): Uint8Array
+}

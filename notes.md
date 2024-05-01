@@ -1,40 +1,64 @@
 current issue I'm working on:
 
-BUG: switch to insert mode after seek to char in some cases
-
 NEXT UP:
 
-start adding keybinding discoverability
-  - for single commands: test out adding bindings that don't activate when the extension
-    is active but do when it isn't, do the prefixes get messed up here? or do
-    the when clauses save us?
-  - open menu for multi-key commands after a short delay
-  - show keybindings in webview (copy from old extension)
+IMPROVE KEYBINDINGS: I have thoughts about how to change my keymap now (maybe prioritize
+  any keybinding redesign before doing this)
+  (maybe this is a good time to redesign the repeated keys setup)
+
+- add: command to remove keybindings
+- add: command to insert bindings in a new file (so they can be easily edited)
+
+- idea: we want the default mode (which can be set by the user)
+  to require no when clause for it; in this way
+  we can activate the extension on the first relevant keypress
+  - whenever we do this we'll need to properly handle `keybindingPaletteOpen`
+  (does a failure for this context to exist cause the when clause to fail
+  even if it is inside an ||, I think it does)
+  - each key will need to check for activation of the extension (e.g. using a context)
+    and a separate version of the keybinding without this context or a mode check
+    can implementing the binding when the extension isn't active (and do this
+    for *only* the default mode bindings)
 
 unit tests: edge cases with recording edits
   - how about when I switch documents?
   - how about when we don't start with normal mode commands?
   - how about long edits with lots of insert mode commands intersprsed with the edits?
   - what about multiple cursors?
+  - how do recorded commands interact with the palette?
+  - does the command palette show up / not show up with the proper timing?
 unit tests: parsing of YAML and JSON(C)
 unit tests: store/restore named
 
-REFACTOR: cleanup up and document code, make it nice and readable
-REFACTOR: add prettier config and apply new style to all files
+BUG: I noticed that definitions are updated internally on some kind of delay
+  (the config updates, but the state has an old value)
+  (search for this edge case a little bit)
+
+- BUG/IMPROVEMENT: for any non-prefix binding (e.g. prefixCode==0)
+  that has no modifier (other than shift), require that the editor
+  be in focus
 
 thoughts: things I must have to release:
-- good documentation of the code
 - user documentation
-- the command palette like feature: OR
-  - make single commands visible in pallet (need to test that this would work!)
-  - and have all multi key commands show up in quick picker
-    (ideally after some delay)
+- well documented default keybindings
 - keybinding documentation features
+  - markdown output / html
 - mode customization
 - modernized selection utilities
   - good documentation
   - modern build setup
-- anything else that has to be here? (check below wishlist and issues under the project)
+- final design of keybinding file that I'm relatively satisfied with
+  - fix the repeat keybindings
+  - fix default expansion
+
+after first release
+
+- good documentation of the code
+- vim style bindings? (I think this could come in a separate release)
+
+REFACTOR: add prettier config and apply new style to all files
+REFACTOR: cleanup up and document code, make it nice and readable
+REFACTOR: change name of test files to be more consistent
 
 **TODO**: in documenting macro playback note the limitations of recording the keyboard
 (e.g. that it only records inserts; any modifiers are espected to be commands
@@ -66,10 +90,33 @@ EDGE CASE: check that changing keybingings doesn't much with state (e.g. reset m
 
 wishlist:
 
+- careful optimization: clean up code to do fewer dumb repetivie things
+  that slow down performance
+
+- unit tests for visual doc?? (what would this even look like?? sounds time consuming
+  and not very much gain would be had)
+
+- place frequently used commands near the bottom of the command palette
+
+- turn keybinding file into markdown documentation of the bindings
+
+- make it possible to customize when the contextual palette shows up
+  (or have it be hidden entirely unless a keybinding is pressed)
+
+- choose which modifiers to default to in the visual documentation based
+  on modifier frequency
+
 - get macro replay working with selection utility commands
 
 - would be nice if each key past the first shows up in a quick pick menu
   rather than just being a separate keybinding
+
+- reduce the commands that have to be excluded from the global command palette
+
+- move all flag setting for prefix commands to the suffix command upon pre-processing
+  - we need to examine which variables `computedArgs` depend on
+  and only eliminate those commands that depend on variables modified in the
+  prefix
 
 - would be nice if each key sequence that mapped to a *single* command
   could be added as a keybinding full keybinding for that command
@@ -140,6 +187,10 @@ wishlist:
   capture input outside of the text editor
   OR
   all non-modifier keys (k or shift+k) get a condition added to them so they don't mess up input boxes ???
+
+- support multiple keyboard layouts in the visual documentation
+
+- use the theme colors in the visual documentation
 
 quick win: store clipboard to a register
 

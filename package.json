@@ -16,9 +16,7 @@
   ],
   "activationEvents": [
     "onCommand:master-key.do",
-    "onCommand:modlakeys.selectPreset",
-    "onCommand:master-key.prefix",
-    "onCommand:master-key.set"
+    "onCommand:master-key.prefix"
   ],
   "browser": "./dist/web/extension.js",
   "contributes": {
@@ -27,6 +25,73 @@
         "command": "master-key.selectPreset",
         "category": "Master Key",
         "title": "Select Keybinding Preset"
+      },
+      {
+        "command": "master-key.contextualCommandPalette",
+        "category": "Master Key",
+        "title": "Contextual Command Palette"
+      },
+      {
+        "command": "master-key.commandPalette",
+        "category": "Master Key",
+        "title": "Command Palette"
+      },
+      {
+        "command": "master-key.showVisualDoc",
+        "category": "Master Key",
+        "title": "Show Visual Documentation"
+      },
+      {
+        "command": "master-key.setVisualDocTopModifiers",
+        "category": "Master Key",
+        "title": "Toggle Visual Doc Modifier for Top of Key"
+      },
+      {
+        "command": "master-key.setVisualDocBottomModifiers",
+        "category": "Master Key",
+        "title": "Toggle Visual Doc Modifier for Bottom of Key"
+      },
+      {
+        "command": "master-key.toggleVisualDocModifiers",
+        "category": "Master Key",
+        "title": "Toggle visual doc keys from most to least common keybinding modifiers"
+      },
+      {
+        "command": "master-key.togglePaletteMode",
+        "category": "Master Key",
+        "title": "Toggle palette input mode"
+      }
+    ],
+    "views": {
+      "masterKeyVisualDoc": [
+        {
+          "type": "webview",
+          "id": "masterkey.visualDoc",
+          "name": "Master Key Bindings",
+          "contextualTitle": "Keys",
+          "icon": "icon.svg",
+          "visibility": "visible"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "panel": [
+        {
+          "id": "masterKeyVisualDoc",
+          "title": "Master Key Bindings",
+          "icon": "icon.svg"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "key": "ctrl+shift+;",
+        "command": "master-key.commandPalette"
+      },
+      {
+        "key": "ctrl+.",
+        "when": "master-key.keybindingPaletteOpen",
+        "command": "master-key.togglePaletteMode"
       }
     ],
     "configuration": {
@@ -108,6 +173,7 @@
     "@jsep-plugin/regex": "^1.0.3",
     "chai": "^5.0.0",
     "expect": "^29.7.0",
+    "fastestsmallesttextencoderdecoder": "^1.0.22",
     "immutable": "^5.0.0-beta.5",
     "jsep": "^1.3.8",
     "jsonc-parser": "^3.2.0",
