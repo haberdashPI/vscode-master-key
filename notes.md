@@ -1,5 +1,42 @@
 current issue I'm working on:
 
+p - paste after (⇧ before)
+m - match
+  a - around motions
+    - p paragraph
+    - word related
+    - s section
+  i - inside motions
+    - p paragraph
+    - word related
+    - s section
+  s - section motion → (⇧ is ←)
+  [ - in parens (⇧ is around)
+  ' - in quotes (⇧ is around)
+  space  - indent
+  w - WORD motion → (⇧ is →)
+
+: - global palette
+/ - search
+; - repeat selection
+[ - reset selection
+] - exec. repl (and variant)
+⇧[ - → paragraph (] is ←)
+- - -,0 cursor history
+  e, E edit curost history
+  n, N navivation cursor history
+v - hold selection
+space - leader
+  : - palette
+  b - bookmark
+    j - next book mark
+    k - prev book mark
+    l - list book marks
+    b - toggle book mark
+
+' - select edit?
+  * - select all matches
+
 NEXT UP:
 
 IMPROVE KEYBINDINGS: I have thoughts about how to change my keymap now (maybe prioritize
