@@ -2066,6 +2066,7 @@ args.focus = false
 
 [[bind]]
 path = "edit.action.terminal"
+name = "open terminal"
 key = "g p"
 command = "runCommands"
 when = "master-key.count"

@@ -2,40 +2,120 @@ current issue I'm working on:
 
 p - paste after (⇧ before)
 m - match
-  a - around motions
-    - p paragraph
-    - word related
-    - s section
-  i - inside motions
-    - p paragraph
-    - word related
-    - s section
-  s - section motion → (⇧ is ←)
-  [ - in parens (⇧ is around)
-  ' - in quotes (⇧ is around)
-  space  - indent
-  w - WORD motion → (⇧ is →)
+  - p paragraph
+  - gw - around WORD
+  - ge - in WORD
+  - w - around subword (⇧ for full word)
+  - e - in subword (⇧ for full word)
+  - 0 subsection
+  - ) around-subsection
+  - ./< in/around karets
+  - ,/> in/around karent contents
+  - s section
+  - S around-section
+  - c text between character (count for multiple characters)
+  - v any character pair (count for multiple characters each)
+  [ - parens (⇧ for around)
+  ' - quotes (⇧ for around)
+  space  - indent (⇧ for around, ^ for python style)
 
+/ and ? - search
+
+g - go
+  - g - goto line
+  - d definition
+  - r references
+  - w WORD motion
+  - e WORD end
+  - b WORD back
+  - p/P paragraph
+  - 9/0 subsection
+  - a/s section
+  - j/h, J/H - unwrap selectionion (or unwrap expand)
+  - space matching indent end (need to implement)
+  - ;/: next/previous comment
+
+X - center window
 : - global palette
 / - search
-; - repeat selection
+; - repeat match/jump
 [ - reset selection
 ] - exec. repl (and variant)
 ⇧[ - → paragraph (] is ←)
-- - -,0 cursor history
-  e, E edit curost history
-  n, N navivation cursor history
-v - hold selection
+"-": cursor history
+  - "-",0 cursor history
+  - e, E edit curost history
+  - n, N navivation cursor history
+v - start/stop hold selection
+
 space - leader
+  r - open recent
   : - palette
-  b - bookmark
+  h - hover
+  H - hover debug
+  f - open file under cursor
+  m - bookmark
+    b - toggle book mark
     j - next book mark
     k - prev book mark
     l - list book marks
-    b - toggle book mark
+    r - remove bookmark
+  e/E - next/prev error
+  d/D - with diff
 
-' - select edit?
+  w - window/pane
+    - x close pane
+    - m - move (all same as before)
+    - c - create (all same as before)
+    - = - equalize
+    - M - maximize
+    - s - split pane
+    - j,k,l,h - move to pane
+    - t/b - move cursor to top bottom
+
+  B - breakbpoint
+  b - debug
+    - h hover
+    - j/J steps
+
+u/U - undo/redo
+
+' - do
+  c - insert cell
+  o/O - open above/below
+  i - symmetric insertion mode
+  space - trim whitespace
+  w - wrap paragraph
+  v - paste
+  f - format
+  [ - parens
+      - d - remove
+      - s - swap
+  ' - quotes
+      - as per parens
+  a - julia activate
+  t - julia run tests
+  ; - toggle comments
+  : - toggle block comments
+  =/+ - decrement/increment all
+
+z - multi-select mode (Z adds cursor)
+  enter - split by newline
+  r - by regex
+    s - split
+    fF - filter
+  S - split by string
+  s - split by character
+  f - filter by including
+  F - filter by excluding
   * - select all matches
+  j/k - insert cursor below/above
+  h/l - add prev/next match
+  c - save current selection (and clear) and switch to normal
+  C - save current selection (don't clear) - and switch to normal
+  n - remove last saved selection
+  v - restore selection
+  x - exchange selection - and switch to normal
 
 NEXT UP:
 
@@ -74,6 +154,8 @@ BUG: I noticed that definitions are updated internally on some kind of delay
 - BUG/IMPROVEMENT: for any non-prefix binding (e.g. prefixCode==0)
   that has no modifier (other than shift), require that the editor
   be in focus
+
+- IMPROVEMENT: show escape/function key row in the visual key doc
 
 thoughts: things I must have to release:
 - user documentation
