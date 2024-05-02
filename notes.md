@@ -2,38 +2,41 @@ current issue I'm working on:
 
 p - paste after (⇧ before)
 m - match
-  - p paragraph
-  - gw - around WORD
-  - ge - in WORD
   - w - around subword (⇧ for full word)
   - e - in subword (⇧ for full word)
-  - 0 subsection
-  - ) around-subsection
+  - p paragraph
+  - 0/) subsection
+  - s/S section
+  ' - quotes (⇧ for around)
+  [ - parens (⇧ for around)
+  space  - indent (⇧ for around, ^ for python style)
+  ;/: - comment
+  - gw - around WORD
+  - ge - in WORD
   - ./< in/around karets
   - ,/> in/around karent contents
-  - s section
-  - S around-section
-  - c text between character (count for multiple characters)
-  - v any character pair (count for multiple characters each)
-  [ - parens (⇧ for around)
-  ' - quotes (⇧ for around)
-  space  - indent (⇧ for around, ^ for python style)
+  - c jupyter-notebook cell
+  - t/T in/around text between character (count for multiple characters)
+  - s/S text between the two typed characters (count for multiple characters before and after)
 
 / and ? - search
 
 g - go
-  - g - goto line
-  - d definition
-  - r references
+  - j/h, J/H - unwrap up/down (or unwrap expand)
   - w WORD motion
   - e WORD end
   - b WORD back
   - p/P paragraph
   - 9/0 subsection
-  - a/s section
-  - j/h, J/H - unwrap selectionion (or unwrap expand)
-  - space matching indent end (need to implement)
   - ;/: next/previous comment
+  - space matching indent end (need to implement)
+  - a/s section
+    - g - goto line
+  - t - top of file
+  - b - bottom of file
+  - d function definition
+  - r function references
+  - c/C notebook cell
 
 X - center window
 : - global palette
@@ -81,7 +84,9 @@ space - leader
 u/U - undo/redo
 
 ' - do
-  c - insert cell
+  c -
+    i - insert cell
+    s - split
   o/O - open above/below
   i - symmetric insertion mode
   space - trim whitespace
