@@ -1,5 +1,7 @@
 current issue I'm working on:
 
+redesign bindings:
+
 p - paste after (⇧ before)
 m - match
   - w - around subword (⇧ for full word)
@@ -21,7 +23,7 @@ m - match
 
 / and ? - search
 
-g - go
+g - goto
   - j/h, J/H - unwrap up/down (or unwrap expand)
   - w WORD motion
   - e WORD end
@@ -105,7 +107,11 @@ u/U - undo/redo
   =/+ - decrement/increment all
 
 z - multi-select mode (Z adds cursor)
-  enter - split by newline
+  shift-enter - split by newline
+  enter - return to normal
+  j/k - make next/prev selection primary
+  d - delete current selection
+  D - delete all but current selection and return to normal
   r - by regex
     s - split
     fF - filter
@@ -118,7 +124,7 @@ z - multi-select mode (Z adds cursor)
   h/l - add prev/next match
   c - save current selection (and clear) and switch to normal
   C - save current selection (don't clear) - and switch to normal
-  n - remove last saved selection
+  n - remove last saved selection - return to normal
   v - restore selection
   x - exchange selection - and switch to normal
 
