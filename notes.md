@@ -25,12 +25,11 @@ m - match
 / and ? - search
 
 g - goto
-  - j/h, J/H - unwrap up/down (or unwrap expand)
-  - t - top of file
-  - b - bottom of file
-  - w WORD motion
-  - e WORD end
-  - b WORD back
+  + j/k, J/K - unwrap up/down (or unwrap expand)
+  + </> - top/bottom of file
+  + w WORD motion
+  + e WORD end
+  + b WORD back
   - p/P paragraph
   - 9/0 subsection
   - ;/: next/previous comment
@@ -131,6 +130,8 @@ z - multi-select mode (Z adds cursor)
 
 NEXT UP:
 
+BUG: esc will be captured by palette even if its bound as a suffix
+  (e.g. in a binding setup without esc for normal mode)
 IMPROVE KEYBINDINGS: I have thoughts about how to change my keymap now (maybe prioritize
   any keybinding redesign before doing this)
   (maybe this is a good time to redesign the repeated keys setup)
