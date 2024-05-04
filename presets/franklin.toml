@@ -142,9 +142,13 @@ default.kind = "count"
 path = "edit.count"
 # likewise, the numbers affect command count in all modes where text isn't
 # being entered
-name = "Update number with {key}"
+name = "count {key}"
 key = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
 command = "master-key.updateCount"
+description = "Add digit {key} to the count argument of a command"
+combinedKey = "0-9"
+combinedName = "count 0-9"
+combinedDescription = "Add digit 1-9 to count argument of a command"
 args.value = "{key}"
 resetTransient = false
 mode = ["!insert", "!capture"]
@@ -168,25 +172,12 @@ default.computedArgs.select = "editorHasSelection || select_on"
 path = "edit.motion.prim"
 key = "h"
 name = "←"
+combinedName = "←/→"
+combinedKey = "h/l"
+combinedDescription = "move left/right"
 description = "move left"
 args.to = "left"
 mode = ["normal", "selectedit"]
-
-[[bind]]
-path = "edit.motion.prim"
-key = "j"
-name = "↓"
-description = "move down"
-args.to = "down"
-args.by = "wrappedLine"
-
-[[bind]]
-path = "edit.motion.prim"
-key = "k"
-name = "↑"
-description = "move up"
-args.to = "up"
-args.by = "wrappedLine"
 
 [[bind]]
 path = "edit.motion.prim"
@@ -198,15 +189,39 @@ mode = ["normal", "selectedit"]
 
 [[bind]]
 path = "edit.motion.prim"
+key = "j"
+name = "↓"
+combinedName = "↓/↑"
+combinedKey = "j/k"
+combinedDescription = "move down/up"
+description = "move down"
+args.to = "down"
+args.by = "wrappedLine"
+
+[[bind]]
+path = "edit.motion.prim"
+key = "k"
+name = "↑"
+description = "move up"
+combinedName = "↓/↑"
+args.to = "up"
+args.by = "wrappedLine"
+
+[[bind]]
+path = "edit.motion.prim"
 key = "shift+h"
 name = "start"
 description = "start of line (alternates between first non-white and first)"
+combinedName = "start/end"
+combinedKey = "shift+h/shift+l"
+combinedDescription = "move to start/end of line"
 command = "cursorHomeSelect"
 
 [[bind]] # we don't use prim because we don't want the defaults
 path = "edit.motion"
 key = "shift+l"
 name = "end"
+combinedName = "shift+h/shift+l"
 description = "end of line"
 command = "cursorMove"
 args.to = "wrappedLineEnd"
@@ -214,15 +229,11 @@ args.select = true
 
 [[bind]]
 path = "edit.motion.prim"
-key = "shift+g"
-name = "exapand"
-description = "expand selections to full lines"
-command = "expandLineSelection"
-
-[[bind]]
-path = "edit.motion.prim"
 key = "shift+k"
 name = "sel ↑"
+combinedName = "sel ↑/↓"
+combinedDescription = "select lines up/down"
+combinedKey = "shift+k/shift+j"
 description = "select lines upwards"
 command = "runCommands"
 
@@ -241,6 +252,7 @@ command = "expandLineSelection"
 path = "edit.motion.prim"
 key = "shift+j"
 name = "sel ↓"
+combinedName = "sel ↑/↓"
 description = "select lines downwards"
 command = "runCommands"
 
@@ -255,17 +267,14 @@ computedArgs = { value = "count" }
 [[bind.args.commands]]
 command = "expandLineSelection"
 
-## Goto commands
-
-## TODO: this is where I stopped editing
-
 [[bind]]
 path = "edit.motion.prim"
-key = "g j"
-name = "unwrp ↓"
-description = "down unwrapped line"
-args.to = "down"
-args.by = "line"
+key = "shift+g"
+name = "exapand"
+description = "expand selections to full lines"
+command = "expandLineSelection"
+
+## Goto commands
 
 [[bind]]
 path = "edit.motion"
@@ -280,8 +289,26 @@ or backwards in some direction.
 
 [[bind]]
 path = "edit.motion.prim"
+key = "g j"
+name = "unwrp ↓"
+combinedName = "unwrap ↓/↑"
+combinedKey = "g j/k"
+combinedDescription = """
+move cursor up/down unwrapped text line; if a single line is wrapped into multiple lines by
+the editor, this command skips all such wrapped lines
+"""
+description = """
+down unwrapped line; if a single line is wrapped into multiple lines by the editor, this
+command skips all such wrapped lines
+"""
+args.to = "down"
+args.by = "line"
+
+[[bind]]
+path = "edit.motion.prim"
 key = "g k"
 name = "unwrp ↑"
+combinedName = "unwrap ↓/↑"
 description = "up unwrapped line"
 args.to = "up"
 args.by = "line"
@@ -289,6 +316,9 @@ args.by = "line"
 [[bind]]
 path = "edit.motion.prim"
 key = "g shift+k"
+combinedName = "unwrp sel ↑/↓"
+combinedDescription = "select unwrapped lines up/down"
+combinedKey = "g shift+k/j"
 name = "unwrp sel ↑"
 description = "select unwrapped lines upwards"
 command = "runCommands"
@@ -308,6 +338,7 @@ command = "expandLineSelection"
 path = "edit.motion.prim"
 key = "g shift+j"
 name = "sel ↓"
+combinedName = "unwrp sel ↑/↓"
 description = "select unwrapped lines downwards"
 command = "runCommands"
 
@@ -321,6 +352,23 @@ computedArgs = { value = "count" }
 
 [[bind.args.commands]]
 command = "expandLineSelection"
+
+[[bind]]
+path = "edit.motion.prim"
+key = "g b"
+name = "doc end"
+description = "select to end of document"
+combinedName = "doc top/bottom"
+combinedDescription = "select to top/bottom of document"
+combinedKey = "g t/b"
+command = "cursorBottomSelect"
+
+[[bind]]
+path = "edit.motion.prim"
+key = "g t"
+name = "doc start"
+description = "select to start of document"
+command = "cursorTopSelect"
 
 [[bind]]
 path = "edit.motion.prim"
@@ -353,20 +401,6 @@ command = "selection-utilities.shrinkToActive"
 command = "cursorMove"
 args = { to = "left", select = true }
 computedArgs = { value = "count" }
-
-[[bind]]
-path = "edit.motion.prim"
-key = "g t"
-name = "doc end"
-description = "select to end of document"
-command = "cursorBottomSelect"
-
-[[bind]]
-path = "edit.motion.prim"
-key = "g t"
-name = "doc start"
-description = "select to start of document"
-command = "cursorTopSelect"
 
 [[path]]
 id = "edit.motion.mod"

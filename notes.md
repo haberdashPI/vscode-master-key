@@ -189,6 +189,8 @@ after first release
 REFACTOR: add prettier config and apply new style to all files
 REFACTOR: cleanup up and document code, make it nice and readable
 REFACTOR: change name of test files to be more consistent
+REFACTOR: somehow we have to define/organize binding parameters
+  in *four* places, should be easier
 
 **TODO**: in documenting macro playback note the limitations of recording the keyboard
 (e.g. that it only records inserts; any modifiers are espected to be commands
