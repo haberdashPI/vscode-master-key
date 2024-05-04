@@ -7,6 +7,8 @@ import { MODE } from './mode';
 import { IConfigKeyBinding, PrefixCodes } from '../keybindings/processing';
 import { RunCommandsArgs, doCommandsCmd } from './do';
 import { uniqBy, sortBy } from 'lodash';
+import { QuickPickItem } from 'vscode-extension-tester';
+import { TypeOf } from 'zod';
 
 let paletteBindingMode = false;
 let paletteBindingContext = false;
@@ -76,28 +78,39 @@ export async function commandPalette(args_: unknown,
                     key = seq + " " + key;
                 }
                 key = prettifyPrefix(key);
-                if(binding.args.mode){
-                    key = binding.args.mode.toLocaleLowerCase() + ": " + key;
-                }
             }else{
                 key = prettifyPrefix(key);
             }
 
             return {
                 label: key,
-                description: (binding.args.name || "") + " — " + (binding.args.description || ""),
+                description: [(binding.args.name || ""), (binding.args.description || "")].join(" — "),
                 args: binding.args,
             };
         });
 
         picks = sortBy(picks, x => -x.args.priority);
+        let filteredPicks: typeof picks = [];
+
+        let lastPick = picks[0];
+        filteredPicks.push(lastPick);
+        for(let pick of picks.slice(1)){
+            if(lastPick.args.combinedName && lastPick.args.combinedName === pick.args.combinedName){
+                lastPick.label = prettifyPrefix(lastPick.args.combinedKey)
+                lastPick.description = [(lastPick.args.combinedName || ""),
+                    (lastPick.args.combinedDescription || "")].join(" — ");
+            }else{
+                filteredPicks.push(pick);
+                lastPick = pick;
+            }
+        }
 
         let picker = vscode.window.createQuickPick<{label: string, args: RunCommandsArgs}>();
         currentPicker = picker;
         let accepted = false;
         paletteBindingContext = context;
         setPickerText();
-        picker.items = picks;
+        picker.items = filteredPicks;
         picker.matchOnDescription = true;
         picker.onDidAccept(async _ => {
             let pick = picker.selectedItems[0];

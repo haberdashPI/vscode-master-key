@@ -131,6 +131,9 @@ export function parseWhen(when_: string | string[] | undefined): ParsedWhen[] {
 export const rawBindingItem = z.object({
     name: z.string().optional(),
     description: z.string().optional(),
+    combinedName: z.string().optional().default(""),
+    combinedKey: z.string().optional().default(""),
+    combinedDescription: z.string().optional().default(""),
     path: z.string().optional(),
     priority: z.number().default(0).optional(),
     kind: z.string().optional(),
@@ -171,6 +174,9 @@ export const bindingItem = z.object({
         do: doArgs,
         path: z.string().optional().default(""),
         priority: z.number().optional().default(0),
+        combinedName: z.string().optional().default(""),
+        combinedKey: z.string().optional().default(""),
+        combinedDescription: z.string().optional().default(""),
         resetTransient: rawBindingItem.shape.resetTransient.default(true),
         kind: z.string().optional().default(""),
         repeat: z.number().min(0).or(z.string()).default(0)

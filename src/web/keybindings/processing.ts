@@ -133,6 +133,9 @@ function expandDefaultsAndDefinedCommands(spec: BindingSpec, problems: string[])
                     name: item.name,
                     description: item.description,
                     priority: item.priority,
+                    combinedName: item.combinedName,
+                    combinedKey: item.combinedKey,
+                    combinedDescription: item.combinedDescription,
                     kind: item.kind,
                     resetTransient: item.resetTransient,
                     repeat: item.repeat
@@ -228,6 +231,9 @@ export interface IConfigKeyBinding {
         description?: string,
         resetTransient?: boolean,
         priority: number,
+        combinedName: string,
+        combinedKey: string,
+        combinedDescription: string,
         kind: string,
         path: string
         mode: string | undefined,
@@ -329,6 +335,9 @@ function updatePrefixItemAndPrefix(item: BindingItem, key: string, prefix: strin
             name: "Command Prefix: "+prefix,
             kind: "prefix",
             priority: 0,
+            combinedName: "",
+            combinedKey: "",
+            combinedDescription: "",
             resetTransient: false,
             repeat: 0
         },

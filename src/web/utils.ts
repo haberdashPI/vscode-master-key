@@ -50,7 +50,8 @@ export function prettifyPrefix(str: string){
     str = replaceAll(str, /meta(\+|$)/gi, '◆');
     str = replaceAll(str, /win(\+|$)/gi, '⊞');
     str = replaceAll(str, /cmd(\+|$)/gi, '⌘');
-    str = replaceAll(str, / /g, ", ");
+    // note: a bit hacky, to handle combined key descriptions
+    str = replaceAll(str, /(?<!\/) (?!\/)/g, ", ");
     str = replaceAll(str, /escape/gi, "ESC");
     return str;
 }
