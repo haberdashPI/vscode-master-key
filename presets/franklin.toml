@@ -274,6 +274,76 @@ name = "exapand"
 description = "expand selections to full lines"
 command = "expandLineSelection"
 
+[[path]]
+id = "edit.motion.obj"
+name = "Motions around various regex-like objects"
+description = """
+motions that move by a predefined syntactic object (e.g. word, paragraph, etc...)
+"""
+default.command = "selection-utilities.moveBy"
+default.args.boundary = "start"
+default.mode = ["normal", "selectedit"]
+
+[[bind]]
+path = "edit.motion.obj"
+key = "w"
+name = "subwrd →"
+description = "next subword (camel/snake case)"
+combinedName = "subwrd ←/→"
+combinedDescription = "next/prev subword (camel/snake case)"
+combinedKey = "w/b"
+args.unit = "subword"
+computedArgs.value = "count || 1"
+
+[[bind]]
+path = "edit.motion.obj"
+key = "b"
+name = "subwrd ←"
+description = "previous subword (camel/snake case)"
+combinedName = "subwrd ←/→"
+args.unit = "subword"
+computedArgs.value = "-count || -1"
+
+[[bind]]
+path = "edit.motion.obj"
+key = "shift+w"
+name = "word →"
+description = "next word"
+combinedName = "word ←/→"
+combinedDescription = "next/prev word"
+combinedKey = "shift+w/b"
+args.unit = "word"
+computedArgs.value = "count || 1"
+
+[[bind]]
+path = "edit.motion.obj"
+key = "shift+b"
+name = "word ←"
+combinedName = "word ←/→"
+description = "previous word"
+prefixes = [""]
+args.unit = "word"
+computedArgs.value = "-count || -1"
+
+[[bind]]
+path = "edit.motion.obj"
+key = "e"
+name = "subwrd end"
+description = "next subword (camel/snake case) end"
+args.unit = "subword"
+computedArgs.boundary = "around_on ? 'both' : 'end'"
+computedArgs.value = "count || 1"
+
+[[bind]]
+path = "edit.motion.obj"
+key = "shift+e"
+name = "word end"
+description = "next word end"
+args.unit = "word"
+computedArgs.boundary = "around_on ? 'both' : 'end'"
+computedArgs.value = "count || 1"
+
+####################################################################################
 ## Goto commands
 
 [[bind]]
@@ -371,6 +441,44 @@ description = "select to start of document"
 command = "cursorTopSelect"
 
 [[bind]]
+path = "edit.motion.obj"
+key = "g w"
+name = "WORD →"
+combinedName = "WORD →/←"
+combinedDescription = """
+next/prev WORD;  e.g. contiguous non-whitespace region
+"""
+combinedKey = "g w/b"
+description = "next WORD; e.g. contiguous non-whitespace region"
+args.unit = "WORD"
+computedArgs.value = "count || 1"
+
+[[bind]]
+path = "edit.motion.obj"
+key = "g b"
+name = "WORD ←"
+combinedName = "WORD →/←"
+description = "previous WORD; e.g. contiguous non-whitespace region"
+args.unit = "WORD"
+computedArgs.value = "-count || -1"
+
+[[bind]]
+path = "edit.motion.obj"
+key = "g e"
+name = "WORD end →"
+description = "next WORD end; e.g. contiguous non-whitespace region"
+args.unit = "WORD"
+computedArgs.boundary = "around_on ? 'both' : 'end'"
+computedArgs.value = "count || 1"
+
+####################################################################################
+## Match commands
+
+
+####################################################################################
+# where I stopped editing
+
+[[bind]]
 path = "edit.motion.prim"
 key = '\'
 name = "→ sel"
@@ -447,94 +555,6 @@ args.commands = [
       "selection-utilities.shrinkToActive",
       { command = "master-key.setFlag", args = { name = "select_on", value = false } },
 ]
-
-[[path]]
-id = "edit.motion.obj"
-name = "Motions around various regex-like objects"
-description = """
-selection commands that move by a predefined syntactic object (e.g. word, paragraph, etc...)
-"""
-default.command = "selection-utilities.moveBy"
-default.args.boundary = "start"
-default.prefixes = ["", "u"]
-default.computedArgs.select = "!around_on"
-default.computedArgs.selectWhole = "around_on"
-default.mode = ["normal", "selectedit"]
-
-[[bind]]
-path = "edit.motion.obj"
-key = "w"
-name = "subwrd →"
-description = "next subword (camel/snake case)"
-args.unit = "subword"
-computedArgs.value = "count || 1"
-
-[[bind]]
-path = "edit.motion.obj"
-key = "e"
-name = "subwrd end"
-description = "next subword (camel/snake case) end"
-args.unit = "subword"
-computedArgs.boundary = "around_on ? 'both' : 'end'"
-computedArgs.value = "count || 1"
-
-[[bind]]
-path = "edit.motion.obj"
-key = "shift+w"
-name = "word →"
-description = "next word"
-args.unit = "word"
-computedArgs.value = "count || 1"
-
-[[bind]]
-path = "edit.motion.obj"
-key = "shift+e"
-name = "word end"
-description = "next word end"
-args.unit = "word"
-computedArgs.boundary = "around_on ? 'both' : 'end'"
-computedArgs.value = "count || 1"
-
-[[bind]]
-path = "edit.motion.obj"
-key = "b"
-name = "subwrd ←"
-description = "previous subword (camel/snake case)"
-args.unit = "subword"
-computedArgs.value = "-count || -1"
-
-[[bind]]
-path = "edit.motion.obj"
-key = "shift+b"
-name = "word ←"
-description = "previous word"
-args.unit = "word"
-computedArgs.value = "-count || -1"
-
-[[bind]]
-path = "edit.motion.obj"
-key = "' w"
-name = "WORD →"
-description = "next WORD; e.g. contiguous non-whitespace region"
-args.unit = "WORD"
-computedArgs.value = "count || 1"
-
-[[bind]]
-path = "edit.motion.obj"
-key = "' b"
-name = "WORD ←"
-description = "previous WORD; e.g. contiguous non-whitespace region"
-args.unit = "WORD"
-computedArgs.value = "-count || -1"
-
-[[bind]]
-path = "edit.motion.obj"
-key = "' e"
-name = "WORD end →"
-description = "next WORD end; e.g. contiguous non-whitespace region"
-args.unit = "WORD"
-computedArgs.boundary = "around_on ? 'both' : 'end'"
-computedArgs.value = "count || 1"
 
 [[bind]]
 path = "edit.motion.obj"

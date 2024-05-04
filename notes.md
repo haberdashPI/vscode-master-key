@@ -15,6 +15,7 @@ m - match
   ;/: - comment
   - gw - around WORD
   - ge - in WORD
+  - #/@ - next/prev number
   - ./< in/around karets
   - ,/> in/around karent contents
   - c jupyter-notebook cell
@@ -25,6 +26,8 @@ m - match
 
 g - goto
   - j/h, J/H - unwrap up/down (or unwrap expand)
+  - t - top of file
+  - b - bottom of file
   - w WORD motion
   - e WORD end
   - b WORD back
@@ -34,8 +37,6 @@ g - goto
   - space matching indent end (need to implement)
   - a/s section
     - g - goto line
-  - t - top of file
-  - b - bottom of file
   - d function definition
   - r function references
   - c/C notebook cell
@@ -158,6 +159,7 @@ unit tests: edge cases with recording edits
 unit tests: parsing of YAML and JSON(C)
 unit tests: store/restore named
 
+BUG: repeat argument is not work for the repeat action command (e.g. I cannot repeat the last action ten times)
 BUG: I noticed that definitions are updated internally on some kind of delay
   (the config updates, but the state has an old value)
   (search for this edge case a little bit)
