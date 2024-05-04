@@ -30,15 +30,14 @@ g - goto
   + w WORD motion
   + e WORD end
   + b WORD back
-  - p/P paragraph
-  - 9/0 subsection
-  - ;/: next/previous comment
+  + ;/: next/previous comment
   - space matching indent end (need to implement)
-  - a/s section
-    - g - goto line
-  - d function definition
-  - r function references
+  + a/s section
+  + g - goto line
+  + d/D function definition
+  + r function references
   - c/C notebook cell
+  + f - file under cursor
 
 X - center window
 : - global palette

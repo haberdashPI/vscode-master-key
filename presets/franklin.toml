@@ -153,6 +153,9 @@ args.value = "{key}"
 resetTransient = false
 mode = ["!insert", "!capture"]
 
+####################################################################################
+## Basic motions
+
 [[path]]
 id = "edit.motion"
 name = "Motions"
@@ -343,6 +346,46 @@ args.unit = "word"
 computedArgs.boundary = "around_on ? 'both' : 'end'"
 computedArgs.value = "count || 1"
 
+[[bind]]
+path = "edit.motion.obj"
+key = "shift+]"
+name = "parag. →"
+description = "next paragraph"
+combinedName = "paragraph →/←"
+combinedDescription = "next/previous paragraph"
+combinedKey = "shift+]/["
+args.unit = "paragraph"
+computedArgs.value = "count || 1"
+
+[[bind]]
+path = "edit.motion.obj"
+key = "shift+p"
+name = "parag. ←"
+combinedName = "paragraph →/←"
+description = "previous paragraph"
+args.unit = "paragraph"
+computedArgs.value = "-(count || 1)"
+
+[[bind]]
+path = "edit.motion.obj"
+key = "shift+0"
+name = "subsec →"
+description = "next subsection"
+combinedName = "subsec →/←"
+combinedDescription = "next/previous subsection"
+combinedKey = "shift+0/9"
+args.unit = "subsection"
+computedArgs.value = "count || 1"
+
+[[bind]]
+path = "edit.motion.obj"
+key = "shift+9"
+name = "subsec ←"
+description = "previous subsection"
+combinedName = "subsec →/←"
+args.unit = "subsection"
+computedArgs.value = "-(count || 1)"
+
 ####################################################################################
 ## Goto commands
 
@@ -471,6 +514,91 @@ args.unit = "WORD"
 computedArgs.boundary = "around_on ? 'both' : 'end'"
 computedArgs.value = "count || 1"
 
+[[bind]]
+path = "edit.motion.obj"
+key = "g ;"
+name = "comment →"
+description = "next comment"
+combinedName = "comment →/←"
+args.unit = "comment"
+args.boundary = "both"
+args.selectWhole = true
+computedArgs = { value = "count || 1" }
+
+[[bind]]
+path = "edit.motion.obj"
+key = "g shift+;"
+name = "comment ←"
+description = "previous comment"
+args.unit = "comment"
+args.boundary = "both"
+args.selectWhole = true
+computedArgs = { value = "count || 1" }
+
+[[bind]]
+path = "edit.motion.obj"
+key = "g s"
+name = "sec →"
+description = "next section"
+combinedName = "sec →/←"
+combinedDescription = "next/previous section"
+combinedKey = "g s/a"
+args.unit = "section"
+computedArgs.value = "count || 1"
+
+[[bind]]
+path = "edit.motion.obj"
+key = "g a"
+name = "sec ←"
+description = "previous section"
+combinedName = "sec →/←"
+args.unit = "section"
+computedArgs.value = "-(count || 1)"
+
+[[bind]]
+path = "window"
+name = "goto line"
+description = "goto line command"
+key = "g g"
+command = "workbench.action.gotoLine"
+when = "editorTextFocus"
+
+[[bind]]
+path = "window"
+name = "to refs"
+description = "jump to a location where this symbol is referenced"
+key = "g r"
+command = "editor.action.goToReferences"
+when = "editorTextFocus"
+
+[[bind]]
+path = "window"
+name = "go to"
+description = "go to the definition of symbol under cursor"
+key = "g d"
+combinedName = "go to (aside)"
+combinedKey = "g (shift+)d"
+combinedDescription = "go to the definition of symbol (in ean editor to the side)"
+command = "editor.action.revealDefinition"
+when = "editorTextFocus"
+
+[[bind]]
+path = "window"
+name = "go to, aside"
+description = "go to the definition of symbol under cursor in an editor to the side"
+key = "g shift+d"
+combinedName = "go to (aside)"
+command = "editor.action.revealDefinitionAside"
+when = "editorTextFocus"
+
+[[bind]]
+path = "window"
+name = "open"
+description = "open the file name under the cursor"
+key = "g f"
+command = "extension.openFileFromPath"
+when = "editorTextFocus"
+
 ####################################################################################
 ## Match commands
 
@@ -578,26 +706,6 @@ computedArgs = { value = "(count || 1)" }
 
 [[bind]]
 path = "edit.motion.obj"
-key = "' shift+;"
-name = "comment ←"
-description = "previous comment"
-args.unit = "comment"
-args.boundary = "both"
-args.selectWhole = true
-computedArgs = { value = "-(count || 1)" }
-
-[[bind]]
-path = "edit.motion.obj"
-key = "' ;"
-name = "comment →"
-description = "next comment"
-args.unit = "comment"
-args.boundary = "both"
-args.selectWhole = true
-computedArgs = { value = "(count || 1)" }
-
-[[bind]]
-path = "edit.motion.obj"
 key = "/ ;"
 name = "blk cmnt ←"
 description = "previous block comment"
@@ -615,54 +723,6 @@ args.unit = "block_comment"
 args.boundary = "both"
 args.selectWhole = true
 computedArgs = { value = "-(count || 1)" }
-
-[[bind]]
-path = "edit.motion.obj"
-key = "p"
-name = "paragraph →"
-description = "next paragraph"
-args.unit = "paragraph"
-computedArgs.value = "count || 1"
-
-[[bind]]
-path = "edit.motion.obj"
-key = "shift+p"
-name = "paragraph ←"
-description = "previous paragraph"
-args.unit = "paragraph"
-computedArgs.value = "-(count || 1)"
-
-[[bind]]
-path = "edit.motion.obj"
-key = "shift+0"
-name = "subsec →"
-description = "next subsection"
-args.unit = "subsection"
-computedArgs.value = "count || 1"
-
-[[bind]]
-path = "edit.motion.obj"
-key = "shift+9"
-name = "subsec ←"
-description = "previous subsection"
-args.unit = "subsection"
-computedArgs.value = "-(count || 1)"
-
-[[bind]]
-path = "edit.motion.obj"
-key = "' shift+0"
-name = "sec →"
-description = "next section"
-args.unit = "section"
-computedArgs.value = "count || 1"
-
-[[bind]]
-path = "edit.motion.obj"
-key = "' shift+p"
-name = "sec ←"
-description = "previous section"
-args.unit = "section"
-computedArgs.value = "-(count || 1)"
 
 [[path]]
 id = "edit.motion.cell"
@@ -2298,14 +2358,6 @@ command = "workbench.action.showCommands"
 
 [[bind]]
 path = "window"
-name = "goto line"
-description = "Use VSCode goto line command"
-key = "/ g"
-command = "workbench.action.gotoLine"
-when = "editorTextFocus"
-
-[[bind]]
-path = "window"
 name = "center"
 description = "center window at primary cursor position"
 key = "/ ."
@@ -2393,38 +2445,6 @@ name = "hover"
 description = "show the hover view"
 key = "g h"
 command = "editor.action.showHover"
-when = "editorTextFocus"
-
-[[bind]]
-path = "window"
-name = "open"
-description = "open the file name under the cursor"
-key = "g f"
-command = "extension.openFileFromPath"
-when = "editorTextFocus"
-
-[[bind]]
-path = "window"
-name = "to refs"
-description = "jump to a location where this symbol is referenced"
-key = "g r"
-command = "editor.action.goToReferences"
-when = "editorTextFocus"
-
-[[bind]]
-path = "window"
-name = "go to"
-description = "go to the definition of symbol under cursor"
-key = "g d"
-command = "editor.action.revealDefinition"
-when = "editorTextFocus"
-
-[[bind]]
-path = "window"
-name = "go to (aside)"
-description = "go to the definition of symbol under cursor in an editor to the side"
-key = "g shift+d"
-command = "editor.action.revealDefinitionAside"
 when = "editorTextFocus"
 
 [[bind]]
