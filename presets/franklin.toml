@@ -676,7 +676,7 @@ args.commands = ["cursorRight", "editor.action.clipboardPasteAction"]
 
 [[bind]]
 path = "edit.action.clipboard"
-key = "shift+P"
+key = "shift+p"
 name = "paste before"
 combinedName = "paste before/after"
 description = "Paste before the cursor/selection"
@@ -686,7 +686,7 @@ args.commands = ["selection-utilities.activeAtStart", "selection-utilities.shrin
 
 [[bind]]
 path = "edit.action.clipboard"
-key = "shift+P"
+key = "shift+p"
 combinedName = "paste before/after"
 when = "!editorHasSelection"
 command = "runCommands"
