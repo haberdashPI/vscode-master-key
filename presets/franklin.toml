@@ -386,10 +386,40 @@ combinedName = "subsec →/←"
 args.unit = "subsection"
 computedArgs.value = "-(count || 1)"
 
-## Search Motions
+## Repeating Motions
 ## --------------------------------
 
-# TODO: and combinedName etc...
+[[bind]]
+path = "edit.motion.repeat"
+key = ";"
+name = "repeat motion"
+description = """
+Repeat the last motion command. Motions usually move the cursor or change the selection.
+"""
+mode = ["normal", "selectedit"]
+repeat = "count"
+command = "master-key.replayFromHistory"
+args.at = "commandHistory[i].path.startsWith('edit.motion')"
+
+[[bind]]
+path = "edit.motion"
+name = "repeat subject"
+description = """
+Repeat the subject: a motion command that occurred right before an action. For
+instance `w` followed by `d` selects a word and deletes it. The `w` command would be the
+last subject until some new action is run after `d`.
+"""
+key = ","
+command = "master-key.replayFromHistory"
+args.at = """
+commandHistory[i].path.startsWith("edit.motion") &&
+commandHistory[i+1].path.startsWith("edit.action") &&
+!(commandHistory[i+1].name.startsWith("repeat ") &&
+  commandHistory[i+1].path.startsWith("edit.action.history"))
+"""
+
+## Search Motions
+## --------------------------------
 
 [[path]]
 id = "edit.motion.search"
@@ -404,8 +434,11 @@ default.args.wrapAround = true
 [[bind]]
 path = "edit.motion.search"
 key = "/"
-name = "capture"
+name = "search →"
 description = "search forwards"
+combinedName = "search → (←)"
+combinedDescription = "search forwards (backgwards)"
+combinedKey = "/ (shift+/)"
 args.offset = "start"
 args.register = "search"
 
@@ -414,33 +447,19 @@ path = "edit.motion.search"
 key = "shift+/"
 name = "search bk"
 description = "search backwards"
+combinedName = "search → (←)"
 args.offset = "start"
 args.register = "search"
 args.backwards = true
 
 [[bind]]
 path = "edit.motion.search"
-key = "n"
-name = "→ search"
-description = "Go to the next match of the search query"
-command = "master-key.nextMatch"
-args.register = "search"
-computedArgs.repeat = "(count || 1)-1"
-
-[[bind]]
-path = "edit.motion.search"
-key = "shift+n"
-name = "← search"
-description = "Go to the previous match of the search query"
-command = "master-key.previousMatch"
-args.register = "search"
-computedArgs.repeat = "(count || 1)-1"
-
-[[bind]]
-path = "edit.motion.search"
 key = "shift+8"
 name = "match →"
 description = "Next match to object under cursor"
+combinedName = "match →/←"
+combinedDescription = "Next/previous match to object under cursor"
+combinedKey = "shift+8/7"
 computedArgs.text = "firstSelectionOrWord"
 args.offset = "start"
 args.register = "search"
@@ -451,6 +470,7 @@ path = "edit.motion.search"
 key = "shift+7"
 name = "match ←"
 description = "Previous match to object under cursor"
+combinedName = "match →/←"
 computedArgs.text = "firstSelectionOrWord"
 args.offset = "start"
 args.register = "search"
@@ -462,6 +482,9 @@ path = "edit.motion.search"
 key = "f"
 name = "find char"
 description = "Find the next char (include char in selection)"
+combinedName = "find char (back)"
+combinedDescription = "Find the next (previous) char (include char in selection)"
+combinedKey = "f (shift+f)"
 args.acceptAfter = 1
 computedArgs.skip = "count-1"
 args.offset = "inclusive"
@@ -472,6 +495,7 @@ path = "edit.motion.search"
 key = "shift+f"
 name = "find char back"
 description = "Find the previous char (include char in selection)"
+combinedName = "find char (back)"
 args.acceptAfter = 1
 args.offset = "inclusive"
 args.backwards = true
@@ -483,6 +507,9 @@ path = "edit.motion.search"
 key = "t"
 name = "to char"
 description = "Find the next char (exclude char in selection)"
+combinedName = "to char (back)"
+combinedKey = "t (shift+t)"
+combinedDescription = "Find the next/previous char (exclude char in selection)"
 args.acceptAfter = 1
 args.offset = "start"
 computedArgs.skip = "count-1"
@@ -493,6 +520,7 @@ path = "edit.motion.search"
 key = "shift+t"
 name = "to char back"
 description = "Find the previous char (exclude char in selection)"
+combinedName = "to char (back)"
 args.acceptAfter = 1
 args.offset = "end"
 args.backwards = true
@@ -504,6 +532,9 @@ path = "edit.motion.search"
 key = "s"
 name = "find char pair"
 description = "To next character pair"
+combinedName = "char pair →/←"
+combinedDescription = "To next character pair"
+combinedKey = "s/shift+s"
 args.acceptAfter = 2
 args.offset = "start"
 computedArgs.skip = "count-1"
@@ -514,28 +545,11 @@ path = "edit.motion.search"
 key = "shift+s"
 name = "char pair back"
 description = "To previous character pair"
+combinedName = "char pair →/←"
 args.acceptAfter = 2
 args.offset = "start"
 computedArgs.skip = "count-1"
 args.backwards = true
-mode = ["normal", "selectedit"]
-
-[[bind]]
-path = "edit.motion.search"
-key = ";"
-name = "→ match"
-description = "Repeat search motion forwards"
-command = "master-key.nextMatch"
-computedArgs.repeat = "count"
-mode = ["normal", "selectedit"]
-
-[[bind]]
-path = "edit.motion.search"
-key = "shift+;"
-name = "← match"
-description = "Repeat search motion backwards"
-command = "master-key.previousMatch"
-computedArgs.repeat = "count"
 mode = ["normal", "selectedit"]
 
 ## Goto commands
@@ -2067,34 +2081,6 @@ commandHistory[i].path.startsWith('edit.action') &&
 
 [[bind.args.commands]]
 command = "master-key.enterNormal"
-
-[[bind]]
-path = "edit.action.history"
-name = "repeat last subject"
-description = """
-Repeat the last subject: the selection command that occurred right before an action. For
-instance `w` followed by `d` selects a word and deletes it. The `w` command would be the
-last noun until some action is run after `d`.
-"""
-key = ","
-command = "master-key.replayFromHistory"
-args.at = """
-commandHistory[i].path.startsWith("edit.motion") &&
-commandHistory[i+1].path.startsWith("edit.action") &&
-!(commandHistory[i+1].name.startsWith("repeat ") &&
-  commandHistory[i+1].path.startsWith("edit.action.history"))
-"""
-
-[[bind]]
-path = "edit.action.history"
-name = "repeat last motion"
-description = """
-Repeat the last motion command. Motions usually move the cursor or change the selection.
-"""
-key = "ctrl+,"
-command = "master-key.replayFromHistory"
-repeat = "count"
-args.at = "commandHistory[i].path.startsWith('edit.motion')"
 
 [[path]]
 id = "edit.action.comment"

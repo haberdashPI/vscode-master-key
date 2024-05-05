@@ -4,7 +4,7 @@ redesign bindings:
 
 + p - paste after (⇧ before)
 
-/ and ? - search
++ / and ? - search
 
 g - goto
   + j/k, J/K - unwrap up/down (or unwrap expand)
@@ -40,18 +40,18 @@ m - match
   - t/T in/around text between character (count for multiple characters)
   - s/S text between the two typed characters (count for multiple characters before and after)
 
-X - center window
-: - global palette
-/ - search
-; - repeat match/jump
-[ - reset selection
-] - exec. repl (and variant)
-⇧[ - → paragraph (] is ←)
-"-": cursor history
+- X - center window
+- : - global palette
++ / - search
++ ; - repeat match/jump
+- [ - reset selection
+- ] - exec. repl (and variant)
+- ⇧[ - → paragraph (] is ←)
+- "-": cursor history
   - "-",0 cursor history
   - e, E edit curost history
   - n, N navivation cursor history
-v - start/stop hold selection
+- v - start/stop hold selection
 
 space - leader
   r - open recent
