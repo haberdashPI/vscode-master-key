@@ -386,6 +386,158 @@ combinedName = "subsec →/←"
 args.unit = "subsection"
 computedArgs.value = "-(count || 1)"
 
+## Search Motions
+## --------------------------------
+
+# TODO: and combinedName etc...
+
+[[path]]
+id = "edit.motion.search"
+name = "Search Related Motions"
+description = "Motions related to searching for text in a document"
+default.command = "master-key.search"
+default.args.caseSensitive = false
+default.args.backwards = false
+default.args.selectTillMatch = true
+default.args.wrapAround = true
+
+[[bind]]
+path = "edit.motion.search"
+key = "/"
+name = "capture"
+description = "search forwards"
+args.offset = "start"
+args.register = "search"
+
+[[bind]]
+path = "edit.motion.search"
+key = "shift+/"
+name = "search bk"
+description = "search backwards"
+args.offset = "start"
+args.register = "search"
+args.backwards = true
+
+[[bind]]
+path = "edit.motion.search"
+key = "n"
+name = "→ search"
+description = "Go to the next match of the search query"
+command = "master-key.nextMatch"
+args.register = "search"
+computedArgs.repeat = "(count || 1)-1"
+
+[[bind]]
+path = "edit.motion.search"
+key = "shift+n"
+name = "← search"
+description = "Go to the previous match of the search query"
+command = "master-key.previousMatch"
+args.register = "search"
+computedArgs.repeat = "(count || 1)-1"
+
+[[bind]]
+path = "edit.motion.search"
+key = "shift+8"
+name = "match →"
+description = "Next match to object under cursor"
+computedArgs.text = "firstSelectionOrWord"
+args.offset = "start"
+args.register = "search"
+mode = ["normal", "selectedit"]
+
+[[bind]]
+path = "edit.motion.search"
+key = "shift+7"
+name = "match ←"
+description = "Previous match to object under cursor"
+computedArgs.text = "firstSelectionOrWord"
+args.offset = "start"
+args.register = "search"
+args.backwards = true
+mode = ["normal", "selectedit"]
+
+[[bind]]
+path = "edit.motion.search"
+key = "f"
+name = "find char"
+description = "Find the next char (include char in selection)"
+args.acceptAfter = 1
+computedArgs.skip = "count-1"
+args.offset = "inclusive"
+mode = ["normal", "selectedit"]
+
+[[bind]]
+path = "edit.motion.search"
+key = "shift+f"
+name = "find char back"
+description = "Find the previous char (include char in selection)"
+args.acceptAfter = 1
+args.offset = "inclusive"
+args.backwards = true
+computedArgs.skip = "count-1"
+mode = ["normal", "selectedit"]
+
+[[bind]]
+path = "edit.motion.search"
+key = "t"
+name = "to char"
+description = "Find the next char (exclude char in selection)"
+args.acceptAfter = 1
+args.offset = "start"
+computedArgs.skip = "count-1"
+mode = ["normal", "selectedit"]
+
+[[bind]]
+path = "edit.motion.search"
+key = "shift+t"
+name = "to char back"
+description = "Find the previous char (exclude char in selection)"
+args.acceptAfter = 1
+args.offset = "end"
+args.backwards = true
+computedArgs.skip = "count-1"
+mode = ["normal", "selectedit"]
+
+[[bind]]
+path = "edit.motion.search"
+key = "s"
+name = "find char pair"
+description = "To next character pair"
+args.acceptAfter = 2
+args.offset = "start"
+computedArgs.skip = "count-1"
+mode = "normal"
+
+[[bind]]
+path = "edit.motion.search"
+key = "shift+s"
+name = "char pair back"
+description = "To previous character pair"
+args.acceptAfter = 2
+args.offset = "start"
+computedArgs.skip = "count-1"
+args.backwards = true
+mode = ["normal", "selectedit"]
+
+[[bind]]
+path = "edit.motion.search"
+key = ";"
+name = "→ match"
+description = "Repeat search motion forwards"
+command = "master-key.nextMatch"
+computedArgs.repeat = "count"
+mode = ["normal", "selectedit"]
+
+[[bind]]
+path = "edit.motion.search"
+key = "shift+;"
+name = "← match"
+description = "Repeat search motion backwards"
+command = "master-key.previousMatch"
+computedArgs.repeat = "count"
+mode = ["normal", "selectedit"]
+
 ## Goto commands
 ## --------------------------------
 
@@ -861,153 +1013,6 @@ prefixes = [""]
 name = "smart expand"
 description = "Use VSCode's built-in smart expansion command"
 command = "editor.action.smartSelect.expand"
-
-[[path]]
-id = "edit.motion.search"
-name = "Search Related Motions"
-description = "Motions related to searching for text in a document"
-default.command = "master-key.search"
-default.args.caseSensitive = false
-default.args.backwards = false
-default.args.selectTillMatch = true
-default.args.wrapAround = true
-
-[[bind]]
-path = "edit.motion.search"
-key = "/ /"
-name = "capture"
-description = "search forwards"
-args.offset = "start"
-args.register = "search"
-
-[[bind]]
-path = "edit.motion.search"
-key = "shift+/"
-name = "search bk"
-description = "search backwards"
-args.offset = "start"
-args.register = "search"
-args.backwards = true
-
-[[bind]]
-path = "edit.motion.search"
-key = "n"
-name = "→ search"
-description = "Go to the next match of the search query"
-command = "master-key.nextMatch"
-args.register = "search"
-computedArgs.repeat = "(count || 1)-1"
-
-[[bind]]
-path = "edit.motion.search"
-key = "shift+n"
-name = "← search"
-description = "Go to the previous match of the search query"
-command = "master-key.previousMatch"
-args.register = "search"
-computedArgs.repeat = "(count || 1)-1"
-
-[[bind]]
-path = "edit.motion.search"
-key = "shift+8"
-name = "match →"
-description = "Next match to object under cursor"
-computedArgs.text = "firstSelectionOrWord"
-args.offset = "start"
-args.register = "search"
-mode = ["normal", "selectedit"]
-
-[[bind]]
-path = "edit.motion.search"
-key = "shift+7"
-name = "match ←"
-description = "Previous match to object under cursor"
-computedArgs.text = "firstSelectionOrWord"
-args.offset = "start"
-args.register = "search"
-args.backwards = true
-mode = ["normal", "selectedit"]
-
-[[bind]]
-path = "edit.motion.search"
-key = "f"
-name = "find char"
-description = "Find the next char (include char in selection)"
-args.acceptAfter = 1
-computedArgs.skip = "count-1"
-args.offset = "inclusive"
-mode = ["normal", "selectedit"]
-
-[[bind]]
-path = "edit.motion.search"
-key = "shift+f"
-name = "find char back"
-description = "Find the previous char (include char in selection)"
-args.acceptAfter = 1
-args.offset = "inclusive"
-args.backwards = true
-computedArgs.skip = "count-1"
-mode = ["normal", "selectedit"]
-
-[[bind]]
-path = "edit.motion.search"
-key = "t"
-name = "to char"
-description = "Find the next char (exclude char in selection)"
-args.acceptAfter = 1
-args.offset = "start"
-computedArgs.skip = "count-1"
-mode = ["normal", "selectedit"]
-
-[[bind]]
-path = "edit.motion.search"
-key = "shift+t"
-name = "to char back"
-description = "Find the previous char (exclude char in selection)"
-args.acceptAfter = 1
-args.offset = "end"
-args.backwards = true
-computedArgs.skip = "count-1"
-mode = ["normal", "selectedit"]
-
-[[bind]]
-path = "edit.motion.search"
-key = "s"
-name = "find char pair"
-description = "To next character pair"
-args.acceptAfter = 2
-args.offset = "start"
-computedArgs.skip = "count-1"
-mode = "normal"
-
-[[bind]]
-path = "edit.motion.search"
-key = "shift+s"
-name = "char pair back"
-description = "To previous character pair"
-args.acceptAfter = 2
-args.offset = "start"
-computedArgs.skip = "count-1"
-args.backwards = true
-mode = ["normal", "selectedit"]
-
-[[bind]]
-path = "edit.motion.search"
-key = ";"
-name = "→ match"
-description = "Repeat search motion forwards"
-command = "master-key.nextMatch"
-computedArgs.repeat = "count"
-mode = ["normal", "selectedit"]
-
-[[bind]]
-path = "edit.motion.search"
-key = "shift+;"
-name = "← match"
-description = "Repeat search motion backwards"
-command = "master-key.previousMatch"
-computedArgs.repeat = "count"
-mode = ["normal", "selectedit"]
 
 [[path]]
 id = "edit.motion.searchpair"

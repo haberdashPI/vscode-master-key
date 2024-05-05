@@ -86,11 +86,11 @@
     "keybindings": [
       {
         "key": "ctrl+shift+;",
-        "command": "master-key.commandPalette"
+        "command": "master-key.commandSuggestions"
       },
       {
         "key": "ctrl+alt+;",
-        "command": "master-key.commandSuggestions"
+        "command": "master-key.commandPalette"
       },
       {
         "key": "ctrl+.",
