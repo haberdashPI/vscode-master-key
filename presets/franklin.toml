@@ -279,7 +279,7 @@ command = "expandLineSelection"
 
 [[path]]
 id = "edit.motion.obj"
-name = "Motions around various regex-like objects"
+name = "Motions defined by various regex and syntactical objects"
 description = """
 motions that move by a predefined syntactic object (e.g. word, paragraph, etc...)
 """
@@ -359,7 +359,7 @@ computedArgs.value = "count || 1"
 
 [[bind]]
 path = "edit.motion.obj"
-key = "shift+p"
+key = "shift+["
 name = "parag. ←"
 combinedName = "paragraph →/←"
 description = "previous paragraph"
@@ -810,6 +810,85 @@ args.commands = ["jupyter.gotoPrevCellInFile", "jupyter.selectCell"]
 ## Match commands
 ## --------------------------------
 
+# TODO: need to fix the arugments (used to be set by "u" key)
+
+[[path]]
+id = "edit.motion.obj"
+name = "Matching Motions"
+description = "Motions that match some range of characters"
+default.kind = "select"
+
+[[bind]]
+path = "edit.motion.obj"
+key = "m"
+name = "match"
+description = """
+Find the closet character range matching a specified object.
+"""
+kind = "util"
+resetTransient = false
+mode = ["normal", "selectedit"]
+command = "master-key.prefix"
+
+[[bind]]
+path = "edit.motion.obj"
+key = "m w"
+name = "subwrd →"
+description = "around next subword match (camel/snake case)"
+combinedName = "subwrd ←/→"
+combinedDescription = "next/prev subword match (camel/snake case)"
+combinedKey = "w/b"
+args.unit = "subword"
+computedArgs.value = "count || 1"
+
+[[bind]]
+path = "edit.motion.obj"
+key = "b"
+name = "subwrd ←"
+description = "previous subword match (camel/snake case)"
+combinedName = "subwrd ←/→"
+args.unit = "subword"
+computedArgs.value = "-count || -1"
+
+[[bind]]
+path = "edit.motion.obj"
+key = "shift+w"
+name = "word →"
+description = "around next word match"
+combinedName = "word ←/→"
+combinedDescription = "next/prev word match"
+combinedKey = "shift+w/b"
+args.unit = "word"
+computedArgs.value = "count || 1"
+
+[[bind]]
+path = "edit.motion.obj"
+key = "shift+b"
+name = "word ←"
+combinedName = "word ←/→"
+description = "previous word match"
+prefixes = [""]
+args.unit = "word"
+computedArgs.value = "-count || -1"
+
+[[bind]]
+path = "edit.motion.obj"
+key = "e"
+name = "in subwrd"
+description = "in next subword (camel/snake case)"
+args.unit = "subword"
+computedArgs.boundary = "both"
+computedArgs.value = "count || 1"
+
+[[bind]]
+path = "edit.motion.obj"
+key = "shift+e"
+name = "in word"
+description = "in next word"
+args.unit = "word"
+computedArgs.boundary = "both"
+computedArgs.value = "count || 1"
+
 ## Simple Actions
 ## --------------------------------
 
@@ -898,20 +977,6 @@ id = "edit.motion.mod"
 name = "Modify Motion Effects"
 description = "Keys that change how other motions work"
 default.kind = "select"
-
-[[bind]]
-path = "edit.motion.mod"
-key = "u"
-name = "around"
-description = """
-selection commands are changed to both move start and end of a selection to surround the
-entire object (rather than extending to specified start/end point)
-"""
-kind = "util"
-resetTransient = false
-mode = ["normal", "selectedit"]
-command = "master-key.prefix"
-args = { flag = "around_on" }
 
 [[bind]]
 path = "edit.motion.mod"
