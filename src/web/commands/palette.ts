@@ -159,5 +159,6 @@ export function activate(context: vscode.ExtensionContext){
         togglePaletteMode));
     context.subscriptions.push(vscode.commands.registerCommand('master-key.commandPalette',
         x => commandPalette(x, {context: false})));
-    // TODO: also show a full command palette that lets you search all commands
+    context.subscriptions.push(vscode.commands.registerCommand('master-key.commandSuggestions',
+        x => commandPalette(x, {context: true, useKey: true})));
 }

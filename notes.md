@@ -3,6 +3,24 @@ current issue I'm working on:
 redesign bindings:
 
 + p - paste after (⇧ before)
+
+/ and ? - search
+
+g - goto
+  + j/k, J/K - unwrap up/down (or unwrap expand)
+  + </> - top/bottom of file
+  + w WORD motion
+  + e WORD end
+  + b WORD back
+  + ;/: next/previous comment
+  - space matching indent end (need to implement)
+  + a/s section
+  + g - goto line
+  + d/D function definition
+  + r function references
+  + c/C notebook cell
+  + f - file under cursor
+
 m - match
   - w - around subword (⇧ for full word)
   - e - in subword (⇧ for full word)
@@ -21,23 +39,6 @@ m - match
   - c jupyter-notebook cell
   - t/T in/around text between character (count for multiple characters)
   - s/S text between the two typed characters (count for multiple characters before and after)
-
-/ and ? - search
-
-g - goto
-  + j/k, J/K - unwrap up/down (or unwrap expand)
-  + </> - top/bottom of file
-  + w WORD motion
-  + e WORD end
-  + b WORD back
-  + ;/: next/previous comment
-  - space matching indent end (need to implement)
-  + a/s section
-  + g - goto line
-  + d/D function definition
-  + r function references
-  + c/C notebook cell
-  + f - file under cursor
 
 X - center window
 : - global palette

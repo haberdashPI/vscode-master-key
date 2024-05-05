@@ -27,7 +27,7 @@
         "title": "Select Keybinding Preset"
       },
       {
-        "command": "master-key.contextualCommandPalette",
+        "command": "master-key.commandSuggestions",
         "category": "Master Key",
         "title": "Contextual Command Palette"
       },
@@ -87,6 +87,10 @@
       {
         "key": "ctrl+shift+;",
         "command": "master-key.commandPalette"
+      },
+      {
+        "key": "ctrl+alt+;",
+        "command": "master-key.commandSuggestions"
       },
       {
         "key": "ctrl+.",
