@@ -153,8 +153,8 @@ args.value = "{key}"
 resetTransient = false
 mode = ["!insert", "!capture"]
 
-####################################################################################
 ## Basic motions
+## --------------------------------
 
 [[path]]
 id = "edit.motion"
@@ -386,8 +386,8 @@ combinedName = "subsec →/←"
 args.unit = "subsection"
 computedArgs.value = "-(count || 1)"
 
-####################################################################################
 ## Goto commands
+## --------------------------------
 
 [[bind]]
 path = "edit.motion"
@@ -599,12 +599,101 @@ key = "g f"
 command = "extension.openFileFromPath"
 when = "editorTextFocus"
 
-####################################################################################
+[[bind]]
+path = "edit.motion.cell"
+key = "g c"
+name = "cell →"
+description = "next notebook cell"
+combinedName = "cell →/←"
+combinedDescription = "next/prev notebook cell"
+combinedKey = "g c/shift+c"
+when = "editorLangId == 'markdown' || editorLangId == 'quarto'"
+command = "runCommands"
+args.commands = ["terminal-polyglot.next-fence-select", "selection-utilities.revealActive"]
+
+[[bind]]
+path = "edit.motion.cell"
+key = "g c"
+name = "cell →"
+combinedName = "cell →/←"
+when = "!(editorLangId == 'markdown' || editorLangId == 'quarto')"
+command = "runCommands"
+args.commands = [ "jupyter.gotoNextCellInFile", "jupyter.selectCell" ]
+description = "previous jupyter notebook cell"
+
+[[bind]]
+path = "edit.motion.cell"
+key = "g shift+c"
+name = "cell ←"
+combinedName = "cell →/←"
+description = "previous jupyter notebook cell"
+when = "editorLangId == 'markdown' || editorLangId == 'quarto'"
+command = "runCommands"
+args.commands = ["terminal-polyglot.prev-fence-select", "selection-utilities.revealActive"]
+
+
+[[bind]]
+path = "edit.motion.cell"
+key = "g shift+c"
+name = "cell ←"
+description = "previous jupyter notebook cell"
+when = "!(editorLangId == 'markdown' || editorLangId == 'quarto')"
+command = "runCommands"
+args.commands = ["jupyter.gotoPrevCellInFile", "jupyter.selectCell"]
+
 ## Match commands
+## --------------------------------
 
+## Simple Actions
+## --------------------------------
 
-####################################################################################
-# where I stopped editing
+[[path]]
+id = "edit.action.clipboard"
+name = "Clipboard Operations"
+description = "Operations that manipulate the clipboard in some way."
+default.mode = ["normal", "selectedit"]
+
+[[bind]]
+path = "edit.action.clipboard"
+key = "p"
+name = "paste after"
+description = "Paste clipboard after the cursor/selection"
+combinedName = "paste before/after"
+combinedDescription = "Paste clipboard before/after the cursor/selection"
+combinedKey = "p/shift+p"
+when = "editorHasSelection"
+command = "runCommands"
+args.commands = ["selection-utilities.activeAtEnd", "selection-utilities.shrinkToActive", "editor.action.clipboardPasteAction"]
+
+[[bind]]
+path = "edit.action.clipboard"
+key = "p"
+name = "paste after"
+combinedName = "paste before/after"
+when = "!editorHasSelection"
+command = "runCommands"
+args.commands = ["cursorRight", "editor.action.clipboardPasteAction"]
+
+[[bind]]
+path = "edit.action.clipboard"
+key = "shift+P"
+name = "paste before"
+combinedName = "paste before/after"
+description = "Paste before the cursor/selection"
+when = "editorHasSelection"
+command = "runCommands"
+args.commands = ["selection-utilities.activeAtStart", "selection-utilities.shrinkToActive", "editor.action.clipboardPasteAction"]
+
+[[bind]]
+path = "edit.action.clipboard"
+key = "shift+P"
+combinedName = "paste before/after"
+when = "!editorHasSelection"
+command = "runCommands"
+args.commands = ["cursorRight", "editor.action.clipboardPasteAction"]
+
+## Where I stopped editing
+## --------------------------------
 
 [[bind]]
 path = "edit.motion.prim"
@@ -728,39 +817,6 @@ computedArgs = { value = "-(count || 1)" }
 id = "edit.motion.cell"
 name = "Cell Motions"
 description = "Motions for operating on notebook cells"
-
-[[bind]]
-path = "edit.motion.cell"
-key = "' y"
-when = "editorLangId == 'markdown' || editorLangId == 'quarto'"
-command = "runCommands"
-args.commands = ["terminal-polyglot.next-fence-select", "selection-utilities.revealActive"]
-
-[[bind]]
-path = "edit.motion.cell"
-key = "' y"
-when = "!(editorLangId == 'markdown' || editorLangId == 'quarto')"
-command = "runCommands"
-args.commands = [ "jupyter.gotoNextCellInFile", "jupyter.selectCell" ]
-name = "cell ←"
-description = "previous jupyter notebook cell"
-
-[[bind]]
-path = "edit.motion.cell"
-key = "' shift+y"
-when = "editorLangId == 'markdown' || editorLangId == 'quarto'"
-command = "runCommands"
-args.commands = ["terminal-polyglot.prev-fence-select", "selection-utilities.revealActive"]
-
-
-[[bind]]
-path = "edit.motion.cell"
-key = "' shift+y"
-when = "!(editorLangId == 'markdown' || editorLangId == 'quarto')"
-command = "runCommands"
-args.commands = ["jupyter.gotoPrevCellInFile", "jupyter.selectCell"]
-name = "cell"
-description = "select a jyputer notebook cell"
 
 [[bind]]
 path = "edit.motion.cell"
@@ -1603,12 +1659,6 @@ command = "runCommands"
 args.commands = [ "master-key.enterInsert", { command = "type", args = { text = "[" } },
        "master-key.enterNormal" ]
 
-[[path]]
-id = "edit.action.clipboard"
-name = "Clipboard Operations"
-description = "Operations that manipulate the clipboard in some way."
-default.mode = ["normal", "selectedit"]
-
 [[bind]]
 path = "edit.action.clipboard"
 key = "d"
@@ -1685,38 +1735,6 @@ args.commands = [
       "editor.action.clipboardCopyAction",
       "editor.action.shrinkToActive"
 ]
-
-[[bind]]
-path = "edit.action.clipboard"
-key = "v"
-name = "paste after"
-description = "Paste the next after the cursor/selection"
-when = "editorHasSelection"
-command = "runCommands"
-args.commands = ["selection-utilities.activeAtEnd", "selection-utilities.shrinkToActive", "editor.action.clipboardPasteAction"]
-
-[[bind]]
-path = "edit.action.clipboard"
-key = "v"
-when = "!editorHasSelection"
-command = "runCommands"
-args.commands = ["cursorRight", "editor.action.clipboardPasteAction"]
-
-[[bind]]
-path = "edit.action.clipboard"
-key = "shift+v"
-name = "paste before"
-description = "Paste before the cursor/selection"
-when = "editorHasSelection"
-command = "runCommands"
-args.commands = ["selection-utilities.activeAtStart", "selection-utilities.shrinkToActive", "editor.action.clipboardPasteAction"]
-
-[[bind]]
-path = "edit.action.clipboard"
-key = "shift+v"
-when = "!editorHasSelection"
-command = "runCommands"
-args.commands = ["cursorRight", "editor.action.clipboardPasteAction"]
 
 [[bind]]
 path = "edit.action.clipboard"

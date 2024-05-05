@@ -22,15 +22,15 @@ function setPickerText(){
         }
         let mode;
         if(paletteBindingMode){
-            mode = "Press a Binding";
+            mode = "Keybinding mode";
         }else{
-            mode = "Search";
+            mode = "Search mode";
         }
         let context = "";
         if(paletteBindingContext){
             context = "Context Specific ";
         }
-        currentPicker.title = `Master Key ${context}Palette: ${mode} (use ^. to change mode)`;
+        currentPicker.title = `Master Key ${context}Palette: ${mode} (^. changes mode)`;
     }
 }
 

@@ -2,7 +2,7 @@ current issue I'm working on:
 
 redesign bindings:
 
-p - paste after (⇧ before)
++ p - paste after (⇧ before)
 m - match
   - w - around subword (⇧ for full word)
   - e - in subword (⇧ for full word)
@@ -36,7 +36,7 @@ g - goto
   + g - goto line
   + d/D function definition
   + r function references
-  - c/C notebook cell
+  + c/C notebook cell
   + f - file under cursor
 
 X - center window
@@ -85,25 +85,26 @@ space - leader
 u/U - undo/redo
 
 ' - do
-  c -
+  - c -
     i - insert cell
     s - split
-  o/O - open above/below
-  i - symmetric insertion mode
-  space - trim whitespace
-  w - wrap paragraph
-  v - paste
-  f - format
-  [ - parens
+  - p/P - past before/after line
+  - o/O - open above/below
+  - i - symmetric insertion mode
+  - space - trim whitespace
+  - w - wrap paragraph
+  - v - paste
+  - f - format
+  - [ - parens
       - d - remove
       - s - swap
-  ' - quotes
+  - ' - quotes
       - as per parens
-  a - julia activate
-  t - julia run tests
-  ; - toggle comments
-  : - toggle block comments
-  =/+ - decrement/increment all
+  - a - julia activate
+  - t - julia run tests
+  - ; - toggle comments
+  - : - toggle block comments
+  - =/+ - decrement/increment all
 
 z - multi-select mode (Z adds cursor)
   shift-enter - split by newline
