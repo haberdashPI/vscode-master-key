@@ -40,22 +40,22 @@ m - match
   - #/@ - next/prev number
   + >/< in karets / karent contents
   + c/C jupyter-notebook cell
-  - t/T in/around text between character (count for multiple characters)
-  - smart expansion
-  - s/S text between the two typed characters (count for multiple characters before and after)
+  + s/t text between character (count for multiple characters)
+  + m smart expansion
 
-- X - center window
-- : - contextual palette
-- ctrl+: - global palette
++ X - center window
++ : - contextual palette
++ ctrl+: - global palette
 + / - search
 + ; - repeat match/jump
-- v/V - reset/toggle selection
++ v/V - reset/toggle selection
 - [ - exec. repl (and variant)
 + ⇧[ - → paragraph (] is ←)
 - "-": cursor history
   - "-",0 cursor history
   - e, E edit curost history
   - n, N navivation cursor history
++ u/U - undo/redo
 
 space - leader
   r - open recent
@@ -87,7 +87,6 @@ space - leader
     - h hover
     - j/J steps
 
-u/U - undo/redo
 
 ' - do
   - c -

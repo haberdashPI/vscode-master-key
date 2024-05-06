@@ -162,7 +162,7 @@ mode = ["!insert", "!capture"]
 id = "edit.motion"
 name = "Motions"
 description = "Commands that move the cursors and/or selections"
-default.kind = "select"
+default.kind = "motions"
 
 [[path]]
 id = "edit.motion.prim"
@@ -387,6 +387,36 @@ description = "previous subsection"
 combinedName = "subsec →/←"
 args.unit = "subsection"
 computedArgs.value = "-(count || 1)"
+
+[[bind]]
+path = "edit.motion.prim"
+key = "v"
+name = "shrink selection"
+combinedName = "shrink/hold selection"
+combinedDescription = """
+reduce selections to zero length / make all commands extend the selection
+"""
+mode = ["normal", "selectedit"]
+description = """
+reduce all selections to length zero
+"""
+command = "runCommands"
+args.commands = [
+      "selection-utilities.shrinkToActive",
+      { command = "master-key.setFlag", args = { name = "select_on", value = false } },
+]
+
+[[bind]]
+path = "edit.motion.mod"
+key = "shift+v"
+name = "hold selection"
+description = """
+all motions extend the selection
+"""
+command = "master-key.setFlag"
+args.name = "select_on"
+args.value = true
+mode = ["normal", "selectedit"]
 
 ## Repeating Motions
 ## --------------------------------
@@ -828,7 +858,7 @@ name = "Matching Object Motions"
 description = "Motions that match some range of characters by predefined regex"
 default.mode = ["normal", "selectedit"]
 default.command = "selection-utilities.moveBy"
-default.kind = "select"
+default.kind = "motions"
 default.args.selectWhole = true
 default.args.boundary = "start"
 
@@ -839,10 +869,18 @@ name = "match"
 description = """
 Find the closet character range matching a specified object.
 """
-kind = "util"
+kind = "motions"
 resetTransient = false
 mode = ["normal", "selectedit"]
 command = "master-key.prefix"
+
+[[bind]]
+path = "edit.motion.match"
+key = "m m"
+prefixes = [""]
+name = "smart expand"
+description = "Use VSCode's built-in smart expansion command"
+command = "editor.action.smartSelect.expand"
 
 [[bind]]
 path = "edit.motion.match.obj"
@@ -991,7 +1029,7 @@ description = """
 expand inside parens/brackets/braces and their contents; repeated calls to this command
 will seek out larger and larger scopes
 """
-command = "selection-utilities.expandAroundBrackets"
+command = "selection-utilities.expandWithinBrackets"
 
 [[bind]]
 path = "edit.motion.match.syntax"
@@ -1124,6 +1162,58 @@ key = "m c"
 when = "!(editorLangId == 'markdown' || editorLangId == 'quarto')"
 command = "jupyter.selectCell"
 
+[[path]]
+id = "edit.motion.searchpair"
+name = "Search pairs"
+description = "Find text that falls between pairs of characters"
+mode = ["normal", "selectedit"]
+
+[[bind]]
+path = "edit.motion.searchpair"
+name = "between pair"
+description = """
+Select between to pairs of the same N characters (m) or distinct sets of N
+characters (s), where N is the count:
+2mt'' would search for a string between '' and ''.
+2ms,,.. would search for a string between ,, and ..
+"""
+key = "m t"
+command = "runCommands"
+combinedName = "between pair/two"
+combinedKey = "t/s"
+combinedDescription = """
+"""
+
+[[bind.args.commands]]
+command = "master-key.captureKeys"
+computedArgs.acceptAfter = "count || 1"
+
+[[bind.args.commands]]
+command = "selection-utilities.selectBetween"
+computedArgs.str = "captured"
+args.inclusive = false
+
+[[bind]]
+path = "edit.motion.searchpair"
+name = "between two"
+description = """
+Select between two different sets of N characters, where N is the count e.g.
+2ms,,.. would search for a string between ,, and ..
+"""
+key = "m s"
+combinedKey = "t/s"
+command = "runCommands"
+
+[[bind.args.commands]]
+command = "master-key.captureKeys"
+computedArgs.acceptAfter = "2*(count || 1)"
+
+[[bind.args.commands]]
+command = "selection-utilities.selectBetween"
+computedArgs.between.from = "captured.slice(0, captured.length/2)"
+computedArgs.between.to = "captured.slice(captured.length/2)"
+args.inclusive = false
+
 ## Simple Actions
 ## --------------------------------
 
@@ -1179,6 +1269,94 @@ when = "!editorHasSelection"
 command = "runCommands"
 args.commands = ["cursorRight", "editor.action.clipboardPasteAction"]
 
+[[bind]]
+path = "edit.action.history"
+name = "repeat action"
+description = """
+Repeat the last action command. Actions usually modify the text of a document in one way or
+another. (But, e.g. sending text to the REPL is also considered an editor action).
+"""
+key = "."
+command = "runCommands"
+repeat = "count"
+
+[[bind.args.commands]]
+command = "master-key.replayFromHistory"
+# we can repeat any action but history-related actions; we make an exception
+# for replaying macros, which can be repeated
+args.at = """
+commandHistory[i].path.startsWith('edit.action') &&
+(!commandHistory[i].path.startsWith('edit.action.history') ||
+ commandHistory[i].name == 'replay')
+"""
+
+[[bind.args.commands]]
+command = "master-key.enterNormal"
+
+[[bind]]
+path = "edit.action.history"
+name = "undo"
+description = "VSCode Undo"
+key = "u"
+command = "runCommands"
+args.commands = [ "undo", "selection-utilities.shrinkToActive" ]
+
+[[bind]]
+path = "edit.action.history"
+name = "redo"
+description = "VSCode Redo"
+key = "shift+u"
+command = "runCommands"
+args.commands = [ "redo", "selection-utilities.shrinkToActive" ]
+
+## Simple util
+## --------------------------------
+
+[[path]]
+id = "window"
+name = "Window Manipulation"
+description = "Commands for navigating and manipulating the window/editor panes in some way"
+default.kind = "util"
+default.mode = "normal"
+default.when = "editorTextFocus && !findWidgetVisible"
+
+[[bind]]
+path = "window"
+name = "cntr win"
+description = "center window at primary cursor position"
+key = "shift+x"
+command = "selection-utilities.revealActive"
+args.at = "center"
+when = "editorTextFocus"
+
+[[bind]]
+path = "window"
+key = "shift+;"
+name = "suggest"
+resetTransient = false
+hideInPalette = true
+mode = []
+prefixes = "<all-prefixes>"
+description = """
+show command suggestsion within the context of the current mode and keybinding prefix
+(if any keys have already been typed)
+"""
+command = "master-key.commandSuggestions"
+
+[[bind]]
+path = "window"
+key = "shift+ctrl+;"
+name = "palette"
+resetTransient = false
+hideInPalette = true
+mode = []
+prefixes = "<all-prefixes>"
+description = """
+show command suggestsion within the context of the current mode and keybinding prefix
+(if any keys have already been typed)
+"""
+command = "master-key.commandPalette"
+
 ## Where I stopped editing
 ## --------------------------------
 
@@ -1225,7 +1403,7 @@ computedArgs = { value = "count" }
 id = "edit.motion.mod"
 name = "Modify Motion Effects"
 description = "Keys that change how other motions work"
-default.kind = "select"
+default.kind = "motions"
 
 [[bind]]
 path = "edit.motion.mod"
@@ -1318,59 +1496,6 @@ key = "shift+4"
 name = "all"
 description = "Select entire document"
 command = "editor.action.selectAll"
-
-[[bind]]
-path = "edit.motion.obj"
-key = "u u"
-prefixes = [""]
-name = "smart expand"
-description = "Use VSCode's built-in smart expansion command"
-command = "editor.action.smartSelect.expand"
-
-[[path]]
-id = "edit.motion.searchpair"
-name = "Search pairs"
-description = "Find text that falls between pairs of characters"
-mode = ["normal", "selectedit"]
-
-[[bind]]
-path = "edit.motion.searchpair"
-name = "between"
-description = """
-Select between pairs of identical N characters, where N is the count e.g.
-3uc''' would search for a string between ''' and '''.
-"""
-key = "u c"
-command = "runCommands"
-
-[[bind.args.commands]]
-command = "master-key.captureKeys"
-computedArgs.acceptAfter = "count || 1"
-
-[[bind.args.commands]]
-command = "selection-utilities.selectBetween"
-computedArgs.str = "captured"
-args.inclusive = false
-
-[[bind]]
-path = "edit.motion.searchpair"
-name = "between"
-description = """
-Select between pairs of identical N characters, where N is the count e.g.
-3uc''' would search for a string between ''' and '''.
-"""
-key = "u v"
-command = "runCommands"
-
-[[bind.args.commands]]
-command = "master-key.captureKeys"
-computedArgs.acceptAfter = "2*(count || 1)"
-
-[[bind.args.commands]]
-command = "selection-utilities.selectBetween"
-computedArgs.between.from = "captured.slice(0, captured.length/2)"
-computedArgs.between.to = "captured.slice(captured.length/2)"
-args.inclusive = false
 
 [[path]]
 id = "edit.motion.adjust"
@@ -2129,22 +2254,6 @@ default.mode = ["normal", "selectedit"]
 
 [[bind]]
 path = "edit.action.history"
-name = "undo"
-description = "VSCode Undo"
-key = "z"
-command = "runCommands"
-args.commands = [ "undo", "selection-utilities.shrinkToActive" ]
-
-[[bind]]
-path = "edit.action.history"
-name = "undo"
-description = "VSCode Redo"
-key = "shift+z"
-command = "runCommands"
-args.commands = [ "redo", "selection-utilities.shrinkToActive" ]
-
-[[bind]]
-path = "edit.action.history"
 name = "cursor undo"
 description = "VSCode Cursor Undo"
 key = "-"
@@ -2271,30 +2380,6 @@ key = "q l"
 command = "master-key.pushHistoryToStack"
 args.range.from = "i-(count || 0)"
 args.range.to = "i"
-
-[[bind]]
-path = "edit.action.history"
-name = "repeat action"
-description = """
-Repeat the last action command. Actions usually modify the text of a document in one way or
-another. (But, e.g. sending text to the REPL is also considered an editor action).
-"""
-key = "."
-command = "runCommands"
-repeat = "count"
-
-[[bind.args.commands]]
-command = "master-key.replayFromHistory"
-# we can repeat any action but history-related actions; we make an exception
-# for replaying macros, which can be repeated
-args.at = """
-commandHistory[i].path.startsWith('edit.action') &&
-(!commandHistory[i].path.startsWith('edit.action.history') ||
- commandHistory[i].name == 'replay')
-"""
-
-[[bind.args.commands]]
-command = "master-key.enterNormal"
 
 [[path]]
 id = "edit.action.comment"
@@ -2491,7 +2576,7 @@ args.commands = ["terminal-polyglot.send-text", "selection-utilities.shrinkToAct
 [[path]]
 id = "edit.navigation"
 name = "Document Navigation"
-default.kind = "select"
+default.kind = "motions"
 description = """
 Commands that navigate to various places in a document
 """
@@ -2550,13 +2635,13 @@ move to previous change
 key = "' shift+d"
 command = "workbench.action.editor.previousChange"
 
-[[path]]
-id = "window"
-name = "Window Manipulation"
-description = "Commands for navigating and manipulating the window/editor panes in some way"
-default.kind = "util"
-default.mode = "normal"
-default.when = "editorTextFocus && !findWidgetVisible"
+# [[path]]
+# id = "window"
+# name = "Window Manipulation"
+# description = "Commands for navigating and manipulating the window/editor panes in some way"
+# default.kind = "util"
+# default.mode = "normal"
+# default.when = "editorTextFocus && !findWidgetVisible"
 
 # [[bind]]
 # path = "window"
@@ -2894,7 +2979,7 @@ id = "edit.select_edit"
 name = "Selection Editing"
 description = "Various kakaune inspired commands for editing multiple selections"
 default.mode = "selectedit"
-default.kind = "select"
+default.kind = "motions"
 
 [[bind]]
 path = "edit.select_edit"
@@ -3307,7 +3392,7 @@ command = "selection-utilities.excludeByRegex"
 id = "edit.action.symmetric"
 name = "Symmetric Operations"
 description = "Operations that occur at both ends of a selection"
-default.kind = "select"
+default.kind = "motions"
 default.mode = "syminsert"
 
 [[bind]]
