@@ -92,6 +92,9 @@ async function restoreKeybindingsFromStorage(){
 export function filterBindingFn(mode?: string, prefixCode?: number) {
     return function filterBinding(binding_: any) {
         let binding = <IConfigKeyBinding>binding_;
+        if(binding.args.hideInPalette){
+            return false;
+        }
         if (isSingleCommand(binding.args.do, 'master-key.ignore')) {
             return false;
         }

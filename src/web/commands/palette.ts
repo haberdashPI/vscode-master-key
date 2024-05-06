@@ -7,6 +7,7 @@ import { MODE } from './mode';
 import { IConfigKeyBinding, PrefixCodes } from '../keybindings/processing';
 import { RunCommandsArgs, doCommandsCmd } from './do';
 import { uniqBy, sortBy } from 'lodash';
+import replaceAll from 'string.prototype.replaceall';
 import { QuickPickItem } from 'vscode-extension-tester';
 import { TypeOf } from 'zod';
 
@@ -84,7 +85,8 @@ export async function commandPalette(args_: unknown,
 
             return {
                 label: key,
-                description: [(binding.args.name || ""), (binding.args.description || "")].join(" — "),
+                description: binding.args.name,
+                detail: replaceAll(binding.args.description || "", /\n/g, ' '),
                 args: binding.args,
             };
         });
@@ -96,9 +98,9 @@ export async function commandPalette(args_: unknown,
         filteredPicks.push(lastPick);
         for(let pick of picks.slice(1)){
             if(lastPick.args.combinedName && lastPick.args.combinedName === pick.args.combinedName){
-                lastPick.label = prettifyPrefix(lastPick.args.combinedKey)
-                lastPick.description = [(lastPick.args.combinedName || ""),
-                    (lastPick.args.combinedDescription || "")].join(" — ");
+                lastPick.label = prettifyPrefix(lastPick.args.combinedKey);
+                lastPick.description = lastPick.args.combinedName;
+                lastPick.detail = lastPick.args.combinedDescription || "";
             }else{
                 filteredPicks.push(pick);
                 lastPick = pick;
@@ -112,6 +114,7 @@ export async function commandPalette(args_: unknown,
         setPickerText();
         picker.items = filteredPicks;
         picker.matchOnDescription = true;
+        picker.matchOnDetail = true;
         picker.onDidAccept(async _ => {
             let pick = picker.selectedItems[0];
             if(pick){
