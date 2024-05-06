@@ -33,15 +33,15 @@ m - match
     - 0/) section
     - w - around WORD
     - e - in WORD
-  - ' - quotes (⇧ for around)
-  - [ - parens (⇧ for around)
-  - space  - indent (⇧ for around, ^ for python style)
-  - ;/: - comment
+  + ' - quotes (⇧ for around)
+  + [ - parens (⇧ for around)
+  + space  - indent (⇧ for around, ^ for python style)
+  + ;/: - comment
   - #/@ - next/prev number
-  - ./< in/around karets
-  - ,/> in/around karent contents
-  - c jupyter-notebook cell
+  + >/< in karets / karent contents
+  + c/C jupyter-notebook cell
   - t/T in/around text between character (count for multiple characters)
+  - smart expansion
   - s/S text between the two typed characters (count for multiple characters before and after)
 
 - X - center window
@@ -49,14 +49,13 @@ m - match
 - ctrl+: - global palette
 + / - search
 + ; - repeat match/jump
-- v/V - reset/hold selection
+- v/V - reset/toggle selection
 - [ - exec. repl (and variant)
 + ⇧[ - → paragraph (] is ←)
 - "-": cursor history
   - "-",0 cursor history
   - e, E edit curost history
   - n, N navivation cursor history
-- v - start/stop hold selection
 
 space - leader
   r - open recent

@@ -94,6 +94,7 @@ name = "normal"
 description = "Enter normal mode"
 key = ["escape", "ctrl+["]
 mode = []
+hideInPalette = true
 command = "master-key.enterNormal"
 when = "!findWidgetVisible"
 prefixes = "<all-prefixes>"
@@ -102,6 +103,7 @@ prefixes = "<all-prefixes>"
 path = "modes"
 name = "normal"
 key = ["escape", "ctrl+["]
+hideInPalette = true
 when = "suggsetWidgetVisible && editorTextFocus && !findWidgetVisible"
 command = "master-key.enterNormal"
 mode = []
@@ -831,7 +833,7 @@ default.args.selectWhole = true
 default.args.boundary = "start"
 
 [[bind]]
-path = "edit.motion"
+path = "edit.motion.match"
 key = "m"
 name = "match"
 description = """
@@ -846,9 +848,9 @@ command = "master-key.prefix"
 path = "edit.motion.match.obj"
 key = "m w"
 name = "around subwrd →"
-description = "around next subword match (camel/snake case)"
+description = "(camel/snake case)"
 combinedName = "around subwrd ←/→"
-combinedDescription = "next/prev subword match (camel/snake case)"
+combinedDescription = "(camel/snake case)"
 combinedKey = "w/b"
 args.unit = "subword"
 computedArgs.value = "count || 1"
@@ -857,7 +859,7 @@ computedArgs.value = "count || 1"
 path = "edit.motion.match.obj"
 key = "m b"
 name = "around subwrd ←"
-description = "previous subword match (camel/snake case)"
+description = "(camel/snake case)"
 combinedName = "around subwrd ←/→"
 args.unit = "subword"
 computedArgs.value = "-count || -1"
@@ -866,9 +868,7 @@ computedArgs.value = "-count || -1"
 path = "edit.motion.match.obj"
 key = "m shift+w"
 name = "ard word →"
-description = "around next word match"
 combinedName = "around word →/←"
-combinedDescription = "around next/prev word match"
 combinedKey = "shift+w/b"
 args.unit = "word"
 computedArgs.value = "count || 1"
@@ -878,7 +878,6 @@ path = "edit.motion.match.obj"
 key = "m shift+b"
 name = "ard word ←"
 combinedName = "around word →/←"
-description = "around previous word match"
 prefixes = [""]
 args.unit = "word"
 computedArgs.value = "-count || -1"
@@ -887,9 +886,7 @@ computedArgs.value = "-count || -1"
 path = "edit.motion.match.obj"
 key = "m e"
 name = "in subwrd"
-description = "in next subword (camel/snake case)"
 combinedName = "in → subword/word"
-combinedDescription = "in next subword/word"
 combinedKey = "e/shift+e"
 args.unit = "subword"
 args.boundary = "both"
@@ -899,91 +896,233 @@ computedArgs.value = "count || 1"
 path = "edit.motion.match.obj"
 key = "m shift+e"
 name = "in word"
-description = "in next word"
 combinedName = "in → subword/word"
 args.unit = "word"
 args.boundary = "both"
 computedArgs.value = "count || 1"
 
 [[bind]]
-path = "edit.motion.obj"
+path = "edit.motion.match.obj"
 key = "m p"
-name = "arn parag. →"
-description = "around next paragraph"
-combinedName = "around paragraph →/←"
-combinedDescription = "around next/previous paragraph"
-combinedKey = "p/shift+p"
-args.unit = "paragraph"
-computedArgs.value = "count || 1"
-
-[[bind]]
-path = "edit.motion.obj"
-key = "m shift+p"
-name = "arn parag. ←"
-description = "around previous paragraph"
-combinedName = "around paragraph →/←"
-args.unit = "paragraph"
-computedArgs.value = "count || 1"
-
-[[bind]]
-path = "edit.motion.obj"
-key = "m o"
 name = "in parag. →"
-description = "around next paragraph"
 combinedName = "in paragraph →/←"
-combinedDescription = "in next/previous paragraph"
-combinedKey = "o/shift+o"
+combinedKey = "p/o"
 args.unit = "paragraph"
 computedArgs.value = "count || 1"
 
 [[bind]]
-path = "edit.motion.obj"
-key = "m shift+o"
+path = "edit.motion.match.obj"
+key = "m o"
 name = "in parag. ←"
-description = "around previous paragraph"
 combinedName = "in paragraph →/←"
 args.unit = "paragraph"
 computedArgs.value = "count || 1"
 
 [[bind]]
-path = "edit.motion.obj"
+path = "edit.motion.match.obj"
+key = "m shift+p"
+name = "arn parag. →"
+combinedName = "around paragraph →/←"
+combinedKey = "shift+p/shift+o"
+args.unit = "paragraph"
+computedArgs.value = "count || 1"
+
+[[bind]]
+path = "edit.motion.match.obj"
+key = "m shift+o"
+name = "arn parag. ←"
+combinedName = "around paragraph →/←"
+args.unit = "paragraph"
+computedArgs.value = "count || 1"
+
+[[bind]]
+path = "edit.motion.match.obj"
 key = "m 0"
 name = "arn subsec →"
-description = "around next subsection"
 combinedName = "around subsection →/←"
-combinedDescription = "next/previous subsection"
 combinedKey = "0/shift+0"
 args.unit = "subsection"
 computedArgs.value = "count || 1"
 
 [[bind]]
-path = "edit.motion.obj"
+path = "edit.motion.match.obj"
 key = "m shift+0"
 name = "arn subsec ←"
-description = "around previous subsection"
 combinedName = "around subsection →/←"
 args.unit = "subsection"
 computedArgs.value = "count || 1"
 
 [[bind]]
-path = "edit.motion.obj"
+path = "edit.motion.match.obj"
 key = "m 9"
 name = "in subsec →"
-description = "around next subsection"
 combinedName = "in subsection →/←"
-combinedDescription = "in next/previous subsection"
 combinedKey = "9/shift+9"
 args.unit = "subsection"
 computedArgs.value = "count || 1"
 
 [[bind]]
-path = "edit.motion.obj"
+path = "edit.motion.match.obj"
 key = "m shift+9"
 name = "in subsec ←"
-description = "around previous subsection"
 combinedName = "in subsection →/←"
 args.unit = "subsection"
 computedArgs.value = "count || 1"
+
+[[path]]
+id = "edit.motion.match.syntax"
+name = "Motions around syntactic objects (e.g. parentheses and quotes)"
+description = """
+selection commands that move by a predefined syntactic object like brackets and quotes
+"""
+default.mode = ["normal", "selectedit"]
+
+[[bind]]
+path = "edit.motion.match.syntax"
+key = "m ["
+name = "in parens"
+combinedName = "in/arnd parens"
+combinedKey = "[/shift+["
+combinedDescription = """
+expand inside/around parens/brackets/braces and their contents; repeated calls to this command
+will seek out larger and larger scopes
+"""
+description = """
+expand inside parens/brackets/braces and their contents; repeated calls to this command
+will seek out larger and larger scopes
+"""
+command = "selection-utilities.expandAroundBrackets"
+
+[[bind]]
+path = "edit.motion.match.syntax"
+key = "m shift+["
+name = "arnd parens"
+combinedName = "in/arnd parens"
+description = """
+expand inside parens/brackets/braces and their contents; repeated calls to this command
+will seek out larger and larger scopes
+"""
+command = "selection-utilities.expandAroundBrackets"
+
+[[bind]]
+path = "edit.motion.match.syntax"
+key = "m '"
+name = "in quotes"
+description = """
+select within current quotes; repeated calls to this command
+will seek out larger and larger scopes
+"""
+combinedName = "in/arnd quotes"
+combinedKey = "'/shift+'"
+combinedDescription = """
+select around/within current quotes; repeated calls to this command
+will seek out larger and larger scopes
+"""
+command = "bracketeer.selectQuotesContent"
+
+[[bind]]
+path = "edit.motion.match.syntax"
+key = "m shift+'"
+name = "around quotes"
+combinedName = "in/arnd quotes"
+description = """
+select around current quotes; repeated calls to this command
+will seek out larger and larger scopes
+"""
+command = "runCommands"
+args.commands = ["bracketeer.selectQuotesContent", "bracketeer.selectQuotesContent"]
+
+[[bind]]
+path = "edit.motion.match.syntax"
+key = "m shift+."
+name = "in <>"
+description = "text inside angle brackets"
+combinedName = "in <> / in ><"
+combinedKey = "shift+. / shift+,"
+combinedDescription = "text inside angle brackets / pairs (e.g. text in <a>text</a>)"
+command = "extension.selectAngleBrackets"
+
+[[bind]]
+path = "edit.motion.match.syntax"
+key = "m shift+,"
+name = "in ><"
+combinedName = "in <> / in ><"
+description = "text inside tag pairs (e.g. <a>text</a>)"
+command = "extension.selectInTag"
+
+[[bind]]
+path = "edit.motion.match.syntax"
+key = "m space"
+name = "in indent"
+description = "all text at the same indentation level"
+combinedName = "in/arnd/w.top indent"
+combinedKey = "space/shift+space/ctrl+space"
+combinedDescription = """
+all text at the same indentation level / all indentation along with the line above and
+below this (ala c-like syntax)
+"""
+command = "vscode-select-by-indent.select-inner"
+
+[[bind]]
+path = "edit.motion.match.syntax"
+key = "m shift+space"
+name = "arnd indent"
+description = """
+all text at the same indentation level along with the line above and below
+this (ala c-like syntax)
+"""
+combinedName = "in/arnd/w.top indent"
+command = "vscode-select-by-indent.select-outer"
+
+[[bind]]
+path = "edit.motion.match.syntax"
+key = "m ctrl+space"
+name = "indent+top"
+description = """
+all text at the same indentation level and the line just above it (ala python syntax)
+"""
+combinedName = "in/arnd/w.top indent"
+command = "vscode-select-by-indent.select-outer-top-only"
+
+[[bind]]
+path = "edit.motion.match.obj"
+key = "m ;"
+name = "comment →"
+combinedName = "comment →/←"
+combinedKey = ";/shift+;"
+args.unit = "comment"
+computedArgs.value = "count || 1"
+
+[[bind]]
+path = "edit.motion.match.obj"
+key = "m shift+;"
+name = "comment ←"
+combinedName = "comment →/←"
+args.unit = "comment"
+computedArgs.value = "count || 1"
+
+[[path]]
+id = "edit.motion.match.cell"
+name = "Matching Object Motions"
+description = "Motions that match some range of characters by predefined regex"
+default.mode = ["normal", "selectedit"]
+
+[[bind]]
+path = "edit.motion.match.cell"
+name = "in cell"
+description = "select text within a cell (ala jupyter)"
+key = "m c"
+when = "editorLangId == 'markdown' || editorLangId == 'quarto'"
+command = "runCommands"
+args.commands = ["terminal-polyglot.select-fence", "selection-utilities.revealActive"]
+
+[[bind]]
+path = "edit.motion.match.cell"
+name = "in cell"
+description = "select text within a cell (ala jupyter)"
+key = "m c"
+when = "!(editorLangId == 'markdown' || editorLangId == 'quarto')"
+command = "jupyter.selectCell"
 
 ## Simple Actions
 ## --------------------------------
@@ -1042,6 +1181,13 @@ args.commands = ["cursorRight", "editor.action.clipboardPasteAction"]
 
 ## Where I stopped editing
 ## --------------------------------
+
+# [[bind]]
+# path = "edit.motion.syntax"
+# key = "shift+5"
+# name = "to bracket"
+# description = "Move to matching bracket"
+# command = "editor.action.jumpToBracket"
 
 [[bind]]
 path = "edit.motion.prim"
@@ -1167,21 +1313,6 @@ description = "Motions for operating on notebook cells"
 # command = "jupyter.selectCell"
 
 [[bind]]
-path = "edit.motion.cell"
-key = "u y"
-when = "editorLangId == 'markdown' || editorLangId == 'quarto'"
-command = "runCommands"
-args.commands = ["terminal-polyglot.select-fence", "selection-utilities.revealActive"]
-
-[[bind]]
-path = "edit.motion.cell"
-key = "u y"
-when = "!(editorLangId == 'markdown' || editorLangId == 'quarto')"
-command = "jupyter.selectCell"
-name = "create cell"
-description = "Create a new jupyter notebook cell"
-
-[[bind]]
 path = "edit.motion.obj"
 key = "shift+4"
 name = "all"
@@ -1240,84 +1371,6 @@ command = "selection-utilities.selectBetween"
 computedArgs.between.from = "captured.slice(0, captured.length/2)"
 computedArgs.between.to = "captured.slice(captured.length/2)"
 args.inclusive = false
-
-[[path]]
-id = "edit.motion.syntax"
-name = "Motions around syntactic objects (e.g. parentheses and quotes)"
-description = """
-selection commands that move by a predefined syntactic object like brackets and quotes
-"""
-
-# [[bind]]
-# path = "edit.motion.syntax"
-# key = "shift+["
-# name = "arnd parens"
-# description = "parens/brackets/braces and their contents"
-# command = "selection-utilities.expandAroundBrackets"
-
-# [[bind]]
-# path = "edit.motion.syntax"
-# key = "["
-# name = "in parens"
-# description = "text inside parens/brackets/braces"
-# command = "selection-utilities.expandWithinBrackets"
-
-[[bind]]
-path = "edit.motion.syntax"
-key = "shift+5"
-name = "to bracket"
-description = "Move to matching bracket"
-command = "editor.action.jumpToBracket"
-
-[[bind]]
-path = "edit.motion.syntax"
-key = "' '"
-name = "in quotes"
-description = "text within current quotes"
-command = "bracketeer.selectQuotesContent"
-
-[[bind]]
-path = "edit.motion.syntax"
-key = "' shift+'"
-name = "around quotes"
-description = "text around current quotes"
-command = "runCommands"
-args.commands = ["bracketeer.selectQuotesContent", "bracketeer.selectQuotesContent"]
-
-[[bind]]
-path = "edit.motion.syntax"
-key = "' shift+."
-name = "in <>"
-description = "text inside angle brackets"
-command = "extension.selectAngleBrackets"
-
-[[bind]]
-path = "edit.motion.syntax"
-key = "' shift+,"
-name = "in ><"
-description = "text inside tag pairs (e.g. <a>text</a>)"
-command = "extension.selectInTag"
-
-[[bind]]
-path = "edit.motion.syntax"
-key = "]"
-name = "inside indent"
-description = "all text at the same indentation level"
-command = "vscode-select-by-indent.select-inner"
-
-# [[bind]]
-# path = "edit.motion.syntax"
-# key = "shift+]"
-# name = "around indent"
-# description = "all text at the same indentation level along with the line above and below this (ala c-like syntax)"
-# command = "vscode-select-by-indent.select-outer"
-
-# [[bind]]
-# path = "edit.motion.syntax"
-# key = "' ]"
-# name = "indent+top"
-# description = "all text at the same indentation level and the line just about it (ala python syntax)"
-# command = "vscode-select-by-indent.select-outer-top-only"
 
 [[path]]
 id = "edit.motion.adjust"
