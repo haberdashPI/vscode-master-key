@@ -162,7 +162,7 @@ mode = ["!insert", "!capture"]
 id = "edit.motion"
 name = "Motions"
 description = "Commands that move the cursors and/or selections"
-default.kind = "motions"
+default.kind = "motion"
 
 [[path]]
 id = "edit.motion.prim"
@@ -422,12 +422,12 @@ mode = ["normal", "selectedit"]
 ## --------------------------------
 
 [[path]]
-id = "edit.motion.repeat"
-name = "repeat sel"
-description = "Commands that repeat some kind of selection"
+id = "edit.motion.history"
+name = "motion history"
+description = "Commands that repeat some kind of motion"
 
 [[bind]]
-path = "edit.motion.repeat"
+path = "edit.motion.history"
 key = ";"
 name = "repeat motion"
 description = """
@@ -439,7 +439,7 @@ command = "master-key.replayFromHistory"
 args.at = "commandHistory[i].path.startsWith('edit.motion')"
 
 [[bind]]
-path = "edit.motion"
+path = "edit.motion.history"
 name = "repeat subject"
 description = """
 Repeat the subject: a motion command that occurred right before an action. For
@@ -454,6 +454,62 @@ commandHistory[i+1].path.startsWith("edit.action") &&
 !(commandHistory[i+1].name.startsWith("repeat ") &&
   commandHistory[i+1].path.startsWith("edit.action.history"))
 """
+
+[[bind]]
+path = "edit.motion.history"
+name = "move hist."
+description = "commands that navigate motion history"
+key = "-"
+command = "master-key.prefix"
+
+[[bind]]
+path = "edit.motion.history"
+name = "cursor undo"
+key = "- -"
+combinedName = "cursor undo/redo"
+combinedKey = "-/shift+-"
+command = "cursorUndo"
+
+[[bind]]
+path = "edit.motion.history"
+name = "cursor redo"
+combinedName = "cursor undo/redo"
+key = "- shift+-"
+command = "cursorRedo"
+
+[[bind]]
+path = "edit.motion.history"
+name = "nav ←"
+description = "Go back in navigation history (e.g. goto definition)"
+combinedName = "nav ←/→"
+combinedKey = "n/shift+n"
+key = "- n"
+command = "workbench.action.navigateBackInNavigationLocations"
+
+[[bind]]
+path = "edit.motion.history"
+name = "nav →"
+combinedName = "nav ←/→"
+description = "Go forward in navigation history (e.g. goto definition)"
+key = "- shift+n"
+command = "workbench.action.navigateForwardInNavigationLocations"
+
+[[bind]]
+path = "edit.motion.history"
+name = "edit hist ←"
+description = "Go back in edit history)"
+key = "- e"
+combinedName = "edit ←/→"
+combinedKey = "e/shift+e"
+command = "workbench.action.navigateBackInEditLocations"
+
+[[bind]]
+path = "edit.motion.history"
+name = "edit hist →"
+description = "Go forward in edit history)"
+key = "- shift+e"
+combinedName = "edit ←/→"
+command = "workbench.action.navigateForwardInEditLocations"
 
 ## Search Motions
 ## --------------------------------
@@ -858,7 +914,7 @@ name = "Matching Object Motions"
 description = "Motions that match some range of characters by predefined regex"
 default.mode = ["normal", "selectedit"]
 default.command = "selection-utilities.moveBy"
-default.kind = "motions"
+default.kind = "motion"
 default.args.selectWhole = true
 default.args.boundary = "start"
 
@@ -869,7 +925,7 @@ name = "match"
 description = """
 Find the closet character range matching a specified object.
 """
-kind = "motions"
+kind = "motion"
 resetTransient = false
 mode = ["normal", "selectedit"]
 command = "master-key.prefix"
@@ -1296,7 +1352,6 @@ command = "master-key.enterNormal"
 [[bind]]
 path = "edit.action.history"
 name = "undo"
-description = "VSCode Undo"
 key = "u"
 command = "runCommands"
 args.commands = [ "undo", "selection-utilities.shrinkToActive" ]
@@ -1304,12 +1359,11 @@ args.commands = [ "undo", "selection-utilities.shrinkToActive" ]
 [[bind]]
 path = "edit.action.history"
 name = "redo"
-description = "VSCode Redo"
 key = "shift+u"
 command = "runCommands"
 args.commands = [ "redo", "selection-utilities.shrinkToActive" ]
 
-## Simple util
+## Utilities
 ## --------------------------------
 
 [[path]]
@@ -1357,6 +1411,59 @@ show command suggestsion within the context of the current mode and keybinding p
 """
 command = "master-key.commandPalette"
 
+[[bind]]
+path = "edit.action.terminal"
+name = "to repl"
+description = """
+send text to a terminal (usually containing a REPL); use language
+specific extensions when available and put the pasted code into a block (when defined)."
+"""
+key = "["
+when = "editorLangId == 'julia' && !editorHasSelection && count >= 1"
+command = "runCommands"
+args.commands = [
+      { defined = "selectLinesDown" },
+      "expandLineSelection", "selection-utilities.trimSelectionWhitespace",
+      "language-julia.executeCodeBlockOrSelectionAndMove",
+      "cursorUndo"
+]
+
+[[bind]]
+path = "edit.action.terminal"
+key = "["
+when = "editorLangId == 'julia' && !editorHasSelection && !count"
+command = "runCommands"
+args.commands = [
+      "expandLineSelection", "selection-utilities.trimSelectionWhitespace",
+      "language-julia.executeCodeBlockOrSelectionAndMove",
+      "cursorUndo"
+]
+
+[[bind]]
+path = "edit.action.terminal"
+key = "["
+when = "editorLangId == 'julia' && editorHasSelection"
+command = "runCommands"
+args.commands = ["selection-utilities.trimSelectionWhitespace",
+        "language-julia.executeCodeBlockOrSelectionAndMove",
+        "cursorUndo"]
+
+[[bind]]
+path = "edit.action.terminal"
+key = "["
+when = "editorLangId != 'julia' && !(master-key.firstSelectionOrWord =~ /\\n/)"
+command = "runCommands"
+args.commands = ["terminal-polyglot.send-text",
+        "selection-utilities.shrinkToActive"]
+
+[[bind]]
+path = "edit.action.terminal"
+key = "["
+when = "editorLangId != 'julia' && master-key.firstSelectionOrWord =~ /\\n/"
+command = "runCommands"
+args.commands = ["terminal-polyglot.send-block-text",
+      "selection-utilities.shrinkToActive"]
+
 ## Where I stopped editing
 ## --------------------------------
 
@@ -1403,7 +1510,7 @@ computedArgs = { value = "count" }
 id = "edit.motion.mod"
 name = "Modify Motion Effects"
 description = "Keys that change how other motions work"
-default.kind = "motions"
+default.kind = "motion"
 
 [[bind]]
 path = "edit.motion.mod"
@@ -1509,14 +1616,14 @@ name = "expand no wht"
 description = "select full line(s), and trim external whitespace"
 command = "selection-utilities.trimSelectionWhitespace"
 
-[[bind]]
-path = "edit.motion.adjust"
-name = 'narrow to subword'
-description = "Narrow current selection so it starts and stops at a subword (e.g. 'snake' in snake_case)"
-key = "shift+u"
-command = "selection-utilities.narrowTo"
-args.unit = "subident"
-args.boundary = "both"
+# [[bind]]
+# path = "edit.motion.adjust"
+# name = 'narrow to subword'
+# description = "Narrow current selection so it starts and stops at a subword (e.g. 'snake' in snake_case)"
+# key = "shift+u"
+# command = "selection-utilities.narrowTo"
+# args.unit = "subident"
+# args.boundary = "both"
 
 [[path]]
 id = "edit.action.basic"
@@ -2254,48 +2361,6 @@ default.mode = ["normal", "selectedit"]
 
 [[bind]]
 path = "edit.action.history"
-name = "cursor undo"
-description = "VSCode Cursor Undo"
-key = "-"
-command = "cursorUndo"
-
-[[bind]]
-path = "edit.action.history"
-name = "cursor redo"
-description = "VSCode Cursor Redo"
-key = "shift+-"
-command = "cursorRedo"
-
-[[bind]]
-path = "edit.action.history"
-name = "nav ←"
-description = "Go back in navigation history (e.g. goto definition)"
-key = "g -"
-command = "workbench.action.navigateBackInNavigationLocations"
-
-[[bind]]
-path = "edit.action.history"
-name = "nav →"
-description = "Go forward in navigation history (e.g. goto definition)"
-key = "g shift+-"
-command = "workbench.action.navigateForwardInNavigationLocations"
-
-[[bind]]
-path = "edit.action.history"
-name = "edit hist ←"
-description = "Go back in edit history (e.g. goto definition)"
-key = "' -"
-command = "workbench.action.navigateBackInEditLocations"
-
-[[bind]]
-path = "edit.action.history"
-name = "edit hist →"
-description = "Go forward in edit history (e.g. goto definition)"
-key = "' shift+-"
-command = "workbench.action.navigateForwardInEditLocations"
-
-[[bind]]
-path = "edit.action.history"
 name = "record"
 description = "Start/stop recording Master Key commands"
 key = "shift+q"
@@ -2576,7 +2641,7 @@ args.commands = ["terminal-polyglot.send-text", "selection-utilities.shrinkToAct
 [[path]]
 id = "edit.navigation"
 name = "Document Navigation"
-default.kind = "motions"
+default.kind = "motion"
 description = """
 Commands that navigate to various places in a document
 """
@@ -2979,7 +3044,7 @@ id = "edit.select_edit"
 name = "Selection Editing"
 description = "Various kakaune inspired commands for editing multiple selections"
 default.mode = "selectedit"
-default.kind = "motions"
+default.kind = "motion"
 
 [[bind]]
 path = "edit.select_edit"
@@ -3392,7 +3457,7 @@ command = "selection-utilities.excludeByRegex"
 id = "edit.action.symmetric"
 name = "Symmetric Operations"
 description = "Operations that occur at both ends of a selection"
-default.kind = "motions"
+default.kind = "motion"
 default.mode = "syminsert"
 
 [[bind]]

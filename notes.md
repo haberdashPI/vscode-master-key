@@ -4,6 +4,8 @@ redesign bindings:
 
 implementing (not yet fully tested out though!!)
 
+BUG: keys are combined so that prefixes don't show the user defined description
+
 + p - paste after (⇧ before)
 
 + / and ? - search
@@ -49,13 +51,35 @@ m - match
 + / - search
 + ; - repeat match/jump
 + v/V - reset/toggle selection
-- [ - exec. repl (and variant)
++ [ - exec. repl (and variant)
 + ⇧[ - → paragraph (] is ←)
-- "-": cursor history
-  - "-",0 cursor history
-  - e, E edit curost history
-  - n, N navivation cursor history
++ "-": cursor history
+  + "-",0 cursor history
+  + e, E edit curost history
+  + n, N navivation cursor history
 + u/U - undo/redo
+
+' - do
+  - p/P - past before/after line
+  - o/O - open above/below
+  - i - symmetric insertion mode
+  - space - trim whitespace
+  - w - wrap paragraph
+  - v - paste
+  - f - format
+  - [ - parens
+      - d - remove
+      - s - swap
+  - ' - quotes
+      - as per parens
+  - a - julia activate
+  - t - julia run tests
+  - ; - toggle comments
+  - : - toggle block comments
+  - =/+ - decrement/increment all
+  - c -
+    i - insert cell
+    s - split
 
 space - leader
   r - open recent
@@ -88,28 +112,6 @@ space - leader
     - j/J steps
 
 
-' - do
-  - c -
-    i - insert cell
-    s - split
-  - p/P - past before/after line
-  - o/O - open above/below
-  - i - symmetric insertion mode
-  - space - trim whitespace
-  - w - wrap paragraph
-  - v - paste
-  - f - format
-  - [ - parens
-      - d - remove
-      - s - swap
-  - ' - quotes
-      - as per parens
-  - a - julia activate
-  - t - julia run tests
-  - ; - toggle comments
-  - : - toggle block comments
-  - =/+ - decrement/increment all
-
 z - multi-select mode (Z adds cursor)
   shift-enter - split by newline
   enter - return to normal
@@ -117,8 +119,8 @@ z - multi-select mode (Z adds cursor)
   d - delete current selection
   D - delete all but current selection and return to normal
   r - by regex
-    s - split
-    fF - filter
+    s/S - split
+    f/F - filter
   S - split by string
   s - split by character
   f - filter by including
@@ -135,7 +137,8 @@ z - multi-select mode (Z adds cursor)
 NEXT UP:
 
 BUG: esc will be captured by palette even if its bound as a suffix
-  (e.g. in a binding setup without esc for normal mode)
+  (e.g. in a binding setup without esc for normal mode), preventing
+  any commands from being run that around bound to that key
 IMPROVE KEYBINDINGS: I have thoughts about how to change my keymap now (maybe prioritize
   any keybinding redesign before doing this)
   (maybe this is a good time to redesign the repeated keys setup)
