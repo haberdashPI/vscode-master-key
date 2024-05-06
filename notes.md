@@ -2,6 +2,8 @@ current issue I'm working on:
 
 redesign bindings:
 
+implementing (not yet fully tested out though!!)
+
 + p - paste after (⇧ before)
 
 + / and ? - search
@@ -14,7 +16,7 @@ g - goto
   + b WORD back
   + ;/: next/previous comment
   - space matching indent end (need to implement)
-  + a/s section
+  + 0/9 section
   + g - goto line
   + d/D function definition
   + r function references
@@ -22,17 +24,19 @@ g - goto
   + f - file under cursor
 
 m - match
-  - w - around subword (⇧ for full word)
-  - e - in subword (⇧ for full word)
-  - p paragraph
-  - 0/) subsection
-  - s/S section
-  ' - quotes (⇧ for around)
-  [ - parens (⇧ for around)
-  space  - indent (⇧ for around, ^ for python style)
-  ;/: - comment
-  - gw - around WORD
-  - ge - in WORD
+  + w - around subword (⇧ for full word)
+  + e - in subword (⇧ for full word)
+  + p/P around paragraph
+  + o/O in paragraph
+  + 0/) subsection
+  - g - more objects
+    - 0/) section
+    - w - around WORD
+    - e - in WORD
+  - ' - quotes (⇧ for around)
+  - [ - parens (⇧ for around)
+  - space  - indent (⇧ for around, ^ for python style)
+  - ;/: - comment
   - #/@ - next/prev number
   - ./< in/around karets
   - ,/> in/around karent contents
@@ -41,12 +45,13 @@ m - match
   - s/S text between the two typed characters (count for multiple characters before and after)
 
 - X - center window
-- : - global palette
+- : - contextual palette
+- ctrl+: - global palette
 + / - search
 + ; - repeat match/jump
-- [ - reset selection
-- ] - exec. repl (and variant)
-- ⇧[ - → paragraph (] is ←)
+- v/V - reset/hold selection
+- [ - exec. repl (and variant)
++ ⇧[ - → paragraph (] is ←)
 - "-": cursor history
   - "-",0 cursor history
   - e, E edit curost history

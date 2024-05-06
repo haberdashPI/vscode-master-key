@@ -95,7 +95,7 @@ function expandDefaultsAndDefinedCommands(spec: BindingSpec, problems: string[])
         if(parts.length > 1){
             let prefix = parts.slice(0,-1).join('.');
             if(pathDefaults[prefix] === undefined){
-                problems.push(`The path '${path}' was defined before
+                problems.push(`The path '${path.id}' was defined before
                     '${prefix}'.`);
             }else{
                 defaults = cloneDeep(pathDefaults[prefix]);
