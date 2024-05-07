@@ -418,6 +418,42 @@ args.name = "select_on"
 args.value = true
 mode = ["normal", "selectedit"]
 
+[[bind]]
+path = "edit.action.open_lines"
+name = "open, act →"
+description = "without selection: open a line below current line and enter insert, with seleciton: move cursort to start"
+key = "o"
+mode = ["normal", "selectedit"]
+when = "!editorHasSelection"
+command = "runCommands"
+args.commands = ["editor.action.insertLineAfter", "master-key.enterInsert"]
+
+[[bind]]
+path = "edit.action.open_lines"
+key = "o"
+mode = ["normal", "selectedit"]
+when = "editorHasSelection"
+command = "selection-utilities.activeAtEnd"
+
+[[bind]]
+path = "edit.action.open_lines"
+name = "open blw, act ←"
+description = "without selection: open a line above current line and enter insert, with selection: move cursor to end"
+key = "shift+o"
+when = "!editorHasSelection"
+mode = ["normal", "selectedit"]
+command = "runCommands"
+args.commands = [ "editor.action.insertLineBefore", "master-key.enterInsert" ]
+
+[[bind]]
+path = "edit.action.open_lines"
+name = "open blw, act ←"
+description = "without selection: open a line above current line and enter insert, with selection: move cursor to end"
+key = "shift+o"
+mode = ["normal", "selectedit"]
+when = "editorHasSelection"
+command = "selection-utilities.activeAtStart"
+
 ## Repeating Motions
 ## --------------------------------
 
@@ -1363,6 +1399,219 @@ key = "shift+u"
 command = "runCommands"
 args.commands = [ "redo", "selection-utilities.shrinkToActive" ]
 
+[[bind]]
+path = "edit.action.clipboard"
+name = "paste after line"
+combinedName = "paste after/before line"
+combinedKey = "p/shift+p"
+description = "Paste text after current line"
+priority = 2
+key = "' p"
+command = "runCommands"
+args.commands = [
+      "expandLineSelection",
+      "selection-utilities.activeAtEnd",
+      "selection-utilities.shrinkToActive",
+      "editor.action.clipboardPasteAction",
+]
+
+[[bind]]
+path = "edit.action.clipboard"
+priority = 2
+name = "paste before line"
+combinedName = "paste after/before line"
+description = "Paste text before current line"
+key = "' shift+p"
+command = "runCommands"
+args.commands = [
+      "expandLineSelection",
+      "selection-utilities.activeAtStart",
+      "selection-utilities.shrinkToActive",
+      "editor.action.clipboardPasteAction",
+]
+
+[[bind]]
+path = "edit.action.open_lines"
+priority = 2
+name = "add line below"
+combinedName = "add line below/above"
+combinedDescription = "open a line below/above current line"
+combinedKey = "o/shift+o"
+description = "open a line below current line"
+key = "' o"
+command = "editor.action.insertLineAfter"
+
+[[bind]]
+path = "edit.action.open_lines"
+name = "add line above"
+priority = 2
+combinedName = "add line below/above"
+description = "open a line above current line"
+key = "' shift+o"
+command = "editor.action.insertLineBefore"
+
+[[bind]]
+path = "edit.action.basic"
+name = 'trim white'
+description = "Delete all external whitespace (left and right edges)"
+key = "' _"
+command = "selection-utilities.trimWhitespace"
+
+[[bind]]
+path = "edit.action.comment"
+key = "' w"
+name = "wrap p"
+description = "wrap paragraph text, preserving commenting"
+command = "rewrap.rewrapComment"
+
+[[bind]]
+path = "edit.action.indent"
+key = "' f"
+name = "format"
+description = "Format code"
+when = "master-key.count >= 1"
+command = "runCommands"
+args.commands = [
+      { defined = "selectLinesDown" },
+      "editor.action.formatSelection",
+      "selection-utilities.shrinkToActive"
+]
+
+[[bind]]
+path = "edit.action.indent"
+key = "' f"
+when = "master-key.count < 1"
+command = "editor.action.formatSelection"
+
+[[path]]
+id = "edit.action.brackets"
+name = 'Bracket/Quote Editing'
+description = "Commands that edit two matching brackets or quotes."
+
+# TODO: re-arrange according to keymap in notes
+[[bind]]
+path = "edit.action.brackets"
+name = 'remove pair'
+description = "Delete a pairing (e.g. `()`)"
+key = "' x"
+command = "master-key.prefix"
+
+[[bind]]
+path = "edit.action.brackets"
+name = 'parens/brackets'
+description = "Removes pairs that start with `[`, `(` or `{`"
+key = "' x ["
+command = "bracketeer.removeBrackets"
+
+[[bind]]
+path = "edit.action.brackets"
+name = 'swap pair'
+description = "Change between different kinds of pairs (e.g. `(` to `{`)"
+key = "g s"
+command = "master-key.prefix"
+
+[[bind]]
+path = "edit.action.brackets"
+name = 'parens/brackets'
+description = "Swap between `[`, `(` and `{`"
+key = "g s ["
+command = "bracketeer.swapBrackets"
+
+[[bind]]
+path = "edit.action.brackets"
+name = 'quotes'
+description = "Change between different quotes"
+key = "g s '"
+command = "bracketeer.swapQuotes"
+
+[[bind]]
+path = "edit.action.brackets"
+name = 'quotes'
+description = "Removes quotes (', \" or `)"
+key = "g x '"
+command = "bracketeer.removeQuotes"
+
+[[bind]]
+path = "edit.action.brackets"
+name = 'insert pair'
+description = "Insert a pairing (e.g. ()) around a selection"
+key = "g i"
+command = "master-key.prefix"
+
+[[bind]]
+path = "edit.action.brackets"
+name = 'paren'
+description = "Insert parenthesis around selection"
+key = "g i shift+9"
+command = "runCommands"
+args.commands = ["master-key.enterInsert", { command = "type", args = { text = "(" } },
+        "master-key.enterNormal" ]
+
+[[bind]]
+path = "edit.action.brackets"
+name = 'paren'
+description = "Insert parenthesis around selection"
+key = "g i shift+,"
+command = "runCommands"
+args.commands = [ "master-key.enterInsert", { command = "type", args = { text = "<" } },
+       "master-key.enterNormal" ]
+
+[[bind]]
+path = "edit.action.brackets"
+name = 'ticks'
+description = "Insert ticks (``) around selection"
+key = "g i `"
+command = "runCommands"
+args.commands = [ "master-key.enterInsert", { command = "type", args = { text = "`" } },
+       "master-key.enterNormal" ]
+
+[[bind]]
+path = "edit.action.brackets"
+name = 'dbl quotes'
+description = "Insert quotes (\"\") around selection"
+key = "g i shift+'"
+command = "runCommands"
+args.commands = [ "master-key.enterInsert", { command = "type", args = { "text" = "\"" } },
+       "master-key.enterNormal" ]
+
+[[bind]]
+path = "edit.action.brackets"
+name = 'sgl quotes'
+description = "Insert single quotes ('') around selection"
+key = "g i '"
+command = "runCommands"
+args.commands = [ "master-key.enterInsert", { command = "type", args = { text = "'" } },
+       "master-key.enterNormal" ]
+
+[[bind]]
+path = "edit.action.brackets"
+name = 'start'
+description = "Insert stars (**) around selection"
+key = "g i shift+8"
+command = "runCommands"
+args.commands = [ "master-key.enterInsert", { command = "type", args = { text = "*" } },
+       "master-key.enterNormal" ]
+
+[[bind]]
+path = "edit.action.brackets"
+name = 'curly'
+description = "Insert curly brackets ({}) around selection"
+key = "g i shift+["
+command = "runCommands"
+args.commands = [ "master-key.enterInsert", { command = "type", args = { text = "{" } },
+       "master-key.enterNormal" ]
+
+[[bind]]
+path = "edit.action.brackets"
+name = 'square'
+description = "Insert square brackets ([]) around selection"
+key = "g i ["
+command = "runCommands"
+args.commands = [ "master-key.enterInsert", { command = "type", args = { text = "[" } },
+       "master-key.enterNormal" ]
+
+
+
 ## Utilities
 ## --------------------------------
 
@@ -1463,6 +1712,95 @@ when = "editorLangId != 'julia' && master-key.firstSelectionOrWord =~ /\\n/"
 command = "runCommands"
 args.commands = ["terminal-polyglot.send-block-text",
       "selection-utilities.shrinkToActive"]
+
+## Symmetric Insert Mode
+## --------------------------------
+
+[[path]]
+id = "edit.action.symmetric"
+name = "Symmetric Operations"
+description = "Operations that occur at both ends of a selection"
+default.kind = "motion"
+default.mode = "syminsert"
+
+[[bind]]
+path = "edit.action.symmetric"
+name = "Symmetric Insert Mode"
+priority = 1
+description = """
+In this mode all commands and character insertions happen at both ends of
+the selection
+"""
+mode = "normal"
+key = "' i"
+command = "master-key.setMode"
+args.value = "syminsert"
+
+[[bind]]
+path = "edit.action.symmetric"
+name = "Normal"
+description = "Return to normal model"
+key = ["enter", "' i"]
+command = "master-key.setMode"
+mode = "syminsert"
+
+[define.symmetric_key_map]
+"shift+;" = ":"
+"shift+'" = "\""
+"shift+/" = "?"
+"shift+\\" = "|"
+"shift+=" = "+"
+"shift+-" = "-"
+"shift+8" = "*"
+"shift+7" = "&"
+"shift+6" = "^"
+"shift+5" = "%"
+"shift+4" = "$"
+"shift+3" = "#"
+"shift+2" = "@"
+"shift+1" = "!"
+"shift+`" = "~"
+";" = ";"
+"'" = "'"
+"," = ","
+"." = "."
+"/" = "/"
+"=" = "="
+"-" = "-"
+"`" = "`"
+
+[[bind]]
+path = "edit.action.symmetric"
+key = [
+      "shift+;",
+      ";",
+      "'",
+      "shift+'",
+      ",",
+      ".",
+      "/",
+      "shift+/",
+      "shift+\\",
+      "=",
+      "shift+=",
+      "-",
+      "shift+-",
+      "shift+8",
+      "shift+7",
+      "shift+6",
+      "shift+5",
+      "shift+4",
+      "shift+3",
+      "shift+2",
+      "shift+1",
+      "shift+`",
+      "`",
+]
+description = "Insert the character {symmetric_key_map[key]} at both ends of each selection"
+command = "selection-utilities.insertAround"
+args = { before = "{symmetric_key_map[key]}", after = "{symmetric_key_map[key]}" }
+
+# TODO: there is more to insert here (e.g. parens deletion)
 
 ## Where I stopped editing
 ## --------------------------------
@@ -1992,139 +2330,6 @@ key = "shift+6"
 command = "markdown-checkbox.markCheckbox"
 
 [[bind]]
-path = "edit.action.basic"
-name = 'trim white'
-description = "Delete all external whitespace (left and right edges)"
-key = "g a"
-command = "selection-utilities.trimWhitespace"
-
-[[path]]
-id = "edit.action.brackets"
-name = 'Bracket/Quote Editing'
-description = "Commands that edit two matching brackets or quotes."
-
-[[bind]]
-path = "edit.action.brackets"
-name = 'remove pair'
-description = "Delete a pairing (e.g. `()`)"
-key = "g x"
-command = "master-key.prefix"
-
-[[bind]]
-path = "edit.action.brackets"
-name = 'parens/brackets'
-description = "Removes pairs that start with `[`, `(` or `{`"
-key = "g x ["
-command = "bracketeer.removeBrackets"
-
-[[bind]]
-path = "edit.action.brackets"
-name = 'swap pair'
-description = "Change between different kinds of pairs (e.g. `(` to `{`)"
-key = "g s"
-command = "master-key.prefix"
-
-[[bind]]
-path = "edit.action.brackets"
-name = 'parens/brackets'
-description = "Swap between `[`, `(` and `{`"
-key = "g s ["
-command = "bracketeer.swapBrackets"
-
-[[bind]]
-path = "edit.action.brackets"
-name = 'quotes'
-description = "Change between different quotes"
-key = "g s '"
-command = "bracketeer.swapQuotes"
-
-[[bind]]
-path = "edit.action.brackets"
-name = 'quotes'
-description = "Removes quotes (', \" or `)"
-key = "g x '"
-command = "bracketeer.removeQuotes"
-
-[[bind]]
-path = "edit.action.brackets"
-name = 'insert pair'
-description = "Insert a pairing (e.g. ()) around a selection"
-key = "g i"
-command = "master-key.prefix"
-
-[[bind]]
-path = "edit.action.brackets"
-name = 'paren'
-description = "Insert parenthesis around selection"
-key = "g i shift+9"
-command = "runCommands"
-args.commands = ["master-key.enterInsert", { command = "type", args = { text = "(" } },
-        "master-key.enterNormal" ]
-
-[[bind]]
-path = "edit.action.brackets"
-name = 'paren'
-description = "Insert parenthesis around selection"
-key = "g i shift+,"
-command = "runCommands"
-args.commands = [ "master-key.enterInsert", { command = "type", args = { text = "<" } },
-       "master-key.enterNormal" ]
-
-[[bind]]
-path = "edit.action.brackets"
-name = 'ticks'
-description = "Insert ticks (``) around selection"
-key = "g i `"
-command = "runCommands"
-args.commands = [ "master-key.enterInsert", { command = "type", args = { text = "`" } },
-       "master-key.enterNormal" ]
-
-[[bind]]
-path = "edit.action.brackets"
-name = 'dbl quotes'
-description = "Insert quotes (\"\") around selection"
-key = "g i shift+'"
-command = "runCommands"
-args.commands = [ "master-key.enterInsert", { command = "type", args = { "text" = "\"" } },
-       "master-key.enterNormal" ]
-
-[[bind]]
-path = "edit.action.brackets"
-name = 'sgl quotes'
-description = "Insert single quotes ('') around selection"
-key = "g i '"
-command = "runCommands"
-args.commands = [ "master-key.enterInsert", { command = "type", args = { text = "'" } },
-       "master-key.enterNormal" ]
-
-[[bind]]
-path = "edit.action.brackets"
-name = 'start'
-description = "Insert stars (**) around selection"
-key = "g i shift+8"
-command = "runCommands"
-args.commands = [ "master-key.enterInsert", { command = "type", args = { text = "*" } },
-       "master-key.enterNormal" ]
-
-[[bind]]
-path = "edit.action.brackets"
-name = 'curly'
-description = "Insert curly brackets ({}) around selection"
-key = "g i shift+["
-command = "runCommands"
-args.commands = [ "master-key.enterInsert", { command = "type", args = { text = "{" } },
-       "master-key.enterNormal" ]
-
-[[bind]]
-path = "edit.action.brackets"
-name = 'square'
-description = "Insert square brackets ([]) around selection"
-key = "g i ["
-command = "runCommands"
-args.commands = [ "master-key.enterInsert", { command = "type", args = { text = "[" } },
-       "master-key.enterNormal" ]
-
-[[bind]]
 path = "edit.action.clipboard"
 key = "d"
 name = "delete"
@@ -2201,32 +2406,6 @@ args.commands = [
       "editor.action.shrinkToActive"
 ]
 
-# [[bind]]
-# path = "edit.action.clipboard"
-# name = "paste after line"
-# description = "Paste text after current line"
-# key = "/ v"
-# command = "runCommands"
-# args.commands = [
-#       "expandLineSelection",
-#       "selection-utilities.activeAtEnd",
-#       "selection-utilities.shrinkToActive",
-#       "editor.action.clipboardPasteAction",
-# ]
-
-# [[bind]]
-# path = "edit.action.clipboard"
-# name = "paste before line"
-# description = "Paste text before current line"
-# key = "/ shift+v"
-# command = "runCommands"
-# args.commands = [
-#       "expandLineSelection",
-#       "selection-utilities.activeAtStart",
-#       "selection-utilities.shrinkToActive",
-#       "editor.action.clipboardPasteAction",
-# ]
-
 [[path]]
 id = "edit.action.open_lines"
 name = "Line opening actions"
@@ -2234,56 +2413,6 @@ description = """
 These commands provides several ways of adding lines above or below the current line
 """
 default.mode = ["normal", "selectedit"]
-
-[[bind]]
-path = "edit.action.open_lines"
-name = "open, act →"
-description = "without selection: open a line below current line and enter insert, with seleciton: move cursort to start"
-key = "o"
-mode = ["normal", "selectedit"]
-when = "!editorHasSelection"
-command = "runCommands"
-args.commands = ["editor.action.insertLineAfter", "master-key.enterInsert"]
-
-[[bind]]
-path = "edit.action.open_lines"
-key = "o"
-mode = ["normal", "selectedit"]
-when = "editorHasSelection"
-command = "selection-utilities.activeAtEnd"
-
-[[bind]]
-path = "edit.action.open_lines"
-name = "add line below"
-description = "open a line below current line"
-key = "g o"
-command = "editor.action.insertLineAfter"
-
-[[bind]]
-path = "edit.action.open_lines"
-name = "open blw, act ←"
-description = "without selection: open a line above current line and enter insert, with selection: move cursor to end"
-key = "shift+o"
-when = "!editorHasSelection"
-mode = ["normal", "selectedit"]
-command = "runCommands"
-args.commands = [ "editor.action.insertLineBefore", "master-key.enterInsert" ]
-
-[[bind]]
-path = "edit.action.open_lines"
-name = "open blw, act ←"
-description = "without selection: open a line above current line and enter insert, with selection: move cursor to end"
-key = "shift+o"
-mode = ["normal", "selectedit"]
-when = "editorHasSelection"
-command = "selection-utilities.activeAtStart"
-
-[[bind]]
-path = "edit.action.open_lines"
-name = "open above"
-description = "open a line above current line"
-key = "g shift+o"
-command = "editor.action.insertLineBefore"
 
 [[path]]
 id = "edit.action.indent"
@@ -2333,25 +2462,6 @@ name = "deindent"
 when = "master-key.count < 1"
 description = "De-indent lines"
 command = "editor.action.outdentLines"
-
-[[bind]]
-path = "edit.action.indent"
-key = "g /"
-name = "format"
-description = "Format code"
-when = "master-key.count >= 1"
-command = "runCommands"
-args.commands = [
-      { defined = "selectLinesDown" },
-      "editor.action.formatSelection",
-      "selection-utilities.shrinkToActive"
-]
-
-[[bind]]
-path = "edit.action.indent"
-key = "g /"
-when = "master-key.count < 1"
-command = "editor.action.formatSelection"
 
 [[path]]
 id = "edit.action.history"
@@ -2490,13 +2600,6 @@ path = "edit.action.comment"
 key = "g shift+;"
 when = "master-key.count < 1"
 command = "editor.action.blockComment"
-
-[[bind]]
-path = "edit.action.comment"
-key = "g q"
-name = "wrap"
-description = "wrap text, preserving commenting"
-command = "rewrap.rewrapComment"
 
 [[path]]
 id = "edit.action.terminal"
@@ -3452,86 +3555,3 @@ name = "regex"
 description = "Exclude all selections that contain a given regular expression"
 key = "] r"
 command = "selection-utilities.excludeByRegex"
-
-[[path]]
-id = "edit.action.symmetric"
-name = "Symmetric Operations"
-description = "Operations that occur at both ends of a selection"
-default.kind = "motion"
-default.mode = "syminsert"
-
-[[bind]]
-path = "edit.action.symmetric"
-name = "Symmetric Insert Mode"
-description = """
-In this mode all commands and character insertions happen at both ends of
-the selection
-"""
-mode = "normal"
-key = "g '"
-command = "master-key.setMode"
-args.value = "syminsert"
-
-[[bind]]
-path = "edit.action.symmetric"
-name = "Normal"
-description = "Return to normal model"
-key = ["enter", "g '"]
-command = "master-key.setMode"
-mode = "syminsert"
-
-[define.symmetric_key_map]
-"shift+;" = ":"
-"shift+'" = "\""
-"shift+/" = "?"
-"shift+\\" = "|"
-"shift+=" = "+"
-"shift+-" = "-"
-"shift+8" = "*"
-"shift+7" = "&"
-"shift+6" = "^"
-"shift+5" = "%"
-"shift+4" = "$"
-"shift+3" = "#"
-"shift+2" = "@"
-"shift+1" = "!"
-"shift+`" = "~"
-";" = ";"
-"'" = "'"
-"," = ","
-"." = "."
-"/" = "/"
-"=" = "="
-"-" = "-"
-"`" = "`"
-
-[[bind]]
-path = "edit.action.symmetric"
-key = [
-      "shift+;",
-      ";",
-      "'",
-      "shift+'",
-      ",",
-      ".",
-      "/",
-      "shift+/",
-      "shift+\\",
-      "=",
-      "shift+=",
-      "-",
-      "shift+-",
-      "shift+8",
-      "shift+7",
-      "shift+6",
-      "shift+5",
-      "shift+4",
-      "shift+3",
-      "shift+2",
-      "shift+1",
-      "shift+`",
-      "`",
-]
-description = "Insert the character {symmetric_key_map[key]} at both ends of each selection"
-command = "selection-utilities.insertAround"
-args = { before = "{symmetric_key_map[key]}", after = "{symmetric_key_map[key]}" }

@@ -60,13 +60,12 @@ m - match
 + u/U - undo/redo
 
 ' - do
-  - p/P - past before/after line
-  - o/O - open above/below
-  - i - symmetric insertion mode
-  - space - trim whitespace
-  - w - wrap paragraph
-  - v - paste
-  - f - format
+  + p/P - past before/after line
+  + o/O - open above/below
+  + i - symmetric insertion mode
+  + _ - trim whitespace
+  + w - wrap paragraph
+  + f - format
   - [ - parens
       - d - remove
       - s - swap
@@ -86,7 +85,6 @@ space - leader
   : - palette
   h - hover
   H - hover debug
-  f - open file under cursor
   m - bookmark
     b - toggle book mark
     j - next book mark
