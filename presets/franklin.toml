@@ -1450,6 +1450,30 @@ description = "open a line above current line"
 key = "' shift+o"
 command = "editor.action.insertLineBefore"
 
+
+# TODO: this is where we stopped
+# NOTE: could make this more general by using insertAround
+# (but would need to expand the syminsert mode
+
+[[bind]]
+path = "edit.action.brackets"
+name = 'sym insert'
+description = "Insert a character a pair around a character"
+priority = 1
+key = "' i"
+combinedName = "sym insert (mode)"
+combinedDescription = "Insert characters around pair"
+command = "runCommands"
+
+[[bind.args.commands]]
+command = "master-key.captureKeys"
+args.acceptAfter = 1
+
+[[bind.args.commands]]
+command = "type"
+computedArgs.text = "capture"
+
+
 [[bind]]
 path = "edit.action.basic"
 name = 'trim white'
@@ -1491,126 +1515,47 @@ description = "Commands that edit two matching brackets or quotes."
 # TODO: re-arrange according to keymap in notes
 [[bind]]
 path = "edit.action.brackets"
-name = 'remove pair'
-description = "Delete a pairing (e.g. `()`)"
-key = "' x"
+name = 'parens'
+description = "actions related to various brackets (`[`, `(`, `{`)"
+key = "' ["
 command = "master-key.prefix"
+resetTransient = false
 
 [[bind]]
 path = "edit.action.brackets"
-name = 'parens/brackets'
-description = "Removes pairs that start with `[`, `(` or `{`"
-key = "' x ["
+name = 'remove'
+description = "Removes surrounding pairs"
+key = "' [ d"
 command = "bracketeer.removeBrackets"
-
-[[bind]]
-path = "edit.action.brackets"
-name = 'swap pair'
-description = "Change between different kinds of pairs (e.g. `(` to `{`)"
-key = "g s"
-command = "master-key.prefix"
 
 [[bind]]
 path = "edit.action.brackets"
 name = 'parens/brackets'
 description = "Swap between `[`, `(` and `{`"
-key = "g s ["
+key = "' [ s"
 command = "bracketeer.swapBrackets"
 
 [[bind]]
 path = "edit.action.brackets"
 name = 'quotes'
-description = "Change between different quotes"
-key = "g s '"
-command = "bracketeer.swapQuotes"
+description = "Actions related to quotes"
+key = "' '"
+command = "master-key.prefix"
+resetTransient = false
 
 [[bind]]
 path = "edit.action.brackets"
-name = 'quotes'
+name = 'remove'
 description = "Removes quotes (', \" or `)"
-key = "g x '"
+key = "' ' d"
 command = "bracketeer.removeQuotes"
 
 [[bind]]
 path = "edit.action.brackets"
-name = 'insert pair'
-description = "Insert a pairing (e.g. ()) around a selection"
-key = "g i"
-command = "master-key.prefix"
-
-[[bind]]
-path = "edit.action.brackets"
-name = 'paren'
-description = "Insert parenthesis around selection"
-key = "g i shift+9"
-command = "runCommands"
-args.commands = ["master-key.enterInsert", { command = "type", args = { text = "(" } },
-        "master-key.enterNormal" ]
-
-[[bind]]
-path = "edit.action.brackets"
-name = 'paren'
-description = "Insert parenthesis around selection"
-key = "g i shift+,"
-command = "runCommands"
-args.commands = [ "master-key.enterInsert", { command = "type", args = { text = "<" } },
-       "master-key.enterNormal" ]
-
-[[bind]]
-path = "edit.action.brackets"
-name = 'ticks'
-description = "Insert ticks (``) around selection"
-key = "g i `"
-command = "runCommands"
-args.commands = [ "master-key.enterInsert", { command = "type", args = { text = "`" } },
-       "master-key.enterNormal" ]
-
-[[bind]]
-path = "edit.action.brackets"
-name = 'dbl quotes'
-description = "Insert quotes (\"\") around selection"
-key = "g i shift+'"
-command = "runCommands"
-args.commands = [ "master-key.enterInsert", { command = "type", args = { "text" = "\"" } },
-       "master-key.enterNormal" ]
-
-[[bind]]
-path = "edit.action.brackets"
-name = 'sgl quotes'
-description = "Insert single quotes ('') around selection"
-key = "g i '"
-command = "runCommands"
-args.commands = [ "master-key.enterInsert", { command = "type", args = { text = "'" } },
-       "master-key.enterNormal" ]
-
-[[bind]]
-path = "edit.action.brackets"
-name = 'start'
-description = "Insert stars (**) around selection"
-key = "g i shift+8"
-command = "runCommands"
-args.commands = [ "master-key.enterInsert", { command = "type", args = { text = "*" } },
-       "master-key.enterNormal" ]
-
-[[bind]]
-path = "edit.action.brackets"
-name = 'curly'
-description = "Insert curly brackets ({}) around selection"
-key = "g i shift+["
-command = "runCommands"
-args.commands = [ "master-key.enterInsert", { command = "type", args = { text = "{" } },
-       "master-key.enterNormal" ]
-
-[[bind]]
-path = "edit.action.brackets"
-name = 'square'
-description = "Insert square brackets ([]) around selection"
-key = "g i ["
-command = "runCommands"
-args.commands = [ "master-key.enterInsert", { command = "type", args = { text = "[" } },
-       "master-key.enterNormal" ]
-
-
+name = 'remove'
+description = "Swap quotes (', \" or `)"
+key = "' ' s"
+command = "bracketeer.swapQuotes"
 
 ## Utilities
 ## --------------------------------
@@ -1725,14 +1670,15 @@ default.mode = "syminsert"
 
 [[bind]]
 path = "edit.action.symmetric"
-name = "Symmetric Insert Mode"
+name = "sym insert mode"
 priority = 1
 description = """
 In this mode all commands and character insertions happen at both ends of
 the selection
 """
 mode = "normal"
-key = "' i"
+key = "' shift+i"
+combinedName = "sym insert (mode)"
 command = "master-key.setMode"
 args.value = "syminsert"
 

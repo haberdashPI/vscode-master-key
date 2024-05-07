@@ -62,7 +62,7 @@ m - match
 ' - do
   + p/P - past before/after line
   + o/O - open above/below
-  + i - symmetric insertion mode
+  + i/I - symmetric insertion (mode)
   + _ - trim whitespace
   + w - wrap paragraph
   + f - format
