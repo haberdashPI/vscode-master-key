@@ -66,19 +66,19 @@ m - match
   + _ - trim whitespace
   + w - wrap paragraph
   + f - format
-  - [ - parens
-      - d - remove
-      - s - swap
-  - ' - quotes
-      - as per parens
-  - a - julia activate
-  - t - julia run tests
-  - ; - toggle comments
-  - : - toggle block comments
-  - =/+ - decrement/increment all
-  - c -
-    i - insert cell
-    s - split
+  + [ - parens
+      + d - remove
+      + s - swap
+  + ' - quotes
+      + as per parens
+  + a - julia activate
+  + t - julia run tests
+  + ; - toggle comments
+  + : - toggle block comments
+  + =/+ - decrement/increment all
+  + c -
+    i + insert cell
+    s + split
 
 space - leader
   r - open recent
@@ -182,6 +182,9 @@ thoughts: things I must have to release:
 - keybinding documentation features
   - markdown output / html
 - mode customization
+  - have an option to allow a default command
+    that operates on all keys that *aren't* specified
+    OR that pass a regex
 - modernized selection utilities
   - good documentation
   - modern build setup

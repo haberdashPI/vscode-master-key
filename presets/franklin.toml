@@ -1399,8 +1399,25 @@ key = "shift+u"
 command = "runCommands"
 args.commands = [ "redo", "selection-utilities.shrinkToActive" ]
 
+## Do actions
+## --------------------------------
+
+[[path]]
+id = "edit.action.do"
+name = "'Do' actions"
+description = "Additional actions organized under the `'` (or 'do') prefix."
+default.mode = "normal"
+
 [[bind]]
-path = "edit.action.clipboard"
+path = "edit.action.do"
+name = "do"
+key = "'"
+description = "additional actions, mostly for modifying specific syntactic formats"
+resetTransient = false
+command = "master-key.prefix"
+
+[[bind]]
+path = "edit.action.do"
 name = "paste after line"
 combinedName = "paste after/before line"
 combinedKey = "p/shift+p"
@@ -1416,7 +1433,7 @@ args.commands = [
 ]
 
 [[bind]]
-path = "edit.action.clipboard"
+path = "edit.action.do"
 priority = 2
 name = "paste before line"
 combinedName = "paste after/before line"
@@ -1431,7 +1448,7 @@ args.commands = [
 ]
 
 [[bind]]
-path = "edit.action.open_lines"
+path = "edit.action.do"
 priority = 2
 name = "add line below"
 combinedName = "add line below/above"
@@ -1442,7 +1459,7 @@ key = "' o"
 command = "editor.action.insertLineAfter"
 
 [[bind]]
-path = "edit.action.open_lines"
+path = "edit.action.do"
 name = "add line above"
 priority = 2
 combinedName = "add line below/above"
@@ -1450,13 +1467,8 @@ description = "open a line above current line"
 key = "' shift+o"
 command = "editor.action.insertLineBefore"
 
-
-# TODO: this is where we stopped
-# NOTE: could make this more general by using insertAround
-# (but would need to expand the syminsert mode
-
 [[bind]]
-path = "edit.action.brackets"
+path = "edit.action.do"
 name = 'sym insert'
 description = "Insert a character a pair around a character"
 priority = 1
@@ -1473,23 +1485,22 @@ args.acceptAfter = 1
 command = "type"
 computedArgs.text = "capture"
 
-
 [[bind]]
-path = "edit.action.basic"
+path = "edit.action.do"
 name = 'trim white'
 description = "Delete all external whitespace (left and right edges)"
-key = "' _"
+key = "' shift+-"
 command = "selection-utilities.trimWhitespace"
 
 [[bind]]
-path = "edit.action.comment"
+path = "edit.action.do"
 key = "' w"
 name = "wrap p"
 description = "wrap paragraph text, preserving commenting"
 command = "rewrap.rewrapComment"
 
 [[bind]]
-path = "edit.action.indent"
+path = "edit.action.do"
 key = "' f"
 name = "format"
 description = "Format code"
@@ -1502,7 +1513,7 @@ args.commands = [
 ]
 
 [[bind]]
-path = "edit.action.indent"
+path = "edit.action.do"
 key = "' f"
 when = "master-key.count < 1"
 command = "editor.action.formatSelection"
@@ -1512,9 +1523,8 @@ id = "edit.action.brackets"
 name = 'Bracket/Quote Editing'
 description = "Commands that edit two matching brackets or quotes."
 
-# TODO: re-arrange according to keymap in notes
 [[bind]]
-path = "edit.action.brackets"
+path = "edit.action.do"
 name = 'parens'
 description = "actions related to various brackets (`[`, `(`, `{`)"
 key = "' ["
@@ -1522,21 +1532,21 @@ command = "master-key.prefix"
 resetTransient = false
 
 [[bind]]
-path = "edit.action.brackets"
+path = "edit.action.do"
 name = 'remove'
 description = "Removes surrounding pairs"
 key = "' [ d"
 command = "bracketeer.removeBrackets"
 
 [[bind]]
-path = "edit.action.brackets"
+path = "edit.action.do"
 name = 'parens/brackets'
 description = "Swap between `[`, `(` and `{`"
 key = "' [ s"
 command = "bracketeer.swapBrackets"
 
 [[bind]]
-path = "edit.action.brackets"
+path = "edit.action.do"
 name = 'quotes'
 description = "Actions related to quotes"
 key = "' '"
@@ -1544,18 +1554,127 @@ command = "master-key.prefix"
 resetTransient = false
 
 [[bind]]
-path = "edit.action.brackets"
+path = "edit.action.do"
 name = 'remove'
 description = "Removes quotes (', \" or `)"
 key = "' ' d"
 command = "bracketeer.removeQuotes"
 
 [[bind]]
-path = "edit.action.brackets"
+path = "edit.action.do"
 name = 'remove'
 description = "Swap quotes (', \" or `)"
 key = "' ' s"
 command = "bracketeer.swapQuotes"
+
+[[bind]]
+path = "edit.action.do"
+name = "activate"
+description = "Activate the julia project associated with the current file in the active REPL"
+key = "' a"
+when = "editorLangId == 'julia'"
+command = "terminal-polyglot.send-command"
+args.cmd = "activate_from(\"%file%\")"
+
+[[bind]]
+path = "edit.action.do"
+name = "activate tests"
+description = "Activate the julia project test environmentassociated with the current file in the active REPL"
+key = "' t"
+when = "editorLangId == 'julia'"
+command = "terminal-polyglot.send-command"
+args.cmd = "\nbegin; activate_from(\"%file%\"); using TestEnv; TestEnv.activate(); end"
+
+[[path]]
+id = "edit.action.comment"
+name = "Comments"
+description = """
+Operations that modify comments
+"""
+default.mode = ["normal", "selectedit"]
+
+[[bind]]
+path = "edit.action.do"
+key = "' ;"
+name = "comment lines"
+combinedName = "(block) comment"
+combinedDescription = "Toggle (block) comment"
+combinedKey = "' (shift+);"
+description = "select next comment"
+when = "master-key.count >= 1"
+command = "runCommands"
+args.commands = [
+      { defined = "selectLinesDown" },
+      "editor.action.commentLine",
+]
+
+[[bind]]
+path = "edit.action.do"
+key = "' ;"
+combinedName = "(block) comment"
+when = "master-key.count < 1"
+command = "editor.action.commentLine"
+
+[[bind]]
+path = "edit.action.do"
+key = "' shift+;"
+name = "block comment lines"
+combinedName = "(block) comment"
+description = "select previous comment"
+when = "master-key.count >= 1"
+command = "runCommands"
+args.commands = [
+      { defined = "selectLinesDown" },
+      "editor.action.blockComment",
+      "selection-utilities.shrinkToActive",
+]
+
+[[bind]]
+path = "edit.action.do"
+key = "' shift+;"
+when = "master-key.count < 1"
+combinedName = "(block) comment"
+command = "editor.action.blockComment"
+
+[[bind]]
+path = "edit.action.do"
+name = 'inc all #'
+combinedName = "inc/dec all #"
+combinedDescription = "Increment/decrement all numbers by 1"
+combinedKey = "' =/shift+="
+description = "Increment all numbers by 1"
+key = "' ="
+command = "editor.emmet.action.incrementNumberByOne"
+
+[[bind]]
+path = "edit.action.do"
+name = 'dec all #'
+combinedName = "inc/dec all #"
+description = "Decrement all numbers by 1"
+key = "' shift+="
+command = "editor.emmet.action.decrementNumberByOne"
+
+[[bind]]
+path = "edit.action.do"
+name = 'nb cell'
+description = "Actions related to notebook cells"
+key = "' c"
+command = "master-key.prefix"
+resetTransient = false
+
+[[bind]]
+path = "edit.action.do"
+key = "' c i"
+when = "editorLangId == 'quarto'"
+command = "quarto.insertCodeCell"
+name = "insert cell"
+description = "insert a new cell in a notebook"
+
+[[bind]]
+path = "edit.action.do"
+key = "' c s"
+when = "editorLangId != 'quarto'"
+command = "jupyter.selectCell"
 
 ## Utilities
 ## --------------------------------
@@ -1686,7 +1805,7 @@ args.value = "syminsert"
 path = "edit.action.symmetric"
 name = "Normal"
 description = "Return to normal model"
-key = ["enter", "' i"]
+key = ["enter"]
 command = "master-key.setMode"
 mode = "syminsert"
 
@@ -1866,20 +1985,6 @@ computedArgs = { value = "(count || 1)" }
 id = "edit.motion.cell"
 name = "Cell Motions"
 description = "Motions for operating on notebook cells"
-
-# [[bind]]
-# path = "edit.motion.cell"
-# key = "/ y"
-# when = "editorLangId == 'quarto'"
-# command = "quarto.insertCodeCell"
-# name = "insert cell"
-# description = "insert a new cell in a notebook"
-
-# [[bind]]
-# path = "edit.motion.cell"
-# key = "/ y"
-# when = "editorLangId != 'quarto'"
-# command = "jupyter.selectCell"
 
 [[bind]]
 path = "edit.motion.obj"
@@ -2255,20 +2360,6 @@ key = "shift+="
 command = "extension.decrementSelection"
 
 [[bind]]
-path = "edit.action.numbers"
-name = 'inc all #'
-description = "Increment all numbers by 1"
-key = "g ="
-command = "editor.emmet.action.incrementNumberByOne"
-
-[[bind]]
-path = "edit.action.numbers"
-name = 'dec all #'
-description = "Decrement all numbers by 1"
-key = "g shift+="
-command = "editor.emmet.action.decrementNumberByOne"
-
-[[bind]]
 path = "edit.action.basic"
 name = 'toggle check'
 description = "Toggle a markdown checkbox"
@@ -2503,51 +2594,6 @@ args.range.from = "i-(count || 0)"
 args.range.to = "i"
 
 [[path]]
-id = "edit.action.comment"
-name = "Comments"
-description = """
-Operations that modify comments
-"""
-default.mode = ["normal", "selectedit"]
-
-[[bind]]
-path = "edit.action.comment"
-key = "g ;"
-name = "comment lines"
-description = "select next comment"
-when = "master-key.count >= 1"
-command = "runCommands"
-args.commands = [
-      { defined = "selectLinesDown" },
-      "editor.action.commentLine",
-]
-
-[[bind]]
-path = "edit.action.comment"
-key = "g ;"
-when = "master-key.count < 1"
-command = "editor.action.commentLine"
-
-[[bind]]
-path = "edit.action.comment"
-key = "g shift+;"
-name = "block comment lines"
-description = "select previous comment"
-when = "master-key.count >= 1"
-command = "runCommands"
-args.commands = [
-      { defined = "selectLinesDown" },
-      "editor.action.blockComment",
-      "selection-utilities.shrinkToActive",
-]
-
-[[bind]]
-path = "edit.action.comment"
-key = "g shift+;"
-when = "master-key.count < 1"
-command = "editor.action.blockComment"
-
-[[path]]
 id = "edit.action.terminal"
 name = "Terminal Actions"
 description = "Commands that send text from the editor to the terminal"
@@ -2634,24 +2680,6 @@ path = "edit.action.terminal"
 key = "g p"
 command = "terminal-polyglot.run"
 when = "!master-key.count"
-
-[[bind]]
-path = "edit.action.terminal"
-name = "activate"
-description = "Activate the julia project associated with the current file in the active REPL"
-key = "' a"
-when = "editorLangId == 'julia'"
-command = "terminal-polyglot.send-command"
-args.cmd = "activate_from(\"%file%\")"
-
-[[bind]]
-path = "edit.action.terminal"
-name = "activate tests"
-description = "Activate the julia project test environmentassociated with the current file in the active REPL"
-key = "' t"
-when = "editorLangId == 'julia'"
-command = "terminal-polyglot.send-command"
-args.cmd = "\nbegin; activate_from(\"%file%\"); using TestEnv; TestEnv.activate(); end"
 
 [[bind]]
 path = "edit.action.terminal"
@@ -3188,20 +3216,20 @@ description = "align selections right"
 key = "shift+="
 command = "selection-utilities.alignSelectionsRight"
 
-[[bind]]
-path = "edit.select_edit"
-name = "save sel"
-description = """
-save all selections to the default register.
-Use a count to specify an alternate register
-"""
-key = "' c"
-mode = ["normal", "selectedit"]
-command = "runCommands"
-args.commands = [
-      { command = "selection-utilities.appendToMemory", computedArgs = { register = "count || 'default'" } },
-      "selection-utilities.shrinkToActive", "master-key.enterNormal"
-]
+# [[bind]]
+# path = "edit.select_edit"
+# name = "save sel"
+# description = """
+# save all selections to the default register.
+# Use a count to specify an alternate register
+# """
+# key = "' c"
+# mode = ["normal", "selectedit"]
+# command = "runCommands"
+# args.commands = [
+#       { command = "selection-utilities.appendToMemory", computedArgs = { register = "count || 'default'" } },
+#       "selection-utilities.shrinkToActive", "master-key.enterNormal"
+# ]
 
 [[bind]]
 path = "edit.select_edit"
