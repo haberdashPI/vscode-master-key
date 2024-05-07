@@ -1475,6 +1475,7 @@ priority = 1
 key = "' i"
 combinedName = "sym insert (mode)"
 combinedDescription = "Insert characters around pair"
+combinedKey = "i/shift+i"
 command = "runCommands"
 
 [[bind.args.commands]]
@@ -1503,6 +1504,7 @@ command = "rewrap.rewrapComment"
 path = "edit.action.do"
 key = "' f"
 name = "format"
+combinedName = "format"
 description = "Format code"
 when = "master-key.count >= 1"
 command = "runCommands"
@@ -1515,6 +1517,7 @@ args.commands = [
 [[bind]]
 path = "edit.action.do"
 key = "' f"
+name = "format"
 when = "master-key.count < 1"
 command = "editor.action.formatSelection"
 
@@ -1562,28 +1565,10 @@ command = "bracketeer.removeQuotes"
 
 [[bind]]
 path = "edit.action.do"
-name = 'remove'
+name = 'swap'
 description = "Swap quotes (', \" or `)"
 key = "' ' s"
 command = "bracketeer.swapQuotes"
-
-[[bind]]
-path = "edit.action.do"
-name = "activate"
-description = "Activate the julia project associated with the current file in the active REPL"
-key = "' a"
-when = "editorLangId == 'julia'"
-command = "terminal-polyglot.send-command"
-args.cmd = "activate_from(\"%file%\")"
-
-[[bind]]
-path = "edit.action.do"
-name = "activate tests"
-description = "Activate the julia project test environmentassociated with the current file in the active REPL"
-key = "' t"
-when = "editorLangId == 'julia'"
-command = "terminal-polyglot.send-command"
-args.cmd = "\nbegin; activate_from(\"%file%\"); using TestEnv; TestEnv.activate(); end"
 
 [[path]]
 id = "edit.action.comment"
@@ -1599,7 +1584,7 @@ key = "' ;"
 name = "comment lines"
 combinedName = "(block) comment"
 combinedDescription = "Toggle (block) comment"
-combinedKey = "' (shift+);"
+combinedKey = "(shift+);"
 description = "select next comment"
 when = "master-key.count >= 1"
 command = "runCommands"
@@ -1641,7 +1626,7 @@ path = "edit.action.do"
 name = 'inc all #'
 combinedName = "inc/dec all #"
 combinedDescription = "Increment/decrement all numbers by 1"
-combinedKey = "' =/shift+="
+combinedKey = "=/shift+="
 description = "Increment all numbers by 1"
 key = "' ="
 command = "editor.emmet.action.incrementNumberByOne"
@@ -1653,6 +1638,24 @@ combinedName = "inc/dec all #"
 description = "Decrement all numbers by 1"
 key = "' shift+="
 command = "editor.emmet.action.decrementNumberByOne"
+
+[[bind]]
+path = "edit.action.do"
+name = "activate"
+description = "Activate the julia project associated with the current file in the active REPL"
+key = "' a"
+when = "editorLangId == 'julia'"
+command = "terminal-polyglot.send-command"
+args.cmd = "activate_from(\"%file%\")"
+
+[[bind]]
+path = "edit.action.do"
+name = "activate tests"
+description = "Activate the julia project test environmentassociated with the current file in the active REPL"
+key = "' t"
+when = "editorLangId == 'julia'"
+command = "terminal-polyglot.send-command"
+args.cmd = "\nbegin; activate_from(\"%file%\"); using TestEnv; TestEnv.activate(); end"
 
 [[bind]]
 path = "edit.action.do"
@@ -2759,23 +2762,23 @@ Commands that navigate to various places in a document
 # key = "/ shift+d"
 # command = "editor.action.dirtydiff.previous"
 
-[[bind]]
-path = "edit.navigation"
-name = "change →"
-description = """
-move to next change
-"""
-key = "' d"
-command = "workbench.action.editor.nextChange"
+# [[bind]]
+# path = "edit.navigation"
+# name = "change →"
+# description = """
+# move to next change
+# """
+# key = "' d"
+# command = "workbench.action.editor.nextChange"
 
-[[bind]]
-path = "edit.navigation"
-name = "change ←"
-description = """
-move to previous change
-"""
-key = "' shift+d"
-command = "workbench.action.editor.previousChange"
+# [[bind]]
+# path = "edit.navigation"
+# name = "change ←"
+# description = """
+# move to previous change
+# """
+# key = "' shift+d"
+# command = "workbench.action.editor.previousChange"
 
 # [[path]]
 # id = "window"
@@ -2973,37 +2976,37 @@ description = "toggle bookmark at given line (use 'j, 'k and '# to navigate book
 key = "g space"
 command = "vsc-labeled-bookmarks.toggleBookmark"
 
-[[bind]]
-path = "window.bookmark"
-name = "mark ↓"
-description = "move to next bookmark"
-key = "' j"
-when = "!master-key.select_on && !editorHasSelection"
-command = "vsc-labeled-bookmarks.navigateToNextBookmark"
+# [[bind]]
+# path = "window.bookmark"
+# name = "mark ↓"
+# description = "move to next bookmark"
+# key = "' j"
+# when = "!master-key.select_on && !editorHasSelection"
+# command = "vsc-labeled-bookmarks.navigateToNextBookmark"
 
-[[bind]]
-path = "window.bookmark"
-key = "' j"
-when = "master-key.select_on || editorHasSelection"
-command = "vsc-labeled-bookmarks.expandSelectionToNextBookmark"
+# [[bind]]
+# path = "window.bookmark"
+# key = "' j"
+# when = "master-key.select_on || editorHasSelection"
+# command = "vsc-labeled-bookmarks.expandSelectionToNextBookmark"
 
-[[bind]]
-path = "window.bookmark"
-name = "mark ↑"
-description = "move to previous bookmark"
-key = "' k"
-when = "!master-key.select_on && !editorHasSelection"
-command = "vsc-labeled-bookmarks.navigateToPreviousBookmark"
+# [[bind]]
+# path = "window.bookmark"
+# name = "mark ↑"
+# description = "move to previous bookmark"
+# key = "' k"
+# when = "!master-key.select_on && !editorHasSelection"
+# command = "vsc-labeled-bookmarks.navigateToPreviousBookmark"
 
-[[bind]]
-path = "window.bookmark"
-name = "mark ↑"
-description = "move to previous bookmark"
-key = "' k"
-when = "master-key.select_on || editorHasSelection"
-command = "runCommands"
-args.commands = ["vsc-labeled-bookmarks.expandSelectionToPreviousBookmark",
-      "selection-utilities.activeAtStart"]
+# [[bind]]
+# path = "window.bookmark"
+# name = "mark ↑"
+# description = "move to previous bookmark"
+# key = "' k"
+# when = "master-key.select_on || editorHasSelection"
+# command = "runCommands"
+# args.commands = ["vsc-labeled-bookmarks.expandSelectionToPreviousBookmark",
+#       "selection-utilities.activeAtStart"]
 
 [[bind]]
 path = "window.bookmark"
@@ -3012,12 +3015,12 @@ description = "remove bookmark (use quick selection)"
 key = "g x space"
 command = "vsc-labeled-bookmarks.deleteBookmark"
 
-[[bind]]
-path = "window.bookmark"
-name = "nav marks"
-description = "reveal quick selection to move to a bookmark"
-key = "' shift+3"
-command = "vsc-labeled-bookmarks.navigateToBookmark"
+# [[bind]]
+# path = "window.bookmark"
+# name = "nav marks"
+# description = "reveal quick selection to move to a bookmark"
+# key = "' shift+3"
+# command = "vsc-labeled-bookmarks.navigateToBookmark"
 
 [[path]]
 id = "window.create"
@@ -3231,82 +3234,82 @@ command = "selection-utilities.alignSelectionsRight"
 #       "selection-utilities.shrinkToActive", "master-key.enterNormal"
 # ]
 
-[[bind]]
-path = "edit.select_edit"
-name = "load sel"
-description = """
-load previously saved selections in the default register.
-Use a count to specify an alternate register
-"""
-key = "' v"
-mode = ["normal", "selectedit"]
-command = "runCommands"
-args.commands = [
-      { command = "selection-utilities.restoreAndClear", computedArgs = { register = "count || 'default'" } },
-]
+# [[bind]]
+# path = "edit.select_edit"
+# name = "load sel"
+# description = """
+# load previously saved selections in the default register.
+# Use a count to specify an alternate register
+# """
+# key = "' v"
+# mode = ["normal", "selectedit"]
+# command = "runCommands"
+# args.commands = [
+#       { command = "selection-utilities.restoreAndClear", computedArgs = { register = "count || 'default'" } },
+# ]
 
-[[bind]]
-path = "edit.select_edit"
-when = "editorHasMultipleSelections"
-key = "' v"
-mode = ["normal", "selectedit"]
-command = "runCommands"
-args.commands = [
-      { command = "selection-utilities.restoreAndClear", computedArgs = { register = "count || 'default'" } },
-      { command = "master-key.setMode", args = { value = "selectedit" } }
-]
+# [[bind]]
+# path = "edit.select_edit"
+# when = "editorHasMultipleSelections"
+# key = "' v"
+# mode = ["normal", "selectedit"]
+# command = "runCommands"
+# args.commands = [
+#       { command = "selection-utilities.restoreAndClear", computedArgs = { register = "count || 'default'" } },
+#       { command = "master-key.setMode", args = { value = "selectedit" } }
+# ]
 
-[[bind]]
-path = "edit.select_edit"
-name = "exchange sel"
-description = """
-exchange selections: with no saved selection, saves the selection, with saved selections exchanges text of current selections with those of the saved selections (number of selections must match). Use a count to specify an alternate register.
-"""
-key = "' x"
-mode = ["normal", "selectedit"]
-command = "selection-utilities.swapWithMemory"
-computedArgs.register = "count || 'default'"
+# [[bind]]
+# path = "edit.select_edit"
+# name = "exchange sel"
+# description = """
+# exchange selections: with no saved selection, saves the selection, with saved selections exchanges text of current selections with those of the saved selections (number of selections must match). Use a count to specify an alternate register.
+# """
+# key = "' x"
+# mode = ["normal", "selectedit"]
+# command = "selection-utilities.swapWithMemory"
+# computedArgs.register = "count || 'default'"
 
-[[bind]]
-path = "edit.select_edit"
-name = "rem saved sel"
-description = """
-remove the most recently saved selection from the list of saved selections
-"""
-key = "' n"
-mode = ["normal", "selectedit"]
+# [[bind]]
+# path = "edit.select_edit"
+# name = "rem saved sel"
+# description = """
+# remove the most recently saved selection from the list of saved selections
+# """
+# key = "' n"
+# mode = ["normal", "selectedit"]
 
- command = "selection-utilities.deleteLastSaved"
-computedArgs.register = "count || 'default'"
+# command = "selection-utilities.deleteLastSaved"
+# computedArgs.register = "count || 'default'"
 
-[[bind]]
-path = "edit.select_edit"
-key = "' enter"
-name = "split sel"
-description = """
-split selection into multiple selections by new line charactesr
-"""
-mode = ["normal", "selectedit"]
-command = "runCommands"
-args.commands = [
-      { defined = "selectLinesDown" },
-      "selection-utilities.splitByNewline",
-      { command = "master-key.setMode", args = { value = "selectedit" } }
-]
+# [[bind]]
+# path = "edit.select_edit"
+# key = "' enter"
+# name = "split sel"
+# description = """
+# split selection into multiple selections by new line charactesr
+# """
+# mode = ["normal", "selectedit"]
+# command = "runCommands"
+# args.commands = [
+#       { defined = "selectLinesDown" },
+#       "selection-utilities.splitByNewline",
+#       { command = "master-key.setMode", args = { value = "selectedit" } }
+# ]
 
-[[bind]]
-path = "edit.select_edit"
-name = "sel all"
-description = """
-create a selection for every match of the current word (or selection)
-"""
-key = "' shift+8"
-mode = ["normal", "selectedit"]
-command = "runCommands"
-args.commands = [
-      "editor.action.selectHighlights",
-      { command = "master-key.setMode", args = { value = "selectedit" } }
-]
+# [[bind]]
+# path = "edit.select_edit"
+# name = "sel all"
+# description = """
+# create a selection for every match of the current word (or selection)
+# """
+# key = "' shift+8"
+# mode = ["normal", "selectedit"]
+# command = "runCommands"
+# args.commands = [
+#       "editor.action.selectHighlights",
+#       { command = "master-key.setMode", args = { value = "selectedit" } }
+# ]
 
 # [[bind]]
 # path = "edit.select_edit"
@@ -3331,35 +3334,35 @@ args.commands = [
 #       { command = "master-key.setMode", args = { value = "selectedit" } }
 # ]
 
-[[bind]]
-path = "edit.select_edit"
-name = "insert sel ↑"
-description = """
-insert cursor on line above
-"""
-key = "' shift+k"
-mode = ["normal", "selectedit"]
-command = "runCommands"
-repeat = "count"
-args.commands = [
-      { command = "master-key.setMode", args = { value = "selectedit" } },
-      { command = "editor.action.insertCursorAbove" }
-]
+# [[bind]]
+# path = "edit.select_edit"
+# name = "insert sel ↑"
+# description = """
+# insert cursor on line above
+# """
+# key = "' shift+k"
+# mode = ["normal", "selectedit"]
+# command = "runCommands"
+# repeat = "count"
+# args.commands = [
+#       { command = "master-key.setMode", args = { value = "selectedit" } },
+#       { command = "editor.action.insertCursorAbove" }
+# ]
 
-[[bind]]
-path = "edit.select_edit"
-name = "insert sel ↓"
-description = """
-insert cursor on line below
-"""
-key = "' shift+j"
-mode = ["normal", "selectedit"]
-command = "runCommands"
-repeat = "count"
-args.commands = [
-      { command = "master-key.setMode", args = { value = "selectedit" }},
-      { command = "editor.action.insertCursorBelow" }
-]
+# [[bind]]
+# path = "edit.select_edit"
+# name = "insert sel ↓"
+# description = """
+# insert cursor on line below
+# """
+# key = "' shift+j"
+# mode = ["normal", "selectedit"]
+# command = "runCommands"
+# repeat = "count"
+# args.commands = [
+#       { command = "master-key.setMode", args = { value = "selectedit" }},
+#       { command = "editor.action.insertCursorBelow" }
+# ]
 
 [[bind]]
 path = "edit.select_edit"

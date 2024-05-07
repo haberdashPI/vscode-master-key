@@ -59,6 +59,9 @@ m - match
   + n, N navivation cursor history
 + u/U - undo/redo
 
+TODO: to get this menu working we need to fix the bug where prefix
+names all get renamed to be `prefix`
+
 ' - do
   + p/P - past before/after line
   + o/O - open above/below
