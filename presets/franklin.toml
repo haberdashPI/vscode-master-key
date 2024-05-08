@@ -1037,6 +1037,7 @@ key = "m p"
 name = "in parag. →"
 combinedName = "in paragraph →/←"
 combinedKey = "p/o"
+args.boundary = "both"
 args.unit = "paragraph"
 computedArgs.value = "count || 1"
 
@@ -1780,6 +1781,191 @@ command = "runCommands"
 args.commands = ["terminal-polyglot.send-block-text",
       "selection-utilities.shrinkToActive"]
 
+## Leader Commands
+## --------------------------------
+
+# Miscellaneous commands organized under SPACE
+
+[[path]]
+id = "edit.util"
+name = "assorted misecellaneous commands"
+default.kind = "util"
+
+[[bind]]
+path = "edit.util"
+name = "utility"
+key = "space"
+description = "utility related commands: file opening, window manipulation, debugging etc..."
+resetTransient = false
+command = "master-key.prefix"
+
+[[bind]]
+path = "edit.util"
+name = "open recent"
+description = "Open recent file"
+key = "space r"
+command = "workbench.action.openRecent"
+
+[[bind]]
+path = "edit.util"
+name = "command"
+description = "Show the VSCode command palette"
+key = "space shift+;"
+command = "workbench.action.showCommands"
+
+[[bind]]
+path = "edit.util"
+name = "hover"
+description = "show the hover view"
+combinedName = "(debug) hover"
+combinedDescription = "show the (debug) hover view"
+combinedKey = "space (shift+)h"
+key = "space h"
+command = "editor.action.showHover"
+when = "editorTextFocus"
+
+[[bind]]
+path = "edit.util"
+name = "debug hover"
+combinedName = "(debug) hover"
+description = "show the debug hover view"
+key = "space shift+h"
+command = "editor.debug.action.showDebugHover"
+when = "editorTextFocus"
+
+[[bind]]
+path = "edit.util"
+name = "mark"
+description = "bookmark related commands"
+key = "space m"
+command = "master-key.prefix"
+resetTransient = false
+
+[[bind]]
+path = "edit.util"
+name = "mark"
+description = "toggle bookmark at given line"
+key = "space m m"
+command = "vsc-labeled-bookmarks.toggleBookmark"
+
+[[bind]]
+path = "edit.util"
+name = "mark ↓"
+description = "move to next bookmark"
+combinedName = "mark ↓/↑"
+key = "space m j"
+when = "!master-key.select_on && !editorHasSelection"
+command = "vsc-labeled-bookmarks.navigateToNextBookmark"
+
+[[bind]]
+path = "edit.util"
+combinedName = "mark ↓/↑"
+combinedDescription = "move to next/previous bookmark"
+combinedKey = "j/k"
+key = "space m j"
+when = "master-key.select_on || editorHasSelection"
+command = "vsc-labeled-bookmarks.expandSelectionToNextBookmark"
+
+[[bind]]
+path = "edit.util"
+name = "mark ↑"
+combinedName = "mark ↓/↑"
+description = "move to previous bookmark"
+key = "space m k"
+when = "!master-key.select_on && !editorHasSelection"
+command = "vsc-labeled-bookmarks.navigateToPreviousBookmark"
+
+[[bind]]
+path = "edit.util"
+name = "mark ↑"
+combinedName = "mark ↓/↑"
+description = "move to previous bookmark"
+key = "space m k"
+when = "master-key.select_on || editorHasSelection"
+command = "runCommands"
+args.commands = ["vsc-labeled-bookmarks.expandSelectionToPreviousBookmark",
+      "selection-utilities.activeAtStart"]
+
+[[bind]]
+path = "edit.util"
+name = "remove mark"
+description = "remove bookmark (use quick selection)"
+key = "space m d"
+command = "vsc-labeled-bookmarks.deleteBookmark"
+
+[[bind]]
+path = "edit.util"
+name = "nav marks"
+description = "reveal quick selection to move to a bookmark"
+key = "space m t"
+command = "vsc-labeled-bookmarks.navigateToBookmark"
+
+[[bind]]
+path = "edit.util"
+name = "error →"
+combinedName = "error →/←"
+combinedDescription = "move to next/previous error"
+combinedKey = "e/shift+e"
+description = """
+move to next error
+"""
+key = "space e"
+command = "editor.action.marker.next"
+
+[[bind]]
+path = "edit.util"
+name = "error ←"
+combinedName = "error →/←"
+description = """
+move to previous error
+"""
+key = "space shift+e"
+command = "editor.action.marker.prev"
+
+[[bind]]
+path = "edit.util"
+name = "diff →"
+combinedName = "diff →/←"
+combinedDescription = "move to and show next/previous diff"
+combinedKey = "c/shift+c"
+description = """
+move to and show next diff
+"""
+key = "space c"
+command = "editor.action.dirtydiff.next"
+
+[[bind]]
+path = "edit.util"
+name = "diff ←"
+combinedName = "diff →/←"
+description = """
+move to and show previous diff
+"""
+key = "space shift+c"
+command = "editor.action.dirtydiff.previous"
+
+[[bind]]
+path = "edit.util"
+name = "change →"
+combinedName = "change →/←"
+combinedDescription = "move to next/previous file change"
+combinedKey = "d/shift+d"
+description = """
+move to next file change
+"""
+key = "space d"
+command = "workbench.action.editor.nextChange"
+
+[[bind]]
+path = "edit.util"
+name = "change ←"
+combinedName = "change →/←"
+description = """
+move to previous change
+"""
+key = "space shift+d"
+command = "workbench.action.editor.previousChange"
+
 ## Symmetric Insert Mode
 ## --------------------------------
 
@@ -1929,20 +2115,6 @@ command = "master-key.setFlag"
 args.name = "select_on"
 args.value = true
 mode = ["normal", "selectedit"]
-
-[[bind]]
-path = "edit.motion.mod"
-key = "space"
-name = "shrink selection"
-mode = ["normal", "selectedit"]
-description = """
-reduce all selections to length zero
-"""
-command = "runCommands"
-args.commands = [
-      "selection-utilities.shrinkToActive",
-      { command = "master-key.setFlag", args = { name = "select_on", value = false } },
-]
 
 [[bind]]
 path = "edit.motion.obj"
@@ -2726,60 +2898,6 @@ description = """
 Commands that navigate to various places in a document
 """
 
-# [[bind]]
-# path = "edit.navigation"
-# name = "error →"
-# description = """
-# move to next error
-# """
-# key = "/ e"
-# command = "editor.action.marker.next"
-
-# [[bind]]
-# path = "edit.navigation"
-# name = "error ←"
-# description = """
-# move to previous error
-# """
-# key = "/ shift+e"
-# command = "editor.action.marker.prev"
-
-# [[bind]]
-# path = "edit.navigation"
-# name = "diff →"
-# description = """
-# move to and show next change
-# """
-# key = "/ d"
-# command = "editor.action.dirtydiff.next"
-
-# [[bind]]
-# path = "edit.navigation"
-# name = "diff ←"
-# description = """
-# move to and show previous change
-# """
-# key = "/ shift+d"
-# command = "editor.action.dirtydiff.previous"
-
-# [[bind]]
-# path = "edit.navigation"
-# name = "change →"
-# description = """
-# move to next change
-# """
-# key = "' d"
-# command = "workbench.action.editor.nextChange"
-
-# [[bind]]
-# path = "edit.navigation"
-# name = "change ←"
-# description = """
-# move to previous change
-# """
-# key = "' shift+d"
-# command = "workbench.action.editor.previousChange"
-
 # [[path]]
 # id = "window"
 # name = "Window Manipulation"
@@ -2892,22 +3010,6 @@ Commands that navigate to various places in a document
 # key = "/ j"
 # command = "workbench.action.focusBelowGroup"
 
-[[bind]]
-path = "window"
-name = "hover"
-description = "show the hover view"
-key = "g h"
-command = "editor.action.showHover"
-when = "editorTextFocus"
-
-[[bind]]
-path = "window"
-name = "debug hover"
-description = "show the debug hover view"
-key = "g shift+h"
-command = "editor.debug.action.showDebugHover"
-when = "editorTextFocus"
-
 # [[bind]]
 # path = "window"
 # name = "breakpt."
@@ -2968,59 +3070,6 @@ id = "window.bookmark"
 name = "Bookmarks"
 description = "Commands for creating and interacting with book marks"
 default.when = "editorTextFocus"
-
-[[bind]]
-path = "window.bookmark"
-name = "mark"
-description = "toggle bookmark at given line (use 'j, 'k and '# to navigate bookmarks)"
-key = "g space"
-command = "vsc-labeled-bookmarks.toggleBookmark"
-
-# [[bind]]
-# path = "window.bookmark"
-# name = "mark ↓"
-# description = "move to next bookmark"
-# key = "' j"
-# when = "!master-key.select_on && !editorHasSelection"
-# command = "vsc-labeled-bookmarks.navigateToNextBookmark"
-
-# [[bind]]
-# path = "window.bookmark"
-# key = "' j"
-# when = "master-key.select_on || editorHasSelection"
-# command = "vsc-labeled-bookmarks.expandSelectionToNextBookmark"
-
-# [[bind]]
-# path = "window.bookmark"
-# name = "mark ↑"
-# description = "move to previous bookmark"
-# key = "' k"
-# when = "!master-key.select_on && !editorHasSelection"
-# command = "vsc-labeled-bookmarks.navigateToPreviousBookmark"
-
-# [[bind]]
-# path = "window.bookmark"
-# name = "mark ↑"
-# description = "move to previous bookmark"
-# key = "' k"
-# when = "master-key.select_on || editorHasSelection"
-# command = "runCommands"
-# args.commands = ["vsc-labeled-bookmarks.expandSelectionToPreviousBookmark",
-#       "selection-utilities.activeAtStart"]
-
-[[bind]]
-path = "window.bookmark"
-name = "mark"
-description = "remove bookmark (use quick selection)"
-key = "g x space"
-command = "vsc-labeled-bookmarks.deleteBookmark"
-
-# [[bind]]
-# path = "window.bookmark"
-# name = "nav marks"
-# description = "reveal quick selection to move to a bookmark"
-# key = "' shift+3"
-# command = "vsc-labeled-bookmarks.navigateToBookmark"
 
 [[path]]
 id = "window.create"

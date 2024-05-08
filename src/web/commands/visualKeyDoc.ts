@@ -6,7 +6,7 @@ import z from 'zod';
 import { IConfigKeyBinding } from '../keybindings/processing';
 import { currentKeybindings, filterBindingFn } from '../keybindings';
 import { PREFIX_CODE } from './prefix';
-import { uniqBy } from 'lodash';
+import { reverse, uniqBy } from 'lodash';
 import { modifierKey, prettifyPrefix, validateInput } from '../utils';
 import { Map } from 'immutable';
 
@@ -215,7 +215,7 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
 
         let bindings = allBindings.filter(filterBindingFn(<string>(values.get(MODE)),
             <number>(values.get(PREFIX_CODE))));
-        bindings = uniqBy(bindings, b => b.args.key);
+        bindings = reverse(uniqBy(reverse(bindings), b => b.args.key));
         this._bindingMap = {};
         for(let binding of bindings){
             this._bindingMap[prettifyPrefix(binding.args.key)] = binding;

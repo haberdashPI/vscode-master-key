@@ -6,7 +6,7 @@ import { PREFIX_CODE, prefixCodes } from './prefix';
 import { MODE } from './mode';
 import { IConfigKeyBinding, PrefixCodes } from '../keybindings/processing';
 import { RunCommandsArgs, doCommandsCmd } from './do';
-import { uniqBy, sortBy } from 'lodash';
+import { reverse, uniqBy, sortBy } from 'lodash';
 import replaceAll from 'string.prototype.replaceall';
 import { QuickPickItem } from 'vscode-extension-tester';
 import { TypeOf } from 'zod';
@@ -68,8 +68,8 @@ export async function commandPalette(args_: unknown,
             // (atlernatively, commands can set their own state somehow)
             availableBindings = <IConfigKeyBinding[]>bindings.filter(filterBindingFn());
         }
-        availableBindings = uniqBy(availableBindings, b =>
-            (b.args.name || "")+(b.args.kind || "")+(b.args.prefixCode));
+        availableBindings = reverse(uniqBy(reverse(availableBindings), b =>
+            (b.args.key || "")+(b.args.prefixCode)));
 
         let picks = availableBindings.map(binding => {
             let key = binding.args.key;
