@@ -1966,6 +1966,185 @@ move to previous change
 key = "space shift+d"
 command = "workbench.action.editor.previousChange"
 
+## Window manipulation
+## --------------------------------
+
+[[bind]]
+path = "edit.util"
+name = "window"
+description = "window/editor pane manipulation-related commands"
+key = "space w"
+command = "master-key.prefix"
+resetTransient = false
+
+[[bind]]
+path = "edit.util"
+name = "vert/horz"
+key = "space w r"
+description = "Toggle between horizontal and vertical layouts"
+command = "workbench.action.toggleEditorGroupLayout"
+
+[[bind]]
+path = "edit.util"
+name = "nav →"
+combinedName = "nav →/←"
+combinedDescription = "move focus to the right/left"
+combinedKey = "l/h"
+description = "move focus to window to the right"
+key = "space w l"
+command = "workbench.action.focusRightGroup"
+
+[[bind]]
+path = "edit.util"
+name = "nav ←"
+combinedName = "nav →/←"
+description = "move focus to window to the left"
+key = "space w h"
+command = "workbench.action.focusLeftGroup"
+
+[[bind]]
+path = "edit.util"
+name = "nav ↑"
+combinedName = "nav ↑/↓"
+combinedDescription = "move focus to window above/below"
+combinedKey = "k/j"
+description = "move focus to window above"
+key = "space w k"
+command = "workbench.action.focusAboveGroup"
+
+[[bind]]
+path = "edit.util"
+name = "nav ↓"
+combinedName = "nav ↑/↓"
+description = "move focus to window below"
+key = "space w j"
+command = "workbench.action.focusBelowGroup"
+
+[[bind]]
+path = "edit.util"
+name = "move →"
+combinedName = "move →/←"
+combinedDescription = "move editor to window left/right"
+combinedKey = "shift+l/h"
+description = "move editor to window to left"
+key = "space w shift+l"
+command = "workbench.action.moveEditorToRightGroup"
+
+[[bind]]
+path = "edit.util"
+name = "←"
+combinedName = "move →/←"
+description = "move editor to window to left"
+key = "space w shift+h"
+command = "workbench.action.moveEditorToLeftGroup"
+
+[[bind]]
+path = "edit.util"
+name = "↓"
+combinedName = "move ↓/↑"
+combinedDescription = "move editor to window above/below"
+combinedKey = "shift+j/k"
+description = "move editor to window below"
+key = "space w shift+j"
+command = "workbench.action.moveEditorToBelowGroup"
+
+[[bind]]
+path = "edit.util"
+name = "↑"
+combinedName = "move ↓/↑"
+description = "move editor to window above"
+key = "space w shift+k"
+command = "workbench.action.splitEditorUp"
+
+[[bind]]
+path = "edit.util"
+name = "split editor..."
+description = "split editor to in a given direction"
+key = "space w s"
+command = "master-key.prefix"
+resetTransient = false
+
+[[bind]]
+path = "edit.util"
+name = "move →"
+combinedName = "split →/←"
+combinedDescription = "move editor to window left/right"
+combinedKey = "l/h"
+description = "split editor to window to left"
+key = "space w s l"
+command = "workbench.action.splitEditorRight"
+
+[[bind]]
+path = "edit.util"
+name = "←"
+combinedName = "split →/←"
+description = "split editor to window to left"
+key = "space w s h"
+command = "workbench.action.splitEditorLeft"
+
+[[bind]]
+path = "edit.util"
+name = "↓"
+combinedName = "split ↓/↑"
+combinedDescription = "split editor to window above/below"
+combinedKey = "j/k"
+description = "split editor to window below"
+key = "space w s j"
+command = "workbench.action.splitEditorDown"
+
+[[bind]]
+path = "edit.util"
+name = "↑"
+combinedName = "split ↓/↑"
+combinedDescription = "split editor to window above/below"
+combinedKey = "j/k"
+description = "split editor to window below"
+key = "space w s k"
+command = "workbench.action.splitEditorUp"
+
+[[bind]]
+path = "edit.util"
+name = "close pane"
+description = "close the given group of editors"
+key = "space w x"
+command = "workbench.action.closeEditorsInGroup"
+
+[[bind]]
+path = "edit.util"
+name = "max"
+description = "minimize size of all other windows"
+key = "space w shift+m"
+command = "workbench.action.minimizeOtherEditors"
+
+[[bind]]
+path = "edit.util"
+name = "equal"
+description = "equalzize size of all windows"
+key = "space w ="
+command = "workbench.action.evenEditorWidths"
+
+[[bind]]
+path = "edit.util"
+name = "curs. win top"
+description = "center window so that primary cursor is at the top"
+key = "space w t"
+combinedName = "center window top/bottom"
+combinedDescription = "center window so that primary cursor is at the top/bottom"
+combinedKey = "t/b"
+command = "selection-utilities.revealActive"
+args.at = "top"
+when = "editorTextFocus"
+
+[[bind]]
+path = "edit.util"
+name = "curs. win bot"
+combinedName = "center window top/bottom"
+description = "center window so that primary cursor is at the bottom"
+key = "space w b"
+command = "selection-utilities.revealActive"
+args.at = "bottom"
+when = "editorTextFocus"
+
 ## Symmetric Insert Mode
 ## --------------------------------
 
@@ -2938,38 +3117,6 @@ Commands that navigate to various places in a document
 
 # [[bind]]
 # path = "window"
-# name = "top"
-# description = "center window so that primary cursor is at the top"
-# key = "/ shift+k"
-# command = "selection-utilities.revealActive"
-# args.at = "top"
-# when = "editorTextFocus"
-
-# [[bind]]
-# path = "window"
-# name = "bottom"
-# description = "center window so that primary cursor is at the bottom"
-# key = "/ shift+j"
-# command = "selection-utilities.revealActive"
-# args.at = "bottom"
-# when = "editorTextFocus"
-
-# [[bind]]
-# path = "window"
-# name = "max"
-# description = "minimize size of all other windows"
-# key = "/ shift+m"
-# command = "workbench.action.minimizeOtherEditors"
-
-# [[bind]]
-# path = "window"
-# name = "equal"
-# description = "equalzize size of all windows"
-# key = "/ ="
-# command = "workbench.action.evenEditorWidths"
-
-# [[bind]]
-# path = "window"
 # name = "split"
 # description = "toggle split editor view"
 # key = "/ shift+\\"
@@ -2981,34 +3128,6 @@ Commands that navigate to various places in a document
 # description = "move to other side of editor split"
 # key = "/ shift+l"
 # command = "workbench.action.focusOtherSideEditor"
-
-# [[bind]]
-# path = "window"
-# name = "→"
-# description = "move focus to window to the right"
-# key = "/ l"
-# command = "workbench.action.focusRightGroup"
-
-# [[bind]]
-# path = "window"
-# name = "←"
-# description = "move focus to window to the left"
-# key = "/ h"
-# command = "workbench.action.focusLeftGroup"
-
-# [[bind]]
-# path = "window"
-# name = "↑"
-# description = "move focus to window above"
-# key = "/ k"
-# command = "workbench.action.focusAboveGroup"
-
-# [[bind]]
-# path = "window"
-# name = "↓"
-# description = "move focus to window below"
-# key = "/ j"
-# command = "workbench.action.focusBelowGroup"
 
 # [[bind]]
 # path = "window"
@@ -3064,109 +3183,6 @@ description = "debug: step out"
 key = "g e k"
 command = "workbench.action.debug.stepOut"
 when = "editorTextFocus"
-
-[[path]]
-id = "window.bookmark"
-name = "Bookmarks"
-description = "Commands for creating and interacting with book marks"
-default.when = "editorTextFocus"
-
-[[path]]
-id = "window.create"
-name = "Create New Panes"
-description = "Commands for placing editors in new panes."
-
-# [[bind]]
-# path = "window.create"
-# name = "create"
-# description = "create new window of editor in given direction"
-# key = "/ c"
-# kind = "util"
-# resetTransient = false
-# command = "master-key.prefix"
-
-# [[bind]]
-# path = "window.create"
-# name = "→"
-# description = "create new window of editor to left"
-# key = "/ c l"
-# command = "workbench.action.splitEditorRight"
-
-# [[bind]]
-# path = "window.create"
-# name = "←"
-# description = "create new window of editor to left"
-# key = "/ c h"
-# command = "workbench.action.splitEditorLeft"
-
-# [[bind]]
-# path = "window.create"
-# name = "↓"
-# description = "create new window of editor below"
-# key = "/ c j"
-# command = "workbench.action.splitEditorDown"
-
-# [[bind]]
-# path = "window.create"
-# name = "↑"
-# description = "create new window of editor above"
-# key = "/ c k"
-# command = "workbench.action.splitEditorUp"
-
-[[path]]
-id = "window.move"
-name = "Move Editors"
-description = "Move editors between panes"
-
-# [[bind]]
-# path = "window.move"
-# name = "move to"
-# description = "move editor to window in given direction"
-# key = "/ m"
-# resetTransient = false
-# command = "master-key.prefix"
-
-# [[bind]]
-# path = "window.move"
-# name = "vert/horz"
-# key = "/ m r"
-# description = "Toggle between horizontal and vertical layouts"
-# command = "workbench.action.toggleEditorGroupLayout"
-
-# [[bind]]
-# path = "window.move"
-# name = "→"
-# description = "move editor to window to left"
-# key = "/ m l"
-# command = "workbench.action.moveEditorToRightGroup"
-
-# [[bind]]
-# path = "window.move"
-# name = "←"
-# description = "move editor to window to left"
-# key = "/ m h"
-# command = "workbench.action.moveEditorToLeftGroup"
-
-# [[bind]]
-# path = "window.move"
-# name = "↓"
-# description = "move editor to window below"
-# key = "/ m j"
-# command = "workbench.action.moveEditorToBelowGroup"
-
-# [[bind]]
-# path = "window.move"
-# name = "↑"
-# description = "move editor to window above"
-# key = "/ m k"
-# command = "workbench.action.moveEditorToAboveGroup"
-
-# [[bind]]
-# path = "window.move"
-# name = "close pane"
-# description = "close the given group of editors"
-# key = "/ x"
-# command = "workbench.action.closeEditorsInGroup"
 
 [[path]]
 id = "edit.select_edit"

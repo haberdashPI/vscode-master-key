@@ -98,23 +98,20 @@ space - leader
   d/D + with diff
 
   w - window/pane
-    - x close pane
-    - m - move (all same as before)
-    - c - create (all same as before)
-    - = - equalize
-    - M - maximize
+    + x close pane
+    + = - equalize
+    + M - maximize
+    + r - rotate
     - s - split pane
-    - j,k,l,h - move to pane
-    - J,K,L,H - move window
-    - c - j,k,l,h
-    - t/b - move cursor to top bottom
+    + j,k,l,h - move to pane
+    + J,K,L,H - move window
+    + s - j,k,l,h
+    + t/b - move cursor to top bottom
 
   B - breakbpoint
   b - debug
     - j/J steps
     - i into
-    -
-
 
 z - multi-select mode (Z adds cursor)
   shift-enter - split by newline
