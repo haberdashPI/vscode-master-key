@@ -114,26 +114,29 @@ space - leader
     - i into
 
 z - multi-select mode (Z adds cursor)
-  shift-enter - split by newline
-  enter - return to normal
-  j/k - make next/prev selection primary
-  d - delete current selection
-  D - delete all but current selection and return to normal
-  r - by regex
-    s/S - split
-    f/F - filter
-  S - split by string
-  s - split by character
-  f - filter by including
-  F - filter by excluding
-  * - select all matches
-  j/k - insert cursor below/above
-  h/l - add prev/next match
-  c - save current selection (and clear) and switch to normal
-  C - save current selection (don't clear) - and switch to normal
-  n - remove last saved selection - return to normal
-  v - restore selection
-  x - exchange selection - and switch to normal
+  + enter - return to normal
+  + z - add next match
+  + h/l - add prev/next match
+  + shift h/l - skip to prev/next match
+  + j/k - make next/prev selection primary
+  + shift+j/k - insert cursor below/above
+  + d - delete current selection
+  + D - delete all but current selection and return to normal
+  - =/shift+= - align left/right
+  - S - split by string
+  - r - by regex
+    - S - split
+    - f/F - filter
+  - shift-enter - split by newline
+  - s - split by character
+  - f - filter by including
+  - F - filter by excluding
+  - * - select all matches
+  - c - save current selection (and clear) and switch to normal
+  - C - save current selection (don't clear) - and switch to normal
+  - n - remove last saved selection - return to normal
+  - v - restore selection
+  - x - exchange selection - and switch to normal
 
 NEXT UP:
 
