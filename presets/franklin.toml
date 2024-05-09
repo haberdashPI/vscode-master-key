@@ -575,6 +575,24 @@ args.backwards = true
 
 [[bind]]
 path = "edit.motion.search"
+key = "n"
+name = "→ search"
+description = "Go to the next match of the search query"
+command = "master-key.nextMatch"
+args.register = "search"
+computedArgs.repeat = "(count || 1)-1"
+
+[[bind]]
+path = "edit.motion.search"
+key = "shift+n"
+name = "← search"
+description = "Go to the previous match of the search query"
+command = "master-key.previousMatch"
+args.register = "search"
+computedArgs.repeat = "(count || 1)-1"
+
+[[bind]]
+path = "edit.motion.search"
 key = "shift+8"
 name = "match →"
 description = "Next match to object under cursor"
@@ -748,17 +766,17 @@ command = "expandLineSelection"
 
 [[bind]]
 path = "edit.motion.prim"
-key = "g shift+."
+key = "g ."
 name = "doc end"
 description = "select to end of document"
 combinedName = "doc top/bottom"
 combinedDescription = "select to top/bottom of document"
-combinedKey = "g shift+,/shift+."
+combinedKey = ",/."
 command = "cursorBottomSelect"
 
 [[bind]]
 path = "edit.motion.prim"
-key = "g shift+,"
+key = "g ,"
 name = "doc start"
 description = "select to start of document"
 command = "cursorTopSelect"
@@ -1658,6 +1676,40 @@ key = "' c s"
 when = "editorLangId != 'quarto'"
 command = "jupyter.selectCell"
 
+[[bind]]
+path = "edit.action.basic"
+key = "' ."
+name = 'sent. lines'
+description = "Split paragraph into one line per sentence"
+mode = "normal"
+command = "runCommands"
+
+[[bind.args.commands]]
+command = "selection-utilities.moveBy"
+args.unit = "paragraph"
+args.boundary = "both"
+args.selectWhole = true
+
+[[bind.args.commands]]
+command = "editor.action.joinLines"
+
+[[bind.args.commands]]
+command = "selection-utilities.createBy"
+args.text = "."
+
+[[bind.args.commands]]
+command = "selection-utilities.shrinkToActive"
+
+[[bind.args.commands]]
+command = "cursorRight"
+
+[[bind.args.commands]]
+command = "type"
+args.text = "\n"
+
+[[bind.args.commands]]
+command = "selection-utilities.cancelSelection"
+
 ## Utilities
 ## --------------------------------
 
@@ -1707,7 +1759,7 @@ show command suggestsion within the context of the current mode and keybinding p
 command = "master-key.commandPalette"
 
 [[bind]]
-path = "edit.action.terminal"
+path = "edit.action"
 name = "to repl"
 description = """
 send text to a terminal (usually containing a REPL); use language
@@ -1724,7 +1776,7 @@ args.commands = [
 ]
 
 [[bind]]
-path = "edit.action.terminal"
+path = "edit.action"
 key = "["
 when = "editorLangId == 'julia' && !editorHasSelection && !count"
 command = "runCommands"
@@ -1735,7 +1787,7 @@ args.commands = [
 ]
 
 [[bind]]
-path = "edit.action.terminal"
+path = "edit.action"
 key = "["
 when = "editorLangId == 'julia' && editorHasSelection"
 command = "runCommands"
@@ -1744,7 +1796,7 @@ args.commands = ["selection-utilities.trimSelectionWhitespace",
         "cursorUndo"]
 
 [[bind]]
-path = "edit.action.terminal"
+path = "edit.action"
 key = "["
 when = "editorLangId != 'julia' && !(master-key.firstSelectionOrWord =~ /\\n/)"
 command = "runCommands"
@@ -1752,7 +1804,7 @@ args.commands = ["terminal-polyglot.send-text",
         "selection-utilities.shrinkToActive"]
 
 [[bind]]
-path = "edit.action.terminal"
+path = "edit.action"
 name = "repl"
 key = "["
 when = "editorLangId != 'julia' && master-key.firstSelectionOrWord =~ /\\n/"
@@ -1761,7 +1813,7 @@ args.commands = ["terminal-polyglot.send-block-text",
       "selection-utilities.shrinkToActive"]
 
 [[bind]]
-path = "edit.action.terminal"
+path = "edit.action"
 key = "space ["
 name = "to repl (v2)"
 description = """
@@ -1772,7 +1824,7 @@ command = "runCommands"
 args.commands = ["terminal-polyglot.send-block-text", "selection-utilities.shrinkToActive"]
 
 [[bind]]
-path = "edit.action.terminal"
+path = "edit.action"
 key = "space ["
 name = "to repl (v2)"
 description = """
@@ -1783,7 +1835,7 @@ command = "runCommands"
 args.commands = ["terminal-polyglot.send-text", "selection-utilities.shrinkToActive"]
 
 [[bind]]
-path = "edit.action.terminal"
+path = "edit.action"
 key = "space shift+["
 name = "to repl (v3)"
 description = """
@@ -1793,12 +1845,55 @@ command = "runCommands"
 args.commands = ["terminal-polyglot.send-text", "selection-utilities.shrinkToActive"]
 
 [[bind]]
-path = "edit.action.terminal"
+path = "edit.action"
 name = "open terminal"
 key = "]"
 command = "terminal-polyglot.open-terminal-N"
 computedArgs.index = "count || 1"
 args.focus = false
+
+[[bind]]
+path = "edit.util"
+name = "git..."
+description = "git commands"
+key = "space g"
+command = "master-key.prefix"
+resetTransient = false
+
+[[bind]]
+path = "edit.util"
+name = "pull"
+combinedName = "push/pull"
+description = "pull changes from remote"
+combinedDescription = "pull from/push to remote"
+combinedKey = "p/shift+p"
+key = "space g p"
+command = "git.pull"
+
+[[bind]]
+path = "edit.util"
+name = "push"
+description = "push changes to remote"
+key = "space g shift+p"
+command = "git.push"
+
+[[bind]]
+path = "edit.util"
+name = "checkout"
+combinedName = "commit/checkout"
+description = "commit changes"
+combinedDescription = "commit/checkout git changes"
+combinedKey = "c/shift+c"
+key = "space g c"
+command = "git.commit"
+
+[[bind]]
+path = "edit.util"
+name = "checkout"
+combinedName = "commit/checkout"
+description = "checkout changes"
+key = "space g shift+c"
+command = "git.checkout"
 
 ## Leader Commands
 ## --------------------------------
@@ -2910,40 +3005,6 @@ mode = ["normal", "selectedit"]
 key = "g y"
 command = "editor.action.joinLines"
 
-[[bind]]
-path = "edit.action.basic"
-key = "g ."
-name = 'sent. lines'
-description = "Split paragraph into one line per sentence"
-mode = "normal"
-command = "runCommands"
-
-[[bind.args.commands]]
-command = "selection-utilities.moveBy"
-args.unit = "paragraph"
-args.boundary = "both"
-args.selectWhole = true
-
-[[bind.args.commands]]
-command = "editor.action.joinLines"
-
-[[bind.args.commands]]
-command = "selection-utilities.createBy"
-args.text = "."
-
-[[bind.args.commands]]
-command = "selection-utilities.shrinkToActive"
-
-[[bind.args.commands]]
-command = "cursorRight"
-
-[[bind.args.commands]]
-command = "type"
-args.text = "\n"
-
-[[bind.args.commands]]
-command = "selection-utilities.cancelSelection"
-
 [[path]]
 id = "edit.action.capitals"
 name = "Capitlization Actions"
@@ -3319,65 +3380,65 @@ command = "master-key.pushHistoryToStack"
 args.range.from = "i-(count || 0)"
 args.range.to = "i"
 
-[[path]]
-id = "edit.action.terminal"
-name = "Terminal Actions"
-description = "Commands that send text from the editor to the terminal"
-default.kind = "action"
-default.mode = "normal"
+# [[path]]
+# id = "edit.action.terminal"
+# name = "Terminal Actions"
+# description = "Commands that send text from the editor to the terminal"
+# default.kind = "action"
+# default.mode = "normal"
 
-[[bind]]
-path = "edit.action.terminal"
-name = "open terminal"
-key = "g p"
-command = "runCommands"
-when = "master-key.count"
+# [[bind]]
+# path = "edit.action.terminal"
+# name = "open terminal"
+# key = "g p"
+# command = "runCommands"
+# when = "master-key.count"
 
-[[bind.args.commands]]
-command = "terminal-polyglot.open-terminal-N"
-computedArgs.index = "count || 1"
-args.focus = false
+# [[bind.args.commands]]
+# command = "terminal-polyglot.open-terminal-N"
+# computedArgs.index = "count || 1"
+# args.focus = false
 
-[[bind.args.commands]]
-command = "terminal-polyglot.run"
+# [[bind.args.commands]]
+# command = "terminal-polyglot.run"
 
-[[bind]]
-path = "edit.action.terminal"
-key = "g p"
-command = "terminal-polyglot.run"
-when = "!master-key.count"
+# [[bind]]
+# path = "edit.action.terminal"
+# key = "g p"
+# command = "terminal-polyglot.run"
+# when = "!master-key.count"
 
-[[bind]]
-path = "edit.action.terminal"
-key = "shift+m"
-name = "to repl (v2)"
-description = """
-send text to a terminal (usually containing a REPL), placing in a block when defined.
-"""
-when = "master-key.firstSelectionOrWord =~ /\\n/"
-command = "runCommands"
-args.commands = ["terminal-polyglot.send-block-text", "selection-utilities.shrinkToActive"]
+# [[bind]]
+# path = "edit.action.terminal"
+# key = "shift+m"
+# name = "to repl (v2)"
+# description = """
+# send text to a terminal (usually containing a REPL), placing in a block when defined.
+# """
+# when = "master-key.firstSelectionOrWord =~ /\\n/"
+# command = "runCommands"
+# args.commands = ["terminal-polyglot.send-block-text", "selection-utilities.shrinkToActive"]
 
-[[bind]]
-path = "edit.action.terminal"
-key = "shift+m"
-name = "to repl (v2)"
-description = """
-send text to a terminal (usually containing a REPL), placing in a block when defined.
-"""
-when = "!(master-key.firstSelectionOrWord =~ /\\n/)"
-command = "runCommands"
-args.commands = ["terminal-polyglot.send-text", "selection-utilities.shrinkToActive"]
+# [[bind]]
+# path = "edit.action.terminal"
+# key = "shift+m"
+# name = "to repl (v2)"
+# description = """
+# send text to a terminal (usually containing a REPL), placing in a block when defined.
+# """
+# when = "!(master-key.firstSelectionOrWord =~ /\\n/)"
+# command = "runCommands"
+# args.commands = ["terminal-polyglot.send-text", "selection-utilities.shrinkToActive"]
 
-[[bind]]
-path = "edit.action.terminal"
-key = "g m"
-name = "to repl (v3)"
-description = """
-send text to a terminal (usually containing a REPL)
-"""
-command = "runCommands"
-args.commands = ["terminal-polyglot.send-text", "selection-utilities.shrinkToActive"]
+# [[bind]]
+# path = "edit.action.terminal"
+# key = "g m"
+# name = "to repl (v3)"
+# description = """
+# send text to a terminal (usually containing a REPL)
+# """
+# command = "runCommands"
+# args.commands = ["terminal-polyglot.send-text", "selection-utilities.shrinkToActive"]
 
 ## TODO: add git/version control commands
 
