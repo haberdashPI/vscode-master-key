@@ -5,6 +5,8 @@ redesign bindings:
 implementing (not yet fully tested out though!!)
 
 BUG: keys are combined so that prefixes don't show the user defined description
+BUG: validate `prefixes` to be actual key sequences
+NOTE: maybe swap z/' for better ergonomics
 
 + p - paste after (⇧ before)
 

@@ -1736,8 +1736,8 @@ key = "shift+;"
 name = "suggest"
 resetTransient = false
 hideInPalette = true
-mode = []
-prefixes = ["!capture"]
+prefixes = []
+mode = ["!capture", "!insert"]
 description = """
 show command suggestsion within the context of the current mode and keybinding prefix
 (if any keys have already been typed)
