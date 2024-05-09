@@ -2336,6 +2336,7 @@ key = "shift+D"
 command = "runCommands"
 args.commands = ["selection-utilities.cancelSelection", "master-key.enterNormal"]
 
+# TODO: this is where I left off (above untestd)
 
 # [[bind]]
 # path = "edit.select_edit"
