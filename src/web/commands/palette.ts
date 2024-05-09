@@ -94,6 +94,10 @@ export async function commandPalette(args_: unknown,
         picks = sortBy(picks, x => -x.args.priority);
         let filteredPicks: typeof picks = [];
 
+        if(picks.length === 0){
+            vscode.window.showErrorMessage(`Palette cannot be shown for mode '${mode}', there are no bindings.`)
+        }
+
         let lastPick = picks[0];
         filteredPicks.push(lastPick);
         for(let pick of picks.slice(1)){

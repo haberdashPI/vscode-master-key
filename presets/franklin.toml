@@ -181,7 +181,7 @@ combinedKey = "h/l"
 combinedDescription = "move left/right"
 description = "move left"
 args.to = "left"
-mode = ["normal", "selectedit"]
+mode = "normal"
 
 [[bind]]
 path = "edit.motion.prim"
@@ -189,7 +189,6 @@ key = "l"
 name = "→"
 description = "move right"
 args.to = "right"
-mode = ["normal", "selectedit"]
 
 [[bind]]
 path = "edit.motion.prim"
@@ -287,7 +286,6 @@ motions that move by a predefined syntactic object (e.g. word, paragraph, etc...
 default.command = "selection-utilities.moveBy"
 default.args.boundary = "start"
 default.args.select = true
-default.mode = ["normal", "selectedit"]
 
 [[bind]]
 path = "edit.motion.obj"
@@ -396,7 +394,6 @@ combinedName = "shrink/hold selection"
 combinedDescription = """
 reduce selections to zero length / make all commands extend the selection
 """
-mode = ["normal", "selectedit"]
 description = """
 reduce all selections to length zero
 """
@@ -416,14 +413,12 @@ all motions extend the selection
 command = "master-key.setFlag"
 args.name = "select_on"
 args.value = true
-mode = ["normal", "selectedit"]
 
 [[bind]]
 path = "edit.action.open_lines"
 name = "open, act →"
 description = "without selection: open a line below current line and enter insert, with seleciton: move cursort to start"
 key = "o"
-mode = ["normal", "selectedit"]
 when = "!editorHasSelection"
 command = "runCommands"
 args.commands = ["editor.action.insertLineAfter", "master-key.enterInsert"]
@@ -431,7 +426,6 @@ args.commands = ["editor.action.insertLineAfter", "master-key.enterInsert"]
 [[bind]]
 path = "edit.action.open_lines"
 key = "o"
-mode = ["normal", "selectedit"]
 when = "editorHasSelection"
 command = "selection-utilities.activeAtEnd"
 
@@ -441,7 +435,6 @@ name = "open blw, act ←"
 description = "without selection: open a line above current line and enter insert, with selection: move cursor to end"
 key = "shift+o"
 when = "!editorHasSelection"
-mode = ["normal", "selectedit"]
 command = "runCommands"
 args.commands = [ "editor.action.insertLineBefore", "master-key.enterInsert" ]
 
@@ -450,7 +443,6 @@ path = "edit.action.open_lines"
 name = "open blw, act ←"
 description = "without selection: open a line above current line and enter insert, with selection: move cursor to end"
 key = "shift+o"
-mode = ["normal", "selectedit"]
 when = "editorHasSelection"
 command = "selection-utilities.activeAtStart"
 
@@ -469,10 +461,9 @@ name = "repeat motion"
 description = """
 Repeat the last motion command. Motions usually move the cursor or change the selection.
 """
-mode = ["normal", "selectedit"]
 repeat = "count"
 command = "master-key.replayFromHistory"
-args.at = "commandHistory[i].path.startsWith('edit.motion')"
+args.at = "commandHistory[i].path.startsWith('edit.motion') && commandHistory[i].name != 'repeat motion'"
 
 [[bind]]
 path = "edit.motion.history"
@@ -497,6 +488,7 @@ name = "move hist."
 description = "commands that navigate motion history"
 key = "-"
 command = "master-key.prefix"
+resetTransient = false
 
 [[bind]]
 path = "edit.motion.history"
@@ -592,7 +584,6 @@ combinedKey = "shift+8/7"
 computedArgs.text = "firstSelectionOrWord"
 args.offset = "start"
 args.register = "search"
-mode = ["normal", "selectedit"]
 
 [[bind]]
 path = "edit.motion.search"
@@ -604,7 +595,6 @@ computedArgs.text = "firstSelectionOrWord"
 args.offset = "start"
 args.register = "search"
 args.backwards = true
-mode = ["normal", "selectedit"]
 
 [[bind]]
 path = "edit.motion.search"
@@ -617,7 +607,6 @@ combinedKey = "f (shift+f)"
 args.acceptAfter = 1
 computedArgs.skip = "count-1"
 args.offset = "inclusive"
-mode = ["normal", "selectedit"]
 
 [[bind]]
 path = "edit.motion.search"
@@ -629,7 +618,6 @@ args.acceptAfter = 1
 args.offset = "inclusive"
 args.backwards = true
 computedArgs.skip = "count-1"
-mode = ["normal", "selectedit"]
 
 [[bind]]
 path = "edit.motion.search"
@@ -642,7 +630,6 @@ combinedDescription = "Find the next/previous char (exclude char in selection)"
 args.acceptAfter = 1
 args.offset = "start"
 computedArgs.skip = "count-1"
-mode = ["normal", "selectedit"]
 
 [[bind]]
 path = "edit.motion.search"
@@ -654,7 +641,6 @@ args.acceptAfter = 1
 args.offset = "end"
 args.backwards = true
 computedArgs.skip = "count-1"
-mode = ["normal", "selectedit"]
 
 [[bind]]
 path = "edit.motion.search"
@@ -679,7 +665,6 @@ args.acceptAfter = 2
 args.offset = "start"
 computedArgs.skip = "count-1"
 args.backwards = true
-mode = ["normal", "selectedit"]
 
 ## Goto commands
 ## --------------------------------
@@ -948,7 +933,6 @@ description = "Motions that match some range of characters"
 id = "edit.motion.match.obj"
 name = "Matching Object Motions"
 description = "Motions that match some range of characters by predefined regex"
-default.mode = ["normal", "selectedit"]
 default.command = "selection-utilities.moveBy"
 default.kind = "motion"
 default.args.selectWhole = true
@@ -963,7 +947,6 @@ Find the closet character range matching a specified object.
 """
 kind = "motion"
 resetTransient = false
-mode = ["normal", "selectedit"]
 command = "master-key.prefix"
 
 [[bind]]
@@ -1106,7 +1089,6 @@ name = "Motions around syntactic objects (e.g. parentheses and quotes)"
 description = """
 selection commands that move by a predefined syntactic object like brackets and quotes
 """
-default.mode = ["normal", "selectedit"]
 
 [[bind]]
 path = "edit.motion.match.syntax"
@@ -1236,7 +1218,6 @@ computedArgs.value = "count || 1"
 id = "edit.motion.match.cell"
 name = "Matching Object Motions"
 description = "Motions that match some range of characters by predefined regex"
-default.mode = ["normal", "selectedit"]
 
 [[bind]]
 path = "edit.motion.match.cell"
@@ -1259,7 +1240,6 @@ command = "jupyter.selectCell"
 id = "edit.motion.searchpair"
 name = "Search pairs"
 description = "Find text that falls between pairs of characters"
-mode = ["normal", "selectedit"]
 
 [[bind]]
 path = "edit.motion.searchpair"
@@ -1321,7 +1301,6 @@ default.mode = "normal"
 id = "edit.action.clipboard"
 name = "Clipboard Operations"
 description = "Operations that manipulate the clipboard in some way."
-default.mode = ["normal", "selectedit"]
 
 [[bind]]
 path = "edit.action.clipboard"
@@ -1485,7 +1464,7 @@ args.acceptAfter = 1
 
 [[bind.args.commands]]
 command = "type"
-computedArgs.text = "capture"
+computedArgs.text = "captured"
 
 [[bind]]
 path = "edit.action.do"
@@ -1577,7 +1556,6 @@ name = "Comments"
 description = """
 Operations that modify comments
 """
-default.mode = ["normal", "selectedit"]
 
 [[bind]]
 path = "edit.action.do"
@@ -1707,7 +1685,7 @@ name = "suggest"
 resetTransient = false
 hideInPalette = true
 mode = []
-prefixes = "<all-prefixes>"
+prefixes = ["!capture"]
 description = """
 show command suggestsion within the context of the current mode and keybinding prefix
 (if any keys have already been typed)
@@ -1775,11 +1753,52 @@ args.commands = ["terminal-polyglot.send-text",
 
 [[bind]]
 path = "edit.action.terminal"
+name = "repl"
 key = "["
 when = "editorLangId != 'julia' && master-key.firstSelectionOrWord =~ /\\n/"
 command = "runCommands"
 args.commands = ["terminal-polyglot.send-block-text",
       "selection-utilities.shrinkToActive"]
+
+[[bind]]
+path = "edit.action.terminal"
+key = "space ["
+name = "to repl (v2)"
+description = """
+send text to a terminal (usually containing a REPL), placing in a block when defined.
+"""
+when = "master-key.firstSelectionOrWord =~ /\\n/"
+command = "runCommands"
+args.commands = ["terminal-polyglot.send-block-text", "selection-utilities.shrinkToActive"]
+
+[[bind]]
+path = "edit.action.terminal"
+key = "space ["
+name = "to repl (v2)"
+description = """
+send text to a terminal (usually containing a REPL), placing in a block when defined.
+"""
+when = "!(master-key.firstSelectionOrWord =~ /\\n/)"
+command = "runCommands"
+args.commands = ["terminal-polyglot.send-text", "selection-utilities.shrinkToActive"]
+
+[[bind]]
+path = "edit.action.terminal"
+key = "space shift+["
+name = "to repl (v3)"
+description = """
+send text to a terminal (usually containing a REPL)
+"""
+command = "runCommands"
+args.commands = ["terminal-polyglot.send-text", "selection-utilities.shrinkToActive"]
+
+[[bind]]
+path = "edit.action.terminal"
+name = "open terminal"
+key = "]"
+command = "terminal-polyglot.open-terminal-N"
+computedArgs.index = "count || 1"
+args.focus = false
 
 ## Leader Commands
 ## --------------------------------
@@ -2162,7 +2181,6 @@ description = """
 Enter a mode where you can edit and manipulate (possibly multiple) selections.
 """
 key = "z"
-when = "editorHasMultipleSelections"
 command = "master-key.setMode"
 args.value = "selectedit"
 mode = "normal"
@@ -2170,13 +2188,13 @@ mode = "normal"
 [[bind]]
 path = "edit.select_edit"
 key = "shift+z"
+name = "selectt-edit"
 description = """
 Enter a mode where you can edit and manipulate (possibly multiple) selections with ease.
 Entering the mode also adds a new cursor for the next match to the word under the cursor
 (or selection). You can use the count to ask multiple matches to be added.
 (You can use `,\"` to avoid adding any cursors).
 """
-when = "!editorHasMultipleSelections"
 command = "runCommands"
 args.commands = [
       { command = "master-key.setMode", args = { value = "selectedit"} },
@@ -2190,14 +2208,13 @@ path = "edit.select_edit"
 name = 'normal'
 description = "return to a single selection and return to normal mode"
 key = "enter"
-command = "runCommands"
-args.commands = ["selection-utilities.cancelSelection", "master-key.enterNormal"]
+command = "master-key.enterNormal"
 
 [[bind]]
 path = "edit.select_edit"
 name = "add →"
 description = "add cursor at the next match to the primary cursor's text"
-key = "z"
+key = ["z", "shift+z"]
 repeat = "count"
 command = "selection-utilities.addNext"
 
@@ -2289,9 +2306,8 @@ description = """
 insert cursor on line above
 """
 combinedDescription = "insert cursor on line above/below"
-key = "' shift+k"
+key = "shift+k"
 combinedKey = "shift+k/j"
-mode = ["normal", "selectedit"]
 command = "runCommands"
 repeat = "count"
 args.commands = [
@@ -2306,8 +2322,7 @@ combinedName = "insert ↑/↓"
 description = """
 insert cursor on line below
 """
-key = "' shift+j"
-mode = ["normal", "selectedit"]
+key = "shift+j"
 command = "runCommands"
 repeat = "count"
 args.commands = [
@@ -2321,8 +2336,8 @@ name = "del. primary"
 combinedName = "del. primary/others"
 description = "remove the primary selection"
 combinedDescription = """
-Remove either the primary selection or all other selections. Return to normal
-mode if all others are deleted.
+Remove either the primary selection or all selections. Return to normal
+mode if all selections are deleted.
 """
 key = "d"
 command = "selection-utilities.deletePrimary"
@@ -2331,176 +2346,87 @@ repeat = 'count'
 [[bind]]
 path = "edit.select_edit"
 name = 'del. others'
-description = "delete all but the primary selection and return to normal mode"
-key = "shift+D"
+description = "delete all selections and return to normal mode"
+key = "shift+d"
 command = "runCommands"
 args.commands = ["selection-utilities.cancelSelection", "master-key.enterNormal"]
 
-# TODO: this is where I left off (above untestd)
-
-# [[bind]]
-# path = "edit.select_edit"
-# name = "save sel"
-# description = """
-# save all selections to the default register.
-# Use a count to specify an alternate register
-# """
-# key = "' c"
-# mode = ["normal", "selectedit"]
-# command = "runCommands"
-# args.commands = [
-#       { command = "selection-utilities.appendToMemory", computedArgs = { register = "count || 'default'" } },
-#       "selection-utilities.shrinkToActive", "master-key.enterNormal"
-# ]
-
-# [[bind]]
-# path = "edit.select_edit"
-# name = "load sel"
-# description = """
-# load previously saved selections in the default register.
-# Use a count to specify an alternate register
-# """
-# key = "' v"
-# mode = ["normal", "selectedit"]
-# command = "runCommands"
-# args.commands = [
-#       { command = "selection-utilities.restoreAndClear", computedArgs = { register = "count || 'default'" } },
-# ]
-
-# [[bind]]
-# path = "edit.select_edit"
-# when = "editorHasMultipleSelections"
-# key = "' v"
-# mode = ["normal", "selectedit"]
-# command = "runCommands"
-# args.commands = [
-#       { command = "selection-utilities.restoreAndClear", computedArgs = { register = "count || 'default'" } },
-#       { command = "master-key.setMode", args = { value = "selectedit" } }
-# ]
-
-# [[bind]]
-# path = "edit.select_edit"
-# name = "exchange sel"
-# description = """
-# exchange selections: with no saved selection, saves the selection, with saved selections exchanges text of current selections with those of the saved selections (number of selections must match). Use a count to specify an alternate register.
-# """
-# key = "' x"
-# mode = ["normal", "selectedit"]
-# command = "selection-utilities.swapWithMemory"
-# computedArgs.register = "count || 'default'"
-
-# [[bind]]
-# path = "edit.select_edit"
-# name = "rem saved sel"
-# description = """
-# remove the most recently saved selection from the list of saved selections
-# """
-# key = "' n"
-# mode = ["normal", "selectedit"]
-
-# command = "selection-utilities.deleteLastSaved"
-# computedArgs.register = "count || 'default'"
-
-# [[bind]]
-# path = "edit.select_edit"
-# key = "' enter"
-# name = "split sel"
-# description = """
-# split selection into multiple selections by new line charactesr
-# """
-# mode = ["normal", "selectedit"]
-# command = "runCommands"
-# args.commands = [
-#       { defined = "selectLinesDown" },
-#       "selection-utilities.splitByNewline",
-#       { command = "master-key.setMode", args = { value = "selectedit" } }
-# ]
-
-# [[bind]]
-# path = "edit.select_edit"
-# name = "sel all"
-# description = """
-# create a selection for every match of the current word (or selection)
-# """
-# key = "' shift+8"
-# mode = ["normal", "selectedit"]
-# command = "runCommands"
-# args.commands = [
-#       "editor.action.selectHighlights",
-#       { command = "master-key.setMode", args = { value = "selectedit" } }
-# ]
-
-# [[bind]]
-# path = "edit.select_edit"
-# name = "restore sel"
-# description = """
-# restore the most recently cleared selection
-# """
-# key = "/ -"
-# mode = ["normal", "selectedit"]
-
-# command = "selection-utilities.restoreAndClear"
-# args.register = "cancel"
-
-# [[bind]]
-# path = "edit.select_edit"
-# when = "editorHasMultipleSelections"
-# key = "/ -"
-# mode = ["normal", "selectedit"]
-# command = "runCommands"
-# args.commands = [
-#       { command = "selection-utilities.restoreAndClear", args = { register = "cancel"} },
-#       { command = "master-key.setMode", args = { value = "selectedit" } }
-# ]
-
 [[bind]]
 path = "edit.select_edit"
-name = "reset"
-description = "collapse all selections to the active position, and return to normal mode"
-key = "r"
+name = "save sel"
+description = """
+save all selections to the default register.
+Use a count to specify an alternate register
+"""
+key = "c"
 command = "runCommands"
-args.commands = [ "master-key.enterNormal", "selection-utilities.shrinkToActive" ]
+args.commands = [
+      { command = "selection-utilities.appendToMemory", computedArgs = { register = "count || 'default'" } },
+      "selection-utilities.shrinkToActive", "master-key.enterNormal"
+]
 
 [[bind]]
 path = "edit.select_edit"
-key = "s"
-name = "split"
-description = "split the selection by a specified marker"
-resetTransient = false
-command = "master-key.prefix"
-
-[[path]]
-id = "edit.select_edit.split"
-name = "Split Selections"
-description = "Commands that split a selection into multiple selections"
+name = "load sel"
+description = """
+load previously saved selections in the default register.
+Use a count to specify an alternate register
+"""
+key = "v"
+command = "runCommands"
+args.commands = [
+      { command = "selection-utilities.restoreAndClear", computedArgs = { register = "count || 'default'" } },
+]
 
 [[bind]]
-path = "edit.select_edit.split"
-name = "newline"
-description = "split by newlines"
-key = "s enter"
+path = "edit.select_edit"
+name = "exchange sel"
+description = """
+exchange selections: with no saved selection, saves the selection, with saved selections exchanges text of current selections with those of the saved selections (number of selections must match). Use a count to specify an alternate register.
+"""
+key = "x"
+command = "runCommands"
+args.commands = [
+      { command = "selection-utilities.swapWithMemory", computedArgs = {register = "count || 'default'"} },
+      "master-key.enterNormal"
+]
+
+[[bind]]
+path = "edit.select_edit"
+name = "rem saved sel"
+description = """
+remove the most recently saved selection from the list of saved selections
+"""
+command = "runCommands"
+key = "n"
+args.commands = [
+      { command = "selection-utilities.deleteLastSaved", computedArgs = {register = "count || 'default'"} },
+      "master-key.enterNormal"
+]
+
+[[bind]]
+path = "edit.select_edit"
+key = "shift+enter"
+name = "split sel"
+description = """
+split selection into multiple selections by new line charactesr
+"""
 command = "selection-utilities.splitByNewline"
 
 [[bind]]
-path = "edit.select_edit.split"
-name = "string"
-description = "split by a given string"
-key = "s s"
-command = "selection-utilities.splitBy"
+path = "edit.select_edit"
+name = "sel all"
+description = """
+create a selection for every match of the current word (or selection)
+"""
+key = "shift+8"
+command = "editor.action.selectHighlights"
 
 [[bind]]
-path = "edit.select_edit.split"
-name = "regex"
-description = "split by a given regular expression"
-key = "s r"
-command = "selection-utilities.splitByRegex"
-
-
-[[bind]]
-path = "edit.select_edit.split"
+path = "edit.select_edit"
 name = "character"
 description = "split by a given character"
-key = "s c"
+key = "s"
 command = "runCommands"
 
 [[bind.args.commands]]
@@ -2509,94 +2435,92 @@ args.acceptAfter = 1
 
 [[bind.args.commands]]
 command = "selection-utilities.splitBy"
-computedArgs.text = "capture"
-
-[[path]]
-id = "edit.select_edit.create"
-name = "Create Selections"
-description = "Create some number of selections derived from the bounds of the current selections"
+computedArgs.text = "captured"
 
 [[bind]]
-path = "edit.select_edit.create"
-name = "create"
-description = """
-create a set of selections by the specified marker that all fall within the current
-set of selections
-"""
-key = "/ /"
-resetTransient = false
-command = "master-key.prefix"
-
-[[bind]]
-path = "edit.select_edit.create"
+path = "edit.select_edit"
 name = "string"
-description = "create selections of given string scoped to the current selections"
-key = "/ s"
-command = "selection-utilities.createBy"
+description = "split by a given string"
+key = "shift+s"
+command = "selection-utilities.splitBy"
 
 [[bind]]
-path = "edit.select_edit.create"
-name = "regex"
-description = "create selections of given regular expression scoped to the current selections"
-key = "/ r"
-command = "selection-utilities.createByRegex"
-
-[[bind]]
-path = "edit.select_edit.create"
-name = "character"
-description = "create selections of given character scoped to the current selections"
-key = "/ c"
-command = "master-key.captureChar"
-args.acceptAfter = 1
-args.executeAfter = { command = "selection-utilities.createBy", args = { text = "capture" } }
-
-[[bind]]
-path = "edit.select_edit.create"
-name = "include by"
+path = "edit.select_edit"
+name = "include"
 description = """
 Include all selections that contain a given marker
 """
-key = "["
-resetTransient = false
-command = "master-key.prefix"
-
-[[bind]]
-path = "edit.select_edit.create"
-name = "exclude by"
-description = """
-Exclude all selections that contain a given marker
-"""
-key = "]"
-resetTransient = false
-command = "master-key.prefix"
-
-[[bind]]
-path = "edit.select_edit.split"
-name = "string"
-description = "Include all selections that contain a given string"
-key = "[ s"
+key = "f"
 command = "selection-utilities.includeBy"
 
 [[bind]]
-path = "edit.select_edit.split"
-name = "string"
-description = "Exclude all selections that contain a given string"
-key = "] s"
+path = "edit.select_edit"
+name = "exclude"
+description = """
+Exclude all selections that contain a given marker
+"""
+key = "shift+f"
 command = "selection-utilities.excludeBy"
 
 [[bind]]
-path = "edit.select_edit.split"
+path = "edit.select_edit"
+name = "create"
+description = "create selections of given string scoped to the current selections"
+key = "/"
+command = "selection-utilities.createBy"
+
+[[bind]]
+path = "edit.select_edit"
 name = "regex"
+description = "operations by regex rather than string"
+key = "r"
+command = "master-key.prefix"
+resetTransient = false
+
+[[bind]]
+path = "edit.select_edit"
+name = "split"
+description = "split by a given regular expression"
+key = "r shift+s"
+command = "selection-utilities.splitByRegex"
+
+[[bind]]
+path = "edit.select_edit"
+name = "create"
+description = "create selections of given regular expression scoped to the current selections"
+key = "r /"
+command = "selection-utilities.createByRegex"
+
+[[bind]]
+path = "edit.select_edit"
+name = "include"
 description = "Include all selections that contain a given regular expression"
-key = "[ r"
+key = "r f"
 command = "selection-utilities.includeByRegex"
 
 [[bind]]
-path = "edit.select_edit.split"
-name = "regex"
+path = "edit.select_edit"
+name = "exclude"
 description = "Exclude all selections that contain a given regular expression"
-key = "] r"
+key = "r shift+f"
 command = "selection-utilities.excludeByRegex"
+
+[[bind]]
+path = "edit.select_edit"
+key = "o"
+name = "active to front"
+combinedName = "active to start/end"
+combinedDescription = "move cursor to start/end of selection"
+description = "move cursor to start of selection"
+command = "selection-utilities.activeAtEnd"
+
+[[bind]]
+path = "edit.select_edit"
+name = "active to end"
+combinedName = "active to start/end"
+description = "move cursor to back of selection"
+key = "shift+o"
+command = "selection-utilities.activeAtStart"
 
 ## Symmetric Insert Mode
 ## --------------------------------
@@ -2878,7 +2802,6 @@ Without a count: change selected region of text. With a count:
 change up to `count` lines.
 """
 when = "editorHasMultilineSelection"
-mode = ["normal", "selectedit"]
 command = "runCommands"
 args.commands = ["deleteRight", "editor.action.insertLineBefore", "master-key.enterInsert"]
 
@@ -2888,7 +2811,6 @@ key = "c"
 when = "!editorHasMultilineSelection && editorHasSelection"
 command = "runCommands"
 args.commands = ["deleteRight", "master-key.enterInsert"]
-mode = ["normal", "selectedit"]
 
 [[bind]]
 path = "edit.action.basic"
@@ -2901,12 +2823,10 @@ args.commands = [
       "editor.action.insertLineBefore",
       "master-key.enterInsert",
 ]
-mode = ["normal", "selectedit"]
 
 [[bind]]
 path = "edit.action.basic"
 key = "c"
-mode = ["normal", "selectedit"]
 when = "!editorHasSelection && master-key.count > 1"
 command = "runCommands"
 args.commands = [
@@ -2923,7 +2843,7 @@ name = "change to/back"
 description = """Without a count: change from current char to end of line. With a count:
 change the previous `count` lines.
 """
-mode = ["normal", "selectedit"]
+mode = "normal"
 when = "master-key.count <= 1"
 command = "runCommands"
 args.commands = [
@@ -2948,7 +2868,7 @@ args.commands = [
 [[bind]]
 path = "edit.action.basic"
 key = "x"
-mode = ["normal", "selectedit"]
+mode = "normal"
 name = "delete char"
 command = "runCommands"
 args.commands = [
@@ -3202,6 +3122,7 @@ args.commands = [
 [[bind]]
 path = "edit.action.clipboard"
 key = "shift+d"
+mode = "normal"
 name = "without count: Delete from cursor to end of line; with count: Delete from current line up `count` number of keys."
 command = "runCommands"
 args.commands = [
@@ -3213,6 +3134,7 @@ args.commands = [
 [[bind]]
 path = "edit.action.clipboard"
 key = "shift+d"
+mode = "normal"
 when = "master-key.count > 1"
 command = "runCommands"
 args.commands = [{ defined = "selectLinesUp" }, "deleteRight"]
@@ -3256,7 +3178,6 @@ name = "Line opening actions"
 description = """
 These commands provides several ways of adding lines above or below the current line
 """
-default.mode = ["normal", "selectedit"]
 
 [[path]]
 id = "edit.action.indent"
@@ -3264,7 +3185,6 @@ name = "Indentation"
 description = """
 Operations that affect line indentation
 """
-default.mode = ["normal", "selectedit"]
 
 [[bind]]
 path = "edit.action.indent"
@@ -3311,7 +3231,6 @@ command = "editor.action.outdentLines"
 id = "edit.action.history"
 name = "History Commands"
 description = "Commands that interact with edit or cursor history."
-default.mode = ["normal", "selectedit"]
 
 [[bind]]
 path = "edit.action.history"
@@ -3406,66 +3325,6 @@ name = "Terminal Actions"
 description = "Commands that send text from the editor to the terminal"
 default.kind = "action"
 default.mode = "normal"
-
-# [[bind]]
-# path = "edit.action.terminal"
-# name = "to repl"
-# description = """
-# send text to a terminal (usually containing a REPL); use language
-# specific extensions when available and put the pasted code into a block (when defined)."
-# """
-# key = "m"
-# when = "editorLangId == 'julia' && !editorHasSelection && count >= 1"
-# command = "runCommands"
-# args.commands = [
-#       { defined = "selectLinesDown" },
-#       "expandLineSelection", "selection-utilities.trimSelectionWhitespace",
-#       "language-julia.executeCodeBlockOrSelectionAndMove",
-#       "cursorUndo"
-# ]
-
-# [[bind]]
-# path = "edit.action.terminal"
-# key = "m"
-# when = "editorLangId == 'julia' && !editorHasSelection && !count"
-# command = "runCommands"
-# args.commands = [
-#       "expandLineSelection", "selection-utilities.trimSelectionWhitespace",
-#       "language-julia.executeCodeBlockOrSelectionAndMove",
-#       "cursorUndo"
-# ]
-
-# [[bind]]
-# path = "edit.action.terminal"
-# key = "m"
-# when = "editorLangId == 'julia' && editorHasSelection"
-# command = "runCommands"
-# args.commands = ["selection-utilities.trimSelectionWhitespace",
-#         "language-julia.executeCodeBlockOrSelectionAndMove",
-#         "cursorUndo"]
-
-# [[bind]]
-# path = "edit.action.terminal"
-# key = "m"
-# when = "editorLangId != 'julia' && !(master-key.firstSelectionOrWord =~ /\\n/)"
-# command = "runCommands"
-# args.commands = ["terminal-polyglot.send-text",
-#         "selection-utilities.shrinkToActive"]
-
-# [[bind]]
-# path = "edit.action.terminal"
-# key = "m"
-# when = "editorLangId != 'julia' && master-key.firstSelectionOrWord =~ /\\n/"
-# command = "runCommands"
-# args.commands = ["terminal-polyglot.send-block-text",
-#       "selection-utilities.shrinkToActive"]
-
-# [[bind]]
-# path = "edit.action.terminal"
-# key = "/ t"
-# command = "terminal-polyglot.open-terminal-N"
-# computedArgs.index = "count || 1"
-# args.focus = false
 
 [[bind]]
 path = "edit.action.terminal"

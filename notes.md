@@ -88,6 +88,7 @@ space - leader
   : + vscode palette
   h + hover
   H + hover debug
+  [ + alternate repl command
   m + bookmark
     m + toggle book mark
     j + next book mark
@@ -115,28 +116,31 @@ space - leader
 
 z - multi-select mode (Z adds cursor)
   + enter - return to normal
-  + z - add next match
+  + z/Z - add next match
   + h/l - add prev/next match
   + shift h/l - skip to prev/next match
   + j/k - make next/prev selection primary
   + shift+j/k - insert cursor below/above
   + d - delete current selection
   + D - delete all but current selection and return to normal
-  - =/shift+= - align left/right
-  - S - split by string
-  - r - by regex
-    - S - split
-    - f/F - filter
-  - shift-enter - split by newline
-  - s - split by character
-  - f - filter by including
-  - F - filter by excluding
-  - * - select all matches
-  - c - save current selection (and clear) and switch to normal
-  - C - save current selection (don't clear) - and switch to normal
-  - n - remove last saved selection - return to normal
-  - v - restore selection
-  - x - exchange selection - and switch to normal
+  + o/O - start/stop cursor position
+  + =/shift+= - align left/right
+  + shift-enter - split by newline
+  + S - split by string
+  - / - create by string
+  + r - by regex
+    + S - split
+    + f/F - filter
+    + / - create by regex
+  + s - split by character
+  + f - filter by including
+  + F - filter by excluding
+  + * - select all matches
+  + c - save current selection (and clear) and switch to normal
+  + C - save current selection (don't clear) - and switch to normal
+  + n - remove last saved selection - return to normal
+  + v - restore selection
+  + x - exchange selection - and switch to normal
 
 NEXT UP:
 
