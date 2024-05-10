@@ -8,6 +8,8 @@ BUG: keys are combined so that prefixes don't show the user defined description
 BUG: validate `prefixes` to be actual key sequences
 NOTE: maybe swap z/' for better ergonomics
 
+BUG: right when switching modes, we see insert but the editor responds as if it is in normal mode
+
 + p - paste after (⇧ before)
 
 + / and ? - search
@@ -34,13 +36,14 @@ m - match
   + o/O in paragraph
   + 0/) subsection
   - g - more objects
-    - 0/) section
+    + 0/) section
     - w - around WORD
     - e - in WORD
+    - space - python style indent
   + ' - quotes (⇧ for around)
   + [ - parens (⇧ for around)
-  + space  - indent (⇧ for around, ^ for python style)
-  + ;/: - comment
+  + space  - indent (⇧ for around)
+  + / or shift+/ - comment
   - #/@ - next/prev number
   + >/< in karets / karent contents
   + c/C jupyter-notebook cell
@@ -64,7 +67,7 @@ m - match
 TODO: to get this menu working we need to fix the bug where prefix
 names all get renamed to be `prefix`
 
-' - do
+z - do
   + p/P - past before/after line
   + o/O - open above/below
   + i/I - symmetric insertion (mode)
@@ -116,7 +119,7 @@ space - leader
     - j/J steps
     - i into
 
-z - multi-select mode (Z adds cursor)
+' - multi-select mode (Z adds cursor)
   + enter - return to normal
   + z/Z - add next match
   + h/l - add prev/next match
@@ -149,9 +152,6 @@ NEXT UP:
 BUG: esc will be captured by palette even if its bound as a suffix
   (e.g. in a binding setup without esc for normal mode), preventing
   any commands from being run that around bound to that key
-IMPROVE KEYBINDINGS: I have thoughts about how to change my keymap now (maybe prioritize
-  any keybinding redesign before doing this)
-  (maybe this is a good time to redesign the repeated keys setup)
 
 - add: command to remove keybindings
 - add: command to insert bindings in a new file (so they can be easily edited)
@@ -177,6 +177,7 @@ unit tests: edge cases with recording edits
 unit tests: parsing of YAML and JSON(C)
 unit tests: store/restore named
 
+IMPROVEMENT: automated resetTransient flag
 BUG: repeat argument is not work for the repeat action command (e.g. I cannot repeat the last action ten times)
 BUG: I noticed that definitions are updated internally on some kind of delay
   (the config updates, but the state has an old value)

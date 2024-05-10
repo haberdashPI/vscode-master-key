@@ -1065,7 +1065,7 @@ key = "m shift+o"
 name = "arn parag. ←"
 combinedName = "around paragraph →/←"
 args.unit = "paragraph"
-computedArgs.value = "count || 1"
+computedArgs.value = "-(count || 1)"
 
 [[bind]]
 path = "edit.motion.match.obj"
@@ -1099,6 +1099,56 @@ key = "m shift+9"
 name = "in subsec ←"
 combinedName = "in subsection →/←"
 args.unit = "subsection"
+computedArgs.value = "count || 1"
+
+[[bind]]
+path = "edit.motion.match"
+key = "m g"
+name = "other..."
+description = "additional objects to match..."
+command = "master-key.prefix"
+resetTransient = false
+
+[[bind]]
+path = "edit.motion.match.obj"
+key = "m g 0"
+name = "section →"
+combinedName = "section →/←"
+combinedKey = "0/9"
+args.unit = "section"
+computedArgs.value = "count || 1"
+
+[[bind]]
+path = "edit.motion.match.obj"
+key = "m g 9"
+name = "section ←"
+combinedName = "section →/←"
+args.unit = "section"
+computedArgs.value = "-(count || 1)"
+
+[[bind]]
+path = "edit.motion.match.obj"
+key = "m g w"
+name = "around WORD →"
+combinedName = "around WORD →/←"
+combinedKey = "w/b"
+args.unit = "WORD"
+computedArgs.value = "count || 1"
+
+[[bind]]
+path = "edit.motion.match.obj"
+key = "m g b"
+name = "around WORD ←"
+combinedName = "around WORD →/←"
+args.unit = "WORD"
+computedArgs.value = "-(count || 1)"
+
+[[bind]]
+path = "edit.motion.match.obj"
+key = "m g e"
+name = "in WORD"
+args.unit = "WORD"
+args.boundary = "end"
 computedArgs.value = "count || 1"
 
 [[path]]
@@ -1217,20 +1267,22 @@ command = "vscode-select-by-indent.select-outer-top-only"
 
 [[bind]]
 path = "edit.motion.match.obj"
-key = "m ;"
+key = "m /"
 name = "comment →"
 combinedName = "comment →/←"
-combinedKey = ";/shift+;"
+combinedKey = "/ (shift+/)"
 args.unit = "comment"
+args.boundary = "both"
 computedArgs.value = "count || 1"
 
 [[bind]]
 path = "edit.motion.match.obj"
-key = "m shift+;"
+key = "m shift+/"
 name = "comment ←"
 combinedName = "comment →/←"
 args.unit = "comment"
-computedArgs.value = "count || 1"
+args.boundary = "both"
+computedArgs.value = "-(count || 1)"
 
 [[path]]
 id = "edit.motion.match.cell"
@@ -1409,7 +1461,7 @@ default.mode = "normal"
 [[bind]]
 path = "edit.action.do"
 name = "do"
-key = "'"
+key = "z"
 description = "additional actions, mostly for modifying specific syntactic formats"
 resetTransient = false
 command = "master-key.prefix"
@@ -1421,7 +1473,7 @@ combinedName = "paste after/before line"
 combinedKey = "p/shift+p"
 description = "Paste text after current line"
 priority = 2
-key = "' p"
+key = "z p"
 command = "runCommands"
 args.commands = [
       "expandLineSelection",
@@ -1436,7 +1488,7 @@ priority = 2
 name = "paste before line"
 combinedName = "paste after/before line"
 description = "Paste text before current line"
-key = "' shift+p"
+key = "z shift+p"
 command = "runCommands"
 args.commands = [
       "expandLineSelection",
@@ -1453,7 +1505,7 @@ combinedName = "add line below/above"
 combinedDescription = "open a line below/above current line"
 combinedKey = "o/shift+o"
 description = "open a line below current line"
-key = "' o"
+key = "z o"
 command = "editor.action.insertLineAfter"
 
 [[bind]]
@@ -1462,7 +1514,7 @@ name = "add line above"
 priority = 2
 combinedName = "add line below/above"
 description = "open a line above current line"
-key = "' shift+o"
+key = "z shift+o"
 command = "editor.action.insertLineBefore"
 
 [[bind]]
@@ -1470,9 +1522,9 @@ path = "edit.action.do"
 name = 'sym insert'
 description = "Insert a character a pair around a character"
 priority = 1
-key = "' i"
+key = "z i"
 combinedName = "sym insert (mode)"
-combinedDescription = "Insert characters around pair"
+combinedDescription = "Insert characters around pair (switching to syminster mode until hitting  again)"
 combinedKey = "i/shift+i"
 command = "runCommands"
 
@@ -1488,19 +1540,19 @@ computedArgs.text = "captured"
 path = "edit.action.do"
 name = 'trim white'
 description = "Delete all external whitespace (left and right edges)"
-key = "' shift+-"
+key = "z shift+-"
 command = "selection-utilities.trimWhitespace"
 
 [[bind]]
 path = "edit.action.do"
-key = "' w"
+key = "z w"
 name = "wrap p"
 description = "wrap paragraph text, preserving commenting"
 command = "rewrap.rewrapComment"
 
 [[bind]]
 path = "edit.action.do"
-key = "' f"
+key = "z f"
 name = "format"
 combinedName = "format"
 description = "Format code"
@@ -1514,7 +1566,7 @@ args.commands = [
 
 [[bind]]
 path = "edit.action.do"
-key = "' f"
+key = "z f"
 name = "format"
 when = "master-key.count < 1"
 command = "editor.action.formatSelection"
@@ -1528,7 +1580,7 @@ description = "Commands that edit two matching brackets or quotes."
 path = "edit.action.do"
 name = 'parens'
 description = "actions related to various brackets (`[`, `(`, `{`)"
-key = "' ["
+key = "z ["
 command = "master-key.prefix"
 resetTransient = false
 
@@ -1536,21 +1588,21 @@ resetTransient = false
 path = "edit.action.do"
 name = 'remove'
 description = "Removes surrounding pairs"
-key = "' [ d"
+key = "z [ d"
 command = "bracketeer.removeBrackets"
 
 [[bind]]
 path = "edit.action.do"
 name = 'parens/brackets'
 description = "Swap between `[`, `(` and `{`"
-key = "' [ s"
+key = "z [ s"
 command = "bracketeer.swapBrackets"
 
 [[bind]]
 path = "edit.action.do"
 name = 'quotes'
 description = "Actions related to quotes"
-key = "' '"
+key = "z '"
 command = "master-key.prefix"
 resetTransient = false
 
@@ -1558,14 +1610,14 @@ resetTransient = false
 path = "edit.action.do"
 name = 'remove'
 description = "Removes quotes (', \" or `)"
-key = "' ' d"
+key = "z ' d"
 command = "bracketeer.removeQuotes"
 
 [[bind]]
 path = "edit.action.do"
 name = 'swap'
 description = "Swap quotes (', \" or `)"
-key = "' ' s"
+key = "z ' s"
 command = "bracketeer.swapQuotes"
 
 [[path]]
@@ -1577,7 +1629,7 @@ Operations that modify comments
 
 [[bind]]
 path = "edit.action.do"
-key = "' ;"
+key = "z ;"
 name = "comment lines"
 combinedName = "(block) comment"
 combinedDescription = "Toggle (block) comment"
@@ -1592,14 +1644,14 @@ args.commands = [
 
 [[bind]]
 path = "edit.action.do"
-key = "' ;"
+key = "z ;"
 combinedName = "(block) comment"
 when = "master-key.count < 1"
 command = "editor.action.commentLine"
 
 [[bind]]
 path = "edit.action.do"
-key = "' shift+;"
+key = "z shift+;"
 name = "block comment lines"
 combinedName = "(block) comment"
 description = "select previous comment"
@@ -1613,7 +1665,7 @@ args.commands = [
 
 [[bind]]
 path = "edit.action.do"
-key = "' shift+;"
+key = "z shift+;"
 when = "master-key.count < 1"
 combinedName = "(block) comment"
 command = "editor.action.blockComment"
@@ -1625,7 +1677,7 @@ combinedName = "inc/dec all #"
 combinedDescription = "Increment/decrement all numbers by 1"
 combinedKey = "=/shift+="
 description = "Increment all numbers by 1"
-key = "' ="
+key = "z ="
 command = "editor.emmet.action.incrementNumberByOne"
 
 [[bind]]
@@ -1633,14 +1685,14 @@ path = "edit.action.do"
 name = 'dec all #'
 combinedName = "inc/dec all #"
 description = "Decrement all numbers by 1"
-key = "' shift+="
+key = "z shift+="
 command = "editor.emmet.action.decrementNumberByOne"
 
 [[bind]]
 path = "edit.action.do"
 name = "activate"
 description = "Activate the julia project associated with the current file in the active REPL"
-key = "' a"
+key = "z a"
 when = "editorLangId == 'julia'"
 command = "terminal-polyglot.send-command"
 args.cmd = "activate_from(\"%file%\")"
@@ -1649,7 +1701,7 @@ args.cmd = "activate_from(\"%file%\")"
 path = "edit.action.do"
 name = "activate tests"
 description = "Activate the julia project test environmentassociated with the current file in the active REPL"
-key = "' t"
+key = "z t"
 when = "editorLangId == 'julia'"
 command = "terminal-polyglot.send-command"
 args.cmd = "\nbegin; activate_from(\"%file%\"); using TestEnv; TestEnv.activate(); end"
@@ -1658,13 +1710,13 @@ args.cmd = "\nbegin; activate_from(\"%file%\"); using TestEnv; TestEnv.activate(
 path = "edit.action.do"
 name = 'nb cell'
 description = "Actions related to notebook cells"
-key = "' c"
+key = "z c"
 command = "master-key.prefix"
 resetTransient = false
 
 [[bind]]
 path = "edit.action.do"
-key = "' c i"
+key = "z c i"
 when = "editorLangId == 'quarto'"
 command = "quarto.insertCodeCell"
 name = "insert cell"
@@ -1672,13 +1724,13 @@ description = "insert a new cell in a notebook"
 
 [[bind]]
 path = "edit.action.do"
-key = "' c s"
+key = "z c s"
 when = "editorLangId != 'quarto'"
 command = "jupyter.selectCell"
 
 [[bind]]
 path = "edit.action.basic"
-key = "' ."
+key = "z ."
 name = 'sent. lines'
 description = "Split paragraph into one line per sentence"
 mode = "normal"
@@ -2275,14 +2327,14 @@ name = "select-edit"
 description = """
 Enter a mode where you can edit and manipulate (possibly multiple) selections.
 """
-key = "z"
+key = "'"
 command = "master-key.setMode"
 args.value = "selectedit"
 mode = "normal"
 
 [[bind]]
 path = "edit.select_edit"
-key = "shift+z"
+key = "shift+'"
 name = "selectt-edit"
 description = """
 Enter a mode where you can edit and manipulate (possibly multiple) selections with ease.
@@ -2309,7 +2361,7 @@ command = "master-key.enterNormal"
 path = "edit.select_edit"
 name = "add →"
 description = "add cursor at the next match to the primary cursor's text"
-key = ["z", "shift+z"]
+key = ["'", "shift+'"]
 repeat = "count"
 command = "selection-utilities.addNext"
 
@@ -2636,7 +2688,7 @@ In this mode all commands and character insertions happen at both ends of
 the selection
 """
 mode = "normal"
-key = "' shift+i"
+key = "z shift+i"
 combinedName = "sym insert (mode)"
 command = "master-key.setMode"
 args.value = "syminsert"
