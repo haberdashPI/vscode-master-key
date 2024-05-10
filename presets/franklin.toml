@@ -1148,7 +1148,7 @@ path = "edit.motion.match.obj"
 key = "m g e"
 name = "in WORD"
 args.unit = "WORD"
-args.boundary = "end"
+args.boundary = "both"
 computedArgs.value = "count || 1"
 
 [[path]]
@@ -1236,8 +1236,8 @@ path = "edit.motion.match.syntax"
 key = "m space"
 name = "in indent"
 description = "all text at the same indentation level"
-combinedName = "in/arnd/w.top indent"
-combinedKey = "space/shift+space/ctrl+space"
+combinedName = "in/arnd"
+combinedKey = "space/shift+space"
 combinedDescription = """
 all text at the same indentation level / all indentation along with the line above and
 below this (ala c-like syntax)
@@ -1252,17 +1252,17 @@ description = """
 all text at the same indentation level along with the line above and below
 this (ala c-like syntax)
 """
-combinedName = "in/arnd/w.top indent"
+combinedName = "in/arnd"
 command = "vscode-select-by-indent.select-outer"
 
 [[bind]]
 path = "edit.motion.match.syntax"
-key = "m ctrl+space"
+key = "m g space"
 name = "indent+top"
 description = """
 all text at the same indentation level and the line just above it (ala python syntax)
 """
-combinedName = "in/arnd/w.top indent"
+combinedName = "in/arnd"
 command = "vscode-select-by-indent.select-outer-top-only"
 
 [[bind]]
@@ -1777,7 +1777,7 @@ default.when = "editorTextFocus && !findWidgetVisible"
 path = "window"
 name = "cntr win"
 description = "center window at primary cursor position"
-key = "shift+x"
+key = "space space"
 command = "selection-utilities.revealActive"
 args.at = "center"
 when = "editorTextFocus"

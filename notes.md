@@ -29,17 +29,17 @@ g - goto
   + c/C notebook cell
   + f - file under cursor
 
-m - match
+m + match
   + w - around subword (⇧ for full word)
   + e - in subword (⇧ for full word)
   + p/P around paragraph
   + o/O in paragraph
   + 0/) subsection
-  - g - more objects
+  + g - more objects
     + 0/) section
-    - w - around WORD
-    - e - in WORD
-    - space - python style indent
+    + w/b - around WORD
+    + e - in WORD
+    + space - python style indent
   + ' - quotes (⇧ for around)
   + [ - parens (⇧ for around)
   + space  - indent (⇧ for around)
@@ -67,7 +67,7 @@ m - match
 TODO: to get this menu working we need to fix the bug where prefix
 names all get renamed to be `prefix`
 
-z - do
+z + do
   + p/P - past before/after line
   + o/O - open above/below
   + i/I - symmetric insertion (mode)
@@ -77,7 +77,7 @@ z - do
   + [ - parens
       + d - remove
       + s - swap
-  + ' - quotes
+  + ' + quotes
       + as per parens
   + a - julia activate
   + t - julia run tests
@@ -103,12 +103,14 @@ space - leader
   e/E + next/prev error
   d/D + with diff
 
-  w - window/pane
+  space - center cursor in window
+
+  w + window/pane
     + x close pane
     + = - equalize
     + M - maximize
     + r - rotate
-    - s - split pane
+    + s - split pane
     + j,k,l,h - move to pane
     + J,K,L,H - move window
     + s - j,k,l,h
@@ -132,7 +134,7 @@ space - leader
   + =/shift+= - align left/right
   + shift-enter - split by newline
   + S - split by string
-  - / - create by string
+  + / - create by string
   + r - by regex
     + S - split
     + f/F - filter
@@ -146,6 +148,8 @@ space - leader
   + n - remove last saved selection - return to normal
   + v - restore selection
   + x - exchange selection - and switch to normal
+
+TODO: organize remaining, unchanged bindings
 
 NEXT UP:
 
