@@ -14,14 +14,13 @@ BUG: right when switching modes, we see insert but the editor responds as if it 
 
 + / and ? - search
 
-g - goto
+g + goto
   + j/k, J/K - unwrap up/down (or unwrap expand)
   + </> - top/bottom of file
   + w WORD motion
   + e WORD end
   + b WORD back
   + ;/: next/previous comment
-  - space matching indent end (need to implement)
   + 0/9 section
   + g - goto line
   + d/D function definition
@@ -116,10 +115,10 @@ space - leader
     + s - j,k,l,h
     + t/b - move cursor to top bottom
 
-  B - breakbpoint
-  b - debug
-    - j/J steps
-    - i into
+  B + breakbpoint
+  b + debug
+    + j/J steps
+    + i into
 
 ' - multi-select mode (Z adds cursor)
   + enter - return to normal
@@ -249,6 +248,8 @@ maybe we should
 EDGE CASE: check that changing keybingings doesn't much with state (e.g. reset mode)
 
 wishlist:
+
+- make it possible to navigate by indent
 
 - careful optimization: clean up code to do fewer dumb repetivie things
   that slow down performance
