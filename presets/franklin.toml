@@ -272,7 +272,7 @@ command = "expandLineSelection"
 
 [[bind]]
 path = "edit.motion.prim"
-key = "shift+g"
+key = "shift+x"
 name = "exapand"
 description = "expand selections to full lines"
 command = "expandLineSelection"
@@ -773,7 +773,7 @@ command = "expandLineSelection"
 
 [[bind]]
 path = "edit.motion.prim"
-key = "g ."
+key = "shift+g"
 name = "doc end"
 description = "select to end of document"
 combinedName = "doc top/bottom"
@@ -783,7 +783,7 @@ command = "cursorBottomSelect"
 
 [[bind]]
 path = "edit.motion.prim"
-key = "g ,"
+key = "g g"
 name = "doc start"
 description = "select to start of document"
 command = "cursorTopSelect"
@@ -864,7 +864,7 @@ computedArgs.value = "-(count || 1)"
 path = "window"
 name = "goto line"
 description = "goto line command"
-key = "g g"
+key = "g l"
 command = "workbench.action.gotoLine"
 when = "editorTextFocus"
 
@@ -1971,7 +1971,7 @@ default.mode = "normal"
 [[bind]]
 path = "edit.action.do"
 name = "do"
-key = "z"
+key = "space"
 description = "additional actions, mostly for modifying specific syntactic formats"
 resetTransient = false
 command = "master-key.prefix"
@@ -1983,7 +1983,7 @@ combinedName = "paste after/before line"
 combinedKey = "p/shift+p"
 description = "Paste text after current line"
 priority = 2
-key = "z p"
+key = "space p"
 command = "runCommands"
 args.commands = [
       "expandLineSelection",
@@ -1998,7 +1998,7 @@ priority = 2
 name = "paste before line"
 combinedName = "paste after/before line"
 description = "Paste text before current line"
-key = "z shift+p"
+key = "space shift+p"
 command = "runCommands"
 args.commands = [
       "expandLineSelection",
@@ -2015,7 +2015,7 @@ combinedName = "add line below/above"
 combinedDescription = "open a line below/above current line"
 combinedKey = "o/shift+o"
 description = "open a line below current line"
-key = "z o"
+key = "space o"
 command = "editor.action.insertLineAfter"
 
 [[bind]]
@@ -2024,7 +2024,7 @@ name = "add line above"
 priority = 2
 combinedName = "add line below/above"
 description = "open a line above current line"
-key = "z shift+o"
+key = "space shift+o"
 command = "editor.action.insertLineBefore"
 
 [[bind]]
@@ -2032,7 +2032,7 @@ path = "edit.action.do"
 name = 'sym insert'
 description = "Insert a character a pair around a character"
 priority = 1
-key = "z i"
+key = "space i"
 combinedName = "sym insert (mode)"
 combinedDescription = "Insert characters around pair (switching to syminster mode until hitting  again)"
 combinedKey = "i/shift+i"
@@ -2050,12 +2050,12 @@ computedArgs.text = "captured"
 path = "edit.action.do"
 name = 'trim white'
 description = "Delete all external whitespace (left and right edges)"
-key = "z shift+-"
+key = "space shift+-"
 command = "selection-utilities.trimWhitespace"
 
 [[bind]]
 path = "edit.action.do"
-key = "z w"
+key = "space w"
 name = "wrap p"
 combinedName = "wrap/join lines"
 description = "wrap paragraph text, preserving commenting"
@@ -2068,7 +2068,7 @@ path = "edit.action.basic"
 name = 'join'
 combinedName = "wrap/join lines"
 description = "Remove newline between current and next line"
-key = "z j"
+key = "space j"
 mode = ["normal", "selectedit"]
 when = "!editorHasSelection"
 command = "runCommands"
@@ -2080,12 +2080,12 @@ combinedName = "wrap/join lines"
 name = 'join'
 description = "Remove newline between current and next line"
 mode = ["normal", "selectedit"]
-key = "z j"
+key = "space j"
 command = "editor.action.joinLines"
 
 [[bind]]
 path = "edit.action.do"
-key = "z f"
+key = "space f"
 name = "format"
 combinedName = "format"
 description = "Format code"
@@ -2099,7 +2099,7 @@ args.commands = [
 
 [[bind]]
 path = "edit.action.do"
-key = "z f"
+key = "space f"
 name = "format"
 when = "master-key.count < 1"
 command = "editor.action.formatSelection"
@@ -2113,7 +2113,7 @@ description = "Commands that edit two matching brackets or quotes."
 path = "edit.action.do"
 name = 'parens'
 description = "actions related to various brackets (`[`, `(`, `{`)"
-key = "z ["
+key = "space ["
 command = "master-key.prefix"
 resetTransient = false
 
@@ -2121,21 +2121,21 @@ resetTransient = false
 path = "edit.action.do"
 name = 'remove'
 description = "Removes surrounding pairs"
-key = "z [ d"
+key = "space [ d"
 command = "bracketeer.removeBrackets"
 
 [[bind]]
 path = "edit.action.do"
 name = 'parens/brackets'
 description = "Swap between `[`, `(` and `{`"
-key = "z [ s"
+key = "space [ s"
 command = "bracketeer.swapBrackets"
 
 [[bind]]
 path = "edit.action.do"
 name = 'quotes'
 description = "Actions related to quotes"
-key = "z '"
+key = "space '"
 command = "master-key.prefix"
 resetTransient = false
 
@@ -2143,14 +2143,14 @@ resetTransient = false
 path = "edit.action.do"
 name = 'remove'
 description = "Removes quotes (', \" or `)"
-key = "z ' d"
+key = "space ' d"
 command = "bracketeer.removeQuotes"
 
 [[bind]]
 path = "edit.action.do"
 name = 'swap'
 description = "Swap quotes (', \" or `)"
-key = "z ' s"
+key = "space ' s"
 command = "bracketeer.swapQuotes"
 
 [[path]]
@@ -2162,7 +2162,7 @@ Operations that modify comments
 
 [[bind]]
 path = "edit.action.do"
-key = "z /"
+key = "space /"
 name = "comment lines"
 combinedName = "(block) comment"
 combinedDescription = "Toggle (block) comment"
@@ -2177,14 +2177,14 @@ args.commands = [
 
 [[bind]]
 path = "edit.action.do"
-key = "z /"
+key = "space /"
 combinedName = "(block) comment"
 when = "master-key.count < 1"
 command = "editor.action.commentLine"
 
 [[bind]]
 path = "edit.action.do"
-key = "z shift+/"
+key = "space shift+/"
 name = "block comment lines"
 combinedName = "(block) comment"
 description = "select previous comment"
@@ -2198,7 +2198,7 @@ args.commands = [
 
 [[bind]]
 path = "edit.action.do"
-key = "z shift+/"
+key = "space shift+/"
 when = "master-key.count < 1"
 combinedName = "(block) comment"
 command = "editor.action.blockComment"
@@ -2210,7 +2210,7 @@ combinedName = "inc/dec all #"
 combinedDescription = "Increment/decrement all numbers by 1"
 combinedKey = "=/shift+="
 description = "Increment all numbers by 1"
-key = "z ="
+key = "space ="
 command = "editor.emmet.action.incrementNumberByOne"
 
 [[bind]]
@@ -2218,14 +2218,14 @@ path = "edit.action.do"
 name = 'dec all #'
 combinedName = "inc/dec all #"
 description = "Decrement all numbers by 1"
-key = "z shift+="
+key = "space shift+="
 command = "editor.emmet.action.decrementNumberByOne"
 
 [[bind]]
 path = "edit.action.do"
 name = "activate"
 description = "Activate the julia project associated with the current file in the active REPL"
-key = "z a"
+key = "space a"
 when = "editorLangId == 'julia'"
 command = "terminal-polyglot.send-command"
 args.cmd = "activate_from(\"%file%\")"
@@ -2234,7 +2234,7 @@ args.cmd = "activate_from(\"%file%\")"
 path = "edit.action.do"
 name = "activate tests"
 description = "Activate the julia project test environmentassociated with the current file in the active REPL"
-key = "z t"
+key = "space t"
 when = "editorLangId == 'julia'"
 command = "terminal-polyglot.send-command"
 args.cmd = "\nbegin; activate_from(\"%file%\"); using TestEnv; TestEnv.activate(); end"
@@ -2243,13 +2243,13 @@ args.cmd = "\nbegin; activate_from(\"%file%\"); using TestEnv; TestEnv.activate(
 path = "edit.action.do"
 name = 'nb cell'
 description = "Actions related to notebook cells"
-key = "z c"
+key = "space c"
 command = "master-key.prefix"
 resetTransient = false
 
 [[bind]]
 path = "edit.action.do"
-key = "z c i"
+key = "space c i"
 when = "editorLangId == 'quarto'"
 command = "quarto.insertCodeCell"
 name = "insert cell"
@@ -2257,13 +2257,13 @@ description = "insert a new cell in a notebook"
 
 [[bind]]
 path = "edit.action.do"
-key = "z c s"
+key = "space c s"
 when = "editorLangId != 'quarto'"
 command = "jupyter.selectCell"
 
 [[bind]]
 path = "edit.action.basic"
-key = "z ."
+key = "space ."
 name = 'sent. lines'
 description = "Split paragraph into one line per sentence"
 mode = "normal"
@@ -2389,23 +2389,6 @@ args.range.to = "i"
 ## Utilities
 ## --------------------------------
 
-[[path]]
-id = "window"
-name = "Window Manipulation"
-description = "Commands for navigating and manipulating the window/editor panes in some way"
-default.kind = "util"
-default.mode = "normal"
-default.when = "editorTextFocus && !findWidgetVisible"
-
-[[bind]]
-path = "window"
-name = "cntr win"
-description = "center window at primary cursor position"
-key = "space space"
-command = "selection-utilities.revealActive"
-args.at = "center"
-when = "editorTextFocus"
-
 [[bind]]
 path = "window"
 key = "shift+;"
@@ -2490,7 +2473,7 @@ args.commands = ["terminal-polyglot.send-block-text",
 
 [[bind]]
 path = "edit.action"
-key = "space ["
+key = "z ["
 name = "to repl (v2)"
 description = """
 send text to a terminal (usually containing a REPL), placing in a block when defined.
@@ -2501,7 +2484,7 @@ args.commands = ["terminal-polyglot.send-block-text", "selection-utilities.shrin
 
 [[bind]]
 path = "edit.action"
-key = "space ["
+key = "z ["
 name = "to repl (v2)"
 combinedName = "to repl v2 (v3)"
 description = """
@@ -2517,7 +2500,7 @@ args.commands = ["terminal-polyglot.send-text", "selection-utilities.shrinkToAct
 
 [[bind]]
 path = "edit.action"
-key = "space shift+["
+key = "z shift+["
 name = "to repl (v3)"
 combinedName = "to repl v2 (v3)"
 description = """
@@ -2530,15 +2513,25 @@ args.commands = ["terminal-polyglot.send-text", "selection-utilities.shrinkToAct
 path = "edit.action"
 name = "open terminal"
 key = "]"
+when = "master-key.count"
 command = "terminal-polyglot.open-terminal-N"
-computedArgs.index = "count || 1"
+computedArgs.index = "count"
+args.focus = false
+
+[[bind]]
+path = "edit.action"
+name = "open terminal"
+key = "]"
+when = "!master-key.count"
+command = "terminal-polyglot.open-terminal"
+computedArgs.index = "count"
 args.focus = false
 
 [[bind]]
 path = "edit.util"
 name = "git..."
 description = "git commands"
-key = "space g"
+key = "z g"
 command = "master-key.prefix"
 resetTransient = false
 
@@ -2549,14 +2542,14 @@ combinedName = "push/pull"
 description = "pull changes from remote"
 combinedDescription = "pull from/push to remote"
 combinedKey = "p/shift+p"
-key = "space g p"
+key = "z g p"
 command = "git.pull"
 
 [[bind]]
 path = "edit.util"
 name = "push"
 description = "push changes to remote"
-key = "space g shift+p"
+key = "z g shift+p"
 command = "git.push"
 
 [[bind]]
@@ -2566,7 +2559,7 @@ combinedName = "commit/checkout"
 description = "commit changes"
 combinedDescription = "commit/checkout git changes"
 combinedKey = "c/shift+c"
-key = "space g c"
+key = "z g c"
 command = "git.commit"
 
 [[bind]]
@@ -2574,13 +2567,13 @@ path = "edit.util"
 name = "checkout"
 combinedName = "commit/checkout"
 description = "checkout changes"
-key = "space g shift+c"
+key = "z g shift+c"
 command = "git.checkout"
 
 ## Leader Commands
 ## --------------------------------
 
-# Miscellaneous commands organized under SPACE
+# Miscellaneous commands organized under z
 
 [[path]]
 id = "edit.util"
@@ -2590,7 +2583,7 @@ default.kind = "util"
 [[bind]]
 path = "edit.util"
 name = "utility"
-key = "space"
+key = "z"
 description = "utility related commands: file opening, window manipulation, debugging etc..."
 resetTransient = false
 command = "master-key.prefix"
@@ -2599,14 +2592,14 @@ command = "master-key.prefix"
 path = "edit.util"
 name = "open recent"
 description = "Open recent file"
-key = "space r"
+key = "z r"
 command = "workbench.action.openRecent"
 
 [[bind]]
 path = "edit.util"
 name = "command"
 description = "Show the VSCode command palette"
-key = "space shift+;"
+key = "z shift+;"
 command = "workbench.action.showCommands"
 
 [[bind]]
@@ -2616,7 +2609,7 @@ description = "show the hover view"
 combinedName = "(debug) hover"
 combinedDescription = "show the (debug) hover view"
 combinedKey = "(shift+)h"
-key = "space h"
+key = "z h"
 command = "editor.action.showHover"
 when = "editorTextFocus"
 
@@ -2625,7 +2618,7 @@ path = "edit.util"
 name = "debug hover"
 combinedName = "(debug) hover"
 description = "show the debug hover view"
-key = "space shift+h"
+key = "z shift+h"
 command = "editor.debug.action.showDebugHover"
 when = "editorTextFocus"
 
@@ -2637,7 +2630,7 @@ description = "toggle bookmark at given line"
 combinedDescription = """
 toggle bookmark at given line / bookmark related commands
 """
-key = "space shift+m"
+key = "z shift+m"
 combinedKey = "shift+m / m"
 command = "vsc-labeled-bookmarks.toggleBookmark"
 
@@ -2646,7 +2639,7 @@ path = "edit.util"
 name = "mark"
 combinedName = "add mark / mark..."
 description = "bookmark related commands"
-key = "space m"
+key = "z m"
 command = "master-key.prefix"
 resetTransient = false
 
@@ -2655,7 +2648,7 @@ path = "edit.util"
 name = "mark ↓"
 description = "move to next bookmark"
 combinedName = "mark ↓/↑"
-key = "space m j"
+key = "z m j"
 when = "!master-key.select_on && !editorHasSelection"
 command = "vsc-labeled-bookmarks.navigateToNextBookmark"
 
@@ -2664,7 +2657,7 @@ path = "edit.util"
 combinedName = "mark ↓/↑"
 combinedDescription = "move to next/previous bookmark"
 combinedKey = "j/k"
-key = "space m j"
+key = "z m j"
 when = "master-key.select_on || editorHasSelection"
 command = "vsc-labeled-bookmarks.expandSelectionToNextBookmark"
 
@@ -2673,7 +2666,7 @@ path = "edit.util"
 name = "mark ↑"
 combinedName = "mark ↓/↑"
 description = "move to previous bookmark"
-key = "space m k"
+key = "z m k"
 when = "!master-key.select_on && !editorHasSelection"
 command = "vsc-labeled-bookmarks.navigateToPreviousBookmark"
 
@@ -2682,7 +2675,7 @@ path = "edit.util"
 name = "mark ↑"
 combinedName = "mark ↓/↑"
 description = "move to previous bookmark"
-key = "space m k"
+key = "z m k"
 when = "master-key.select_on || editorHasSelection"
 command = "runCommands"
 args.commands = ["vsc-labeled-bookmarks.expandSelectionToPreviousBookmark",
@@ -2692,14 +2685,14 @@ args.commands = ["vsc-labeled-bookmarks.expandSelectionToPreviousBookmark",
 path = "edit.util"
 name = "remove mark"
 description = "remove bookmark (use quick selection)"
-key = "space m d"
+key = "z m d"
 command = "vsc-labeled-bookmarks.deleteBookmark"
 
 [[bind]]
 path = "edit.util"
 name = "nav marks"
 description = "reveal quick selection to move to a bookmark"
-key = "space m t"
+key = "z m t"
 command = "vsc-labeled-bookmarks.navigateToBookmark"
 
 [[bind]]
@@ -2711,7 +2704,7 @@ combinedKey = "e/shift+e"
 description = """
 move to next error
 """
-key = "space e"
+key = "z e"
 command = "editor.action.marker.next"
 
 [[bind]]
@@ -2721,7 +2714,7 @@ combinedName = "error →/←"
 description = """
 move to previous error
 """
-key = "space shift+e"
+key = "z shift+e"
 command = "editor.action.marker.prev"
 
 [[bind]]
@@ -2733,7 +2726,7 @@ combinedKey = "c/shift+c"
 description = """
 move to and show next diff
 """
-key = "space c"
+key = "z c"
 command = "editor.action.dirtydiff.next"
 
 [[bind]]
@@ -2743,7 +2736,7 @@ combinedName = "diff →/←"
 description = """
 move to and show previous diff
 """
-key = "space shift+c"
+key = "z shift+c"
 command = "editor.action.dirtydiff.previous"
 
 [[bind]]
@@ -2755,7 +2748,7 @@ combinedKey = "d/shift+d"
 description = """
 move to next file change
 """
-key = "space d"
+key = "z d"
 command = "workbench.action.editor.nextChange"
 
 [[bind]]
@@ -2765,24 +2758,41 @@ combinedName = "change →/←"
 description = """
 move to previous change
 """
-key = "space shift+d"
+key = "z shift+d"
 command = "workbench.action.editor.previousChange"
 
 ## Window manipulation
 ## --------------------------------
 
+[[path]]
+id = "window"
+name = "Window Manipulation"
+description = "Commands for navigating and manipulating the window/editor panes in some way"
+default.kind = "util"
+default.mode = "normal"
+default.when = "editorTextFocus && !findWidgetVisible"
+
+[[bind]]
+path = "window"
+name = "cntr win"
+description = "center window at primary cursor position"
+key = "z z"
+command = "selection-utilities.revealActive"
+args.at = "center"
+when = "editorTextFocus"
+
 [[bind]]
 path = "edit.util"
 name = "window"
 description = "window/editor pane manipulation-related commands"
-key = "space w"
+key = "z w"
 command = "master-key.prefix"
 resetTransient = false
 
 [[bind]]
 path = "edit.util"
 name = "vert/horz"
-key = "space w r"
+key = "z w r"
 description = "Toggle between horizontal and vertical layouts"
 command = "workbench.action.toggleEditorGroupLayout"
 
@@ -2793,7 +2803,7 @@ combinedName = "nav →/←"
 combinedDescription = "move focus to the right/left"
 combinedKey = "l/h"
 description = "move focus to window to the right"
-key = "space w l"
+key = "z w l"
 command = "workbench.action.focusRightGroup"
 
 [[bind]]
@@ -2801,7 +2811,7 @@ path = "edit.util"
 name = "nav ←"
 combinedName = "nav →/←"
 description = "move focus to window to the left"
-key = "space w h"
+key = "z w h"
 command = "workbench.action.focusLeftGroup"
 
 [[bind]]
@@ -2811,7 +2821,7 @@ combinedName = "nav ↑/↓"
 combinedDescription = "move focus to window above/below"
 combinedKey = "k/j"
 description = "move focus to window above"
-key = "space w k"
+key = "z w k"
 command = "workbench.action.focusAboveGroup"
 
 [[bind]]
@@ -2819,7 +2829,7 @@ path = "edit.util"
 name = "nav ↓"
 combinedName = "nav ↑/↓"
 description = "move focus to window below"
-key = "space w j"
+key = "z w j"
 command = "workbench.action.focusBelowGroup"
 
 [[bind]]
@@ -2829,7 +2839,7 @@ combinedName = "move →/←"
 combinedDescription = "move editor to window left/right"
 combinedKey = "shift+l/h"
 description = "move editor to window to left"
-key = "space w shift+l"
+key = "z w shift+l"
 command = "workbench.action.moveEditorToRightGroup"
 
 [[bind]]
@@ -2837,7 +2847,7 @@ path = "edit.util"
 name = "←"
 combinedName = "move →/←"
 description = "move editor to window to left"
-key = "space w shift+h"
+key = "z w shift+h"
 command = "workbench.action.moveEditorToLeftGroup"
 
 [[bind]]
@@ -2847,7 +2857,7 @@ combinedName = "move ↓/↑"
 combinedDescription = "move editor to window above/below"
 combinedKey = "shift+j/k"
 description = "move editor to window below"
-key = "space w shift+j"
+key = "z w shift+j"
 command = "workbench.action.moveEditorToBelowGroup"
 
 [[bind]]
@@ -2855,14 +2865,14 @@ path = "edit.util"
 name = "↑"
 combinedName = "move ↓/↑"
 description = "move editor to window above"
-key = "space w shift+k"
+key = "z w shift+k"
 command = "workbench.action.splitEditorUp"
 
 [[bind]]
 path = "edit.util"
 name = "split editor..."
 description = "split editor to in a given direction"
-key = "space w s"
+key = "z w s"
 command = "master-key.prefix"
 resetTransient = false
 
@@ -2873,7 +2883,7 @@ combinedName = "split →/←"
 combinedDescription = "move editor to window left/right"
 combinedKey = "l/h"
 description = "split editor to window to left"
-key = "space w s l"
+key = "z w s l"
 command = "workbench.action.splitEditorRight"
 
 [[bind]]
@@ -2881,7 +2891,7 @@ path = "edit.util"
 name = "←"
 combinedName = "split →/←"
 description = "split editor to window to left"
-key = "space w s h"
+key = "z w s h"
 command = "workbench.action.splitEditorLeft"
 
 [[bind]]
@@ -2891,7 +2901,7 @@ combinedName = "split ↓/↑"
 combinedDescription = "split editor to window above/below"
 combinedKey = "j/k"
 description = "split editor to window below"
-key = "space w s j"
+key = "z w s j"
 command = "workbench.action.splitEditorDown"
 
 [[bind]]
@@ -2901,35 +2911,35 @@ combinedName = "split ↓/↑"
 combinedDescription = "split editor to window above/below"
 combinedKey = "j/k"
 description = "split editor to window below"
-key = "space w s k"
+key = "z w s k"
 command = "workbench.action.splitEditorUp"
 
 [[bind]]
 path = "edit.util"
 name = "close pane"
 description = "close the given group of editors"
-key = "space w x"
+key = "z w x"
 command = "workbench.action.closeEditorsInGroup"
 
 [[bind]]
 path = "edit.util"
 name = "max"
 description = "minimize size of all other windows"
-key = "space w shift+m"
+key = "z w shift+m"
 command = "workbench.action.minimizeOtherEditors"
 
 [[bind]]
 path = "edit.util"
 name = "equal"
 description = "equalzize size of all windows"
-key = "space w ="
+key = "z w ="
 command = "workbench.action.evenEditorWidths"
 
 [[bind]]
 path = "edit.util"
 name = "curs. win top"
 description = "center window so that primary cursor is at the top"
-key = "space w t"
+key = "z w t"
 combinedName = "center window top/bottom"
 combinedDescription = "center window so that primary cursor is at the top/bottom"
 combinedKey = "t/b"
@@ -2942,7 +2952,7 @@ path = "edit.util"
 name = "curs. win bot"
 combinedName = "center window top/bottom"
 description = "center window so that primary cursor is at the bottom"
-key = "space w b"
+key = "z w b"
 command = "selection-utilities.revealActive"
 args.at = "bottom"
 when = "editorTextFocus"
@@ -2957,7 +2967,7 @@ combinedName = "breakpt / debug..."
 combinedKey = "shift+b/b"
 description = "toggle debug breakpoint"
 combinedDescription = "toggle debug breakpoint / debug related commands..."
-key = "space shift+b"
+key = "z shift+b"
 command = "editor.debug.action.toggleBreakpoint"
 when = "editorTextFocus"
 
@@ -2966,7 +2976,7 @@ path = "edit.util"
 name = "debug..."
 combinedName = "breakpt / debug..."
 description = "assorted debugging actions"
-key = "space b"
+key = "z b"
 command = "master-key.prefix"
 resetTransient = false
 
@@ -2974,7 +2984,7 @@ resetTransient = false
 path = "edit.util"
 name = "cond. break"
 description = "conditional breakpoint"
-key = "space b shift+c"
+key = "z b shift+c"
 command = "editor.debug.action.conditionalBreakpoint"
 when = "editorTextFocus"
 
@@ -2983,21 +2993,21 @@ when = "editorTextFocus"
 path = "edit.util"
 name = "start"
 description = "start debugging"
-key = "space b r"
+key = "z b r"
 command = "workbench.action.debug.start"
 
 [[bind]]
 path = "edit.util"
 name = "continue"
 description = "continue debugging"
-key = "space b c"
+key = "z b c"
 command = "workbench.action.debug.continue"
 
 [[bind]]
 path = "edit.util"
 name = "next"
 description = "debug: step over next line"
-key = "space b j"
+key = "z b j"
 command = "workbench.action.debug.stepOver"
 when = "editorTextFocus"
 
@@ -3005,7 +3015,7 @@ when = "editorTextFocus"
 path = "edit.util"
 name = "into"
 description = "debug: step into next line"
-key = "space b i"
+key = "z b i"
 command = "workbench.action.debug.stepInto"
 when = "editorTextFocus"
 
@@ -3013,7 +3023,7 @@ when = "editorTextFocus"
 path = "edit.util"
 name = "out"
 description = "debug: step out"
-key = "space b o"
+key = "z b o"
 command = "workbench.action.debug.stepOut"
 when = "editorTextFocus"
 
@@ -3394,7 +3404,7 @@ In this mode all commands and character insertions happen at both ends of
 the selection
 """
 mode = "normal"
-key = "z shift+i"
+key = "space shift+i"
 combinedName = "sym insert (mode)"
 command = "master-key.setMode"
 args.value = "syminsert"
