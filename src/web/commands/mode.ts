@@ -10,10 +10,12 @@ function updateCursorAppearance(editor: vscode.TextEditor | undefined, mode: str
     if(editor){
         if(mode === 'capture'){
             editor.options.cursorStyle = vscode.TextEditorCursorStyle.Underline;
-        }else if(mode !== 'insert'){
+        }else if(mode === 'normal'){
             editor.options.cursorStyle = vscode.TextEditorCursorStyle.Block;
-        }else{
+        }else if(mode === 'insert'){
             editor.options.cursorStyle = vscode.TextEditorCursorStyle.Line;
+        }else{
+            editor.options.cursorStyle = vscode.TextEditorCursorStyle.BlockOutline;
         }
     }
 }

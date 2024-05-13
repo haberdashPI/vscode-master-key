@@ -3051,35 +3051,18 @@ mode = "normal"
 [[bind]]
 path = "edit.select_edit"
 key = "shift+'"
-name = "selectt-edit"
-description = """
-Enter a mode where you can edit and manipulate (possibly multiple) selections with ease.
-Entering the mode also adds a new cursor for the next match to the word under the cursor
-(or selection). You can use the count to ask multiple matches to be added.
-(You can use `,\"` to avoid adding any cursors).
-"""
+name = "del. cursors"
+description = "Delete all selections and return to normal"
 command = "runCommands"
-args.commands = [
-      { command = "master-key.setMode", args = { value = "selectedit"} },
-      { command = "selection-utilities.addNext" }
-]
-repeat = "count"
-mode = "normal"
+args.commands = ["selection-utilities.cancelSelection", "master-key.enterNormal"]
+mode = ["selectedit", "normal"]
 
 [[bind]]
 path = "edit.select_edit"
 name = 'normal'
-description = "return to a single selection and return to normal mode"
-key = "enter"
+description = "return to normal mode"
+key = "'"
 command = "master-key.enterNormal"
-
-[[bind]]
-path = "edit.select_edit"
-name = "add →"
-description = "add cursor at the next match to the primary cursor's text"
-key = ["'", "shift+'"]
-repeat = "count"
-command = "selection-utilities.addNext"
 
 [[bind]]
 path = "edit.select_edit"
@@ -3209,10 +3192,9 @@ repeat = 'count'
 [[bind]]
 path = "edit.select_edit"
 name = 'del. others'
-description = "delete all selections and return to normal mode"
+description = "delete all other cursors but the primary selection"
 key = "shift+d"
-command = "runCommands"
-args.commands = ["selection-utilities.cancelSelection", "master-key.enterNormal"]
+command = "removeSecondaryCursors"
 
 [[bind]]
 path = "edit.select_edit"

@@ -39,6 +39,7 @@ unit tests: parsing of YAML and JSON(C)
 unit tests: store/restore named
 
 IMPROVEMENT: automated resetTransient flag
+IMPROVEMENT: add command to delete all but primary selection in selection utilities
 BUG: repeat argument is not work for the repeat action command (e.g. I cannot repeat the last action ten times)
 BUG: I noticed that definitions are updated internally on some kind of delay
   (the config updates, but the state has an old value)
