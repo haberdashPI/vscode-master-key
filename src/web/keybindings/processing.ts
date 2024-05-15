@@ -20,6 +20,7 @@ export function processBindings(spec: BindingSpec): [Bindings, string[]]{
     items = expandBindingKeys(items, spec.define);
     items = expandPrefixes(items);
     items = expandModes(items, spec.define);
+    items = expandDocsToDuplicates(items);
     let prefixCodes: PrefixCodes;
     [items, prefixCodes] = expandKeySequencesAndResolveDuplicates(items, problems);
     items = items.map(moveModeToWhenClause);
@@ -218,6 +219,33 @@ function expandModes(items: BindingItem[], define: Record<string, any> | undefin
             return modes.map(m => ({ ...item, mode: [m] }));
         }
     });
+}
+
+interface DocFields {
+    description?: string
+    combinedName?: string
+    combinedDescription?: string
+    combinedKey?: string
+}
+function expandDocsToDuplicates(items: BindingItem[]){
+    let itemDocs: Record<string, DocFields> = {};
+
+    // merge all doc keys across identical key/mode pairs
+    for(let i=0;i<items.length;i++){
+        let item = items[i];
+        let key = hash([item.key, item.mode]);
+        let oldDocs = itemDocs[key] || {};
+        itemDocs[key] = merge(oldDocs, pick(item.args, ['description', 'combinedName', 'combinedDescription', 'combinedKey']))
+    }
+
+    // assign all items their combined docs
+    for(let item of items){
+        let key = hash([item.key, item.mode]);
+        let mergedDocs = itemDocs[key];
+        item.args = merge(item.args, mergedDocs);
+    }
+
+    return items;
 }
 
 export interface IConfigKeyBinding {

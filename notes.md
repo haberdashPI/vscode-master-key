@@ -2,10 +2,11 @@ current issue I'm working on:
 
 BUG: keys are combined so that prefixes don't always show the user defined description
   the ordering of where the user defined description must be placed to show up is unintuitive
+    + implement doc mergig
+    - add/pass a unit test
 BUG: validate `prefixes` to be actual key sequences
   + implement validation
-  - add a unit test
-  - verify/debug unit test
+  - add/pass a unit test
 
 BUG: right when switching modes, we see insert but the editor responds as if it is in normal mode
 
