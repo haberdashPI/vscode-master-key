@@ -1,11 +1,11 @@
 # Master Key
 
-Master key helps you to learn and to create powerful keybindings.
+Master key helps you to learn and create powerful keybindings.
 
 If:
 
-- you want to improve your fluency in text editing, levarging keybindings to move around and edit at the speed of thought
-- you want to use VSCode but miss some of the cools things that vim, emacs, kakaune, helix or any other awesome text editor can do
+- you want to improve your fluency in text editing, levarging keybindings to move around and edit at the speed of thought OR
+- you want to use VSCode but miss some cool thing that vim, emacs, kakaune, helix or any other awesome text editor can do
 
 Master Key might just be the tool for you.
 
@@ -31,7 +31,7 @@ See a quick pick palette of possible bindings for the current mode and prefix of
 
 ### Keybinding Features
 
-When you create your own keybindings using Mater Key's special `.master-key.toml` format you get several powerful features that make it possible to easily create key bindings that would be difficult or impossible to implement without writing your own extension.
+When you create your own keybindings using Mater Key's special `.master-key.toml` format you get several powerful features that make it possible to easily create keybindings that would be difficult or impossible to implement without writing your own extension.
 
 #### Modal Bindings
 
@@ -39,15 +39,15 @@ Your bindings can be modal—a special key (like escape) switches you to a diffe
 
 #### Parameteric Bindings
 
-Express an entire sequence of bindings use the `foreach` field.
+Express an entire series of bindings using the `foreach` field.
 
 #### Stateful Bindings
 
 Update state with the `master-key.captureKeys`, `master-key.updateCount`, `master-key.setFlag` or `master-key.storeNamed` and then use this state in downstream commands using `computedArgs` instead of `args` in your keybinding.
 
-#### Record and repeat keypresses
+#### Record and Repeat Commands
 
-Master key records recent key-presses, allowing you to create commands that quickly repeat a previous sequence of key presses using `master-key.replayFromHistory` or `master-key.pushHistoryToStack` and `master-key.replayFromStack`.
+Master key records recent key presses, allowing you to create commands that quickly repeat a previous sequence using `master-key.replayFromHistory` or `master-key.pushHistoryToStack` and `master-key.replayFromStack`.
 
 #### Documented Bindings
 
@@ -55,11 +55,11 @@ Of course, just like all of the built-in bindings in Master Key, you can documen
 
 ### How to get started
 
-Master key comes with its own custom keybinding layout that follows in the footsteps of vim, kakaune and helix, but you can create your own set of bindings by creating a `*.master-key.toml` file.
+Master key comes with its own custom keybinding layout that follows in the footsteps of vim, kakaune and helix.
 
 To get started, install the extension and then run the command `Master Key: Select Binding Preset`, and select the built-in binding set "Larkin". Once you have run this command a large number of new keybindings will be added to VSCode. Almost all of these bindings are under a `normal` mode that you activate by pressing `escape` or `ctrl+[`. Furthermore, the visual documentation and cheet sheet for these new bindings will be displayed for you to start learning how to use these bindings and you can access them later on by using the commands `Master Key: Show Visual Documentation` and `Master Key: Show Cheesheet`.
 
-## Customizing the Bindings
+## Customized Bindings
 
 Okay, so you want to make your own keybindings with Master Key?
 
