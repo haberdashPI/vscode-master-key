@@ -34,6 +34,8 @@ unit tests: edge cases with recording edits
 unit tests: parsing of YAML and JSON(C)
 tests: store/restore named
 
+IMPROVEMENT: rename `Select Binding Preset` to something better
+
 IMPROVEMENT: automated resetTransient flag
 IMPROVEMENT: add command to delete all but primary selection in selection utilities
 BUG: repeat argument is not work for the repeat action command (e.g. I cannot repeat the last action ten times)
