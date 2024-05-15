@@ -1,14 +1,10 @@
 current issue I'm working on:
 
-redesign bindings:
-
-BUG: keys are combined so that prefixes don't show the user defined description
+BUG: keys are combined so that prefixes don't always show the user defined description
+  the ordering of where the user defined description must be placed to show up is unintuitive
 BUG: validate `prefixes` to be actual key sequences
-NOTE: maybe swap z/' for better ergonomics
 
 BUG: right when switching modes, we see insert but the editor responds as if it is in normal mode
-
-NEXT UP:
 
 BUG: esc will be captured by palette even if its bound as a suffix
   (e.g. in a binding setup without esc for normal mode), preventing
@@ -36,7 +32,7 @@ unit tests: edge cases with recording edits
   - how do recorded commands interact with the palette?
   - does the command palette show up / not show up with the proper timing?
 unit tests: parsing of YAML and JSON(C)
-unit tests: store/restore named
+tests: store/restore named
 
 IMPROVEMENT: automated resetTransient flag
 IMPROVEMENT: add command to delete all but primary selection in selection utilities
