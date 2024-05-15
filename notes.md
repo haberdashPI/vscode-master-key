@@ -3,26 +3,23 @@ current issue I'm working on:
 BUG: keys are combined so that prefixes don't always show the user defined description
   the ordering of where the user defined description must be placed to show up is unintuitive
 BUG: validate `prefixes` to be actual key sequences
+  + implement validation
+  - add a unit test
+  - verify/debug unit test
 
 BUG: right when switching modes, we see insert but the editor responds as if it is in normal mode
 
 BUG: esc will be captured by palette even if its bound as a suffix
   (e.g. in a binding setup without esc for normal mode), preventing
-  any commands from being run that around bound to that key
+  any commands from being run that are bound to that key;
+  is this really a bug? I think this just requires that the user
+  use appropriate `when` clauses here if they want `esc` to work this way.
+  NOTE: we should document this limitation
 
 - add: command to remove keybindings
 - add: command to insert bindings in a new file (so they can be easily edited)
 
-- idea: we want the default mode (which can be set by the user)
-  to require no when clause for it; in this way
-  we can activate the extension on the first relevant keypress
-  - whenever we do this we'll need to properly handle `keybindingPaletteOpen`
-  (does a failure for this context to exist cause the when clause to fail
-  even if it is inside an ||, I think it does)
-  - each key will need to check for activation of the extension (e.g. using a context)
-    and a separate version of the keybinding without this context or a mode check
-    can implementing the binding when the extension isn't active (and do this
-    for *only* the default mode bindings)
+- fix: have the extension activate on * for now BUT see idea in wish list
 
 unit tests: edge cases with recording edits
   - how about when I switch documents?
@@ -37,8 +34,6 @@ tests: store/restore named
 IMPROVEMENT: rename `Select Binding Preset` to something better
 
 IMPROVEMENT: automated resetTransient flag
-IMPROVEMENT: add command to delete all but primary selection in selection utilities
-BUG: repeat argument is not work for the repeat action command (e.g. I cannot repeat the last action ten times)
 BUG: I noticed that definitions are updated internally on some kind of delay
   (the config updates, but the state has an old value)
   (search for this edge case a little bit)
@@ -48,6 +43,27 @@ BUG: I noticed that definitions are updated internally on some kind of delay
   be in focus
 
 - IMPROVEMENT: show escape/function key row in the visual key doc
+
+DOCUMENTATION: in documenting macro playback note the limitations of recording the keyboard
+(e.g. that it only records inserts; any modifiers are espected to be commands
+that are recorded)
+
+- IMPROVEMENT: fix default expansion for `when` clauses (keep it simple) and add an extra
+field e.g. `extend` (or `concat`?) for the fancier situation
+
+- REDESIGN!! I think the the way repeated keys works is a little unwieldy in many cases
+  (maybe we should express it explicitly as a loop somehow...🤔)
+
+```toml
+[[bind]]
+foreach.i = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0] # or "[0-9]+"
+key = "shift+{i}"
+name = "count {i}"
+command = "master-key.updateCount"
+args.value = "{i}"
+```
+
+THEN: add more to symmetric insert setup
 
 thoughts: things I must have to release:
 - user documentation
@@ -70,41 +86,32 @@ after first release
 - good documentation of the code
 - vim style bindings? (I think this could come in a separate release)
 
+BUG: repeat argument is not work for the repeat action command (e.g. I cannot repeat the last action ten times)
+
 REFACTOR: add prettier config and apply new style to all files
 REFACTOR: cleanup up and document code, make it nice and readable
 REFACTOR: change name of test files to be more consistent
 REFACTOR: somehow we have to define/organize binding parameters
   in *four* places, should be easier
 
-**TODO**: in documenting macro playback note the limitations of recording the keyboard
-(e.g. that it only records inserts; any modifiers are espected to be commands
-that are recorded)
+FEATURE: require parsing to validate modes to be all negations or all positive mode specifications
 
-**TODO**: fix default expansion for `when` clauses (keep it simple) and add an extra
-field e.g. `extend` (or `concat`?) for the fancier situation
-
-**TODO**: anything beyond this point needs to be organized and prioritized
-
-- REDESIGN!! I think the the way repeated keys works is a little unwieldy in many cases
-  (maybe we should express it explicitly as a loop somehow...🤔)
-
-```toml
-[[bind]]
-foreach.i = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0]
-key = "shift+{i}"
-name = "count {i}"
-command = "master-key.updateCount"
-args.value = "{i}"
-```
-
-maybe we should
-
-- require parsing to validate modes to be all negations or all positive mode specifications
-- add more to symmetric insert setup
-
-EDGE CASE: check that changing keybingings doesn't much with state (e.g. reset mode)
+EDGE CASE: check that changing keybingings doesn't muck with state (e.g. reset mode)
 
 wishlist:
+
+- IMPROVEMENT: add command to delete all but primary selection in selection utilities
+
+- idea: we want the default mode (which can be set by the user)
+  to require no when clause for it; in this way
+  we can activate the extension on the first relevant keypress
+  - whenever we do this we'll need to properly handle `keybindingPaletteOpen`
+  (does a failure for this context to exist cause the when clause to fail
+  even if it is inside an ||, I think it does)
+  - each key will need to check for activation of the extension (e.g. using a context)
+    and a separate version of the keybinding without this context or a mode check
+    can implementing the binding when the extension isn't active (and do this
+    for *only* the default mode bindings)
 
 - make it possible to navigate by indent
 
