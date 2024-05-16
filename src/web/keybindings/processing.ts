@@ -233,14 +233,14 @@ function expandDocsToDuplicates(items: BindingItem[]){
     // merge all doc keys across identical key/mode pairs
     for(let i=0;i<items.length;i++){
         let item = items[i];
-        let key = hash([item.key, item.mode]);
+        let key = hash([item.key, item.mode, item.prefixes[0]]);
         let oldDocs = itemDocs[key] || {};
-        itemDocs[key] = merge(oldDocs, pick(item.args, ['description', 'combinedName', 'combinedDescription', 'combinedKey']))
+        itemDocs[key] = merge(oldDocs, pick(item.args, ['description', 'combinedName', 'combinedDescription', 'combinedKey']));
     }
 
     // assign all items their combined docs
     for(let item of items){
-        let key = hash([item.key, item.mode]);
+        let key = hash([item.key, item.mode, item.prefixes[0]]);
         let mergedDocs = itemDocs[key];
         item.args = merge(item.args, mergedDocs);
     }

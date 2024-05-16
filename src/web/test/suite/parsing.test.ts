@@ -5,7 +5,7 @@ import assert from 'assert';
 import { processBindings } from '../../keybindings/processing';
 import { parseBindings } from '../../keybindings/parsing';
 import { fromZodError } from 'zod-validation-error';
-import { sortBy, isEqual } from 'lodash';
+import { sortBy, isEqual, isUndefined } from 'lodash';
 
 function specForBindings(text: string) {
     let result = parseBindings(text, 'toml');
@@ -364,6 +364,43 @@ suite('Keybinding Test Suite', () => {
         assert(isEqual(spec.map(i => i.key), ["d", "a", "b", "c", "a", "b"]));
         assert(isEqual(spec.map(i => !!(i.args.do[0]?.args?.automated)),
                        [false, true, true, false, true, false]));
+    });
+
+    test('Documentation expands across different when clauses of the same key', () => {
+        let spec = specForBindings(`
+
+        [[bind]]
+        path = ""
+        name = "a"
+        description = "boop"
+        combinedName = "boop/aba"
+        combinedDescription = "boop/aba daba do"
+        combinedKey = "a/b"
+        key = "k"
+        when = "biz > 5"
+
+        [[bind]]
+        path = ""
+        name = "a"
+        key = "k"
+        when = "biz < 5"
+
+        [[bind]]
+        path = ""
+        name = "a"
+        key = "h k"
+        when = "biz > 5"
+        `);
+
+        assert(isEqual(spec.length, 4));
+        assert(isEqual(spec[0].args.description, spec[1].args.description));
+        assert(isEqual(spec[0].args.combinedKey, spec[1].args.combinedKey));
+        assert(isEqual(spec[0].args.combinedName, spec[1].args.combinedName));
+        assert(isEqual(spec[0].args.combinedDescription, spec[1].args.combinedDescription));
+        assert(isUndefined(spec[3].args.description));
+        assert(isUndefined(spec[3].args.combinedKey));
+        assert(isUndefined(spec[3].args.combinedName));
+        assert(isUndefined(spec[3].args.combinedDescription));
     });
 
     test('Keybindings properly resolve `<all-pefixes>` cases', () => {
