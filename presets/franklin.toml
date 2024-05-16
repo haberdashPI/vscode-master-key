@@ -2478,25 +2478,8 @@ name = "to repl (v2)"
 description = """
 send text to a terminal (usually containing a REPL), placing in a block when defined.
 """
-when = "master-key.firstSelectionOrWord =~ /\\n/"
 command = "runCommands"
 args.commands = ["terminal-polyglot.send-block-text", "selection-utilities.shrinkToActive"]
-
-[[bind]]
-path = "edit.action"
-key = "z ["
-name = "to repl (v2)"
-combinedName = "to repl v2 (v3)"
-description = """
-send text to a terminal, placing in a block when defined.
-"""
-combinedDescription = """
-send text to a terminal (placing in a block when defined)
-"""
-combinedKey = "[/shift+["
-when = "!(master-key.firstSelectionOrWord =~ /\\n/)"
-command = "runCommands"
-args.commands = ["terminal-polyglot.send-text", "selection-utilities.shrinkToActive"]
 
 [[bind]]
 path = "edit.action"

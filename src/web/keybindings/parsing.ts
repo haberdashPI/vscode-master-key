@@ -144,7 +144,7 @@ export const rawBindingItem = z.object({
         pipe(parsedWhen.array()),
     mode: z.union([z.string(), z.string().array()]).optional(),
     prefixes: z.preprocess(x => x === "<all-prefixes>" ? [] : x,
-        bindingKey.array()).optional(),
+        bindingKey.or(z.string().length(0)).array()).optional(),
     resetTransient: z.boolean().optional(),
     repeat: z.number().min(0).or(z.string()).default(0).optional()
 }).merge(rawBindingCommand).strict();
