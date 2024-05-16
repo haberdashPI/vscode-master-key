@@ -2708,7 +2708,7 @@ key = "z e"
 command = "editor.action.marker.next"
 
 [[bind]]
-path = "edit.util"
+path = "edit.motion"
 name = "error ←"
 combinedName = "error →/←"
 description = """
@@ -2718,7 +2718,7 @@ key = "z shift+e"
 command = "editor.action.marker.prev"
 
 [[bind]]
-path = "edit.util"
+path = "edit.motion"
 name = "diff →"
 combinedName = "diff →/←"
 combinedDescription = "move to and show next/previous diff"
@@ -2730,7 +2730,7 @@ key = "z c"
 command = "editor.action.dirtydiff.next"
 
 [[bind]]
-path = "edit.util"
+path = "edit.motion"
 name = "diff ←"
 combinedName = "diff →/←"
 description = """
@@ -2740,7 +2740,7 @@ key = "z shift+c"
 command = "editor.action.dirtydiff.previous"
 
 [[bind]]
-path = "edit.util"
+path = "edit.motion"
 name = "change →"
 combinedName = "change →/←"
 combinedDescription = "move to next/previous file change"
@@ -2752,7 +2752,7 @@ key = "z d"
 command = "workbench.action.editor.nextChange"
 
 [[bind]]
-path = "edit.util"
+path = "edit.motion"
 name = "change ←"
 combinedName = "change →/←"
 description = """
