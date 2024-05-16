@@ -21,6 +21,8 @@ It includes the following features:
 
 Review your bindings on a keyboard layout
 
+**NOTE**: demo the ability to toggle bindings on the keys
+
 #### Cheet sheet of keybindings
 
 Review your bindings in a cheet sheet organied by theme
@@ -57,15 +59,15 @@ Of course, just like all of the built-in bindings in Master Key, you can documen
 
 Master key comes with its own custom keybinding layout that follows in the footsteps of vim, kakaune and helix.
 
-To get started, install the extension and then run the command `Master Key: Select Binding Preset`, and select the built-in binding set "Larkin". Once you have run this command a large number of new keybindings will be added to VSCode. Almost all of these bindings are under a `normal` mode that you activate by pressing `escape` or `ctrl+[`. Furthermore, the visual documentation and cheet sheet for these new bindings will be displayed for you to start learning how to use these bindings and you can access them later on by using the commands `Master Key: Show Visual Documentation` and `Master Key: Show Cheesheet`.
+To learn how to use these bindings, install the extension and then run the command `Master Key: Activate Keybindings`, and select the built-in binding set "Larkin". The visual documentation and cheet sheet for these new bindings will be displayed for you to start learning how to use them.
 
 ## Customized Bindings
 
 Okay, so you want to make your own keybindings with Master Key?
 
-You can start by modifying the built-in `Larkin` preset using the command `Master Key: Export Binding Preset`. A new `*.master-key.toml` file with the contents of this master-key binding set will be opened. The file has comments throughout which document its use.
+You can start by modifying the built-in `Larkin` preset using the command `Master Key: Edit Preset Copy`. A new `*.toml` file with the contents of this master-key binding set will be opened. The file has comments throughout which document its use.
 
-You can now edit the bindings and/or import bindings from those you've already created in VSCode. Call `Master Key: Import Default/User Keybindings` to add any existing bindings you have. Edit the bindings and start using them by calling `Master Key: Select Binding Preset`.
+You can now edit the bindings and/or import bindings from those you've already created in VSCode. Call `Master Key: Import Default/User Keybindings` to add any existing bindings you have. Edit the bindings and update your settings to use them by calling `Master Key: Activate Keybindings` at any time.
 
 ## Related Extensions
 

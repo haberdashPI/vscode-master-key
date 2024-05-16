@@ -491,16 +491,8 @@ commandHistory[i+1].path.startsWith("edit.action") &&
 
 [[bind]]
 path = "edit.motion.history"
-name = "move hist."
-description = "commands that navigate motion history"
-key = "-"
-command = "master-key.prefix"
-resetTransient = false
-
-[[bind]]
-path = "edit.motion.history"
 name = "cursor undo"
-key = "- -"
+key = "-"
 combinedName = "cursor undo/redo"
 combinedKey = "-/shift+-"
 command = "cursorUndo"
@@ -509,7 +501,7 @@ command = "cursorUndo"
 path = "edit.motion.history"
 name = "cursor redo"
 combinedName = "cursor undo/redo"
-key = "- shift+-"
+key = "shift+-"
 command = "cursorRedo"
 
 [[bind]]
@@ -518,7 +510,8 @@ name = "nav ←"
 description = "Go back in navigation history (e.g. goto definition)"
 combinedName = "nav ←/→"
 combinedKey = "n/shift+n"
-key = "- n"
+combinedDescription = "Go back/forward in navigation history"
+key = "g n"
 command = "workbench.action.navigateBackInNavigationLocations"
 
 [[bind]]
@@ -526,23 +519,24 @@ path = "edit.motion.history"
 name = "nav →"
 combinedName = "nav ←/→"
 description = "Go forward in navigation history (e.g. goto definition)"
-key = "- shift+n"
+key = "g shift+n"
 command = "workbench.action.navigateForwardInNavigationLocations"
 
 [[bind]]
 path = "edit.motion.history"
 name = "edit hist ←"
-description = "Go back in edit history)"
-key = "- e"
+description = "Go back in edit history"
+key = "g -"
 combinedName = "edit ←/→"
-combinedKey = "e/shift+e"
+combinedKey = "-/shift+-"
+combinedDescription = "Go back/forward in edit history"
 command = "workbench.action.navigateBackInEditLocations"
 
 [[bind]]
 path = "edit.motion.history"
 name = "edit hist →"
 description = "Go forward in edit history)"
-key = "- shift+e"
+key = "g shift+-"
 combinedName = "edit ←/→"
 command = "workbench.action.navigateForwardInEditLocations"
 
@@ -697,6 +691,7 @@ args.backwards = true
 [[bind]]
 path = "edit.motion"
 key = "g"
+priority = 1
 name = "goto"
 command = "master-key.prefix"
 resetTransient = false
@@ -708,9 +703,10 @@ or backwards in some direction.
 [[bind]]
 path = "edit.motion.prim"
 key = "g j"
+priority = 1
 name = "unwrp ↓"
 combinedName = "unwrap ↓/↑"
-combinedKey = "g j/k"
+combinedKey = "j/k"
 combinedDescription = """
 move cursor up/down unwrapped text line; if a single line is wrapped into multiple lines by
 the editor, this command skips all such wrapped lines
@@ -725,6 +721,7 @@ args.by = "line"
 [[bind]]
 path = "edit.motion.prim"
 key = "g k"
+priority = 1
 name = "unwrp ↑"
 combinedName = "unwrap ↓/↑"
 description = "up unwrapped line"
@@ -734,9 +731,10 @@ args.by = "line"
 [[bind]]
 path = "edit.motion.prim"
 key = "g shift+k"
+priority = 1
 combinedName = "unwrp sel ↑/↓"
 combinedDescription = "select unwrapped lines up/down"
-combinedKey = "g shift+k/j"
+combinedKey = "shift+k/j"
 name = "unwrp sel ↑"
 description = "select unwrapped lines upwards"
 command = "runCommands"
@@ -755,6 +753,7 @@ command = "expandLineSelection"
 [[bind]]
 path = "edit.motion.prim"
 key = "g shift+j"
+priority = 1
 name = "sel ↓"
 combinedName = "unwrp sel ↑/↓"
 description = "select unwrapped lines downwards"
@@ -774,6 +773,7 @@ command = "expandLineSelection"
 [[bind]]
 path = "edit.motion.prim"
 key = "shift+g"
+priority = 1
 name = "doc end"
 description = "select to end of document"
 combinedName = "doc top/bottom"
@@ -784,6 +784,7 @@ command = "cursorBottomSelect"
 [[bind]]
 path = "edit.motion.prim"
 key = "g g"
+priority = 1
 name = "doc start"
 description = "select to start of document"
 command = "cursorTopSelect"
@@ -791,12 +792,13 @@ command = "cursorTopSelect"
 [[bind]]
 path = "edit.motion.obj"
 key = "g w"
+priority = 1
 name = "WORD →"
 combinedName = "WORD →/←"
 combinedDescription = """
 next/prev WORD;  e.g. contiguous non-whitespace region
 """
-combinedKey = "g w/b"
+combinedKey = "w/b"
 description = "next WORD; e.g. contiguous non-whitespace region"
 args.unit = "WORD"
 computedArgs.value = "count || 1"
@@ -804,6 +806,7 @@ computedArgs.value = "count || 1"
 [[bind]]
 path = "edit.motion.obj"
 key = "g b"
+priority = 1
 name = "WORD ←"
 combinedName = "WORD →/←"
 description = "previous WORD; e.g. contiguous non-whitespace region"
@@ -813,6 +816,7 @@ computedArgs.value = "-count || -1"
 [[bind]]
 path = "edit.motion.obj"
 key = "g e"
+priority = 1
 name = "WORD end →"
 description = "next WORD end; e.g. contiguous non-whitespace region"
 args.unit = "WORD"
@@ -821,10 +825,13 @@ computedArgs.value = "count || 1"
 
 [[bind]]
 path = "edit.motion.obj"
-key = "g ;"
+key = "g /"
+priority = 1
 name = "comment →"
 description = "next comment"
-combinedName = "comment →/←"
+combinedKey = "/ (shift+/)"
+combinedName = "comment → (←)"
+combinedDescription = "move to next (previous) comment"
 args.unit = "comment"
 args.boundary = "both"
 args.selectWhole = true
@@ -832,8 +839,10 @@ computedArgs = { value = "count || 1" }
 
 [[bind]]
 path = "edit.motion.obj"
-key = "g shift+;"
+key = "g shift+/"
+priority = 1
 name = "comment ←"
+combinedName = "comment → (←)"
 description = "previous comment"
 args.unit = "comment"
 args.boundary = "both"
@@ -843,17 +852,19 @@ computedArgs = { value = "count || 1" }
 [[bind]]
 path = "edit.motion.obj"
 key = "g 0"
+priority = 1
 name = "sec →"
 description = "next section"
 combinedName = "sec →/←"
 combinedDescription = "next/previous section"
-combinedKey = "g 0/9"
+combinedKey = "0/9"
 args.unit = "section"
 computedArgs.value = "count || 1"
 
 [[bind]]
 path = "edit.motion.obj"
 key = "g 9"
+priority = 1
 name = "sec ←"
 description = "previous section"
 combinedName = "sec →/←"
@@ -863,6 +874,7 @@ computedArgs.value = "-(count || 1)"
 [[bind]]
 path = "window"
 name = "goto line"
+priority = 1
 description = "goto line command"
 key = "g l"
 command = "workbench.action.gotoLine"
@@ -871,6 +883,7 @@ when = "editorTextFocus"
 [[bind]]
 path = "window"
 name = "to refs"
+priority = 1
 description = "jump to a location where this symbol is referenced"
 key = "g r"
 command = "editor.action.goToReferences"
@@ -879,10 +892,11 @@ when = "editorTextFocus"
 [[bind]]
 path = "window"
 name = "go to"
+priority = 1
 description = "go to the definition of symbol under cursor"
 key = "g d"
 combinedName = "go to (aside)"
-combinedKey = "g (shift+)d"
+combinedKey = "(shift+)d"
 combinedDescription = "go to the definition of symbol (in ean editor to the side)"
 command = "editor.action.revealDefinition"
 when = "editorTextFocus"
@@ -890,6 +904,7 @@ when = "editorTextFocus"
 [[bind]]
 path = "window"
 name = "go to, aside"
+priority = 1
 description = "go to the definition of symbol under cursor in an editor to the side"
 key = "g shift+d"
 combinedName = "go to (aside)"
@@ -910,8 +925,6 @@ key = "g c"
 name = "cell →"
 description = "next notebook cell"
 combinedName = "cell →/←"
-combinedDescription = "next/prev notebook cell"
-combinedKey = "g c/shift+c"
 when = "editorLangId == 'markdown' || editorLangId == 'quarto'"
 command = "runCommands"
 args.commands = ["terminal-polyglot.next-fence-select", "selection-utilities.revealActive"]
@@ -921,6 +934,8 @@ path = "edit.motion"
 key = "g c"
 name = "cell →"
 combinedName = "cell →/←"
+combinedDescription = "next/prev notebook cell"
+combinedKey = "c/shift+c"
 when = "!(editorLangId == 'markdown' || editorLangId == 'quarto')"
 command = "runCommands"
 args.commands = [ "jupyter.gotoNextCellInFile", "jupyter.selectCell" ]
@@ -941,6 +956,7 @@ args.commands = ["terminal-polyglot.prev-fence-select", "selection-utilities.rev
 path = "edit.motion"
 key = "g shift+c"
 name = "cell ←"
+combinedName = "cell →/←"
 description = "previous jupyter notebook cell"
 when = "!(editorLangId == 'markdown' || editorLangId == 'quarto')"
 command = "runCommands"
@@ -1660,7 +1676,7 @@ command = "selection-utilities.trimSelectionWhitespace"
 path = "edit.motion"
 name = 'narrow to subword'
 description = "Narrow current selection so it starts and stops at a subword (e.g. 'snake' in snake_case)"
-key = "shift+-"
+key = "shift+z"
 command = "selection-utilities.narrowTo"
 args.unit = "subident"
 args.boundary = "both"

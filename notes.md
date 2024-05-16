@@ -8,19 +8,12 @@ BUG: validate `prefixes` to be actual key sequences
   + implement validation
   - add/pass a unit test
 
-BUG: right when switching modes, we see insert but the editor responds as if it is in normal mode
-
 BUG: esc will be captured by palette even if its bound as a suffix
   (e.g. in a binding setup without esc for normal mode), preventing
   any commands from being run that are bound to that key;
   is this really a bug? I think this just requires that the user
   use appropriate `when` clauses here if they want `esc` to work this way.
   NOTE: we should document this limitation
-
-- add: command to remove keybindings
-- add: command to insert bindings in a new file (so they can be easily edited)
-
-- fix: have the extension activate on * for now BUT see idea in wish list
 
 unit tests: edge cases with recording edits
   - how about when I switch documents?
@@ -32,7 +25,15 @@ unit tests: edge cases with recording edits
 unit tests: parsing of YAML and JSON(C)
 tests: store/restore named
 
-IMPROVEMENT: rename `Select Binding Preset` to something better
+IMPROVEMENT: add command `Import Default/User Keybindings` commands
+
+IMPROVEMENT: show keybinding tips in the visual documentation
+for
+  - toggle modifiers
+  - toggle cheetsheet
+  - toggle visual documentation
+  - simple command palette
+  - key suggestions
 
 IMPROVEMENT: automated resetTransient flag
 BUG: I noticed that definitions are updated internally on some kind of delay

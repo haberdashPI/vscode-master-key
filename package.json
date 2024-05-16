@@ -15,8 +15,7 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:master-key.do",
-    "onCommand:master-key.prefix"
+    "*"
   ],
   "browser": "./dist/web/extension.js",
   "contributes": {
@@ -24,17 +23,17 @@
       {
         "command": "master-key.selectPreset",
         "category": "Master Key",
-        "title": "Select Keybinding Preset"
+        "title": "Activate Keybindings"
       },
       {
         "command": "master-key.commandSuggestions",
         "category": "Master Key",
-        "title": "Contextual Command Palette"
+        "title": "Key Suggestions..."
       },
       {
         "command": "master-key.commandPalette",
         "category": "Master Key",
-        "title": "Command Palette"
+        "title": "Simple Command Palette"
       },
       {
         "command": "master-key.showVisualDoc",
@@ -60,6 +59,16 @@
         "command": "master-key.togglePaletteMode",
         "category": "Master Key",
         "title": "Toggle palette input mode"
+      },
+      {
+        "command": "master-key.removePreset",
+        "category": "Master Key",
+        "title": "Remove Keybindings"
+      },
+      {
+        "command": "master-key.editPreset",
+        "category": "Master Key",
+        "title": "Edit Preset Copy"
       }
     ],
     "views": {

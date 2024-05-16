@@ -118,6 +118,43 @@ export function currentKeybindings(){
     return keybindings;
 }
 
+async function copyBindings(file: vscode.Uri){
+    await vscode.commands.executeCommand("workbench.action.files.newUntitledFile");
+    let ed = vscode.window.activeTextEditor;
+    if(ed){
+        vscode.languages.setTextDocumentLanguage(ed.document, 'markdown');
+        let fileData = await vscode.workspace.fs.readFile(file);
+        let fileText = new TextDecoder().decode(fileData);
+        let wholeDocument = new vscode.Range(new vscode.Position(0, 0),
+            new vscode.Position(0, ed.document.lineCount+1));
+        await ed.edit(builder => { builder.replace(wholeDocument, fileText); });
+    }
+}
+
+async function removeKeybindings(){
+    await vscode.commands.executeCommand('workbench.action.openGlobalKeybindingsFile');
+    let ed = vscode.window.activeTextEditor;
+    if(ed){
+        let oldBindingsStart = findText(ed.document, "AUTOMATED BINDINGS START");
+        let oldBindingsEnd = findText(ed.document, "AUTOMATED BINDINGS END");
+        ed.document.getText(oldBindingsStart);
+        if (oldBindingsStart && oldBindingsEnd) {
+            let range = new vscode.Range(
+                new vscode.Position(oldBindingsStart.start.line-1,
+                                    ed.document.lineAt(oldBindingsStart.start.line-1).range.end.character),
+                new vscode.Position(oldBindingsEnd.end.line + 4, 0));
+            await ed.edit(builder => { builder.delete(range); });
+            ed.revealRange(new vscode.Range(range.start, range.start));
+            await vscode.commands.executeCommand('workbench.action.files.save');
+            vscode.window.showInformationMessage(`Your master keybindings have
+                been updated in \`keybindings.json\`.`);
+        } else {
+            vscode.window.showErrorMessage(`You appear to have altered the comments
+                around the automated bindings, or you have already removed the bindings.`);
+        }
+    }
+}
+
 async function insertKeybindingsIntoConfig(file: vscode.Uri, config: any) {
     await vscode.commands.executeCommand('workbench.action.openGlobalKeybindingsFile');
     let ed = vscode.window.activeTextEditor;
@@ -282,8 +319,16 @@ async function queryPreset(): Promise<Preset | undefined> {
 async function importBindings(file: vscode.Uri, preset: Bindings) {
     insertKeybindingsIntoConfig(file, preset.bind);
     let config = vscode.workspace.getConfiguration('master-key');
-    await withState(async state => state.set(MODE, 'insert'));
+    await withState(async state => state.set(MODE, {public: true}, 'insert').resolve());
     await config.update('definitions', preset.define, vscode.ConfigurationTarget.Global);
+}
+
+async function copyBindingsToNewFile(){
+    let options = makeQuickPicksFromPresets(await keybindingPresets);
+    let picked = await vscode.window.showQuickPick(options);
+    if(picked?.preset){
+        copyBindings(picked.preset.uri);
+    }
 }
 
 export async function selectPreset(preset?: Preset){
@@ -344,6 +389,14 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(vscode.commands.registerCommand(
         'master-key.selectPreset',
         selectPreset
+    ));
+    context.subscriptions.push(vscode.commands.registerCommand(
+        'master-key.removePreset',
+        removeKeybindings,
+    ));
+    context.subscriptions.push(vscode.commands.registerCommand(
+        'master-key.editPreset',
+        copyBindingsToNewFile,
     ));
     extensionPresetsDir = Utils.joinPath(context.extensionUri, "presets");
     await restoreKeybindingsFromStorage();
