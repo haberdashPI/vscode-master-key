@@ -302,7 +302,7 @@ export async function activate(context: vscode.ExtensionContext){
                 }else{
                     firstSelectionOrWord = doc.getText(e.selections[0]);
                 }
-                state.set('firstSelectionOrWord', firstSelectionOrWord);
+                state.set('firstSelectionOrWord', {public: true}, firstSelectionOrWord);
             });
         });
     });
