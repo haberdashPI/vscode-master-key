@@ -89,6 +89,10 @@ return to insert mode.
 """
 default.kind = "mode"
 
+# NOTE: using `escape` as a key has some limitations in Master Key; namely unlike most other
+# keys, escape will not be available in the command suggestion menu because it is
+# already bound to an action that closes the quick pick menu (and this is not something
+# that should normally be changed).
 [[bind]]
 path = "modes"
 name = "normal"

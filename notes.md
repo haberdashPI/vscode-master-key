@@ -8,13 +8,6 @@ BUG: validate `prefixes` to be actual key sequences
   + implement validation
   - add/pass a unit test
 
-BUG: esc will be captured by palette even if its bound as a suffix
-  (e.g. in a binding setup without esc for normal mode), preventing
-  any commands from being run that are bound to that key;
-  is this really a bug? I think this just requires that the user
-  use appropriate `when` clauses here if they want `esc` to work this way.
-  NOTE: we should document this limitation
-
 unit tests: edge cases with recording edits
   - how about when I switch documents?
   - how about when we don't start with normal mode commands?
