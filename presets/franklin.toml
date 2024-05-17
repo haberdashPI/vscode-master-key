@@ -925,6 +925,8 @@ key = "g c"
 name = "cell →"
 description = "next notebook cell"
 combinedName = "cell →/←"
+combinedDescription = "next/prev notebook cell"
+combinedKey = "c/shift+c"
 when = "editorLangId == 'markdown' || editorLangId == 'quarto'"
 command = "runCommands"
 args.commands = ["terminal-polyglot.next-fence-select", "selection-utilities.revealActive"]
@@ -934,8 +936,6 @@ path = "edit.motion"
 key = "g c"
 name = "cell →"
 combinedName = "cell →/←"
-combinedDescription = "next/prev notebook cell"
-combinedKey = "c/shift+c"
 when = "!(editorLangId == 'markdown' || editorLangId == 'quarto')"
 command = "runCommands"
 args.commands = [ "jupyter.gotoNextCellInFile", "jupyter.selectCell" ]
@@ -2491,9 +2491,14 @@ args.commands = ["terminal-polyglot.send-block-text",
 path = "edit.action"
 key = "z ["
 name = "to repl (v2)"
+combinedName = "to repl v2 (v3)"
 description = """
 send text to a terminal (usually containing a REPL), placing in a block when defined.
 """
+combinedDescription = """
+send text to a terminal (usually containing a REPL); v2 places the code in a block when defined (v3 does not).
+"""
+combinedKey = "[ / shift+["
 command = "runCommands"
 args.commands = ["terminal-polyglot.send-block-text", "selection-utilities.shrinkToActive"]
 
@@ -2610,7 +2615,6 @@ combinedDescription = "show the (debug) hover view"
 combinedKey = "(shift+)h"
 key = "z h"
 command = "editor.action.showHover"
-when = "editorTextFocus"
 
 [[bind]]
 path = "edit.util"
@@ -2619,7 +2623,6 @@ combinedName = "(debug) hover"
 description = "show the debug hover view"
 key = "z shift+h"
 command = "editor.debug.action.showDebugHover"
-when = "editorTextFocus"
 
 [[bind]]
 path = "edit.util"
@@ -2647,6 +2650,8 @@ path = "edit.util"
 name = "mark ↓"
 description = "move to next bookmark"
 combinedName = "mark ↓/↑"
+combinedDescription = "move to next/previous bookmark"
+combinedKey = "j/k"
 key = "z m j"
 when = "!master-key.select_on && !editorHasSelection"
 command = "vsc-labeled-bookmarks.navigateToNextBookmark"
@@ -2654,8 +2659,6 @@ command = "vsc-labeled-bookmarks.navigateToNextBookmark"
 [[bind]]
 path = "edit.util"
 combinedName = "mark ↓/↑"
-combinedDescription = "move to next/previous bookmark"
-combinedKey = "j/k"
 key = "z m j"
 when = "master-key.select_on || editorHasSelection"
 command = "vsc-labeled-bookmarks.expandSelectionToNextBookmark"
@@ -2944,7 +2947,6 @@ combinedDescription = "center window so that primary cursor is at the top/bottom
 combinedKey = "t/b"
 command = "selection-utilities.revealActive"
 args.at = "top"
-when = "editorTextFocus"
 
 [[bind]]
 path = "edit.util"
@@ -2954,7 +2956,6 @@ description = "center window so that primary cursor is at the bottom"
 key = "z w b"
 command = "selection-utilities.revealActive"
 args.at = "bottom"
-when = "editorTextFocus"
 
 ## Debugging
 ## --------------------------------
@@ -2968,7 +2969,6 @@ description = "toggle debug breakpoint"
 combinedDescription = "toggle debug breakpoint / debug related commands..."
 key = "z shift+b"
 command = "editor.debug.action.toggleBreakpoint"
-when = "editorTextFocus"
 
 [[bind]]
 path = "edit.util"
@@ -2985,7 +2985,6 @@ name = "cond. break"
 description = "conditional breakpoint"
 key = "z b shift+c"
 command = "editor.debug.action.conditionalBreakpoint"
-when = "editorTextFocus"
 
 
 [[bind]]
@@ -3008,7 +3007,6 @@ name = "next"
 description = "debug: step over next line"
 key = "z b j"
 command = "workbench.action.debug.stepOver"
-when = "editorTextFocus"
 
 [[bind]]
 path = "edit.util"
@@ -3016,7 +3014,6 @@ name = "into"
 description = "debug: step into next line"
 key = "z b i"
 command = "workbench.action.debug.stepInto"
-when = "editorTextFocus"
 
 [[bind]]
 path = "edit.util"
@@ -3024,7 +3021,6 @@ name = "out"
 description = "debug: step out"
 key = "z b o"
 command = "workbench.action.debug.stepOut"
-when = "editorTextFocus"
 
 ## Select-edit mode
 ## --------------------------------

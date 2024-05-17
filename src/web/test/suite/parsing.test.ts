@@ -366,8 +366,10 @@ suite('Keybinding Test Suite', () => {
                        [false, true, true, false, true, false]));
     });
 
-    test('Documentation expands across different when clauses of the same key', () => {
+    test('Documentation expands across key variants', () => {
         let spec = specForBindings(`
+        [header]
+        version = "1.0"
 
         [[bind]]
         path = ""
@@ -378,18 +380,21 @@ suite('Keybinding Test Suite', () => {
         combinedKey = "a/b"
         key = "k"
         when = "biz > 5"
+        command = "do"
 
         [[bind]]
         path = ""
         name = "a"
         key = "k"
         when = "biz < 5"
+        command = "do"
 
         [[bind]]
         path = ""
         name = "a"
         key = "h k"
         when = "biz > 5"
+        command = "do"
         `);
 
         assert(isEqual(spec.length, 4));
@@ -398,9 +403,9 @@ suite('Keybinding Test Suite', () => {
         assert(isEqual(spec[0].args.combinedName, spec[1].args.combinedName));
         assert(isEqual(spec[0].args.combinedDescription, spec[1].args.combinedDescription));
         assert(isUndefined(spec[3].args.description));
-        assert(isUndefined(spec[3].args.combinedKey));
-        assert(isUndefined(spec[3].args.combinedName));
-        assert(isUndefined(spec[3].args.combinedDescription));
+        assert(isEqual(spec[3].args.combinedKey, ""));
+        assert(isEqual(spec[3].args.combinedName, ""));
+        assert(isEqual(spec[3].args.combinedDescription, ""));
     });
 
     test('Keybindings properly resolve `<all-pefixes>` cases', () => {
