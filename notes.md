@@ -1,10 +1,7 @@
 current issue I'm working on:
 
-BUG: keys are combined so that prefixes don't always show the user defined description
-  the ordering of where the user defined description must be placed to show up is unintuitive
-    + implement doc mergig
-    + add/pass a unit test
-    + verify it works for franklin
+## Binding Improvements (this branch)
+
 BUG: validate `prefixes` to be actual key sequences
   + implement validation
   - add/pass a unit test
@@ -19,15 +16,10 @@ unit tests: edge cases with recording edits
   - how do recorded commands interact with the palette?
   - does the command palette show up / not show up with the proper timing?
 unit tests: parsing of YAML and JSON(C)
-tests: store/restore named
+  - actually: delete this feature (add it back in later if it feels worth it)
+unit tests: store/restore named commands
 
-IMPROVEMENT: show keybinding tips (for those general commands useful for examining documentation) in the visual documentation
-for
-  - toggle modifiers
-  - toggle cheetsheet
-  - toggle visual documentation
-  - simple command palette
-  - key suggestions
+Format improvements:
 
 IMPROVEMENT: automated resetTransient flag
 BUG: I noticed that definitions are updated internally on some kind of delay
@@ -37,12 +29,6 @@ BUG: I noticed that definitions are updated internally on some kind of delay
 - BUG/IMPROVEMENT: for any non-prefix binding (e.g. prefixCode==0)
   that has no modifier (other than shift), require that the editor
   be in focus
-
-- IMPROVEMENT: show escape/function key row in the visual key doc
-
-DOCUMENTATION: in documenting macro playback note the limitations of recording the keyboard
-(e.g. that it only records inserts; any modifiers are espected to be commands
-that are recorded)
 
 - IMPROVEMENT: fix default expansion for `when` clauses (keep it simple) and add an extra
 field e.g. `extend` (or `concat`?) for the fancier situation
@@ -58,11 +44,32 @@ name = "count {i}"
 command = "master-key.updateCount"
 args.value = "{i}"
 ```
-
 THEN: add more to symmetric insert setup
 
+BUG: repeat argument is not work for the repeat action command (e.g. I cannot repeat the last action ten times)
+
+## Visual Documentation Improvements (next branch)
+
+Visual doc improvements:
+
+IMPROVEMENT: show keybinding tips (for those general commands useful for examining documentation) in the visual documentation
+for
+  - toggle modifiers
+  - toggle cheetsheet
+  - toggle visual documentation
+  - simple command palette
+  - key suggestions
+
+- IMPROVEMENT: show escape/function key row in the visual key doc
+
+DOCUMENTATION: in documenting macro playback note the limitations of recording the keyboard
+(e.g. that it only records inserts; any modifiers are espected to be commands
+that are recorded)
+
+## Before first release
+
 thoughts: things I must have to release:
-- user documentation
+- user documentation (in cheet sheet form)
 - well documented default keybindings
 - keybinding documentation features
   - markdown output / html
@@ -77,12 +84,13 @@ thoughts: things I must have to release:
   - fix the repeat keybindings
   - fix default expansion
 
+## Future releases
+
 after first release
 
 - good documentation of the code
-- vim style bindings? (I think this could come in a separate release)
-
-BUG: repeat argument is not work for the repeat action command (e.g. I cannot repeat the last action ten times)
+- good documentation of the binding format
+- vim style bindings? (I think this could come in a separate release; or just never do it, wait until someone wants it)
 
 REFACTOR: add prettier config and apply new style to all files
 REFACTOR: cleanup up and document code, make it nice and readable
@@ -91,8 +99,6 @@ REFACTOR: somehow we have to define/organize binding parameters
   in *four* places, should be easier
 
 FEATURE: require parsing to validate modes to be all negations or all positive mode specifications
-
-EDGE CASE: check that changing keybingings doesn't muck with state (e.g. reset mode)
 
 wishlist:
 
