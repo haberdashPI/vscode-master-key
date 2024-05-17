@@ -180,14 +180,14 @@ function expandDefaultsAndDefinedCommands(spec: BindingSpec, problems: string[])
 function requireTransientSequence(item: BindingItem, i: number, problems: string[]){
     if(item.args.do.some(c => c.command === "master-key.prefix")){
         if(item.args.resetTransient === undefined){
-            item.args.resetTransient = true;
-        }else if(item.args.resetTransient === false){
+            item.args.resetTransient = false;
+        }else if(item.args.resetTransient === true){
             problems.push(`Item ${i} with name ${item.args.name}: 'resetTransient' must be `+
-                          `true for a command that calls 'master-key.prefxi'`);
+                          `false for a command that calls 'master-key.prefix'`);
         }
     }else{
         if(item.args.resetTransient === undefined){
-            item.args.resetTransient = false;
+            item.args.resetTransient = true;
         }
     }
 

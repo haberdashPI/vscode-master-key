@@ -278,8 +278,8 @@ suite('Keybinding Test Suite', () => {
         key = "k"
         kind = "all"
         command = "master-key.prefix"
-        resetTransient = false
-        `), {message: /'resetTransient' must be true/});
+        resetTransient = true
+        `), {message: /'resetTransient' must be false/});
 
         let spec = specForBindings(`
         [header]
@@ -295,9 +295,17 @@ suite('Keybinding Test Suite', () => {
         key = "k"
         kind = "all"
         command = "master-key.prefix"
+
+        [[bind]]
+        path = "bind"
+        name = "3"
+        key = "j"
+        kind = "all"
+        command = "bob"
         `);
-        assert.equal(spec.length, 1);
-        assert(spec[0].args.resetTransient);
+        assert.equal(spec.length, 2);
+        assert(!spec[0].args.resetTransient);
+        assert(spec[1].args.resetTransient);
     });
 
     test('Checks for duplicate bindings', () => {
