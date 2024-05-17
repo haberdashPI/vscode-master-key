@@ -63,7 +63,6 @@ suite('Keybinding Test Suite', () => {
 
     test('Imports correct number of bindings', () => {
         let spec = specForBindings(simpleFile);
-        console.dir(spec);
         assert.equal(spec.length, 2);
     });
 
@@ -79,8 +78,8 @@ suite('Keybinding Test Suite', () => {
         id = "foo"
         name = "Foo"
         default.kind = "fookind"
-        default.when = "baz > 0"
         default.computedArgs.value = "count"
+        when = "baz > 0"
 
         [[path]]
         id = "foo.bar"
@@ -111,7 +110,7 @@ suite('Keybinding Test Suite', () => {
     `);
     defItems = sortBy(defItems, x => x.key);
 
-    test('Defaults expand recursively', () => {
+    test('Defaults and when expand recursively', () => {
         assert.equal(defItems[0].key, "a");
         assert.equal(defItems[0].args.kind, "fookind");
         assert.equal(defItems[0].prefixDescriptions.length, 1);
@@ -211,7 +210,7 @@ suite('Keybinding Test Suite', () => {
         command = "foo"
         `), {message: /Invalid keybinding/});
 
-       assert.throws(() => specForBindings(`
+        assert.throws(() => specForBindings(`
         [header]
         version = "1.0"
 
@@ -244,6 +243,62 @@ suite('Keybinding Test Suite', () => {
         `), {message: /Invalid keybinding/});
     });
 
+
+    test('prefixes are validated', () => {
+        assert.throws(() => specForBindings(`
+        [header]
+        version = "1.0"
+
+        [[path]]
+        id = "bind"
+        name = "All Bindings"
+
+        [[bind]]
+        path = "bind"
+        name = "2"
+        key = "k"
+        kind = "all"
+        prefixes = ["foobar", ""]
+        command = "foo"
+        `), {message: /foobar/});
+    });
+
+    test('prefixes must be transient', () => {
+        assert.throws(() => specForBindings(`
+        [header]
+        version = "1.0"
+
+        [[path]]
+        id = "bind"
+        name = "All Bindings"
+
+        [[bind]]
+        path = "bind"
+        name = "2"
+        key = "k"
+        kind = "all"
+        command = "master-key.prefix"
+        resetTransient = false
+        `), {message: /'resetTransient' must be true/});
+
+        let spec = specForBindings(`
+        [header]
+        version = "1.0"
+
+        [[path]]
+        id = "bind"
+        name = "All Bindings"
+
+        [[bind]]
+        path = "bind"
+        name = "2"
+        key = "k"
+        kind = "all"
+        command = "master-key.prefix"
+        `);
+        assert.equal(spec.length, 1);
+        assert(spec[0].args.resetTransient);
+    });
 
     test('Checks for duplicate bindings', () => {
         assert.throws(() => specForBindings(`

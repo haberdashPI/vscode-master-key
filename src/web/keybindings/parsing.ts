@@ -179,7 +179,7 @@ export const bindingItem = z.object({
         combinedName: z.string().optional().default(""),
         combinedKey: z.string().optional().default(""),
         combinedDescription: z.string().optional().default(""),
-        resetTransient: rawBindingItem.shape.resetTransient.default(true),
+        resetTransient: rawBindingItem.shape.resetTransient,
         kind: z.string().optional().default(""),
         repeat: z.number().min(0).or(z.string()).default(0)
     }).merge(rawBindingItem.pick({name: true, description: true}))
@@ -191,7 +191,8 @@ export const bindingPath = z.object({
     id: z.string().regex(/(^$|[a-zA-Z0-9_\-]+(\.[a-zA-Z0-9_\-]+)*)/),
     name: z.string(),
     description: z.string().optional(),
-    default: rawBindingItem.partial().optional()
+    default: rawBindingItem.partial().optional(),
+    when: z.string().optional().transform(parseWhen).pipe(parsedWhen.array().optional())
 });
 
 function contains(xs: string[], el: string){
