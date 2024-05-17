@@ -2,10 +2,9 @@ current issue I'm working on:
 
 ## Binding Improvements (this branch)
 
-Format improvements:
+- DEBUG: with the latest updates to the file format, the key suggestions have disappeared
 
-- IMPROVEMENT: fix default expansion for `when` clauses (keep it simple) and add an extra
-field e.g. `extend` (or `concat`?) for the fancier situation
+Format improvements:
 
  - IMPROVEMENT: add command `Import Default/User Keybindings` commands
 
