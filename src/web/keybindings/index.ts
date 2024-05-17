@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { searchArgs, searchMatches } from '../commands/search';
-import { parseBindings, BindingSpec, showParseError, parseBindingFile, bindingSpec } from './parsing';
+import { parseBindings, BindingSpec, showParseError, parseBindingFile, bindingSpec, bindingItem, vscodeBinding } from './parsing';
 import { processBindings, IConfigKeyBinding, Bindings, isSingleCommand } from './processing';
 import { uniq, pick, words } from 'lodash';
 import replaceAll from 'string.prototype.replaceall';
@@ -8,7 +8,7 @@ import { Utils } from 'vscode-uri';
 import z from 'zod';
 import { withState } from '../state';
 import { MODE } from '../commands/mode';
-import JSONC from 'jsonc-parser';
+const JSONC = require("jsonc-simple-parser");
 const TOML = require("smol-toml");
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -167,14 +167,21 @@ async function copyCommandResultIntoBindingFile(command: string){
     let ed = vscode.window.activeTextEditor;
     if(ed && oldEd){
         let text = ed.document.getText();
-        text = text.replace(/^.*AUTOMATED BINDINGS START(.\n\r)+^.*AUTOMATED BINDINGS END/m, "");
-        let keys = parseBindings(text, JSONC.parse);
-        let tomlText = TOML.stringify(keys);
-        oldEd.edit(edit => {
-            let header = "# Keybindings imported from existing shortcuts\n";
-            let line = "\n##########################################################";
-            edit.insert(vscode.Position(0, 0), header + line + tomlText + line + "\n\n");
-        });
+        text = text.replace(/^.*AUTOMATED BINDINGS START(.|\n|\r)+AUTOMATED BINDINGS END.*$/m, "");
+        let keys = vscodeBinding.array().safeParse(JSONC.default.parse(text));
+        if(!keys.success){
+            for (let issue of keys.error.issues.slice(0, 3)) {
+                showParseError("Validation error: ", issue);
+            }
+        }else{
+            let tomlText = TOML.stringify({bind: keys.data});
+            let lastLine = oldEd.document.lineCount;
+            oldEd.edit(edit => {
+                let header = "\n\n# Keybindings imported from existing shortcuts\n";
+                let line = "\n##########################################################";
+                edit.insert(new vscode.Position(lastLine, 0), header + line + tomlText + line + "\n\n");
+            });
+        }
     }
 }
 
