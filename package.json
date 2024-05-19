@@ -136,6 +136,12 @@
           "description": "The maximum number of previously run commands that are saved.",
           "default": 1024
         },
+        "master-key.suggestionDelay": {
+          "title": "Suggestion Delay",
+          "type": "integer",
+          "description": "Time to wait, in milliseconds, before showing command suggestions for multi-key commands (set to 0 to disable)",
+          "default": 500
+        },
         "master-key.searchMatchBackground": {
           "title": "Background of current search match",
           "type": "string",

@@ -1,7 +1,7 @@
 [header]
 version = "1.0"
 
-# NOTE: currently this fields has no functional effect, it merely serves as documentation.
+# NOTE: currently this field has no functional effect, it merely serves as documentation.
 # However, future version of Master Key may leverage the required extensions in some way to
 # make them easy to install when they are missing
 requiredExtensions = [

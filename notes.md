@@ -1,15 +1,6 @@
 current issue I'm working on:
 
-## Binding Improvements (this branch)
-
-Format improvements:
-
- - IMPROVEMENT: add command `Import Default/User Keybindings` commands
-  - TODO: ensure that function keys are accepted as keybindings
-
 ## Mode customization
-
--
 
 Format improvements
 
@@ -121,14 +112,6 @@ wishlist:
   and not very much gain would be had)
 
 - place frequently used commands near the bottom of the command palette
-
-- turn keybinding file into markdown documentation of the bindings
-
-- make it possible to customize when the contextual palette shows up
-  (or have it be hidden entirely unless a keybinding is pressed)
-
-- choose which modifiers to default to in the visual documentation based
-  on modifier frequency
 
 - get macro replay working with selection utility commands
 
