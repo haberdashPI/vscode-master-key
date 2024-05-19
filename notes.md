@@ -2,11 +2,16 @@ current issue I'm working on:
 
 ## Binding Improvements (this branch)
 
-- DEBUG: with the latest updates to the file format, the key suggestions have disappeared
-
 Format improvements:
 
  - IMPROVEMENT: add command `Import Default/User Keybindings` commands
+  - TODO: ensure that function keys are accepted as keybindings
+
+## Mode customization
+
+-
+
+Format improvements
 
 - REDESIGN!! I think the the way repeated keys works is a little unwieldy in many cases
   (maybe we should express it explicitly as a loop somehow...🤔)
@@ -19,6 +24,7 @@ name = "count {i}"
 command = "master-key.updateCount"
 args.value = "{i}"
 ```
+
 THEN: add more to symmetric insert setup
 
 BUG: repeat argument is not work for the repeat action command (e.g. I cannot repeat the last action ten times)

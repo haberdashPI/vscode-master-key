@@ -8,6 +8,7 @@ import { Utils } from 'vscode-uri';
 import z from 'zod';
 import { withState } from '../state';
 import { MODE } from '../commands/mode';
+import { VSCODE_VERSION_MAX } from 'vscode-extension-tester';
 const JSONC = require("jsonc-simple-parser");
 const TOML = require("smol-toml");
 
@@ -159,6 +160,7 @@ async function removeKeybindings(){
 
 async function copyCommandResultIntoBindingFile(command: string){
     let oldEd = vscode.window.activeTextEditor;
+    let oldDocument = oldEd?.document;
     if(oldEd?.document.languageId !== 'markdown'){
         vscode.window.showErrorMessage("Expected current file to be a markdown file.");
         return;
@@ -175,12 +177,20 @@ async function copyCommandResultIntoBindingFile(command: string){
             }
         }else{
             let tomlText = TOML.stringify({bind: keys.data});
-            let lastLine = oldEd.document.lineCount;
-            oldEd.edit(edit => {
-                let header = "\n\n# Keybindings imported from existing shortcuts\n";
-                let line = "\n##########################################################";
-                edit.insert(new vscode.Position(lastLine, 0), header + line + tomlText + line + "\n\n");
-            });
+            if(oldDocument){
+                await vscode.window.showTextDocument(oldDocument);
+                let tomlEd = vscode.window.activeTextEditor;
+                if(tomlEd){
+                    let lastLine = tomlEd.document.lineCount;
+                    let lastLinePos = new vscode.Position(lastLine, 0);
+                    await tomlEd.edit(edit => {
+                        let header = "\n\n# Keybindings imported from existing shortcuts";
+                        let line = "\n# -----------------------------------------------\n";
+                        edit.insert(lastLinePos, header + line + tomlText + "\n" + line + "\n");
+                    });
+                    tomlEd.revealRange(new vscode.Range(lastLinePos, lastLinePos));
+                }
+            }
         }
     }
 }

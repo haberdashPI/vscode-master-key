@@ -36,7 +36,7 @@ export type DefinedCommand = z.infer<typeof definedCommand>;
 
 const ALLOWED_MODIFIERS = /Ctrl|Shift|Alt|Cmd|Win|Meta/i;
 const ALLOWED_KEYS = [
-    /<all-keys>/, /(f[1-9])|(f1[0-9])/i, /[a-z]/, /[0-9]/,
+    /<all-keys>/, /f[1-9]/i, /f1[0-9]/i, /[a-z]/, /[0-9]/,
     /`/, /-/, /=/, /\[/, /\]/, /\\/, /;/, /'/, /,/, /\./, /\//,
     /left/i, /up/i, /right/i, /down/i, /pageup/i, /pagedown/i, /end/i, /home/i,
     /tab/i, /enter/i, /escape/i, /space/i, /backspace/i, /delete/i,
@@ -44,7 +44,7 @@ const ALLOWED_KEYS = [
     /numpad[0-9]/i, /numpad_multiply/i, /numpad_add/i, /numpad_separator/i,
     /numpad_subtract/i, /numpad_decimal/i, /numpad_divide/i,
     // layout independent versions
-    /(\[f[1-9]\])|(\[f1[0-9]\])/i, /\[Key[A-Z]\]/i, /\[Digit[0-9]\]/i, /\[Numpad[0-9]\]/i,
+    /\[f[1-9]\]/i, /\[f1[0-9]\]/i, /\[Key[A-Z]\]/i, /\[Digit[0-9]\]/i, /\[Numpad[0-9]\]/i,
     /\[Backquote\]/, /\[Minus\]/, /\[Equal\]/, /\[BracketLeft\]/, /\[BracketRight\]/,
     /\[Backslash\]/, /\[Semicolon\]/, /\[Quote\]/, /\[Comma\]/, /\[Period\]/, /\[Slash\]/,
     /\[ArrowLeft\]/, /\[ArrowUp\]/, /\[ArrowRight\]/, /\[ArrowDown\]/, /\[PageUp\]/,
