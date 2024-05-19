@@ -212,13 +212,22 @@ export const validModes = z.string().array().
                  only valid modes listed modes were: ` + modes };
     });
 
+// TODO: implement processing step
+const modeSpec = z.object({
+    name: z.string(),
+    cursorShape: z.enum(["Line", "Block", "Underline", "LineThin", "BlockOutline", "UnderlineThin"]),
+    defaultBinding: rawBindingItem.omit({path: true, mode: true, prefixes: true, key: true}).
+        required({ name: true, command: true })
+})
+
 export const bindingSpec = z.object({
     header: bindingHeader,
     bind: rawBindingItem.array(),
     path: bindingPath.array().refine(xs => uniqBy(xs, x => x.id).length === xs.length,
         { message: "Defined [[path]] entries must all have unique 'id' fields."}).
         optional().default([]),
-    define: z.object({ validModes: validModes }).passthrough().optional()
+    mode: modeSpec.array(),
+    define: z.object({}).passthrough().optional()
 }).strict();
 export type BindingSpec = z.infer<typeof bindingSpec>;
 
