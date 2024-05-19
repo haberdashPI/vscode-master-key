@@ -1,13 +1,96 @@
 current issue I'm working on:
 
-NEXT UP:
+## Mode customization
 
-IMPROVE KEYBINDINGS: I have thoughts about how to change my keymap now (maybe prioritize
-  any keybinding redesign before doing this)
-  (maybe this is a good time to redesign the repeated keys setup)
+Format improvements
 
-- add: command to remove keybindings
-- add: command to insert bindings in a new file (so they can be easily edited)
+- REDESIGN!! I think the the way repeated keys works is a little unwieldy in many cases
+  (maybe we should express it explicitly as a loop somehow...🤔)
+
+```toml
+[[bind]]
+foreach.i = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0] # or "[0-9]+"
+key = "shift+{i}"
+name = "count {i}"
+command = "master-key.updateCount"
+args.value = "{i}"
+```
+
+THEN: add more to symmetric insert setup
+
+BUG: repeat argument is not work for the repeat action command (e.g. I cannot repeat the last action ten times)
+
+## Wrapping up unit tests
+
+unit tests: edge cases with recording edits
+  - how about when I switch documents?
+  - how about when we don't start with normal mode commands?
+  - how about long edits with lots of insert mode commands intersprsed with the edits?
+  - what about multiple cursors?
+  - how do recorded commands interact with the palette?
+  - does the command palette show up / not show up with the proper timing?
+unit tests: parsing of YAML and JSON(C)
+  - actually: delete this feature (add it back in later if it feels worth it)
+unit tests: store/restore named commands
+
+## Visual Documentation Improvements
+
+Visual doc improvements:
+
+IMPROVEMENT: show keybinding tips (for those general commands useful for examining documentation) in the visual documentation
+for
+  - toggle modifiers
+  - toggle cheetsheet
+  - toggle visual documentation
+  - simple command palette
+  - key suggestions
+
+- IMPROVEMENT: show escape/function key row in the visual key doc
+
+write code to convert the toml file to a markdown of organized tables of keybindings
+and provide a command that opens the Markdown preview of this file
+
+DOCUMENTATION: in documenting macro playback note the limitations of recording the keyboard
+(e.g. that it only records inserts; any modifiers are espected to be commands
+that are recorded)
+
+## Before first release
+
+thoughts: things I must have to release:
+- user documentation (in cheet sheet form)
+- well documented default keybindings
+- keybinding documentation features
+  - markdown output / html
+- mode customization
+  - have an option to allow a default command
+    that operates on all keys that *aren't* specified
+    OR that pass a regex
+- modernized selection utilities
+  - good documentation
+  - modern build setup
+- final design of keybinding file that I'm relatively satisfied with
+  - fix the repeat keybindings
+  - fix default expansion
+
+## Future releases
+
+after first release
+
+- good documentation of the code
+- good documentation of the binding format
+- vim style bindings? (I think this could come in a separate release; or just never do it, wait until someone wants it)
+
+REFACTOR: add prettier config and apply new style to all files
+REFACTOR: cleanup up and document code, make it nice and readable
+REFACTOR: change name of test files to be more consistent
+REFACTOR: somehow we have to define/organize binding parameters
+  in *four* places, should be easier
+
+FEATURE: require parsing to validate modes to be all negations or all positive mode specifications
+
+wishlist:
+
+- IMPROVEMENT: add command to delete all but primary selection in selection utilities
 
 - idea: we want the default mode (which can be set by the user)
   to require no when clause for it; in this way
@@ -20,75 +103,7 @@ IMPROVE KEYBINDINGS: I have thoughts about how to change my keymap now (maybe pr
     can implementing the binding when the extension isn't active (and do this
     for *only* the default mode bindings)
 
-unit tests: edge cases with recording edits
-  - how about when I switch documents?
-  - how about when we don't start with normal mode commands?
-  - how about long edits with lots of insert mode commands intersprsed with the edits?
-  - what about multiple cursors?
-  - how do recorded commands interact with the palette?
-  - does the command palette show up / not show up with the proper timing?
-unit tests: parsing of YAML and JSON(C)
-unit tests: store/restore named
-
-BUG: I noticed that definitions are updated internally on some kind of delay
-  (the config updates, but the state has an old value)
-  (search for this edge case a little bit)
-
-- BUG/IMPROVEMENT: for any non-prefix binding (e.g. prefixCode==0)
-  that has no modifier (other than shift), require that the editor
-  be in focus
-
-thoughts: things I must have to release:
-- user documentation
-- well documented default keybindings
-- keybinding documentation features
-  - markdown output / html
-- mode customization
-- modernized selection utilities
-  - good documentation
-  - modern build setup
-- final design of keybinding file that I'm relatively satisfied with
-  - fix the repeat keybindings
-  - fix default expansion
-
-after first release
-
-- good documentation of the code
-- vim style bindings? (I think this could come in a separate release)
-
-REFACTOR: add prettier config and apply new style to all files
-REFACTOR: cleanup up and document code, make it nice and readable
-REFACTOR: change name of test files to be more consistent
-
-**TODO**: in documenting macro playback note the limitations of recording the keyboard
-(e.g. that it only records inserts; any modifiers are espected to be commands
-that are recorded)
-
-**TODO**: fix default expansion for `when` clauses (keep it simple) and add an extra
-field e.g. `extend` (or `concat`?) for the fancier situation
-
-**TODO**: anything beyond this point needs to be organized and prioritized
-
-- REDESIGN!! I think the the way repeated keys works is a little unwieldy in many cases
-  (maybe we should express it explicitly as a loop somehow...🤔)
-
-```toml
-[[bind]]
-foreach.i = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0]
-key = "shift+{i}"
-name = "count {i}"
-command = "master-key.updateCount"
-args.value = "{i}"
-```
-
-maybe we should
-
-- require parsing to validate modes to be all negations or all positive mode specifications
-- add more to symmetric insert setup
-
-EDGE CASE: check that changing keybingings doesn't much with state (e.g. reset mode)
-
-wishlist:
+- make it possible to navigate by indent
 
 - careful optimization: clean up code to do fewer dumb repetivie things
   that slow down performance
@@ -97,14 +112,6 @@ wishlist:
   and not very much gain would be had)
 
 - place frequently used commands near the bottom of the command palette
-
-- turn keybinding file into markdown documentation of the bindings
-
-- make it possible to customize when the contextual palette shows up
-  (or have it be hidden entirely unless a keybinding is pressed)
-
-- choose which modifiers to default to in the visual documentation based
-  on modifier frequency
 
 - get macro replay working with selection utility commands
 
@@ -197,5 +204,8 @@ quick win: store clipboard to a register
 - implement conctext selection-utilities.firstSelectionOrWord (which accounts
   for changes in the primary selection)
   - NOTE: this should also use `master-key.set` when available
+
+- make it possible to render some subset of the keybindings on a keyboard
+  in the cheetsheet documentation
 
 enhancement: sneak shows the count required to reach each target

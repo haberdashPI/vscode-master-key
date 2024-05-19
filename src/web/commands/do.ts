@@ -63,7 +63,11 @@ const runCommandArgs = z.object({
     key: z.string().optional(),
     resetTransient: z.boolean().optional().default(true),
     repeat: z.number().min(0).or(z.string()).optional(),
+    hideInPalette: z.boolean().default(false).optional(),
     priority: z.number().optional(),
+    combinedKey: z.string().optional(),
+    combinedName: z.string().optional(),
+    combinedDescription: z.string().optional(),
     kind: z.string().optional(),
     path: z.string().optional(),
     name: z.string().optional(),
@@ -99,7 +103,7 @@ async function resolveRepeat(args: RunCommandsArgs): Promise<number> {
     }
 }
 
-const PALETTE_DELAY = 500;
+let paletteDelay: number = 500;
 let paletteUpdate = Number.MIN_SAFE_INTEGER;
 
 function registerPaletteUpdate(){
@@ -130,14 +134,14 @@ export async function doCommands(args: RunCommandsArgs): Promise<CommandResult>{
                 }
             }
         }
-        if(!args.resetTransient){
+        if(!args.resetTransient && paletteDelay > 0){
             let currentPaletteUpdate = paletteUpdate;
             setTimeout(async () => {
                 if(currentPaletteUpdate === paletteUpdate){
                     registerPaletteUpdate();
                     commandPalette(undefined, {context: true, useKey: true});
                 }
-            }, PALETTE_DELAY);
+            }, paletteDelay);
         }
     }finally{
         if(args.resetTransient){
@@ -187,6 +191,7 @@ function updateConfig(event?: vscode.ConfigurationChangeEvent){
     if(!event || event.affectsConfiguration('master-key')){
         let config = vscode.workspace.getConfiguration('master-key');
         maxHistory = (config.get<number>('maxCommandHistory') || 1024);
+        paletteDelay = (config.get<number>('suggestionDelay') || 500);
     }
 }
 

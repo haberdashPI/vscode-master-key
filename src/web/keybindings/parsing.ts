@@ -36,7 +36,7 @@ export type DefinedCommand = z.infer<typeof definedCommand>;
 
 const ALLOWED_MODIFIERS = /Ctrl|Shift|Alt|Cmd|Win|Meta/i;
 const ALLOWED_KEYS = [
-    /<all-keys>/, /(f[1-9])|(f1[0-9])/i, /[a-z]/, /[0-9]/,
+    /<all-keys>/, /f[1-9]/i, /f1[0-9]/i, /[a-z]/, /[0-9]/,
     /`/, /-/, /=/, /\[/, /\]/, /\\/, /;/, /'/, /,/, /\./, /\//,
     /left/i, /up/i, /right/i, /down/i, /pageup/i, /pagedown/i, /end/i, /home/i,
     /tab/i, /enter/i, /escape/i, /space/i, /backspace/i, /delete/i,
@@ -44,7 +44,7 @@ const ALLOWED_KEYS = [
     /numpad[0-9]/i, /numpad_multiply/i, /numpad_add/i, /numpad_separator/i,
     /numpad_subtract/i, /numpad_decimal/i, /numpad_divide/i,
     // layout independent versions
-    /(\[f[1-9]\])|(\[f1[0-9]\])/i, /\[Key[A-Z]\]/i, /\[Digit[0-9]\]/i, /\[Numpad[0-9]\]/i,
+    /\[f[1-9]\]/i, /\[f1[0-9]\]/i, /\[Key[A-Z]\]/i, /\[Digit[0-9]\]/i, /\[Numpad[0-9]\]/i,
     /\[Backquote\]/, /\[Minus\]/, /\[Equal\]/, /\[BracketLeft\]/, /\[BracketRight\]/,
     /\[Backslash\]/, /\[Semicolon\]/, /\[Quote\]/, /\[Comma\]/, /\[Period\]/, /\[Slash\]/,
     /\[ArrowLeft\]/, /\[ArrowUp\]/, /\[ArrowRight\]/, /\[ArrowDown\]/, /\[PageUp\]/,
@@ -128,9 +128,20 @@ export function parseWhen(when_: string | string[] | undefined): ParsedWhen[] {
     });
 }
 
+export const vscodeBinding = z.object({
+    key: bindingKey,
+    command: z.string(),
+    args: z.object({}).optional(),
+    when: z.string().optional()
+});
+
 export const rawBindingItem = z.object({
     name: z.string().optional(),
     description: z.string().optional(),
+    hideInPalette: z.boolean().default(false).optional(),
+    combinedName: z.string().optional().default(""),
+    combinedKey: z.string().optional().default(""),
+    combinedDescription: z.string().optional().default(""),
     path: z.string().optional(),
     priority: z.number().default(0).optional(),
     kind: z.string().optional(),
@@ -140,7 +151,7 @@ export const rawBindingItem = z.object({
         pipe(parsedWhen.array()),
     mode: z.union([z.string(), z.string().array()]).optional(),
     prefixes: z.preprocess(x => x === "<all-prefixes>" ? [] : x,
-        z.string().array()).optional(),
+        bindingKey.or(z.string().length(0)).array()).optional(),
     resetTransient: z.boolean().optional(),
     repeat: z.number().min(0).or(z.string()).default(0).optional()
 }).merge(rawBindingCommand).strict();
@@ -170,8 +181,12 @@ export const bindingItem = z.object({
     args: z.object({
         do: doArgs,
         path: z.string().optional().default(""),
+        hideInPalette: z.boolean().default(false).optional(),
         priority: z.number().optional().default(0),
-        resetTransient: rawBindingItem.shape.resetTransient.default(true),
+        combinedName: z.string().optional().default(""),
+        combinedKey: z.string().optional().default(""),
+        combinedDescription: z.string().optional().default(""),
+        resetTransient: rawBindingItem.shape.resetTransient,
         kind: z.string().optional().default(""),
         repeat: z.number().min(0).or(z.string()).default(0)
     }).merge(rawBindingItem.pick({name: true, description: true}))
@@ -183,7 +198,8 @@ export const bindingPath = z.object({
     id: z.string().regex(/(^$|[a-zA-Z0-9_\-]+(\.[a-zA-Z0-9_\-]+)*)/),
     name: z.string(),
     description: z.string().optional(),
-    default: rawBindingItem.partial().optional()
+    default: rawBindingItem.partial().optional(),
+    when: z.string().optional().transform(parseWhen).pipe(parsedWhen.array().optional())
 });
 
 function contains(xs: string[], el: string){

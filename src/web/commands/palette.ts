@@ -6,7 +6,10 @@ import { PREFIX_CODE, prefixCodes } from './prefix';
 import { MODE } from './mode';
 import { IConfigKeyBinding, PrefixCodes } from '../keybindings/processing';
 import { RunCommandsArgs, doCommandsCmd } from './do';
-import { uniqBy, sortBy } from 'lodash';
+import { reverse, uniqBy, sortBy } from 'lodash';
+import replaceAll from 'string.prototype.replaceall';
+import { QuickPickItem } from 'vscode-extension-tester';
+import { TypeOf } from 'zod';
 
 let paletteBindingMode = false;
 let paletteBindingContext = false;
@@ -20,15 +23,15 @@ function setPickerText(){
         }
         let mode;
         if(paletteBindingMode){
-            mode = "Press a Binding";
+            mode = "Keybinding mode";
         }else{
-            mode = "Search";
+            mode = "Search mode";
         }
         let context = "";
         if(paletteBindingContext){
             context = "Context Specific ";
         }
-        currentPicker.title = `Master Key ${context}Palette: ${mode} (use ^. to change mode)`;
+        currentPicker.title = `Master Key ${context}Palette: ${mode} (^. changes mode)`;
     }
 }
 
@@ -65,8 +68,8 @@ export async function commandPalette(args_: unknown,
             // (atlernatively, commands can set their own state somehow)
             availableBindings = <IConfigKeyBinding[]>bindings.filter(filterBindingFn());
         }
-        availableBindings = uniqBy(availableBindings, b =>
-            (b.args.name || "")+(b.args.kind || "")+(b.args.prefixCode));
+        availableBindings = reverse(uniqBy(reverse(availableBindings), b =>
+            (b.args.key || "")+(b.args.prefixCode)));
 
         let picks = availableBindings.map(binding => {
             let key = binding.args.key;
@@ -76,29 +79,46 @@ export async function commandPalette(args_: unknown,
                     key = seq + " " + key;
                 }
                 key = prettifyPrefix(key);
-                if(binding.args.mode){
-                    key = binding.args.mode.toLocaleLowerCase() + ": " + key;
-                }
             }else{
                 key = prettifyPrefix(key);
             }
 
             return {
                 label: key,
-                description: (binding.args.name || "") + " — " + (binding.args.description || ""),
+                description: binding.args.name,
+                detail: replaceAll(binding.args.description || "", /\n/g, ' '),
                 args: binding.args,
             };
         });
 
         picks = sortBy(picks, x => -x.args.priority);
+        let filteredPicks: typeof picks = [];
+
+        if(picks.length === 0){
+            vscode.window.showErrorMessage(`Palette cannot be shown for mode '${mode}', there are no bindings.`)
+        }
+
+        let lastPick = picks[0];
+        filteredPicks.push(lastPick);
+        for(let pick of picks.slice(1)){
+            if(lastPick.args.combinedName && lastPick.args.combinedName === pick.args.combinedName){
+                lastPick.label = prettifyPrefix(lastPick.args.combinedKey);
+                lastPick.description = lastPick.args.combinedName;
+                lastPick.detail = lastPick.args.combinedDescription || "";
+            }else{
+                filteredPicks.push(pick);
+                lastPick = pick;
+            }
+        }
 
         let picker = vscode.window.createQuickPick<{label: string, args: RunCommandsArgs}>();
         currentPicker = picker;
         let accepted = false;
         paletteBindingContext = context;
         setPickerText();
-        picker.items = picks;
+        picker.items = filteredPicks;
         picker.matchOnDescription = true;
+        picker.matchOnDetail = true;
         picker.onDidAccept(async _ => {
             let pick = picker.selectedItems[0];
             if(pick){
@@ -146,5 +166,6 @@ export function activate(context: vscode.ExtensionContext){
         togglePaletteMode));
     context.subscriptions.push(vscode.commands.registerCommand('master-key.commandPalette',
         x => commandPalette(x, {context: false})));
-    // TODO: also show a full command palette that lets you search all commands
+    context.subscriptions.push(vscode.commands.registerCommand('master-key.commandSuggestions',
+        x => commandPalette(x, {context: true, useKey: true})));
 }

@@ -5,7 +5,7 @@ import assert from 'assert';
 import { processBindings } from '../../keybindings/processing';
 import { parseBindings } from '../../keybindings/parsing';
 import { fromZodError } from 'zod-validation-error';
-import { sortBy, isEqual } from 'lodash';
+import { sortBy, isEqual, isUndefined } from 'lodash';
 
 function specForBindings(text: string) {
     let result = parseBindings(text, 'toml');
@@ -63,7 +63,6 @@ suite('Keybinding Test Suite', () => {
 
     test('Imports correct number of bindings', () => {
         let spec = specForBindings(simpleFile);
-        console.dir(spec);
         assert.equal(spec.length, 2);
     });
 
@@ -79,8 +78,8 @@ suite('Keybinding Test Suite', () => {
         id = "foo"
         name = "Foo"
         default.kind = "fookind"
-        default.when = "baz > 0"
         default.computedArgs.value = "count"
+        when = "baz > 0"
 
         [[path]]
         id = "foo.bar"
@@ -111,7 +110,7 @@ suite('Keybinding Test Suite', () => {
     `);
     defItems = sortBy(defItems, x => x.key);
 
-    test('Defaults expand recursively', () => {
+    test('Defaults and when expand recursively', () => {
         assert.equal(defItems[0].key, "a");
         assert.equal(defItems[0].args.kind, "fookind");
         assert.equal(defItems[0].prefixDescriptions.length, 1);
@@ -211,7 +210,7 @@ suite('Keybinding Test Suite', () => {
         command = "foo"
         `), {message: /Invalid keybinding/});
 
-       assert.throws(() => specForBindings(`
+        assert.throws(() => specForBindings(`
         [header]
         version = "1.0"
 
@@ -244,6 +243,70 @@ suite('Keybinding Test Suite', () => {
         `), {message: /Invalid keybinding/});
     });
 
+
+    test('prefixes are validated', () => {
+        assert.throws(() => specForBindings(`
+        [header]
+        version = "1.0"
+
+        [[path]]
+        id = "bind"
+        name = "All Bindings"
+
+        [[bind]]
+        path = "bind"
+        name = "2"
+        key = "k"
+        kind = "all"
+        prefixes = ["foobar", ""]
+        command = "foo"
+        `), {message: /foobar/});
+    });
+
+    test('prefixes must be transient', () => {
+        assert.throws(() => specForBindings(`
+        [header]
+        version = "1.0"
+
+        [[path]]
+        id = "bind"
+        name = "All Bindings"
+
+        [[bind]]
+        path = "bind"
+        name = "2"
+        key = "k"
+        kind = "all"
+        command = "master-key.prefix"
+        resetTransient = true
+        `), {message: /'resetTransient' must be false/});
+
+        let spec = specForBindings(`
+        [header]
+        version = "1.0"
+
+        [[path]]
+        id = "bind"
+        name = "All Bindings"
+
+        [[bind]]
+        path = "bind"
+        name = "2"
+        key = "k"
+        kind = "all"
+        command = "master-key.prefix"
+
+        [[bind]]
+        path = "bind"
+        name = "3"
+        key = "j"
+        kind = "all"
+        command = "bob"
+        `);
+        assert.equal(spec.length, 2);
+        assert(!spec[0].args.resetTransient);
+        assert(spec[1].args.resetTransient);
+    });
 
     test('Checks for duplicate bindings', () => {
         assert.throws(() => specForBindings(`
@@ -364,6 +427,48 @@ suite('Keybinding Test Suite', () => {
         assert(isEqual(spec.map(i => i.key), ["d", "a", "b", "c", "a", "b"]));
         assert(isEqual(spec.map(i => !!(i.args.do[0]?.args?.automated)),
                        [false, true, true, false, true, false]));
+    });
+
+    test('Documentation expands across key variants', () => {
+        let spec = specForBindings(`
+        [header]
+        version = "1.0"
+
+        [[bind]]
+        path = ""
+        name = "a"
+        description = "boop"
+        combinedName = "boop/aba"
+        combinedDescription = "boop/aba daba do"
+        combinedKey = "a/b"
+        key = "k"
+        when = "biz > 5"
+        command = "do"
+
+        [[bind]]
+        path = ""
+        name = "a"
+        key = "k"
+        when = "biz < 5"
+        command = "do"
+
+        [[bind]]
+        path = ""
+        name = "a"
+        key = "h k"
+        when = "biz > 5"
+        command = "do"
+        `);
+
+        assert(isEqual(spec.length, 4));
+        assert(isEqual(spec[0].args.description, spec[1].args.description));
+        assert(isEqual(spec[0].args.combinedKey, spec[1].args.combinedKey));
+        assert(isEqual(spec[0].args.combinedName, spec[1].args.combinedName));
+        assert(isEqual(spec[0].args.combinedDescription, spec[1].args.combinedDescription));
+        assert(isUndefined(spec[3].args.description));
+        assert(isEqual(spec[3].args.combinedKey, ""));
+        assert(isEqual(spec[3].args.combinedName, ""));
+        assert(isEqual(spec[3].args.combinedDescription, ""));
     });
 
     test('Keybindings properly resolve `<all-pefixes>` cases', () => {

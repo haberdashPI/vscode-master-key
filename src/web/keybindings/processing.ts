@@ -1,6 +1,6 @@
 import hash from 'object-hash';
 import { parseWhen, bindingItem, DoArgs, DefinedCommand, BindingItem, BindingSpec,
-         rawBindingItem, RawBindingItem } from "./parsing";
+         rawBindingItem, RawBindingItem, ParsedWhen } from "./parsing";
 import z from 'zod';
 import { sortBy, pick, isEqual, omit, mergeWith, cloneDeep, flatMap, merge } from 'lodash';
 import { reifyStrings, EvalContext } from '../expressions';
@@ -17,9 +17,11 @@ export interface Bindings{
 export function processBindings(spec: BindingSpec): [Bindings, string[]]{
     let problems: string[] = [];
     let items = expandDefaultsAndDefinedCommands(spec, problems);
+    items = items.map((item, i) => requireTransientSequence(item, i, problems));
     items = expandBindingKeys(items, spec.define);
     items = expandPrefixes(items);
     items = expandModes(items, spec.define);
+    items = expandDocsToDuplicates(items);
     let prefixCodes: PrefixCodes;
     [items, prefixCodes] = expandKeySequencesAndResolveDuplicates(items, problems);
     items = items.map(moveModeToWhenClause);
@@ -35,12 +37,8 @@ export function processBindings(spec: BindingSpec): [Bindings, string[]]{
     return [result, problems];
 }
 
-function concatWhenAndOverwritePrefixes(obj_: any, src_: any, key: string){
-    if(key === 'when'){
-        let obj: any[] = obj_ === undefined ? [] : !Array.isArray(obj_) ? [obj_] : obj_;
-        let src: any[] = src_ === undefined ? [] : !Array.isArray(src_) ? [src_] : src_;
-        return obj.concat(src);
-    }else if(key === 'prefixes'){
+function overwritePrefixesAndWhen(obj_: any, src_: any, key: string){
+    if(key === 'prefixes' || key === 'when'){
         if(src_ !== undefined){
             return src_;
         }else{
@@ -52,11 +50,23 @@ function concatWhenAndOverwritePrefixes(obj_: any, src_: any, key: string){
     }
 }
 
+function concatWhens(obj_: any, src_: any, key: string){
+    if(key === 'when'){
+        let obj: any[] = obj_ === undefined ? [] : !Array.isArray(obj_) ? [obj_] : obj_;
+        let src: any[] = src_ === undefined ? [] : !Array.isArray(src_) ? [src_] : src_;
+        return obj.concat(src);
+    }else{
+        // revert to default behavior
+        return;
+    }
+}
+
 const runCommandsArgs = z.object({
     commands: z.array(z.string().
         or(z.object({command: z.string()}).passthrough()).
         or(z.object({defined: z.string()}).passthrough()))
 });
+
 function expandDefinedCommands(item: RawBindingItem, definitions: any): RawBindingItem{
     if(item.command && item.command === 'runCommands'){
         let args = validateInput(`key ${item.key}, mode ${item.mode}; runCommands`, item.args, runCommandsArgs);
@@ -85,33 +95,46 @@ function expandDefinedCommands(item: RawBindingItem, definitions: any): RawBindi
 
 const partialRawBindingItem = rawBindingItem.partial();
 type PartialRawBindingItem = z.infer<typeof partialRawBindingItem>;
+type AppendFields = {when?: string}
 
 function expandDefaultsAndDefinedCommands(spec: BindingSpec, problems: string[]): BindingItem[] {
     // eslint-disable-next-line @typescript-eslint/naming-convention
     let pathDefaults: Record<string, PartialRawBindingItem> = {"": {}};
+    let pathWhens: Record<string, ParsedWhen[]> = {};
     for(let path of spec.path){
         let parts = path.id.split('.');
         let defaults: PartialRawBindingItem = partialRawBindingItem.parse({});
+        let whens: ParsedWhen[] = [];
         if(parts.length > 1){
             let prefix = parts.slice(0,-1).join('.');
             if(pathDefaults[prefix] === undefined){
-                problems.push(`The path '${path}' was defined before
+                problems.push(`The path '${path.id}' was defined before
                     '${prefix}'.`);
             }else{
                 defaults = cloneDeep(pathDefaults[prefix]);
+                whens = cloneDeep(pathWhens[prefix]);
             }
         }
         pathDefaults[path.id] = mergeWith(defaults, path.default,
-            concatWhenAndOverwritePrefixes);
+            overwritePrefixesAndWhen);
+        if(path.when){
+            pathWhens[path.id] = whens.concat(path.when);
+        }
     }
 
     let items = spec.bind.map((item, i) => {
         let itemDefault = pathDefaults[item.path || ""];
+        let itemConcatWhen = pathWhens[item.path || ""];
         if(!itemDefault){
             problems.push(`The path '${item.path}' is undefined.`);
             return undefined;
         }else{
-            item = mergeWith(cloneDeep(itemDefault), item, concatWhenAndOverwritePrefixes);
+            item = mergeWith(cloneDeep(itemDefault), item, overwritePrefixesAndWhen);
+            if(item.when){
+                item.when = itemConcatWhen ? item.when.concat(itemConcatWhen) : item.when;
+            }else if(itemConcatWhen){
+                item.when = itemConcatWhen;
+            }
             item = expandDefinedCommands(item, spec.define);
             let required = ['key', 'command'];
             let missing = required.filter(r => (<any>item)[r] === undefined);
@@ -133,6 +156,10 @@ function expandDefaultsAndDefinedCommands(spec: BindingSpec, problems: string[])
                     name: item.name,
                     description: item.description,
                     priority: item.priority,
+                    hideInPalette: item.hideInPalette,
+                    combinedName: item.combinedName,
+                    combinedKey: item.combinedKey,
+                    combinedDescription: item.combinedDescription,
                     kind: item.kind,
                     resetTransient: item.resetTransient,
                     repeat: item.repeat
@@ -148,6 +175,23 @@ function expandDefaultsAndDefinedCommands(spec: BindingSpec, problems: string[])
     });
 
     return <BindingItem[]>(items.filter(x => x !== undefined));
+}
+
+function requireTransientSequence(item: BindingItem, i: number, problems: string[]){
+    if(item.args.do.some(c => c.command === "master-key.prefix")){
+        if(item.args.resetTransient === undefined){
+            item.args.resetTransient = false;
+        }else if(item.args.resetTransient === true){
+            problems.push(`Item ${i} with name ${item.args.name}: 'resetTransient' must be `+
+                          `false for a command that calls 'master-key.prefix'`);
+        }
+    }else{
+        if(item.args.resetTransient === undefined){
+            item.args.resetTransient = true;
+        }
+    }
+
+    return item;
 }
 
 // TODO: check in unit tests
@@ -216,6 +260,33 @@ function expandModes(items: BindingItem[], define: Record<string, any> | undefin
     });
 }
 
+interface DocFields {
+    description?: string
+    combinedName?: string
+    combinedDescription?: string
+    combinedKey?: string
+}
+function expandDocsToDuplicates(items: BindingItem[]){
+    let itemDocs: Record<string, DocFields> = {};
+
+    // merge all doc keys across identical key/mode pairs
+    for(let i=0;i<items.length;i++){
+        let item = items[i];
+        let key = hash([item.key, item.mode, item.prefixes[0]]);
+        let oldDocs = itemDocs[key] || {};
+        itemDocs[key] = merge(pick(item.args, ['description', 'combinedName', 'combinedDescription', 'combinedKey']), oldDocs);
+    }
+
+    // assign all items their combined docs
+    for(let item of items){
+        let key = hash([item.key, item.mode, item.prefixes[0]]);
+        let mergedDocs = itemDocs[key];
+        item.args = merge(item.args, mergedDocs);
+    }
+
+    return items;
+}
+
 export interface IConfigKeyBinding {
     key: string,
     command: "master-key.do"
@@ -227,7 +298,11 @@ export interface IConfigKeyBinding {
         name?: string,
         description?: string,
         resetTransient?: boolean,
+        hideInPalette?: boolean,
         priority: number,
+        combinedName: string,
+        combinedKey: string,
+        combinedDescription: string,
         kind: string,
         path: string
         mode: string | undefined,
@@ -326,10 +401,14 @@ function updatePrefixItemAndPrefix(item: BindingItem, key: string, prefix: strin
                 },
             }],
             path: item.args.path,
-            name: "Command Prefix: "+prefix,
-            kind: "prefix",
-            priority: 0,
-            resetTransient: false,
+            name: automated ? "prefix" : item.args.name,
+            kind: automated ? "prefix" : item.args.name || "prefix",
+            priority: automated ? 0 : item.args.priority,
+            hideInPalette: automated ? false : item.args.hideInPalette,
+            combinedName: automated ? "" : item.args.combinedName,
+            combinedKey: automated ? "" : item.args.combinedKey,
+            combinedDescription: automated ? "" : item.args.combinedDescription,
+            resetTransient: automated ? false : item.args.resetTransient,
             repeat: 0
         },
         when: item.when,

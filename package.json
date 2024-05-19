@@ -15,8 +15,7 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:master-key.do",
-    "onCommand:master-key.prefix"
+    "*"
   ],
   "browser": "./dist/web/extension.js",
   "contributes": {
@@ -24,17 +23,17 @@
       {
         "command": "master-key.selectPreset",
         "category": "Master Key",
-        "title": "Select Keybinding Preset"
+        "title": "Activate Keybindings"
       },
       {
-        "command": "master-key.contextualCommandPalette",
+        "command": "master-key.commandSuggestions",
         "category": "Master Key",
-        "title": "Contextual Command Palette"
+        "title": "Key Suggestions..."
       },
       {
         "command": "master-key.commandPalette",
         "category": "Master Key",
-        "title": "Command Palette"
+        "title": "Simple Command Palette"
       },
       {
         "command": "master-key.showVisualDoc",
@@ -60,6 +59,26 @@
         "command": "master-key.togglePaletteMode",
         "category": "Master Key",
         "title": "Toggle palette input mode"
+      },
+      {
+        "command": "master-key.removePreset",
+        "category": "Master Key",
+        "title": "Remove Keybindings"
+      },
+      {
+        "command": "master-key.editPreset",
+        "category": "Master Key",
+        "title": "Edit Preset Copy"
+      },
+      {
+        "command": "master-key.importUserBindings",
+        "category": "Master Key",
+        "title": "Import User Bindings"
+      },
+      {
+        "command": "master-key.importDefaultBindings",
+        "category": "Master Key",
+        "title": "Import Default Bindings"
       }
     ],
     "views": {
@@ -86,6 +105,10 @@
     "keybindings": [
       {
         "key": "ctrl+shift+;",
+        "command": "master-key.commandSuggestions"
+      },
+      {
+        "key": "ctrl+alt+;",
         "command": "master-key.commandPalette"
       },
       {
@@ -112,6 +135,12 @@
           "type": "integer",
           "description": "The maximum number of previously run commands that are saved.",
           "default": 1024
+        },
+        "master-key.suggestionDelay": {
+          "title": "Suggestion Delay",
+          "type": "integer",
+          "description": "Time to wait, in milliseconds, before showing command suggestions for multi-key commands (set to 0 to disable)",
+          "default": 500
         },
         "master-key.searchMatchBackground": {
           "title": "Background of current search match",
@@ -162,6 +191,7 @@
     "@vscode/test-web": "^0.0.22",
     "assert": "^2.1.0",
     "eslint": "^8.54.0",
+    "jsonc-simple-parser": "^3.0.0",
     "mocha": "^10.2.0",
     "process": "^0.11.10",
     "ts-loader": "^9.5.1",
@@ -176,7 +206,6 @@
     "fastestsmallesttextencoderdecoder": "^1.0.22",
     "immutable": "^5.0.0-beta.5",
     "jsep": "^1.3.8",
-    "jsonc-parser": "^3.2.0",
     "lodash": "^4.17.21",
     "object-hash": "^3.0.0",
     "safe-expression": "^1.0.2",

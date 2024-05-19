@@ -125,6 +125,9 @@ export class CommandState {
                 return v;
             }
         });
+        // TODO: we don't need to call all listeners
+        // here, we could track which ones were changed
+        // above
         let options = this.record.options.withMutations(opt =>
             opt.map((v, k) => v.update('listeners', l => {
                 console.log(k);
@@ -299,7 +302,7 @@ export async function activate(context: vscode.ExtensionContext){
                 }else{
                     firstSelectionOrWord = doc.getText(e.selections[0]);
                 }
-                state.set('firstSelectionOrWord', firstSelectionOrWord);
+                state.set('firstSelectionOrWord', {public: true}, firstSelectionOrWord);
             });
         });
     });
