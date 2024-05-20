@@ -202,23 +202,14 @@ export const bindingPath = z.object({
     when: z.string().optional().transform(parseWhen).pipe(parsedWhen.array().optional())
 });
 
-function contains(xs: string[], el: string){
-    return xs.some(x => x === el);
-}
-export const validModes = z.string().array().
-    refine(x => contains(x, 'insert') && contains(x, 'capture'), ms => {
-        let modes = ms.join(', ');
-        return { message: `The modes 'insert' and 'capture' are required, but the
-                 only valid modes listed modes were: ` + modes };
-    });
-
 // TODO: implement processing step
 const modeSpec = z.object({
     name: z.string(),
-    cursorShape: z.enum(["Line", "Block", "Underline", "LineThin", "BlockOutline", "UnderlineThin"]),
-    defaultBinding: rawBindingItem.omit({path: true, mode: true, prefixes: true, key: true}).
-        required({ name: true, command: true })
-})
+    default: z.boolean().optional().default(false),
+    highlight: z.enum(["NoHighlight", "Highlight", "Alert"]).default('NoHighlight'),
+    cursorShape: z.enum(["Line", "Block", "Underline", "LineThin", "BlockOutline", "UnderlineThin"]).default('Line'),
+});
+export type ModeSpec = z.output<typeof modeSpec>;
 
 export const bindingSpec = z.object({
     header: bindingHeader,
@@ -226,7 +217,18 @@ export const bindingSpec = z.object({
     path: bindingPath.array().refine(xs => uniqBy(xs, x => x.id).length === xs.length,
         { message: "Defined [[path]] entries must all have unique 'id' fields."}).
         optional().default([]),
-    mode: modeSpec.array(),
+    mode: modeSpec.array().optional().default([{name: 'default', default: true, cursorShape: 'Line', highlight: 'NoHighlight'}]).refine(xs => {
+        uniqBy(xs, x => x.name).length !== xs.length;
+    }, { message: "All mode names must be unique!" }).refine(xs => {
+        let defaults = xs.filter(x => x.default);
+        return defaults.length === 1;
+    }, { message: "There must be one and only one default mode" }).transform(xs => {
+        let captureMode = xs.filter(x => x.name === 'capture');
+        if(captureMode.length === 0){
+            return xs.concat({name: "capture", cursorShape: "Underline", default: false, highlight: "Highlight"});
+        }
+        return xs;
+    }),
     define: z.object({}).passthrough().optional()
 }).strict();
 export type BindingSpec = z.infer<typeof bindingSpec>;

@@ -1,6 +1,6 @@
 import hash from 'object-hash';
 import { parseWhen, bindingItem, DoArgs, DefinedCommand, BindingItem, BindingSpec,
-         rawBindingItem, RawBindingItem, ParsedWhen } from "./parsing";
+         rawBindingItem, RawBindingItem, ParsedWhen, ModeSpec } from "./parsing";
 import z from 'zod';
 import { sortBy, pick, isEqual, omit, mergeWith, cloneDeep, flatMap, merge } from 'lodash';
 import { reifyStrings, EvalContext } from '../expressions';
@@ -11,6 +11,7 @@ export interface Bindings{
     name?: string,
     description?: string,
     define: Record<string, any>;
+    mode: Record<string, ModeSpec>;
     bind: IConfigKeyBinding[]
 }
 
@@ -20,21 +21,30 @@ export function processBindings(spec: BindingSpec): [Bindings, string[]]{
     items = items.map((item, i) => requireTransientSequence(item, i, problems));
     items = expandBindingKeys(items, spec.define);
     items = expandPrefixes(items);
-    items = expandModes(items, spec.define);
+    items = expandModes(items, spec.mode, problems);
     items = expandDocsToDuplicates(items);
     let prefixCodes: PrefixCodes;
     [items, prefixCodes] = expandKeySequencesAndResolveDuplicates(items, problems);
     items = items.map(moveModeToWhenClause);
     let newItems = items.map(i => movePrefixesToWhenClause(i, prefixCodes));
-    let definitions = {...spec.define, prefixCodes: prefixCodes.codes};
+    let definitions = {...spec.define, prefixCodes: prefixCodes.codes };
     let configItems = newItems.map(i => itemToConfigBinding(i, definitions));
     let result: Bindings = {
         name: spec.header.name,
         description: spec.header.description,
         define: definitions,
-        bind: configItems
+        mode: mapByName(spec.mode),
+        bind: configItems,
     };
     return [result, problems];
+}
+
+function mapByName(specs: ModeSpec[]){
+    let modeSpecs: Record<string, ModeSpec> = {};
+    for(let spec of specs){
+        modeSpecs[spec.name] = spec;
+    }
+    return modeSpecs;
 }
 
 function overwritePrefixesAndWhen(obj_: any, src_: any, key: string){
@@ -241,16 +251,18 @@ function expandPrefixes(items: BindingItem[]){
     });
 }
 
-function expandModes(items: BindingItem[], define: Record<string, any> | undefined) {
-    let validModeArg = z.string().array().optional();
-    let validModes = validModeArg.parse(define?.validModes) || ['insert', 'capture'];
+function expandModes(items: BindingItem[], validModes: ModeSpec[], problems: string[]){
+    let defaultMode = validModes.filter(x => x.default)[0]; // validation should guarantee a single match
     return flatMap(items, (item: BindingItem): BindingItem[] => {
-        let modes = item.mode || ['insert'];
+        let modes = item.mode || [defaultMode.name];
         if (modes.length > 0 && modes[0].startsWith('!')) {
-            // TODO: 'parsing' should validate that all modes specifiers are inclusive
-            // or exclusive (!)
+            if(modes.some(x => !x.startsWith('!'))){
+                problems.push(`Either all or none of the modes for binding ${item.key} `+
+                              `must be prefixed with '!'`);
+                modes = modes.filter(x => x.startsWith('!'));
+            }
             let exclude = modes.map(m => m.slice(1));
-            modes = validModes.filter(mode => !exclude.some(x => x === mode));
+            modes = validModes.map(x => x.name).filter(mode => !exclude.some(x => x === mode));
         }
         if (modes.length === 0) {
             return [item];

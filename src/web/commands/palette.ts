@@ -53,7 +53,7 @@ export async function commandPalette(args_: unknown,
         let availableBindings: IConfigKeyBinding[];
         let codes: PrefixCodes | undefined = undefined;
         let prefixCode = state.get<number>(PREFIX_CODE, 0)!;
-        let mode = state.get<string>(MODE, 'insert')!;
+        let mode = state.get<string>(MODE, defaultMode)!;
         vscode.commands.executeCommand('setContext', 'master-key.keybindingPaletteOpen', true);
         paletteBindingMode = useKey;
         vscode.commands.executeCommand('setContext', 'master-key.keybindingPaletteBindingMode', paletteBindingMode);

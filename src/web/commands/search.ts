@@ -335,7 +335,7 @@ async function search(args_: any[]): Promise<CommandResult> {
 
     let mode = '';
     await withState(async state => {
-        mode = state.get(MODE, 'insert')!;
+        mode = state.get(MODE, defaultMode)!;
         return state;
     });
     let state = getSearchState(editor, mode, currentSearch);
@@ -432,7 +432,7 @@ async function nextMatch(editor: vscode.TextEditor,
     if(!args) { return; }
     let mode = '';
     await withState(async state => {
-        mode = state.get(MODE, 'insert')!;
+        mode = state.get(MODE, defaultMode)!;
         return state;
     });
     let state = getSearchState(editor, mode, args!.register);
@@ -450,7 +450,7 @@ async function previousMatch(editor: vscode.TextEditor,
     if(!args) { return; }
     let mode = '';
     await withState(async state => {
-        mode = state.get(MODE, 'insert')!;
+        mode = state.get(MODE, defaultMode)!;
         return state;
     });
     let state = getSearchState(editor, mode, args!.register);

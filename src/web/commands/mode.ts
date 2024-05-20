@@ -3,20 +3,23 @@ import z from 'zod';
 import { onResolve } from '../state';
 import { validateInput } from '../utils';
 import { withState, recordedCommand, CommandState, CommandResult } from '../state';
+import { ModeSpec, vscodeBinding } from '../keybindings/parsing';
 
 export const MODE = 'mode';
 
-function updateCursorAppearance(editor: vscode.TextEditor | undefined, mode: string){
+const CURSOR_STYLES = {
+    "Line": vscode.TextEditorCursorStyle.Line,
+    "Block": vscode.TextEditorCursorStyle.Block,
+    "Underline": vscode.TextEditorCursorStyle.Underline,
+    "LineThin": vscode.TextEditorCursorStyle.LineThin,
+    "BlockOutline": vscode.TextEditorCursorStyle.BlockOutline,
+    "UnderlineThin": vscode.TextEditorCursorStyle.UnderlineThin
+};
+
+function updateCursorAppearance(editor: vscode.TextEditor | undefined, mode: string,
+                                modeSpec: Record<string, ModeSpec>){
     if(editor){
-        if(mode === 'capture'){
-            editor.options.cursorStyle = vscode.TextEditorCursorStyle.Underline;
-        }else if(mode === 'normal'){
-            editor.options.cursorStyle = vscode.TextEditorCursorStyle.Block;
-        }else if(mode === 'insert'){
-            editor.options.cursorStyle = vscode.TextEditorCursorStyle.Line;
-        }else{
-            editor.options.cursorStyle = vscode.TextEditorCursorStyle.BlockOutline;
-        }
+        editor.options.cursorStyle = CURSOR_STYLES[modeSpec[mode]?.cursorShape] || "Line";
     }
 }
 
@@ -29,11 +32,23 @@ async function setMode(args_: unknown): Promise<CommandResult> {
     }
     return args;
 };
+export let modeSpecs: Record<string, ModeSpec> = {};
+export let defaultMode: string = 'default';
+async function updateModeSpecs(event?: vscode.ConfigurationChangeEvent){
+    if(!event || event?.affectsConfiguration('master-key')){
+        let config = vscode.workspace.getConfiguration('master-key');
+        modeSpecs = config.get<Record<string, ModeSpec>>('mode') || {};
+        defaultMode = Object.values(modeSpecs).filter(x => x.default)[0].name || 'default';
+    }
+}
 
-let currentMode = 'insert';
+let currentMode = 'default';
 export async function activate(context: vscode.ExtensionContext){
+    await updateModeSpecs();
+    vscode.workspace.onDidChangeConfiguration(updateModeSpecs);
+
     vscode.window.onDidChangeActiveTextEditor(e => {
-        updateCursorAppearance(e, currentMode);
+        updateCursorAppearance(e, currentMode, modeSpecs);
     });
 
     context.subscriptions.push(vscode.commands.registerCommand('master-key.setMode',
@@ -43,10 +58,11 @@ export async function activate(context: vscode.ExtensionContext){
     context.subscriptions.push(vscode.commands.registerCommand('master-key.enterNormal',
         recordedCommand(() => setMode({value: 'normal'}))));
 
-    await withState(async state => state.set(MODE, {public: true}, 'insert').resolve());
+    await withState(async state => state.set(MODE, {public: true}, defaultMode).resolve());
     await onResolve('mode', values => {
-        currentMode = <string>values.get(MODE, 'insert');
-        updateCursorAppearance(vscode.window.activeTextEditor, currentMode);
+        currentMode = <string>values.get(MODE, defaultMode);
+        modeSpecs = (<Record<string, ModeSpec>>(<any>values.get('definitions')).mode);
+        updateCursorAppearance(vscode.window.activeTextEditor, currentMode, modeSpecs);
         return true;
     });
 

@@ -7,7 +7,7 @@ import replaceAll from 'string.prototype.replaceall';
 import { Utils } from 'vscode-uri';
 import z from 'zod';
 import { withState } from '../state';
-import { MODE } from '../commands/mode';
+import { MODE, defaultMode } from '../commands/mode';
 import { VSCODE_VERSION_MAX } from 'vscode-extension-tester';
 const JSONC = require("jsonc-simple-parser");
 const TOML = require("smol-toml");
@@ -359,7 +359,7 @@ async function queryPreset(): Promise<Preset | undefined> {
 async function importBindings(file: vscode.Uri, preset: Bindings) {
     insertKeybindingsIntoConfig(file, preset.bind);
     let config = vscode.workspace.getConfiguration('master-key');
-    await withState(async state => state.set(MODE, {public: true}, 'insert').resolve());
+    await withState(async state => state.set(MODE, {public: true}, defaultMode).resolve());
     await config.update('definitions', preset.define, vscode.ConfigurationTarget.Global);
 }
 

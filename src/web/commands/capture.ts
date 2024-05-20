@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import z from 'zod';
 import { validateInput } from '../utils';
 import { CommandResult, CommandState } from '../state';
-import { MODE } from './mode';
+import { MODE, defaultMode } from './mode';
 import { withState, recordedCommand } from '../state';
 
 let typeSubscription: vscode.Disposable | undefined;
@@ -26,7 +26,8 @@ type UpdateFn = (captured: string, nextChar: string) => [string, boolean];
 export async function captureKeys(onUpdate: UpdateFn) {
     let oldMode: string;
     await withState(async state => {
-        oldMode = state.get<string>(MODE, 'insert')!;
+        oldMode = state.get<string>(MODE,
+            )!;
         if(!typeSubscription){
             try{
                 typeSubscription = vscode.commands.registerCommand('type', onType);
@@ -49,7 +50,7 @@ export async function captureKeys(onUpdate: UpdateFn) {
 
     await withState(async state => {
         return state.onSet(MODE, state => {
-            if(state.get(MODE, 'insert') !== 'capture'){
+            if(state.get(MODE, defaultMode) !== 'capture'){
                 clearTypeSubscription();
                 if(!isResolved){
                     isResolved = true;

@@ -2,6 +2,10 @@ current issue I'm working on:
 
 ## Mode customization
 
+define formatting for each mode in the binding file
+  - verify the implementation is working for franklin
+  - unit tests for binding settings
+
 Format improvements
 
 - REDESIGN!! I think the the way repeated keys works is a little unwieldy in many cases

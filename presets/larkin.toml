@@ -37,8 +37,26 @@ selections or add commands to select regions of text.
 These bindings are named after the middle name of my first child (Larkin).
 """
 
+[[mode]]
+name = "insert"
+
+[[mode]]
+name = "normal"
+default = true
+highlight = "Highlight"
+cursorShape = "Block"
+
+[[mode]]
+name = "syminsert"
+highlight = "Highlight"
+cursorShape = "Block"
+
+[[mode]]
+name = "selectedit"
+highlight = "Highlight"
+cursorShape = "Block"
+
 [define]
-validModes = ["insert", "capture", "normal", "syminsert", "selectedit"]
 select_on = false
 around_on = false
 
