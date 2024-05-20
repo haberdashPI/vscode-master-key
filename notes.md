@@ -1,9 +1,7 @@
-current issue I'm working on:
-
 ## Mode customization
 
 define formatting for each mode in the binding file
-  - verify the implementation is working for franklin
+  + verify the implementation is working for franklin
   - unit tests for binding settings
 
 Format improvements
@@ -22,9 +20,9 @@ args.value = "{i}"
 
 THEN: add more to symmetric insert setup
 
-BUG: repeat argument is not work for the repeat action command (e.g. I cannot repeat the last action ten times)
-
 ## Wrapping up unit tests
+
+BUG: repeat argument is not work for the repeat action command (e.g. I cannot repeat the last action ten times)
 
 unit tests: edge cases with recording edits
   - how about when I switch documents?

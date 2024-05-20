@@ -105,7 +105,7 @@ function expandDefinedCommands(item: RawBindingItem, definitions: any): RawBindi
 
 const partialRawBindingItem = rawBindingItem.partial();
 type PartialRawBindingItem = z.infer<typeof partialRawBindingItem>;
-type AppendFields = {when?: string}
+type AppendFields = {when?: string};
 
 function expandDefaultsAndDefinedCommands(spec: BindingSpec, problems: string[]): BindingItem[] {
     // eslint-disable-next-line @typescript-eslint/naming-convention

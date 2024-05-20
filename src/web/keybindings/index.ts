@@ -217,7 +217,7 @@ async function insertKeybindingsIntoConfig(file: vscode.Uri, config: any) {
                 let range = new vscode.Range(
                     new vscode.Position(oldBindingsStart.start.line-1,
                                         ed.document.lineAt(oldBindingsStart.start.line-1).range.end.character),
-                    new vscode.Position(oldBindingsEnd.end.line + 4, 0));
+                    new vscode.Position(oldBindingsEnd.end.line+1, 0));
                 await ed.edit(builder => {
                     builder.replace(range, bindingsToInsert);
                 });
@@ -361,6 +361,7 @@ async function importBindings(file: vscode.Uri, preset: Bindings) {
     let config = vscode.workspace.getConfiguration('master-key');
     await withState(async state => state.set(MODE, {public: true}, defaultMode).resolve());
     await config.update('definitions', preset.define, vscode.ConfigurationTarget.Global);
+    await config.update('mode', preset.mode, vscode.ConfigurationTarget.Global);
 }
 
 async function copyBindingsToNewFile(){

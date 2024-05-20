@@ -3,7 +3,7 @@ import z from 'zod';
 import { validateInput, wrappedTranslate } from '../utils';
 import { doArgs } from '../keybindings/parsing';
 import { onResolve, withState, CommandResult, CommandState, recordedCommand } from '../state';
-import { MODE } from './mode';
+import { MODE, defaultMode } from './mode';
 import { captureKeys } from './capture';
 
 export const searchArgs = z.object({

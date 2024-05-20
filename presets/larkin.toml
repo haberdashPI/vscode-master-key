@@ -49,12 +49,12 @@ cursorShape = "Block"
 [[mode]]
 name = "syminsert"
 highlight = "Highlight"
-cursorShape = "Block"
+cursorShape = "BlockOutline"
 
 [[mode]]
 name = "selectedit"
 highlight = "Highlight"
-cursorShape = "Block"
+cursorShape = "BlockOutline"
 
 [define]
 select_on = false

@@ -218,7 +218,7 @@ export const bindingSpec = z.object({
         { message: "Defined [[path]] entries must all have unique 'id' fields."}).
         optional().default([]),
     mode: modeSpec.array().optional().default([{name: 'default', default: true, cursorShape: 'Line', highlight: 'NoHighlight'}]).refine(xs => {
-        uniqBy(xs, x => x.name).length !== xs.length;
+        return uniqBy(xs, x => x.name).length === xs.length;
     }, { message: "All mode names must be unique!" }).refine(xs => {
         let defaults = xs.filter(x => x.default);
         return defaults.length === 1;

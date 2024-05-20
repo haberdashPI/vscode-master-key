@@ -3,7 +3,7 @@ import { prettifyPrefix } from '../utils';
 import { withState } from '../state';
 import { currentKeybindings, filterBindingFn } from '../keybindings';
 import { PREFIX_CODE, prefixCodes } from './prefix';
-import { MODE } from './mode';
+import { MODE, defaultMode } from './mode';
 import { IConfigKeyBinding, PrefixCodes } from '../keybindings/processing';
 import { RunCommandsArgs, doCommandsCmd } from './do';
 import { reverse, uniqBy, sortBy } from 'lodash';
@@ -95,7 +95,7 @@ export async function commandPalette(args_: unknown,
         let filteredPicks: typeof picks = [];
 
         if(picks.length === 0){
-            vscode.window.showErrorMessage(`Palette cannot be shown for mode '${mode}', there are no bindings.`)
+            vscode.window.showErrorMessage(`Palette cannot be shown for mode '${mode}', there are no bindings.`);
         }
 
         let lastPick = picks[0];

@@ -7,7 +7,7 @@ import { cloneDeep, merge } from 'lodash';
 import { evalContext, reifyStrings } from '../expressions';
 import { PREFIX_CODE, keySuffix } from './prefix';
 import { isSingleCommand } from '../keybindings/processing';
-import { MODE } from './mode';
+import { MODE, defaultMode } from './mode';
 import { List } from 'immutable';
 import { commandPalette } from './palette';
 

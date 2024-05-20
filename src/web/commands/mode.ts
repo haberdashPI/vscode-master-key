@@ -18,7 +18,7 @@ const CURSOR_STYLES = {
 
 function updateCursorAppearance(editor: vscode.TextEditor | undefined, mode: string,
                                 modeSpec: Record<string, ModeSpec>){
-    if(editor){
+    if(editor && modeSpec[mode]){
         editor.options.cursorStyle = CURSOR_STYLES[modeSpec[mode]?.cursorShape] || "Line";
     }
 }
@@ -38,7 +38,7 @@ async function updateModeSpecs(event?: vscode.ConfigurationChangeEvent){
     if(!event || event?.affectsConfiguration('master-key')){
         let config = vscode.workspace.getConfiguration('master-key');
         modeSpecs = config.get<Record<string, ModeSpec>>('mode') || {};
-        defaultMode = Object.values(modeSpecs).filter(x => x.default)[0].name || 'default';
+        defaultMode = (Object.values(modeSpecs).filter(x => x.default)[0] || {name: 'default'}).name;
     }
 }
 
@@ -61,8 +61,7 @@ export async function activate(context: vscode.ExtensionContext){
     await withState(async state => state.set(MODE, {public: true}, defaultMode).resolve());
     await onResolve('mode', values => {
         currentMode = <string>values.get(MODE, defaultMode);
-        modeSpecs = (<Record<string, ModeSpec>>(<any>values.get('definitions')).mode);
-        updateCursorAppearance(vscode.window.activeTextEditor, currentMode, modeSpecs);
+        updateCursorAppearance(vscode.window.activeTextEditor, currentMode, modeSpecs || {});
         return true;
     });
 

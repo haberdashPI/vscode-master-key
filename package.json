@@ -130,6 +130,11 @@
           "type": "object",
           "description": "A set of variables defined by the keybinding mode that are accessible when evaluating `computedArgs`"
         },
+        "master-key.mode": {
+          "title": "Keybinding Mode Definitions",
+          "type": "object",
+          "description": "A set of keybinding mode definitions imported from the active master key *.toml file"
+        },
         "master-key.maxCommandHistory": {
           "title": "Command History Maximum",
           "type": "integer",

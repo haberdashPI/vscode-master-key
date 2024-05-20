@@ -7,11 +7,12 @@ import { Map } from 'immutable';
 function updateModeStatus(state: Map<string, unknown> | CommandState ){
     if(modeStatusBar !== undefined){
         let mode = <string>state.get(MODE);
+        let highlight = modeSpecs[mode] ? modeSpecs[mode].highlight : 'NoHighlight';
         let rec = state.get<boolean>(RECORD, false);
         modeStatusBar.text = (rec ? "rec: " : "") + mode;
-        if(state.get<boolean>(RECORD, false) || modeSpecs[mode].highlight === 'Alert'){
+        if(state.get<boolean>(RECORD, false) || highlight === 'Alert'){
             modeStatusBar.backgroundColor = new vscode.ThemeColor("statusBarItem.errorBackground");
-        }else if(modeSpecs[mode].highlight === 'Highlight'){
+        }else if(highlight === 'Highlight'){
             modeStatusBar.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
         }else{
             modeStatusBar.backgroundColor = undefined;
