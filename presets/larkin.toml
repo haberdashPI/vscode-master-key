@@ -111,7 +111,8 @@ default.kind = "util"
 path = "modes"
 name = "normal"
 description = "Enter normal mode"
-key = ["escape", "ctrl+["]
+foreach.key = ["escape", "ctrl+["]
+key = "{key}"
 mode = []
 hideInPalette = true
 command = "master-key.enterNormal"
@@ -121,7 +122,8 @@ prefixes = "<all-prefixes>"
 [[bind]]
 path = "modes"
 name = "normal"
-key = ["escape", "ctrl+["]
+foreach.key = ["escape", "ctrl+["]
+key = "{key}"
 hideInPalette = true
 when = "suggsetWidgetVisible && editorTextFocus && !findWidgetVisible"
 command = "master-key.enterNormal"
@@ -133,7 +135,8 @@ path = "modes"
 # by default typing keys in a mode other than insert (or capture) is simply ignored
 name = "ignore"
 description = "this key does nothing"
-key = ["<all-keys>", "shift+<all-keys>"]
+foreach.key = ['{:anykey:}', 'shift+{:anykey:}']
+key = "{key}"
 command = "master-key.ignore"
 prefixes = "<all-prefixes>"
 mode = ["!insert", "!capture"]
@@ -163,14 +166,15 @@ default.kind = "count"
 path = "edit.count"
 # likewise, the numbers affect command count in all modes where text isn't
 # being entered
-name = "count {key}"
-key = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+foreach.num = ['{key:[0-9]:}']
+name = "count {num}"
+key = "{num}"
 command = "master-key.updateCount"
-description = "Add digit {key} to the count argument of a command"
+description = "Add digit {num} to the count argument of a command"
 combinedKey = "0-9"
 combinedName = "count 0-9"
 combinedDescription = "Add digit 1-9 to count argument of a command"
-args.value = "{key}"
+args.value = "{num}"
 resetTransient = false
 mode = ["!insert", "!capture"]
 
@@ -3395,7 +3399,7 @@ args.value = "syminsert"
 path = "edit.action.symmetric"
 name = "Normal"
 description = "Return to normal model"
-key = ["enter"]
+key = "enter"
 command = "master-key.setMode"
 mode = "syminsert"
 
@@ -3426,7 +3430,7 @@ mode = "syminsert"
 
 [[bind]]
 path = "edit.action.symmetric"
-key = [
+foreach.key = [
       "shift+;",
       ";",
       "'",
@@ -3451,6 +3455,7 @@ key = [
       "shift+`",
       "`",
 ]
+key = "{key}"
 description = "Insert the character {symmetric_key_map[key]} at both ends of each selection"
 command = "selection-utilities.insertAround"
 args = { before = "{symmetric_key_map[key]}", after = "{symmetric_key_map[key]}" }

@@ -2,7 +2,7 @@ import hash from 'object-hash';
 import { parseWhen, bindingItem, DoArgs, DefinedCommand, BindingItem, BindingSpec,
          rawBindingItem, RawBindingItem, ParsedWhen, ModeSpec } from "./parsing";
 import z from 'zod';
-import { sortBy, pick, isEqual, omit, mergeWith, cloneDeep, flatMap, merge } from 'lodash';
+import { sortBy, pick, isEqual, omit, mergeWith, cloneDeep, flatMap, mapValues, merge } from 'lodash';
 import { reifyStrings, EvalContext } from '../expressions';
 import { validateInput } from '../utils';
 import { fromZodError } from 'zod-validation-error';
@@ -17,9 +17,8 @@ export interface Bindings{
 
 export function processBindings(spec: BindingSpec): [Bindings, string[]]{
     let problems: string[] = [];
-    let items = expandDefaultsAndDefinedCommands(spec, problems);
+    let items = expandDefaultsDefinedAndForeach(spec, problems);
     items = items.map((item, i) => requireTransientSequence(item, i, problems));
-    items = expandBindingKeys(items, spec.define);
     items = expandPrefixes(items);
     items = expandModes(items, spec.mode, problems);
     items = expandDocsToDuplicates(items);
@@ -107,7 +106,7 @@ const partialRawBindingItem = rawBindingItem.partial();
 type PartialRawBindingItem = z.infer<typeof partialRawBindingItem>;
 type AppendFields = {when?: string};
 
-function expandDefaultsAndDefinedCommands(spec: BindingSpec, problems: string[]): BindingItem[] {
+function expandDefaultsDefinedAndForeach(spec: BindingSpec, problems: string[]): BindingItem[] {
     // eslint-disable-next-line @typescript-eslint/naming-convention
     let pathDefaults: Record<string, PartialRawBindingItem> = {"": {}};
     let pathWhens: Record<string, ParsedWhen[]> = {};
@@ -132,7 +131,7 @@ function expandDefaultsAndDefinedCommands(spec: BindingSpec, problems: string[])
         }
     }
 
-    let items = spec.bind.map((item, i) => {
+    let items = spec.bind.flatMap((item, i) => {
         let itemDefault = pathDefaults[item.path || ""];
         let itemConcatWhen = pathWhens[item.path || ""];
         if(!itemDefault){
@@ -146,41 +145,44 @@ function expandDefaultsAndDefinedCommands(spec: BindingSpec, problems: string[])
                 item.when = itemConcatWhen;
             }
             item = expandDefinedCommands(item, spec.define);
-            let required = ['key', 'command'];
-            let missing = required.filter(r => (<any>item)[r] === undefined);
-            if(missing.length > 0){
-                problems.push(`Problem with binding ${i} ${item.path}:
-                    missing field '${missing[0]}'`);
-                return undefined;
-            }
-            let result = bindingItem.safeParse({
-                key: item.key,
-                when: item.when,
-                mode: typeof item.mode === 'string' ? [item.mode] : item.mode,
-                prefixes: item.prefixes,
-                command: "master-key.do",
-                args: {
-                    do: item.command === 'runCommands' ?
-                        item.args : [pick(item, ['command', 'args', 'computedArgs', 'if'])],
-                    path: item.path,
-                    name: item.name,
-                    description: item.description,
-                    priority: item.priority,
-                    hideInPalette: item.hideInPalette,
-                    combinedName: item.combinedName,
-                    combinedKey: item.combinedKey,
-                    combinedDescription: item.combinedDescription,
-                    kind: item.kind,
-                    resetTransient: item.resetTransient,
-                    repeat: item.repeat
+            let items = expandForeach(item, spec.define);
+            return items.map(item => {
+                let required = ['key', 'command'];
+                let missing = required.filter(r => (<any>item)[r] === undefined);
+                if(missing.length > 0){
+                    problems.push(`Problem with binding ${i} ${item.path}:
+                        missing field '${missing[0]}'`);
+                    return undefined;
                 }
-            });
-            if(!result.success){
-                problems.push(`Item ${i} with name ${item.name}: ${fromZodError(result.error).message}`);
-                return undefined;
-            }else{
-                return result.data;
-            }
+                let result = bindingItem.safeParse({
+                    key: item.key,
+                    when: item.when,
+                    mode: typeof item.mode === 'string' ? [item.mode] : item.mode,
+                    prefixes: item.prefixes,
+                    command: "master-key.do",
+                    args: {
+                        do: item.command === 'runCommands' ?
+                            item.args : [pick(item, ['command', 'args', 'computedArgs', 'if'])],
+                        path: item.path,
+                        name: item.name,
+                        description: item.description,
+                        priority: item.priority,
+                        hideInPalette: item.hideInPalette,
+                        combinedName: item.combinedName,
+                        combinedKey: item.combinedKey,
+                        combinedDescription: item.combinedDescription,
+                        kind: item.kind,
+                        resetTransient: item.resetTransient,
+                        repeat: item.repeat
+                    }
+                });
+                if(!result.success){
+                    problems.push(`Item ${i} with name ${item.name}: ${fromZodError(result.error).message}`);
+                    return undefined;
+                }else{
+                    return result.data;
+                }
+            }).filter(i => i !== undefined);
         }
     });
 
@@ -207,37 +209,51 @@ function requireTransientSequence(item: BindingItem, i: number, problems: string
 // TODO: check in unit tests
 // invalid items (e.g. both key and keys defined) get detected
 
-function expandBindingKey(k: string, item: BindingItem, context: EvalContext,
-    definitions: any): BindingItem[] {
+function expandForVars(vars: Record<string, string[]>, items: RawBindingItem[], context: EvalContext,
+    definitions: any): RawBindingItem[] {
 
-    let match: RegExpMatchArray | null = null;
-    if((match = /((.*)\+)?<all-keys>/.exec(k)) !== null){
-        if(match[2] !== undefined){
-            let mod = match[2];
-            return flatMap(Array.from(ALL_KEYS), k =>
-                expandBindingKey(`${mod}+${k}`, item, context, definitions));
-        }else{
-            return flatMap(Array.from(ALL_KEYS), k =>
-                expandBindingKey(k, item, context, definitions));
-        }
+    if(Object.keys(vars).length === 0){
+        return items;
     }
-    let keyEvaled = reifyStrings(omit(item, 'key'),
-        str => context.evalExpressionsInString(str, {...definitions, key: k}));
-    return [{...keyEvaled, key: k}];
+    let aKey = Object.keys(vars)[0];
+    let varValues = vars[aKey];
+    let expandedItems = items.flatMap(item => {
+        return varValues.map(val =>
+            reifyStrings(item, str => context.evalExpressionsInString(str,
+                {...definitions, [aKey]: val})));
+    });
+
+    return expandForVars(omit(vars, aKey), expandedItems, context, definitions);
 }
 
 const ALL_KEYS = "`1234567890-=qwertyuiop[]\\asdfghjkl;'zxcvbnm,./";
-function expandBindingKeys(bindings: BindingItem[], definitions: any): BindingItem[] {
+let ANY_KEY_REGEX = /\{:anykey:\}/;
+let REGEX_KEY_REGEX = /\{key:(.*):\}/;
+
+function expandPattern(pattern: string): string[] {
+    let regkey = pattern.match(REGEX_KEY_REGEX);
+    if(ANY_KEY_REGEX.test(pattern)){
+        return Array.from(ALL_KEYS).map(k => pattern.replace(ANY_KEY_REGEX, k));
+    }else if(regkey !== null){
+        let regex = new RegExp(regkey[1]);
+        let matchingKeys = Array.from(ALL_KEYS).filter(k => regex.test(k));
+        return matchingKeys.map(k  => pattern.replace(REGEX_KEY_REGEX, k));
+    }else{
+        return [pattern];
+    }
+}
+
+function expandForeach(item: RawBindingItem, definitions: any): RawBindingItem[] {
     let context = new EvalContext();
-    let result = flatMap(bindings, item => {
-        if(Array.isArray(item.key)){
-            return flatMap(item.key, k => expandBindingKey(k, item, context, definitions));
-        }else{
-            return [item];
-        }
-    });
-    context.reportErrors();
-    return result;
+    if(item.foreach){
+        let varValues = mapValues(item.foreach, v => flatMap(v, expandPattern));
+        let result = expandForVars(varValues, [<RawBindingItem>(omit(item, 'foreach'))],
+            context, definitions);
+        context.reportErrors();
+        return result;
+    }else{
+        return [item];
+    }
 }
 
 function expandPrefixes(items: BindingItem[]){

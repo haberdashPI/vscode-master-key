@@ -45,7 +45,7 @@ export class EvalContext {
 
     evalExpressionsInString(str: string, values: Record<string, any>) {
         let result = "";
-        let r = /\{.*?key.*?\}/g;
+        let r = /\{.*\}/g;
         let match = r.exec(str);
         let startIndex = 0;
         while (match !== null) {

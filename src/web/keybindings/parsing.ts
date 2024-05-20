@@ -145,7 +145,8 @@ export const rawBindingItem = z.object({
     path: z.string().optional(),
     priority: z.number().default(0).optional(),
     kind: z.string().optional(),
-    key: z.union([bindingKey, bindingKey.array()]).optional(),
+    key: z.string().optional(),
+    foreach: z.record(z.string(), z.array(z.string())).optional(),
     when: z.union([z.string(), z.string().array()]).optional().
         transform(parseWhen).
         pipe(parsedWhen.array()),
@@ -173,7 +174,7 @@ export type DoArgs = z.infer<typeof doArgs>;
 // TODO: the errors are not very informative if we transform the result so early in this
 // way; we need to keep this as close as possible to the form in the raw file
 export const bindingItem = z.object({
-    key: rawBindingItem.shape.key,
+    key: bindingKey,
     when: parsedWhen.array(),
     command: z.literal("master-key.do"),
     mode: z.string().array().optional(),
