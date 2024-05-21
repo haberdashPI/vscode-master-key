@@ -7,20 +7,11 @@ Format improvements
   - add test for two patterns (make sure they multiply): written, now debug it
 - PLUS!! make it possible for a *mode* to capture keys and run a command after each press
 
-```toml
-[[bind]]
-foreach.i = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0] # or "[0-9]+"
-key = "shift+{i}"
-name = "count {i}"
-command = "master-key.updateCount"
-args.value = "{i}"
-```
-
 THEN: add more to symmetric insert setup
 
 ## Wrapping up unit tests
 
-BUG: repeat argument is not work for the repeat action command (e.g. I cannot repeat the last action ten times)
+BUG: repeat argument is not working for the repeat action command (e.g. I cannot repeat the last action ten times)
 
 unit tests: edge cases with recording edits
   - how about when I switch documents?
@@ -36,6 +27,8 @@ unit tests: store/restore named commands
 ## Visual Documentation Improvements
 
 Visual doc improvements:
+
+IMPROVEMENT: upon activating bindings, show the visual and cheetsheet documentation
 
 IMPROVEMENT: show keybinding tips (for those general commands useful for examining documentation) in the visual documentation
 for

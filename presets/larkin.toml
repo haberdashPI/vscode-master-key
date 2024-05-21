@@ -166,7 +166,7 @@ default.kind = "count"
 path = "edit.count"
 # likewise, the numbers affect command count in all modes where text isn't
 # being entered
-foreach.num = ['{key:[0-9]:}']
+foreach.num = ['{key: [0-9]}']
 name = "count {num}"
 key = "{num}"
 command = "master-key.updateCount"
@@ -2880,7 +2880,7 @@ name = "↑"
 combinedName = "move ↓/↑"
 description = "move editor to window above"
 key = "z w shift+k"
-command = "workbench.action.splitEditorUp"
+command = "workbench.action.moveEditorToAboveGroup"
 
 [[bind]]
 path = "edit.util"
