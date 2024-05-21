@@ -165,7 +165,7 @@ suite('Keybinding Test Suite', () => {
         [[bind]]
         path = "bind"
         name = "1"
-        foreach.key = ['{keys: [a-e]}']
+        foreach.key = ['{key: [a-e]}']
         key = "{key}"
         kind = "all"
         command = "type"

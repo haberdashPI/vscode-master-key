@@ -135,7 +135,7 @@ path = "modes"
 # by default typing keys in a mode other than insert (or capture) is simply ignored
 name = "ignore"
 description = "this key does nothing"
-foreach.key = ['{keys: .}', 'shift+{keys: .}'] # // all single character keys
+foreach.key = ['{key: .}', 'shift+{key: .}'] # // all single character keys
 key = "{key}"
 command = "master-key.ignore"
 prefixes = "<all-prefixes>"

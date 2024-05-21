@@ -209,21 +209,19 @@ function requireTransientSequence(item: BindingItem, i: number, problems: string
 // TODO: check in unit tests
 // invalid items (e.g. both key and keys defined) get detected
 
-function expandForVars(vars: Record<string, string[]>, items: RawBindingItem[], context: EvalContext,
-    definitions: any): RawBindingItem[] {
+function expandForVars(vars: Record<string, string[]>, item: RawBindingItem,
+    context: EvalContext, definitions: any[]): RawBindingItem[] {
 
+    // we've finished accumulating variables, eval all possible definitions
     if(Object.keys(vars).length === 0){
-        return items;
+        return definitions.map(defs =>
+            reifyStrings(item, str => context.evalExpressionsInString(str, defs)));
     }
     let aKey = Object.keys(vars)[0];
     let varValues = vars[aKey];
-    let expandedItems = items.flatMap(item => {
-        return varValues.map(val =>
-            reifyStrings(item, str => context.evalExpressionsInString(str,
-                {...definitions, [aKey]: val})));
-    });
+    let newDefs = definitions.flatMap(defs => varValues.map(val => ({...defs, [aKey]: val})));
 
-    return expandForVars(omit(vars, aKey), expandedItems, context, definitions);
+    return expandForVars(omit(vars, aKey), item, context, newDefs);
 }
 
 const ALL_KEYS = [
@@ -240,7 +238,7 @@ const ALL_KEYS = [
     "numpad_multiply", "numpad_add", "numpad_separator", "numpad_subtract",
     "numpad_decimal", "numpad_divide",
 ];
-let REGEX_KEY_REGEX = /\{keys(:\s*(.*))?\}/;
+let REGEX_KEY_REGEX = /\{key(:\s*(.*))?\}/;
 
 function expandPattern(pattern: string): string[] {
     let regkey = pattern.match(REGEX_KEY_REGEX);
@@ -260,8 +258,7 @@ function expandForeach(item: RawBindingItem, definitions: any): RawBindingItem[]
     let context = new EvalContext();
     if(item.foreach){
         let varValues = mapValues(item.foreach, v => flatMap(v, expandPattern));
-        let result = expandForVars(varValues, [<RawBindingItem>(omit(item, 'foreach'))],
-            context, definitions);
+        let result = expandForVars(varValues, <RawBindingItem>(omit(item, 'foreach')), context, [definitions]);
         context.reportErrors();
         return result;
     }else{
