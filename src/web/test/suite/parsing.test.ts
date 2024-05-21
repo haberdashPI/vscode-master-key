@@ -165,7 +165,7 @@ suite('Keybinding Test Suite', () => {
         [[bind]]
         path = "bind"
         name = "1"
-        foreach.key = ['{key:[a-e]:}']
+        foreach.key = ['{keys: [a-e]}']
         key = "{key}"
         kind = "all"
         command = "type"
@@ -331,14 +331,18 @@ suite('Keybinding Test Suite', () => {
         key = "a"
         kind = "all"
         command = "foo"
-        `), {message: /Duplicate bindings for 'a' in mode 'insert'/});
+        `), {message: /Duplicate bindings for 'a' in mode 'default'/});
 
         assert.throws(() => specForBindings(`
         [header]
         version = "1.0"
 
-        [define]
-        validModes = ["insert", "capture", "normal"]
+        [[mode]]
+        name = "default"
+        default = true
+
+        [[mode]]
+        name = "normal"
 
         [[path]]
         id = "bind"
@@ -349,7 +353,7 @@ suite('Keybinding Test Suite', () => {
         name = "1"
         key = "a"
         kind = "all"
-        mode = "!insert"
+        mode = "!default"
         command = "foo"
 
         [[bind]]
@@ -400,6 +404,21 @@ suite('Keybinding Test Suite', () => {
         assert.equal(spec.length, 3);
         assert.equal(spec.filter(x => x.args.do[0].command === "foo").length, 1);
         assert(isEqual(spec.map(x => x.key).sort(), ["a", "b", "c"]));
+    });
+
+    test('Multiple foreach create a product', () => {
+        let spec = specForBindings(`
+        [header]
+        version = "1.0"
+
+        [[bind]]
+        name = "1"
+        foreach.key = ['{key: [0-9]}']
+        foreach.mod = ['shift', 'cmd']
+        key = "{mod}+{key}"
+        command = "foo"
+        `);
+        assert.equal(spec.length, 20);
     });
 
     test('Automated prefixes are properly ordered', () => {

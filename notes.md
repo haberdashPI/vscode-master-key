@@ -4,8 +4,7 @@ Format improvements
 
 - REDESIGN!! I think the the way repeated keys works is a little unwieldy in many cases
   (maybe we should express it explicitly as a loop somehow...🤔)
-  - add test for `anykey`
-  - add test for two patterns (make sure they multiply)
+  - add test for two patterns (make sure they multiply): written, now debug it
 - PLUS!! make it possible for a *mode* to capture keys and run a command after each press
 
 ```toml

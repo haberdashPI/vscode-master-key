@@ -226,17 +226,30 @@ function expandForVars(vars: Record<string, string[]>, items: RawBindingItem[], 
     return expandForVars(omit(vars, aKey), expandedItems, context, definitions);
 }
 
-const ALL_KEYS = "`1234567890-=qwertyuiop[]\\asdfghjkl;'zxcvbnm,./";
-let ANY_KEY_REGEX = /\{:anykey:\}/;
-let REGEX_KEY_REGEX = /\{key:(.*):\}/;
+const ALL_KEYS = [
+    "f0", "f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "f10", "f11", "f12",
+    "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
+    "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q",
+    "r", "s", "t", "u", "v", "w", "x", "y", "z",
+    "`", "-", "=", "\[", "\]", "\\", ";", "'", ",", "\.", "\/",
+    "left", "up", "right", "down", "pageup", "pagedown", "end", "home",
+    "tab", "enter", "escape", "space", "backspace", "delete",
+    "pausebreak", "capslock", "insert",
+    "numpad0", "numpad1", "numpad2", "numpad3", "numpad4", "numpad5", "numpad6", "numpad7",
+    "numpad8", "numpad9",
+    "numpad_multiply", "numpad_add", "numpad_separator", "numpad_subtract",
+    "numpad_decimal", "numpad_divide",
+];
+let REGEX_KEY_REGEX = /\{keys(:\s*(.*))?\}/;
 
 function expandPattern(pattern: string): string[] {
     let regkey = pattern.match(REGEX_KEY_REGEX);
-    if(ANY_KEY_REGEX.test(pattern)){
-        return Array.from(ALL_KEYS).map(k => pattern.replace(ANY_KEY_REGEX, k));
-    }else if(regkey !== null){
-        let regex = new RegExp(regkey[1]);
-        let matchingKeys = Array.from(ALL_KEYS).filter(k => regex.test(k));
+    if(regkey !== null){
+        let matchingKeys = ALL_KEYS;
+        if(regkey[2]){
+            let regex = new RegExp("^"+regkey[2]+"$");
+            matchingKeys = matchingKeys.filter(k => regex.test(k));
+        }
         return matchingKeys.map(k  => pattern.replace(REGEX_KEY_REGEX, k));
     }else{
         return [pattern];

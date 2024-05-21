@@ -36,7 +36,7 @@ export type DefinedCommand = z.infer<typeof definedCommand>;
 
 const ALLOWED_MODIFIERS = /Ctrl|Shift|Alt|Cmd|Win|Meta/i;
 const ALLOWED_KEYS = [
-    /<all-keys>/, /f[1-9]/i, /f1[0-9]/i, /[a-z]/, /[0-9]/,
+    /f[1-9]/i, /f1[0-9]/i, /[a-z]/, /[0-9]/,
     /`/, /-/, /=/, /\[/, /\]/, /\\/, /;/, /'/, /,/, /\./, /\//,
     /left/i, /up/i, /right/i, /down/i, /pageup/i, /pagedown/i, /end/i, /home/i,
     /tab/i, /enter/i, /escape/i, /space/i, /backspace/i, /delete/i,
