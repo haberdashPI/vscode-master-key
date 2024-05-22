@@ -209,6 +209,7 @@ const modeSpec = z.object({
     default: z.boolean().optional().default(false),
     highlight: z.enum(["NoHighlight", "Highlight", "Alert"]).default('NoHighlight'),
     cursorShape: z.enum(["Line", "Block", "Underline", "LineThin", "BlockOutline", "UnderlineThin"]).default('Line'),
+    onType: doArgs.optional()
 });
 export type ModeSpec = z.output<typeof modeSpec>;
 

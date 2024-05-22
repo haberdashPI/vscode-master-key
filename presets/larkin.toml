@@ -51,6 +51,15 @@ name = "syminsert"
 highlight = "Highlight"
 cursorShape = "BlockOutline"
 
+[[mode.onType]]
+command = "selection-utilities.insertAround"
+computedArgs.before = "captured"
+computedArgs.after = "captured"
+
+[[mode.onType]]
+command = "selection-utilities.adjustSelections"
+args.dir = "forward"
+
 [[mode]]
 name = "selectedit"
 highlight = "Highlight"
@@ -3378,6 +3387,13 @@ command = "selection-utilities.activeAtStart"
 id = "edit.action.symmetric"
 name = "Symmetric Operations"
 description = "Operations that occur at both ends of a selection"
+default.kind = "action"
+default.mode = "syminsert"
+
+[[path]]
+id = "edit.motion.symmetric"
+name = "Symmetric Motions"
+description = "Motions that occur at both ends of a selection"
 default.kind = "motion"
 default.mode = "syminsert"
 
@@ -3403,59 +3419,98 @@ key = "enter"
 command = "master-key.setMode"
 mode = "syminsert"
 
-[define.symmetric_key_map]
-"shift+;" = ":"
-"shift+'" = "\""
-"shift+/" = "?"
-"shift+\\" = "|"
-"shift+=" = "+"
-"shift+-" = "-"
-"shift+8" = "*"
-"shift+7" = "&"
-"shift+6" = "^"
-"shift+5" = "%"
-"shift+4" = "$"
-"shift+3" = "#"
-"shift+2" = "@"
-"shift+1" = "!"
-"shift+`" = "~"
-";" = ";"
-"'" = "'"
-"," = ","
-"." = "."
-"/" = "/"
-"=" = "="
-"-" = "-"
-"`" = "`"
+[[bind]]
+path = "edit.action.symmetric"
+foreach.key = ["{key: [a-z]}", "shift+{key: [a-z]}"]
+name = ""
+description = "letter key with no associated command in syminsert mode"
+key = "{key}"
+command = "master-key.ignore"
+modoe = "syminsert"
+
+[[bind]]
+name = "esc. quote"
+path = "edit.action.symmetric"
+key = '\ "'
+description = "Insert escaped double quotes around selection"
+command = "selection-utilities.insertAround"
+args.before = '\ "'
+args.after = '\ "'
 
 [[bind]]
 path = "edit.action.symmetric"
-foreach.key = [
-      "shift+;",
-      ";",
-      "'",
-      "shift+'",
-      ",",
-      ".",
-      "/",
-      "shift+/",
-      "shift+\\",
-      "=",
-      "shift+=",
-      "-",
-      "shift+-",
-      "shift+8",
-      "shift+7",
-      "shift+6",
-      "shift+5",
-      "shift+4",
-      "shift+3",
-      "shift+2",
-      "shift+1",
-      "shift+`",
-      "`",
-]
-key = "{key}"
-description = "Insert the character {symmetric_key_map[key]} at both ends of each selection"
+name = "esc. quote"
+key = "\\ '"
+description = "Insert escaped single quotes around selection"
 command = "selection-utilities.insertAround"
-args = { before = "{symmetric_key_map[key]}", after = "{symmetric_key_map[key]}" }
+args.before = "\\ '"
+args.after = "\\ '"
+
+[define.braces]
+"shift+[".before = "{"
+"shift+[".after = "}"
+"[".before = "["
+"[".after = "]"
+"shift+9".before = "("
+"shift+9".after = ")"
+"shift+,".before = "<"
+"shift+,".after = ">"
+
+[[bind]]
+path = "edit.action.symmetric"
+name = "brace"
+foreach.key = ['shift+[', '[', 'shift+9', 'shift+,']
+key = "{key}"
+descpription = "Surround selection in {braces[key].before} {braces[key].after}"
+args.before = "{braces[key].before}"
+args.after = "{braces[key].after}"
+
+[[bind]]
+path = "edit.action.symmetric"
+name = "delete"
+key = "x"
+description = "delete the first and last character of the selection, adjusting the selection"
+command = "runCommands"
+
+[[bind.args.commands]]
+command = "selection-utilities.adjustSelections"
+args.dir = "backward"
+
+[[bind.args.commands]]
+command = "selection-utilities.deleteAround"
+computedArgs.count = "count"
+
+[[bind]]
+path = "edit.motion.symmetric"
+key = "l"
+name = "sel →"
+description = "shrink/grow selections in direction that's rightwards from cursor"
+command = "selection-utilities.adjustSelections"
+args.dir = "right"
+computedArgs.count = "count"
+
+[[bind]]
+path = "edit.motion.symmetric"
+key = "h"
+name = "sel ←"
+description = "shrink/grow selections in direction that's leftwards from cursor"
+command = "selection-utilities.adjustSelections"
+args.dir = "left"
+computedArgs.count = "count"
+
+[[bind]]
+path = "edit.motion.symmetric"
+key = "o"
+name = "active to front"
+combinedName = "active to start/end"
+combinedDescription = "move cursor to start/end of selection"
+description = "move cursor to start of selection"
+command = "selection-utilities.activeAtEnd"
+
+[[bind]]
+path = "edit.motion.symmetric"
+name = "active to end"
+combinedName = "active to start/end"
+description = "move cursor to back of selection"
+key = "shift+o"
+command = "selection-utilities.activeAtStart"
