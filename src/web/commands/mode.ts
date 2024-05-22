@@ -31,6 +31,15 @@ async function updateModeKeyCapture(mode: string, modeSpec: Record<string, ModeS
     }
 }
 
+function updateLineNumbers(mode: string, modeSpec: Record<string, ModeSpec>){
+    let config = vscode.workspace.getConfiguration();
+    if(modeSpec[mode]){
+        let numbers = modeSpec[mode].lineNumbers;
+        config.update('editor.lineNumbers', numbers || defaultLineNumbers,
+            vscode.ConfigurationTarget.Global);
+    }
+}
+
 const setModeArgs = z.object({ value: z.string() }).strict();
 async function setMode(args_: unknown): Promise<CommandResult> {
     let args = validateInput('master-key.setMode', args_, setModeArgs);
@@ -42,11 +51,13 @@ async function setMode(args_: unknown): Promise<CommandResult> {
 };
 export let modeSpecs: Record<string, ModeSpec> = {};
 export let defaultMode: string = 'default';
+let defaultLineNumbers: string = 'on';
 async function updateModeSpecs(event?: vscode.ConfigurationChangeEvent){
     if(!event || event?.affectsConfiguration('master-key')){
         let config = vscode.workspace.getConfiguration('master-key');
         modeSpecs = config.get<Record<string, ModeSpec>>('mode') || {};
         defaultMode = (Object.values(modeSpecs).filter(x => x.default)[0] || {name: 'default'}).name;
+        defaultLineNumbers = config.get<string>('defaultLineNumbers') || 'on';
     }
 }
 
@@ -73,6 +84,7 @@ export async function activate(context: vscode.ExtensionContext){
             currentMode = newMode;
             updateCursorAppearance(vscode.window.activeTextEditor, currentMode, modeSpecs || {});
             updateModeKeyCapture(currentMode, modeSpecs || {});
+            updateLineNumbers(currentMode, modeSpecs || {})
         }
         return true;
     });

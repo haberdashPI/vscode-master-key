@@ -39,17 +39,20 @@ These bindings are named after the middle name of my first child (Larkin).
 
 [[mode]]
 name = "insert"
+lineNumbers = "on"
 
 [[mode]]
 name = "normal"
 default = true
 highlight = "Highlight"
 cursorShape = "Block"
+lineNumbers = "relative"
 
 [[mode]]
 name = "selectedit"
 highlight = "Highlight"
 cursorShape = "BlockOutline"
+lineNumbers = "relative"
 
 [define]
 select_on = false
@@ -3396,6 +3399,7 @@ command = "selection-utilities.activeAtStart"
 name = "syminsert"
 highlight = "Highlight"
 cursorShape = "BlockOutline"
+lineNumbers = "relative"
 
 [[mode.onType]]
 command = "selection-utilities.insertAround"

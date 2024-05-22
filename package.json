@@ -130,10 +130,17 @@
           "type": "object",
           "description": "A set of variables defined by the keybinding mode that are accessible when evaluating `computedArgs`"
         },
+        "master-key.defaultLineNumbers": {
+          "title": "Default Line Numbering",
+          "type": "string",
+          "default": "on",
+          "enum": ["on", "off", "relative", "interval"],
+          "description": "The default line numbering setting, when not explicitly specified by a binding mode. This and the mode's line numbering overwrites the global VSCode setting"
+        },
         "master-key.mode": {
           "title": "Keybinding Mode Definitions",
           "type": "object",
-          "description": "A set of keybinding mode definitions imported from the active master key *.toml file"
+          "description": "A set of definitions that determine the behavior of each keybinding mode"
         },
         "master-key.maxCommandHistory": {
           "title": "Command History Maximum",
