@@ -45,7 +45,7 @@ export class EvalContext {
 
     evalExpressionsInString(str: string, values: Record<string, any>) {
         let result = "";
-        let r = /\{.*?key.*?\}/g;
+        let r = /\{[^\}]*\}/g;
         let match = r.exec(str);
         let startIndex = 0;
         while (match !== null) {
@@ -64,7 +64,7 @@ export class EvalContext {
             }
             result += prefix + evaled;
             startIndex += prefix.length + match[0].length;
-            match = r.exec(str.slice(startIndex));
+            match = r.exec(str);
         }
         result += str.slice(startIndex);
         return result;

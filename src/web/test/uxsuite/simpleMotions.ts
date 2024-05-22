@@ -77,11 +77,12 @@ export const run = () => describe('Simple motions', () => {
             # NOTE: because of how vscode-extension-tester is implemented
             # numeric values get typed, so we use other keybindings here
             # to avoid picking up these typed keys
-            key = ["shift+0", "shift+1", "shift+2", "shift+3"]
+            foreach.num = ["{key:[0-3]:}"]
+            key = "shift+{num}
             mode = "normal"
-            name = "count {keyNumber[key]}"
+            name = "count {num}"
             command = "master-key.updateCount"
-            args.value = "{keyNumber[key]}"
+            args.value = "{num}"
             resetTransient = false
         `);
 

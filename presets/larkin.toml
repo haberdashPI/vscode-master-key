@@ -14,7 +14,6 @@ requiredExtensions = [
       "pranshuagrawal.toggle-case",
       "albymor.increment-selection",
       "pkief.markdown-checkbox",
-      "edgardmessias.clipboard-manager",
       "stkb.rewrap",
       "haberdashPI.terminal-polyglot",
       "jack89ita.open-file-from-path",
@@ -37,8 +36,24 @@ selections or add commands to select regions of text.
 These bindings are named after the middle name of my first child (Larkin).
 """
 
+[[mode]]
+name = "insert"
+lineNumbers = "on"
+
+[[mode]]
+name = "normal"
+default = true
+highlight = "Highlight"
+cursorShape = "Block"
+lineNumbers = "relative"
+
+[[mode]]
+name = "selectedit"
+highlight = "Highlight"
+cursorShape = "BlockOutline"
+lineNumbers = "relative"
+
 [define]
-validModes = ["insert", "capture", "normal", "syminsert", "selectedit"]
 select_on = false
 around_on = false
 
@@ -93,7 +108,8 @@ default.kind = "util"
 path = "modes"
 name = "normal"
 description = "Enter normal mode"
-key = ["escape", "ctrl+["]
+foreach.key = ["escape", "ctrl+["]
+key = "{key}"
 mode = []
 hideInPalette = true
 command = "master-key.enterNormal"
@@ -103,22 +119,25 @@ prefixes = "<all-prefixes>"
 [[bind]]
 path = "modes"
 name = "normal"
-key = ["escape", "ctrl+["]
+foreach.key = ["escape", "ctrl+["]
+key = "{key}"
 hideInPalette = true
 when = "suggsetWidgetVisible && editorTextFocus && !findWidgetVisible"
 command = "master-key.enterNormal"
 mode = []
 prefixes = "<all-prefixes>"
 
+# in "command" like modes (e.g. normal), typing keys without a command defined below should
+# have no effect
 [[bind]]
 path = "modes"
-# by default typing keys in a mode other than insert (or capture) is simply ignored
 name = "ignore"
 description = "this key does nothing"
-key = ["<all-keys>", "shift+<all-keys>"]
+foreach.key = ['{key: .}', 'shift+{key: .}'] # // all keys whose bindings are described by a single character
+key = "{key}"
 command = "master-key.ignore"
 prefixes = "<all-prefixes>"
-mode = ["!insert", "!capture"]
+mode = ["normal", "selectedit"]
 when = "editorTextFocus"
 
 [[path]]
@@ -145,14 +164,15 @@ default.kind = "count"
 path = "edit.count"
 # likewise, the numbers affect command count in all modes where text isn't
 # being entered
-name = "count {key}"
-key = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+foreach.num = ['{key: [0-9]}']
+name = "count {num}"
+key = "{num}"
 command = "master-key.updateCount"
-description = "Add digit {key} to the count argument of a command"
+description = "Add digit {num} to the count argument of a command"
 combinedKey = "0-9"
 combinedName = "count 0-9"
 combinedDescription = "Add digit 1-9 to count argument of a command"
-args.value = "{key}"
+args.value = "{num}"
 resetTransient = false
 mode = ["!insert", "!capture"]
 
@@ -1402,12 +1422,12 @@ name = "insert"
 description = "Switch to insert mode (right before character)"
 command = "runCommands"
 args.commands = ["selection-utilities.shrinkToActive", "master-key.enterInsert"]
-mode = ["normal", "selectedit"]
+mode = ["normal", "selectedit", "syminsert"]
 
 [[bind]]
 path = "edit.action.basic"
 key = "a"
-mode = ["normal", "selectedit"]
+mode = ["normal", "selectedit", "syminsert"]
 command = "runCommands"
 args.commands = [
       "selection-utilities.shrinkToActive",
@@ -1419,7 +1439,7 @@ args.commands = [
 path = "edit.action.basic"
 key = "shift+i"
 name = "insert start"
-mode = ["normal", "selectedit"]
+mode = ["normal", "selectedit", "syminsert"]
 command = "runCommands"
 args.commands = [
       { command = "cursorMove", args = { to = "wrappedLineFirstNonWhitespaceCharacter", select = false } },
@@ -1430,7 +1450,7 @@ args.commands = [
 path = "edit.action.basic"
 key = "shift+a"
 name = "insert end"
-mode = ["normal", "selectedit"]
+mode = ["normal", "selectedit", "syminsert"]
 command = "runCommands"
 args.commands = [
       { command = "cursorMove", args = { to = "wrappedLineEnd", select = false } },
@@ -2858,7 +2878,7 @@ name = "↑"
 combinedName = "move ↓/↑"
 description = "move editor to window above"
 key = "z w shift+k"
-command = "workbench.action.splitEditorUp"
+command = "workbench.action.moveEditorToAboveGroup"
 
 [[bind]]
 path = "edit.util"
@@ -3352,10 +3372,51 @@ command = "selection-utilities.activeAtStart"
 ## Symmetric Insert Mode
 ## --------------------------------
 
+[define.braces]
+
+"{".before = "{"
+"{".after = "}"
+"}".before = "{"
+"}".after = "}"
+
+"[".before = "["
+"[".after = "]"
+"]".before = "["
+"]".after = "]"
+
+"(".before = "("
+"(".after = ")"
+")".before = "("
+")".after = ")"
+
+"<".before = "<"
+"<".after = ">"
+">".before = "<"
+">".after = ">"
+
+[[mode]]
+name = "syminsert"
+highlight = "Highlight"
+cursorShape = "BlockOutline"
+lineNumbers = "relative"
+
+[[mode.onType]]
+command = "selection-utilities.insertAround"
+computedArgs.before = "braces[captured].before || captured"
+computedArgs.after = "braces[captured].after || captured"
+args.followCursor = true
+
 [[path]]
 id = "edit.action.symmetric"
 name = "Symmetric Operations"
 description = "Operations that occur at both ends of a selection"
+default.kind = "action"
+default.mode = "syminsert"
+
+[[path]]
+id = "edit.motion.symmetric"
+name = "Symmetric Motions"
+description = "Motions that occur at both ends of a selection"
 default.kind = "motion"
 default.mode = "syminsert"
 
@@ -3377,62 +3438,106 @@ args.value = "syminsert"
 path = "edit.action.symmetric"
 name = "Normal"
 description = "Return to normal model"
-key = ["enter"]
+key = "enter"
 command = "master-key.setMode"
 mode = "syminsert"
 
-[define.symmetric_key_map]
-"shift+;" = ":"
-"shift+'" = "\""
-"shift+/" = "?"
-"shift+\\" = "|"
-"shift+=" = "+"
-"shift+-" = "-"
-"shift+8" = "*"
-"shift+7" = "&"
-"shift+6" = "^"
-"shift+5" = "%"
-"shift+4" = "$"
-"shift+3" = "#"
-"shift+2" = "@"
-"shift+1" = "!"
-"shift+`" = "~"
-";" = ";"
-"'" = "'"
-"," = ","
-"." = "."
-"/" = "/"
-"=" = "="
-"-" = "-"
-"`" = "`"
+[[bind]]
+path = "edit.action.symmetric"
+foreach.key = ["{key: [a-z]}", "shift+{key: [a-z]}"]
+name = ""
+description = "this key is ignored and has no associated command in syminsert mode"
+key = "{key}"
+command = "master-key.ignore"
+mode = "syminsert"
+
+[[bind]]
+name = "esc. char"
+path = "edit.action.symmetric"
+key = "\\"
+description = "Insert escaped character"
+command = "runCommands"
+
+[[bind.args.commands]]
+command = "master-key.captureKeys"
+args.acceptAfter = 1
+
+[[bind.args.commands]]
+command = "selection-utilities.insertAround"
+computedArgs.before = "'\\\\' + (braces[captured].before || captured)"
+computedArgs.after = "'\\\\' + (braces[captured].after || captured)"
+args.followCursor = true
 
 [[bind]]
 path = "edit.action.symmetric"
-key = [
-      "shift+;",
-      ";",
-      "'",
-      "shift+'",
-      ",",
-      ".",
-      "/",
-      "shift+/",
-      "shift+\\",
-      "=",
-      "shift+=",
-      "-",
-      "shift+-",
-      "shift+8",
-      "shift+7",
-      "shift+6",
-      "shift+5",
-      "shift+4",
-      "shift+3",
-      "shift+2",
-      "shift+1",
-      "shift+`",
-      "`",
+name = "delete"
+key = "x"
+description = """
+delete the first and last adjacent character when cursor is at end of selection and
+delete the first and last character *in* the selection when cursor is at the start of the
+selection
+"""
+command = "selection-utilities.deleteAround"
+computedArgs.count = "count"
+args.followCursor = true
+
+[[bind]]
+path = "edit.motion.symmetric"
+key = "l"
+name = "sel →"
+description = "shrink/grow selections in direction that's rightwards from cursor"
+command = "selection-utilities.adjustSelections"
+args.dir = "forward"
+computedArgs.count = "count"
+
+[[bind]]
+path = "edit.motion.symmetric"
+key = "h"
+name = "sel ←"
+description = "shrink/grow selections in direction that's leftwards from cursor"
+command = "selection-utilities.adjustSelections"
+args.dir = "backward"
+computedArgs.count = "count"
+
+[[bind]]
+path = "edit.motion.symmetric"
+key = "o"
+name = "active to front"
+combinedName = "active to start/end"
+combinedDescription = "move cursor to start/end of selection"
+description = "move cursor to start of selection"
+command = "selection-utilities.activeAtEnd"
+
+[[bind]]
+path = "edit.motion.symmetric"
+name = "active to end"
+combinedName = "active to start/end"
+description = "move cursor to back of selection"
+key = "shift+o"
+command = "selection-utilities.activeAtStart"
+
+[[bind]]
+path = "edit.action.symmetric"
+name = "undo"
+key = "u"
+command = "undo"
+
+[[bind]]
+path = "edit.action.symmetric"
+name = "redo"
+key = "shift+u"
+command = "redo"
+
+[[bind]]
+path = "edit.motion.symmetric"
+key = "v"
+name = "shrink selection"
+description = """
+reduce all selections to length zero and return to normal mode
+"""
+command = "runCommands"
+args.commands = [
+      "selection-utilities.shrinkToActive",
+      { command = "master-key.setFlag", args = { name = "select_on", value = false } },
+      "master-key.enterNormal"
 ]
-description = "Insert the character {symmetric_key_map[key]} at both ends of each selection"
-command = "selection-utilities.insertAround"
-args = { before = "{symmetric_key_map[key]}", after = "{symmetric_key_map[key]}" }

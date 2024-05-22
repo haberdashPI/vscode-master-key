@@ -1,27 +1,10 @@
-current issue I'm working on:
-
-## Mode customization
-
-Format improvements
-
-- REDESIGN!! I think the the way repeated keys works is a little unwieldy in many cases
-  (maybe we should express it explicitly as a loop somehow...🤔)
-
-```toml
-[[bind]]
-foreach.i = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0] # or "[0-9]+"
-key = "shift+{i}"
-name = "count {i}"
-command = "master-key.updateCount"
-args.value = "{i}"
-```
-
-THEN: add more to symmetric insert setup
-
-BUG: repeat argument is not work for the repeat action command (e.g. I cannot repeat the last action ten times)
-
 ## Wrapping up unit tests
 
+BUG/PERFORMANCE: onSet gets called even if the new value is the same as the old
+BUG: repeat argument is not working for the repeat action command (e.g. I cannot repeat the last action ten times)
+
+unit tests: mode capture
+  - cook up some tests `onType` setting of modes
 unit tests: edge cases with recording edits
   - how about when I switch documents?
   - how about when we don't start with normal mode commands?
@@ -33,9 +16,19 @@ unit tests: parsing of YAML and JSON(C)
   - actually: delete this feature (add it back in later if it feels worth it)
 unit tests: store/restore named commands
 
+code coverage?
+https://istanbul.js.org/
+
+CI??
+
 ## Visual Documentation Improvements
 
+NOTE: `path` entries should not have documentation; rather there should be a separate setup
+(perhaps comments?) for how to enter text that becomes part of the markdown output
+
 Visual doc improvements:
+
+IMPROVEMENT: upon activating bindings, show the visual and cheetsheet documentation
 
 IMPROVEMENT: show keybinding tips (for those general commands useful for examining documentation) in the visual documentation
 for
@@ -47,12 +40,18 @@ for
 
 - IMPROVEMENT: show escape/function key row in the visual key doc
 
+- IMPROVEMENT: put some examples of cool features from `Larkin` in the README
+
 write code to convert the toml file to a markdown of organized tables of keybindings
 and provide a command that opens the Markdown preview of this file
 
 DOCUMENTATION: in documenting macro playback note the limitations of recording the keyboard
 (e.g. that it only records inserts; any modifiers are espected to be commands
 that are recorded)
+
+## Binding Cleanup
+
+Split out any of the commands that are really custom for me that don't make sense to publish. Pair down some of the required extensions. Offer to install extensions
 
 ## Before first release
 
@@ -115,18 +114,10 @@ wishlist:
 
 - get macro replay working with selection utility commands
 
-- would be nice if each key past the first shows up in a quick pick menu
-  rather than just being a separate keybinding
-
 - reduce the commands that have to be excluded from the global command palette
 
-- move all flag setting for prefix commands to the suffix command upon pre-processing
-  - we need to examine which variables `computedArgs` depend on
-  and only eliminate those commands that depend on variables modified in the
-  prefix
-
 - would be nice if each key sequence that mapped to a *single* command
-  could be added as a keybinding full keybinding for that command
+  could be added as a full keybinding for that command
   with a `when` clause that is never true; that way
   all single commands that are mapped can be looked up
   using the command palette. NOTE: this might not work
@@ -146,21 +137,12 @@ wishlist:
 - maybe the parse errors can be added to the problems window? (and just have one error
   message for all problems)
 
-- maybe there should be a default set of `ignore` bindings for all
-  modes but insert and capture; we would need some way to remove these
-  bindings if desired
-
 - change capture mode so it accepts all keys it can (and you can define what sequence
   cancels), rather than newlines being always marked as cancel
 
 - quick win: master-key.ignore shouldn't need to be passed to
   master-key.do (we can just call ignore directly)
   -NOTE: the same might be said for `prefix` command
-
-- quick win:
-  - let modes change the cursor
-  - let modes change line numbering
-  - allow modes to specify if they ignore keys?? (instead of manually adding these)
 
 - status bar updates are called a lot, maybe reduce this
 
@@ -189,11 +171,6 @@ wishlist:
 
 - have a debug mode that shows which command got executed from the given keybinding (with an
   option to show or not show prefixes)
-
-- binding validation checks that there aren't non-modifier bindings that
-  capture input outside of the text editor
-  OR
-  all non-modifier keys (k or shift+k) get a condition added to them so they don't mess up input boxes ???
 
 - support multiple keyboard layouts in the visual documentation
 

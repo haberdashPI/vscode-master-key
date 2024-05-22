@@ -7,7 +7,7 @@ import { cloneDeep, merge } from 'lodash';
 import { evalContext, reifyStrings } from '../expressions';
 import { PREFIX_CODE, keySuffix } from './prefix';
 import { isSingleCommand } from '../keybindings/processing';
-import { MODE } from './mode';
+import { MODE, defaultMode } from './mode';
 import { List } from 'immutable';
 import { commandPalette } from './palette';
 
@@ -172,7 +172,7 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
                 return state.update<List<unknown>>(COMMAND_HISTORY,
                     { notSetValue: List() },
                     history => {
-                        let recordEdits = state.get(MODE, 'insert') === 'insert';
+                        let recordEdits = state.get(MODE, defaultMode) === defaultMode;
                         history = history.push({ ...command, edits: [], recordEdits });
                         if(history.count() > maxHistory){
                             history = history.shift();

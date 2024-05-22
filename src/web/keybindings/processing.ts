@@ -1,8 +1,8 @@
 import hash from 'object-hash';
 import { parseWhen, bindingItem, DoArgs, DefinedCommand, BindingItem, BindingSpec,
-         rawBindingItem, RawBindingItem, ParsedWhen } from "./parsing";
+         rawBindingItem, RawBindingItem, ParsedWhen, ModeSpec } from "./parsing";
 import z from 'zod';
-import { sortBy, pick, isEqual, omit, mergeWith, cloneDeep, flatMap, merge } from 'lodash';
+import { sortBy, pick, isEqual, omit, mergeWith, cloneDeep, flatMap, mapValues, merge } from 'lodash';
 import { reifyStrings, EvalContext } from '../expressions';
 import { validateInput } from '../utils';
 import { fromZodError } from 'zod-validation-error';
@@ -11,30 +11,39 @@ export interface Bindings{
     name?: string,
     description?: string,
     define: Record<string, any>;
+    mode: Record<string, ModeSpec>;
     bind: IConfigKeyBinding[]
 }
 
 export function processBindings(spec: BindingSpec): [Bindings, string[]]{
     let problems: string[] = [];
-    let items = expandDefaultsAndDefinedCommands(spec, problems);
+    let items = expandDefaultsDefinedAndForeach(spec, problems);
     items = items.map((item, i) => requireTransientSequence(item, i, problems));
-    items = expandBindingKeys(items, spec.define);
     items = expandPrefixes(items);
-    items = expandModes(items, spec.define);
+    items = expandModes(items, spec.mode, problems);
     items = expandDocsToDuplicates(items);
     let prefixCodes: PrefixCodes;
     [items, prefixCodes] = expandKeySequencesAndResolveDuplicates(items, problems);
     items = items.map(moveModeToWhenClause);
     let newItems = items.map(i => movePrefixesToWhenClause(i, prefixCodes));
-    let definitions = {...spec.define, prefixCodes: prefixCodes.codes};
+    let definitions = {...spec.define, prefixCodes: prefixCodes.codes };
     let configItems = newItems.map(i => itemToConfigBinding(i, definitions));
     let result: Bindings = {
         name: spec.header.name,
         description: spec.header.description,
         define: definitions,
-        bind: configItems
+        mode: mapByName(spec.mode),
+        bind: configItems,
     };
     return [result, problems];
+}
+
+function mapByName(specs: ModeSpec[]){
+    let modeSpecs: Record<string, ModeSpec> = {};
+    for(let spec of specs){
+        modeSpecs[spec.name] = spec;
+    }
+    return modeSpecs;
 }
 
 function overwritePrefixesAndWhen(obj_: any, src_: any, key: string){
@@ -95,9 +104,9 @@ function expandDefinedCommands(item: RawBindingItem, definitions: any): RawBindi
 
 const partialRawBindingItem = rawBindingItem.partial();
 type PartialRawBindingItem = z.infer<typeof partialRawBindingItem>;
-type AppendFields = {when?: string}
+type AppendFields = {when?: string};
 
-function expandDefaultsAndDefinedCommands(spec: BindingSpec, problems: string[]): BindingItem[] {
+function expandDefaultsDefinedAndForeach(spec: BindingSpec, problems: string[]): BindingItem[] {
     // eslint-disable-next-line @typescript-eslint/naming-convention
     let pathDefaults: Record<string, PartialRawBindingItem> = {"": {}};
     let pathWhens: Record<string, ParsedWhen[]> = {};
@@ -122,7 +131,7 @@ function expandDefaultsAndDefinedCommands(spec: BindingSpec, problems: string[])
         }
     }
 
-    let items = spec.bind.map((item, i) => {
+    let items = spec.bind.flatMap((item, i) => {
         let itemDefault = pathDefaults[item.path || ""];
         let itemConcatWhen = pathWhens[item.path || ""];
         if(!itemDefault){
@@ -136,41 +145,44 @@ function expandDefaultsAndDefinedCommands(spec: BindingSpec, problems: string[])
                 item.when = itemConcatWhen;
             }
             item = expandDefinedCommands(item, spec.define);
-            let required = ['key', 'command'];
-            let missing = required.filter(r => (<any>item)[r] === undefined);
-            if(missing.length > 0){
-                problems.push(`Problem with binding ${i} ${item.path}:
-                    missing field '${missing[0]}'`);
-                return undefined;
-            }
-            let result = bindingItem.safeParse({
-                key: item.key,
-                when: item.when,
-                mode: typeof item.mode === 'string' ? [item.mode] : item.mode,
-                prefixes: item.prefixes,
-                command: "master-key.do",
-                args: {
-                    do: item.command === 'runCommands' ?
-                        item.args : [pick(item, ['command', 'args', 'computedArgs', 'if'])],
-                    path: item.path,
-                    name: item.name,
-                    description: item.description,
-                    priority: item.priority,
-                    hideInPalette: item.hideInPalette,
-                    combinedName: item.combinedName,
-                    combinedKey: item.combinedKey,
-                    combinedDescription: item.combinedDescription,
-                    kind: item.kind,
-                    resetTransient: item.resetTransient,
-                    repeat: item.repeat
+            let items = expandForeach(item, spec.define);
+            return items.map(item => {
+                let required = ['key', 'command'];
+                let missing = required.filter(r => (<any>item)[r] === undefined);
+                if(missing.length > 0){
+                    problems.push(`Problem with binding ${i} ${item.path}:
+                        missing field '${missing[0]}'`);
+                    return undefined;
                 }
-            });
-            if(!result.success){
-                problems.push(`Item ${i} with name ${item.name}: ${fromZodError(result.error).message}`);
-                return undefined;
-            }else{
-                return result.data;
-            }
+                let result = bindingItem.safeParse({
+                    key: item.key,
+                    when: item.when,
+                    mode: typeof item.mode === 'string' ? [item.mode] : item.mode,
+                    prefixes: item.prefixes,
+                    command: "master-key.do",
+                    args: {
+                        do: item.command === 'runCommands' ?
+                            item.args : [pick(item, ['command', 'args', 'computedArgs', 'if'])],
+                        path: item.path,
+                        name: item.name,
+                        description: item.description,
+                        priority: item.priority,
+                        hideInPalette: item.hideInPalette,
+                        combinedName: item.combinedName,
+                        combinedKey: item.combinedKey,
+                        combinedDescription: item.combinedDescription,
+                        kind: item.kind,
+                        resetTransient: item.resetTransient,
+                        repeat: item.repeat
+                    }
+                });
+                if(!result.success){
+                    problems.push(`Item ${i} with name ${item.name}: ${fromZodError(result.error).message}`);
+                    return undefined;
+                }else{
+                    return result.data;
+                }
+            }).filter(i => i !== undefined);
         }
     });
 
@@ -197,37 +209,61 @@ function requireTransientSequence(item: BindingItem, i: number, problems: string
 // TODO: check in unit tests
 // invalid items (e.g. both key and keys defined) get detected
 
-function expandBindingKey(k: string, item: BindingItem, context: EvalContext,
-    definitions: any): BindingItem[] {
+function expandForVars(vars: Record<string, string[]>, item: RawBindingItem,
+    context: EvalContext, definitions: any[]): RawBindingItem[] {
 
-    let match: RegExpMatchArray | null = null;
-    if((match = /((.*)\+)?<all-keys>/.exec(k)) !== null){
-        if(match[2] !== undefined){
-            let mod = match[2];
-            return flatMap(Array.from(ALL_KEYS), k =>
-                expandBindingKey(`${mod}+${k}`, item, context, definitions));
-        }else{
-            return flatMap(Array.from(ALL_KEYS), k =>
-                expandBindingKey(k, item, context, definitions));
-        }
+    // we've finished accumulating variables, eval all possible definitions
+    if(Object.keys(vars).length === 0){
+        return definitions.map(defs =>
+            reifyStrings(item, str => context.evalExpressionsInString(str, defs)));
     }
-    let keyEvaled = reifyStrings(omit(item, 'key'),
-        str => context.evalExpressionsInString(str, {...definitions, key: k}));
-    return [{...keyEvaled, key: k}];
+    let aKey = Object.keys(vars)[0];
+    let varValues = vars[aKey];
+    let newDefs = definitions.flatMap(defs => varValues.map(val => ({...defs, [aKey]: val})));
+
+    return expandForVars(omit(vars, aKey), item, context, newDefs);
 }
 
-const ALL_KEYS = "`1234567890-=qwertyuiop[]\\asdfghjkl;'zxcvbnm,./";
-function expandBindingKeys(bindings: BindingItem[], definitions: any): BindingItem[] {
-    let context = new EvalContext();
-    let result = flatMap(bindings, item => {
-        if(Array.isArray(item.key)){
-            return flatMap(item.key, k => expandBindingKey(k, item, context, definitions));
-        }else{
-            return [item];
+const ALL_KEYS = [
+    "f0", "f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "f10", "f11", "f12",
+    "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
+    "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q",
+    "r", "s", "t", "u", "v", "w", "x", "y", "z",
+    "`", "-", "=", "\[", "\]", "\\", ";", "'", ",", "\.", "\/",
+    "left", "up", "right", "down", "pageup", "pagedown", "end", "home",
+    "tab", "enter", "escape", "space", "backspace", "delete",
+    "pausebreak", "capslock", "insert",
+    "numpad0", "numpad1", "numpad2", "numpad3", "numpad4", "numpad5", "numpad6", "numpad7",
+    "numpad8", "numpad9",
+    "numpad_multiply", "numpad_add", "numpad_separator", "numpad_subtract",
+    "numpad_decimal", "numpad_divide",
+];
+let REGEX_KEY_REGEX = /\{key(:\s*(.*))?\}/;
+
+function expandPattern(pattern: string): string[] {
+    let regkey = pattern.match(REGEX_KEY_REGEX);
+    if(regkey !== null){
+        let matchingKeys = ALL_KEYS;
+        if(regkey[2]){
+            let regex = new RegExp("^"+regkey[2]+"$");
+            matchingKeys = matchingKeys.filter(k => regex.test(k));
         }
-    });
-    context.reportErrors();
-    return result;
+        return matchingKeys.map(k  => pattern.replace(REGEX_KEY_REGEX, k));
+    }else{
+        return [pattern];
+    }
+}
+
+function expandForeach(item: RawBindingItem, definitions: any): RawBindingItem[] {
+    let context = new EvalContext();
+    if(item.foreach){
+        let varValues = mapValues(item.foreach, v => flatMap(v, expandPattern));
+        let result = expandForVars(varValues, <RawBindingItem>(omit(item, 'foreach')), context, [definitions]);
+        context.reportErrors();
+        return result;
+    }else{
+        return [item];
+    }
 }
 
 function expandPrefixes(items: BindingItem[]){
@@ -241,16 +277,18 @@ function expandPrefixes(items: BindingItem[]){
     });
 }
 
-function expandModes(items: BindingItem[], define: Record<string, any> | undefined) {
-    let validModeArg = z.string().array().optional();
-    let validModes = validModeArg.parse(define?.validModes) || ['insert', 'capture'];
+function expandModes(items: BindingItem[], validModes: ModeSpec[], problems: string[]){
+    let defaultMode = validModes.filter(x => x.default)[0]; // validation should guarantee a single match
     return flatMap(items, (item: BindingItem): BindingItem[] => {
-        let modes = item.mode || ['insert'];
+        let modes = item.mode || [defaultMode.name];
         if (modes.length > 0 && modes[0].startsWith('!')) {
-            // TODO: 'parsing' should validate that all modes specifiers are inclusive
-            // or exclusive (!)
+            if(modes.some(x => !x.startsWith('!'))){
+                problems.push(`Either all or none of the modes for binding ${item.key} `+
+                              `must be prefixed with '!'`);
+                modes = modes.filter(x => x.startsWith('!'));
+            }
             let exclude = modes.map(m => m.slice(1));
-            modes = validModes.filter(mode => !exclude.some(x => x === mode));
+            modes = validModes.map(x => x.name).filter(mode => !exclude.some(x => x === mode));
         }
         if (modes.length === 0) {
             return [item];

@@ -1,16 +1,18 @@
 import * as vscode from 'vscode';
 import { CommandState, onResolve, withState } from '../state';
 import { RECORD } from '../commands/replay';
-import { MODE } from '../commands/mode';
+import { MODE, defaultMode, modeSpecs } from '../commands/mode';
 import { Map } from 'immutable';
 
 function updateModeStatus(state: Map<string, unknown> | CommandState ){
     if(modeStatusBar !== undefined){
-        modeStatusBar.text = (state.get<boolean>(RECORD, false) ? "rec: " : "") +
-            (state.get<string>(MODE, 'insert'))!;
-        if(state.get<boolean>(RECORD, false)){
+        let mode = <string>state.get(MODE);
+        let highlight = modeSpecs[mode] ? modeSpecs[mode].highlight : 'NoHighlight';
+        let rec = state.get<boolean>(RECORD, false);
+        modeStatusBar.text = (rec ? "rec: " : "") + mode;
+        if(state.get<boolean>(RECORD, false) || highlight === 'Alert'){
             modeStatusBar.backgroundColor = new vscode.ThemeColor("statusBarItem.errorBackground");
-        }else if(modeStatusBar.text !== 'insert'){
+        }else if(highlight === 'Highlight'){
             modeStatusBar.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
         }else{
             modeStatusBar.backgroundColor = undefined;

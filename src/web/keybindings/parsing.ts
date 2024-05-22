@@ -36,7 +36,7 @@ export type DefinedCommand = z.infer<typeof definedCommand>;
 
 const ALLOWED_MODIFIERS = /Ctrl|Shift|Alt|Cmd|Win|Meta/i;
 const ALLOWED_KEYS = [
-    /<all-keys>/, /f[1-9]/i, /f1[0-9]/i, /[a-z]/, /[0-9]/,
+    /f[1-9]/i, /f1[0-9]/i, /[a-z]/, /[0-9]/,
     /`/, /-/, /=/, /\[/, /\]/, /\\/, /;/, /'/, /,/, /\./, /\//,
     /left/i, /up/i, /right/i, /down/i, /pageup/i, /pagedown/i, /end/i, /home/i,
     /tab/i, /enter/i, /escape/i, /space/i, /backspace/i, /delete/i,
@@ -145,7 +145,8 @@ export const rawBindingItem = z.object({
     path: z.string().optional(),
     priority: z.number().default(0).optional(),
     kind: z.string().optional(),
-    key: z.union([bindingKey, bindingKey.array()]).optional(),
+    key: z.string().optional(),
+    foreach: z.record(z.string(), z.array(z.string())).optional(),
     when: z.union([z.string(), z.string().array()]).optional().
         transform(parseWhen).
         pipe(parsedWhen.array()),
@@ -173,7 +174,7 @@ export type DoArgs = z.infer<typeof doArgs>;
 // TODO: the errors are not very informative if we transform the result so early in this
 // way; we need to keep this as close as possible to the form in the raw file
 export const bindingItem = z.object({
-    key: rawBindingItem.shape.key,
+    key: bindingKey,
     when: parsedWhen.array(),
     command: z.literal("master-key.do"),
     mode: z.string().array().optional(),
@@ -202,15 +203,15 @@ export const bindingPath = z.object({
     when: z.string().optional().transform(parseWhen).pipe(parsedWhen.array().optional())
 });
 
-function contains(xs: string[], el: string){
-    return xs.some(x => x === el);
-}
-export const validModes = z.string().array().
-    refine(x => contains(x, 'insert') && contains(x, 'capture'), ms => {
-        let modes = ms.join(', ');
-        return { message: `The modes 'insert' and 'capture' are required, but the
-                 only valid modes listed modes were: ` + modes };
-    });
+const modeSpec = z.object({
+    name: z.string(),
+    default: z.boolean().optional().default(false),
+    highlight: z.enum(["NoHighlight", "Highlight", "Alert"]).default('NoHighlight'),
+    cursorShape: z.enum(["Line", "Block", "Underline", "LineThin", "BlockOutline", "UnderlineThin"]).default('Line'),
+    onType: doArgs.optional(),
+    lineNumbers: z.enum(["relative", "on", "off", "interval"]).optional()
+});
+export type ModeSpec = z.output<typeof modeSpec>;
 
 export const bindingSpec = z.object({
     header: bindingHeader,
@@ -218,7 +219,19 @@ export const bindingSpec = z.object({
     path: bindingPath.array().refine(xs => uniqBy(xs, x => x.id).length === xs.length,
         { message: "Defined [[path]] entries must all have unique 'id' fields."}).
         optional().default([]),
-    define: z.object({ validModes: validModes }).passthrough().optional()
+    mode: modeSpec.array().optional().default([{name: 'default', default: true, cursorShape: 'Line', highlight: 'NoHighlight'}]).refine(xs => {
+        return uniqBy(xs, x => x.name).length === xs.length;
+    }, { message: "All mode names must be unique!" }).refine(xs => {
+        let defaults = xs.filter(x => x.default);
+        return defaults.length === 1;
+    }, { message: "There must be one and only one default mode" }).transform(xs => {
+        let captureMode = xs.filter(x => x.name === 'capture');
+        if(captureMode.length === 0){
+            return xs.concat({name: "capture", cursorShape: "Underline", default: false, highlight: "Highlight"});
+        }
+        return xs;
+    }),
+    define: z.object({}).passthrough().optional()
 }).strict();
 export type BindingSpec = z.infer<typeof bindingSpec>;
 

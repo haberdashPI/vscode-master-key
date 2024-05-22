@@ -130,7 +130,6 @@ export class CommandState {
         // above
         let options = this.record.options.withMutations(opt =>
             opt.map((v, k) => v.update('listeners', l => {
-                console.log(k);
                 return l.filter((listener) => listener(values));
             })));
 
