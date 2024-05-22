@@ -39,12 +39,18 @@ for
 
 - IMPROVEMENT: show escape/function key row in the visual key doc
 
+- IMPROVEMENT: put some examples of cool features from `Larkin` in the README
+
 write code to convert the toml file to a markdown of organized tables of keybindings
 and provide a command that opens the Markdown preview of this file
 
 DOCUMENTATION: in documenting macro playback note the limitations of recording the keyboard
 (e.g. that it only records inserts; any modifiers are espected to be commands
 that are recorded)
+
+## Binding Cleanup
+
+Split out any of the commands that are really custom for me that don't make sense to publish. Pair down some of the required extensions. Offer to install extensions
 
 ## Before first release
 

@@ -1,6 +1,6 @@
 # Master Key
 
-Master key helps you to learn and create powerful keybindings.
+Master key helps you to learn, create and use powerful keybindings.
 
 If:
 
@@ -9,23 +9,61 @@ If:
 
 Master Key might just be the tool for you.
 
-## Feature Demos
+## Get started
 
-It includes the following features:
+Master key comes with its own custom keybinding layout that follows in the footsteps of vim, kakaune and helix.
+
+To learn how to use these bindings, install the extension and then run the command `Master Key: Activate Keybindings`, and select the built-in binding set "Larkin". The built-in documentation for these bindings will pop up.
+
+## Examples
+
+Master Key includes the following features:
 
 **TODO**: when I'm ready to release, insert example gif of each feature below
+
+### Editing Features
+
+Here are some of the cool features that come with the built-in `Larkin` keybindings provided by Master Key with the help of [selection utilities](https://github.com/haberdashPI/vscode-selection-utilities).
+
+#### Move by Object
+
+Select by word, line, block and more. Expand by indent, quotes and brackets.
+
+Once you've selected the object, run commands to do stuff (e.g. delete/change/comment)
+
+#### Multi-Cursor Creation and Filtering
+
+Quickly create multiple selections by splitting selections or searching within selections.
+Filter out the ones you don't want either by some filter, or by manually picking out
+one or more you don't want.
+
+#### Exchange Objects
+
+Swap selected objects with one another.
+
+#### Repeat Last Selection / Action
+
+Avoid lengthy or awkward key sequences by repeating the action-related selection with "," and the last action with "."
+
+#### Record Commands
+
+Recording longer command sequences and replay them.
+
+#### Symmetric Insert
+
+Insert appropriate characters before and after each selection
 
 ### Discoverability Features
 
 #### Visual documentation of keybindings
 
-Review your bindings on a keyboard layout
+Learn and review your bindings on a keyboard layout
 
 **NOTE**: demo the ability to toggle bindings on the keys
 
 #### Cheet sheet of keybindings
 
-Review your bindings in a cheet sheet organied by theme
+Review your bindings in a cheet sheet organized by theme
 
 #### Keybinding hints
 
@@ -54,12 +92,6 @@ Master key records recent key presses, allowing you to create commands that quic
 #### Documented Bindings
 
 Of course, just like all of the built-in bindings in Master Key, you can document your bindings so that they show up legibly within the discoverability features above.
-
-### How to get started
-
-Master key comes with its own custom keybinding layout that follows in the footsteps of vim, kakaune and helix.
-
-To learn how to use these bindings, install the extension and then run the command `Master Key: Activate Keybindings`, and select the built-in binding set "Larkin". The visual documentation and cheet sheet for these new bindings will be displayed for you to start learning how to use them.
 
 ## Customized Bindings
 
