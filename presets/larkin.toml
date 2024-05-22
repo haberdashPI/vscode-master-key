@@ -47,20 +47,6 @@ highlight = "Highlight"
 cursorShape = "Block"
 
 [[mode]]
-name = "syminsert"
-highlight = "Highlight"
-cursorShape = "BlockOutline"
-
-[[mode.onType]]
-command = "selection-utilities.insertAround"
-computedArgs.before = "typed"
-computedArgs.after = "typed"
-
-[[mode.onType]]
-command = "selection-utilities.adjustSelections"
-args.dir = "forward"
-
-[[mode]]
 name = "selectedit"
 highlight = "Highlight"
 cursorShape = "BlockOutline"
@@ -148,7 +134,7 @@ foreach.key = ['{key: .}', 'shift+{key: .}'] # // all single character keys
 key = "{key}"
 command = "master-key.ignore"
 prefixes = "<all-prefixes>"
-mode = ["!insert", "!capture"]
+mode = ["!insert", "!capture", "!syminsert"]
 when = "editorTextFocus"
 
 [[path]]
@@ -1433,12 +1419,12 @@ name = "insert"
 description = "Switch to insert mode (right before character)"
 command = "runCommands"
 args.commands = ["selection-utilities.shrinkToActive", "master-key.enterInsert"]
-mode = ["normal", "selectedit"]
+mode = ["normal", "selectedit", "syminsert"]
 
 [[bind]]
 path = "edit.action.basic"
 key = "a"
-mode = ["normal", "selectedit"]
+mode = ["normal", "selectedit", "syminsert"]
 command = "runCommands"
 args.commands = [
       "selection-utilities.shrinkToActive",
@@ -1450,7 +1436,7 @@ args.commands = [
 path = "edit.action.basic"
 key = "shift+i"
 name = "insert start"
-mode = ["normal", "selectedit"]
+mode = ["normal", "selectedit", "syminsert"]
 command = "runCommands"
 args.commands = [
       { command = "cursorMove", args = { to = "wrappedLineFirstNonWhitespaceCharacter", select = false } },
@@ -1461,7 +1447,7 @@ args.commands = [
 path = "edit.action.basic"
 key = "shift+a"
 name = "insert end"
-mode = ["normal", "selectedit"]
+mode = ["normal", "selectedit", "syminsert"]
 command = "runCommands"
 args.commands = [
       { command = "cursorMove", args = { to = "wrappedLineEnd", select = false } },
@@ -3383,6 +3369,39 @@ command = "selection-utilities.activeAtStart"
 ## Symmetric Insert Mode
 ## --------------------------------
 
+[define.braces]
+
+"{".before = "{"
+"{".after = "}"
+"}".before = "{"
+"}".after = "}"
+
+"[".before = "["
+"[".after = "]"
+"]".before = "["
+"]".after = "]"
+
+"(".before = "("
+"(".after = ")"
+")".before = "("
+")".after = ")"
+
+"<".before = "<"
+"<".after = ">"
+">".before = "<"
+">".after = ">"
+
+[[mode]]
+name = "syminsert"
+highlight = "Highlight"
+cursorShape = "BlockOutline"
+
+[[mode.onType]]
+command = "selection-utilities.insertAround"
+computedArgs.before = "braces[captured].before || captured"
+computedArgs.after = "braces[captured].after || captured"
+args.followCursor = true
+
 [[path]]
 id = "edit.action.symmetric"
 name = "Symmetric Operations"
@@ -3423,63 +3442,40 @@ mode = "syminsert"
 path = "edit.action.symmetric"
 foreach.key = ["{key: [a-z]}", "shift+{key: [a-z]}"]
 name = ""
-description = "letter key with no associated command in syminsert mode"
+description = "this key is ignored and has no associated command in syminsert mode"
 key = "{key}"
 command = "master-key.ignore"
 mode = "syminsert"
 
 [[bind]]
-name = "esc. quote"
+name = "esc. char"
 path = "edit.action.symmetric"
-key = "\\ shift+'"
-description = "Insert escaped double quotes around selection"
-command = "selection-utilities.insertAround"
-args.before = '\ "'
-args.after = '\ "'
+key = "\\"
+description = "Insert escaped character"
+command = "runCommands"
 
-[[bind]]
-path = "edit.action.symmetric"
-name = "esc. quote"
-key = "\\ '"
-description = "Insert escaped single quotes around selection"
-command = "selection-utilities.insertAround"
-args.before = "\\ '"
-args.after = "\\ '"
+[[bind.args.commands]]
+command = "master-key.captureKeys"
+args.acceptAfter = 1
 
-[define.braces]
-"shift+[".before = "{"
-"shift+[".after = "}"
-"[".before = "["
-"[".after = "]"
-"shift+9".before = "("
-"shift+9".after = ")"
-"shift+,".before = "<"
-"shift+,".after = ">"
-
-[[bind]]
-path = "edit.action.symmetric"
-name = "brace"
-foreach.key = ['shift+[', '[', 'shift+9', 'shift+,']
-key = "{key}"
-description = "Surround selection in {braces[key].before} {braces[key].after}"
+[[bind.args.commands]]
 command = "selection-utilities.insertAround"
-args.before = "{braces[key].before}"
-args.after = "{braces[key].after}"
+computedArgs.before = "'\\\\' + (braces[captured].before || captured)"
+computedArgs.after = "'\\\\' + (braces[captured].after || captured)"
+args.followCursor = true
 
 [[bind]]
 path = "edit.action.symmetric"
 name = "delete"
 key = "x"
-description = "delete the first and last character of the selection, adjusting the selection"
-command = "runCommands"
-
-[[bind.args.commands]]
-command = "selection-utilities.adjustSelections"
-args.dir = "backward"
-
-[[bind.args.commands]]
+description = """
+delete the first and last adjacent character when cursor is at end of selection and
+delete the first and last character *in* the selection when cursor is at the start of the
+selection
+"""
 command = "selection-utilities.deleteAround"
 computedArgs.count = "count"
+args.followCursor = true
 
 [[bind]]
 path = "edit.motion.symmetric"
@@ -3487,7 +3483,7 @@ key = "l"
 name = "sel →"
 description = "shrink/grow selections in direction that's rightwards from cursor"
 command = "selection-utilities.adjustSelections"
-args.dir = "right"
+args.dir = "forward"
 computedArgs.count = "count"
 
 [[bind]]
@@ -3496,7 +3492,7 @@ key = "h"
 name = "sel ←"
 description = "shrink/grow selections in direction that's leftwards from cursor"
 command = "selection-utilities.adjustSelections"
-args.dir = "left"
+args.dir = "backward"
 computedArgs.count = "count"
 
 [[bind]]
@@ -3515,3 +3511,29 @@ combinedName = "active to start/end"
 description = "move cursor to back of selection"
 key = "shift+o"
 command = "selection-utilities.activeAtStart"
+
+[[bind]]
+path = "edit.action.symmetric"
+name = "undo"
+key = "u"
+command = "undo"
+
+[[bind]]
+path = "edit.action.symmetric"
+name = "redo"
+key = "shift+u"
+command = "redo"
+
+[[bind]]
+path = "edit.motion.symmetric"
+key = "v"
+name = "shrink selection"
+description = """
+reduce all selections to length zero and return to normal mode
+"""
+command = "runCommands"
+args.commands = [
+      "selection-utilities.shrinkToActive",
+      { command = "master-key.setFlag", args = { name = "select_on", value = false } },
+      "master-key.enterNormal"
+]

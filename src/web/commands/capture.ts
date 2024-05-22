@@ -4,6 +4,8 @@ import { validateInput } from '../utils';
 import { CommandResult, CommandState } from '../state';
 import { MODE, defaultMode } from './mode';
 import { withState, recordedCommand } from '../state';
+import { DoArgs } from '../keybindings/parsing';
+import { doCommandsCmd } from './do';
 
 let typeSubscription: vscode.Disposable | undefined;
 let onTypeFn: (text: string) => void = async function(text: string){
@@ -22,12 +24,33 @@ function clearTypeSubscription(){
     }
 }
 
+export async function runCommandOnKeys(doArgs: DoArgs | undefined, mode: string){
+    if(mode !== 'capture'){ clearTypeSubscription(); }
+    if(doArgs){
+        // we await on state to avoid race conditions here (rather than
+        // to change or read anything about the state)
+        if(!typeSubscription){
+            try{
+                typeSubscription = vscode.commands.registerCommand('type', onType);
+            }catch(e){
+                vscode.window.showErrorMessage(`Master key failed to capture keyboard input. You
+                    might have an extension that is already listening to type events
+                    (e.g. vscodevim).`);
+            }
+        }
+        onTypeFn = async (typed: string) => {
+            await withState(async state =>
+                    state.set(CAPTURE, {transient: {reset: ""}}, typed));
+            await doCommandsCmd({ do: doArgs });
+        };
+    }
+}
+
 type UpdateFn = (captured: string, nextChar: string) => [string, boolean];
 export async function captureKeys(onUpdate: UpdateFn) {
     let oldMode: string;
     await withState(async state => {
-        oldMode = state.get<string>(MODE,
-            )!;
+        oldMode = state.get<string>(MODE)!;
         if(!typeSubscription){
             try{
                 typeSubscription = vscode.commands.registerCommand('type', onType);

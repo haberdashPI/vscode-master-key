@@ -4,7 +4,7 @@ import { onResolve } from '../state';
 import { validateInput } from '../utils';
 import { withState, recordedCommand, CommandResult } from '../state';
 import { ModeSpec } from '../keybindings/parsing';
-import { doCommandsCmd } from './do';
+import { runCommandOnKeys } from './capture';
 
 export const MODE = 'mode';
 const TYPED = 'typed';
@@ -25,35 +25,9 @@ function updateCursorAppearance(editor: vscode.TextEditor | undefined, mode: str
     }
 }
 
-let typeSubscription: vscode.Disposable | undefined;
-function clearTypeSubscription(){
-    if(typeSubscription){
-        typeSubscription.dispose();
-        typeSubscription = undefined;
-    }
-}
-
-function updateModeKeyCapture(mode: string, modeSpec: Record<string, ModeSpec>){
+async function updateModeKeyCapture(mode: string, modeSpec: Record<string, ModeSpec>){
     if(modeSpec[mode]){
-        if(modeSpec[mode].onType){
-            let onType = modeSpec[mode].onType;
-            clearTypeSubscription();
-            if(!typeSubscription){
-                try{
-                    typeSubscription = vscode.commands.registerCommand('type', async (typed: string) => {
-                        await withState(async state =>
-                            state.set(TYPED, {transient: {reset: ""}}, typed));
-                        doCommandsCmd(onType);
-                    });
-                }catch(e){
-                    vscode.window.showErrorMessage(`Master Key failed to capture keyboard input. You
-                        might have an extension that is already listening to type events
-                        (e.g. vscodevim).`);
-                }
-            }
-        }else{
-            clearTypeSubscription();
-        }
+        runCommandOnKeys(modeSpec[mode].onType, mode);
     }
 }
 
@@ -94,9 +68,12 @@ export async function activate(context: vscode.ExtensionContext){
 
     await withState(async state => state.set(MODE, {public: true}, defaultMode).resolve());
     await onResolve('mode', values => {
-        currentMode = <string>values.get(MODE, defaultMode);
-        updateCursorAppearance(vscode.window.activeTextEditor, currentMode, modeSpecs || {});
-        updateModeKeyCapture(currentMode, modeSpecs || {});
+        let newMode = <string>values.get(MODE, defaultMode);
+        if(currentMode !== newMode){
+            currentMode = newMode;
+            updateCursorAppearance(vscode.window.activeTextEditor, currentMode, modeSpecs || {});
+            updateModeKeyCapture(currentMode, modeSpecs || {});
+        }
         return true;
     });
 

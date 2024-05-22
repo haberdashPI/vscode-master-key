@@ -9,6 +9,7 @@ THEN: add more to symmetric insert setup
 
 ## Wrapping up unit tests
 
+BUG/PERFORMANCE: onSet gets called even if the new value is the same as the old
 BUG: repeat argument is not working for the repeat action command (e.g. I cannot repeat the last action ten times)
 
 unit tests: edge cases with recording edits
