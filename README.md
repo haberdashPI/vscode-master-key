@@ -43,11 +43,14 @@ Swap selected objects with one another.
 
 #### Repeat Last Selection / Action
 
-Avoid lengthy or awkward key sequences by repeating the action-related selection with "," and the last action with "."
+Avoid lengthy or awkward key sequences by repeating the last action-related selection with "," and the last action with "."
 
 #### Record Commands
 
-Recording longer command sequences and replay them.
+Record longer command sequences and replay them.
+
+> [!NOTE]
+> Command command recording comes with a few limitations, refer to the documentation for details
 
 #### Symmetric Insert
 
@@ -71,7 +74,7 @@ See a quick pick palette of possible bindings for the current mode and prefix of
 
 ### Keybinding Features
 
-When you create your own keybindings using Mater Key's special `.master-key.toml` format you get several powerful features that make it possible to easily create keybindings that would be difficult or impossible to implement without writing your own extension.
+When you create your own keybindings using Mater Key's special `.toml` keybinding format you get several powerful features that make it possible to easily create keybindings that would be difficult or impossible to implement without writing your own extension.
 
 #### Modal Bindings
 

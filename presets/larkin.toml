@@ -14,7 +14,6 @@ requiredExtensions = [
       "pranshuagrawal.toggle-case",
       "albymor.increment-selection",
       "pkief.markdown-checkbox",
-      "edgardmessias.clipboard-manager",
       "stkb.rewrap",
       "haberdashPI.terminal-polyglot",
       "jack89ita.open-file-from-path",
