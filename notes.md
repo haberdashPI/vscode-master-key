@@ -1,14 +1,10 @@
-## Mode customization
-
-+ PLUS!! make it possible for a *mode* to capture keys and run a command after each press
-  - add some unit tests for this...
-- let mode customization change line numbering style
-
 ## Wrapping up unit tests
 
 BUG/PERFORMANCE: onSet gets called even if the new value is the same as the old
 BUG: repeat argument is not working for the repeat action command (e.g. I cannot repeat the last action ten times)
 
+unit tests: mode capture
+  - cook up some tests `onType` setting of modes
 unit tests: edge cases with recording edits
   - how about when I switch documents?
   - how about when we don't start with normal mode commands?
@@ -19,6 +15,11 @@ unit tests: edge cases with recording edits
 unit tests: parsing of YAML and JSON(C)
   - actually: delete this feature (add it back in later if it feels worth it)
 unit tests: store/restore named commands
+
+code coverage?
+https://istanbul.js.org/
+
+CI??
 
 ## Visual Documentation Improvements
 
@@ -113,18 +114,10 @@ wishlist:
 
 - get macro replay working with selection utility commands
 
-- would be nice if each key past the first shows up in a quick pick menu
-  rather than just being a separate keybinding
-
 - reduce the commands that have to be excluded from the global command palette
 
-- move all flag setting for prefix commands to the suffix command upon pre-processing
-  - we need to examine which variables `computedArgs` depend on
-  and only eliminate those commands that depend on variables modified in the
-  prefix
-
 - would be nice if each key sequence that mapped to a *single* command
-  could be added as a keybinding full keybinding for that command
+  could be added as a full keybinding for that command
   with a `when` clause that is never true; that way
   all single commands that are mapped can be looked up
   using the command palette. NOTE: this might not work
@@ -144,21 +137,12 @@ wishlist:
 - maybe the parse errors can be added to the problems window? (and just have one error
   message for all problems)
 
-- maybe there should be a default set of `ignore` bindings for all
-  modes but insert and capture; we would need some way to remove these
-  bindings if desired
-
 - change capture mode so it accepts all keys it can (and you can define what sequence
   cancels), rather than newlines being always marked as cancel
 
 - quick win: master-key.ignore shouldn't need to be passed to
   master-key.do (we can just call ignore directly)
   -NOTE: the same might be said for `prefix` command
-
-- quick win:
-  - let modes change the cursor
-  - let modes change line numbering
-  - allow modes to specify if they ignore keys?? (instead of manually adding these)
 
 - status bar updates are called a lot, maybe reduce this
 
@@ -187,11 +171,6 @@ wishlist:
 
 - have a debug mode that shows which command got executed from the given keybinding (with an
   option to show or not show prefixes)
-
-- binding validation checks that there aren't non-modifier bindings that
-  capture input outside of the text editor
-  OR
-  all non-modifier keys (k or shift+k) get a condition added to them so they don't mess up input boxes ???
 
 - support multiple keyboard layouts in the visual documentation
 
