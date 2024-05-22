@@ -125,16 +125,17 @@ command = "master-key.enterNormal"
 mode = []
 prefixes = "<all-prefixes>"
 
+# in "command" like modes (e.g. normal), typing keys without a command defined below should
+# have no effect
 [[bind]]
 path = "modes"
-# by default typing keys in a mode other than insert (or capture) is simply ignored
 name = "ignore"
 description = "this key does nothing"
-foreach.key = ['{key: .}', 'shift+{key: .}'] # // all single character keys
+foreach.key = ['{key: .}', 'shift+{key: .}'] # // all keys whose bindings are described by a single character
 key = "{key}"
 command = "master-key.ignore"
 prefixes = "<all-prefixes>"
-mode = ["!insert", "!capture", "!syminsert"]
+mode = ["normal", "selectedit"]
 when = "editorTextFocus"
 
 [[path]]

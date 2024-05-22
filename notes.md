@@ -1,11 +1,8 @@
 ## Mode customization
 
-Format improvements
-
-- PLUS!! make it possible for a *mode* to capture keys and run a command after each press
++ PLUS!! make it possible for a *mode* to capture keys and run a command after each press
+  - add some unit tests for this...
 - let mode customization change line numbering style
-
-THEN: add more to symmetric insert setup
 
 ## Wrapping up unit tests
 
@@ -24,6 +21,9 @@ unit tests: parsing of YAML and JSON(C)
 unit tests: store/restore named commands
 
 ## Visual Documentation Improvements
+
+NOTE: `path` entries should not have documentation; rather there should be a separate setup
+(perhaps comments?) for how to enter text that becomes part of the markdown output
 
 Visual doc improvements:
 
