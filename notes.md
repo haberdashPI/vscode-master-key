@@ -3,6 +3,7 @@
 Format improvements
 
 - PLUS!! make it possible for a *mode* to capture keys and run a command after each press
+- let mode customization change line numbering style
 
 THEN: add more to symmetric insert setup
 

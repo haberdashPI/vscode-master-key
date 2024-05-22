@@ -203,7 +203,6 @@ export const bindingPath = z.object({
     when: z.string().optional().transform(parseWhen).pipe(parsedWhen.array().optional())
 });
 
-// TODO: implement processing step
 const modeSpec = z.object({
     name: z.string(),
     default: z.boolean().optional().default(false),

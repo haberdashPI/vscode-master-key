@@ -33,7 +33,7 @@ export async function captureKeys(onUpdate: UpdateFn) {
                 typeSubscription = vscode.commands.registerCommand('type', onType);
                 return state.set(MODE, {public: true}, 'capture').resolve();
             }catch(e){
-                vscode.window.showErrorMessage(`Failed to capture keyboard input. You
+                vscode.window.showErrorMessage(`Master key failed to capture keyboard input. You
                     might have an extension that is already listening to type events
                     (e.g. vscodevim).`);
             }

@@ -53,8 +53,8 @@ cursorShape = "BlockOutline"
 
 [[mode.onType]]
 command = "selection-utilities.insertAround"
-computedArgs.before = "captured"
-computedArgs.after = "captured"
+computedArgs.before = "typed"
+computedArgs.after = "typed"
 
 [[mode.onType]]
 command = "selection-utilities.adjustSelections"
@@ -3426,12 +3426,12 @@ name = ""
 description = "letter key with no associated command in syminsert mode"
 key = "{key}"
 command = "master-key.ignore"
-modoe = "syminsert"
+mode = "syminsert"
 
 [[bind]]
 name = "esc. quote"
 path = "edit.action.symmetric"
-key = '\ "'
+key = "\\ shift+'"
 description = "Insert escaped double quotes around selection"
 command = "selection-utilities.insertAround"
 args.before = '\ "'
@@ -3461,7 +3461,8 @@ path = "edit.action.symmetric"
 name = "brace"
 foreach.key = ['shift+[', '[', 'shift+9', 'shift+,']
 key = "{key}"
-descpription = "Surround selection in {braces[key].before} {braces[key].after}"
+description = "Surround selection in {braces[key].before} {braces[key].after}"
+command = "selection-utilities.insertAround"
 args.before = "{braces[key].before}"
 args.after = "{braces[key].after}"
 
