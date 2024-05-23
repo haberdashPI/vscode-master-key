@@ -2552,6 +2552,13 @@ computedArgs.index = "count"
 args.focus = false
 
 [[bind]]
+path = "edit.action"
+name = "run in terminal"
+key = "enter shift+r"
+command = "terminal-polyglot.run"
+args.focus = false
+
+[[bind]]
 path = "edit.util"
 name = "git..."
 description = "git commands"
