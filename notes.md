@@ -5,6 +5,10 @@ BUG: repeat argument is not working for the repeat action command (e.g. I cannot
     which resets transient state like `count`
   - unit test (verify that this doesn't regress)
 
+BUG: default mode is not properly set when loading a new keybinding set
+
+BUG: when there are no keys defined the visual keybinding output includes `undefined`
+
 unit tests: edge cases with recording edits
   - how about when I switch documents?
   - how about when we don't start with normal mode commands?

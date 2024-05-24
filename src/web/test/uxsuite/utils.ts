@@ -42,7 +42,7 @@ export async function setBindings(str: string){
     fs.writeFileSync(config, str);
 
     let workbench = new Workbench();
-    await workbench.executeCommand('Master Key: Select Keybinding');
+    await workbench.executeCommand('Master Key: Activate Keybindings');
     let input = await InputBox.create();
     await input.setText('File...');
     await input.confirm();

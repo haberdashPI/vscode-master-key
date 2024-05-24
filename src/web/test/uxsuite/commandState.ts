@@ -24,13 +24,13 @@ export const run = () => describe('Command state', () => {
 
             [[bind]]
             name = "left mode"
-            key = "ctrl+shift+r"
+            key = "ctrl+shift+l"
             command = "master-key.setMode"
             args.value = "left"
 
             [[bind]]
             name = "move right"
-            key = "ctrl+g ctrl+f"
+            key = "ctrl+h ctrl+f"
             command = "cursorMove"
             args.to = "right"
             when = "editorTextFocus"
@@ -38,7 +38,7 @@ export const run = () => describe('Command state', () => {
             [[bind]]
             name = "move left"
             mode = "left"
-            key = "ctrl+g ctrl+f"
+            key = "ctrl+h ctrl+f"
             command = "cursorMove"
             args.to = "left"
             when = "editorTextFocus"
@@ -79,7 +79,7 @@ export const run = () => describe('Command state', () => {
 
             [[bind]]
             path = "word"
-            key = "ctrl+g ctrl+shift+w"
+            key = "ctrl+h ctrl+shift+w"
             command = "notACommand"
 
             [[bind]]
@@ -100,7 +100,7 @@ export const run = () => describe('Command state', () => {
         editor.typeText(Key.ESCAPE);
 
         await movesCursorInEditor(async () => {
-            await editor.typeText(Key.chord(Key.CONTROL, 'g')+Key.chord(Key.CONTROL, 'f'));
+            await editor.typeText(Key.chord(Key.CONTROL, 'h')+Key.chord(Key.CONTROL, 'f'));
         }, [0, 1], editor);
     });
 
@@ -116,11 +116,11 @@ export const run = () => describe('Command state', () => {
 
         editor.typeText(Key.ESCAPE);
         await editor.moveCursor(1, 1);
-        await pause(250);
+        await pause(50);
         await editor.typeText(Key.chord(Key.CONTROL, 'l'));
         await pause(50);
         await editor.typeText(Key.chord(Key.CONTROL, Key.SHIFT, 'w'));
-        await pause(250);
+        await pause(50);
         expect(await editor.getSelectedText()).toEqual('This');
     });
 
@@ -128,10 +128,10 @@ export const run = () => describe('Command state', () => {
         await editor.moveCursor(1, 6);
         await pause(250);
         await editor.typeText(Key.ESCAPE);
-        await editor.typeText(Key.chord(Key.CONTROL, Key.SHIFT, 'r'));
+        await editor.typeText(Key.chord(Key.CONTROL, Key.SHIFT, 'l'));
 
         await movesCursorInEditor(async () => {
-            await editor.typeText(Key.chord(Key.CONTROL, 'g'));
+            await editor.typeText(Key.chord(Key.CONTROL, 'h'));
             await pause(50);
             await editor.typeText(Key.chord(Key.CONTROL, 'f'));
         }, [0, -1], editor);
@@ -141,7 +141,7 @@ export const run = () => describe('Command state', () => {
         }, [0, -4], editor);
 
         await editor.typeText(Key.ESCAPE);
-        await editor.typeText(Key.chord(Key.CONTROL, Key.SHIFT, 'r'));
+        await editor.typeText(Key.chord(Key.CONTROL, Key.SHIFT, 'l'));
         await pause(50);
 
         await editor.moveCursor(1, 5);
@@ -165,7 +165,7 @@ export const run = () => describe('Command state', () => {
 
         await editor.typeText(Key.ESCAPE);
         await pause(250);
-        await editor.typeText(Key.chord(Key.CONTROL, 'g'));
+        await editor.typeText(Key.chord(Key.CONTROL, 'h'));
         await pause(50);
         await editor.typeText(Key.chord(Key.CONTROL, Key.SHIFT, 'w'));
 
@@ -175,7 +175,7 @@ export const run = () => describe('Command state', () => {
         expect(message).toEqual("command 'notACommand' not found");
 
         await movesCursorInEditor(async () => {
-            await editor.typeText(Key.chord(Key.CONTROL, 'g')+Key.chord(Key.CONTROL, 'f'));
+            await editor.typeText(Key.chord(Key.CONTROL, 'h')+Key.chord(Key.CONTROL, 'f'));
         }, [0, 1], editor);
     });
     // TODO: test that command state appropriate resets if there is an exception
