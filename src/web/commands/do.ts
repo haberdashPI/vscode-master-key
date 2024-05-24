@@ -121,12 +121,17 @@ export async function doCommands(args: RunCommandsArgs): Promise<CommandResult>{
     let reifiedCommands: BindingCommand[] | undefined = undefined;
     let repeat = 0;
     try{
+        // `doCommand` can call a command that calls `doCommandsCmd` and will therefore
+        // clear transient values; thus we have to compute the value of `repeat` *before*
+        // running `doCommand` or the value of any transient variables (e.g. `count`) will
+        // be cleared
+        repeat = await resolveRepeat(args);
+
         reifiedCommands = [];
         for(const cmd of args.do){
             let command = await doCommand(cmd);
             if(command){ reifiedCommands.push(command); }
         }
-        repeat = await resolveRepeat(args);
         if(repeat > 0){
             for(let i = 0; i < repeat; i++){
                 for(const cmd of reifiedCommands){

@@ -54,7 +54,6 @@ export class CommandState {
         return new CommandState(rec);
     }
 
-    // todo: re-write `update` as set, find all calls to `update` and replace
     set<T>(key: string, opt: ISetOptions, val: T): CommandState;
     set<T>(key: string, val: T): CommandState;
     set<T>(key: string, optOrVal: ISetOptions | T, val_?: T){
@@ -68,8 +67,12 @@ export class CommandState {
             val = <T>(val_);
         }
 
-        let values = this.record.values.set(key, val);
-        return this.setHelper_(key, opt, values);
+        if(this.record.values.get(key) !== val){
+            let values = this.record.values.set(key, val);
+            return this.setHelper_(key, opt, values);
+        }else{
+            return this;
+        }
     }
 
     private setHelper_(key: string, opt: ISetOptions, values: Map<string, unknown>){
@@ -109,7 +112,11 @@ export class CommandState {
             change = <(x: T) => T>(change_);
         }
         let values = this.record.values.update(key, opt.notSetValue, x => change(<T>x));
-        return this.setHelper_(key, opt, values);
+        if(values !== this.record.values){
+            return this.setHelper_(key, opt, values);
+        }else{
+            return this;
+        }
     }
 
     get<T>(key: string, defaultValue?: T): T | undefined {

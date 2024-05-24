@@ -1,10 +1,10 @@
 ## Wrapping up unit tests
 
-BUG/PERFORMANCE: onSet gets called even if the new value is the same as the old
 BUG: repeat argument is not working for the repeat action command (e.g. I cannot repeat the last action ten times)
+  + FIXED: this happens because the repeat command runs many `master-key.do` commands
+    which resets transient state like `count`
+  - unit test (verify that this doesn't regress)
 
-unit tests: mode capture
-  - cook up some tests `onType` setting of modes
 unit tests: edge cases with recording edits
   - how about when I switch documents?
   - how about when we don't start with normal mode commands?
@@ -12,6 +12,8 @@ unit tests: edge cases with recording edits
   - what about multiple cursors?
   - how do recorded commands interact with the palette?
   - does the command palette show up / not show up with the proper timing?
+unit tests: mode capture
+  - cook up some tests `onType` setting of modes
 unit tests: parsing of YAML and JSON(C)
   - actually: delete this feature (add it back in later if it feels worth it)
 unit tests: store/restore named commands
