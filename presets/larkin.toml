@@ -2501,7 +2501,7 @@ args.commands = ["terminal-polyglot.send-text",
 [[bind]]
 path = "edit.action"
 name = "repl"
-key = "["
+key = "shift+enter"
 when = "editorLangId != 'julia' && master-key.firstSelectionOrWord =~ /\\n/"
 command = "runCommands"
 args.commands = ["terminal-polyglot.send-block-text",
@@ -2509,7 +2509,7 @@ args.commands = ["terminal-polyglot.send-block-text",
 
 [[bind]]
 path = "edit.action"
-key = "enter ["
+key = "enter enter"
 name = "to repl (v2)"
 combinedName = "to repl v2 (v3)"
 description = """
@@ -2518,13 +2518,13 @@ send text to a terminal (usually containing a REPL), placing in a block when def
 combinedDescription = """
 send text to a terminal (usually containing a REPL); v2 places the code in a block when defined (v3 does not).
 """
-combinedKey = "[ / shift+["
+combinedKey = "enter / shift+enter"
 command = "runCommands"
 args.commands = ["terminal-polyglot.send-block-text", "selection-utilities.shrinkToActive"]
 
 [[bind]]
 path = "edit.action"
-key = "enter shift+["
+key = "enter shift+enter"
 name = "to repl (v3)"
 combinedName = "to repl v2 (v3)"
 description = """
@@ -2599,6 +2599,27 @@ combinedName = "commit/checkout"
 description = "checkout changes"
 key = "enter g shift+c"
 command = "git.checkout"
+
+[[bind]]
+path = "edit.util"
+name = "revert range"
+description = "revert unstaged changes in selected range"
+key = "enter g r"
+command = "git.revertSelectedRanges"
+
+[[bind]]
+path = "edit.util"
+name = "revert range"
+description = "revert unstaged changes in selected range"
+key = "enter g s"
+command = "git.stageSelectedRanges"
+
+[[bind]]
+path = "edit.util"
+name = "commands..."
+description = "show GitLens command palette for git"
+key = "enter g g"
+command = "gitlens.gitCommands"
 
 ## Leader Commands
 ## --------------------------------
@@ -2802,7 +2823,7 @@ when = "editorTextFocus && !findWidgetVisible"
 path = "window"
 name = "cntr win"
 description = "center window at primary cursor position"
-key = "enter enter"
+key = "enter '"
 command = "selection-utilities.revealActive"
 args.at = "center"
 when = "editorTextFocus"
