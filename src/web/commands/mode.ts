@@ -7,7 +7,6 @@ import { ModeSpec } from '../keybindings/parsing';
 import { runCommandOnKeys } from './capture';
 
 export const MODE = 'mode';
-const TYPED = 'typed';
 
 const CURSOR_STYLES = {
     "Line": vscode.TextEditorCursorStyle.Line,

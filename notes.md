@@ -1,5 +1,11 @@
 ## Wrapping up unit tests
 
+getting existing tests to work again (some of the recent changes broke them)
+  + simpleMotions
+  - commandState
+    some of the keys being used are doing the wrong thing (due to default bindings)
+    but I also don't get why the prefixCode is not getting set
+
 BUG: repeat argument is not working for the repeat action command (e.g. I cannot repeat the last action ten times)
   + FIXED: this happens because the repeat command runs many `master-key.do` commands
     which resets transient state like `count`

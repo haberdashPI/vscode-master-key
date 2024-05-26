@@ -12,15 +12,7 @@ export const run = () => describe('Command state', () => {
             version = "1.0"
 
             [define]
-            validModes = ["insert", "capture", "left"]
-
-            [[bind]]
-            description = "Enter normal mode"
-            key = "escape"
-            mode = []
-            command = "master-key.enterInsert"
-            when = "!findWidgetVisible"
-            prefixes = "<all-prefixes>"
+            select_on = false
 
             [[bind]]
             name = "left mode"
@@ -97,7 +89,6 @@ export const run = () => describe('Command state', () => {
     it('Handles Automated Prefixes', async () => {
         await editor.moveCursor(1, 1);
         await pause(250);
-        editor.typeText(Key.ESCAPE);
 
         await movesCursorInEditor(async () => {
             await editor.typeText(Key.chord(Key.CONTROL, 'h')+Key.chord(Key.CONTROL, 'f'));
@@ -107,14 +98,12 @@ export const run = () => describe('Command state', () => {
     it("Handles Flagged Prefixs", async () => {
         await editor.moveCursor(1, 1);
         await pause(250);
-        editor.typeText(Key.ESCAPE);
 
         await movesCursorInEditor(async () => {
             await editor.typeText(Key.chord(Key.CONTROL, Key.SHIFT, 'w'));
             await pause(250);
         }, [0, 4], editor);
 
-        editor.typeText(Key.ESCAPE);
         await editor.moveCursor(1, 1);
         await pause(50);
         await editor.typeText(Key.chord(Key.CONTROL, 'l'));
@@ -127,7 +116,6 @@ export const run = () => describe('Command state', () => {
     it("Mode changes key effects", async () => {
         await editor.moveCursor(1, 6);
         await pause(250);
-        await editor.typeText(Key.ESCAPE);
         await editor.typeText(Key.chord(Key.CONTROL, Key.SHIFT, 'l'));
 
         await movesCursorInEditor(async () => {
@@ -140,7 +128,6 @@ export const run = () => describe('Command state', () => {
             await editor.typeText(Key.chord(Key.CONTROL, Key.SHIFT, 'w'));
         }, [0, -4], editor);
 
-        await editor.typeText(Key.ESCAPE);
         await editor.typeText(Key.chord(Key.CONTROL, Key.SHIFT, 'l'));
         await pause(50);
 
@@ -163,7 +150,6 @@ export const run = () => describe('Command state', () => {
             await pause(10);
         }
 
-        await editor.typeText(Key.ESCAPE);
         await pause(250);
         await editor.typeText(Key.chord(Key.CONTROL, 'h'));
         await pause(50);
