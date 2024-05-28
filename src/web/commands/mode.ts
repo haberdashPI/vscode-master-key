@@ -57,6 +57,7 @@ async function updateModeSpecs(event?: vscode.ConfigurationChangeEvent){
         modeSpecs = config.get<Record<string, ModeSpec>>('mode') || {};
         defaultMode = (Object.values(modeSpecs).filter(x => x.default)[0] || {name: 'default'}).name;
         defaultLineNumbers = config.get<string>('defaultLineNumbers') || 'on';
+        await withState(async state => state.set(MODE, defaultMode));
     }
 }
 
