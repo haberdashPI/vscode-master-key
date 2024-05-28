@@ -39,6 +39,7 @@ These bindings are named after the middle name of my first child (Larkin).
 [[mode]]
 name = "insert"
 lineNumbers = "on"
+recordEdits = true
 
 [[mode]]
 name = "normal"

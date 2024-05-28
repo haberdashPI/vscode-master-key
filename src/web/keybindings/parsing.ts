@@ -207,6 +207,7 @@ const modeSpec = z.object({
     name: z.string(),
     default: z.boolean().optional().default(false),
     highlight: z.enum(["NoHighlight", "Highlight", "Alert"]).default('NoHighlight'),
+    recordEdits: z.boolean().optional().default(false),
     cursorShape: z.enum(["Line", "Block", "Underline", "LineThin", "BlockOutline", "UnderlineThin"]).default('Line'),
     onType: doArgs.optional(),
     lineNumbers: z.enum(["relative", "on", "off", "interval"]).optional()
@@ -219,7 +220,7 @@ export const bindingSpec = z.object({
     path: bindingPath.array().refine(xs => uniqBy(xs, x => x.id).length === xs.length,
         { message: "Defined [[path]] entries must all have unique 'id' fields."}).
         optional().default([]),
-    mode: modeSpec.array().optional().default([{name: 'default', default: true, cursorShape: 'Line', highlight: 'NoHighlight'}]).refine(xs => {
+    mode: modeSpec.array().optional().default([{name: 'default', default: true, recordEdits: true, cursorShape: 'Line', highlight: 'NoHighlight'}]).refine(xs => {
         return uniqBy(xs, x => x.name).length === xs.length;
     }, { message: "All mode names must be unique!" }).refine(xs => {
         let defaults = xs.filter(x => x.default);
@@ -227,7 +228,7 @@ export const bindingSpec = z.object({
     }, { message: "There must be one and only one default mode" }).transform(xs => {
         let captureMode = xs.filter(x => x.name === 'capture');
         if(captureMode.length === 0){
-            return xs.concat({name: "capture", cursorShape: "Underline", default: false, highlight: "Highlight"});
+            return xs.concat({name: "capture", cursorShape: "Underline", default: false, recordEdits: false, highlight: "Highlight"});
         }
         return xs;
     }),
