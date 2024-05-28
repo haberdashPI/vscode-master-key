@@ -110,6 +110,9 @@ path = "modes"
 name = "normal"
 description = "Enter normal mode"
 foreach.key = ["escape", "ctrl+["]
+combinedKey = "escape/ctrl+["
+combinedName = "normal"
+combinedDescription = "Enter normal mode"
 key = "{key}"
 mode = []
 hideInPalette = true
@@ -3089,11 +3092,24 @@ mode = "normal"
 [[bind]]
 path = "edit.select_edit"
 key = "shift+'"
+combinedName = "rm cursors"
+combinedKey = "shift/ctrl+'"
+combinedDescription = "Delete all selections and return to normal (multiple key variants)"
 name = "del. cursors"
 description = "Delete all selections and return to normal"
 command = "runCommands"
 args.commands = ["selection-utilities.cancelSelection", "master-key.enterNormal"]
 mode = ["selectedit", "normal"]
+
+[[bind]]
+path = "edit.select_edit"
+key = "ctrl+'"
+mode = ["insert", "selectedit", "normal"]
+name = "rm cursors"
+combinedName = "rm cursors"
+description = "Delete all selections and return to normal"
+command = "runCommands"
+args.commands = ["selection-utilities.cancelSelection", "master-key.enterNormal"]
 
 [[bind]]
 path = "edit.select_edit"
