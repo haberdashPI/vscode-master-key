@@ -196,7 +196,8 @@ export function activate(context: vscode.ExtensionContext){
                 return history.update(len-1, lastCommand_ => {
                     let lastCommand = <RecordedCommandArgs>lastCommand_;
                     if (lastCommand && typeof lastCommand.edits !== 'string' &&
-                        lastCommand.recordEdits) {
+
+                        lastCommand.recordEdits === e.document) {
                         lastCommand.edits = lastCommand.edits.concat(e);
                     }
                     return lastCommand;

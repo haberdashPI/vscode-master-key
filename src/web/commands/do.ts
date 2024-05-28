@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import z from 'zod';
+import z, { record } from 'zod';
 import { validateInput } from '../utils';
 import { BindingCommand, DoArgs, doArgs } from '../keybindings/parsing';
 import { withState, CommandResult, CommandState, WrappedCommandResult, commandArgs, recordedCommand } from '../state';
@@ -7,7 +7,7 @@ import { cloneDeep, merge } from 'lodash';
 import { evalContext, reifyStrings } from '../expressions';
 import { PREFIX_CODE, keySuffix } from './prefix';
 import { isSingleCommand } from '../keybindings/processing';
-import { MODE, defaultMode } from './mode';
+import { MODE, defaultMode, modeSpecs } from './mode';
 import { List } from 'immutable';
 import { commandPalette } from './palette';
 
@@ -78,7 +78,7 @@ const runCommandArgs = z.object({
 export type RunCommandsArgs = z.input<typeof runCommandArgs>;
 
 export type RecordedCommandArgs = RunCommandsArgs & {
-    recordEdits: boolean,
+    recordEdits: vscode.TextDocument | undefined, // if editing is being recorded, the text document where those edits are happening
     edits: vscode.TextDocumentChangeEvent[] | string
 };
 
@@ -177,7 +177,10 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
                 return state.update<List<unknown>>(COMMAND_HISTORY,
                     { notSetValue: List() },
                     history => {
-                        let recordEdits = state.get(MODE, defaultMode) === defaultMode;
+                        let recordEdits = undefined;
+                        if((modeSpecs[state.get(MODE, defaultMode) || ""] || {})?.recordEdits){
+                            recordEdits = vscode.window.activeTextEditor?.document;
+                        }
                         history = history.push({ ...command, edits: [], recordEdits });
                         if(history.count() > maxHistory){
                             history = history.shift();
