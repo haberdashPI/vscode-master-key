@@ -2638,7 +2638,7 @@ default.kind = "util"
 [[bind]]
 path = "edit.util"
 name = "utility"
-key = "enter"
+key = "tab"
 description = "utility related commands: file opening, window manipulation, debugging etc..."
 command = "master-key.prefix"
 
