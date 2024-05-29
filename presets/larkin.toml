@@ -2487,7 +2487,7 @@ args.commands = [
 
 [[bind]]
 path = "edit.action"
-key = "["
+key = "enter"
 when = "editorLangId == 'julia' && editorHasSelection"
 command = "runCommands"
 args.commands = ["selection-utilities.trimSelectionWhitespace",
@@ -2496,7 +2496,7 @@ args.commands = ["selection-utilities.trimSelectionWhitespace",
 
 [[bind]]
 path = "edit.action"
-key = "["
+key = "enter"
 when = "editorLangId != 'julia' && !(master-key.firstSelectionOrWord =~ /\\n/)"
 command = "runCommands"
 args.commands = ["terminal-polyglot.send-text",
