@@ -5,6 +5,7 @@ import { validateInput } from '../utils';
 import { withState, recordedCommand, CommandResult } from '../state';
 import { ModeSpec } from '../keybindings/parsing';
 import { runCommandOnKeys } from './capture';
+import { onConfigUpdate } from '../config';
 
 export const MODE = 'mode';
 
@@ -50,21 +51,25 @@ async function setMode(args_: unknown): Promise<CommandResult> {
 };
 export let modeSpecs: Record<string, ModeSpec> = {};
 export let defaultMode: string = 'default';
+async function updateModeSpecs(modeSpecs: Record<string, ModeSpec>){
+    defaultMode = (Object.values(modeSpecs).filter(x => x.default)[0] || {name: 'default'}).name;
+    await withState(async state => state.set(MODE, defaultMode));
+}
+
 let defaultLineNumbers: string = 'on';
-async function updateModeSpecs(event?: vscode.ConfigurationChangeEvent){
+async function updateLineNumConfig(event?: vscode.ConfigurationChangeEvent){
     if(!event || event?.affectsConfiguration('master-key')){
         let config = vscode.workspace.getConfiguration('master-key');
-        modeSpecs = config.get<Record<string, ModeSpec>>('mode') || {};
-        defaultMode = (Object.values(modeSpecs).filter(x => x.default)[0] || {name: 'default'}).name;
         defaultLineNumbers = config.get<string>('defaultLineNumbers') || 'on';
-        await withState(async state => state.set(MODE, defaultMode));
     }
 }
 
 let currentMode = 'default';
 export async function activate(context: vscode.ExtensionContext){
-    await updateModeSpecs();
-    vscode.workspace.onDidChangeConfiguration(updateModeSpecs);
+    await updateLineNumConfig();
+    vscode.workspace.onDidChangeConfiguration(updateLineNumConfig);
+
+    onConfigUpdate('mode', updateModeSpecs);
 
     vscode.window.onDidChangeActiveTextEditor(e => {
         updateCursorAppearance(e, currentMode, modeSpecs);

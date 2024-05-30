@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import z from 'zod';
 import { validateInput } from './utils';
 import { Map, List, RecordOf, Record as IRecord } from 'immutable';
+import { onConfigUpdate } from './config';
 
 export type Listener = (states: Map<string, unknown>) => boolean;
 
@@ -255,12 +256,8 @@ function addDefinitions(state: CommandState, definitions: any){
     });
 }
 
-async function updateConfig(event?: vscode.ConfigurationChangeEvent){
-    if(!event || event?.affectsConfiguration('master-key')){
-        let config = vscode.workspace.getConfiguration('master-key');
-        let definitions = config.get<object[]>('definitions');
-        await withState(async state => addDefinitions(state, definitions));
-    }
+async function updateDefinitions(defs: any){
+    await withState(async state => addDefinitions(state, defs));
 }
 
 const setFlagArgs = z.object({
@@ -268,7 +265,6 @@ const setFlagArgs = z.object({
     value: z.boolean(),
     transient: z.boolean().default(false).optional()
 }).strict();
-type SetFlagArgs = z.infer<typeof setFlagArgs>;
 
 async function setFlag(args_: unknown): Promise<CommandResult> {
     let args = validateInput('master-key.setFlag', args_, setFlagArgs);
@@ -283,8 +279,7 @@ async function setFlag(args_: unknown): Promise<CommandResult> {
 }
 
 export async function activate(context: vscode.ExtensionContext){
-    await updateConfig();
-    vscode.workspace.onDidChangeConfiguration(updateConfig);
+    onConfigUpdate('definitions', updateDefinitions);
 
     context.subscriptions.push(vscode.commands.registerCommand('master-key.setFlag',
         recordedCommand(setFlag)));

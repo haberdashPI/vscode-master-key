@@ -10,9 +10,8 @@ getting existing tests to work again (some of the recent changes broke them)
     if we're the one updating the config (VSCode doesn't call back into the same
     extension when you change config)
 
-    I'm wondering if writing this stuff out to config is even the write call.
-    Maybe this should be some kind of private extension state that gets persistently
-    stored
+    I've now reimplemented (but haven't compiled or tried out) internal configuration state
+    management
 
 BUG: remove command needs to update user settings (e.g. remove mode and definitions)
 BUG: (I think this is related to the above) default mode is not properly set when loading a new keybinding set

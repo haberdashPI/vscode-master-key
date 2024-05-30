@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { searchArgs, searchMatches } from '../commands/search';
-import { parseBindings, BindingSpec, showParseError, parseBindingFile, bindingSpec, bindingItem, vscodeBinding } from './parsing';
+import { parseBindings, BindingSpec, showParseError, parseBindingFile, bindingSpec, bindingItem, vscodeBinding, ModeSpec } from './parsing';
 import { processBindings, IConfigKeyBinding, Bindings, isSingleCommand } from './processing';
 import { uniq, pick, words } from 'lodash';
 import replaceAll from 'string.prototype.replaceall';
@@ -9,6 +9,7 @@ import z from 'zod';
 import { withState } from '../state';
 import { MODE, defaultMode } from '../commands/mode';
 import { VSCODE_VERSION_MAX } from 'vscode-extension-tester';
+import { updateConfig } from '../config';
 const JSONC = require("jsonc-simple-parser");
 const TOML = require("smol-toml");
 
@@ -358,10 +359,9 @@ async function queryPreset(): Promise<Preset | undefined> {
 
 async function importBindings(file: vscode.Uri, preset: Bindings) {
     insertKeybindingsIntoConfig(file, preset.bind);
-    let config = vscode.workspace.getConfiguration('master-key');
     await withState(async state => state.set(MODE, {public: true}, defaultMode).resolve());
-    await config.update('definitions', preset.define, vscode.ConfigurationTarget.Global);
-    await config.update('mode', preset.mode, vscode.ConfigurationTarget.Global);
+    updateConfig('definitions', preset.define);
+    updateConfig('mode', preset.mode);
 }
 
 async function copyBindingsToNewFile(){
