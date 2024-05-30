@@ -8,18 +8,24 @@ import * as vscode from 'vscode';
 
 export type ConfigListener = (x: any) => Promise<void>;
 
-let configState: vscode.Memento;
+let configState: vscode.Memento | undefined = undefined;
 let listeners: Record<string, ConfigListener[]> = {};
 
 export async function updateConfig<T>(key: string, value: T){
-    configState.update(key, value);
-    for(let fn of (listeners[key] || [])){
-        await fn(value);
+    if(configState){
+        configState.update(key, value);
+        for(let fn of (listeners[key] || [])){
+            await fn(value);
+        }
+    }else{
+        throw(Error("Tried to update config state before activating config"));
     }
 }
 
 export async function onConfigUpdate(key: string, fn: ConfigListener){
-    await fn(configState.get(key, undefined));
+    if(configState){
+        await fn(configState.get(key, undefined));
+    }
     let ls = listeners[key] || [];
     ls.push(fn);
     listeners[key] = ls;
@@ -28,4 +34,11 @@ export async function onConfigUpdate(key: string, fn: ConfigListener){
 
 export function activate(context: vscode.ExtensionContext){
     configState = context.globalState;
+    if(configState){
+        for(let key of configState.keys()){
+            for(let fn of (listeners[key])){
+                fn(configState.get(key, undefined));
+            }
+        }
+    }
 }

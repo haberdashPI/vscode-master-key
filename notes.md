@@ -3,15 +3,13 @@
 getting existing tests to work again (some of the recent changes broke them)
   + simpleMotions
   - commandState
-    some of the keys being used are doing the wrong thing (due to default bindings)
+    WIP: tests - `This` is not highlighted (instead its the whole sentence; timing?)
+    WIP: tests - extra notification means we miss the error message if it exists
+      (something about a screen reading)
+
+    some of the keys being used were doing the wrong thing (due to default bindings)
     but I also don't get why the prefixCode is not getting set
-
-    I think this comes down to needing to manually update config watchers
-    if we're the one updating the config (VSCode doesn't call back into the same
-    extension when you change config)
-
-    I've now reimplemented (but haven't compiled or tried out) internal configuration state
-    management
+    I think this is fixed (verify) but still need to work out the tests above
 
 BUG: remove command needs to update user settings (e.g. remove mode and definitions)
 BUG: (I think this is related to the above) default mode is not properly set when loading a new keybinding set
@@ -20,6 +18,8 @@ BUG: repeat argument is not working for the repeat action command (e.g. I cannot
   + FIXED: this happens because the repeat command runs many `master-key.do` commands
     which resets transient state like `count`
   - unit test (verify that this doesn't regress)
+
+BUG: search highlighting clears almost immediately
 
 BUG: when there are no keys defined the visual keybinding output includes `undefined`
 
