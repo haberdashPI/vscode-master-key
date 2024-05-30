@@ -109,6 +109,9 @@ FEATURE: require parsing to validate modes to be all negations or all positive m
 
 wishlist:
 
+- use `getExtension` on each required extension, and offer to install if it fails
+  (does this work for any extension? or does `activate` have to return something)
+
 - IMPROVEMENT: add command to delete all but primary selection in selection utilities
 
 - idea: we want the default mode (which can be set by the user)
