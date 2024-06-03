@@ -1,1 +1,5 @@
-{"name":"debug-profile","extensions":"[{\"identifier\":{\"id\":\"haberdashpi.selection-utilities\",\"uuid\":\"f85dfbd2-9a09-44ef-b491-0b250e656003\"},\"displayName\":\"Selection Utilities\"}]"}
+{
+  "name": "debug-profile",
+  "extensions": "[{\"identifier\":{\"id\":\"haberdashpi.selection-utilities\",\"uuid\":\"f85dfbd2-9a09-44ef-b491-0b250e656003\"},\"displayName\":\"Selection Utilities\"}]",
+  "master-key.suggestionDelay": 50
+}

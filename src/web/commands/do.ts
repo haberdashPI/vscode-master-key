@@ -199,7 +199,10 @@ function updateConfig(event?: vscode.ConfigurationChangeEvent){
     if(!event || event.affectsConfiguration('master-key')){
         let config = vscode.workspace.getConfiguration('master-key');
         maxHistory = (config.get<number>('maxCommandHistory') || 1024);
-        paletteDelay = (config.get<number>('suggestionDelay') || 500);
+        let configDelay = config.get<number>('suggestionDelay');
+        if(configDelay !== undefined){
+            paletteDelay = configDelay;
+        }
     }
 }
 
