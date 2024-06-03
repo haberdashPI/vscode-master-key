@@ -1,18 +1,6 @@
 ## Wrapping up unit tests
 
-getting existing tests to work again (some of the recent changes broke them)
-  + simpleMotions
-  - commandState
-    WIP: tests - `This` is not highlighted (instead its the whole sentence; timing?)
-    WIP: tests - extra notification means we miss the error message if it exists
-      (something about a screen reading)
-
-    some of the keys being used were doing the wrong thing (due to default bindings)
-    but I also don't get why the prefixCode is not getting set
-    I think this is fixed (verify) but still need to work out the tests above
-
-BUG: remove command needs to update user settings (e.g. remove mode and definitions)
-BUG: (I think this is related to the above) default mode is not properly set when loading a new keybinding set
+BUG: remove command needs to update config (e.g. remove mode and definitions)
 
 BUG: repeat argument is not working for the repeat action command (e.g. I cannot repeat the last action ten times)
   + FIXED: this happens because the repeat command runs many `master-key.do` commands
@@ -23,6 +11,7 @@ BUG: search highlighting clears almost immediately
 
 BUG: when there are no keys defined the visual keybinding output includes `undefined`
 
+NOTE: ux tests are kinda buggy, is it worth implementing all of these?
 unit tests: edge cases with recording edits
   - how about when I switch documents?
   - how about when we don't start with normal mode commands?

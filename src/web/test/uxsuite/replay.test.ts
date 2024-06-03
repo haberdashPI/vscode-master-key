@@ -10,8 +10,12 @@ export const run = () => describe('Replay commands', () => {
         [header]
         version = "1.0"
 
-        [define]
-        validModes = ["insert", "capture", "normal"]
+        [[mode]]
+        name = "insert"
+        default = true
+
+        [[mode]]
+        name = "normal"
 
         [[bind]]
         description = "Enter normal mode"
@@ -76,7 +80,7 @@ export const run = () => describe('Replay commands', () => {
         # NOTE: because of how vscode-extension-tester is implemented
         # numeric values get typed, so we use other keybindings here
         # to avoid picking up this typed keys
-        foreach.num = ["{/[0-3]/}"]
+        foreach.num = ["{key: [0-3]}"]
         key = "shift+{num}"
         mode = "normal"
         name = "count {num}"

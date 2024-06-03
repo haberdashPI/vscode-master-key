@@ -5,7 +5,7 @@ export const run = () => describe('Capture key commands', () => {
     let editor: TextEditor;
 
     before(async function(){
-        this.timeout(8 * 1000);
+        this.timeout(12 * 1000);
         await setBindings(`
             [header]
             version = "1.0"

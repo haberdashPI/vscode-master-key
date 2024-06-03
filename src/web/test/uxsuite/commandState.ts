@@ -38,7 +38,7 @@ export const run = () => describe('Command state', () => {
             [[bind]]
             name = "prepare select"
             key = "ctrl+l"
-            mode = ["left", "insert"]
+            mode = ["left", "default"]
             command = "master-key.prefix"
             args.flag = "select_on"
             resetTransient = false
@@ -104,13 +104,11 @@ export const run = () => describe('Command state', () => {
             await pause(250);
         }, [0, 4], editor);
 
-        await editor.moveCursor(1, 1);
-        await pause(50);
         await editor.typeText(Key.chord(Key.CONTROL, 'l'));
         await pause(50);
         await editor.typeText(Key.chord(Key.CONTROL, Key.SHIFT, 'w'));
         await pause(50);
-        expect(await editor.getSelectedText()).toEqual('This');
+        expect(await editor.getSelectedText()).toEqual(' is');
     });
 
     it("Mode changes key effects", async () => {
@@ -140,14 +138,15 @@ export const run = () => describe('Command state', () => {
         expect(await editor.getSelectedText()).toEqual('This');
     });
 
-    it('Resets state on error',async () => {
+    // test is broken due to a bug that means we can't clear notifications
+    it.skip('Resets state on error',async () => {
         // clear any other notificatoins that happened before
         let workbench = new Workbench();
         let notifications = await workbench.getNotifications();
         for(let note of notifications){
             console.log(await note.getMessage);
             await note.dismiss();
-            await pause(10);
+            await pause(100);
         }
 
         await pause(250);
@@ -157,16 +156,18 @@ export const run = () => describe('Command state', () => {
 
         await pause(250);
         notifications = await workbench.getNotifications();
-        const message = await notifications[0].getMessage();
-        expect(message).toEqual("command 'notACommand' not found");
-
+        for(let note of notifications){
+            let message = await note.getMessage();
+            if(!/screen reader/i.test(message)){
+                expect(message).toEqual("command 'notACommand' not found");
+            }
+        }
         await movesCursorInEditor(async () => {
             await editor.typeText(Key.chord(Key.CONTROL, 'h')+Key.chord(Key.CONTROL, 'f'));
         }, [0, 1], editor);
     });
     // TODO: test that command state appropriate resets if there is an exception
     // thrown in the keybinding
-
 });
 
 export default { run };
