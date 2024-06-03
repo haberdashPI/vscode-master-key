@@ -25,6 +25,8 @@ unit tests: parsing of YAML and JSON(C)
   - actually: delete this feature (add it back in later if it feels worth it)
 unit tests: store/restore named commands
 
+UNIT TEST: verify that larkin can be properly loaded/parsed
+
 code coverage?
 https://istanbul.js.org/
 

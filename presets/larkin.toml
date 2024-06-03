@@ -810,8 +810,32 @@ path = "edit.motion.prim"
 key = "g g"
 priority = 1
 name = "doc start"
+description = "select to start (line) of document."
+command = "runCommands"
+when = "master-key.count > 1"
+
+[[bind.args.commands]]
+command = "cursorTop"
+
+[[bind.args.commands]]
+command = "cursorMove"
+args.to = "down"
+args.by = "wrappedLine"
+computedArgs.value = "count-1"
+
+[[bind.args.commands]]
+command = "revealLine"
+args.at = "center"
+computedArgs.lineNumber = "count"
+
+[[bind]]
+path = "edit.motion.prim"
+key = "g g"
+priority = 1
+name = "doc start"
 description = "select to start of document"
 command = "cursorTopSelect"
+when = "master-key.count <= 1"
 
 [[bind]]
 path = "edit.motion.obj"

@@ -133,6 +133,7 @@ export const run = () => describe('Capture key commands', () => {
         await pause(50);
         let text = await editor.getText();
         expect(text).toEqual(`fpoobar bum POINT_A`);
+        await pause(500);
     });
 });
 export default { run };

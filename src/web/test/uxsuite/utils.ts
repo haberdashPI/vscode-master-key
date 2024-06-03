@@ -38,15 +38,19 @@ export async function setupEditor(str: string, testname: string){
 }
 
 export async function setBindings(str: string){
+    console.log("loading config.toml");
     let config = path.join(tempdir, 'config.toml');
     fs.writeFileSync(config, str);
 
+    console.log("preparing to activate bindings");
     let workbench = new Workbench();
     await workbench.executeCommand('Master Key: Activate Keybindings');
+    console.log("executed command");
     let input = await InputBox.create();
     await input.setText('File...');
     await input.confirm();
     await pause(250);
+    console.log("Setting file...");
 
     input = await InputBox.create();
     await input.setText(config);

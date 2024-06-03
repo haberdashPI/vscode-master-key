@@ -170,6 +170,7 @@ export const run = () => describe('Command state', () => {
 
         await movesCursorInEditor(async () => {
             await editor.typeText(Key.chord(Key.CONTROL, 'h')+Key.chord(Key.CONTROL, 'f'));
+            await pause(50);
         }, [0, 1], editor);
     });
     // TODO: test that command state appropriate resets if there is an exception
