@@ -1118,6 +1118,7 @@ key = "m o"
 name = "in parag. ←"
 combinedName = "in paragraph →/←"
 args.unit = "paragraph"
+args.boundary = "both"
 computedArgs.value = "-(count || 1)"
 
 [[bind]]
@@ -2672,13 +2673,6 @@ name = "open recent"
 description = "Open recent file"
 key = "tab r"
 command = "workbench.action.openRecent"
-
-[[bind]]
-path = "edit.util"
-name = "command"
-description = "Show the VSCode command palette"
-key = "tab shift+;"
-command = "workbench.action.showCommands"
 
 [[bind]]
 path = "edit.util"
