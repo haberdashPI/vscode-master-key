@@ -22,7 +22,7 @@ export const run = () => describe('Command state', () => {
 
             [[bind]]
             name = "move right"
-            key = "ctrl+h ctrl+f"
+            key = "ctrl+h shift+ctrl+1"
             command = "cursorMove"
             args.to = "right"
             when = "editorTextFocus"
@@ -30,7 +30,7 @@ export const run = () => describe('Command state', () => {
             [[bind]]
             name = "move left"
             mode = "left"
-            key = "ctrl+h ctrl+f"
+            key = "ctrl+h shift+ctrl+1"
             command = "cursorMove"
             args.to = "left"
             when = "editorTextFocus"
@@ -91,11 +91,14 @@ export const run = () => describe('Command state', () => {
         await pause(250);
 
         await movesCursorInEditor(async () => {
-            await editor.typeText(Key.chord(Key.CONTROL, 'h')+Key.chord(Key.CONTROL, 'f'));
+            await editor.typeText(Key.chord(Key.CONTROL, 'h'));
+            await pause(50);
+            await editor.typeText(Key.chord(Key.SHIFT, Key.CONTROL, "1"));
         }, [0, 1], editor);
+        await pause(100);
     });
 
-    it("Handles Flagged Prefixs", async () => {
+    it("Handles Flagged Prefixs", async function(){
         await editor.moveCursor(1, 1);
         await pause(250);
 
@@ -104,10 +107,12 @@ export const run = () => describe('Command state', () => {
             await pause(250);
         }, [0, 4], editor);
 
+
+        await pause(100);
         await editor.typeText(Key.chord(Key.CONTROL, 'l'));
-        await pause(50);
+        await pause(100);
         await editor.typeText(Key.chord(Key.CONTROL, Key.SHIFT, 'w'));
-        await pause(50);
+        await pause(100);
         expect(await editor.getSelectedText()).toEqual(' is');
     });
 
@@ -119,7 +124,7 @@ export const run = () => describe('Command state', () => {
         await movesCursorInEditor(async () => {
             await editor.typeText(Key.chord(Key.CONTROL, 'h'));
             await pause(50);
-            await editor.typeText(Key.chord(Key.CONTROL, 'f'));
+            await editor.typeText(Key.chord(Key.SHIFT, Key.CONTROL, "1"));
         }, [0, -1], editor);
 
         await movesCursorInEditor(async () => {
@@ -162,6 +167,7 @@ export const run = () => describe('Command state', () => {
             let message = await note.getMessage();
             // console.log(message);
             if(message === "command 'notACommand' not found"){
+                console.log(message);
                 foundCommand = true;
                 break;
             }
@@ -169,7 +175,9 @@ export const run = () => describe('Command state', () => {
         expect(foundCommand);
 
         await movesCursorInEditor(async () => {
-            await editor.typeText(Key.chord(Key.CONTROL, 'h')+Key.chord(Key.CONTROL, 'f'));
+            await editor.typeText(Key.chord(Key.CONTROL, 'h'));
+            await pause(50);
+            await editor.typeText(Key.chord(Key.SHIFT, Key.CONTROL, "1"));
             await pause(50);
         }, [0, 1], editor);
     });

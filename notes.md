@@ -1,5 +1,8 @@
 ## Wrapping up unit tests
 
+- debugging existing tests:
+  - commandState — for the final test, movement doesn't seem to actually occur
+
 BUG: remove command needs to update config (e.g. remove mode and definitions)
 
 BUG: repeat argument is not working for the repeat action command (e.g. I cannot repeat the last action ten times)
