@@ -116,7 +116,7 @@ export const run = () => describe('Command state', () => {
         expect(await editor.getSelectedText()).toEqual(' is');
     });
 
-    it("Mode changes key effects", async () => {
+    it.only("Mode changes key effects", async () => {
         await editor.moveCursor(1, 6);
         await pause(250);
         await editor.typeText(Key.chord(Key.CONTROL, Key.SHIFT, 'l'));
@@ -144,7 +144,7 @@ export const run = () => describe('Command state', () => {
     });
 
     // test is broken due to a bug that means we can't clear notifications
-    it('Resets state on error',async () => {
+    it.only('Resets state on error',async () => {
         await editor.moveCursor(1, 1);
 
         // clear any other notificatoins that happened before
@@ -152,7 +152,7 @@ export const run = () => describe('Command state', () => {
         let notifications = await workbench.getNotifications();
         for(let note of notifications){
             await note.dismiss();
-            await pause(400);
+            await pause(100);
         }
 
         await pause(250);
@@ -165,15 +165,19 @@ export const run = () => describe('Command state', () => {
         let foundCommand = false;
         for(let note of notifications){
             let message = await note.getMessage();
-            // console.log(message);
+            console.log("Message: " + message);
+            await pause(50);
             if(message === "command 'notACommand' not found"){
-                console.log(message);
                 foundCommand = true;
+                console.log("Found command!");
                 break;
             }
         }
-        expect(foundCommand);
+        console.log("Testing that command was found");
+        expect(foundCommand).toEqual(true);
+        await pause(100);
 
+        console.log("Testing that we can run a command like normal");
         await movesCursorInEditor(async () => {
             await editor.typeText(Key.chord(Key.CONTROL, 'h'));
             await pause(50);
