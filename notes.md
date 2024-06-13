@@ -1,7 +1,5 @@
 ## Wrapping up unit tests
 
-TODO: I've lost faith in vscode-extension-tester, it is now failing
-  - I'm going to try out [webdriverio](https://webdriverio-community.github.io/wdio-vscode-service/) and see if that works any better
 - debugging existing tests:
   - commandState — for the final test, movement doesn't seem to actually occur
 
