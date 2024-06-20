@@ -134,7 +134,12 @@
           "title": "Default Line Numbering",
           "type": "string",
           "default": "on",
-          "enum": ["on", "off", "relative", "interval"],
+          "enum": [
+            "on",
+            "off",
+            "relative",
+            "interval"
+          ],
           "description": "The default line numbering setting, when not explicitly specified by a binding mode. This and the mode's line numbering overwrites the global VSCode setting"
         },
         "master-key.mode": {
@@ -179,15 +184,15 @@
   },
   "scripts": {
     "preui-test": "npx tsc -p tsconfig.ux.json",
-    "ui-test": "extest setup-and-run './uxtest/out/*.uxtest.js' -s uxtest/storage -e uxtest/extensions -t insiders --code_settings uxtest/settings.json",
-    "test": "vscode-test-web -c 1.89.1--browserType=chromium --extensionDevelopmentPath=. --extensionTestsPath=dist/web/test/suite/index.js",
+    "test": "vscode-test-web --browserType=chromium --extensionDevelopmentPath=. --extensionTestsPath=dist/web/test/suite/index.js",
     "pretest": "npm run compile-web",
     "vscode:prepublish": "npm run package-web",
     "compile-web": "webpack",
     "watch-web": "webpack --watch",
     "package-web": "webpack --mode production --devtool hidden-source-map",
     "lint": "eslint src --ext ts",
-    "run-in-browser": "vscode-test-web --browserType=chromium --extensionDevelopmentPath=. ."
+    "run-in-browser": "vscode-test-web --browserType=chromium --extensionDevelopmentPath=. .",
+    "wdio": "wdio run ./wdio.conf.mts"
   },
   "devDependencies": {
     "@types/assert": "^1.5.10",
@@ -201,13 +206,19 @@
     "@typescript-eslint/eslint-plugin": "^6.13.1",
     "@typescript-eslint/parser": "^6.13.1",
     "@vscode/test-web": "^0.0.22",
+    "@wdio/cli": "^8.39.0",
+    "@wdio/local-runner": "^8.39.0",
+    "@wdio/mocha-framework": "^8.39.0",
+    "@wdio/spec-reporter": "^8.39.0",
     "assert": "^2.1.0",
     "eslint": "^8.54.0",
     "jsonc-simple-parser": "^3.0.0",
     "mocha": "^10.2.0",
     "process": "^0.11.10",
     "ts-loader": "^9.5.1",
+    "ts-node": "^10.9.2",
     "typescript": "^5.3.2",
+    "wdio-vscode-service": "^6.1.0",
     "webpack": "^5.89.0",
     "webpack-cli": "^5.1.4"
   },
