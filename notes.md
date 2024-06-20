@@ -89,6 +89,9 @@ thoughts: things I must have to release:
 
 after first release
 
+- speed up:
+  - https://www.nicoespeon.com/en/2019/11/fix-vscode-extension-performance-issue/
+
 - good documentation of the code
 - good documentation of the binding format
 - vim style bindings? (I think this could come in a separate release; or just never do it, wait until someone wants it)

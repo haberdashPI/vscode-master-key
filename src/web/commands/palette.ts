@@ -8,7 +8,6 @@ import { IConfigKeyBinding, PrefixCodes } from '../keybindings/processing';
 import { RunCommandsArgs, doCommandsCmd } from './do';
 import { reverse, uniqBy, sortBy } from 'lodash';
 import replaceAll from 'string.prototype.replaceall';
-import { QuickPickItem } from 'vscode-extension-tester';
 import { TypeOf } from 'zod';
 
 let paletteBindingMode = false;

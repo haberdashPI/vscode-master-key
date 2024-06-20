@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { browser, expect } from '@wdio/globals';
 import 'wdio-vscode-service';
-import { TextEditor, sleep } from 'wdio-vscode-service';
+import { InputBox, TextEditor, sleep } from 'wdio-vscode-service';
 
 let tempdir: string;
 
@@ -12,15 +12,18 @@ export async function setBindings(str: string){
     let config = path.join(tempdir, 'config.toml');
     fs.writeFileSync(config, str);
 
+    console.log("[DEBUG]: executing 'Activate Keybindings'");
     const workbench = await browser.getWorkbench();
-    let input = await workbench.executeCommand('Master Key: Activate Keybindings');
-    await browser.waitUntil(async () => (await input.getText()) !== 'Master Key: Activate Keybindings');
-    await input.setText('File...');
-    await input.confirm();
-    await browser.waitUntil(async () => (await input.getText()) !== 'File...');
-    await input.setText(config);
-    await input.confirm();
-    await browser.waitUntil(async () => (await input.getText()) !== config);
+    await workbench.executeCommand('Master Key: Activate Keybindings');
+    console.log("[DEBUG]: setting file");
+    const bindingInput = await (new InputBox(workbench.locatorMap).wait());
+    await bindingInput.setText('File...');
+    await bindingInput.confirm();
+
+    console.log("[DEBUG]: specifying filename");
+    const fileInput = await (new InputBox(workbench.locatorMap).wait());
+    await fileInput.setText(config);
+    await fileInput.confirm();
 }
 
 export async function setupEditor(str: string){

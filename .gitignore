@@ -8,3 +8,4 @@ uxtest/storage/**
 uxtest/out/**
 uxtest/temp/**
 .wdio-vscode-service
+test/temp/**

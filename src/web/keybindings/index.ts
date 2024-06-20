@@ -8,7 +8,6 @@ import { Utils } from 'vscode-uri';
 import z from 'zod';
 import { withState } from '../state';
 import { MODE, defaultMode } from '../commands/mode';
-import { VSCODE_VERSION_MAX } from 'vscode-extension-tester';
 import { updateConfig } from '../config';
 const JSONC = require("jsonc-simple-parser");
 const TOML = require("smol-toml");
