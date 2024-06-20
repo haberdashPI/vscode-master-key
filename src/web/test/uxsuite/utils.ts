@@ -37,6 +37,7 @@ export async function setupEditor(str: string, testname: string){
     return await editorView.openEditor(filename) as TextEditor;
 }
 
+// TODO: copy over and revise for wdio setup
 export async function setBindings(str: string){
     console.log("loading config.toml");
     let config = path.join(tempdir, 'config.toml');
