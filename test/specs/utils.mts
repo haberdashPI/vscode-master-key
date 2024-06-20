@@ -6,7 +6,7 @@ import { InputBox, TextEditor, sleep } from 'wdio-vscode-service';
 
 export async function setBindings(str: string){
     if(!fs.existsSync('test/temp/')){ fs.mkdirSync('test/temp/'); }
-    tempdir = path.join(process.cwd(), fs.mkdtempSync('test/temp/tmp'));
+    let tempdir = path.join(process.cwd(), fs.mkdtempSync('test/temp/tmp'));
     let config = path.join(tempdir, 'config.toml');
     fs.writeFileSync(config, str);
 
