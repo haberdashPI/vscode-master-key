@@ -4,8 +4,6 @@ import { browser, expect } from '@wdio/globals';
 import 'wdio-vscode-service';
 import { InputBox, TextEditor, sleep } from 'wdio-vscode-service';
 
-let tempdir: string;
-
 export async function setBindings(str: string){
     if(!fs.existsSync('test/temp/')){ fs.mkdirSync('test/temp/'); }
     tempdir = path.join(process.cwd(), fs.mkdtempSync('test/temp/tmp'));
