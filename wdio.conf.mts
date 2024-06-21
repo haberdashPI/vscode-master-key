@@ -74,6 +74,7 @@ export const config: Options.Testrunner = {
         'wdio:vscodeOptions': {
             // points to directory where extension package.json is located
             extensionPath: __dirname,
+            workspacePath: __dirname,
             // optional VS Code settings
             userSettings: {
                 // eslint-disable-next-line @typescript-eslint/naming-convention

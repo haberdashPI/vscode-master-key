@@ -5,7 +5,7 @@ node_modules
 *.vsix
 uxtest/extensions/**
 uxtest/storage/**
-uxtest/out/**
+utest/out/**
 uxtest/temp/**
 .wdio-vscode-service
 test/temp/**

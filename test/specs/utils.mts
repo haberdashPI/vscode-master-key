@@ -4,7 +4,7 @@ import { browser, expect } from '@wdio/globals';
 import 'wdio-vscode-service';
 import { InputBox, TextEditor, sleep } from 'wdio-vscode-service';
 
-export async function setBindings(str: string){
+    export async function setBindings(str: string){
     if(!fs.existsSync('test/temp/')){ fs.mkdirSync('test/temp/'); }
     let tempdir = path.join(process.cwd(), fs.mkdtempSync('test/temp/tmp'));
     let config = path.join(tempdir, 'config.toml');
@@ -14,6 +14,7 @@ export async function setBindings(str: string){
     const workbench = await browser.getWorkbench();
     await workbench.executeCommand('Master Key: Activate Keybindings');
     console.log("[DEBUG]: setting file");
+    await sleep(60000);
     const bindingInput = await (new InputBox(workbench.locatorMap).wait());
     await bindingInput.setText('File...');
     await bindingInput.confirm();

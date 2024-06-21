@@ -446,6 +446,7 @@ export async function activate(context: vscode.ExtensionContext) {
         'master-key.importDefaultBindings',
         () => copyCommandResultIntoBindingFile('workbench.action.openDefaultKeybindingsFile')
     ));
+    console.log("presetdir: "+Utils.joinPath(context.extensionUri, "presets").toString());
     extensionPresetsDir = Utils.joinPath(context.extensionUri, "presets");
     await restoreKeybindingsFromStorage();
 
