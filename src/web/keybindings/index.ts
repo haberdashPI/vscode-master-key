@@ -286,7 +286,7 @@ function makeQuickPicksFromPresets(presets: Preset[]): PresetPick[]{
     });
 }
 
-async function queryPreset(): Promise<Preset | undefined> {
+export async function queryPreset(): Promise<Preset | undefined> {
     let options = makeQuickPicksFromPresets(await keybindingPresets);
     options.push(
         {label: "add new presets...", kind: vscode.QuickPickItemKind.Separator},
@@ -388,7 +388,7 @@ interface Preset{
 }
 let keybindingPresets: Promise<Preset[]>;
 
-function updatePresets(event?: vscode.ConfigurationChangeEvent){
+export function updatePresets(event?: vscode.ConfigurationChangeEvent){
     if(!event || event.affectsConfiguration('master-key')){
         let config = vscode.workspace.getConfiguration('master-key');
         let userDirs = config.get<string[]>('presetDirectories')?.map(x =>
@@ -401,19 +401,33 @@ function updatePresets(event?: vscode.ConfigurationChangeEvent){
     }
 }
 
+let presetFiles = ['larkin.toml'];
+
+async function loadPreset(presets: Preset[], uri: vscode.Uri){
+    let bindings = processParsing(await parseBindingFile(uri), uri+" ");
+    let [label] = Utils.basename(uri).split('.');
+    if(bindings){
+        if(bindings.name){ label = bindings.name; }
+        presets.push({bindings, name: label, uri});
+    }
+}
+
 async function loadPresets(allDirs: vscode.Uri[]){
     let presets: Preset[] = [];
     for(let dir of allDirs){
-        for(let [filename, type] of await vscode.workspace.fs.readDirectory(dir)){
-            if(type === vscode.FileType.File &&
-                /(json|jsonc|yml|yaml|toml)$/.test(filename)){
+        // special case this directory (so it works (??) in the web context)
+        if(dir === extensionPresetsDir){
+            for(const preset of presetFiles){
+                let uri = Utils.joinPath(dir, preset);
+                loadPreset(presets, uri);
+            }
+        }else{
+            for(let [filename, type] of await vscode.workspace.fs.readDirectory(dir)){
+                if(type === vscode.FileType.File &&
+                    /(json|jsonc|yml|yaml|toml)$/.test(filename)){
 
-                let uri = Utils.joinPath(dir, filename);
-                let bindings = processParsing(await parseBindingFile(uri), filename+" ");
-                let [label] = Utils.basename(uri).split('.');
-                if(bindings){
-                    if(bindings.name){ label = bindings.name; }
-                    presets.push({bindings, name: label, uri});
+                    let uri = Utils.joinPath(dir, filename);
+                    loadPreset(presets, uri);
                 }
             }
         }
@@ -447,7 +461,7 @@ export async function activate(context: vscode.ExtensionContext) {
         () => copyCommandResultIntoBindingFile('workbench.action.openDefaultKeybindingsFile')
     ));
     console.log("presetdir: "+Utils.joinPath(context.extensionUri, "presets").toString());
-    extensionPresetsDir = Utils.joinPath(context.extensionUri, "presets");
+    extensionPresetsDir = Utils.joinPath(context.extensionUri, "presets/");
     await restoreKeybindingsFromStorage();
 
     updatePresets();

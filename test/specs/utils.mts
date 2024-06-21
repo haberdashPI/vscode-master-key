@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { browser, expect } from '@wdio/globals';
 import 'wdio-vscode-service';
-import { InputBox, TextEditor, sleep } from 'wdio-vscode-service';
+import { Input, InputBox, TextEditor, sleep } from 'wdio-vscode-service';
 
     export async function setBindings(str: string){
     if(!fs.existsSync('test/temp/')){ fs.mkdirSync('test/temp/'); }
@@ -10,26 +10,38 @@ import { InputBox, TextEditor, sleep } from 'wdio-vscode-service';
     let config = path.join(tempdir, 'config.toml');
     fs.writeFileSync(config, str);
 
-    console.log("[DEBUG]: executing 'Activate Keybindings'");
     const workbench = await browser.getWorkbench();
     await workbench.executeCommand('Master Key: Activate Keybindings');
-    console.log("[DEBUG]: setting file");
-    await sleep(60000);
     const bindingInput = await (new InputBox(workbench.locatorMap).wait());
     await bindingInput.setText('File...');
     await bindingInput.confirm();
 
-    console.log("[DEBUG]: specifying filename");
     const fileInput = await (new InputBox(workbench.locatorMap).wait());
     await fileInput.setText(config);
+    await sleep(50);
     await fileInput.confirm();
 }
 
 export async function setupEditor(str: string){
     const workbench = await browser.getWorkbench();
+    await sleep(5000);
+    await workbench.executeCommand('New Untitled Text File');
+    await sleep(5000);
+    console.log("[DEBUG]: new file created");
+    await workbench.executeCommand('Save');
+    await sleep(5000);
+
+    console.log("[DEBUG]: setting filename");
+    let input = await (new InputBox(workbench.locatorMap).wait());
+    let tempdir = path.join(process.cwd(), fs.mkdtempSync('test/temp/tmp'));
+    await input.setText(tempdir+"/test.md");
+    await input.confirm();
+    await sleep(50);
+
+    console.log("[DEBUG]: selecting editor");
     const editorView = await workbench.getEditorView();
     const editor = await editorView.openEditor('test.md') as TextEditor;
-    editor.setText(str);
+    await editor.setText(str);
     return editor;
 }
 
