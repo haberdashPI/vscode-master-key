@@ -4,6 +4,7 @@
   - we seem to be missing a file when trying to load it
     when setting up the initial presets (e.g. the default presets directory
     doesn't seem to exist, or something, need to narrow down the error more)
+    it looks like it just can't find the directory at all
   - question: did this preset thing ever work? try ruunning as web extension
 
 - debugging existing tests:
