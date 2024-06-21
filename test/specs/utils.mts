@@ -10,11 +10,15 @@ import { Input, InputBox, TextEditor, sleep } from 'wdio-vscode-service';
     let config = path.join(tempdir, 'config.toml');
     fs.writeFileSync(config, str);
 
+    // TODO: rather than using a temporary file create a new file and enter text, save it
+    // and use `Current File` option
     const workbench = await browser.getWorkbench();
     await workbench.executeCommand('Master Key: Activate Keybindings');
     const bindingInput = await (new InputBox(workbench.locatorMap).wait());
+    await sleep(100);
     await bindingInput.setText('File...');
     await bindingInput.confirm();
+    await sleep(5000);
 
     const fileInput = await (new InputBox(workbench.locatorMap).wait());
     await fileInput.setText(config);
