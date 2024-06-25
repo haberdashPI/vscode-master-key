@@ -102,9 +102,10 @@ laborum ad. Dolore exercitation cillum eiusmod culpa minim duis`);
         await editor.moveCursor(1, 1);
         await browser.keys([Key.Escape]);
 
-        await movesCursorInEditor(() => browser.keys('j'), [1, 0], editor);
-        // await movesCursorInEditor(() => browser.keys('l'), [0, 1], editor);
-        // await movesCursorInEditor(() => browser.keys('h'), [0, -1], editor);
+        // await movesCursorInEditor(() => browser.keys('j'), [1, 0], editor);
+        // TODO: when we're in headless mode, it seems to just type the key into the browser
+        await movesCursorInEditor(() => browser.keys('l'), [0, 1], editor);
+        await movesCursorInEditor(() => browser.keys('h'), [0, -1], editor);
         // await movesCursorInEditor(() => browser.keys('k'), [-1, 0], editor);
     });
 
