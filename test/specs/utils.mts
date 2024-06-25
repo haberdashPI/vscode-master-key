@@ -30,7 +30,7 @@ export async function setupEditor(str: string){
     const workbench = await browser.getWorkbench();
     browser.keys([Key.Ctrl, 'n']);
 
-    const editorView = await workbench.getEditorView();
+    const editorView = workbench.getEditorView();
     let tab = await editorView.getActiveTab();
     const editor = await editorView.openEditor(await tab?.getTitle()!) as TextEditor;
 
@@ -39,10 +39,14 @@ export async function setupEditor(str: string){
 }
 
 export async function movesCursorInEditor(action: () => Promise<void>, by: [number, number], editor: TextEditor){
+    await sleep(2000);
     let oldpos = await editor.getCoordinates();
+    console.log("oldpos: "+oldpos);
+    // TODO: watch the status bar, and wait until it clears
     await action();
-    await sleep(30);
+    await sleep(2000);
     let newpos = await editor.getCoordinates();
+    console.log("newpos: "+newpos);
     let ydiff = newpos[0] - oldpos[0];
     let xdiff = newpos[1] - oldpos[1];
     expect({y: ydiff, x: xdiff}).toEqual({y: by[0], x: by[1]});

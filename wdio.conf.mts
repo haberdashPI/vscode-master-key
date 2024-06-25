@@ -1,11 +1,11 @@
+/* eslint-disable @typescript-eslint/naming-convention */
+
 import type { Options } from '@wdio/types';
 import 'wdio-vscode-service';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
 const __filename = fileURLToPath(import.meta.url);
-// eslint-disable-next-line @typescript-eslint/naming-convention
 const __dirname = dirname(__filename);
 
 export const config: Options.Testrunner = {
@@ -70,14 +70,15 @@ export const config: Options.Testrunner = {
     capabilities: [{
         browserName: 'chrome',
         browserVersion: 'stable', // also possible: "insiders" or a specific version e.g. "1.80.0"
-        // eslint-disable-next-line @typescript-eslint/naming-convention
+        "goog:chromeOptions": {
+            args: ['headless'],
+        },
         'wdio:vscodeOptions': {
             // points to directory where extension package.json is located
             extensionPath: __dirname,
             workspacePath: __dirname,
             // optional VS Code settings
             userSettings: {
-                // eslint-disable-next-line @typescript-eslint/naming-convention
                 "editor.fontSize": 14
             }
         }
@@ -321,4 +322,4 @@ export const config: Options.Testrunner = {
     */
     // afterAssertion: function(params) {
     // }
-}
+};
