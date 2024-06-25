@@ -6,7 +6,7 @@ import 'wdio-vscode-service';
 import { sleep, TextEditor } from 'wdio-vscode-service';
 import { Key } from "webdriverio";
 
-describe('VS Code Extension Testing', () => {
+describe('Simple Motions', () => {
     let editor: TextEditor;
     before(async () => {
         await setBindings(`
@@ -95,7 +95,7 @@ ipsum ex labore enim. Amet do commodo et occaecat proident ex cupidatat in. Quis
 laborum ad. Dolore exercitation cillum eiusmod culpa minim duis`);
     });
 
-    it('should be able to run command', async() => {
+    it('Can move cursor', async() => {
         await editor.moveCursor(1, 1);
         await browser.keys([Key.Escape]);
 
@@ -103,5 +103,41 @@ laborum ad. Dolore exercitation cillum eiusmod culpa minim duis`);
         await movesCursorInEditor(() => browser.keys('l'), [0, 1], editor);
         await movesCursorInEditor(() => browser.keys('h'), [0, -1], editor);
         await movesCursorInEditor(() => browser.keys('k'), [-1, 0], editor);
+    });
+
+    it('Can use `repeat`', async () => {
+        await editor.moveCursor(1, 1);
+        await browser.keys([Key.Escape]);
+
+        await movesCursorInEditor(() => browser.keys([Key.Shift, 'l']), [0, 2], editor);
+    });
+
+    it('Can use `count`', async function(){
+        await editor.moveCursor(1, 1);
+        await browser.keys([Key.Escape]);
+
+        for (let c = 1; c <= 3; c++) {
+            await movesCursorInEditor(async () => {
+                await browser.keys([Key.Shift, String(c)]);
+                await browser.keys('j');
+            }, [1*c, 0], editor);
+            await movesCursorInEditor(async () => {
+                await browser.keys([Key.Shift, String(c)]);
+                await browser.keys('l');
+            }, [0, 1*c], editor);
+            await movesCursorInEditor(async () => {
+                await browser.keys([Key.Shift, String(c)]);
+                await browser.keys('h');
+            }, [0, -1*c], editor);
+            await movesCursorInEditor(async () => {
+                await browser.keys([Key.Shift, String(c)]);
+                await browser.keys('k');
+            }, [-1*c, 0], editor);
+        }
+        await movesCursorInEditor(async () => {
+            await browser.keys([Key.Shift, '1']);
+            await browser.keys([Key.Shift, '0']);
+            await browser.keys('l');
+        }, [0, 10], editor);
     });
 });
