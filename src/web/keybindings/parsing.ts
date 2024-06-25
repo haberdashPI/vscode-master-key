@@ -238,12 +238,13 @@ export type BindingSpec = z.infer<typeof bindingSpec>;
 
 export function parseBindings<T>(text: string, parse: string | ((data: string) => unknown)){
     if(typeof parse === 'string'){
+        // TODO: remove this logic and always use TOML for now
         let ext = parse.toLowerCase();
         let match = ext.match(/^\.(.+)$/);
         if(match){ ext = match[1]; }
         if(ext === 'json' || ext === 'jsonc'){ return parseBindings(text, JSONC.parse); }
         else if(ext === 'yaml' || ext === 'yml'){ return parseBindings(text, YAML.parse); }
-        else if(ext === 'toml' ){ return parseBindings(text, TOML.parse); }
+        else if(ext === 'toml' || ext === 'markdown'){ return parseBindings(text, TOML.parse); }
         else{
             throw new Error("Unexpected file extension: "+ext);
         }

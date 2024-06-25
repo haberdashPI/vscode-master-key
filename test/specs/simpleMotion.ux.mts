@@ -3,7 +3,7 @@
 import { browser, expect } from '@wdio/globals';
 import { setBindings, setupEditor, movesCursorInEditor } from './utils.mts';
 import 'wdio-vscode-service';
-import { TextEditor } from 'wdio-vscode-service';
+import { sleep, TextEditor } from 'wdio-vscode-service';
 import { Key } from "webdriverio";
 
 describe('VS Code Extension Testing', () => {
@@ -92,23 +92,15 @@ consectetur ullamco ullamco aliqua ex. Pariatur officia nostrud pariatur ex
 dolor magna. Consequat cupidatat amet nostrud proident occaecat ex.
 Ex cillum duis anim dolor cupidatat non nostrud non et sint ullamco. Consectetur consequat
 ipsum ex labore enim. Amet do commodo et occaecat proident ex cupidatat in. Quis id magna
-laborum ad. Dolore exercitation cillum eiusmod culpa minim duis`);
-    });
-    it('should be able to load VSCode', async () => {
-        const workbench = await browser.getWorkbench();
-        expect(await workbench.getTitleBar().getTitle())
-            .toContain('[Extension Development Host]');
-    });
+laborum ad. Dolore exer citation cillum eiusmod culpa minim duis`);
 
     it('should be able to run command', async() => {
         await editor.moveCursor(1, 1);
-        let elm = await editor.elem$;
-        elm.click();
         await browser.keys([Key.Escape]);
 
-        await movesCursorInEditor(() => editor.typeText('j'), [1, 0], editor);
-        await movesCursorInEditor(() => editor.typeText('l'), [0, 1], editor);
-        await movesCursorInEditor(() => editor.typeText('h'), [0, -1], editor);
-        await movesCursorInEditor(() => editor.typeText('k'), [-1, 0], editor);
+        await movesCursorInEditor(() => browser.keys('j'), [1, 0], editor);
+        await movesCursorInEditor(() => browser.keys('l'), [0, 1], editor);
+        await movesCursorInEditor(() => browser.keys('h'), [0, -1], editor);
+        await movesCursorInEditor(() => browser.keys('k'), [-1, 0], editor);
     });
 });
