@@ -54,7 +54,6 @@ export async function commandPalette(args_: unknown,
         let codes: PrefixCodes | undefined = undefined;
         let prefixCode = state.get<number>(PREFIX_CODE, 0)!;
         let mode = state.get<string>(MODE, defaultMode)!;
-        vscode.commands.executeCommand('setContext', 'master-key.keybindingPaletteOpen', true);
         paletteBindingMode = useKey;
         vscode.commands.executeCommand('setContext', 'master-key.keybindingPaletteBindingMode', paletteBindingMode);
         if(context){
@@ -136,6 +135,7 @@ export async function commandPalette(args_: unknown,
                 await withState(async s => s.reset().resolve());
             }
         });
+        vscode.commands.executeCommand('setContext', 'master-key.keybindingPaletteOpen', true);
         picker.show();
         // when this the palette accepts keybinding presses (rather than searchbing
         // bindings), dispose of the palette any time a normal key binding key is pressed
@@ -160,8 +160,8 @@ export async function commandPalette(args_: unknown,
 }
 
 export function activate(context: vscode.ExtensionContext){
+    vscode.commands.executeCommand('setContext', 'master-key.keybindingPaletteOpen', false);
     vscode.commands.executeCommand('setContext', 'master-key.keybindingPaletteBindingMode', false);
-    vscode.commands.executeCommand('setContext', 'master-key.keybindingOpen', false);
     context.subscriptions.push(vscode.commands.registerCommand('master-key.togglePaletteMode',
         togglePaletteMode));
     context.subscriptions.push(vscode.commands.registerCommand('master-key.commandPalette',
