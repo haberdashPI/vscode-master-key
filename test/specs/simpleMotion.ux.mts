@@ -92,7 +92,8 @@ consectetur ullamco ullamco aliqua ex. Pariatur officia nostrud pariatur ex
 dolor magna. Consequat cupidatat amet nostrud proident occaecat ex.
 Ex cillum duis anim dolor cupidatat non nostrud non et sint ullamco. Consectetur consequat
 ipsum ex labore enim. Amet do commodo et occaecat proident ex cupidatat in. Quis id magna
-laborum ad. Dolore exer citation cillum eiusmod culpa minim duis`);
+laborum ad. Dolore exercitation cillum eiusmod culpa minim duis`);
+    });
 
     it('should be able to run command', async() => {
         await editor.moveCursor(1, 1);
