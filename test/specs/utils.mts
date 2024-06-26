@@ -110,7 +110,6 @@ export async function modalKeySeq(...keySeq: (string | string[])[]){
     }
     cleared = await browser.waitUntil(() => statusBar.getItem('No Keys Typed'));
     expect(cleared).toBeTruthy();
-    return keySeqString;
 }
 
 export async function movesCursorInEditor(action: () => Promise<void>, by: [number, number], editor: TextEditor){
