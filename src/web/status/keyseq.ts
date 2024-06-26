@@ -7,7 +7,7 @@ import { prettifyPrefix } from '../utils';
 
 let keyStatusBar: vscode.StatusBarItem | undefined = undefined;
 
-const UPDATE_DELAY = 500;
+let keyDisplayDelay: number = 500;
 let statusUpdates = Number.MIN_SAFE_INTEGER;
 
 function updateKeyStatus(values: Map<string, unknown>){
@@ -30,10 +30,20 @@ function updateKeyStatus(values: Map<string, unknown>){
 
                     if(keyStatusBar){ keyStatusBar.text = plannedUpdate; }
                 }
-            }, UPDATE_DELAY);
+            }, keyDisplayDelay);
         }
     }
     return true;
+}
+
+function updateConfig(event?: vscode.ConfigurationChangeEvent){
+    if(!event || event.affectsConfiguration('master-key')){
+        let config = vscode.workspace.getConfiguration('master-key');
+        let configDelay = config.get<number>('keyDisplayDelay');
+        if(configDelay !== undefined){
+            keyDisplayDelay = configDelay;
+        }
+    }
 }
 
 export async function activate(context: vscode.ExtensionContext){
