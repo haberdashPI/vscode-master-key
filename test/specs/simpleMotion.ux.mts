@@ -1,9 +1,9 @@
 // start with just some basic tests to verify all is well
 
-import { browser, expect } from '@wdio/globals';
-import { setBindings, setupEditor, movesCursorInEditor } from './utils.mts';
+import '@wdio/globals';
 import 'wdio-vscode-service';
-import { sleep, TextEditor, Workbench } from 'wdio-vscode-service';
+import { modalKeySeq, setBindings, setupEditor, movesCursorInEditor } from './utils.mts';
+import { TextEditor } from 'wdio-vscode-service';
 import { Key } from "webdriverio";
 
 describe('Simple Motions', () => {
@@ -93,72 +93,51 @@ dolor magna. Consequat cupidatat amet nostrud proident occaecat ex.
 Ex cillum duis anim dolor cupidatat non nostrud non et sint ullamco. Consectetur consequat
 ipsum ex labore enim. Amet do commodo et occaecat proident ex cupidatat in. Quis id magna
 laborum ad. Dolore exercitation cillum eiusmod culpa minim duis`);
-        (await editor.elem).click();
-        await browser.keys([Key.Ctrl, 'A']);
-        await browser.keys(Key.ArrowRight);
     });
 
     it('Can move cursor', async() => {
-        await browser.keys([Key.Escape]);
-
-        const workbench = await browser.getWorkbench();
-        const editorView = await workbench.getEditorView();
-        const tab = await editorView.getActiveTab();
-        const editor = await editorView.openEditor(await tab?.getTitle()!) as TextEditor;
-        console.log("[DEBUG]: "+(await editor.getTitle()));
-        console.log("[DEBUG]: "+(await editor.getText()));
-
-        // (await editor.elem).click();
-        // await browser.keys([Key.Ctrl, 'A']);
-        // await browser.keys(Key.ArrowRight);
+        await modalKeySeq([Key.Escape]);
         await editor.moveCursor(1, 1);
-        // await sleep(50);
 
-        await movesCursorInEditor(async () => {
-            await browser.keys('j');
-            await sleep(500);
-            console.log("[DEBUG]: "+(await editor.getText()));
-            await browser.keys('j');
-        }, [1, 0], editor);
-        // TODO: when we're in headless mode, it seems to just type the key into the browser
-        // await movesCursorInEditor(() => browser.keys('l'), [0, 1], editor);
-        // await movesCursorInEditor(async () => await browser.keys('h'), [0, -1], editor);
-        // await movesCursorInEditor(() => browser.keys('k'), [-1, 0], editor);
+        await movesCursorInEditor(() => modalKeySeq('j'), [1, 0], editor);
+        await movesCursorInEditor(() => modalKeySeq('l'), [0, 1], editor);
+        await movesCursorInEditor(() => modalKeySeq('h'), [0, -1], editor);
+        await movesCursorInEditor(() => modalKeySeq('k'), [-1, 0], editor);
     });
 
-    // it('Can use `repeat`', async () => {
-    //     await editor.moveCursor(1, 1);
-    //     await browser.keys([Key.Escape]);
+    it('Can use `repeat`', async () => {
+        await editor.moveCursor(1, 1);
+        await modalKeySeq([Key.Escape]);
 
-    //     await movesCursorInEditor(() => browser.keys([Key.Shift, 'l']), [0, 2], editor);
-    // });
+        await movesCursorInEditor(() => modalKeySeq([Key.Shift, 'l']), [0, 2], editor);
+    });
 
-    // it('Can use `count`', async function(){
-    //     await editor.moveCursor(1, 1);
-    //     await browser.keys([Key.Escape]);
+    it('Can use `count`', async function(){
+        await editor.moveCursor(1, 1);
+        await modalKeySeq([Key.Escape]);
 
-    //     for (let c = 1; c <= 3; c++) {
-    //         await movesCursorInEditor(async () => {
-    //             await browser.keys([Key.Shift, String(c)]);
-    //             await browser.keys('j');
-    //         }, [1*c, 0], editor);
-    //         await movesCursorInEditor(async () => {
-    //             await browser.keys([Key.Shift, String(c)]);
-    //             await browser.keys('l');
-    //         }, [0, 1*c], editor);
-    //         await movesCursorInEditor(async () => {
-    //             await browser.keys([Key.Shift, String(c)]);
-    //             await browser.keys('h');
-    //         }, [0, -1*c], editor);
-    //         await movesCursorInEditor(async () => {
-    //             await browser.keys([Key.Shift, String(c)]);
-    //             await browser.keys('k');
-    //         }, [-1*c, 0], editor);
-    //     }
-    //     await movesCursorInEditor(async () => {
-    //         await browser.keys([Key.Shift, '1']);
-    //         await browser.keys([Key.Shift, '0']);
-    //         await browser.keys('l');
-    //     }, [0, 10], editor);
-    // });
+        for (let c = 1; c <= 3; c++) {
+            await movesCursorInEditor(async () => {
+                await modalKeySeq([Key.Shift, String(c)]);
+                await modalKeySeq('j');
+            }, [1*c, 0], editor);
+            await movesCursorInEditor(async () => {
+                await modalKeySeq([Key.Shift, String(c)]);
+                await modalKeySeq('l');
+            }, [0, 1*c], editor);
+            await movesCursorInEditor(async () => {
+                await modalKeySeq([Key.Shift, String(c)]);
+                await modalKeySeq('h');
+            }, [0, -1*c], editor);
+            await movesCursorInEditor(async () => {
+                await modalKeySeq([Key.Shift, String(c)]);
+                await modalKeySeq('k');
+            }, [-1*c, 0], editor);
+        }
+        await movesCursorInEditor(async () => {
+            await modalKeySeq([Key.Shift, '1']);
+            await modalKeySeq([Key.Shift, '0']);
+            await modalKeySeq('l');
+        }, [0, 10], editor);
+    });
 });

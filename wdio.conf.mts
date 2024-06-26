@@ -69,14 +69,6 @@ export const config: Options.Testrunner = {
     //
     capabilities: [{
         browserName: 'chrome',
-        "goog:chromeOptions": {
-            args: ['headless'],
-        },
-        // 'moz:firefoxOptions': {
-        //     args: ['-headless']
-        // },
-
-        // TODO: setup profile
         'wdio:vscodeOptions': {
             // points to directory where extension package.json is located
             extensionPath: __dirname,

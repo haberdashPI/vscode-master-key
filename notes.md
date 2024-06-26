@@ -2,16 +2,9 @@
 
 - setting up wdio:
   - some basic motion tests work
-  - *BUT* when we switch to headless mode, keybindings don't seem to be working anymore
-    - I've confirmed that we get a notification indicating that the bindings
-      were indeed loaded.
-    - clicking in the editor directly before the test doesn't seem to do the trick
-    - my guess is that I'm just typing in text; this should be clear if I show the
-      output of `editor.getText()`, but I'm having trouble because this
-      seems to yield an empty string (but only when in headless mode)
-      - okay: bottom line, this extension clearly isn't working
-        very well in headless mode, so let's abandon that feature for now
-    -
+    - but: typing is flaky, it doesn't always work
+      trying to implement something that review the status bar to
+      verify that the key was really pressed
 
 - debugging existing tests:
   - commandState — for the final test, movement doesn't seem to actually occur
