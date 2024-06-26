@@ -4,7 +4,6 @@ import { browser, expect } from '@wdio/globals';
 import 'wdio-vscode-service';
 import { Key } from 'webdriverio';
 import { Input, InputBox, StatusBar, TextEditor, sleep } from 'wdio-vscode-service';
-import replaceAll from 'string.prototype.replaceall';
 
 export async function setBindings(str: string){
     const workbench = await browser.getWorkbench();
@@ -62,42 +61,56 @@ export async function setupEditor(str: string){
     return editor;
 }
 
-export function prettifyPrefix(str: string | string[]){
-    str = Array.isArray(str) ? str.join('+') : str;
+export function prettifyPrefix(str: string){
     str = str.toUpperCase();
-    str = replaceAll(str, /shift(\+|$)/gi, '⇧');
-    str = replaceAll(str, /ctrl(\+|$)/gi, '^');
-    str = replaceAll(str, /alt(\+|$)/gi, '⌥');
-    str = replaceAll(str, /meta(\+|$)/gi, '◆');
-    str = replaceAll(str, /win(\+|$)/gi, '⊞');
-    str = replaceAll(str, /cmd(\+|$)/gi, '⌘');
-    // note: a bit hacky, to handle combined key descriptions
-    str = replaceAll(str, /(?<!\/) (?!\/)/g, ", ");
-    str = replaceAll(str, /escape/gi, "ESC");
+    str = str.replace(/shift(\+|$)/gi, '⇧');
+    str = str.replace(/ctrl(\+|$)/gi, '^');
+    str = str.replace(/alt(\+|$)/gi, '⌥');
+    str = str.replace(/meta(\+|$)/gi, '◆');
+    str = str.replace(/win(\+|$)/gi, '⊞');
+    str = str.replace(/cmd(\+|$)/gi, '⌘');
+    str = str.replace(/escape/gi, "ESC");
     return str;
 }
 
 // TODO: test out and get this function working
+const MODAL_KEY_MAP: Record<string, string> = {
+    'shift': Key.Shift,
+    'alt': Key.Alt,
+    'tab': Key.Tab,
+    'cmd': Key.Command,
+    'ctrl': Key.Control,
+    'escape': Key.Escape,
+    'space': Key.Space
+};
+
+// TODO: implement count
 export async function modalKeySeq(...keySeq: (string | string[])[]){
     const workbench = await browser.getWorkbench();
     const statusBar = await (new StatusBar(workbench.locatorMap));
-    let lastKeyStr = "";
-    for(const keys of keySeq){
-        browser.keys(keys);
-        const keyString = prettifyPrefix(keys);
-        lastKeyStr = keyString;
-        let registered = await browser.waitUntil(async () => {
-            const items = await statusBar.getItems();
-            return items.some(i => i.includes(keyString));
-        });
+    let keySeqString = "";
+
+    let cleared = await browser.waitUntil(() => statusBar.getItem('No Keys Typed'));
+    expect(cleared).toBeTruthy();
+
+    for(const keys_ of keySeq){
+        const keys = Array.isArray(keys_) ? keys_ : [keys_];
+        const keyCodes = keys.map(k => MODAL_KEY_MAP[k] ? MODAL_KEY_MAP[k] : k);
+        const keyString = keys.map(prettifyPrefix).join('+');
+        if(keySeq){
+            keySeqString += ", " + keyString;
+        }else{
+            keySeqString = keyString;
+        }
+
+        browser.keys(keyCodes);
+        let registered = await browser.waitUntil(() =>
+            statusBar.getItem('Keys Typed: '+keySeqString));
         expect(registered).toBeTruthy();
     }
-    // wait for keys to be cleared from status before moving on
-    let cleared = await browser.waitUntil(async () => {
-        const items = await statusBar.getItems();
-        return !items.some(i => i.includes(lastKeyStr));
-    });
+    cleared = await browser.waitUntil(() => statusBar.getItem('No Keys Typed'));
     expect(cleared).toBeTruthy();
+    return keySeqString;
 }
 
 export async function movesCursorInEditor(action: () => Promise<void>, by: [number, number], editor: TextEditor){

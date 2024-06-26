@@ -11,12 +11,13 @@ let keyDisplayDelay: number = 500;
 let statusUpdates = Number.MIN_SAFE_INTEGER;
 
 function updateKeyStatus(values: Map<string, unknown>){
-    let count = <number>values.get(COUNT, 0);
-    let plannedUpdate = count ? count + "× " : '';
-    plannedUpdate += prettifyPrefix(<string>values.get(PREFIX, ''));
-    if(keyStatusBar !== undefined){
+    if(keyStatusBar !== undefined && keyDisplayDelay > 0){
+        let count = <number>values.get(COUNT, 0);
+        let plannedUpdate = count ? count + "× " : '';
+        plannedUpdate += prettifyPrefix(<string>values.get(PREFIX, ''));
         if(plannedUpdate.length > 0){
             keyStatusBar.text = plannedUpdate;
+            keyStatusBar.accessibilityInformation = { label: 'Keys Typed: '+plannedUpdate };
         }else{
             // clearing the prefix is delayed so users can see the completed command
             let currentUpdate = statusUpdates;
@@ -28,7 +29,10 @@ function updateKeyStatus(values: Map<string, unknown>){
                         statusUpdates = Number.MIN_SAFE_INTEGER;
                     }
 
-                    if(keyStatusBar){ keyStatusBar.text = plannedUpdate; }
+                    if(keyStatusBar){
+                        keyStatusBar.text = plannedUpdate;
+                        keyStatusBar.accessibilityInformation = { label: 'No Keys Typed' };
+                    }
                 }
             }, keyDisplayDelay);
         }
@@ -48,7 +52,7 @@ function updateConfig(event?: vscode.ConfigurationChangeEvent){
 
 export async function activate(context: vscode.ExtensionContext){
     keyStatusBar = vscode.window.createStatusBarItem('keys', vscode.StatusBarAlignment.Left, -10000);
-    keyStatusBar.accessibilityInformation = { label: "Keys Typed" };
+    keyStatusBar.accessibilityInformation = { label: "No Keys Typed" };
     keyStatusBar.show();
     await onSet(PREFIX, updateKeyStatus);
     await onSet(COUNT, updateKeyStatus);

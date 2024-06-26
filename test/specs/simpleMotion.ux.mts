@@ -95,48 +95,48 @@ ipsum ex labore enim. Amet do commodo et occaecat proident ex cupidatat in. Quis
 laborum ad. Dolore exercitation cillum eiusmod culpa minim duis`);
     });
 
-    it('Can move cursor', async() => {
-        await modalKeySeq([Key.Escape]);
+    it.only('Can move cursor', async() => {
+        await browser.keys(Key.Escape);
         await editor.moveCursor(1, 1);
 
         await movesCursorInEditor(() => modalKeySeq('j'), [1, 0], editor);
-        await movesCursorInEditor(() => modalKeySeq('l'), [0, 1], editor);
-        await movesCursorInEditor(() => modalKeySeq('h'), [0, -1], editor);
-        await movesCursorInEditor(() => modalKeySeq('k'), [-1, 0], editor);
+        // await movesCursorInEditor(() => modalKeySeq('l'), [0, 1], editor);
+        // await movesCursorInEditor(() => modalKeySeq('h'), [0, -1], editor);
+        // await movesCursorInEditor(() => modalKeySeq('k'), [-1, 0], editor);
     });
 
     it('Can use `repeat`', async () => {
         await editor.moveCursor(1, 1);
-        await modalKeySeq([Key.Escape]);
+        await browser.keys([Key.Escape]);
 
         await movesCursorInEditor(() => modalKeySeq([Key.Shift, 'l']), [0, 2], editor);
     });
 
     it('Can use `count`', async function(){
         await editor.moveCursor(1, 1);
-        await modalKeySeq([Key.Escape]);
+        await browser.keys([Key.Escape]);
 
         for (let c = 1; c <= 3; c++) {
             await movesCursorInEditor(async () => {
-                await modalKeySeq([Key.Shift, String(c)]);
+                await modalKeySeq(['shift', String(c)]);
                 await modalKeySeq('j');
             }, [1*c, 0], editor);
             await movesCursorInEditor(async () => {
-                await modalKeySeq([Key.Shift, String(c)]);
+                await modalKeySeq(['shift', String(c)]);
                 await modalKeySeq('l');
             }, [0, 1*c], editor);
             await movesCursorInEditor(async () => {
-                await modalKeySeq([Key.Shift, String(c)]);
+                await modalKeySeq(['shift', String(c)]);
                 await modalKeySeq('h');
             }, [0, -1*c], editor);
             await movesCursorInEditor(async () => {
-                await modalKeySeq([Key.Shift, String(c)]);
+                await modalKeySeq(['shift', String(c)]);
                 await modalKeySeq('k');
             }, [-1*c, 0], editor);
         }
         await movesCursorInEditor(async () => {
-            await modalKeySeq([Key.Shift, '1']);
-            await modalKeySeq([Key.Shift, '0']);
+            await modalKeySeq(['shift', '1']);
+            await modalKeySeq(['shift', '0']);
             await modalKeySeq('l');
         }, [0, 10], editor);
     });

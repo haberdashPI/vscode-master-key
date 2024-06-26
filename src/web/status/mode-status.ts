@@ -10,6 +10,7 @@ function updateModeStatus(state: Map<string, unknown> | CommandState ){
         let highlight = modeSpecs[mode] ? modeSpecs[mode].highlight : 'NoHighlight';
         let rec = state.get<boolean>(RECORD, false);
         modeStatusBar.text = (rec ? "rec: " : "") + mode;
+        modeStatusBar.accessibilityInformation = { label: "Keybinding Mode: "+modeStatusBar.text };
         if(state.get<boolean>(RECORD, false) || highlight === 'Alert'){
             modeStatusBar.backgroundColor = new vscode.ThemeColor("statusBarItem.errorBackground");
         }else if(highlight === 'Highlight'){

@@ -3,7 +3,7 @@
 - setting up wdio:
   - some basic motion tests work
     - but: typing is flaky, it doesn't always work
-      trying to implement something that review the status bar to
+      implementing function that reviews the status bar to
       verify that the key was really pressed
 
 - debugging existing tests:
