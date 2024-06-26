@@ -3,7 +3,7 @@
 import { browser, expect } from '@wdio/globals';
 import { setBindings, setupEditor, movesCursorInEditor } from './utils.mts';
 import 'wdio-vscode-service';
-import { sleep, TextEditor } from 'wdio-vscode-service';
+import { sleep, TextEditor, Workbench } from 'wdio-vscode-service';
 import { Key } from "webdriverio";
 
 describe('Simple Motions', () => {
@@ -99,13 +99,30 @@ laborum ad. Dolore exercitation cillum eiusmod culpa minim duis`);
     });
 
     it('Can move cursor', async() => {
-        await editor.moveCursor(1, 1);
         await browser.keys([Key.Escape]);
 
-        // await movesCursorInEditor(() => browser.keys('j'), [1, 0], editor);
+        const workbench = await browser.getWorkbench();
+        const editorView = await workbench.getEditorView();
+        const tab = await editorView.getActiveTab();
+        const editor = await editorView.openEditor(await tab?.getTitle()!) as TextEditor;
+        console.log("[DEBUG]: "+(await editor.getTitle()));
+        console.log("[DEBUG]: "+(await editor.getText()));
+
+        // (await editor.elem).click();
+        // await browser.keys([Key.Ctrl, 'A']);
+        // await browser.keys(Key.ArrowRight);
+        await editor.moveCursor(1, 1);
+        // await sleep(50);
+
+        await movesCursorInEditor(async () => {
+            await browser.keys('j');
+            await sleep(500);
+            console.log("[DEBUG]: "+(await editor.getText()));
+            await browser.keys('j');
+        }, [1, 0], editor);
         // TODO: when we're in headless mode, it seems to just type the key into the browser
-        await movesCursorInEditor(() => browser.keys('l'), [0, 1], editor);
-        await movesCursorInEditor(() => browser.keys('h'), [0, -1], editor);
+        // await movesCursorInEditor(() => browser.keys('l'), [0, 1], editor);
+        // await movesCursorInEditor(async () => await browser.keys('h'), [0, -1], editor);
         // await movesCursorInEditor(() => browser.keys('k'), [-1, 0], editor);
     });
 

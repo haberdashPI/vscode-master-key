@@ -68,13 +68,14 @@ export const config: Options.Testrunner = {
     // https://saucelabs.com/platform/platform-configurator
     //
     capabilities: [{
-        browserName: 'firefox',
+        browserName: 'chrome',
         "goog:chromeOptions": {
-            // args: ['headless'],
+            args: ['headless'],
         },
-        'moz:firefoxOptions': {
-            args: ['-headless']
-        },
+        // 'moz:firefoxOptions': {
+        //     args: ['-headless']
+        // },
+
         // TODO: setup profile
         'wdio:vscodeOptions': {
             // points to directory where extension package.json is located

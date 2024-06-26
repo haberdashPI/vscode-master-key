@@ -23,6 +23,21 @@ export async function setBindings(str: string){
     let bindingInput = await ((new InputBox(workbench.locatorMap)).wait());
     await bindingInput.setText("Current File");
     await bindingInput.confirm();
+
+    const messagePattern = /Your master keybindings have/;
+    let message = await browser.waitUntil(async () => {
+        const notifs = await workbench.getNotifications();
+        if(notifs.length > 0){
+            for(let not of notifs){
+                const m = await not.getMessage();
+                messagePattern.test(m);
+                return m;
+            }
+        }else{
+            return false;
+        }
+    });
+    expect(message).toBeTruthy();
     return;
 }
 

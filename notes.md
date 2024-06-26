@@ -1,11 +1,17 @@
 ## Wrapping up unit tests
 
 - setting up wdio:
-  - we seem to be missing a file when trying to load it
-    when setting up the initial presets (e.g. the default presets directory
-    doesn't seem to exist, or something, need to narrow down the error more)
-    it looks like it just can't find the directory at all
-  - question: did this preset thing ever work? try ruunning as web extension
+  - some basic motion tests work
+  - *BUT* when we switch to headless mode, keybindings don't seem to be working anymore
+    - I've confirmed that we get a notification indicating that the bindings
+      were indeed loaded.
+    - clicking in the editor directly before the test doesn't seem to do the trick
+    - my guess is that I'm just typing in text; this should be clear if I show the
+      output of `editor.getText()`, but I'm having trouble because this
+      seems to yield an empty string (but only when in headless mode)
+      - okay: bottom line, this extension clearly isn't working
+        very well in headless mode, so let's abandon that feature for now
+    -
 
 - debugging existing tests:
   - commandState — for the final test, movement doesn't seem to actually occur
@@ -91,6 +97,8 @@ thoughts: things I must have to release:
 - final design of keybinding file that I'm relatively satisfied with
   - fix the repeat keybindings
   - fix default expansion
+
+WHEN PUBLISHING: get this to work on both stores (the one from microsoft and the one that vscodium uses)
 
 ## Future releases
 
