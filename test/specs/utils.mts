@@ -85,31 +85,46 @@ const MODAL_KEY_MAP: Record<string, string> = {
 };
 
 // TODO: implement count
-export async function modalKeySeq(...keySeq: (string | string[])[]){
+export async function enterModalKeys(...keySeq: (string | string[])[]){
     const workbench = await browser.getWorkbench();
     const statusBar = await (new StatusBar(workbench.locatorMap));
     let keySeqString = "";
+    let cleared;
 
-    let cleared = await browser.waitUntil(() => statusBar.getItem('No Keys Typed'));
+    console.dir(keySeqString)
+
+    console.log("[DEBUG]: waiting for old keys to clear");
+    cleared = await browser.waitUntil(() => statusBar.getItem('No Keys Typed'),
+        {interval: 20, timeout: 1200});
     expect(cleared).toBeTruthy();
 
     for(const keys_ of keySeq){
         const keys = Array.isArray(keys_) ? keys_ : [keys_];
-        const keyCodes = keys.map(k => MODAL_KEY_MAP[k] ? MODAL_KEY_MAP[k] : k);
-        const keyString = keys.map(prettifyPrefix).join('+');
-        if(keySeq){
+        const keyCodes = keys.map(k => MODAL_KEY_MAP[k] !== undefined ? MODAL_KEY_MAP[k] : k);
+        console.log("[DEBUG]: keys");
+        console.dir(keyCodes);
+        console.dir(keys);
+        const keyString = keys.map(prettifyPrefix).join('');
+        if(keySeqString){
             keySeqString += ", " + keyString;
         }else{
             keySeqString = keyString;
         }
 
+        console.log("[DEBUG]: looking for new key");
+        console.log("[DEBUG]: target '"+keySeqString+"'");
         browser.keys(keyCodes);
         let registered = await browser.waitUntil(() =>
-            statusBar.getItem('Keys Typed: '+keySeqString));
+            statusBar.getItem('Keys Typed: '+keySeqString),
+            {interval: 20, timeout: 1200});
         expect(registered).toBeTruthy();
     }
-    cleared = await browser.waitUntil(() => statusBar.getItem('No Keys Typed'));
+    console.log("[DEBUG]: waiting for new key to clear");
+    cleared = await browser.waitUntil(() => statusBar.getItem('No Keys Typed'),
+        {interval: 20, timeout: 1200});
     expect(cleared).toBeTruthy();
+
+    return;
 }
 
 export async function movesCursorInEditor(action: () => Promise<void>, by: [number, number], editor: TextEditor){

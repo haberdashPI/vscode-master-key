@@ -76,7 +76,7 @@ export const config: Options.Testrunner = {
             // optional VS Code settings
             userSettings: {
                 "editor.fontSize": 14,
-                "master-key.keyDisplayDelay": 2000,
+                "master-key.keyDisplayDelay": 100,
                 "master-key.suggestionDelay": 0,
             }
         }

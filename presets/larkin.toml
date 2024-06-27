@@ -882,7 +882,6 @@ combinedName = "comment → (←)"
 combinedDescription = "move to next (previous) comment"
 args.unit = "comment"
 args.boundary = "both"
-args.selectWhole = true
 computedArgs = { value = "count || 1" }
 
 [[bind]]
@@ -894,8 +893,7 @@ combinedName = "comment → (←)"
 description = "previous comment"
 args.unit = "comment"
 args.boundary = "both"
-args.selectWhole = true
-computedArgs = { value = "count || 1" }
+computedArgs = { value = "-(count || 1)" }
 
 [[bind]]
 path = "edit.motion.obj"

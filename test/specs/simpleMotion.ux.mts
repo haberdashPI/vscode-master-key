@@ -2,7 +2,7 @@
 
 import '@wdio/globals';
 import 'wdio-vscode-service';
-import { modalKeySeq, setBindings, setupEditor, movesCursorInEditor } from './utils.mts';
+import { enterModalKeys, setBindings, setupEditor, movesCursorInEditor } from './utils.mts';
 import { TextEditor } from 'wdio-vscode-service';
 import { Key } from "webdriverio";
 
@@ -95,21 +95,21 @@ ipsum ex labore enim. Amet do commodo et occaecat proident ex cupidatat in. Quis
 laborum ad. Dolore exercitation cillum eiusmod culpa minim duis`);
     });
 
-    it.only('Can move cursor', async() => {
+    it('Can move cursor', async() => {
         await browser.keys(Key.Escape);
         await editor.moveCursor(1, 1);
 
-        await movesCursorInEditor(() => modalKeySeq('j'), [1, 0], editor);
-        // await movesCursorInEditor(() => modalKeySeq('l'), [0, 1], editor);
-        // await movesCursorInEditor(() => modalKeySeq('h'), [0, -1], editor);
-        // await movesCursorInEditor(() => modalKeySeq('k'), [-1, 0], editor);
+        await movesCursorInEditor(() => enterModalKeys('j'), [1, 0], editor);
+        await movesCursorInEditor(() => enterModalKeys('l'), [0, 1], editor);
+        await movesCursorInEditor(() => enterModalKeys('h'), [0, -1], editor);
+        await movesCursorInEditor(() => enterModalKeys('k'), [-1, 0], editor);
     });
 
     it('Can use `repeat`', async () => {
         await editor.moveCursor(1, 1);
         await browser.keys([Key.Escape]);
 
-        await movesCursorInEditor(() => modalKeySeq([Key.Shift, 'l']), [0, 2], editor);
+        await movesCursorInEditor(() => enterModalKeys(['shift', 'l']), [0, 2], editor);
     });
 
     it('Can use `count`', async function(){
@@ -118,26 +118,20 @@ laborum ad. Dolore exercitation cillum eiusmod culpa minim duis`);
 
         for (let c = 1; c <= 3; c++) {
             await movesCursorInEditor(async () => {
-                await modalKeySeq(['shift', String(c)]);
-                await modalKeySeq('j');
+                await enterModalKeys(['shift', String(c)], 'j');
             }, [1*c, 0], editor);
             await movesCursorInEditor(async () => {
-                await modalKeySeq(['shift', String(c)]);
-                await modalKeySeq('l');
+                await enterModalKeys(['shift', String(c)], 'l');
             }, [0, 1*c], editor);
             await movesCursorInEditor(async () => {
-                await modalKeySeq(['shift', String(c)]);
-                await modalKeySeq('h');
+                await enterModalKeys(['shift', String(c)], 'h');
             }, [0, -1*c], editor);
             await movesCursorInEditor(async () => {
-                await modalKeySeq(['shift', String(c)]);
-                await modalKeySeq('k');
+                await enterModalKeys(['shift', String(c)], 'k');
             }, [-1*c, 0], editor);
         }
         await movesCursorInEditor(async () => {
-            await modalKeySeq(['shift', '1']);
-            await modalKeySeq(['shift', '0']);
-            await modalKeySeq('l');
+            await enterModalKeys(['shift', '1'], ['shift', '0'], 'l');
         }, [0, 10], editor);
     });
 });
