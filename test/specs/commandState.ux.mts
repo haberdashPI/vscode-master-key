@@ -90,7 +90,18 @@ describe('Command State', () => {
         await editor.moveCursor(1, 1);
 
         await movesCursorInEditor(async () => {
-            await enterModalKeys([Key.Control, 'h'], [Key.Shift, Key.Control, "1"]);
+            await enterModalKeys(['ctrl', 'h'], ['shift', 'ctrl', "1"]);
         }, [0, 1], editor);
+    });
+
+    it.only("Handles Flagged Prefixs", async function(){
+        await editor.moveCursor(1, 1);
+
+        await movesCursorInEditor(async () => {
+            await enterModalKeys(['ctrl', 'shift', 'w']);
+        }, [0, 4], editor);
+
+        await enterModalKeys(['ctrl', 'l'], ['ctrl', 'shift', 'w']);
+        expect(editor.getSelectedText()).toEqual(' is');
     });
 });

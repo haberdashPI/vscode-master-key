@@ -1,5 +1,8 @@
 ## Wrapping up unit tests
 
+- NOTE: it's not clear the `userSettings` are actually getting passed
+  to VSCode, I should debug this (would help with speed of tests as well)
+
 - setting up wdio:
   - some basic motion tests work
     - but: typing is flaky, it doesn't always work

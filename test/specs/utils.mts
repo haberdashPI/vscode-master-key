@@ -8,6 +8,7 @@ import { Input, InputBox, StatusBar, TextEditor, sleep } from 'wdio-vscode-servi
 export async function setBindings(str: string){
     const workbench = await browser.getWorkbench();
     browser.keys([Key.Ctrl, 'n']);
+    await sleep(500);
 
     await workbench.executeCommand('Select Language Mode');
     let input = await ((new InputBox(workbench.locatorMap)).wait());
@@ -129,10 +130,10 @@ export async function enterModalKeys(...keySeq: ModalKey[]){
     for(const keys_ of keySeq){
         const keys = modalKeyToStringArray(keys_);
         const keyCodes = keys.map(k => MODAL_KEY_MAP[k] !== undefined ? MODAL_KEY_MAP[k] : k);
-        // console.log("[DEBUG]: keys");
-        // console.dir(keys_);
-        // console.dir(keyCodes);
-        // console.dir(keys);
+        console.log("[DEBUG]: keys");
+        console.dir(keys_);
+        console.dir(keyCodes);
+        console.dir(keys);
         const keyCount = modalKeyCount(keys_);
         if(keyCount === undefined){
             let keyString = keys.map(prettifyPrefix).join('');
@@ -146,15 +147,15 @@ export async function enterModalKeys(...keySeq: ModalKey[]){
         }
         let currentKeySeqString = (count ? count + "× " : '') + keySeqString;
 
-        // console.log("[DEBUG]: looking for new key");
-        // console.log("[DEBUG]: target '"+currentKeySeqString+"'");
+        console.log("[DEBUG]: looking for new key");
+        console.log("[DEBUG]: target '"+currentKeySeqString+"'");
         browser.keys(keyCodes);
         let registered = await browser.waitUntil(() =>
             statusBar.getItem('Keys Typed: '+currentKeySeqString),
             {interval: 20, timeout: 1200});
         expect(registered).toBeTruthy();
     }
-    // console.log("[DEBUG]: waiting for new key to clear");
+    console.log("[DEBUG]: waiting for new key to clear");
     cleared = await browser.waitUntil(() => statusBar.getItem('No Keys Typed'),
         {interval: 20, timeout: 1200});
     expect(cleared).toBeTruthy();

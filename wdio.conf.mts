@@ -75,9 +75,13 @@ export const config: Options.Testrunner = {
             workspacePath: __dirname,
             // optional VS Code settings
             userSettings: {
+                // NOTE: these are ignored
                 "editor.fontSize": 14,
                 "master-key.keyDisplayDelay": 20,
                 "master-key.suggestionDelay": 0,
+            },
+            vscodeArgs: {
+                "profile": "debug-profile"
             }
         }
     }],
