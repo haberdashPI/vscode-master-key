@@ -85,41 +85,76 @@ const MODAL_KEY_MAP: Record<string, string> = {
 };
 
 // TODO: implement count
-export async function enterModalKeys(...keySeq: (string | string[])[]){
+interface ModalCount {
+    key: string | string[]
+    count: number
+}
+type ModalKey = string | string[] | ModalCount;
+function modalKeyToStringArray(key: ModalKey): string[] {
+    let simpleKey: string | string[];
+    if((key as ModalCount).key){
+        simpleKey = (key as ModalCount).key;
+    }else{
+        simpleKey = (key as string | string[]);
+    }
+    if(Array.isArray(simpleKey)){
+        return simpleKey;
+    }else{
+        return [simpleKey];
+    }
+};
+
+function modalKeyCount(key: ModalKey){
+    if((key as ModalCount).key){
+        return (key as ModalCount).count;
+    }else{
+        return undefined;
+    }
+}
+
+export async function enterModalKeys(...keySeq: ModalKey[]){
     const workbench = await browser.getWorkbench();
     const statusBar = await (new StatusBar(workbench.locatorMap));
     let keySeqString = "";
     let cleared;
 
-    console.dir(keySeqString)
+    console.dir(keySeqString);
 
     console.log("[DEBUG]: waiting for old keys to clear");
     cleared = await browser.waitUntil(() => statusBar.getItem('No Keys Typed'),
         {interval: 20, timeout: 1200});
     expect(cleared).toBeTruthy();
 
+    let count = 0;
     for(const keys_ of keySeq){
-        const keys = Array.isArray(keys_) ? keys_ : [keys_];
+        const keys = modalKeyToStringArray(keys_);
         const keyCodes = keys.map(k => MODAL_KEY_MAP[k] !== undefined ? MODAL_KEY_MAP[k] : k);
-        console.log("[DEBUG]: keys");
-        console.dir(keyCodes);
-        console.dir(keys);
-        const keyString = keys.map(prettifyPrefix).join('');
-        if(keySeqString){
-            keySeqString += ", " + keyString;
+        // console.log("[DEBUG]: keys");
+        // console.dir(keys_);
+        // console.dir(keyCodes);
+        // console.dir(keys);
+        const keyCount = modalKeyCount(keys_);
+        if(keyCount === undefined){
+            let keyString = keys.map(prettifyPrefix).join('');
+            if(keySeqString){
+                keySeqString += ", " + keyString;
+            }else{
+                keySeqString = keyString;
+            }
         }else{
-            keySeqString = keyString;
+            count = count * 10 + keyCount;
         }
+        let currentKeySeqString = (count ? count + "× " : '') + keySeqString;
 
-        console.log("[DEBUG]: looking for new key");
-        console.log("[DEBUG]: target '"+keySeqString+"'");
+        // console.log("[DEBUG]: looking for new key");
+        // console.log("[DEBUG]: target '"+currentKeySeqString+"'");
         browser.keys(keyCodes);
         let registered = await browser.waitUntil(() =>
-            statusBar.getItem('Keys Typed: '+keySeqString),
+            statusBar.getItem('Keys Typed: '+currentKeySeqString),
             {interval: 20, timeout: 1200});
         expect(registered).toBeTruthy();
     }
-    console.log("[DEBUG]: waiting for new key to clear");
+    // console.log("[DEBUG]: waiting for new key to clear");
     cleared = await browser.waitUntil(() => statusBar.getItem('No Keys Typed'),
         {interval: 20, timeout: 1200});
     expect(cleared).toBeTruthy();

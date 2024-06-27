@@ -5,6 +5,8 @@
     - but: typing is flaky, it doesn't always work
       implementing function that reviews the status bar to
       verify that the key was really pressed
+- TODO: now that our framework is working better, make some tests
+  for the command palette
 
 - debugging existing tests:
   - commandState — for the final test, movement doesn't seem to actually occur
@@ -20,7 +22,6 @@ BUG: search highlighting clears almost immediately
 
 BUG: when there are no keys defined the visual keybinding output includes `undefined`
 
-NOTE: ux tests are kinda buggy, is it worth implementing all of these?
 unit tests: edge cases with recording edits
   - how about when I switch documents?
   - how about when we don't start with normal mode commands?

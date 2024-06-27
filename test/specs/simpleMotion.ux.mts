@@ -112,26 +112,27 @@ laborum ad. Dolore exercitation cillum eiusmod culpa minim duis`);
         await movesCursorInEditor(() => enterModalKeys(['shift', 'l']), [0, 2], editor);
     });
 
-    it('Can use `count`', async function(){
+    it.only('Can use `count`', async function(){
         await editor.moveCursor(1, 1);
         await browser.keys([Key.Escape]);
 
         for (let c = 1; c <= 3; c++) {
             await movesCursorInEditor(async () => {
-                await enterModalKeys(['shift', String(c)], 'j');
+                await enterModalKeys({count: c, key:['shift', String(c)]}, 'j');
             }, [1*c, 0], editor);
             await movesCursorInEditor(async () => {
-                await enterModalKeys(['shift', String(c)], 'l');
+                await enterModalKeys({count: c, key: ['shift', String(c)]}, 'l');
             }, [0, 1*c], editor);
             await movesCursorInEditor(async () => {
-                await enterModalKeys(['shift', String(c)], 'h');
+                await enterModalKeys({count: c, key: ['shift', String(c)]}, 'h');
             }, [0, -1*c], editor);
             await movesCursorInEditor(async () => {
-                await enterModalKeys(['shift', String(c)], 'k');
+                await enterModalKeys({count: c, key: ['shift', String(c)]}, 'k');
             }, [-1*c, 0], editor);
         }
         await movesCursorInEditor(async () => {
-            await enterModalKeys(['shift', '1'], ['shift', '0'], 'l');
+            await enterModalKeys({count: 1, key: ['shift', '1']},
+                                 {count: 0, key: ['shift', '0']}, 'l');
         }, [0, 10], editor);
     });
 });

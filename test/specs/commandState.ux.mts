@@ -1,7 +1,7 @@
 // start with just some basic tests to verify all is well
 
 import { browser, expect } from '@wdio/globals';
-import { setBindings, setupEditor, movesCursorInEditor } from './utils.mts';
+import { setBindings, setupEditor, movesCursorInEditor, enterModalKeys } from './utils.mts';
 import 'wdio-vscode-service';
 import { sleep, TextEditor } from 'wdio-vscode-service';
 import { Key } from "webdriverio";
@@ -90,8 +90,7 @@ describe('Command State', () => {
         await editor.moveCursor(1, 1);
 
         await movesCursorInEditor(async () => {
-            await browser.keys([Key.Control, 'h']);
-            await browser.keys([Key.Shift, Key.Control, "1"]);
+            await enterModalKeys([Key.Control, 'h'], [Key.Shift, Key.Control, "1"]);
         }, [0, 1], editor);
     });
 });
