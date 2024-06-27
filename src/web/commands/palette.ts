@@ -3,7 +3,7 @@ import { prettifyPrefix } from '../utils';
 import { withState } from '../state';
 import { currentKeybindings, filterBindingFn } from '../keybindings';
 import { PREFIX_CODE, prefixCodes } from './prefix';
-import { MODE, defaultMode } from './mode';
+import { MODE, defaultMode, modeSpecs } from './mode';
 import { IConfigKeyBinding, PrefixCodes } from '../keybindings/processing';
 import { RunCommandsArgs, doCommandsCmd } from './do';
 import { reverse, uniqBy, sortBy } from 'lodash';
@@ -93,8 +93,9 @@ export async function commandPalette(args_: unknown,
         picks = sortBy(picks, x => -x.args.priority);
         let filteredPicks: typeof picks = [];
 
-        if(picks.length === 0){
+        if(picks.length === 0 && !modeSpecs[mode].recordEdits){
             vscode.window.showErrorMessage(`Palette cannot be shown for mode '${mode}', there are no bindings.`);
+            return;
         }
 
         let lastPick = picks[0];
@@ -128,16 +129,17 @@ export async function commandPalette(args_: unknown,
                 picker.dispose();
             }
         });
-        picker.onDidHide(async _ => {
+        picker.onDidHide(() => {
             vscode.commands.executeCommand('setContext', 'master-key.keybindingPaletteBindingMode', false);
             vscode.commands.executeCommand('setContext', 'master-key.keybindingPaletteOpen', false);
             if(!accepted){
-                await withState(async s => s.reset().resolve());
+                return withState(async s => s.reset().resolve());
             }
+            return Promise.resolve();
         });
         vscode.commands.executeCommand('setContext', 'master-key.keybindingPaletteOpen', true);
         picker.show();
-        // when this the palette accepts keybinding presses (rather than searchbing
+        // when this the palette accepts keybinding presses (rather than searching
         // bindings), dispose of the palette any time a normal key binding key is pressed
         // (e.g. ones that add to the prefix or execute a command)
         await withState(async state => {
