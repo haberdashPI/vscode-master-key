@@ -7,7 +7,7 @@ import { prettifyPrefix } from '../utils';
 
 let keyStatusBar: vscode.StatusBarItem | undefined = undefined;
 
-const KEY_DISPLAY_DELAY_DEFAULT = 40;
+const KEY_DISPLAY_DELAY_DEFAULT = process.env.TESTING ? 100 : 500;
 let keyDisplayDelay: number = KEY_DISPLAY_DELAY_DEFAULT;
 let statusUpdates = Number.MIN_SAFE_INTEGER;
 
@@ -42,14 +42,9 @@ function updateKeyStatus(values: Map<string, unknown>){
 }
 
 function updateConfig(event?: vscode.ConfigurationChangeEvent){
-    if(!event || event.affectsConfiguration('master-key')){
+    if((!event && !process.env.TESTING) || event?.affectsConfiguration('master-key')){
         let config = vscode.workspace.getConfiguration('master-key');
-        let configDelay = config.get<number>('keyDisplayDelay');
-        if(configDelay !== undefined){
-            keyDisplayDelay = configDelay;
-        }else{
-            keyDisplayDelay = KEY_DISPLAY_DELAY_DEFAULT;
-        }
+        keyDisplayDelay = config.get<number>('keyDisplayDelay') || KEY_DISPLAY_DELAY_DEFAULT;
     }
 }
 

@@ -197,15 +197,10 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
 }
 
 function updateConfig(event?: vscode.ConfigurationChangeEvent){
-    if(!event || event.affectsConfiguration('master-key')){
+    if((!event && !process.env.TESTING) || event?.affectsConfiguration('master-key')){
         let config = vscode.workspace.getConfiguration('master-key');
         maxHistory = (config.get<number>('maxCommandHistory') || 1024);
-        let configDelay = config.get<number>('suggestionDelay');
-        if(configDelay !== undefined){
-            paletteDelay = configDelay;
-        }else{
-            paletteDelay = PALETTE_DELAY_DEFAULT;
-        }
+        paletteDelay = config.get<number>('suggestionDelay') || PALETTE_DELAY_DEFAULT;
     }
 }
 

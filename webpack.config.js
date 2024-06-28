@@ -13,13 +13,13 @@ const path = require('path');
 const webpack = require('webpack');
 
 /**
+ * webExtensionConfig: webpack configuration function
  *
  * @param {Record<string, string>} env
  * @param {Record<string, string>} argv
  * @returns {Configuration}
  */
-function webExtensionConfig(env, argv) {
-    return {
+const webExtensionConfig = (env, argv) => ({
     mode: 'none', // this leaves the source code as close as possible to the original (when packaging we set this to 'production')
     target: 'webworker', // extensions run in a webworker context
     entry: {
@@ -76,7 +76,6 @@ function webExtensionConfig(env, argv) {
     infrastructureLogging: {
         level: "log", // enables logging required for problem matchers
     },
-}
-}
+});
 
 module.exports = webExtensionConfig;

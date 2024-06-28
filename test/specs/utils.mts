@@ -34,7 +34,7 @@ export async function setBindings(str: string){
                 if(messagePattern.test(m)){
                     return m;
                 }else{
-                    // console.log("[UTIL]: notification message — "+m);
+                    console.log("[UTIL]: notification message — "+m);
                 }
             }
         }else{
@@ -128,8 +128,9 @@ export async function enterModalKeys(...keySeq: ModalKey[]){
     // console.dir(keySeqString);
 
     // console.log("[DEBUG]: waiting for old keys to clear");
+    let waitOpts = {interval: 50, timeout: 1000};
     cleared = await browser.waitUntil(() => statusBar.getItem('No Keys Typed'),
-        {interval: 8, timeout: 1000});
+        waitOpts);
     expect(cleared).toBeTruthy();
 
     let count = 0;
@@ -158,12 +159,12 @@ export async function enterModalKeys(...keySeq: ModalKey[]){
         browser.keys(keyCodes);
         let registered = await browser.waitUntil(() =>
             statusBar.getItem('Keys Typed: '+currentKeySeqString),
-            {interval: 8, timeout: 1000});
+            waitOpts);
         expect(registered).toBeTruthy();
     }
     // console.log("[DEBUG]: waiting for new key to clear");
     cleared = await browser.waitUntil(() => statusBar.getItem('No Keys Typed'),
-        {interval: 8, timeout: 1000});
+        waitOpts);
     expect(cleared).toBeTruthy();
 
     return;

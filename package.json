@@ -156,14 +156,12 @@
         "master-key.suggestionDelay": {
           "title": "Suggestion Delay",
           "type": "integer",
-          "description": "Time to wait, in milliseconds, before showing command suggestions for multi-key commands (set to 0 to disable)",
-          "default": 500
+          "description": "Time to wait, in milliseconds, before showing command suggestions for multi-key commands (set to 0 to disable)"
         },
         "master-key.keyDisplayDelay": {
           "title": "Key Display Delay",
           "type": "integer",
-          "description": "Time to wait, in milliseconds, before clearing status bar display of the most recently pressed key sequence. (set to 0 to hide display entirely)",
-          "default": 500
+          "description": "Time to wait, in milliseconds, before clearing status bar display of the most recently pressed key sequence. (set to 0 to hide display entirely)"
         },
         "master-key.searchMatchBackground": {
           "title": "Background of current search match",
