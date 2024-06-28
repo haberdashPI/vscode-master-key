@@ -1,4 +1,4 @@
-## Wrapping up unit tests
+## Wrapping up unit tests / stability / coverage
 
 WIP: translating all of the old vscode-extension-tester tests over to
      wdio-vscode-service tests
@@ -37,8 +37,12 @@ UNIT TEST: verify that larkin can be properly loaded/parsed
 code coverage?
 https://istanbul.js.org/
 
+TODO: switch to public repo status, include a license, add a note at the top
+about the repo being in a WIP status
+
 CI??
-  - probably: I can use xvfb
+  - yes: I can use xvfb
+    refer to https://github.com/webdriverio-community/wdio-vscode-service/blob/main/.github/workflows/ci.yml for instance
 
 ## Visual Documentation Improvements
 
@@ -46,8 +50,6 @@ NOTE: `path` entries should not have documentation; rather there should be a sep
 (perhaps comments?) for how to enter text that becomes part of the markdown output
 
 Visual doc improvements:
-
-IMPROVEMENT: upon activating bindings, show the visual and cheetsheet documentation
 
 IMPROVEMENT: show keybinding tips (for those general commands useful for examining documentation) in the visual documentation
 for
@@ -64,13 +66,17 @@ for
 write code to convert the toml file to a markdown of organized tables of keybindings
 and provide a command that opens the Markdown preview of this file
 
+IMPROVEMENT: upon activating bindings, show the visual and cheetsheet documentation
+
 DOCUMENTATION: in documenting macro playback note the limitations of recording the keyboard
 (e.g. that it only records inserts; any modifiers are espected to be commands
 that are recorded)
 
 ## Binding Cleanup
 
-Split out any of the commands that are really custom for me that don't make sense to publish. Pair down some of the required extensions. Offer to install extensions
+- Split out any of the commands that are really custom for me that don't make sense to publish.
+- Pair down some of the required extensions.
+- Offer to install extensions? (maybe when a keybinding fails to run??)
 
 ## Before first release
 
@@ -79,16 +85,16 @@ thoughts: things I must have to release:
 - well documented default keybindings
 - keybinding documentation features
   - markdown output / html
-- mode customization
-  - have an option to allow a default command
++ mode customization
+  + have an option to allow a default command
     that operates on all keys that *aren't* specified
     OR that pass a regex
 - modernized selection utilities
   - good documentation
   - modern build setup
-- final design of keybinding file that I'm relatively satisfied with
-  - fix the repeat keybindings
-  - fix default expansion
++ final design of keybinding file that I'm relatively satisfied with
+  + fix the repeat keybindings
+  + fix default expansion
 
 WHEN PUBLISHING: get this to work on both stores (the one from microsoft and the one that vscodium uses)
 

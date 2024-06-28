@@ -1,5 +1,12 @@
 # Master Key
 
+[![Project Status: WIP – Initial development is in progress, but there has not yet been a stable, usable release suitable for the public.](https://img.shields.io/badge/Repo%20Status-WIP-yellow)](https://www.repostatus.org/#active)
+
+> [!WARNING]
+> 🚧 Master Key is still under construction. 🚧
+>
+> The README reflects the intended state for a 0.1.0 release at which point this extension will be published to VSCode's extension marketplace. Expect to find missing features, bugs and incomplete documentation.
+
 Master key helps you to learn, create and use powerful keybindings.
 
 If:
