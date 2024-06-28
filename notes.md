@@ -1,19 +1,12 @@
 ## Wrapping up unit tests
 
-- NOTE: it's not clear the `userSettings` are actually getting passed
-  to VSCode, I should debug this (would help with speed of tests as well)
-  -- seems like I can't pass options to vscode (at least in web mode)
-  -- workaround: use webpack compile options to change settings
-  -- TODO: verify that the settings were actually applied
-
-- setting up wdio:
-  - some basic motion tests work
-    - just finished: waiting until keys indicate that they've been pressed
-- TODO: now that our framework is working a little better, make some tests
-  for the command palette
-
-- debugging existing tests:
-  - commandState — for the final test, movement doesn't seem to actually occur
+WIP: translating all of the old vscode-extension-tester tests over to
+     wdio-vscode-service tests
+    + simpleMotions
+    + commandState
+    | searchMotions
+    - captureKeys
+    - replay
 
 BUG: remove command needs to update config (e.g. remove mode and definitions)
 
@@ -45,6 +38,7 @@ code coverage?
 https://istanbul.js.org/
 
 CI??
+  - probably: I can use xvfb
 
 ## Visual Documentation Improvements
 
