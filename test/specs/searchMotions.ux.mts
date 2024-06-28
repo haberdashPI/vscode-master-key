@@ -1,7 +1,7 @@
 import { browser, expect } from '@wdio/globals';
 import { Key } from 'webdriverio';
-import { setBindings, setupEditor, movesCursorInEditor, enterModalKeys, cursorToTop } from './utils.mts';
-import { InputBox, TextEditor, Workbench } from 'wdio-vscode-service';
+import { movesCursorTo, setBindings, setupEditor, movesCursorInEditor, enterModalKeys, cursorToTop } from './utils.mts';
+import { sleep, InputBox, TextEditor, Workbench } from 'wdio-vscode-service';
 
 describe('Search motion command', () => {
     let editor: TextEditor;
@@ -203,14 +203,14 @@ labore elit occaecat cupidatat non POINT_B.`);
     });
 
     // TODO: currently failing
-    it.only('Can do a wrap-around search', async () => {
+    it('Can do a wrap-around search', async () => {
         await editor.moveCursor(1, 1);
         await enterModalKeys('escape');
 
         await movesCursorInEditor(async () => {
             await enterModalKeys({key: '/', updatesStatus: false});
             const input = await (new InputBox(workbench.locatorMap)).wait();
-            await input.setText('POINT_');
+            await input.setText('POINT_A');
             await input.confirm();
 
             await enterModalKeys('n');
@@ -219,7 +219,7 @@ labore elit occaecat cupidatat non POINT_B.`);
 
         await cursorToTop(editor);
 
-        await movesCursorInEditor(async () => {
+        await movesCursorTo(async () => {
             await enterModalKeys('w', {key: '/', updatesStatus: false});
             const input = await (new InputBox(workbench.locatorMap)).wait();
             await input.setText('POINT_A');
@@ -227,6 +227,6 @@ labore elit occaecat cupidatat non POINT_B.`);
 
             await enterModalKeys('n');
             await enterModalKeys('n');
-        }, [0, 10], editor);
+        }, [1, 11], editor);
     });
 });

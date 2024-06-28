@@ -48,7 +48,8 @@ export async function setBindings(str: string){
 export async function cursorToTop(editor: TextEditor){
     (await editor.elem).click();
     await browser.keys([Key.Ctrl, 'A']);
-    await browser.keys(Key.ArrowRight);
+    await browser.keys(Key.ArrowLeft);
+    await sleep(100);
 }
 
 export async function setupEditor(str: string){
@@ -203,4 +204,10 @@ export async function movesCursorInEditor(action: () => Promise<void>, by: [numb
     let ydiff = newpos[0] - oldpos[0];
     let xdiff = newpos[1] - oldpos[1];
     expect({y: ydiff, x: xdiff}).toEqual({y: by[0], x: by[1]});
+}
+
+export async function movesCursorTo(action: () => Promise<void>, by: [number, number], editor: TextEditor){
+    await action();
+    let newpos = await editor.getCoordinates();
+    expect({y: newpos[0], x: newpos[1]}).toEqual({y: by[0], x: by[1]});
 }
