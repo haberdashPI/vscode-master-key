@@ -45,6 +45,12 @@ export async function setBindings(str: string){
     return;
 }
 
+export async function cursorToTop(editor: TextEditor){
+    (await editor.elem).click();
+    await browser.keys([Key.Ctrl, 'A']);
+    await browser.keys(Key.ArrowRight);
+}
+
 export async function setupEditor(str: string){
     const workbench = await browser.getWorkbench();
     browser.keys([Key.Ctrl, 'n']);
@@ -61,9 +67,7 @@ export async function setupEditor(str: string){
 
     await editor.setText(str);
 
-    (await editor.elem).click();
-    await browser.keys([Key.Ctrl, 'A']);
-    await browser.keys(Key.ArrowRight);
+    await cursorToTop(editor);
 
     return editor;
 }

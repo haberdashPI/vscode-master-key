@@ -4,7 +4,7 @@ WIP: translating all of the old vscode-extension-tester tests over to
      wdio-vscode-service tests
     + simpleMotions
     + commandState
-    | searchMotions
+    | searchMotions: currently failing test is marked
     - captureKeys
     - replay
 

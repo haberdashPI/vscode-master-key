@@ -1,6 +1,6 @@
 import { browser, expect } from '@wdio/globals';
 import { Key } from 'webdriverio';
-import { setBindings, setupEditor, movesCursorInEditor, enterModalKeys } from './utils.mts';
+import { setBindings, setupEditor, movesCursorInEditor, enterModalKeys, cursorToTop } from './utils.mts';
 import { InputBox, TextEditor, Workbench } from 'wdio-vscode-service';
 
 describe('Search motion command', () => {
@@ -165,7 +165,7 @@ labore elit occaecat cupidatat non POINT_B.`);
         }, [-1, 47], editor);
     });
 
-    it.only('follows `skip` argument', async () => {
+    it('follows `skip` argument', async () => {
         await editor.moveCursor(1, 1);
         await enterModalKeys('escape');
 
@@ -178,5 +178,55 @@ labore elit occaecat cupidatat non POINT_B.`);
         }, [0, 39], editor);
     });
 
+    it('handles case sensitive search', async () => {
+        await editor.moveCursor(1, 1);
+        await enterModalKeys('escape');
 
+        await movesCursorInEditor(async () => {
+            await enterModalKeys({key: '/', updatesStatus: false});
+            const input = await (new InputBox(workbench.locatorMap)).wait();
+            await input.setText('POINT_');
+            await input.confirm();
+
+            await enterModalKeys('n');
+        }, [0, 39], editor);
+
+        await editor.moveCursor(1, 1);
+        await movesCursorInEditor(async () => {
+            await enterModalKeys({key: [Key.Control, '/'], updatesStatus: false});
+            const input = await (new InputBox(workbench.locatorMap)).wait();
+            await input.setText('POINT_');
+            await input.confirm();
+
+            await enterModalKeys('n');
+        }, [2, 34], editor);
+    });
+
+    // TODO: currently failing
+    it.only('Can do a wrap-around search', async () => {
+        await editor.moveCursor(1, 1);
+        await enterModalKeys('escape');
+
+        await movesCursorInEditor(async () => {
+            await enterModalKeys({key: '/', updatesStatus: false});
+            const input = await (new InputBox(workbench.locatorMap)).wait();
+            await input.setText('POINT_');
+            await input.confirm();
+
+            await enterModalKeys('n');
+            await enterModalKeys('n');
+        }, [0, 39], editor);
+
+        await cursorToTop(editor);
+
+        await movesCursorInEditor(async () => {
+            await enterModalKeys('w', {key: '/', updatesStatus: false});
+            const input = await (new InputBox(workbench.locatorMap)).wait();
+            await input.setText('POINT_A');
+            await input.confirm();
+
+            await enterModalKeys('n');
+            await enterModalKeys('n');
+        }, [0, 10], editor);
+    });
 });
