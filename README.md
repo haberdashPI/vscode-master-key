@@ -5,7 +5,7 @@
 > [!WARNING]
 > 🚧 Master Key is still under construction. 🚧
 >
-> The README is a WIP document that will eventually reflect the intended state for a 0.1.0 release at which point this extension will be published to VSCode's extension marketplace. Expect to find missing features, bugs and incomplete documentation.
+> The README is a WIP document that will eventually reflect the intended state for a 0.1.0 release at which point this extension will be published to VSCode's extension marketplace. For now expect to find missing features, a variety of bugs and incomplete documentation.
 
 Master key helps you to learn, create and use powerful keybindings.
 
