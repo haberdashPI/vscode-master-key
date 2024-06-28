@@ -92,15 +92,16 @@ const MODAL_KEY_MAP: Record<string, string> = {
 };
 
 // TODO: implement count
-interface ModalCount {
+interface ModalKeySpec {
     key: string | string[]
-    count: number
+    count?: number
+    updatesStatus?: boolean
 }
-type ModalKey = string | string[] | ModalCount;
+type ModalKey = string | string[] | ModalKeySpec;
 function modalKeyToStringArray(key: ModalKey): string[] {
     let simpleKey: string | string[];
-    if((key as ModalCount).key){
-        simpleKey = (key as ModalCount).key;
+    if((key as ModalKeySpec).key){
+        simpleKey = (key as ModalKeySpec).key;
     }else{
         simpleKey = (key as string | string[]);
     }
@@ -112,10 +113,23 @@ function modalKeyToStringArray(key: ModalKey): string[] {
 };
 
 function modalKeyCount(key: ModalKey){
-    if((key as ModalCount).key){
-        return (key as ModalCount).count;
+    if((key as ModalKeySpec).key){
+        return (key as ModalKeySpec).count;
     }else{
         return undefined;
+    }
+}
+
+function modalKeyUpdateStatus(key: ModalKey){
+    if((key as ModalKeySpec).key){
+        let update = (key as ModalKeySpec).updatesStatus;
+        if(update === undefined){
+            return true;
+        }else{
+            return update;
+        }
+    }else{
+        return true;
     }
 }
 
@@ -134,7 +148,9 @@ export async function enterModalKeys(...keySeq: ModalKey[]){
     expect(cleared).toBeTruthy();
 
     let count = 0;
+    let checkCleared = true;
     for(const keys_ of keySeq){
+        checkCleared = true;
         const keys = modalKeyToStringArray(keys_);
         const keyCodes = keys.map(k => MODAL_KEY_MAP[k] !== undefined ? MODAL_KEY_MAP[k] : k);
         // console.log("[DEBUG]: keys");
@@ -154,18 +170,24 @@ export async function enterModalKeys(...keySeq: ModalKey[]){
         }
         let currentKeySeqString = (count ? count + "× " : '') + keySeqString;
 
-        // console.log("[DEBUG]: looking for new key");
-        // console.log("[DEBUG]: target '"+currentKeySeqString+"'");
         browser.keys(keyCodes);
-        let registered = await browser.waitUntil(() =>
-            statusBar.getItem('Keys Typed: '+currentKeySeqString),
-            waitOpts);
-        expect(registered).toBeTruthy();
+        if(modalKeyUpdateStatus(keys_)){
+            // console.log("[DEBUG]: looking for new key");
+            // console.log("[DEBUG]: target '"+currentKeySeqString+"'");
+            let registered = await browser.waitUntil(() =>
+                statusBar.getItem('Keys Typed: '+currentKeySeqString),
+                waitOpts);
+            expect(registered).toBeTruthy();
+        }else{
+            checkCleared = false;
+        }
     }
-    // console.log("[DEBUG]: waiting for new key to clear");
-    cleared = await browser.waitUntil(() => statusBar.getItem('No Keys Typed'),
-        waitOpts);
-    expect(cleared).toBeTruthy();
+    if(checkCleared){
+        // console.log("[DEBUG]: waiting for new key to clear");
+        cleared = await browser.waitUntil(() => statusBar.getItem('No Keys Typed'),
+            waitOpts);
+        expect(cleared).toBeTruthy();
+    }
 
     return;
 }

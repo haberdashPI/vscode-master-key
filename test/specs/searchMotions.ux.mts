@@ -1,10 +1,12 @@
 import { browser, expect } from '@wdio/globals';
 import { Key } from 'webdriverio';
 import { setBindings, setupEditor, movesCursorInEditor, enterModalKeys } from './utils.mts';
-import { InputBox, TextEditor } from 'wdio-vscode-service';
+import { InputBox, TextEditor, Workbench } from 'wdio-vscode-service';
 
-describe('Search motion commands', () => {
+describe('Search motion command', () => {
     let editor: TextEditor;
+    let workbench: Workbench;
+
     before(async () => {
         await setBindings(`
             [header]
@@ -136,17 +138,15 @@ describe('Search motion commands', () => {
         editor = await setupEditor(`foobar bum POINT_A Officia voluptate ex point_a commodo esse laborum velit
 ipsum velit excepteur sunt cillum nulla adipisicing cupidatat. Laborum officia do mollit do
 labore elit occaecat cupidatat non POINT_B.`);
+        workbench = await browser.getWorkbench();
     });
 
     it('jumps to search location', async () => {
         await editor.moveCursor(1, 1);
         await enterModalKeys('escape');
-        const workbench = await browser.getWorkbench();
 
         await movesCursorInEditor(async () => {
-            // we don't use enterModalKeys because `/` doesn't show up in the status bar
-            // (and `enterModalKeys` expects this to happen)
-            await browser.keys('/');
+            await enterModalKeys({key: '/', updatesStatus: false});
             const input = await (new InputBox(workbench.locatorMap)).wait();
             await input.setText('POINT_A');
             await input.confirm();
@@ -156,15 +156,27 @@ labore elit occaecat cupidatat non POINT_B.`);
     it('can jump backwards', async () => {
         await editor.moveCursor(2, 1);
         await enterModalKeys('escape');
-        const workbench = await browser.getWorkbench();
 
         await movesCursorInEditor(async () => {
-            // we don't use enterModalKeys because `shift+/` doesn't show up in the status bar
-            // (and `enterModalKeys` expects this to happen)
-            await browser.keys([Key.Shift, '/']);
+            await enterModalKeys({key: ['shift', '/'], updatesStatus: false});
             const input = await (new InputBox(workbench.locatorMap)).wait();
             await input.setText('POINT_A');
             await input.confirm();
         }, [-1, 47], editor);
     });
+
+    it.only('follows `skip` argument', async () => {
+        await editor.moveCursor(1, 1);
+        await enterModalKeys('escape');
+
+        await movesCursorInEditor(async () => {
+            await enterModalKeys(['shift', '2'], {key: '/', updatesStatus: false});
+            const input = await (new InputBox(workbench.locatorMap)).wait();
+
+            await input.setText('POINT_A');
+            await input.confirm();
+        }, [0, 39], editor);
+    });
+
+
 });
