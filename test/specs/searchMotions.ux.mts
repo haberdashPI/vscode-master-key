@@ -229,4 +229,27 @@ labore elit occaecat cupidatat non POINT_B.`);
             await enterModalKeys('n');
         }, [1, 11], editor);
     });
+
+    it('Can handle accept after', async () => {
+        await editor.moveCursor(1, 1);
+        await enterModalKeys('escape');
+
+        await movesCursorInEditor(async () => {
+            await enterModalKeys({key: 't', updatesStatus: false});
+            browser.keys('p');
+            // TODO: wait for mode to return to 'normal'
+        }, [0, 10], editor);
+
+        await movesCursorInEditor(async () => {
+            await enterModalKeys({key: 't', updatesStatus: false});
+            browser.keys(Key.Escape);
+            // TODO: wait for mode to return to 'normal'
+        }, [0, 0], editor);
+
+        await movesCursorInEditor(async () => {
+            await enterModalKeys({key: 't', updatesStatus: false});
+            browser.keys('p');
+            // TODO: wait for mode to return to 'normal'
+        }, [0, 20], editor);
+    });
 });
