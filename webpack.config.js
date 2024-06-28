@@ -7,13 +7,19 @@
 'use strict';
 
 //@ts-check
-/** @typedef {import('webpack').Configuration} WebpackConfig **/
+/** @typedef {import('webpack').Configuration} Configuration **/
 
 const path = require('path');
 const webpack = require('webpack');
 
-/** @type WebpackConfig */
-const webExtensionConfig = {
+/**
+ *
+ * @param {Record<string, string>} env
+ * @param {Record<string, string>} argv
+ * @returns {Configuration}
+ */
+function webExtensionConfig(env, argv) {
+    return {
     mode: 'none', // this leaves the source code as close as possible to the original (when packaging we set this to 'production')
     target: 'webworker', // extensions run in a webworker context
     entry: {
@@ -56,6 +62,9 @@ const webExtensionConfig = {
         new webpack.ProvidePlugin({
             process: 'process/browser', // provide a shim for the global `process` variable
         }),
+        new webpack.DefinePlugin({
+            'process.env.TESTING': JSON.stringify(env['testing'] || false)
+        })
     ],
     externals: {
         'vscode': 'commonjs vscode', // ignored because it doesn't exist
@@ -67,6 +76,7 @@ const webExtensionConfig = {
     infrastructureLogging: {
         level: "log", // enables logging required for problem matchers
     },
-};
+}
+}
 
 module.exports = webExtensionConfig;

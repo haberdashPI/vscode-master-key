@@ -112,7 +112,7 @@ laborum ad. Dolore exercitation cillum eiusmod culpa minim duis`);
         await movesCursorInEditor(() => enterModalKeys(['shift', 'l']), [0, 2], editor);
     });
 
-    it.only('Can use `count`', async function(){
+    it('Can use `count`', async function(){
         await editor.moveCursor(1, 1);
         await browser.keys([Key.Escape]);
 

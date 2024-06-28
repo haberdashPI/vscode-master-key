@@ -123,7 +123,7 @@ export async function enterModalKeys(...keySeq: ModalKey[]){
 
     console.log("[DEBUG]: waiting for old keys to clear");
     cleared = await browser.waitUntil(() => statusBar.getItem('No Keys Typed'),
-        {interval: 20, timeout: 1200});
+        {interval: 8, timeout: 1000});
     expect(cleared).toBeTruthy();
 
     let count = 0;
@@ -152,12 +152,12 @@ export async function enterModalKeys(...keySeq: ModalKey[]){
         browser.keys(keyCodes);
         let registered = await browser.waitUntil(() =>
             statusBar.getItem('Keys Typed: '+currentKeySeqString),
-            {interval: 20, timeout: 1200});
+            {interval: 8, timeout: 1000});
         expect(registered).toBeTruthy();
     }
     console.log("[DEBUG]: waiting for new key to clear");
     cleared = await browser.waitUntil(() => statusBar.getItem('No Keys Typed'),
-        {interval: 20, timeout: 1200});
+        {interval: 8, timeout: 1000});
     expect(cleared).toBeTruthy();
 
     return;

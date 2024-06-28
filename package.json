@@ -189,7 +189,6 @@
     }
   },
   "scripts": {
-    "preui-test": "npx tsc -p tsconfig.ux.json",
     "test": "vscode-test-web --browserType=chromium --extensionDevelopmentPath=. --extensionTestsPath=dist/web/test/suite/index.js",
     "pretest": "npm run compile-web",
     "vscode:prepublish": "npm run package-web",
@@ -198,7 +197,7 @@
     "package-web": "webpack --mode production --devtool hidden-source-map",
     "lint": "eslint src --ext ts",
     "run-in-browser": "vscode-test-web --browserType=chromium --extensionDevelopmentPath=. .",
-    "prewdio": "webpack",
+    "prewdio": "webpack --env testing",
     "wdio": "wdio run ./wdio.conf.mts"
   },
   "devDependencies": {

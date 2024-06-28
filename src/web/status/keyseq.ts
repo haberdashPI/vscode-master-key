@@ -7,7 +7,8 @@ import { prettifyPrefix } from '../utils';
 
 let keyStatusBar: vscode.StatusBarItem | undefined = undefined;
 
-let keyDisplayDelay: number = 500;
+const KEY_DISPLAY_DELAY_DEFAULT = 40;
+let keyDisplayDelay: number = KEY_DISPLAY_DELAY_DEFAULT;
 let statusUpdates = Number.MIN_SAFE_INTEGER;
 
 function updateKeyStatus(values: Map<string, unknown>){
@@ -46,11 +47,16 @@ function updateConfig(event?: vscode.ConfigurationChangeEvent){
         let configDelay = config.get<number>('keyDisplayDelay');
         if(configDelay !== undefined){
             keyDisplayDelay = configDelay;
+        }else{
+            keyDisplayDelay = KEY_DISPLAY_DELAY_DEFAULT;
         }
     }
 }
 
 export async function activate(context: vscode.ExtensionContext){
+    updateConfig();
+    vscode.workspace.onDidChangeConfiguration(updateConfig);
+
     keyStatusBar = vscode.window.createStatusBarItem('keys', vscode.StatusBarAlignment.Left, -10000);
     keyStatusBar.accessibilityInformation = { label: "No Keys Typed" };
     keyStatusBar.show();

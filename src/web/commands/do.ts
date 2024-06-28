@@ -103,7 +103,8 @@ async function resolveRepeat(args: RunCommandsArgs): Promise<number> {
     }
 }
 
-let paletteDelay: number = 500;
+const PALETTE_DELAY_DEFAULT = process.env.TESTING ? 0 : 500;
+let paletteDelay: number = PALETTE_DELAY_DEFAULT;
 let paletteUpdate = Number.MIN_SAFE_INTEGER;
 
 function registerPaletteUpdate(){
@@ -202,6 +203,8 @@ function updateConfig(event?: vscode.ConfigurationChangeEvent){
         let configDelay = config.get<number>('suggestionDelay');
         if(configDelay !== undefined){
             paletteDelay = configDelay;
+        }else{
+            paletteDelay = PALETTE_DELAY_DEFAULT;
         }
     }
 }
