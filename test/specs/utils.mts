@@ -34,7 +34,7 @@ export async function setBindings(str: string){
                 if(messagePattern.test(m)){
                     return m;
                 }else{
-                    console.log("[UTIL]: notification message — "+m);
+                    // console.log("[UTIL]: notification message — "+m);
                 }
             }
         }else{
@@ -52,6 +52,12 @@ export async function setupEditor(str: string){
     const editorView = workbench.getEditorView();
     let tab = await editorView.getActiveTab();
     const editor = await editorView.openEditor(await tab?.getTitle()!) as TextEditor;
+
+    // clear any older notificatoins
+    let notifications = await workbench.getNotifications();
+    for(let note of notifications){
+        await note.dismiss();
+    }
 
     await editor.setText(str);
 
@@ -119,9 +125,9 @@ export async function enterModalKeys(...keySeq: ModalKey[]){
     let keySeqString = "";
     let cleared;
 
-    console.dir(keySeqString);
+    // console.dir(keySeqString);
 
-    console.log("[DEBUG]: waiting for old keys to clear");
+    // console.log("[DEBUG]: waiting for old keys to clear");
     cleared = await browser.waitUntil(() => statusBar.getItem('No Keys Typed'),
         {interval: 8, timeout: 1000});
     expect(cleared).toBeTruthy();
@@ -130,10 +136,10 @@ export async function enterModalKeys(...keySeq: ModalKey[]){
     for(const keys_ of keySeq){
         const keys = modalKeyToStringArray(keys_);
         const keyCodes = keys.map(k => MODAL_KEY_MAP[k] !== undefined ? MODAL_KEY_MAP[k] : k);
-        console.log("[DEBUG]: keys");
-        console.dir(keys_);
-        console.dir(keyCodes);
-        console.dir(keys);
+        // console.log("[DEBUG]: keys");
+        // console.dir(keys_);
+        // console.dir(keyCodes);
+        // console.dir(keys);
         const keyCount = modalKeyCount(keys_);
         if(keyCount === undefined){
             let keyString = keys.map(prettifyPrefix).join('');
@@ -147,15 +153,15 @@ export async function enterModalKeys(...keySeq: ModalKey[]){
         }
         let currentKeySeqString = (count ? count + "× " : '') + keySeqString;
 
-        console.log("[DEBUG]: looking for new key");
-        console.log("[DEBUG]: target '"+currentKeySeqString+"'");
+        // console.log("[DEBUG]: looking for new key");
+        // console.log("[DEBUG]: target '"+currentKeySeqString+"'");
         browser.keys(keyCodes);
         let registered = await browser.waitUntil(() =>
             statusBar.getItem('Keys Typed: '+currentKeySeqString),
             {interval: 8, timeout: 1000});
         expect(registered).toBeTruthy();
     }
-    console.log("[DEBUG]: waiting for new key to clear");
+    // console.log("[DEBUG]: waiting for new key to clear");
     cleared = await browser.waitUntil(() => statusBar.getItem('No Keys Typed'),
         {interval: 8, timeout: 1000});
     expect(cleared).toBeTruthy();

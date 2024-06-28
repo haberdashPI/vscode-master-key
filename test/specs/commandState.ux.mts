@@ -109,8 +109,21 @@ describe('Command State', () => {
         }, [0, 4], editor);
 
         await enterModalKeys(['ctrl', 'l'], ['ctrl', 'shift', 'w']);
-        await sleep(1000);
         expect(await editor.getSelectedText()).toEqual(" is");
+    });
+
+    it('Resets state on error',async () => {
+        await editor.moveCursor(1, 1);
+
+        await enterModalKeys(['ctrl', 'h'], ['ctrl', 'shift', 'w']);
+        const workbench = await browser.getWorkbench();
+        const notifs = await workbench.getNotifications();
+        let messages = await Promise.all(notifs.map(n => n.getMessage()));
+        expect(messages).toContainEqual("command 'notACommand' not found");
+
+        await movesCursorInEditor(async () => {
+            await enterModalKeys(['ctrl','h'], ['shift', 'ctrl', '1']);
+        }, [0, 1], editor);
     });
 
     it("Allows key mode to changes commands", async () => {
@@ -129,46 +142,4 @@ describe('Command State', () => {
         await enterModalKeys(['ctrl', 'l'], ['ctrl', 'shift', 'w']);
         expect(await editor.getSelectedText()).toEqual('This');
     });
-
-/*     it.only('Resets state on error',async () => {
-        await editor.moveCursor(1, 1);
-
-        // clear any other notificatoins that happened before
-        let workbench = new Workbench();
-        let notifications = await workbench.getNotifications();
-        for(let note of notifications){
-            await note.dismiss();
-            await pause(100);
-        }
-
-        await pause(250);
-        await editor.typeText(Key.chord(Key.CONTROL, 'h'));
-        await pause(250);
-        await editor.typeText(Key.chord(Key.CONTROL, Key.SHIFT, 'w'));
-        await pause(250);
-
-        notifications = await workbench.getNotifications();
-        let foundCommand = false;
-        for(let note of notifications){
-            let message = await note.getMessage();
-            console.log("Message: " + message);
-            await pause(50);
-            if(message === "command 'notACommand' not found"){
-                foundCommand = true;
-                console.log("Found command!");
-                break;
-            }
-        }
-        console.log("Testing that command was found");
-        expect(foundCommand).toEqual(true);
-        await pause(100);
-
-        console.log("Testing that we can run a command like normal");
-        await movesCursorInEditor(async () => {
-            await editor.typeText(Key.chord(Key.CONTROL, 'h'));
-            await pause(50);
-            await editor.typeText(Key.chord(Key.SHIFT, Key.CONTROL, "1"));
-            await pause(50);
-        }, [0, 1], editor);
-    });
- */});
+});
