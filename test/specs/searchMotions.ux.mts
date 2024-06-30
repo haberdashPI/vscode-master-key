@@ -237,21 +237,46 @@ labore elit occaecat cupidatat non POINT_B.`);
         await movesCursorInEditor(async () => {
             await enterModalKeys({key: 't', updatesStatus: false});
             await waitForMode('capture');
-            browser.keys('p');
+            await browser.keys('p');
             await waitForMode('normal');
         }, [0, 10], editor);
 
         await movesCursorInEditor(async () => {
             await enterModalKeys({key: 't', updatesStatus: false});
             await waitForMode('capture');
-            browser.keys(Key.Escape);
+            await browser.keys(Key.Escape);
             await waitForMode('normal');
         }, [0, 0], editor);
 
         await movesCursorInEditor(async () => {
             await enterModalKeys({key: 't', updatesStatus: false});
             await waitForMode('capture');
-            browser.keys('p');
+            await browser.keys('p');
+            await waitForMode('normal');
+        }, [0, 20], editor);
+    });
+
+    it.only('Can handle delete char for acceptAfter', async () => {
+        await cursorToTop(editor);
+        await editor.moveCursor(1, 1);
+        await enterModalKeys('escape');
+
+        await movesCursorInEditor(async () => {
+            await enterModalKeys({key: ['shift', 't'], updatesStatus: false});
+            await waitForMode('capture');
+            await browser.keys('po');
+            await waitForMode('normal');
+        }, [0, 10], editor);
+
+        await movesCursorInEditor(async () => {
+            await enterModalKeys({key: ['shift', 't'], updatesStatus: false});
+            await waitForMode('capture');
+            await browser.keys('p');
+            await sleep(100);
+            // TODO: backspace isn't work here
+            await browser.keys(Key.Backspace);
+            await sleep(100);
+            await browser.keys('po');
             await waitForMode('normal');
         }, [0, 20], editor);
     });
