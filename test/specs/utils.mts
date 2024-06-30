@@ -1,8 +1,6 @@
-import * as fs from 'fs';
-import * as path from 'path';
 import { browser, expect } from '@wdio/globals';
 import 'wdio-vscode-service';
-import { Key } from 'webdriverio';
+import { Key, WaitUntilOptions } from 'webdriverio';
 import { Input, InputBox, StatusBar, TextEditor, sleep } from 'wdio-vscode-service';
 
 export async function setBindings(str: string){
@@ -194,6 +192,16 @@ export async function enterModalKeys(...keySeq: ModalKey[]){
         expect(cleared).toBeTruthy();
     }
 
+    return;
+}
+
+export async function waitForMode(mode: string, opts: Partial<WaitUntilOptions> = {}){
+    const workbench = await browser.getWorkbench();
+    const statusBar = await (new StatusBar(workbench.locatorMap));
+    let modeSet = await browser.waitUntil(() =>
+        statusBar.getItem('Keybinding Mode: '+mode),
+        opts);
+    expect(modeSet).toBeTruthy();
     return;
 }
 

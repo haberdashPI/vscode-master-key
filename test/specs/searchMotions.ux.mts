@@ -1,6 +1,6 @@
 import { browser, expect } from '@wdio/globals';
 import { Key } from 'webdriverio';
-import { movesCursorTo, setBindings, setupEditor, movesCursorInEditor, enterModalKeys, cursorToTop } from './utils.mts';
+import { movesCursorTo, setBindings, setupEditor, movesCursorInEditor, enterModalKeys, cursorToTop, waitForMode } from './utils.mts';
 import { sleep, InputBox, TextEditor, Workbench } from 'wdio-vscode-service';
 
 describe('Search motion command', () => {
@@ -236,20 +236,23 @@ labore elit occaecat cupidatat non POINT_B.`);
 
         await movesCursorInEditor(async () => {
             await enterModalKeys({key: 't', updatesStatus: false});
+            await waitForMode('capture');
             browser.keys('p');
-            // TODO: wait for mode to return to 'normal'
+            await waitForMode('normal');
         }, [0, 10], editor);
 
         await movesCursorInEditor(async () => {
             await enterModalKeys({key: 't', updatesStatus: false});
+            await waitForMode('capture');
             browser.keys(Key.Escape);
-            // TODO: wait for mode to return to 'normal'
+            await waitForMode('normal');
         }, [0, 0], editor);
 
         await movesCursorInEditor(async () => {
             await enterModalKeys({key: 't', updatesStatus: false});
+            await waitForMode('capture');
             browser.keys('p');
-            // TODO: wait for mode to return to 'normal'
+            await waitForMode('normal');
         }, [0, 20], editor);
     });
 });
