@@ -387,4 +387,25 @@ labore elit occaecat cupidatat non POINT_B.`);
             await enterModalKeys('n');
         }, [2, -5], editor);
     });
+
+    it('Handles multiple registers', async () => {
+        await cursorToTop(editor);
+        await editor.moveCursor(1, 1);
+        await enterModalKeys('escape');
+
+        await movesCursorInEditor(async () => {
+            await enterModalKeys({key: '/', updatesStatus: false});
+            const inputA = await (new InputBox(workbench.locatorMap)).wait();
+            await inputA.setText('point_a');
+            await inputA.confirm();
+
+            await enterModalKeys(['shift', 'r'], {key: '/', updatesStatus: false});
+
+            const inputB = await (new InputBox(workbench.locatorMap)).wait();
+            await inputB.setText('point_b');
+            await inputB.confirm();
+
+            await enterModalKeys(['shift', 'n']);
+        }, [0, 47], editor);
+    });
 });
