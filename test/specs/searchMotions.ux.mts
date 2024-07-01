@@ -349,4 +349,13 @@ labore elit occaecat cupidatat non POINT_B.`);
             await enterModalKeys(['shift', 'n']);
         }, [0, 0], editor);
     });
+
+    it.only('Accepts `text` argument.', async () => {
+        await cursorToTop(editor);
+        await editor.moveCursor(1, 1);
+
+        await movesCursorInEditor(async () => {
+            await enterModalKeys('p', {key: '/', updatesStatus: false});
+        }, [0, 10], editor);
+    });
 });
