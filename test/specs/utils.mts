@@ -2,6 +2,8 @@ import { browser, expect } from '@wdio/globals';
 import 'wdio-vscode-service';
 import { Key, WaitUntilOptions } from 'webdriverio';
 import { Input, InputBox, StatusBar, TextEditor, sleep } from 'wdio-vscode-service';
+import loadash from 'lodash';
+const { isEqual } = loadash;
 
 export async function setBindings(str: string){
     const workbench = await browser.getWorkbench();
@@ -155,6 +157,9 @@ export async function enterModalKeys(...keySeq: ModalKey[]){
     for(const keys_ of keySeq){
         checkCleared = true;
         const keys = modalKeyToStringArray(keys_);
+        if(!isEqual(keys.map(x => x.toLowerCase()), keys)){
+            throw Error("Keys must all be lower case (use 'shift')");
+        }
         const keyCodes = keys.map(k => MODAL_KEY_MAP[k] !== undefined ? MODAL_KEY_MAP[k] : k);
         // console.log("[DEBUG]: keys");
         // console.dir(keys_);

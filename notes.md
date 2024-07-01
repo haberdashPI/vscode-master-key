@@ -119,6 +119,8 @@ FEATURE: require parsing to validate modes to be all negations or all positive m
 
 wishlist:
 
+- have backspace and enter run commands in capture mode
+
 - use `getExtension` on each required extension, and offer to install if it fails
   (does this work for any extension? or does `activate` have to return something)
 
