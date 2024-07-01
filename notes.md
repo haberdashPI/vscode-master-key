@@ -8,6 +8,12 @@ WIP: translating all of the old vscode-extension-tester tests over to
     - captureKeys
     - replay
 
+NEW TEST: palette commands can no be readily tested, I believe...
+
+BUG: we're showing prefix commands as 'prefix' again in the palette
+BUG: sometimes what shows up in the palette by the auto show is different from
+  what shows up with an explicit command
+
 BUG: remove command needs to update config (e.g. remove mode and definitions)
 
 BUG: repeat argument is not working for the repeat action command (e.g. I cannot repeat the last action ten times)
