@@ -408,4 +408,18 @@ labore elit occaecat cupidatat non POINT_B.`);
             await enterModalKeys(['shift', 'n']);
         }, [0, 47], editor);
     });
+
+    it('Handles post-search commands', async () => {
+        await cursorToTop(editor);
+        await editor.moveCursor(1, 1);
+        await enterModalKeys('escape');
+
+        await movesCursorInEditor(async () => {
+            await enterModalKeys('e', {key: '/', updatesStatus: false});
+            const inputA = await (new InputBox(workbench.locatorMap)).wait();
+            await inputA.setText('point_a');
+            await inputA.confirm();
+        }, [0, 18], editor);
+        expect(await editor.getSelectedText()).toEqual(' POINT_A');
+    });
 });
