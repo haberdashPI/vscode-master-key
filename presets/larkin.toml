@@ -2872,48 +2872,30 @@ command = "workbench.action.toggleEditorGroupLayout"
 
 [[bind]]
 path = "edit.util"
-name = "nav →"
-combinedName = "nav →/←"
-combinedDescription = "move focus to the right/left"
-combinedKey = "l/h"
-description = "move focus to window to the right"
-key = "tab w l"
-command = "workbench.action.focusRightGroup"
+name = "next window"
+combinedName = "next/previous window"
+description = "move to next window"
+combinedDescription = "move to next/prev window"
+key = "tab ]"
+combinedKey = "]/["
+command = "workbench.action.focusNextGroup"
 
 [[bind]]
 path = "edit.util"
-name = "nav ←"
-combinedName = "nav →/←"
-description = "move focus to window to the left"
-key = "tab w h"
-command = "workbench.action.focusLeftGroup"
-
-[[bind]]
-path = "edit.util"
-name = "nav ↑"
-combinedName = "nav ↑/↓"
-combinedDescription = "move focus to window above/below"
-combinedKey = "k/j"
-description = "move focus to window above"
-key = "tab w k"
-command = "workbench.action.focusAboveGroup"
-
-[[bind]]
-path = "edit.util"
-name = "nav ↓"
-combinedName = "nav ↑/↓"
-description = "move focus to window below"
-key = "tab w j"
-command = "workbench.action.focusBelowGroup"
+name = "prev window"
+combinedName = "next/previous window"
+description = "move to previous window"
+key = "tab ["
+command = "workbench.action.focusPreviousGroup"
 
 [[bind]]
 path = "edit.util"
 name = "move →"
 combinedName = "move →/←"
 combinedDescription = "move editor to window left/right"
-combinedKey = "shift+l/h"
+combinedKey = "l/h"
 description = "move editor to window to left"
-key = "tab w shift+l"
+key = "tab w l"
 command = "workbench.action.moveEditorToRightGroup"
 
 [[bind]]
@@ -2921,7 +2903,7 @@ path = "edit.util"
 name = "←"
 combinedName = "move →/←"
 description = "move editor to window to left"
-key = "tab w shift+h"
+key = "tab w h"
 command = "workbench.action.moveEditorToLeftGroup"
 
 [[bind]]
@@ -2929,9 +2911,9 @@ path = "edit.util"
 name = "↓"
 combinedName = "move ↓/↑"
 combinedDescription = "move editor to window above/below"
-combinedKey = "shift+j/k"
+combinedKey = "j/k"
 description = "move editor to window below"
-key = "tab w shift+j"
+key = "tab w j"
 command = "workbench.action.moveEditorToBelowGroup"
 
 [[bind]]
@@ -2939,7 +2921,7 @@ path = "edit.util"
 name = "↑"
 combinedName = "move ↓/↑"
 description = "move editor to window above"
-key = "tab w shift+k"
+key = "tab w k"
 command = "workbench.action.moveEditorToAboveGroup"
 
 [[bind]]
