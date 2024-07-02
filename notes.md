@@ -5,7 +5,7 @@ WIP: translating all of the old vscode-extension-tester tests over to
     + simpleMotions
     + commandState
     + searchMotions: currently failing test is marked
-    - captureKeys
+    + captureKeys
     - replay
 
 NEW TEST: palette commands can no be readily tested, I believe...
