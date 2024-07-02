@@ -11,8 +11,11 @@ WIP: translating all of the old vscode-extension-tester tests over to
 NEW TEST: palette commands can no be readily tested, I believe...
 
 BUG: we're showing prefix commands as 'prefix' again in the palette
+  - this is probably about how the debug setup for activate keys is mucking
+  with extension state (is there some way to fix this? it appears to be non-specific to the current profile?)
 BUG: sometimes what shows up in the palette by the auto show is different from
-  what shows up with an explicit command
+  what shows up with an explicit command, what's that about?
+BUG: window splitting commands don't work (make a test for it)
 
 BUG: remove command needs to update config (e.g. remove mode and definitions)
 
