@@ -210,13 +210,44 @@ export async function waitForMode(mode: string, opts: Partial<WaitUntilOptions> 
     return;
 }
 
-export async function movesCursorInEditor(action: () => Promise<void>, by: [number, number], editor: TextEditor){
-    let oldpos = await editor.getCoordinates();
-    await action();
+async function coordChange(editor: TextEditor, oldpos: {x: number, y: number}): Promise<{x: number, y: number}> {
     let newpos = await editor.getCoordinates();
-    let ydiff = newpos[0] - oldpos[0];
-    let xdiff = newpos[1] - oldpos[1];
-    expect({y: ydiff, x: xdiff}).toEqual({y: by[0], x: by[1]});
+    let ydiff = newpos[0] - oldpos.y;
+    let xdiff = newpos[1] - oldpos.x;
+    return {y: ydiff, x: xdiff};
+}
+
+export async function movesCursorInEditor(action: () => Promise<void>, by: [number, number], editor: TextEditor){
+    let [x, y] = await editor.getCoordinates();
+    let oldpos = {x, y};
+    await action();
+    let expected = {y: by[0], x: by[1]};
+    let actual = coordChange(editor, oldpos);
+    // most of the time we can just run `expect` right away...
+    if(isEqual(actual, expected)){
+        expect(actual).toEqual(expected);
+        return;
+    }
+    // but some commands require that we wait before their effects are observed...
+    // in this case we need to have some confidence that no further moves are
+    // going to happen
+    let stepsUnchanged = 0;
+    let lastMove = {x: 0, y: 0};
+    let maybeActual = await browser.waitUntil(async() => {
+        let move = await coordChange(editor, oldpos);
+        console.log('stepsUnchanged: '+stepsUnchanged);
+        if(isEqual(lastMove, move)){ stepsUnchanged += 1; }
+        else{
+            lastMove = move;
+            console.log("move changed: "+JSON.stringify(lastMove));
+            stepsUnchanged = 0;
+        };
+        if(stepsUnchanged > 1){
+            return move;
+        }
+    }, {interval: 300, timeout: 9000});
+
+    expect(maybeActual).toEqual(expected);
 }
 
 export async function movesCursorTo(action: () => Promise<void>, by: [number, number], editor: TextEditor){

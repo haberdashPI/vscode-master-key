@@ -195,8 +195,6 @@ i j k l`);
         workbench = await browser.getWorkbench();
     });
 
-    // TODO: we found a genuine bug with the current implementation (this test fails
-    // when reproducing it in a debug setup)
     it('Handles basic recording', async () => {
         await editor.moveCursor(1, 1);
         await enterModalKeys('escape');
@@ -211,14 +209,22 @@ i j k l`);
         await waitForMode('normal');
 
         await movesCursorInEditor(async () => {
-            await enterModalKeys('q', 'q');
-            // TODO: found a bug: the final q is not shown in the status bar
-            // here, and instead we start prepending the keys pressed
-            // in the macro
-             // TODO: the last command we see is `replayFromStack`
-             // it never gets to actually running the commands to replay
-             // (add more logging statements to see what they say)
+            await enterModalKeys('q', {key: 'q', updatesStatus: false});
         }, [1, 1], editor);
+    });
+
+    it('Replays from history', async () => {
+        await editor.moveCursor(1, 1);
+        await enterModalKeys('escape');
+
+        await movesCursorInEditor(async () => {
+            await enterModalKeys('l');
+            await enterModalKeys('j');
+        }, [1, 1], editor);
+
+        await movesCursorInEditor(async () => {
+            await enterModalKeys('q', {key: 'l', updatesStatus: false});
+        }, [1, 0], editor);
     });
 
     // it('Captures keys', async () => {

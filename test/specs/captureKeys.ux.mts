@@ -87,10 +87,8 @@ describe('Search motion command', () => {
         await editor.moveCursor(1, 1);
         await enterModalKeys('escape');
 
-        let oldPos = editor.getCoordinates();
         await movesCursorInEditor(async () => {
             await enterModalKeys({key: 'f', updatesStatus: false});
-            await browser.waitUntil(async () => !isEqual(oldPos, await editor.getCoordinates()));
         }, [0, 10], editor);
     });
 
