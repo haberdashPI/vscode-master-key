@@ -17,6 +17,8 @@ BUG: sometimes what shows up in the palette by the auto show is different from
   what shows up with an explicit command, what's that about?
 BUG: window splitting commands don't work (make a test for it)
 
+SMALL BUG: should 'esc' really be appended in the status bar since it cancels a prefix sequence... 🤔
+
 BUG: remove command needs to update config (e.g. remove mode and definitions)
 
 BUG: repeat argument is not working for the repeat action command (e.g. I cannot repeat the last action ten times)

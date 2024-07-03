@@ -328,7 +328,6 @@ i j k l`, 'replay');
         }, [0, 3], editor);
     });
 
-    // broken test!!
     it('Replays capture keys', async () => {
         await editor.moveCursor(1, 1);
         await pause(250);
@@ -352,7 +351,6 @@ i j k l`, 'replay');
         }, [0, 3], editor);
     });
 
-    // because the above is broken, this one is also broken
     it('Replays capture keys', async () => {
         await editor.moveCursor(1, 1);
         await pause(250);

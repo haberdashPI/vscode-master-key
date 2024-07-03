@@ -280,4 +280,27 @@ i j k l`);
             await editor.typeText('q');
         }, [0, 3], editor);
     });
+
+    it('Replays search with canceled entry', async () => {
+        await editor.moveCursor(1, 1);
+        await enterModalKeys('escape');
+
+        await enterModalKeys(['shift', 'q']);
+        await movesCursorInEditor(async () => {
+            await enterModalKeys({key: 't', updatesStatus: false});
+            await waitForMode('rec: capture');
+            browser.keys(Key.Escape);
+            await waitForMode('rec: normal');
+            await enterModalKeys({key: 't', updatesStatus: false});
+            await waitForMode('rec: capture');
+            await browser.keys('c');
+        }, [0, 3], editor);
+        await enterModalKeys(['shift', 'q']);
+
+        await editor.moveCursor(1, 1);
+        await movesCursorInEditor(async () => {
+            await editor.typeText('q');
+            await editor.typeText('q');
+        }, [0, 3], editor);
+    });
 });
