@@ -242,26 +242,25 @@ i j k l`);
         }, [0, 3], editor);
     });
 
-    //     let oldPos = editor.getCoordinates();
-    //     await movesCursorInEditor(async () => {
-    //         await enterModalKeys({key: 'f', updatesStatus: false});
-    //         await browser.waitUntil(async () => !isEqual(oldPos, await editor.getCoordinates()));
-    //     }, [0, 10], editor);
-    // });
+    it('Replays search', async () => {
+        await editor.moveCursor(1, 1);
+        await enterModalKeys('escape');
 
-    // it('Handles escape during capture', async () => {
-    //     await editor.moveCursor(1, 1);
-    //     await enterModalKeys('escape');
+        await enterModalKeys(['shift', 'q']);
+        await movesCursorInEditor(async () => {
+            await enterModalKeys({key: '/', updatesStatus: false});
+            const input = await (new InputBox(workbench.locatorMap)).wait();
+            await input.setText('c d');
+            await input.confirm();
+        }, [0, 3], editor);
+        await enterModalKeys(['shift', 'q']);
 
-    //     await movesCursorInEditor(async () => {
-    //         await enterModalKeys({key: 't', updatesStatus: false});
-    //         await waitForMode('capture');
-    //         await browser.keys('p');
-    //         // TODO: we should have some user feedback for captured keys
-    //         // so this sleep wouldn't be necessary
-    //         await sleep(1000);
-    //         await browser.keys(Key.Escape);
-    //         await waitForMode('normal');
+        await editor.moveCursor(1, 1);
+        await movesCursorInEditor(async () => {
+            await editor.typeText('q');
+            await editor.typeText('q');
+        }, [0, 3], editor);
+    });
 
     //         await enterModalKeys({key: 't', updatesStatus: false});
     //         await waitForMode('capture');
