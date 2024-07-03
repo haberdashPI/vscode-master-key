@@ -15,6 +15,7 @@ async function doCommand(command: BindingCommand):
     Promise<BindingCommand | undefined> {
 
     let reifiedCommand = cloneDeep(command);
+    console.log('[DEBUG]: reifiedCommand.command - '+reifiedCommand.command);
     if (command.if !== undefined) {
         let doRun: unknown = undefined;
         if (typeof command.if === 'boolean') { doRun = command.if; }
@@ -51,6 +52,9 @@ async function doCommand(command: BindingCommand):
     // sometime, based on user input, a command can change its final argument values we need
     // to capture this result and save it as part of the `reifiedCommand` (for example, see
     // `replaceChar` in `capture.ts`)
+    console.log("[DEBUG]: run command "+command.command);
+    console.dir(reifyArgs);
+
     let result = await vscode.commands.executeCommand<WrappedCommandResult | void>(command.command, reifyArgs);
     let args = commandArgs(result);
     if(args === "cancel"){ return undefined; }
@@ -126,10 +130,12 @@ export async function doCommands(args: RunCommandsArgs): Promise<CommandResult>{
         // clear transient values; thus we have to compute the value of `repeat` *before*
         // running `doCommand` or the value of any transient variables (e.g. `count`) will
         // be cleared
+        console.log('[DEBUG]: resolveRepeat');
         repeat = await resolveRepeat(args);
 
         reifiedCommands = [];
         for(const cmd of args.do){
+            console.log('[DEBUG]: doCommand');
             let command = await doCommand(cmd);
             if(command){ reifiedCommands.push(command); }
         }
