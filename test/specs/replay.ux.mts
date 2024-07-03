@@ -227,21 +227,20 @@ i j k l`);
         }, [1, 0], editor);
     });
 
-    // it('Captures keys', async () => {
-    //     await editor.moveCursor(1, 1);
-    //     await enterModalKeys('escape');
+    it('Replays counts', async () => {
+        await editor.moveCursor(1, 1);
+        await enterModalKeys('escape');
 
-    //     await movesCursorInEditor(async () => {
-    //         await enterModalKeys({key: 't', updatesStatus: false});
-    //         await waitForMode('capture');
-    //         await browser.keys('po');
-    //         await waitForMode('normal');
-    //     }, [0, 10], editor);
-    // });
+        await enterModalKeys(['shift', 'q']);
+        await movesCursorInEditor(async () => {
+            await enterModalKeys({key: ['shift', '3'], count: 3}, 'l');
+        }, [0, 3], editor);
+        await enterModalKeys(['shift', 'q']);
 
-    // it('Captures saved keys', async () => {
-    //     await editor.moveCursor(1, 1);
-    //     await enterModalKeys('escape');
+        await movesCursorInEditor(async () => {
+            await enterModalKeys('q', {key: 'q', updatesStatus: false});
+        }, [0, 3], editor);
+    });
 
     //     let oldPos = editor.getCoordinates();
     //     await movesCursorInEditor(async () => {

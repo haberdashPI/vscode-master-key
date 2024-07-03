@@ -218,11 +218,11 @@ async function coordChange(editor: TextEditor, oldpos: {x: number, y: number}): 
 }
 
 export async function movesCursorInEditor(action: () => Promise<void>, by: [number, number], editor: TextEditor){
-    let [x, y] = await editor.getCoordinates();
+    let [y, x] = await editor.getCoordinates();
     let oldpos = {x, y};
     await action();
     let expected = {y: by[0], x: by[1]};
-    let actual = coordChange(editor, oldpos);
+    let actual = await coordChange(editor, oldpos);
     // most of the time we can just run `expect` right away...
     if(isEqual(actual, expected)){
         expect(actual).toEqual(expected);
@@ -235,11 +235,10 @@ export async function movesCursorInEditor(action: () => Promise<void>, by: [numb
     let lastMove = {x: 0, y: 0};
     let maybeActual = await browser.waitUntil(async() => {
         let move = await coordChange(editor, oldpos);
-        console.log('stepsUnchanged: '+stepsUnchanged);
+
         if(isEqual(lastMove, move)){ stepsUnchanged += 1; }
         else{
             lastMove = move;
-            console.log("move changed: "+JSON.stringify(lastMove));
             stepsUnchanged = 0;
         };
         if(stepsUnchanged > 1){
