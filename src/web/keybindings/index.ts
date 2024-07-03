@@ -87,7 +87,7 @@ async function restoreKeybindingsFromStorage(){
         let data = await vscode.workspace.fs.readFile(configFile);
         keybindings = JSON.parse(new TextDecoder().decode(data));
     }catch{
-        console.log("No keybindings found at: "+configFile);
+        console.error("No keybindings found at: "+configFile);
         return;
     }
 }

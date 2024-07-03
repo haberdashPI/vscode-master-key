@@ -94,7 +94,6 @@ const REPLAY_DELAY = 50;
 async function runCommandHistory(commands: (RunCommandsArgs | RecordedCommandArgs)[]): Promise<CommandResult> {
 
     for(let cmd of commands){
-        console.log('[DEBUG]: doCommands call');
         await doCommands(cmd);
 
         if((<any>cmd).edits){
@@ -146,18 +145,11 @@ const replayFromStackArgs = z.object({
 async function replayFromStack(args_: unknown): Promise<CommandResult> {
     let args = validateInput('master-key.replayFromStack', args_, replayFromStackArgs);
     if(args){
-        console.log('[DEBUG]: setting up replay');
         let state = (await withState(async s => s));
-        console.log('[DEBUG]: state - '+state);
         if(!state){ return; }
         let macros = state.get<List<RecordedCommandArgs[]>>(MACRO, List())!;
-        console.log('DEBUG]: macros:');
-        console.dir(macros);
         let commands = macros.last();
-        console.log('[DEBUG]: commands:');
-        console.dir(commands);
         if(commands){
-            console.log('[DEBUG]: running commands');
             await runCommandHistory(commands);
         }
     }

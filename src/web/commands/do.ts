@@ -15,7 +15,6 @@ async function doCommand(command: BindingCommand):
     Promise<BindingCommand | undefined> {
 
     let reifiedCommand = cloneDeep(command);
-    console.log('[DEBUG]: reifiedCommand.command - '+reifiedCommand.command);
     if (command.if !== undefined) {
         let doRun: unknown = undefined;
         if (typeof command.if === 'boolean') { doRun = command.if; }
@@ -52,9 +51,6 @@ async function doCommand(command: BindingCommand):
     // sometime, based on user input, a command can change its final argument values we need
     // to capture this result and save it as part of the `reifiedCommand` (for example, see
     // `replaceChar` in `capture.ts`)
-    console.log("[DEBUG]: run command "+command.command);
-    console.dir(reifyArgs);
-
     let result = await vscode.commands.executeCommand<WrappedCommandResult | void>(command.command, reifyArgs);
     let args = commandArgs(result);
     if(args === "cancel"){ return undefined; }
@@ -130,12 +126,10 @@ export async function doCommands(args: RunCommandsArgs): Promise<CommandResult>{
         // clear transient values; thus we have to compute the value of `repeat` *before*
         // running `doCommand` or the value of any transient variables (e.g. `count`) will
         // be cleared
-        console.log('[DEBUG]: resolveRepeat');
         repeat = await resolveRepeat(args);
 
         reifiedCommands = [];
         for(const cmd of args.do){
-            console.log('[DEBUG]: doCommand');
             let command = await doCommand(cmd);
             if(command){ reifiedCommands.push(command); }
         }
@@ -203,10 +197,20 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
 }
 
 function updateConfig(event?: vscode.ConfigurationChangeEvent){
-    if((!event && !process.env.TESTING) || event?.affectsConfiguration('master-key')){
+    if(!event || event?.affectsConfiguration('master-key')){
         let config = vscode.workspace.getConfiguration('master-key');
-        maxHistory = (config.get<number>('maxCommandHistory') || 1024);
-        paletteDelay = config.get<number>('suggestionDelay') || PALETTE_DELAY_DEFAULT;
+        let configMaxHistory = config.get<number>('maxCommandHistory');
+        if(configMaxHistory === undefined){
+            configMaxHistory = 1024;
+        }else{
+            maxHistory = configMaxHistory;
+        }
+        let configPaletteDelay = config.get<number>('suggestionDelay');
+        if(configPaletteDelay === undefined){
+            paletteDelay = PALETTE_DELAY_DEFAULT;
+        }else{
+            paletteDelay = configPaletteDelay;
+        }
     }
 }
 
@@ -215,5 +219,6 @@ export function activate(context: vscode.ExtensionContext){
         recordedCommand(doCommandsCmd)));
 
     updateConfig();
+    console.log("configured max history: "+maxHistory);
     vscode.workspace.onDidChangeConfiguration(updateConfig);
 }

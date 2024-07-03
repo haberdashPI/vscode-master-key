@@ -212,10 +212,12 @@ i j k l`);
 
         await movesCursorInEditor(async () => {
             await enterModalKeys('q', 'q');
+            // TODO: found a bug: the final q is not shown in the status bar
+            // here, and instead we start prepending the keys pressed
+            // in the macro
              // TODO: the last command we see is `replayFromStack`
              // it never gets to actually running the commands to replay
              // (add more logging statements to see what they say)
-            await sleep(60000);
         }, [1, 1], editor);
     });
 

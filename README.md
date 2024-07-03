@@ -97,7 +97,7 @@ Update state with the `master-key.captureKeys`, `master-key.updateCount`, `maste
 
 #### Record and Repeat Commands
 
-Master key records recent key presses, allowing you to create commands that quickly repeat a previous sequence using `master-key.replayFromHistory` or `master-key.pushHistoryToStack` and `master-key.replayFromStack`.
+Master key records recent key presses, allowing you to create commands that quickly repeat a previous sequence using `master-key.replayFromHistory` or `master-key.pushHistoryToStack` and `master-key.replayFromStack`. You can disable key press recording by setting `master-key.maxCommandHistory` to 0 in your settings.
 
 #### Documented Bindings
 
