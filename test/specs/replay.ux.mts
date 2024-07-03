@@ -262,36 +262,22 @@ i j k l`);
         }, [0, 3], editor);
     });
 
-    //         await enterModalKeys({key: 't', updatesStatus: false});
-    //         await waitForMode('capture');
-    //         await browser.keys('po');
-    //         await waitForMode('normal');
-    //     }, [0, 10], editor);
-    // });
+    it('Replays search with `acceptAfter`', async () => {
+        await editor.moveCursor(1, 1);
+        await enterModalKeys('escape');
 
-    // it('Replaces chars', async () => {
-    //     await editor.moveCursor(1, 1);
-    //     await enterModalKeys('escape');
+        await enterModalKeys(['shift', 'q']);
+        await movesCursorInEditor(async () => {
+            await enterModalKeys({key: 't', updatesStatus: false});
+            await waitForMode('rec: capture');
+            await browser.keys('c');
+        }, [0, 3], editor);
+        await enterModalKeys(['shift', 'q']);
 
-    //     await enterModalKeys({key: 'r', updatesStatus: false});
-    //     await waitForMode('capture');
-    //     await browser.keys('p');
-    //     // TODO: we should have some user feedback for captured keys
-    //     // so this sleep wouldn't be necessary
-    //     await sleep(1000);
-    //     expect(await editor.getText()).toEqual(`poobar bum POINT_A`);
-    // });
-
-    // it('Inserts chars', async () => {
-    //     await editor.moveCursor(1, 1);
-    //     await enterModalKeys('escape');
-
-    //     await enterModalKeys({key: 'i', updatesStatus: false});
-    //     await waitForMode('capture');
-    //     await browser.keys('f');
-    //     // TODO: we should have some user feedback for captured keys
-    //     // so this sleep wouldn't be necessary
-    //     await sleep(1000);
-    //     expect(await editor.getText()).toEqual(`fpoobar bum POINT_A`);
-    // });
+        await editor.moveCursor(1, 1);
+        await movesCursorInEditor(async () => {
+            await editor.typeText('q');
+            await editor.typeText('q');
+        }, [0, 3], editor);
+    });
 });
