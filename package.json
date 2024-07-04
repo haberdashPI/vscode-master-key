@@ -119,6 +119,12 @@
     ],
     "configuration": {
       "properties": {
+        "master-key.activatedBindingName": {
+          "title": "Active Master Key Bindings Identifier",
+          "type": "string",
+          "description": "A unique label for the currently active master keybinding configuration. Leave blank to remove automated bindings.",
+          "default": ""
+        },
         "master-key.presetDirectories": {
           "title": "Directory to search for Master Key presets",
           "type": "array",

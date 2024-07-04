@@ -13,11 +13,26 @@ BUG: we're showing prefix commands as 'prefix' again in the palette
   with extension state (is there some way to fix this? it appears to be non-specific to the current profile?)
 BUG: sometimes what shows up in the palette by the auto show is different from
   what shows up with an explicit command, what's that about?
-BUG: window splitting commands don't work (make a test for it)
-
-SMALL BUG: should 'esc' really be appended in the status bar since it cancels a prefix sequence... 🤔
-
 BUG: remove command needs to update config (e.g. remove mode and definitions)
+
+  FIX: associate active bindings with a configuration value
+  (note: if the config has updated since last being opened does the config
+   event get triggered? this could lead the config value and the bindings
+   to be out of sync)
+
+  NOTE: I have a sketch of the above fix, but it doesn't incorporate the config.ts
+  implementation. Further the binding stuff should really be stored as a config
+  rather than handled separately. All of this should be stored to some label
+  or name.
+
+  Is the Memento object used by config.ts specif to profiles? (Should be easy to test)
+  We can move on from there; we can see if the config has changed re the memento
+  object, and if it has then we update keybindigns. This *could* lead to false
+  alarms: if the memnto is not profile specific, it will show as out of sync
+  with the config setting (which is profile specific), and would lead to a
+  reloading of keybindings when switching profiles. This wouldn't be
+  so bad...
+
 
 BUG: repeat argument is not working for the repeat action command (e.g. I cannot repeat the last action ten times)
   + FIXED: this happens because the repeat command runs many `master-key.do` commands
@@ -27,6 +42,10 @@ BUG: repeat argument is not working for the repeat action command (e.g. I cannot
 BUG: search highlighting clears almost immediately
 
 BUG: when there are no keys defined the visual keybinding output includes `undefined`
+
+NEW TEST: palette commands can no be readily tested, I believe...
+
+SMALL BUG: should 'esc' really be appended in the status bar since it cancels a prefix sequence... 🤔
 
 unit tests: edge cases with recording edits
   - how about when I switch documents?
