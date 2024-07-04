@@ -33,6 +33,12 @@ BUG: remove command needs to update config (e.g. remove mode and definitions)
   reloading of keybindings when switching profiles. This wouldn't be
   so bad...
 
+TESTS:
+  - get some comprehensive tests to verify that switching between
+    different types of bindings sets properly updates the configuration
+    of modes, definitions and bindings
+  - test that removing bindings clears these various configuration settings
+  - as part of this we should check that palette output looks right
 
 BUG: repeat argument is not working for the repeat action command (e.g. I cannot repeat the last action ten times)
   + FIXED: this happens because the repeat command runs many `master-key.do` commands
