@@ -53,7 +53,8 @@ export let modeSpecs: Record<string, ModeSpec> = {};
 export let defaultMode: string = 'default';
 async function updateModeSpecs(modeSpecs: Record<string, ModeSpec>){
     defaultMode = (Object.values(modeSpecs).filter(x => x.default)[0] || {name: 'default'}).name;
-    await withState(async state => state.set(MODE, defaultMode));
+    console.log("[DEBUG]: defaultMode - "+defaultMode);
+    await withState(async state => state.set(MODE, {public: true}, defaultMode).resolve());
 }
 
 let defaultLineNumbers: string = 'on';

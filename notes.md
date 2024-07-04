@@ -5,6 +5,9 @@ BUG: normal mode isn't actually working with new config state setup
   2. fix
   3. create a unit test (might not be possible for setup)
 
+  almost there, need to get test working for insert
+  need to figure out why the color of the status message isn't right
+
 TODO: write a test for parsing to check that `[[mode]]` sections are defined
 and that `validModes` is not
 
