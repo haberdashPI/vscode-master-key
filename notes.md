@@ -1,9 +1,12 @@
 ## Wrapping up unit tests / stability / coverage
 
 BUG: normal mode isn't actually working with new config state setup
-  1. debug what is happening
+  1. debug what is happening - config debug and then rerun so the config is setup befor eloading vscode!!
   2. fix
-  3. create a unit test
+  3. create a unit test (might not be possible for setup)
+
+TODO: write a test for parsing to check that `[[mode]]` sections are defined
+and that `validModes` is not
 
 NEXT: switch to the dfl/fix-config-state branch to continue working on
   config design
