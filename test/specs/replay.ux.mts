@@ -303,4 +303,56 @@ i j k l`);
             await editor.typeText('q');
         }, [0, 3], editor);
     });
+
+    it('Replays captured keys', async () => {
+        await editor.moveCursor(1, 1);
+        await enterModalKeys('escape');
+
+        await enterModalKeys(['shift', 'q']);
+        await movesCursorInEditor(async () => {
+            await enterModalKeys({key: 's', updatesStatus: false});
+            await waitForMode('rec: capture');
+            await browser.keys('c');
+            // TODO: someday we can avoid this second long pause
+            await sleep(1000);
+            await browser.keys(' ');
+        }, [0, 3], editor);
+        await enterModalKeys(['shift', 'q']);
+
+        await editor.moveCursor(1, 1);
+        await movesCursorInEditor(async () => {
+            await editor.typeText('q');
+            await editor.typeText('q');
+        }, [0, 3], editor);
+    });
+
+    it('Replays canceled capture keys', async () => {
+        await editor.moveCursor(1, 1);
+        await enterModalKeys('escape');
+
+        await enterModalKeys(['shift', 'q']);
+        await movesCursorInEditor(async () => {
+            await enterModalKeys({key: 's', updatesStatus: false});
+            await waitForMode('rec: capture');
+            await browser.keys('c');
+            // TODO: someday we can avoid this second long pause
+            await sleep(1000);
+            browser.keys(Key.Escape);
+            await waitForMode('rec: normal');
+
+            await enterModalKeys({key: 's', updatesStatus: false});
+            await waitForMode('rec: capture');
+            await browser.keys('c');
+            // TODO: someday we can avoid this second long pause
+            await sleep(1000);
+            await browser.keys(' ');
+        }, [0, 3], editor);
+        await enterModalKeys(['shift', 'q']);
+
+        await editor.moveCursor(1, 1);
+        await movesCursorInEditor(async () => {
+            await editor.typeText('q');
+            await editor.typeText('q');
+        }, [0, 3], editor);
+    });
 });
