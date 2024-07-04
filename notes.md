@@ -1,12 +1,12 @@
 ## Wrapping up unit tests / stability / coverage
 
-WIP: translating all of the old vscode-extension-tester tests over to
-     wdio-vscode-service tests
-    + simpleMotions
-    + commandState
-    + searchMotions: currently failing test is marked
-    + captureKeys
-    - replay
+BUG: normal mode isn't actually working with new config state setup
+  1. debug what is happening
+  2. fix
+  3. create a unit test
+
+NEXT: switch to the dfl/fix-config-state branch to continue working on
+  config design
 
 NEW TEST: palette commands can no be readily tested, I believe...
 
