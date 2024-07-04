@@ -144,9 +144,9 @@ export async function enterModalKeys(...keySeq: ModalKey[]){
     let keySeqString = "";
     let cleared;
 
-    // console.dir(keySeqString);
+    console.dir(keySeqString);
 
-    // console.log("[DEBUG]: waiting for old keys to clear");
+    console.log("[DEBUG]: waiting for old keys to clear");
     let waitOpts = {interval: 50, timeout: 1000};
     cleared = await browser.waitUntil(() => statusBar.getItem('No Keys Typed'),
         waitOpts);
@@ -161,10 +161,10 @@ export async function enterModalKeys(...keySeq: ModalKey[]){
             throw Error("Keys must all be lower case (use 'shift')");
         }
         const keyCodes = keys.map(k => MODAL_KEY_MAP[k] !== undefined ? MODAL_KEY_MAP[k] : k);
-        // console.log("[DEBUG]: keys");
-        // console.dir(keys_);
-        // console.dir(keyCodes);
-        // console.dir(keys);
+        console.log("[DEBUG]: keys");
+        console.dir(keys_);
+        console.dir(keyCodes);
+        console.dir(keys);
         const keyCount = modalKeyCount(keys_);
         if(keyCount === undefined){
             let keyString = keys.map(prettifyPrefix).join('');
@@ -180,8 +180,8 @@ export async function enterModalKeys(...keySeq: ModalKey[]){
 
         browser.keys(keyCodes);
         if(modalKeyUpdateStatus(keys_)){
-            // console.log("[DEBUG]: looking for new key");
-            // console.log("[DEBUG]: target '"+currentKeySeqString+"'");
+            console.log("[DEBUG]: looking for new key");
+            console.log("[DEBUG]: target '"+currentKeySeqString+"'");
             let registered = await browser.waitUntil(() =>
                 statusBar.getItem('Keys Typed: '+currentKeySeqString),
                 waitOpts);
@@ -191,7 +191,7 @@ export async function enterModalKeys(...keySeq: ModalKey[]){
         }
     }
     if(checkCleared){
-        // console.log("[DEBUG]: waiting for new key to clear");
+        console.log("[DEBUG]: waiting for new key to clear");
         cleared = await browser.waitUntil(() => statusBar.getItem('No Keys Typed'),
             waitOpts);
         expect(cleared).toBeTruthy();

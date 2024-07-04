@@ -1,9 +1,7 @@
 import { browser, expect } from '@wdio/globals';
 import { Key } from 'webdriverio';
-import { movesCursorTo, setBindings, setupEditor, movesCursorInEditor, enterModalKeys, cursorToTop, waitForMode } from './utils.mts';
+import { setBindings, setupEditor, movesCursorInEditor, enterModalKeys, waitForMode } from './utils.mts';
 import { sleep, InputBox, TextEditor, Workbench } from 'wdio-vscode-service';
-import lodash from 'lodash';
-const { isEqual } = lodash;
 
 describe('Search motion command', () => {
     let editor: TextEditor;
@@ -354,5 +352,57 @@ i j k l`);
             await editor.typeText('q');
             await editor.typeText('q');
         }, [0, 3], editor);
+    });
+
+    it('Replaces chars', async () => {
+        await editor.moveCursor(1, 1);
+        await enterModalKeys('escape');
+
+        await enterModalKeys(['shift', 'q']);
+        await enterModalKeys({key: 'r', updatesStatus: false});
+        await waitForMode('rec: capture');
+        await browser.keys('p');
+        await waitForMode('rec: normal');
+        await enterModalKeys(['shift', 'q']);
+
+        let text = await editor.getText();
+        expect(text).toEqual(`p b c d\ne f g h\ni j k l`);
+
+        await editor.moveCursor(1, 3);
+        await enterModalKeys('q', {key: 'q', updatesStatus: false});
+        // TODO: not sure how to avoid this sleep... maybe we have some status
+        // indicating a macro has finished running? (or e.g. we show a 'replying...'
+        // status)
+        await sleep(1500);
+
+        text = await editor.getText();
+        expect(text).toEqual(`p p c d\ne f g h\ni j k l`);
+        await editor.setText(`a b c d\ne f g h\ni j k l`);
+    });
+
+    it.only('Insert chars', async () => {
+        await editor.moveCursor(1, 1);
+        await enterModalKeys('escape');
+
+        await enterModalKeys(['shift', 'q']);
+        await enterModalKeys({key: ['ctrl', 'i'], updatesStatus: false});
+        await waitForMode('rec: capture');
+        await browser.keys('f');
+        await waitForMode('rec: normal');
+        await enterModalKeys(['shift', 'q']);
+
+        let text = await editor.getText();
+        expect(text).toEqual(`fa b c d\ne f g h\ni j k l`);
+
+        await editor.moveCursor(1, 4);
+        await enterModalKeys('q', {key: 'q', updatesStatus: false});
+        // TODO: not sure how to avoid this sleep... maybe we have some status
+        // indicating a macro has finished running? (or e.g. we show a 'replying...'
+        // status)
+        await sleep(1500);
+
+        text = await editor.getText();
+        expect(text).toEqual(`fa fb c d\ne f g h\ni j k l`);
+        await editor.setText(`a b c d\ne f g h\ni j k l`);
     });
 });
