@@ -110,6 +110,9 @@ path = "modes"
 name = "normal"
 description = "Enter normal mode"
 foreach.key = ["escape", "ctrl+["]
+combinedKey = "escape/ctrl+["
+combinedName = "normal"
+combinedDescription = "Enter normal mode"
 key = "{key}"
 mode = []
 hideInPalette = true
@@ -807,8 +810,32 @@ path = "edit.motion.prim"
 key = "g g"
 priority = 1
 name = "doc start"
+description = "select to start (line) of document."
+command = "runCommands"
+when = "master-key.count > 1"
+
+[[bind.args.commands]]
+command = "cursorTop"
+
+[[bind.args.commands]]
+command = "cursorMove"
+args.to = "down"
+args.by = "wrappedLine"
+computedArgs.value = "count-1"
+
+[[bind.args.commands]]
+command = "revealLine"
+args.at = "center"
+computedArgs.lineNumber = "count"
+
+[[bind]]
+path = "edit.motion.prim"
+key = "g g"
+priority = 1
+name = "doc start"
 description = "select to start of document"
 command = "cursorTopSelect"
+when = "master-key.count <= 1"
 
 [[bind]]
 path = "edit.motion.obj"
@@ -855,7 +882,6 @@ combinedName = "comment → (←)"
 combinedDescription = "move to next (previous) comment"
 args.unit = "comment"
 args.boundary = "both"
-args.selectWhole = true
 computedArgs = { value = "count || 1" }
 
 [[bind]]
@@ -867,8 +893,7 @@ combinedName = "comment → (←)"
 description = "previous comment"
 args.unit = "comment"
 args.boundary = "both"
-args.selectWhole = true
-computedArgs = { value = "count || 1" }
+computedArgs = { value = "-(count || 1)" }
 
 [[bind]]
 path = "edit.motion.obj"
@@ -1091,6 +1116,7 @@ key = "m o"
 name = "in parag. ←"
 combinedName = "in paragraph →/←"
 args.unit = "paragraph"
+args.boundary = "both"
 computedArgs.value = "-(count || 1)"
 
 [[bind]]
@@ -2120,9 +2146,11 @@ command = "editor.action.joinLines"
 [[bind]]
 path = "edit.action.do"
 key = "space f"
+combinedName = "format / format document"
+combinedKey = "f/shift+f"
+combinedDescription = "Format selection / document"
 name = "format"
-combinedName = "format"
-description = "Format code"
+description = "Format sel"
 when = "master-key.count >= 1"
 command = "runCommands"
 args.commands = [
@@ -2135,6 +2163,7 @@ args.commands = [
 path = "edit.action.do"
 key = "space f"
 name = "format"
+combinedName = "format / format document"
 when = "master-key.count < 1"
 command = "editor.action.formatSelection"
 
@@ -2142,6 +2171,7 @@ command = "editor.action.formatSelection"
 path = "edit.action.do"
 key = "space shift+f"
 name = "format doc"
+combinedName = "format / format document"
 command = "editor.action.formatDocument"
 
 [[path]]
@@ -2262,6 +2292,9 @@ command = "editor.emmet.action.decrementNumberByOne"
 [[bind]]
 path = "edit.action.do"
 name = "activate"
+combinedName = "activate / activate tests"
+combinedDescription = "Activate the julia project / julia tests associated with the current file in the active REPL"
+combinedKey = "a/t"
 description = "Activate the julia project associated with the current file in the active REPL"
 key = "space a"
 when = "editorLangId == 'julia'"
@@ -2271,8 +2304,9 @@ args.cmd = "activate_from(\"%file%\")"
 [[bind]]
 path = "edit.action.do"
 name = "activate tests"
-description = "Activate the julia project test environmentassociated with the current file in the active REPL"
+description = "Activate the julia project test environment associated with the current file in the active REPL"
 key = "space t"
+combinedName = "activate / activate tests"
 when = "editorLangId == 'julia'"
 command = "terminal-polyglot.send-command"
 args.cmd = "\nbegin; activate_from(\"%file%\"); using TestEnv; TestEnv.activate(); end"
@@ -2484,7 +2518,7 @@ args.commands = [
 
 [[bind]]
 path = "edit.action"
-key = "["
+key = "enter"
 when = "editorLangId == 'julia' && editorHasSelection"
 command = "runCommands"
 args.commands = ["selection-utilities.trimSelectionWhitespace",
@@ -2493,7 +2527,7 @@ args.commands = ["selection-utilities.trimSelectionWhitespace",
 
 [[bind]]
 path = "edit.action"
-key = "["
+key = "enter"
 when = "editorLangId != 'julia' && !(master-key.firstSelectionOrWord =~ /\\n/)"
 command = "runCommands"
 args.commands = ["terminal-polyglot.send-text",
@@ -2502,7 +2536,7 @@ args.commands = ["terminal-polyglot.send-text",
 [[bind]]
 path = "edit.action"
 name = "repl"
-key = "["
+key = "enter"
 when = "editorLangId != 'julia' && master-key.firstSelectionOrWord =~ /\\n/"
 command = "runCommands"
 args.commands = ["terminal-polyglot.send-block-text",
@@ -2510,7 +2544,7 @@ args.commands = ["terminal-polyglot.send-block-text",
 
 [[bind]]
 path = "edit.action"
-key = "enter ["
+key = "shift+enter"
 name = "to repl (v2)"
 combinedName = "to repl v2 (v3)"
 description = """
@@ -2519,13 +2553,13 @@ send text to a terminal (usually containing a REPL), placing in a block when def
 combinedDescription = """
 send text to a terminal (usually containing a REPL); v2 places the code in a block when defined (v3 does not).
 """
-combinedKey = "[ / shift+["
+combinedKey = "tab / shift+enter"
 command = "runCommands"
 args.commands = ["terminal-polyglot.send-block-text", "selection-utilities.shrinkToActive"]
 
 [[bind]]
 path = "edit.action"
-key = "enter shift+["
+key = "tab enter"
 name = "to repl (v3)"
 combinedName = "to repl v2 (v3)"
 description = """
@@ -2555,7 +2589,7 @@ args.focus = false
 [[bind]]
 path = "edit.action"
 name = "run in terminal"
-key = "enter shift+r"
+key = "tab shift+r"
 command = "terminal-polyglot.run"
 args.focus = false
 
@@ -2563,7 +2597,7 @@ args.focus = false
 path = "edit.util"
 name = "git..."
 description = "git commands"
-key = "enter g"
+key = "tab g"
 command = "master-key.prefix"
 
 [[bind]]
@@ -2573,14 +2607,14 @@ combinedName = "push/pull"
 description = "pull changes from remote"
 combinedDescription = "pull from/push to remote"
 combinedKey = "p/shift+p"
-key = "enter g p"
+key = "tab g p"
 command = "git.pull"
 
 [[bind]]
 path = "edit.util"
 name = "push"
 description = "push changes to remote"
-key = "enter g shift+p"
+key = "tab g shift+p"
 command = "git.push"
 
 [[bind]]
@@ -2590,7 +2624,7 @@ combinedName = "commit/checkout"
 description = "commit changes"
 combinedDescription = "commit/checkout git changes"
 combinedKey = "c/shift+c"
-key = "enter g c"
+key = "tab g c"
 command = "git.commit"
 
 [[bind]]
@@ -2598,8 +2632,29 @@ path = "edit.util"
 name = "checkout"
 combinedName = "commit/checkout"
 description = "checkout changes"
-key = "enter g shift+c"
+key = "tab g shift+c"
 command = "git.checkout"
+
+[[bind]]
+path = "edit.util"
+name = "revert range"
+description = "revert unstaged changes in selected range"
+key = "tab g r"
+command = "git.revertSelectedRanges"
+
+[[bind]]
+path = "edit.util"
+name = "revert range"
+description = "revert unstaged changes in selected range"
+key = "tab g s"
+command = "git.stageSelectedRanges"
+
+[[bind]]
+path = "edit.util"
+name = "commands..."
+description = "show GitLens command palette for git"
+key = "tab g g"
+command = "gitlens.gitCommands"
 
 ## Leader Commands
 ## --------------------------------
@@ -2614,7 +2669,7 @@ default.kind = "util"
 [[bind]]
 path = "edit.util"
 name = "utility"
-key = "enter"
+key = "tab"
 description = "utility related commands: file opening, window manipulation, debugging etc..."
 command = "master-key.prefix"
 
@@ -2622,15 +2677,8 @@ command = "master-key.prefix"
 path = "edit.util"
 name = "open recent"
 description = "Open recent file"
-key = "enter r"
+key = "tab r"
 command = "workbench.action.openRecent"
-
-[[bind]]
-path = "edit.util"
-name = "command"
-description = "Show the VSCode command palette"
-key = "enter shift+;"
-command = "workbench.action.showCommands"
 
 [[bind]]
 path = "edit.util"
@@ -2639,7 +2687,7 @@ description = "show the hover view"
 combinedName = "(debug) hover"
 combinedDescription = "show the (debug) hover view"
 combinedKey = "(shift+)h"
-key = "enter h"
+key = "tab h"
 command = "editor.action.showHover"
 
 [[bind]]
@@ -2647,7 +2695,7 @@ path = "edit.util"
 name = "debug hover"
 combinedName = "(debug) hover"
 description = "show the debug hover view"
-key = "enter shift+h"
+key = "tab shift+h"
 command = "editor.debug.action.showDebugHover"
 
 [[bind]]
@@ -2658,7 +2706,7 @@ description = "toggle bookmark at given line"
 combinedDescription = """
 toggle bookmark at given line / bookmark related commands
 """
-key = "enter shift+m"
+key = "tab shift+m"
 combinedKey = "shift+m / m"
 command = "vsc-labeled-bookmarks.toggleBookmark"
 
@@ -2667,7 +2715,7 @@ path = "edit.util"
 name = "mark"
 combinedName = "add mark / mark..."
 description = "bookmark related commands"
-key = "enter m"
+key = "tab m"
 command = "master-key.prefix"
 
 [[bind]]
@@ -2677,14 +2725,14 @@ description = "move to next bookmark"
 combinedName = "mark ↓/↑"
 combinedDescription = "move to next/previous bookmark"
 combinedKey = "j/k"
-key = "enter m j"
+key = "tab m j"
 when = "!master-key.select_on && !editorHasSelection"
 command = "vsc-labeled-bookmarks.navigateToNextBookmark"
 
 [[bind]]
 path = "edit.util"
 combinedName = "mark ↓/↑"
-key = "enter m j"
+key = "tab m j"
 when = "master-key.select_on || editorHasSelection"
 command = "vsc-labeled-bookmarks.expandSelectionToNextBookmark"
 
@@ -2693,7 +2741,7 @@ path = "edit.util"
 name = "mark ↑"
 combinedName = "mark ↓/↑"
 description = "move to previous bookmark"
-key = "enter m k"
+key = "tab m k"
 when = "!master-key.select_on && !editorHasSelection"
 command = "vsc-labeled-bookmarks.navigateToPreviousBookmark"
 
@@ -2702,7 +2750,7 @@ path = "edit.util"
 name = "mark ↑"
 combinedName = "mark ↓/↑"
 description = "move to previous bookmark"
-key = "enter m k"
+key = "tab m k"
 when = "master-key.select_on || editorHasSelection"
 command = "runCommands"
 args.commands = ["vsc-labeled-bookmarks.expandSelectionToPreviousBookmark",
@@ -2712,14 +2760,14 @@ args.commands = ["vsc-labeled-bookmarks.expandSelectionToPreviousBookmark",
 path = "edit.util"
 name = "remove mark"
 description = "remove bookmark (use quick selection)"
-key = "enter m d"
+key = "tab m d"
 command = "vsc-labeled-bookmarks.deleteBookmark"
 
 [[bind]]
 path = "edit.util"
 name = "nav marks"
 description = "reveal quick selection to move to a bookmark"
-key = "enter m t"
+key = "tab m t"
 command = "vsc-labeled-bookmarks.navigateToBookmark"
 
 [[bind]]
@@ -2731,7 +2779,7 @@ combinedKey = "e/shift+e"
 description = """
 move to next error
 """
-key = "enter e"
+key = "tab e"
 command = "editor.action.marker.next"
 
 [[bind]]
@@ -2741,7 +2789,7 @@ combinedName = "error →/←"
 description = """
 move to previous error
 """
-key = "enter shift+e"
+key = "tab shift+e"
 command = "editor.action.marker.prev"
 
 [[bind]]
@@ -2753,7 +2801,7 @@ combinedKey = "c/shift+c"
 description = """
 move to and show next diff
 """
-key = "enter c"
+key = "tab c"
 command = "editor.action.dirtydiff.next"
 
 [[bind]]
@@ -2763,7 +2811,7 @@ combinedName = "diff →/←"
 description = """
 move to and show previous diff
 """
-key = "enter shift+c"
+key = "tab shift+c"
 command = "editor.action.dirtydiff.previous"
 
 [[bind]]
@@ -2775,7 +2823,7 @@ combinedKey = "d/shift+d"
 description = """
 move to next file change
 """
-key = "enter d"
+key = "tab d"
 command = "workbench.action.editor.nextChange"
 
 [[bind]]
@@ -2785,7 +2833,7 @@ combinedName = "change →/←"
 description = """
 move to previous change
 """
-key = "enter shift+d"
+key = "tab shift+d"
 command = "workbench.action.editor.previousChange"
 
 ## Window manipulation
@@ -2803,7 +2851,7 @@ when = "editorTextFocus && !findWidgetVisible"
 path = "window"
 name = "cntr win"
 description = "center window at primary cursor position"
-key = "enter enter"
+key = "tab l"
 command = "selection-utilities.revealActive"
 args.at = "center"
 when = "editorTextFocus"
@@ -2812,60 +2860,42 @@ when = "editorTextFocus"
 path = "edit.util"
 name = "window"
 description = "window/editor pane manipulation-related commands"
-key = "enter w"
+key = "tab w"
 command = "master-key.prefix"
 
 [[bind]]
 path = "edit.util"
 name = "vert/horz"
-key = "enter w r"
+key = "tab w r"
 description = "Toggle between horizontal and vertical layouts"
 command = "workbench.action.toggleEditorGroupLayout"
 
 [[bind]]
 path = "edit.util"
-name = "nav →"
-combinedName = "nav →/←"
-combinedDescription = "move focus to the right/left"
-combinedKey = "l/h"
-description = "move focus to window to the right"
-key = "enter w l"
-command = "workbench.action.focusRightGroup"
+name = "next window"
+combinedName = "next/previous window"
+description = "move to next window"
+combinedDescription = "move to next/prev window"
+key = "tab ]"
+combinedKey = "]/["
+command = "workbench.action.focusNextGroup"
 
 [[bind]]
 path = "edit.util"
-name = "nav ←"
-combinedName = "nav →/←"
-description = "move focus to window to the left"
-key = "enter w h"
-command = "workbench.action.focusLeftGroup"
-
-[[bind]]
-path = "edit.util"
-name = "nav ↑"
-combinedName = "nav ↑/↓"
-combinedDescription = "move focus to window above/below"
-combinedKey = "k/j"
-description = "move focus to window above"
-key = "enter w k"
-command = "workbench.action.focusAboveGroup"
-
-[[bind]]
-path = "edit.util"
-name = "nav ↓"
-combinedName = "nav ↑/↓"
-description = "move focus to window below"
-key = "enter w j"
-command = "workbench.action.focusBelowGroup"
+name = "prev window"
+combinedName = "next/previous window"
+description = "move to previous window"
+key = "tab ["
+command = "workbench.action.focusPreviousGroup"
 
 [[bind]]
 path = "edit.util"
 name = "move →"
 combinedName = "move →/←"
 combinedDescription = "move editor to window left/right"
-combinedKey = "shift+l/h"
+combinedKey = "l/h"
 description = "move editor to window to left"
-key = "enter w shift+l"
+key = "tab w l"
 command = "workbench.action.moveEditorToRightGroup"
 
 [[bind]]
@@ -2873,7 +2903,7 @@ path = "edit.util"
 name = "←"
 combinedName = "move →/←"
 description = "move editor to window to left"
-key = "enter w shift+h"
+key = "tab w h"
 command = "workbench.action.moveEditorToLeftGroup"
 
 [[bind]]
@@ -2881,9 +2911,9 @@ path = "edit.util"
 name = "↓"
 combinedName = "move ↓/↑"
 combinedDescription = "move editor to window above/below"
-combinedKey = "shift+j/k"
+combinedKey = "j/k"
 description = "move editor to window below"
-key = "enter w shift+j"
+key = "tab w j"
 command = "workbench.action.moveEditorToBelowGroup"
 
 [[bind]]
@@ -2891,14 +2921,14 @@ path = "edit.util"
 name = "↑"
 combinedName = "move ↓/↑"
 description = "move editor to window above"
-key = "enter w shift+k"
+key = "tab w k"
 command = "workbench.action.moveEditorToAboveGroup"
 
 [[bind]]
 path = "edit.util"
 name = "split editor..."
 description = "split editor to in a given direction"
-key = "enter w s"
+key = "tab w s"
 command = "master-key.prefix"
 
 [[bind]]
@@ -2908,7 +2938,7 @@ combinedName = "split →/←"
 combinedDescription = "move editor to window left/right"
 combinedKey = "l/h"
 description = "split editor to window to left"
-key = "enter w s l"
+key = "tab w s l"
 command = "workbench.action.splitEditorRight"
 
 [[bind]]
@@ -2916,7 +2946,7 @@ path = "edit.util"
 name = "←"
 combinedName = "split →/←"
 description = "split editor to window to left"
-key = "enter w s h"
+key = "tab w s h"
 command = "workbench.action.splitEditorLeft"
 
 [[bind]]
@@ -2926,7 +2956,7 @@ combinedName = "split ↓/↑"
 combinedDescription = "split editor to window above/below"
 combinedKey = "j/k"
 description = "split editor to window below"
-key = "enter w s j"
+key = "tab w s j"
 command = "workbench.action.splitEditorDown"
 
 [[bind]]
@@ -2936,35 +2966,35 @@ combinedName = "split ↓/↑"
 combinedDescription = "split editor to window above/below"
 combinedKey = "j/k"
 description = "split editor to window below"
-key = "enter w s k"
+key = "tab w s k"
 command = "workbench.action.splitEditorUp"
 
 [[bind]]
 path = "edit.util"
 name = "close pane"
 description = "close the given group of editors"
-key = "enter w x"
+key = "tab w x"
 command = "workbench.action.closeEditorsInGroup"
 
 [[bind]]
 path = "edit.util"
 name = "max"
 description = "minimize size of all other windows"
-key = "enter w shift+m"
+key = "tab w shift+m"
 command = "workbench.action.minimizeOtherEditors"
 
 [[bind]]
 path = "edit.util"
 name = "equal"
 description = "equalize size of all windows"
-key = "enter w ="
+key = "tab w ="
 command = "workbench.action.evenEditorWidths"
 
 [[bind]]
 path = "edit.util"
 name = "curs. win top"
 description = "center window so that primary cursor is at the top"
-key = "enter k"
+key = "tab k"
 combinedName = "center window top/bottom"
 combinedDescription = "center window so that primary cursor is at the top/bottom"
 combinedKey = "k/j"
@@ -2976,7 +3006,7 @@ path = "edit.util"
 name = "curs. win bot"
 combinedName = "center window top/bottom"
 description = "center window so that primary cursor is at the bottom"
-key = "enter j"
+key = "tab j"
 command = "selection-utilities.revealActive"
 args.at = "bottom"
 
@@ -2990,7 +3020,7 @@ combinedName = "breakpt / debug..."
 combinedKey = "shift+b/b"
 description = "toggle debug breakpoint"
 combinedDescription = "toggle debug breakpoint / debug related commands..."
-key = "enter shift+b"
+key = "tab shift+b"
 command = "editor.debug.action.toggleBreakpoint"
 
 [[bind]]
@@ -2998,14 +3028,14 @@ path = "edit.util"
 name = "debug..."
 combinedName = "breakpt / debug..."
 description = "assorted debugging actions"
-key = "enter b"
+key = "tab b"
 command = "master-key.prefix"
 
 [[bind]]
 path = "edit.util"
 name = "cond. break"
 description = "conditional breakpoint"
-key = "enter b shift+c"
+key = "tab b shift+c"
 command = "editor.debug.action.conditionalBreakpoint"
 
 
@@ -3013,35 +3043,35 @@ command = "editor.debug.action.conditionalBreakpoint"
 path = "edit.util"
 name = "start"
 description = "start debugging"
-key = "enter b r"
+key = "tab b r"
 command = "workbench.action.debug.start"
 
 [[bind]]
 path = "edit.util"
 name = "continue"
 description = "continue debugging"
-key = "enter b c"
+key = "tab b c"
 command = "workbench.action.debug.continue"
 
 [[bind]]
 path = "edit.util"
 name = "next"
 description = "debug: step over next line"
-key = "enter b j"
+key = "tab b j"
 command = "workbench.action.debug.stepOver"
 
 [[bind]]
 path = "edit.util"
 name = "into"
 description = "debug: step into next line"
-key = "enter b i"
+key = "tab b i"
 command = "workbench.action.debug.stepInto"
 
 [[bind]]
 path = "edit.util"
 name = "out"
 description = "debug: step out"
-key = "enter b o"
+key = "tab b o"
 command = "workbench.action.debug.stepOut"
 
 ## Select-edit mode
@@ -3068,11 +3098,24 @@ mode = "normal"
 [[bind]]
 path = "edit.select_edit"
 key = "shift+'"
+combinedName = "rm cursors"
+combinedKey = "shift/ctrl+'"
+combinedDescription = "Delete all selections and return to normal (multiple key variants)"
 name = "del. cursors"
 description = "Delete all selections and return to normal"
 command = "runCommands"
 args.commands = ["selection-utilities.cancelSelection", "master-key.enterNormal"]
 mode = ["selectedit", "normal"]
+
+[[bind]]
+path = "edit.select_edit"
+key = "ctrl+'"
+mode = ["insert", "selectedit", "normal"]
+name = "rm cursors"
+combinedName = "rm cursors"
+description = "Delete all selections and return to normal"
+command = "runCommands"
+args.commands = ["selection-utilities.cancelSelection", "master-key.enterNormal"]
 
 [[bind]]
 path = "edit.select_edit"

@@ -66,7 +66,7 @@ export async function keySuffix(key: string) {
 
 export async function activate(context: vscode.ExtensionContext){
     await withState(async state => {
-        return state.set(PREFIX_CODE, {public: true}, 0);
+        return state.set(PREFIX_CODE, {public: true}, 0).resolve();
     });
     context.subscriptions.push(vscode.commands.registerCommand('master-key.prefix',
         recordedCommand(prefix)));

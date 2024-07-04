@@ -14,3 +14,4 @@ webpack.config.js
 **/*.map
 **/*.ts
 **/.vscode-test.*
+.wdio-vscode-service

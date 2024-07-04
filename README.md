@@ -1,29 +1,33 @@
 # Master Key
 
+[![Project Status: WIP – Initial development is in progress, but there has not yet been a stable, usable release suitable for the public.](https://img.shields.io/badge/Repo%20Status-WIP-yellow)](https://www.repostatus.org/#active)
+
+> [!WARNING]
+> 🚧 Master Key is still under construction. 🚧
+>
+> The README is a WIP document that will eventually reflect the intended state for a 0.1.0 release at which point this extension will be published to VSCode's extension marketplace. For now expect to find missing features, a variety of bugs and incomplete documentation.
+
 Master key helps you to learn, create and use powerful keybindings.
 
-If:
+If you want to improve your text editing super powers in VSCode, Master Key might just be the tool for you.
 
-- you want to improve your fluency in text editing, levarging keybindings to move around and edit at the speed of thought OR
-- you want to use VSCode but miss some cool thing that vim, emacs, kakaune, helix or any other awesome text editor can do
+## To get started
 
-Master Key might just be the tool for you.
+The easiest way to get started is to activate the built-in keybindings that come with Master Key.
 
-## Get started
-
-Master key comes with its own custom keybinding layout that follows in the footsteps of vim, kakaune and helix.
-
-To learn how to use these bindings, install the extension and then run the command `Master Key: Activate Keybindings`, and select the built-in binding set "Larkin". The built-in documentation for these bindings will pop up.
+1. Install this extension
+2. Run the command `Master Key: Activate Keybindings`.
+3. Select the built-in binding set "Larkin".
 
 ## Examples
 
 Master Key includes the following features:
 
-**TODO**: when I'm ready to release, insert example gif of each feature below
+**TODO**: insert example gif of each feature below
 
 ### Editing Features
 
-Here are some of the cool features that come with the built-in `Larkin` keybindings provided by Master Key with the help of [selection utilities](https://github.com/haberdashPI/vscode-selection-utilities).
+Here are some of the cool features that come with the built-in `Larkin` keybindings provided by Master Key with the help of [selection utilities](https://github.com/haberdashPI/vscode-selection-utilities). These bindings following in the footsteps of Vim, Kakaune and Helix.
 
 #### Move by Object
 
@@ -43,7 +47,7 @@ Swap selected objects with one another.
 
 #### Repeat Last Selection / Action
 
-Avoid lengthy or awkward key sequences by repeating the last action-related selection with "," and the last action with "."
+Avoid lengthy key sequences by repeating the last action-related selection with "," and the last action with "."
 
 #### Record Commands
 
@@ -74,6 +78,9 @@ See a quick pick palette of possible bindings for the current mode and prefix of
 
 ### Keybinding Features
 
+> [!WARNING]
+> For the initial release of Master Key, the Keybinding Features are not yet well documented. The main goal of the 0.1.0 release was to make the default keybindings accessible. See the roadmap section below for details. The finer points of implementing your own keybindings will require some digging into source code and/or asking questions in the discussions section of this repo.
+
 When you create your own keybindings using Mater Key's special `.toml` keybinding format you get several powerful features that make it possible to easily create keybindings that would be difficult or impossible to implement without writing your own extension.
 
 #### Modal Bindings
@@ -90,7 +97,7 @@ Update state with the `master-key.captureKeys`, `master-key.updateCount`, `maste
 
 #### Record and Repeat Commands
 
-Master key records recent key presses, allowing you to create commands that quickly repeat a previous sequence using `master-key.replayFromHistory` or `master-key.pushHistoryToStack` and `master-key.replayFromStack`.
+Master key records recent key presses, allowing you to create commands that quickly repeat a previous sequence using `master-key.replayFromHistory` or `master-key.pushHistoryToStack` and `master-key.replayFromStack`. You can disable key press recording by setting `master-key.maxCommandHistory` to 0 in your settings.
 
 #### Documented Bindings
 
@@ -104,7 +111,19 @@ You can start by modifying the built-in `Larkin` preset using the command `Maste
 
 You can now edit the bindings and/or import bindings from those you've already created in VSCode. Call `Master Key: Import Default/User Keybindings` to add any existing bindings you have. Edit the bindings and update your settings to use them by calling `Master Key: Activate Keybindings` at any time.
 
-## Related Extensions
+## Roadmap
+
+For detailed notes on development, refer to `notes.md`.
+
+- Release 0.1.0: working and well documented default keybindings
+- Release 0.1.x: improved performance. Through profiling and code review the 0.1.0 functioanlity will be improved in efficiency
+- Release 0.2.x: documentation of all keybinding commands, improve quality of life for those building their own custom extensions. May introduce breaking changes to improve API clarity for these bindings
+- Release 0.2.y: source code documentation — may involve substantial refactor to improve legibility / clarity of code
+- Release 0.3.0: this is the point at which new features will be considered for addition into Master Key
+
+## Related Work
+
+Master Key follows in the footsteps of many other extensions:
 
 - [VSCodeVim](https://github.com/VSCodeVim/Vim)
 - [vscode-neovim](https://github.com/asvetliakov/vscode-neovim)
@@ -113,9 +132,14 @@ You can now edit the bindings and/or import bindings from those you've already c
 - [ModalEdit](https://github.com/johtela/vscode-modaledit)
 - [ModalKeys](https://github.com/haberdashPI/vscode-modal-keys)
 
-## Developer Notes
+And of course, there are many existing editors that Master Key draws inspiration from:
 
-**TODO**: reference a separate file here
+- [vim](https://www.vim.org/)
+- [emacs](https://www.gnu.org/software/emacs/)
+- [kakune](https://github.com/mawww/kakoune)
+- [helix](https://helix-editor.com/)
+
+## Developer Notes
 
 This repository relies on a working versions of `nvm` installed in bash and a npm version
 matching the version specified in `.nvmrc`. You can satisfy this requirement by copying and
@@ -134,7 +158,3 @@ You can then install all dependencies for this project as follows:
 nvm use
 npm i
 ```
-
-**TODO**: this should really document the use of the debug-profile file
-
-**TODO**: this should document the limitations of ux testing (e.g. can't test palette, and why that's okay)

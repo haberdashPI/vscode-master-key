@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import z from 'zod';
 import { validateInput } from './utils';
 import { Map, List, RecordOf, Record as IRecord } from 'immutable';
+import { onConfigUpdate } from './config';
 
 export type Listener = (states: Map<string, unknown>) => boolean;
 
@@ -54,7 +55,6 @@ export class CommandState {
         return new CommandState(rec);
     }
 
-    // todo: re-write `update` as set, find all calls to `update` and replace
     set<T>(key: string, opt: ISetOptions, val: T): CommandState;
     set<T>(key: string, val: T): CommandState;
     set<T>(key: string, optOrVal: ISetOptions | T, val_?: T){
@@ -68,8 +68,12 @@ export class CommandState {
             val = <T>(val_);
         }
 
-        let values = this.record.values.set(key, val);
-        return this.setHelper_(key, opt, values);
+        if(this.record.values.get(key) !== val){
+            let values = this.record.values.set(key, val);
+            return this.setHelper_(key, opt, values);
+        }else{
+            return this;
+        }
     }
 
     private setHelper_(key: string, opt: ISetOptions, values: Map<string, unknown>){
@@ -109,7 +113,11 @@ export class CommandState {
             change = <(x: T) => T>(change_);
         }
         let values = this.record.values.update(key, opt.notSetValue, x => change(<T>x));
-        return this.setHelper_(key, opt, values);
+        if(values !== this.record.values){
+            return this.setHelper_(key, opt, values);
+        }else{
+            return this;
+        }
     }
 
     get<T>(key: string, defaultValue?: T): T | undefined {
@@ -248,12 +256,8 @@ function addDefinitions(state: CommandState, definitions: any){
     });
 }
 
-async function updateConfig(event?: vscode.ConfigurationChangeEvent){
-    if(!event || event?.affectsConfiguration('master-key')){
-        let config = vscode.workspace.getConfiguration('master-key');
-        let definitions = config.get<object[]>('definitions');
-        await withState(async state => addDefinitions(state, definitions));
-    }
+async function updateDefinitions(defs: any){
+    await withState(async state => addDefinitions(state, defs));
 }
 
 const setFlagArgs = z.object({
@@ -261,7 +265,6 @@ const setFlagArgs = z.object({
     value: z.boolean(),
     transient: z.boolean().default(false).optional()
 }).strict();
-type SetFlagArgs = z.infer<typeof setFlagArgs>;
 
 async function setFlag(args_: unknown): Promise<CommandResult> {
     let args = validateInput('master-key.setFlag', args_, setFlagArgs);
@@ -276,8 +279,7 @@ async function setFlag(args_: unknown): Promise<CommandResult> {
 }
 
 export async function activate(context: vscode.ExtensionContext){
-    await updateConfig();
-    vscode.workspace.onDidChangeConfiguration(updateConfig);
+    onConfigUpdate('definitions', updateDefinitions);
 
     context.subscriptions.push(vscode.commands.registerCommand('master-key.setFlag',
         recordedCommand(setFlag)));

@@ -1,12 +1,14 @@
-import { Key, TextEditor } from 'vscode-extension-tester';
-import { pause, movesCursorInEditor, setupEditor, setBindings } from './utils';
+// start with just some basic tests to verify all is well
 
-export const run = () => describe('Simple motions', () => {
+import '@wdio/globals';
+import 'wdio-vscode-service';
+import { enterModalKeys, setBindings, setupEditor, movesCursorInEditor } from './utils.mts';
+import { TextEditor } from 'wdio-vscode-service';
+import { Key } from "webdriverio";
+
+describe('Simple Motions', () => {
     let editor: TextEditor;
-
-    // initialize the browser and webdriver
-    before(async function(){
-        this.timeout(10 * 1000);
+    before(async () => {
         await setBindings(`
             [header]
             version = "1.0"
@@ -77,75 +79,60 @@ export const run = () => describe('Simple motions', () => {
             # NOTE: because of how vscode-extension-tester is implemented
             # numeric values get typed, so we use other keybindings here
             # to avoid picking up these typed keys
-            foreach.num = ["{key:[0-3]:}"]
-            key = "shift+{num}
+            foreach.num = ["{key: [0-3]}"]
+            key = "shift+{num}"
             mode = "normal"
             name = "count {num}"
             command = "master-key.updateCount"
             args.value = "{num}"
             resetTransient = false
         `);
-
         editor = await setupEditor(`Anim reprehenderit voluptate magna excepteur dolore aliqua minim labore est
 consectetur ullamco ullamco aliqua ex. Pariatur officia nostrud pariatur ex
 dolor magna. Consequat cupidatat amet nostrud proident occaecat ex.
 Ex cillum duis anim dolor cupidatat non nostrud non et sint ullamco. Consectetur consequat
 ipsum ex labore enim. Amet do commodo et occaecat proident ex cupidatat in. Quis id magna
-laborum ad. Dolore exercitation cillum eiusmod culpa minim duis`, "simple");
-
-        return;
+laborum ad. Dolore exercitation cillum eiusmod culpa minim duis`);
     });
 
-    it('Works with Directional Motions', async () => {
+    it('Can move cursor', async() => {
+        await browser.keys(Key.Escape);
         await editor.moveCursor(1, 1);
-        await editor.typeText(Key.ESCAPE);
-        await pause(500);
 
-        await movesCursorInEditor(() => editor.typeText('j'), [1, 0], editor);
-        await movesCursorInEditor(() => editor.typeText('l'), [0, 1], editor);
-        await movesCursorInEditor(() => editor.typeText('h'), [0, -1], editor);
-        await movesCursorInEditor(() => editor.typeText('k'), [-1, 0], editor);
+        await movesCursorInEditor(() => enterModalKeys('j'), [1, 0], editor);
+        await movesCursorInEditor(() => enterModalKeys('l'), [0, 1], editor);
+        await movesCursorInEditor(() => enterModalKeys('h'), [0, -1], editor);
+        await movesCursorInEditor(() => enterModalKeys('k'), [-1, 0], editor);
     });
 
-    it('Can Repeat Commands', async () => {
+    it('Can use `repeat`', async () => {
         await editor.moveCursor(1, 1);
-        await editor.typeText(Key.ESCAPE);
-        await pause(500);
+        await browser.keys([Key.Escape]);
 
-        await movesCursorInEditor(() => editor.typeText(Key.chord(Key.SHIFT, 'l')), [0, 2], editor);
+        await movesCursorInEditor(() => enterModalKeys(['shift', 'l']), [0, 2], editor);
     });
 
-    it('Repeats using count', async function(){
+    it('Can use `count`', async function(){
         await editor.moveCursor(1, 1);
-        await editor.typeText(Key.ESCAPE);
-        await pause(500);
+        await browser.keys([Key.Escape]);
 
         for (let c = 1; c <= 3; c++) {
             await movesCursorInEditor(async () => {
-                await editor.typeText(Key.chord(Key.SHIFT, String(c)));
-                await editor.typeText('j');
+                await enterModalKeys({count: c, key:['shift', String(c)]}, 'j');
             }, [1*c, 0], editor);
             await movesCursorInEditor(async () => {
-                await editor.typeText(Key.chord(Key.SHIFT, String(c)));
-                await editor.typeText('l');
+                await enterModalKeys({count: c, key: ['shift', String(c)]}, 'l');
             }, [0, 1*c], editor);
             await movesCursorInEditor(async () => {
-                await editor.typeText(Key.chord(Key.SHIFT, String(c)));
-                await editor.typeText('h');
+                await enterModalKeys({count: c, key: ['shift', String(c)]}, 'h');
             }, [0, -1*c], editor);
             await movesCursorInEditor(async () => {
-                await editor.typeText(Key.chord(Key.SHIFT, String(c)));
-                await editor.typeText('k');
+                await enterModalKeys({count: c, key: ['shift', String(c)]}, 'k');
             }, [-1*c, 0], editor);
         }
         await movesCursorInEditor(async () => {
-            await editor.typeText(Key.chord(Key.SHIFT, '1'));
-            await editor.typeText(Key.chord(Key.SHIFT, '0'));
-            await editor.typeText('l');
+            await enterModalKeys({count: 1, key: ['shift', '1']},
+                                 {count: 0, key: ['shift', '0']}, 'l');
         }, [0, 10], editor);
     });
-
-    after(async () => { await editor.typeText('i'); });
 });
-
-export default { run };

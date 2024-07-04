@@ -1,6 +1,4 @@
 import { cleanupTempdir, pause, setupTempdir } from './utils';
-import simpleMotions from './simpleMotions';
-import commandState from "./commandState";
 import searchMotions from './searchMotions';
 import captureKeys from './captureKeys.test';
 import replay from './replay.test';
@@ -12,11 +10,9 @@ describe('UI Test Suite', () => {
         setupTempdir();
     });
 
-    simpleMotions.run();
-    commandState.run();
     searchMotions.run();
-    captureKeys.run();
-    replay.run();
+    // captureKeys.run();
+    // replay.run();
 
     after(() => { cleanupTempdir(); });
 });

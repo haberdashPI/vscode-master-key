@@ -103,7 +103,8 @@ async function resolveRepeat(args: RunCommandsArgs): Promise<number> {
     }
 }
 
-let paletteDelay: number = 500;
+const PALETTE_DELAY_DEFAULT = process.env.TESTING ? 0 : 500;
+let paletteDelay: number = PALETTE_DELAY_DEFAULT;
 let paletteUpdate = Number.MIN_SAFE_INTEGER;
 
 function registerPaletteUpdate(){
@@ -121,12 +122,17 @@ export async function doCommands(args: RunCommandsArgs): Promise<CommandResult>{
     let reifiedCommands: BindingCommand[] | undefined = undefined;
     let repeat = 0;
     try{
+        // `doCommand` can call a command that calls `doCommandsCmd` and will therefore
+        // clear transient values; thus we have to compute the value of `repeat` *before*
+        // running `doCommand` or the value of any transient variables (e.g. `count`) will
+        // be cleared
+        repeat = await resolveRepeat(args);
+
         reifiedCommands = [];
         for(const cmd of args.do){
             let command = await doCommand(cmd);
             if(command){ reifiedCommands.push(command); }
         }
-        repeat = await resolveRepeat(args);
         if(repeat > 0){
             for(let i = 0; i < repeat; i++){
                 for(const cmd of reifiedCommands){
@@ -191,10 +197,20 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
 }
 
 function updateConfig(event?: vscode.ConfigurationChangeEvent){
-    if(!event || event.affectsConfiguration('master-key')){
+    if(!event || event?.affectsConfiguration('master-key')){
         let config = vscode.workspace.getConfiguration('master-key');
-        maxHistory = (config.get<number>('maxCommandHistory') || 1024);
-        paletteDelay = (config.get<number>('suggestionDelay') || 500);
+        let configMaxHistory = config.get<number>('maxCommandHistory');
+        if(configMaxHistory === undefined){
+            configMaxHistory = 1024;
+        }else{
+            maxHistory = configMaxHistory;
+        }
+        let configPaletteDelay = config.get<number>('suggestionDelay');
+        if(configPaletteDelay === undefined){
+            paletteDelay = PALETTE_DELAY_DEFAULT;
+        }else{
+            paletteDelay = configPaletteDelay;
+        }
     }
 }
 
@@ -203,5 +219,6 @@ export function activate(context: vscode.ExtensionContext){
         recordedCommand(doCommandsCmd)));
 
     updateConfig();
+    console.log("configured max history: "+maxHistory);
     vscode.workspace.onDidChangeConfiguration(updateConfig);
 }
