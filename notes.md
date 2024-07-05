@@ -8,6 +8,9 @@ BUG: normal mode isn't actually working with new config state setup
   almost there, need to get test working for insert
   need to figure out why the color of the status message isn't right
 
+  gahh!! why isn't currentMode working in a sane way???
+  (is there some optimization happening???)
+
 TODO: write a test for parsing to check that `[[mode]]` sections are defined
 and that `validModes` is not
 

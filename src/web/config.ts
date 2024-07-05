@@ -32,12 +32,12 @@ export async function onConfigUpdate(key: string, fn: ConfigListener){
     return;
 }
 
-export function activate(context: vscode.ExtensionContext){
+export async function activate(context: vscode.ExtensionContext){
     configState = context.globalState;
     if(configState){
         for(let key of configState.keys()){
             for(let fn of (listeners[key])){
-                fn(configState.get(key, undefined));
+                await fn(configState.get(key, undefined));
             }
         }
     }

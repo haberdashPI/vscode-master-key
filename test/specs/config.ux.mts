@@ -24,6 +24,7 @@ describe('Configuration', () => {
             [[bind]]
             name = "normal mode"
             key = "escape"
+            mode = []
             command = "master-key.enterNormal"
             prefixes = "<all-prefixes>"
 
@@ -37,9 +38,9 @@ describe('Configuration', () => {
 
             [[bind]]
             path = "motion"
-            name = "left"
-            key = "h"
-            args.to = "left"
+            name = "right"
+            key = "l"
+            args.to = "right"
 
             [[bind]]
             name = "insert"
@@ -55,12 +56,15 @@ describe('Configuration', () => {
         const modeItem = await statusBar.getItem('Keybinding Mode: normal');
         expect(modeItem).toBeTruthy();
         console.log('[DEBUG]: '+modeItem?.getCSSProperty('background-color'));
-        await movesCursorInEditor(() => enterModalKeys('h'), [0, -1], editor);
+        await movesCursorInEditor(() => enterModalKeys('l'), [0, 1], editor);
     });
 
     it('Can allow switch to insert mode', async() => {
         await movesCursorInEditor(() => enterModalKeys('i'), [0, -1], editor);
         await waitForMode('insert');
+        await movesCursorInEditor(async () => {
+            await browser.keys('i');
+        }, [0, 1], editor);
+        expect(await editor.getText()).toEqual('Ai simple test');
     });
-
 });

@@ -53,7 +53,6 @@ export let modeSpecs: Record<string, ModeSpec> = {};
 export let defaultMode: string = 'default';
 async function updateModeSpecs(modeSpecs: Record<string, ModeSpec>){
     defaultMode = (Object.values(modeSpecs).filter(x => x.default)[0] || {name: 'default'}).name;
-    console.log("[DEBUG]: defaultMode - "+defaultMode);
     await withState(async state => state.set(MODE, {public: true}, defaultMode).resolve());
 }
 
@@ -87,10 +86,10 @@ export async function activate(context: vscode.ExtensionContext){
     await onResolve('mode', values => {
         let newMode = <string>values.get(MODE, defaultMode);
         if(currentMode !== newMode){
+            updateCursorAppearance(vscode.window.activeTextEditor, newMode, modeSpecs || {});
+            updateModeKeyCapture(newMode, modeSpecs || {});
+            updateLineNumbers(newMode, modeSpecs || {});
             currentMode = newMode;
-            updateCursorAppearance(vscode.window.activeTextEditor, currentMode, modeSpecs || {});
-            updateModeKeyCapture(currentMode, modeSpecs || {});
-            updateLineNumbers(currentMode, modeSpecs || {})
         }
         return true;
     });
