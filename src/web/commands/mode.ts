@@ -10,11 +10,17 @@ import { onConfigUpdate } from '../config';
 export const MODE = 'mode';
 
 const CURSOR_STYLES = {
+    // eslint-disable-next-line @typescript-eslint/naming-convention
     "Line": vscode.TextEditorCursorStyle.Line,
+    // eslint-disable-next-line @typescript-eslint/naming-convention
     "Block": vscode.TextEditorCursorStyle.Block,
+    // eslint-disable-next-line @typescript-eslint/naming-convention
     "Underline": vscode.TextEditorCursorStyle.Underline,
+    // eslint-disable-next-line @typescript-eslint/naming-convention
     "LineThin": vscode.TextEditorCursorStyle.LineThin,
+    // eslint-disable-next-line @typescript-eslint/naming-convention
     "BlockOutline": vscode.TextEditorCursorStyle.BlockOutline,
+    // eslint-disable-next-line @typescript-eslint/naming-convention
     "UnderlineThin": vscode.TextEditorCursorStyle.UnderlineThin
 };
 

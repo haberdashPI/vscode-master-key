@@ -119,10 +119,10 @@
     ],
     "configuration": {
       "properties": {
-        "master-key.activatedBindingName": {
+        "master-key.activatedBindingsId": {
           "title": "Active Master Key Bindings Identifier",
           "type": "string",
-          "description": "A unique label for the currently active master keybinding configuration. Leave blank to remove automated bindings.",
+          "description": "A unique label for the currently active master keybinding configuration. Leave blank to remove automated bindings. This value is automated, and should normally be set using the `Master Key: Activate Keybindings` command.",
           "default": ""
         },
         "master-key.presetDirectories": {

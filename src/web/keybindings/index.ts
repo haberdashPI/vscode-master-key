@@ -9,7 +9,7 @@ import { Utils } from 'vscode-uri';
 import z from 'zod';
 import { withState } from '../state';
 import { MODE, defaultMode } from '../commands/mode';
-import { updateConfig } from '../config';
+import { updateConfig, getConfig, onConfigUpdate } from '../config';
 const JSONC = require("jsonc-simple-parser");
 const TOML = require("smol-toml");
 
@@ -71,20 +71,16 @@ function formatBindings(name: string, items: IConfigKeyBinding[]){
 }
 
 let keybindings: IConfigKeyBinding[] = [];
-async function saveKeybindingsToStorage(label: string, newBindings: IConfigKeyBinding[]){
-    keybindings = newBindings;
+async function saveKeybindingsToStorage(label: string, newBindings: Bindings){
+    keybindings = newBindings.bind;
     vscode.workspace.fs.createDirectory(storageUri);
     let bindingFile = vscode.Uri.joinPath(storageUri, label+'.json');
-    let config = vscode.workspace.getConfiguration('master-key');
-    config.update('activatedBindingsName', label, true);
     let data = new TextEncoder().encode(JSON.stringify(newBindings));
     vscode.workspace.fs.writeFile(bindingFile, data);
 }
 
-async function restoreKeybindingsFromStorage(){
-    let config = vscode.workspace.getConfiguration('master-key');
-    let label = config.get<string>('activatedBindingName');
-    if(label === undefined){
+async function restoreKeybindingsFromStorage(label: string){
+    if(label === 'none'){
         keybindings = [];
         return 'none';
     };
@@ -92,7 +88,10 @@ async function restoreKeybindingsFromStorage(){
     try{
         await vscode.workspace.fs.stat(configFile);
         let data = await vscode.workspace.fs.readFile(configFile);
-        keybindings = JSON.parse(new TextDecoder().decode(data));
+        let newBindings = <Bindings>JSON.parse(new TextDecoder().decode(data));
+        keybindings = newBindings.bind;
+        updateConfig('mode', newBindings.mode);
+        updateConfig('definitions', newBindings.define);
         return label?.split(' ').slice(0, -1).join(' ');
     }catch{
         vscode.window.showErrorMessage("Could not load bindings with label: "+configFile);
@@ -151,7 +150,7 @@ async function removeKeybindings(){
         let oldBindingsStart = findText(ed.document, "AUTOMATED BINDINGS START");
         let oldBindingsEnd = findText(ed.document, "AUTOMATED BINDINGS END");
         ed.document.getText(oldBindingsStart);
-        saveKeybindingsToStorage('none', []);
+        saveKeybindingsToStorage('none', {});
         if (oldBindingsStart && oldBindingsEnd) {
             let range = new vscode.Range(
                 new vscode.Position(oldBindingsStart.start.line-1,
@@ -218,8 +217,7 @@ async function insertKeybindingsIntoConfig(name: string, config: any) {
             return;
         } else {
             let insertAt = bracket.end;
-            let label = name+" "+hash(config);
-            let bindingsToInsert = formatBindings(label, config);
+            let bindingsToInsert = formatBindings(name, config);
 
             // try and replace the old bindings
             let oldBindingsStart = findText(ed.document, "AUTOMATED BINDINGS START");
@@ -235,7 +233,6 @@ async function insertKeybindingsIntoConfig(name: string, config: any) {
                 });
                 ed.revealRange(new vscode.Range(range.start, range.start));
                 await vscode.commands.executeCommand('workbench.action.files.save');
-                await saveKeybindingsToStorage(label, config);
                 vscode.window.showInformationMessage(`Your master keybindings have
                     been updated in \`keybindings.json\`.`);
             } else if (oldBindingsEnd || oldBindingsStart){
@@ -249,7 +246,6 @@ async function insertKeybindingsIntoConfig(name: string, config: any) {
                 });
                 ed.revealRange(new vscode.Range(insertAt, insertAt));
                 await vscode.commands.executeCommand('workbench.action.files.save');
-                await saveKeybindingsToStorage(label, config);
                 vscode.window.showInformationMessage(`Your master keybindings have
                     been inserted into \`keybindings.json\`.`);
             }
@@ -368,11 +364,11 @@ export async function queryPreset(): Promise<Preset | undefined> {
     }
 }
 
-async function importBindings(file: vscode.Uri, preset: Bindings) {
-    insertKeybindingsIntoConfig(file, preset.name, preset.bind);
-    await withState(async state => state.set(MODE, {public: true}, defaultMode).resolve());
-    updateConfig('definitions', preset.define);
-    updateConfig('mode', preset.mode);
+async function importBindings(preset: Bindings) {
+    let config = vscode.workspace.getConfiguration('master-key');
+    let label = name+" "+hash(preset.bind);
+    await saveKeybindingsToStorage(label, preset);
+    await config.update('activatedBindingsId', label, true);
 }
 
 async function copyBindingsToNewFile(){
@@ -385,7 +381,7 @@ async function copyBindingsToNewFile(){
 
 export async function selectPreset(preset?: Preset){
     if(!preset){ preset = await queryPreset(); }
-    if(preset){ await importBindings(preset.uri, preset.bindings); }
+    if(preset){ await importBindings(preset.bindings); }
 }
 
 // TODO: we also evenutally want to have a way to customize presets
@@ -410,10 +406,8 @@ export async function updatePresets(event?: vscode.ConfigurationChangeEvent){
         else{ allDirs = [extensionPresetsDir]; }
 
         keybindingPresets = loadPresets(allDirs);
-        if(event?.affectsConfiguration('master-key.activatedBindingName')){
-            let name = await restoreKeybindingsFromStorage();
-            insertKeybindingsIntoConfig(name, keybindings);
-        }
+
+        updateConfig('master-key.activatedBindingsId', config.get<string>('activatedBindingsId'));
     }
 }
 
@@ -478,8 +472,16 @@ export async function activate(context: vscode.ExtensionContext) {
     ));
     console.log("presetdir: "+Utils.joinPath(context.extensionUri, "presets").toString());
     extensionPresetsDir = Utils.joinPath(context.extensionUri, "presets/");
-    await restoreKeybindingsFromStorage();
+    let config = vscode.workspace.getConfiguration('master-key');
+    let label = config.get<string>('activatedBindingsId') || 'none';
+
+    onConfigUpdate('master-key.activatedBindingsId', {triggerOnInit: false}, async value => {
+        let name = await restoreKeybindingsFromStorage(value);
+        await insertKeybindingsIntoConfig(name, keybindings);
+    });
 
     updatePresets();
     vscode.workspace.onDidChangeConfiguration(updatePresets);
+
+    await restoreKeybindingsFromStorage(label);
 }

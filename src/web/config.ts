@@ -11,19 +11,41 @@ export type ConfigListener = (x: any) => Promise<void>;
 let configState: vscode.Memento | undefined = undefined;
 let listeners: Record<string, ConfigListener[]> = {};
 
+export function getConfig(key: string){
+    return configState?.get(key);
+}
+
 export async function updateConfig<T>(key: string, value: T){
     if(configState){
-        configState.update(key, value);
-        for(let fn of (listeners[key] || [])){
-            await fn(value);
+        let oldValue = configState.get(key);
+        if(oldValue !== value){
+            configState.update(key, value);
+            for(let fn of (listeners[key] || [])){
+                await fn(value);
+            }
         }
     }else{
         throw(Error("Tried to update config state before activating config"));
     }
 }
 
-export async function onConfigUpdate(key: string, fn: ConfigListener){
-    if(configState){
+interface IConfigUpdateOpts{
+    triggerOnInit?: boolean
+}
+
+export async function onConfigUpdate(key: string, optsOrFn: IConfigUpdateOpts | ConfigListener, fn_?: ConfigListener){
+    let fn: ConfigListener;
+    let opts: IConfigUpdateOpts;
+    if(fn_){
+        fn = <ConfigListener>fn_;
+        opts = <IConfigUpdateOpts>optsOrFn;
+    }else{
+        fn = <ConfigListener>optsOrFn;
+        opts = {};
+    }
+    if(opts.triggerOnInit === undefined){ opts.triggerOnInit = true; }
+
+    if(configState && opts.triggerOnInit){
         await fn(configState.get(key, undefined));
     }
     let ls = listeners[key] || [];

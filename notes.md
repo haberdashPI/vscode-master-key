@@ -1,13 +1,5 @@
 ## Wrapping up unit tests / stability / coverage
 
-NEXT: switch to the dfl/fix-config-state branch to continue working on
-  config design
-
-TODO: write a test for parsing to check that `[[mode]]` sections are defined
-and that `validModes` is not
-
-NEW TEST: palette commands can no be readily tested, I believe...
-
 BUG: we're showing prefix commands as 'prefix' again in the palette
   - this is probably about how the debug setup for activate keys is mucking
   with extension state (is there some way to fix this? it appears to be non-specific to the current profile?)
@@ -26,12 +18,18 @@ BUG: remove command needs to update config (e.g. remove mode and definitions)
   or name.
 
   Is the Memento object used by config.ts specif to profiles? (Should be easy to test)
-  We can move on from there; we can see if the config has changed re the memento
-  object, and if it has then we update keybindigns. This *could* lead to false
-  alarms: if the memnto is not profile specific, it will show as out of sync
-  with the config setting (which is profile specific), and would lead to a
-  reloading of keybindings when switching profiles. This wouldn't be
-  so bad...
+
+  Bottom line: the config file isn't specific to a profile, at least that
+  is how I understand what would make sense from the design philosophy of profiles
+  (which is to limit the scope of extensions you need and have profile specific config)
+
+  MORE TO THE POINT: config state as I have it implemented really doesn't make
+  sense, i have to save and restore state hashed by name and content from global
+  storage in any case. The config setup should probably just store
+  the bindings object I need: so it should handle keybinding state as well.
+  Then, in the keybindings index.ts I need to register changes to this
+  config state. All of said state is bound to the label I create,
+  and config just updates with the config file label changes.
 
 TESTS:
   - get some comprehensive tests to verify that switching between
@@ -39,6 +37,11 @@ TESTS:
     of modes, definitions and bindings
   - test that removing bindings clears these various configuration settings
   - as part of this we should check that palette output looks right
+
+TODO: write a test for parsing to check that `[[mode]]` sections are defined
+and that `validModes` is not
+
+NEW TEST: palette commands can no be readily tested, I believe...
 
 BUG: repeat argument is not working for the repeat action command (e.g. I cannot repeat the last action ten times)
   + FIXED: this happens because the repeat command runs many `master-key.do` commands
