@@ -2,9 +2,10 @@
 
 import '@wdio/globals';
 import 'wdio-vscode-service';
-import { enterModalKeys, setBindings, setupEditor, movesCursorInEditor, waitForMode } from './utils.mts';
+import { enterModalKeys, setBindings, setupEditor, movesCursorInEditor, waitForMode, cursorToTop } from './utils.mts';
 import { StatusBar, TextEditor } from 'wdio-vscode-service';
 import { Key } from "webdriverio";
+import { sleep } from 'wdio-vscode-service';
 
 describe('Configuration', () => {
     let editor: TextEditor;
@@ -20,6 +21,7 @@ describe('Configuration', () => {
             name = "normal"
             default = true
             highlight = "Highlight"
+            cursorShape = "Block"
 
             [[bind]]
             name = "normal mode"
@@ -48,6 +50,8 @@ describe('Configuration', () => {
             command = "master-key.enterInsert"
         `);
         editor = await setupEditor(`A simple test`);
+        await cursorToTop(editor);
+        await editor.moveCursor(1, 1);
     });
 
     it('Can make normal mode the default', async() => {
@@ -55,16 +59,35 @@ describe('Configuration', () => {
         const statusBar = await (new StatusBar(workbench.locatorMap));
         const modeItem = await statusBar.getItem('Keybinding Mode: normal');
         expect(modeItem).toBeTruthy();
-        console.log('[DEBUG]: '+modeItem?.getCSSProperty('background-color'));
+
         await movesCursorInEditor(() => enterModalKeys('l'), [0, 1], editor);
     });
 
+    it('Correctly sets normal mode appearance', async () => {
+        // check appearance of cursor and status bar
+        const cursorEl = await browser.$('div[role="presentation"].cursors-layer');
+        const cursorClasses = await cursorEl.getAttribute('class');
+        expect(cursorClasses).toMatch(/cursor-block-style/);
+        const statusBarEl = await browser.$('div[aria-label="Keybinding Mode: normal"]');
+        const statusBarClasses = await statusBarEl.getAttribute('class');
+        expect(statusBarClasses).toMatch(/warning-kind/);
+    });
+
     it('Can allow switch to insert mode', async() => {
-        await movesCursorInEditor(() => enterModalKeys('i'), [0, -1], editor);
+        await editor.moveCursor(1, 1);
+        enterModalKeys('i');
         await waitForMode('insert');
-        await movesCursorInEditor(async () => {
-            await browser.keys('i');
-        }, [0, 1], editor);
-        expect(await editor.getText()).toEqual('Ai simple test');
+        await browser.keys('i');
+        expect(await editor.getText()).toEqual('iA simple test');
+    });
+
+    it('Correctly sets insert mode appearance', async () => {
+        // check appearance of cursor and status bar
+        const cursorEl = await browser.$('div[role="presentation"].cursors-layer');
+        const cursorClasses = await cursorEl.getAttribute('class');
+        expect(cursorClasses).toMatch(/cursor-line-style/);
+        const statusBarEl = await browser.$('div[aria-label="Keybinding Mode: insert"]');
+        const statusBarClasses = await statusBarEl.getAttribute('class');
+        expect(statusBarClasses).not.toMatch(/warning-kind/);
     });
 });

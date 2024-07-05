@@ -51,7 +51,8 @@ async function setMode(args_: unknown): Promise<CommandResult> {
 };
 export let modeSpecs: Record<string, ModeSpec> = {};
 export let defaultMode: string = 'default';
-async function updateModeSpecs(modeSpecs: Record<string, ModeSpec>){
+async function updateModeSpecs(modeSpecs_: Record<string, ModeSpec>){
+    modeSpecs = modeSpecs_;
     defaultMode = (Object.values(modeSpecs).filter(x => x.default)[0] || {name: 'default'}).name;
     await withState(async state => state.set(MODE, {public: true}, defaultMode).resolve());
 }
@@ -84,8 +85,12 @@ export async function activate(context: vscode.ExtensionContext){
 
     await withState(async state => state.set(MODE, {public: true}, defaultMode).resolve());
     await onResolve('mode', values => {
+        let cmode = currentMode; // NOTE: I don't really know why I to declare `cmode`
+        // instead of using `currentMode` directly but not doing it prevents this function
+        // from detecting changes to the mode state (something about how closures interact
+        // with scopes and async that I don't understand???)
         let newMode = <string>values.get(MODE, defaultMode);
-        if(currentMode !== newMode){
+        if(cmode !== newMode){
             updateCursorAppearance(vscode.window.activeTextEditor, newMode, modeSpecs || {});
             updateModeKeyCapture(newMode, modeSpecs || {});
             updateLineNumbers(newMode, modeSpecs || {});
