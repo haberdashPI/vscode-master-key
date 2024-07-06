@@ -5,7 +5,8 @@ import { validateInput } from '../utils';
 import { withState, recordedCommand, CommandResult } from '../state';
 import { ModeSpec } from '../keybindings/parsing';
 import { runCommandOnKeys } from './capture';
-import { onConfigUpdate } from '../config';
+import { onChangeBindings } from '../keybindings/config';
+import { Bindings } from '../keybindings/processing';
 
 export const MODE = 'mode';
 
@@ -57,8 +58,8 @@ async function setMode(args_: unknown): Promise<CommandResult> {
 };
 export let modeSpecs: Record<string, ModeSpec> = {};
 export let defaultMode: string = 'default';
-async function updateModeSpecs(modeSpecs_: Record<string, ModeSpec>){
-    modeSpecs = modeSpecs_;
+async function updateModeSpecs(bindings: Bindings | undefined){
+    modeSpecs = bindings?.mode || {};
     defaultMode = (Object.values(modeSpecs).filter(x => x.default)[0] || {name: 'default'}).name;
     await withState(async state => state.set(MODE, {public: true}, defaultMode).resolve());
 }
@@ -76,7 +77,7 @@ export async function activate(context: vscode.ExtensionContext){
     await updateLineNumConfig();
     vscode.workspace.onDidChangeConfiguration(updateLineNumConfig);
 
-    onConfigUpdate('mode', updateModeSpecs);
+    onChangeBindings(updateModeSpecs);
 
     vscode.window.onDidChangeActiveTextEditor(e => {
         updateCursorAppearance(e, currentMode, modeSpecs);

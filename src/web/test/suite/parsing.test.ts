@@ -4,7 +4,6 @@ import assert from 'assert';
 // as well as import your extension to test it
 import { processBindings } from '../../keybindings/processing';
 import { parseBindings } from '../../keybindings/parsing';
-import { activate as bindingActivate, queryPreset, updatePresets } from '../../keybindings/index';
 
 import { fromZodError } from 'zod-validation-error';
 import { sortBy, isEqual, isUndefined } from 'lodash';

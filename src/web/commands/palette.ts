@@ -1,7 +1,8 @@
 import * as vscode from 'vscode';
 import { prettifyPrefix } from '../utils';
 import { withState } from '../state';
-import { currentKeybindings, filterBindingFn } from '../keybindings';
+import { filterBindingFn } from '../keybindings';
+import { bindings } from '../keybindings/config';
 import { PREFIX_CODE, prefixCodes } from './prefix';
 import { MODE, defaultMode, modeSpecs } from './mode';
 import { IConfigKeyBinding, PrefixCodes } from '../keybindings/processing';
@@ -48,7 +49,6 @@ export async function commandPalette(args_: unknown,
 
     let state = await withState(async s => s);
     if(state){
-        let bindings = currentKeybindings();
         let availableBindings: IConfigKeyBinding[];
         let codes: PrefixCodes | undefined = undefined;
         let prefixCode = state.get<number>(PREFIX_CODE, 0)!;
@@ -56,7 +56,7 @@ export async function commandPalette(args_: unknown,
         paletteBindingMode = useKey;
         vscode.commands.executeCommand('setContext', 'master-key.keybindingPaletteBindingMode', paletteBindingMode);
         if(context){
-            availableBindings = <IConfigKeyBinding[]>bindings.filter(filterBindingFn(mode, prefixCode));
+            availableBindings = <IConfigKeyBinding[]>(bindings?.bind || []).filter(filterBindingFn(mode, prefixCode));
         }else{
             await withState(async state => {
                 [state, codes] = prefixCodes(state);
@@ -64,7 +64,7 @@ export async function commandPalette(args_: unknown,
             });
             // TODO: filter to commands that are actually usable in the command palette
             // (atlernatively, commands can set their own state somehow)
-            availableBindings = <IConfigKeyBinding[]>bindings.filter(filterBindingFn());
+            availableBindings = <IConfigKeyBinding[]>(bindings?.bind || []).filter(filterBindingFn());
         }
         availableBindings = reverse(uniqBy(reverse(availableBindings), b =>
             (b.args.key || "")+(b.args.prefixCode)));

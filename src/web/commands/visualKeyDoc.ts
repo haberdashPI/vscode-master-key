@@ -4,7 +4,8 @@ import * as vscode from 'vscode';
 import { MODE } from './mode';
 import z from 'zod';
 import { IConfigKeyBinding } from '../keybindings/processing';
-import { currentKeybindings, filterBindingFn } from '../keybindings';
+import { filterBindingFn } from '../keybindings';
+import { bindings } from '../keybindings/config';
 import { PREFIX_CODE } from './prefix';
 import { reverse, uniqBy } from 'lodash';
 import { modifierKey, prettifyPrefix, validateInput } from '../utils';
@@ -198,7 +199,7 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
     private updateKeys(values: CommandState | Map<string, unknown>){
         // TODO: prevent this from being updated on every keypress
         // e.g. when pressing single-key commands
-        let allBindings = currentKeybindings();
+        let allBindings = (bindings?.bind || []);
         if(this._oldBindings !== allBindings){
             this._modifierSetIndex = 0;
             let modifierCounts: Record<string, number> = {};
@@ -213,11 +214,11 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
             this._topModifier = this._modifierOrder[(0+1) % this._modifierOrder.length];
         }
 
-        let bindings = allBindings.filter(filterBindingFn(<string>(values.get(MODE)),
+        let curBindings = allBindings.filter(filterBindingFn(<string>(values.get(MODE)),
             <number>(values.get(PREFIX_CODE))));
-        bindings = reverse(uniqBy(reverse(bindings), b => b.args.key));
+        curBindings = reverse(uniqBy(reverse(curBindings), b => b.args.key));
         this._bindingMap = {};
-        for(let binding of bindings){
+        for(let binding of curBindings){
             this._bindingMap[prettifyPrefix(binding.args.key)] = binding;
         }
 
