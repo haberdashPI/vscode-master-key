@@ -1,5 +1,8 @@
 ## Wrapping up unit tests / stability / coverage
 
+at the end of this milestone I have my first public github repo available for this
+extension
+
 BUG: we're showing prefix commands as 'prefix' again in the palette
   - this is probably about how the debug setup for activate keys is mucking
   with extension state (is there some way to fix this? it appears to be non-specific to the current profile?)
@@ -71,6 +74,9 @@ CI??
 
 ## Visual Documentation Improvements
 
+at the end of this milestone I have documentation sufficient for releasing the extension
+in the vscode and vscodium stores
+
 NOTE: `path` entries should not have documentation; rather there should be a separate setup
 (perhaps comments?) for how to enter text that becomes part of the markdown output
 
@@ -86,24 +92,26 @@ for
 
 - IMPROVEMENT: show escape/function key row in the visual key doc
 
-- IMPROVEMENT: put some examples of cool features from `Larkin` in the README
-
 write code to convert the toml file to a markdown of organized tables of keybindings
 and provide a command that opens the Markdown preview of this file
 
-IMPROVEMENT: upon activating bindings, show the visual and cheetsheet documentation
+write up documentation for the default files
 
 DOCUMENTATION: in documenting macro playback note the limitations of recording the keyboard
 (e.g. that it only records inserts; any modifiers are espected to be commands
 that are recorded)
 
-## Binding Cleanup
+IMPROVEMENT: upon activating bindings, show the visual and cheetsheet documentation
+
+IMPROVEMENT: put some examples of cool features from `Larkin` in the README
+
+### Binding Cleanup
 
 - Split out any of the commands that are really custom for me that don't make sense to publish.
 - Pair down some of the required extensions.
 - Offer to install extensions? (maybe when a keybinding fails to run??)
 
-## Before first release
+### Before first release
 
 thoughts: things I must have to release:
 - user documentation (in cheet sheet form)
@@ -114,7 +122,7 @@ thoughts: things I must have to release:
   + have an option to allow a default command
     that operates on all keys that *aren't* specified
     OR that pass a regex
-- modernized selection utilities
+- MODERNIZED SELECTION UTILITIES
   - good documentation
   - modern build setup
 + final design of keybinding file that I'm relatively satisfied with
