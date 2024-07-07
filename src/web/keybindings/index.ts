@@ -127,15 +127,15 @@ async function removeKeybindings(){
             let range = new vscode.Range(
                 new vscode.Position(oldBindingsStart.start.line-1,
                                     ed.document.lineAt(oldBindingsStart.start.line-1).range.end.character),
-                new vscode.Position(oldBindingsEnd.end.line + 4, 0));
+                new vscode.Position(oldBindingsEnd.end.line + 1, 0));
             await ed.edit(builder => { builder.delete(range); });
             ed.revealRange(new vscode.Range(range.start, range.start));
             await vscode.commands.executeCommand('workbench.action.files.save');
             vscode.window.showInformationMessage(`Your master keybindings have
                 been updated in \`keybindings.json\`.`);
         } else {
-            vscode.window.showErrorMessage(`You appear to have altered the comments
-                around the automated bindings, or you have already removed the bindings.`);
+            vscode.window.showErrorMessage('Master Key tried to remove bindings but there '+
+                'were no master key bindings to remove.');
         }
     }
 }
@@ -412,10 +412,6 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(vscode.commands.registerCommand(
         'master-key.selectPreset',
         selectPreset
-    ));
-    context.subscriptions.push(vscode.commands.registerCommand(
-        'master-key.removePreset',
-        removeKeybindings,
     ));
     context.subscriptions.push(vscode.commands.registerCommand(
         'master-key.editPreset',

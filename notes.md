@@ -13,6 +13,10 @@ BUG: remove command needs to update config (e.g. remove mode and definitions)
   FIX: setting up a config state to manage all parsed keybinding information
   and update various listeners when it changes
 
+  CURRENT TASK: when starting a unit test, now a message about removing
+  bindings can come up. I need to wait to see if this happens and clear
+  it before moving on.
+
 TESTS:
   - get some comprehensive tests to verify that switching between
     different types of bindings sets properly updates the configuration
