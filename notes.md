@@ -3,20 +3,6 @@
 at the end of this milestone I have my first public github repo available for this
 extension
 
-CURRENT TASK: fixing bug when switching between profiles
-
-TESTS:
-  - get some comprehensive tests to verify that switching between
-    different types of bindings sets properly updates the configuration
-    of modes, definitions and bindings
-  - test that removing bindings clears these various configuration settings
-  - as part of this we should check that palette output looks right
-
-BUG: the palette sometimes clears itself (because resolve is called
-when the command to show the palette is displayed)
-
-BUG??: the hash value for bindings are suspiciously low numbers
-
 REFACTOR:
   - all of the code related to syncing keybinding config files with
   master keys should be pulled out into its own file
@@ -29,8 +15,6 @@ REFACTOR:
 TODO: write a test for parsing to check that `[[mode]]` sections are defined
 and that `validModes` is not
 
-NEW TEST: palette commands can no be readily tested, I believe...
-
 BUG: repeat argument is not working for the repeat action command (e.g. I cannot repeat the last action ten times)
   + FIXED: this happens because the repeat command runs many `master-key.do` commands
     which resets transient state like `count`
@@ -38,9 +22,23 @@ BUG: repeat argument is not working for the repeat action command (e.g. I cannot
 
 BUG: search highlighting clears almost immediately
 
+code coverage?
+https://istanbul.js.org/
+
+TODO: switch to public repo status, include a license, add a note at the top
+about the repo being in a WIP status
+
+CI??
+  - yes: I can use xvfb
+    refer to https://github.com/webdriverio-community/wdio-vscode-service/blob/main/.github/workflows/ci.yml for instance
+
 BUG: when there are no keys defined the visual keybinding output includes `undefined`
 
 NEW TEST: palette commands can no be readily tested, I believe...
+  - check that palette lists things germane to the current bindings
+  - if the bindings change, check that this list changes
+  - check that the palette shows up automaticlaly (or not) depending on config setting
+  - check that change mode affects how palette responds to input
 
 SMALL BUG: should 'esc' really be appended in the status bar since it cancels a prefix sequence... 🤔
 
@@ -58,16 +56,6 @@ unit tests: parsing of YAML and JSON(C)
 unit tests: store/restore named commands
 
 UNIT TEST: verify that larkin can be properly loaded/parsed
-
-code coverage?
-https://istanbul.js.org/
-
-TODO: switch to public repo status, include a license, add a note at the top
-about the repo being in a WIP status
-
-CI??
-  - yes: I can use xvfb
-    refer to https://github.com/webdriverio-community/wdio-vscode-service/blob/main/.github/workflows/ci.yml for instance
 
 ## Visual Documentation Improvements
 

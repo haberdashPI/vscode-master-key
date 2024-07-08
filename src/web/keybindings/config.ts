@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { hash } from 'immutable';
+import hash from 'object-hash';
 import { Utils } from 'vscode-uri';
 import { Bindings, IConfigKeyBinding } from './processing';
 
@@ -18,7 +18,8 @@ async function updateBindings(event?: vscode.ConfigurationChangeEvent){
 }
 
 export async function createBindings(newBindings: Bindings){
-    let label = newBindings.name + " " + hash(newBindings).toString(36);
+    let hashStr = hash(newBindings);
+    let label = newBindings.name + " " + hashStr;
     bindings = newBindings;
     vscode.workspace.fs.createDirectory(storageUri);
     let bindingFile = vscode.Uri.joinPath(storageUri, label+'.json');

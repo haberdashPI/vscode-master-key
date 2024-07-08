@@ -14,8 +14,7 @@ const TOML = require("smol-toml");
 // Keybinding Generation
 
 const AUTOMATED_COMMENT_START_PREFIX = `
-    // AUTOMATED BINDINGS START: For
-`;
+    // AUTOMATED BINDINGS START`;
 
 const AUTOMATED_COMMENT_START_SUFFIX = `
     //
@@ -59,8 +58,7 @@ function formatBindings(name: string, items: IConfigKeyBinding[]){
         json += ",\n\n";
     }
     return (
-        AUTOMATED_COMMENT_START_PREFIX+
-        "    // `"+name+"`"+
+        AUTOMATED_COMMENT_START_PREFIX+" `"+name+"`\n"+
         AUTOMATED_COMMENT_START_SUFFIX+
         "\n" + json +
         AUTOMATED_COMMENT_END
@@ -107,7 +105,7 @@ async function copyBindings(file: vscode.Uri){
 
 async function removeKeybindings(){
     const config = vscode.workspace.getConfiguration('master-key');
-    config.update('activatedBindingsId', 'none');
+    config.update('activatedBindingsId', 'none', true);
 
     await vscode.commands.executeCommand('workbench.action.openGlobalKeybindingsFile');
     let ed = vscode.window.activeTextEditor;

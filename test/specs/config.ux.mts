@@ -90,4 +90,18 @@ describe('Configuration', () => {
         const statusBarClasses = await statusBarEl.getAttribute('class');
         expect(statusBarClasses).not.toMatch(/warning-kind/);
     });
+
+    it('Can be removed', async () => {
+        const workbench = await browser.getWorkbench();
+        await workbench.executeCommand('Master Key: Remove Keybindings');
+        await waitForMode('default');
+
+        const statusBarEl = await browser.$('div[aria-label="Keybinding Mode: default"]');
+        const statusBarClasses = await statusBarEl.getAttribute('class');
+        expect(statusBarClasses).not.toMatch(/warning-kind/);
+
+        const cursorEl = await browser.$('div[role="presentation"].cursors-layer');
+        const cursorClasses = await cursorEl.getAttribute('class');
+        expect(cursorClasses).toMatch(/cursor-line-style/);
+    });
 });

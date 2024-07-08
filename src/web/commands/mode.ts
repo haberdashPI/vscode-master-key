@@ -27,24 +27,20 @@ const CURSOR_STYLES = {
 
 function updateCursorAppearance(editor: vscode.TextEditor | undefined, mode: string,
                                 modeSpec: Record<string, ModeSpec>){
-    if(editor && modeSpec[mode]){
-        editor.options.cursorStyle = CURSOR_STYLES[modeSpec[mode]?.cursorShape] || "Line";
+    if(editor){
+        editor.options.cursorStyle = CURSOR_STYLES[modeSpec[mode]?.cursorShape] || vscode.TextEditorCursorStyle.Line;
     }
 }
 
 async function updateModeKeyCapture(mode: string, modeSpec: Record<string, ModeSpec>){
-    if(modeSpec[mode]){
-        runCommandOnKeys(modeSpec[mode].onType, mode);
-    }
+    runCommandOnKeys(modeSpec[mode]?.onType, mode);
 }
 
 function updateLineNumbers(mode: string, modeSpec: Record<string, ModeSpec>){
     let config = vscode.workspace.getConfiguration();
-    if(modeSpec[mode]){
-        let numbers = modeSpec[mode].lineNumbers;
-        config.update('editor.lineNumbers', numbers || defaultLineNumbers,
-            vscode.ConfigurationTarget.Global);
-    }
+    let numbers = modeSpec[mode]?.lineNumbers || defaultLineNumbers;
+    config.update('editor.lineNumbers', numbers || defaultLineNumbers,
+        vscode.ConfigurationTarget.Global);
 }
 
 const setModeArgs = z.object({ value: z.string() }).strict();

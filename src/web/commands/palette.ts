@@ -6,8 +6,9 @@ import { bindings } from '../keybindings/config';
 import { PREFIX_CODE, prefixCodes } from './prefix';
 import { MODE, defaultMode, modeSpecs } from './mode';
 import { IConfigKeyBinding, PrefixCodes } from '../keybindings/processing';
-import { RunCommandsArgs, doCommandsCmd } from './do';
+import { COMMAND_HISTORY, RecordedCommandArgs, RunCommandsArgs, doCommandsCmd } from './do';
 import { reverse, uniqBy, sortBy } from 'lodash';
+import { List } from 'immutable';
 import replaceAll from 'string.prototype.replaceall';
 import { TypeOf } from 'zod';
 
@@ -138,9 +139,12 @@ export async function commandPalette(args_: unknown,
         });
         vscode.commands.executeCommand('setContext', 'master-key.keybindingPaletteOpen', true);
         picker.show();
-        // when this the palette accepts keybinding presses (rather than searching
+        // when this palette accepts keybinding presses (rather than searching
         // bindings), dispose of the palette any time a normal key binding key is pressed
-        // (e.g. ones that add to the prefix or execute a command)
+        // the effect of a normal key is either 1.) to add update the current prefix
+        // 2.) complete a command, thereby updating the command history
+        // 3.) enter capture mode
+        let commandsFinished = 0;
         await withState(async state => {
             if(paletteBindingMode){
                 state = state.onSet(PREFIX_CODE, _ => {
@@ -148,7 +152,16 @@ export async function commandPalette(args_: unknown,
                     picker.dispose();
                     return false;
                 });
-                state = state.onResolve('keybindingPalette', _ => {
+                state = state.onSet(COMMAND_HISTORY, _ => {
+                    commandsFinished += 1;
+                    if(commandsFinished > 1){
+                        accepted = true;
+                        picker.dispose();
+                        return false;
+                    }
+                    return true;
+                });
+                state = state.onSet(MODE, _ => {
                     accepted = true;
                     picker.dispose();
                     return false;
