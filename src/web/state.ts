@@ -126,20 +126,24 @@ export class CommandState {
     }
 
     reset(){
+        let changedValues = new Set();
         let values = this.record.values.map((v, k) => {
             let transient = this.record.options.get(k)?.transient;
-            if(transient){
+            if(transient && transient.reset !== v){
+                changedValues.add(k);
                 return transient.reset;
             }else{
                 return v;
             }
         });
-        // TODO: we don't need to call all listeners
-        // here, we could track which ones were changed
-        // above
+
         let options = this.record.options.withMutations(opt =>
             opt.map((v, k) => v.update('listeners', l => {
-                return l.filter((listener) => listener(values));
+                if(changedValues.has(k)){
+                    return l.filter((listener) => listener(values));
+                }else{
+                    return l;
+                }
             })));
 
         let record = this.record.

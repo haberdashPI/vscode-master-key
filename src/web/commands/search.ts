@@ -2,9 +2,10 @@ import * as vscode from 'vscode';
 import z from 'zod';
 import { validateInput, wrappedTranslate } from '../utils';
 import { doArgs } from '../keybindings/parsing';
-import { onResolve, withState, CommandResult, CommandState, recordedCommand } from '../state';
+import { onResolve, withState, CommandResult, CommandState, recordedCommand, onSet } from '../state';
 import { MODE, defaultMode } from './mode';
 import { captureKeys } from './capture';
+import { COMMAND_HISTORY } from './do';
 
 export const searchArgs = z.object({
     backwards: z.boolean().optional(),
@@ -174,6 +175,7 @@ function navigateTo(state: SearchState, editor: vscode.TextEditor, updateSearchF
         editor.setDecorations(searchDecorator, []);
         editor.setDecorations(searchOtherDecorator, []);
     }else {
+        state.modified = true;
         let doc = editor.document;
 
         /**
@@ -312,6 +314,18 @@ function skipTo(state: SearchState, editor: vscode.TextEditor){
     }
 }
 
+function searchDecorationCheck(){
+    let editor = vscode.window.activeTextEditor;
+    if (editor) {
+        let searchState = getOldSearchState(editor, currentSearch);
+        if(searchState){
+            if(!searchState.modified){ clearSearchDecorations(editor); }
+            searchState.modified = false;
+        }
+    }
+    return true;
+}
+
 async function search(args_: any[]): Promise<CommandResult> {
     let editor_ = vscode.window.activeTextEditor;
     if(!editor_){ return; }
@@ -320,18 +334,6 @@ async function search(args_: any[]): Promise<CommandResult> {
     let args = validateInput('master-key.search', args_, searchArgs);
     if(!args){ return; }
     currentSearch = args.register;
-
-    await onResolve('search', values => {
-        let editor = vscode.window.activeTextEditor;
-        if (editor) {
-            let searchState = getOldSearchState(editor, currentSearch);
-            if(searchState){
-                if(!searchState.modified){ clearSearchDecorations(editor); }
-                searchState.modified = false;
-            }
-        }
-        return true;
-    });
 
     let mode = '';
     await withState(async state => {
@@ -463,7 +465,7 @@ async function previousMatch(editor: vscode.TextEditor,
     return;
 }
 
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
     // NOTE: `search` must be registered as a normal command, so that its result is returned
     // we need it when call `executeCommand` in `doCommand`.
     context.subscriptions.push(vscode.commands.registerCommand('master-key.search', recordedCommand(search)));
@@ -472,4 +474,6 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(vscode.commands.registerTextEditorCommand('master-key.clearSearchDecorations', clearSearchDecorations));
     updateSearchHighlights();
     vscode.workspace.onDidChangeConfiguration(updateSearchHighlights);
+
+    await onSet(COMMAND_HISTORY, _ => searchDecorationCheck());
 }
