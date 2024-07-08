@@ -3,8 +3,6 @@
 at the end of this milestone I have my first public github repo available for this
 extension
 
-BUG: search highlighting clears almost immediately
-
 BUG: repeat argument is not working for the repeat action command (e.g. I cannot repeat the last action ten times)
   + FIXED: this happens because the repeat command runs many `master-key.do` commands
     which resets transient state like `count`
@@ -124,6 +122,11 @@ REFACTOR: somehow we have to define/organize binding parameters
 FEATURE: require parsing to validate modes to be all negations or all positive mode specifications
 
 wishlist:
+
+- test: use selectors to find the text decorations used for search and check their properties
+
+- optimization: most values can be read only, (e.g. definitions) and if we implemented
+  these values differently, it would save us some time
 
 - a command to repair keybindings getting out of sync with the activated bindings
   ID
