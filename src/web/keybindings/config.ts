@@ -12,17 +12,13 @@ let listeners: ConfigListener[] = [];
 async function updateBindings(event?: vscode.ConfigurationChangeEvent){
     if(!event || event.affectsConfiguration('master-key')){
         let config = vscode.workspace.getConfiguration('master-key');
-        let storedId = configState?.get('activatedBindingsId') || 'none';
         let configId = config.get<string>('activatedBindingsId') || 'none';
-        if(storedId !== configId){
-            configState?.update('activatedBindingsId', configId);
-            loadBindings(configId);
-        }
+        useBindings(configId);
     }
 }
 
-async function createBindings(newBindings: Bindings){
-    let label = newBindings.name + " " + hash(newBindings);
+export async function createBindings(newBindings: Bindings){
+    let label = newBindings.name + " " + hash(newBindings).toString(36);
     bindings = newBindings;
     vscode.workspace.fs.createDirectory(storageUri);
     let bindingFile = vscode.Uri.joinPath(storageUri, label+'.json');
@@ -31,7 +27,7 @@ async function createBindings(newBindings: Bindings){
     return label;
 }
 
-async function loadBindings(label: string){
+async function useBindings(label: string){
     if(label === 'none'){
         bindings = undefined;
         if(configState){ for(let fn of (listeners || [])){ await fn(bindings); } }
@@ -56,12 +52,6 @@ async function loadBindings(label: string){
 // define things like how each keybinding mode works, and what
 
 
-export async function setBindings(bindings: Bindings) {
-    let config = vscode.workspace.getConfiguration('master-key');
-    let label = await createBindings(bindings);
-    config.update('activatedBindingsId', label, true);
-}
-
 export async function onChangeBindings(fn: ConfigListener){
     if(configState){ await fn(bindings); }
     listeners.push(fn);
@@ -75,12 +65,4 @@ export async function activate(context: vscode.ExtensionContext){
 
     updateBindings();
     vscode.workspace.onDidChangeConfiguration(updateBindings);
-
-    context.subscriptions.push(vscode.commands.registerCommand(
-        'master-key.removePreset',
-        () => {
-            let config = vscode.workspace.getConfiguration('master-key');
-            config.update('activatedBindingsId', 'none');
-        }
-    ));
 }

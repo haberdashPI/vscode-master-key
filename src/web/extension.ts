@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import * as keybindings from './keybindings';
+import * as keybindings from './keybindings/index';
 import * as commands from './commands/index';
 import * as status from './status/index';
 import * as state from './state';

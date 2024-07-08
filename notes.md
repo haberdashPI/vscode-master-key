@@ -3,19 +3,7 @@
 at the end of this milestone I have my first public github repo available for this
 extension
 
-BUG: we're showing prefix commands as 'prefix' again in the palette
-  - this is probably about how the debug setup for activate keys is mucking
-  with extension state (is there some way to fix this? it appears to be non-specific to the current profile?)
-BUG: sometimes what shows up in the palette by the auto show is different from
-  what shows up with an explicit command, what's that about?
-BUG: remove command needs to update config (e.g. remove mode and definitions)
-
-  FIX: setting up a config state to manage all parsed keybinding information
-  and update various listeners when it changes
-
-  CURRENT TASK: when starting a unit test, now a message about removing
-  bindings can come up. I need to wait to see if this happens and clear
-  it before moving on.
+CURRENT TASK: fixing bug when switching between profiles
 
 TESTS:
   - get some comprehensive tests to verify that switching between
@@ -23,6 +11,11 @@ TESTS:
     of modes, definitions and bindings
   - test that removing bindings clears these various configuration settings
   - as part of this we should check that palette output looks right
+
+BUG: the palette sometimes clears itself (because resolve is called
+when the command to show the palette is displayed)
+
+BUG??: the hash value for bindings are suspiciously low numbers
 
 REFACTOR:
   - all of the code related to syncing keybinding config files with
@@ -155,6 +148,9 @@ REFACTOR: somehow we have to define/organize binding parameters
 FEATURE: require parsing to validate modes to be all negations or all positive mode specifications
 
 wishlist:
+
+- a command to repair keybindings getting out of sync with the activated bindings
+  ID
 
 - have backspace and enter run commands in capture mode
 

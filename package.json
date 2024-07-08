@@ -122,8 +122,8 @@
         "master-key.activatedBindingsId": {
           "title": "Active Master Key Bindings Identifier",
           "type": "string",
-          "description": "A unique label for the currently active master keybinding configuration. Leave blank to remove automated bindings. This value is automated, and should normally be set using the `Master Key: Activate Keybindings` command.",
-          "default": ""
+          "description": "This value is automated, changing it manually can lead the current master key bindings to be in an inconsistent state. Use `Master Key: Activate Keybindings` or `Master Key: Remove Keybindings` to change this setting.",
+          "default": "none"
         },
         "master-key.presetDirectories": {
           "title": "Directory to search for Master Key presets",

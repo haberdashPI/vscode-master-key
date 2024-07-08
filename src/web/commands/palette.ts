@@ -92,7 +92,7 @@ export async function commandPalette(args_: unknown,
         picks = sortBy(picks, x => -x.args.priority);
         let filteredPicks: typeof picks = [];
 
-        if(picks.length === 0 && !modeSpecs[mode].recordEdits){
+        if(picks.length === 0){
             vscode.window.showErrorMessage(`Palette cannot be shown for mode '${mode}', there are no bindings.`);
             return;
         }
