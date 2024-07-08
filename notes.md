@@ -3,11 +3,6 @@
 at the end of this milestone I have my first public github repo available for this
 extension
 
-BUG: repeat argument is not working for the repeat action command (e.g. I cannot repeat the last action ten times)
-  + FIXED: this happens because the repeat command runs many `master-key.do` commands
-    which resets transient state like `count`
-  - unit test (verify that this doesn't regress)
-
 code coverage?
 https://istanbul.js.org/
 

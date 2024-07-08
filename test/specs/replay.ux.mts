@@ -3,7 +3,7 @@ import { Key } from 'webdriverio';
 import { setBindings, setupEditor, movesCursorInEditor, enterModalKeys, waitForMode } from './utils.mts';
 import { sleep, InputBox, TextEditor, Workbench } from 'wdio-vscode-service';
 
-describe('Search motion command', () => {
+describe('Replay', () => {
     let editor: TextEditor;
     let workbench: Workbench;
 
@@ -182,10 +182,25 @@ describe('Search motion command', () => {
 
             [[bind]]
             path = "replay"
+            name = "replay repeat"
+            key = "q c"
+            command = "master-key.replayFromStack"
+            repeat = "count"
+
+            [[bind]]
+            path = "replay"
             name = "replay last"
             key = "q l"
             command = "master-key.replayFromHistory"
             args.at = "i"
+
+            [[bind]]
+            key = "shift+2"
+            mode = "normal"
+            name = "count 2"
+            command = "master-key.updateCount"
+            args.value = "2"
+            resetTransient = false
         `);
         editor = await setupEditor(`a b c d
 e f g h
@@ -380,7 +395,7 @@ i j k l`);
         await editor.setText(`a b c d\ne f g h\ni j k l`);
     });
 
-    it.only('Insert chars', async () => {
+    it('Insert chars', async () => {
         await editor.moveCursor(1, 1);
         await enterModalKeys('escape');
 
@@ -404,5 +419,23 @@ i j k l`);
         text = await editor.getText();
         expect(text).toEqual(`fa fb c d\ne f g h\ni j k l`);
         await editor.setText(`a b c d\ne f g h\ni j k l`);
+    });
+
+    it('Repeats replay using count', async () => {
+        await editor.moveCursor(1, 1);
+        await enterModalKeys('escape');
+
+        await enterModalKeys(['shift', 'q']);
+        await waitForMode('rec: normal');
+        await movesCursorInEditor(async () => {
+            await enterModalKeys('l');
+        }, [0, 1], editor);
+        await enterModalKeys(['shift', 'q']);
+        await waitForMode('normal');
+
+        await movesCursorInEditor(async () => {
+            await enterModalKeys({key: ['shift', '2'], count: 2}, 'q',
+                {key: 'c', updatesStatus: false});
+        }, [0, 2], editor);
     });
 });

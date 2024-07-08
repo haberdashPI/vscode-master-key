@@ -72,13 +72,6 @@ describe('Simple Motions', () => {
             command = "master-key.enterInsert"
             mode = "normal"
 
-            [define.keyNumber]
-            mode = "normal"
-            "shift+0" = 0
-            "shift+1" = 1
-            "shift+2" = 2
-            "shift+3" = 3
-
             [[bind]]
             # NOTE: because of how vscode-extension-tester is implemented
             # numeric values get typed, so we use other keybindings here
