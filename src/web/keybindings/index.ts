@@ -6,9 +6,7 @@ import { uniq, pick, words } from 'lodash';
 import replaceAll from 'string.prototype.replaceall';
 import { Utils } from 'vscode-uri';
 import z from 'zod';
-import { withState } from '../state';
-import { MODE, defaultMode } from '../commands/mode';
-import { updateConfig } from '../config';
+import { createBindings } from './config';
 const JSONC = require("jsonc-simple-parser");
 const TOML = require("smol-toml");
 
@@ -16,14 +14,11 @@ const TOML = require("smol-toml");
 // Keybinding Generation
 
 const AUTOMATED_COMMENT_START_PREFIX = `
-    // AUTOMATED BINDINGS START: Master Key Bindings
-    //
-    // These bindings were automatically inserted by the master-key extension from the
-    // following file:
-    //
-`;
+    // AUTOMATED BINDINGS START`;
 
 const AUTOMATED_COMMENT_START_SUFFIX = `
+    //
+    // These bindings were automatically inserted by the master-key extension.
     //
     // Leave this comment (and the one denoting the end) unmodified to ensure the automated
     // bindings are properly updated if/when you insert another preset. Add any additional
@@ -47,7 +42,7 @@ function findText(doc: vscode.TextDocument, text: string) {
     return firstMatchResult.value;
 }
 
-function formatBindings(file: vscode.Uri, items: IConfigKeyBinding[]){
+function formatBindings(name: string, items: IConfigKeyBinding[]){
     let json = "";
     for(let item of items){
         if(item.prefixDescriptions.length > 0){
@@ -63,33 +58,11 @@ function formatBindings(file: vscode.Uri, items: IConfigKeyBinding[]){
         json += ",\n\n";
     }
     return (
-        AUTOMATED_COMMENT_START_PREFIX+
-        "    // `"+file.toString()+"`"+
+        AUTOMATED_COMMENT_START_PREFIX+" `"+name+"`\n"+
         AUTOMATED_COMMENT_START_SUFFIX+
         "\n" + json +
         AUTOMATED_COMMENT_END
     );
-}
-
-let keybindings: IConfigKeyBinding[] = [];
-async function saveKeybindingsToStorage(config: any){
-    keybindings = config;
-    vscode.workspace.fs.createDirectory(storageUri);
-    let configFile = vscode.Uri.joinPath(storageUri, 'config.json');
-    let data = new TextEncoder().encode(JSON.stringify(config));
-    vscode.workspace.fs.writeFile(configFile, data);
-}
-
-async function restoreKeybindingsFromStorage(){
-    let configFile = vscode.Uri.joinPath(storageUri, 'config.json');
-    try{
-        await vscode.workspace.fs.stat(configFile);
-        let data = await vscode.workspace.fs.readFile(configFile);
-        keybindings = JSON.parse(new TextDecoder().decode(data));
-    }catch{
-        console.error("No keybindings found at: "+configFile);
-        return;
-    }
 }
 
 export function filterBindingFn(mode?: string, prefixCode?: number) {
@@ -117,10 +90,6 @@ export function filterBindingFn(mode?: string, prefixCode?: number) {
     };
 }
 
-export function currentKeybindings(){
-    return keybindings;
-}
-
 async function copyBindings(file: vscode.Uri){
     await vscode.commands.executeCommand("workbench.action.files.newUntitledFile");
     let ed = vscode.window.activeTextEditor;
@@ -135,6 +104,9 @@ async function copyBindings(file: vscode.Uri){
 }
 
 async function removeKeybindings(){
+    const config = vscode.workspace.getConfiguration('master-key');
+    config.update('activatedBindingsId', 'none', true);
+
     await vscode.commands.executeCommand('workbench.action.openGlobalKeybindingsFile');
     let ed = vscode.window.activeTextEditor;
     if(ed){
@@ -145,15 +117,15 @@ async function removeKeybindings(){
             let range = new vscode.Range(
                 new vscode.Position(oldBindingsStart.start.line-1,
                                     ed.document.lineAt(oldBindingsStart.start.line-1).range.end.character),
-                new vscode.Position(oldBindingsEnd.end.line + 4, 0));
+                new vscode.Position(oldBindingsEnd.end.line + 1, 0));
             await ed.edit(builder => { builder.delete(range); });
             ed.revealRange(new vscode.Range(range.start, range.start));
             await vscode.commands.executeCommand('workbench.action.files.save');
             vscode.window.showInformationMessage(`Your master keybindings have
                 been updated in \`keybindings.json\`.`);
         } else {
-            vscode.window.showErrorMessage(`You appear to have altered the comments
-                around the automated bindings, or you have already removed the bindings.`);
+            vscode.window.showErrorMessage('Master Key tried to remove bindings but there '+
+                'were no master key bindings to remove.');
         }
     }
 }
@@ -195,7 +167,12 @@ async function copyCommandResultIntoBindingFile(command: string){
     }
 }
 
-async function insertKeybindingsIntoConfig(file: vscode.Uri, config: any) {
+async function insertKeybindingsIntoConfig(name: string, label: string,
+    keyBindings: IConfigKeyBinding[]) {
+
+    const config = vscode.workspace.getConfiguration('master-key');
+    await config.update('activatedBindingsId', label, true);
+
     await vscode.commands.executeCommand('workbench.action.openGlobalKeybindingsFile');
     let ed = vscode.window.activeTextEditor;
     if (ed){
@@ -207,7 +184,7 @@ async function insertKeybindingsIntoConfig(file: vscode.Uri, config: any) {
             return;
         } else {
             let insertAt = bracket.end;
-            let bindingsToInsert = formatBindings(file, config);
+            let bindingsToInsert = formatBindings(name, keyBindings);
 
             // try and replace the old bindings
             let oldBindingsStart = findText(ed.document, "AUTOMATED BINDINGS START");
@@ -223,7 +200,6 @@ async function insertKeybindingsIntoConfig(file: vscode.Uri, config: any) {
                 });
                 ed.revealRange(new vscode.Range(range.start, range.start));
                 await vscode.commands.executeCommand('workbench.action.files.save');
-                await saveKeybindingsToStorage(config);
                 vscode.window.showInformationMessage(`Your master keybindings have
                     been updated in \`keybindings.json\`.`);
             } else if (oldBindingsEnd || oldBindingsStart){
@@ -237,7 +213,6 @@ async function insertKeybindingsIntoConfig(file: vscode.Uri, config: any) {
                 });
                 ed.revealRange(new vscode.Range(insertAt, insertAt));
                 await vscode.commands.executeCommand('workbench.action.files.save');
-                await saveKeybindingsToStorage(config);
                 vscode.window.showInformationMessage(`Your master keybindings have
                     been inserted into \`keybindings.json\`.`);
             }
@@ -273,15 +248,15 @@ interface PresetPick extends vscode.QuickPickItem{
 function makeQuickPicksFromPresets(presets: Preset[]): PresetPick[]{
     let nameCount: Record<string, number> = {};
     for(let preset of presets){
-        let count = nameCount[preset.name] || 0;
-        nameCount[preset.name] = count+1;
+        let count = nameCount[preset.bindings.name || 'none'] || 0;
+        nameCount[preset.bindings.name || 'none'] = count+1;
     }
 
     return presets.map(preset => {
-        if(nameCount[preset.name] > 1){
-            return {preset, label: preset.name, detail: preset.uri.path};
+        if(nameCount[preset.bindings.name || 'none'] > 1){
+            return {preset, label: preset.bindings.name || 'none', detail: preset.uri.path};
         }else{
-            return {preset, label: preset.name};
+            return {preset, label: preset.bindings.name || 'none'};
         }
     });
 }
@@ -308,8 +283,8 @@ export async function queryPreset(): Promise<Preset | undefined> {
                 langId || Utils.extname(uri)));
 
             if(bindings){
+                bindings.name = bindings.name || Utils.basename(uri);
                 return {
-                    name: bindings.name || Utils.basename(uri),
                     uri,
                     bindings
                 };
@@ -327,8 +302,8 @@ export async function queryPreset(): Promise<Preset | undefined> {
         if(file && file.length === 1){
             let bindings = await processParsing(await parseBindingFile(file[0]));
             if(bindings){
+                bindings.name = bindings.name || Utils.basename(file[0]);
                 return {
-                    name: bindings.name || Utils.basename(file[0]),
                     uri: file[0],
                     bindings
                 };
@@ -356,13 +331,6 @@ export async function queryPreset(): Promise<Preset | undefined> {
     }
 }
 
-async function importBindings(file: vscode.Uri, preset: Bindings) {
-    insertKeybindingsIntoConfig(file, preset.bind);
-    await withState(async state => state.set(MODE, {public: true}, defaultMode).resolve());
-    updateConfig('definitions', preset.define);
-    updateConfig('mode', preset.mode);
-}
-
 async function copyBindingsToNewFile(){
     let options = makeQuickPicksFromPresets(await keybindingPresets);
     let picked = await vscode.window.showQuickPick(options);
@@ -373,7 +341,11 @@ async function copyBindingsToNewFile(){
 
 export async function selectPreset(preset?: Preset){
     if(!preset){ preset = await queryPreset(); }
-    if(preset){ await importBindings(preset.uri, preset.bindings); }
+    if(preset){
+        let label = await createBindings(preset.bindings);
+        await insertKeybindingsIntoConfig(preset.bindings.name || 'none',
+                                          label, preset.bindings.bind);
+    }
 }
 
 // TODO: we also evenutally want to have a way to customize presets
@@ -383,12 +355,11 @@ export async function selectPreset(preset?: Preset){
 
 interface Preset{
     uri: vscode.Uri,
-    name: string
     bindings: Bindings,
 }
 let keybindingPresets: Promise<Preset[]>;
 
-export function updatePresets(event?: vscode.ConfigurationChangeEvent){
+export async function updatePresets(event?: vscode.ConfigurationChangeEvent){
     if(!event || event.affectsConfiguration('master-key')){
         let config = vscode.workspace.getConfiguration('master-key');
         let userDirs = config.get<string[]>('presetDirectories')?.map(x =>
@@ -405,10 +376,8 @@ let presetFiles = ['larkin.toml'];
 
 async function loadPreset(presets: Preset[], uri: vscode.Uri){
     let bindings = processParsing(await parseBindingFile(uri), uri+" ");
-    let [label] = Utils.basename(uri).split('.');
     if(bindings){
-        if(bindings.name){ label = bindings.name; }
-        presets.push({bindings, name: label, uri});
+        presets.push({bindings, uri});
     }
 }
 
@@ -436,17 +405,11 @@ async function loadPresets(allDirs: vscode.Uri[]){
 }
 
 let extensionPresetsDir: vscode.Uri;
-let storageUri: vscode.Uri;
 
 export async function activate(context: vscode.ExtensionContext) {
-    storageUri = context.globalStorageUri;
     context.subscriptions.push(vscode.commands.registerCommand(
         'master-key.selectPreset',
         selectPreset
-    ));
-    context.subscriptions.push(vscode.commands.registerCommand(
-        'master-key.removePreset',
-        removeKeybindings,
     ));
     context.subscriptions.push(vscode.commands.registerCommand(
         'master-key.editPreset',
@@ -460,9 +423,11 @@ export async function activate(context: vscode.ExtensionContext) {
         'master-key.importDefaultBindings',
         () => copyCommandResultIntoBindingFile('workbench.action.openDefaultKeybindingsFile')
     ));
+    context.subscriptions.push(vscode.commands.registerCommand(
+        'master-key.removePreset', removeKeybindings));
+
     console.log("presetdir: "+Utils.joinPath(context.extensionUri, "presets").toString());
     extensionPresetsDir = Utils.joinPath(context.extensionUri, "presets/");
-    await restoreKeybindingsFromStorage();
 
     updatePresets();
     vscode.workspace.onDidChangeConfiguration(updatePresets);

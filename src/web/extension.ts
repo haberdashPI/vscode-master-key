@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
-import * as keybindings from './keybindings';
+import * as keybindings from './keybindings/index';
 import * as commands from './commands/index';
 import * as status from './status/index';
 import * as state from './state';
-import * as config from './config';
+import * as config from './keybindings/config';
 
 export async function activate(context: vscode.ExtensionContext) {
     await keybindings.activate(context);

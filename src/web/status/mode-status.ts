@@ -3,8 +3,9 @@ import { CommandState, onResolve, withState } from '../state';
 import { RECORD } from '../commands/replay';
 import { MODE, defaultMode, modeSpecs } from '../commands/mode';
 import { Map } from 'immutable';
-import { onConfigUpdate } from '../config';
+import { onChangeBindings } from '../keybindings/config';
 import { ModeSpec } from '../keybindings/parsing';
+import { Bindings } from '../keybindings/processing';
 
 function updateModeStatusHelper(state: Map<string, unknown> | CommandState,
     modeSpecs: Record<string, ModeSpec>){
@@ -29,7 +30,8 @@ function updateModeStatus(state: Map<string, unknown> | CommandState ){
     return true;
 }
 
-async function updateModeStatusConfig(modeSpecs: Record<string, ModeSpec>){
+async function updateModeStatusConfig(bindings: Bindings | undefined){
+    let modeSpecs = bindings?.mode || {};
     await withState(async state => {
         updateModeStatusHelper(state, modeSpecs);
         return state;
@@ -47,5 +49,5 @@ export async function activate(context: vscode.ExtensionContext){
         return state;
     });
     await onResolve('modeStatus', updateModeStatus);
-    await onConfigUpdate('mode', updateModeStatusConfig);
+    await onChangeBindings(updateModeStatusConfig);
 }

@@ -2,7 +2,8 @@ import * as vscode from 'vscode';
 import z from 'zod';
 import { validateInput } from './utils';
 import { Map, List, RecordOf, Record as IRecord } from 'immutable';
-import { onConfigUpdate } from './config';
+import { onChangeBindings } from './keybindings/config';
+import { Bindings } from './keybindings/processing';
 
 export type Listener = (states: Map<string, unknown>) => boolean;
 
@@ -256,8 +257,9 @@ function addDefinitions(state: CommandState, definitions: any){
     });
 }
 
-async function updateDefinitions(defs: any){
-    await withState(async state => addDefinitions(state, defs));
+async function updateDefinitions(bindings: Bindings | undefined){
+    // TODO: ideally we clear the old definitions here
+    await withState(async state => addDefinitions(state, bindings?.define));
 }
 
 const setFlagArgs = z.object({
@@ -279,7 +281,7 @@ async function setFlag(args_: unknown): Promise<CommandResult> {
 }
 
 export async function activate(context: vscode.ExtensionContext){
-    onConfigUpdate('definitions', updateDefinitions);
+    onChangeBindings(updateDefinitions);
 
     context.subscriptions.push(vscode.commands.registerCommand('master-key.setFlag',
         recordedCommand(setFlag)));

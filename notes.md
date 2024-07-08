@@ -1,23 +1,7 @@
 ## Wrapping up unit tests / stability / coverage
 
-NEXT: switch to the dfl/fix-config-state branch to continue working on
-  config design
-
-TODO: write a test for parsing to check that `[[mode]]` sections are defined
-and that `validModes` is not
-
-NEW TEST: palette commands can no be readily tested, I believe...
-
-BUG: we're showing prefix commands as 'prefix' again in the palette
-  - this is probably about how the debug setup for activate keys is mucking
-  with extension state (is there some way to fix this? it appears to be non-specific to the current profile?)
-BUG: sometimes what shows up in the palette by the auto show is different from
-  what shows up with an explicit command, what's that about?
-BUG: window splitting commands don't work (make a test for it)
-
-SMALL BUG: should 'esc' really be appended in the status bar since it cancels a prefix sequence... 🤔
-
-BUG: remove command needs to update config (e.g. remove mode and definitions)
+at the end of this milestone I have my first public github repo available for this
+extension
 
 BUG: repeat argument is not working for the repeat action command (e.g. I cannot repeat the last action ten times)
   + FIXED: this happens because the repeat command runs many `master-key.do` commands
@@ -26,7 +10,25 @@ BUG: repeat argument is not working for the repeat action command (e.g. I cannot
 
 BUG: search highlighting clears almost immediately
 
+code coverage?
+https://istanbul.js.org/
+
+TODO: switch to public repo status, include a license, add a note at the top
+about the repo being in a WIP status
+
+CI??
+  - yes: I can use xvfb
+    refer to https://github.com/webdriverio-community/wdio-vscode-service/blob/main/.github/workflows/ci.yml for instance
+
 BUG: when there are no keys defined the visual keybinding output includes `undefined`
+
+NEW TEST: palette commands can no be readily tested, I believe...
+  - check that palette lists things germane to the current bindings
+  - if the bindings change, check that this list changes
+  - check that the palette shows up automaticlaly (or not) depending on config setting
+  - check that change mode affects how palette responds to input
+
+SMALL BUG: should 'esc' really be appended in the status bar since it cancels a prefix sequence... 🤔
 
 unit tests: edge cases with recording edits
   - how about when I switch documents?
@@ -43,17 +45,10 @@ unit tests: store/restore named commands
 
 UNIT TEST: verify that larkin can be properly loaded/parsed
 
-code coverage?
-https://istanbul.js.org/
-
-TODO: switch to public repo status, include a license, add a note at the top
-about the repo being in a WIP status
-
-CI??
-  - yes: I can use xvfb
-    refer to https://github.com/webdriverio-community/wdio-vscode-service/blob/main/.github/workflows/ci.yml for instance
-
 ## Visual Documentation Improvements
+
+at the end of this milestone I have documentation sufficient for releasing the extension
+in the vscode and vscodium stores
 
 NOTE: `path` entries should not have documentation; rather there should be a separate setup
 (perhaps comments?) for how to enter text that becomes part of the markdown output
@@ -70,24 +65,26 @@ for
 
 - IMPROVEMENT: show escape/function key row in the visual key doc
 
-- IMPROVEMENT: put some examples of cool features from `Larkin` in the README
-
 write code to convert the toml file to a markdown of organized tables of keybindings
 and provide a command that opens the Markdown preview of this file
 
-IMPROVEMENT: upon activating bindings, show the visual and cheetsheet documentation
+write up documentation for the default files
 
 DOCUMENTATION: in documenting macro playback note the limitations of recording the keyboard
 (e.g. that it only records inserts; any modifiers are espected to be commands
 that are recorded)
 
-## Binding Cleanup
+IMPROVEMENT: upon activating bindings, show the visual and cheetsheet documentation
+
+IMPROVEMENT: put some examples of cool features from `Larkin` in the README
+
+### Binding Cleanup
 
 - Split out any of the commands that are really custom for me that don't make sense to publish.
 - Pair down some of the required extensions.
 - Offer to install extensions? (maybe when a keybinding fails to run??)
 
-## Before first release
+### Before first release
 
 thoughts: things I must have to release:
 - user documentation (in cheet sheet form)
@@ -98,7 +95,7 @@ thoughts: things I must have to release:
   + have an option to allow a default command
     that operates on all keys that *aren't* specified
     OR that pass a regex
-- modernized selection utilities
+- MODERNIZED SELECTION UTILITIES
   - good documentation
   - modern build setup
 + final design of keybinding file that I'm relatively satisfied with
@@ -127,6 +124,9 @@ REFACTOR: somehow we have to define/organize binding parameters
 FEATURE: require parsing to validate modes to be all negations or all positive mode specifications
 
 wishlist:
+
+- a command to repair keybindings getting out of sync with the activated bindings
+  ID
 
 - have backspace and enter run commands in capture mode
 

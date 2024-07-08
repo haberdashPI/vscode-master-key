@@ -1,12 +1,14 @@
 import * as vscode from 'vscode';
 import { prettifyPrefix } from '../utils';
 import { withState } from '../state';
-import { currentKeybindings, filterBindingFn } from '../keybindings';
+import { filterBindingFn } from '../keybindings';
+import { bindings } from '../keybindings/config';
 import { PREFIX_CODE, prefixCodes } from './prefix';
 import { MODE, defaultMode, modeSpecs } from './mode';
 import { IConfigKeyBinding, PrefixCodes } from '../keybindings/processing';
-import { RunCommandsArgs, doCommandsCmd } from './do';
+import { COMMAND_HISTORY, RecordedCommandArgs, RunCommandsArgs, doCommandsCmd } from './do';
 import { reverse, uniqBy, sortBy } from 'lodash';
+import { List } from 'immutable';
 import replaceAll from 'string.prototype.replaceall';
 import { TypeOf } from 'zod';
 
@@ -48,7 +50,6 @@ export async function commandPalette(args_: unknown,
 
     let state = await withState(async s => s);
     if(state){
-        let bindings = currentKeybindings();
         let availableBindings: IConfigKeyBinding[];
         let codes: PrefixCodes | undefined = undefined;
         let prefixCode = state.get<number>(PREFIX_CODE, 0)!;
@@ -56,7 +57,7 @@ export async function commandPalette(args_: unknown,
         paletteBindingMode = useKey;
         vscode.commands.executeCommand('setContext', 'master-key.keybindingPaletteBindingMode', paletteBindingMode);
         if(context){
-            availableBindings = <IConfigKeyBinding[]>bindings.filter(filterBindingFn(mode, prefixCode));
+            availableBindings = <IConfigKeyBinding[]>(bindings?.bind || []).filter(filterBindingFn(mode, prefixCode));
         }else{
             await withState(async state => {
                 [state, codes] = prefixCodes(state);
@@ -64,7 +65,7 @@ export async function commandPalette(args_: unknown,
             });
             // TODO: filter to commands that are actually usable in the command palette
             // (atlernatively, commands can set their own state somehow)
-            availableBindings = <IConfigKeyBinding[]>bindings.filter(filterBindingFn());
+            availableBindings = <IConfigKeyBinding[]>(bindings?.bind || []).filter(filterBindingFn());
         }
         availableBindings = reverse(uniqBy(reverse(availableBindings), b =>
             (b.args.key || "")+(b.args.prefixCode)));
@@ -92,7 +93,7 @@ export async function commandPalette(args_: unknown,
         picks = sortBy(picks, x => -x.args.priority);
         let filteredPicks: typeof picks = [];
 
-        if(picks.length === 0 && !modeSpecs[mode].recordEdits){
+        if(picks.length === 0){
             vscode.window.showErrorMessage(`Palette cannot be shown for mode '${mode}', there are no bindings.`);
             return;
         }
@@ -138,9 +139,12 @@ export async function commandPalette(args_: unknown,
         });
         vscode.commands.executeCommand('setContext', 'master-key.keybindingPaletteOpen', true);
         picker.show();
-        // when this the palette accepts keybinding presses (rather than searching
+        // when this palette accepts keybinding presses (rather than searching
         // bindings), dispose of the palette any time a normal key binding key is pressed
-        // (e.g. ones that add to the prefix or execute a command)
+        // the effect of a normal key is either 1.) to add update the current prefix
+        // 2.) complete a command, thereby updating the command history
+        // 3.) enter capture mode
+        let commandsFinished = 0;
         await withState(async state => {
             if(paletteBindingMode){
                 state = state.onSet(PREFIX_CODE, _ => {
@@ -148,7 +152,16 @@ export async function commandPalette(args_: unknown,
                     picker.dispose();
                     return false;
                 });
-                state = state.onResolve('keybindingPalette', _ => {
+                state = state.onSet(COMMAND_HISTORY, _ => {
+                    commandsFinished += 1;
+                    if(commandsFinished > 1){
+                        accepted = true;
+                        picker.dispose();
+                        return false;
+                    }
+                    return true;
+                });
+                state = state.onSet(MODE, _ => {
                     accepted = true;
                     picker.dispose();
                     return false;

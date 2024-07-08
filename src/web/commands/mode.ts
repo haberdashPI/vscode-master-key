@@ -5,39 +5,42 @@ import { validateInput } from '../utils';
 import { withState, recordedCommand, CommandResult } from '../state';
 import { ModeSpec } from '../keybindings/parsing';
 import { runCommandOnKeys } from './capture';
-import { onConfigUpdate } from '../config';
+import { onChangeBindings } from '../keybindings/config';
+import { Bindings } from '../keybindings/processing';
 
 export const MODE = 'mode';
 
 const CURSOR_STYLES = {
+    // eslint-disable-next-line @typescript-eslint/naming-convention
     "Line": vscode.TextEditorCursorStyle.Line,
+    // eslint-disable-next-line @typescript-eslint/naming-convention
     "Block": vscode.TextEditorCursorStyle.Block,
+    // eslint-disable-next-line @typescript-eslint/naming-convention
     "Underline": vscode.TextEditorCursorStyle.Underline,
+    // eslint-disable-next-line @typescript-eslint/naming-convention
     "LineThin": vscode.TextEditorCursorStyle.LineThin,
+    // eslint-disable-next-line @typescript-eslint/naming-convention
     "BlockOutline": vscode.TextEditorCursorStyle.BlockOutline,
+    // eslint-disable-next-line @typescript-eslint/naming-convention
     "UnderlineThin": vscode.TextEditorCursorStyle.UnderlineThin
 };
 
 function updateCursorAppearance(editor: vscode.TextEditor | undefined, mode: string,
                                 modeSpec: Record<string, ModeSpec>){
-    if(editor && modeSpec[mode]){
-        editor.options.cursorStyle = CURSOR_STYLES[modeSpec[mode]?.cursorShape] || "Line";
+    if(editor){
+        editor.options.cursorStyle = CURSOR_STYLES[modeSpec[mode]?.cursorShape] || vscode.TextEditorCursorStyle.Line;
     }
 }
 
 async function updateModeKeyCapture(mode: string, modeSpec: Record<string, ModeSpec>){
-    if(modeSpec[mode]){
-        runCommandOnKeys(modeSpec[mode].onType, mode);
-    }
+    runCommandOnKeys(modeSpec[mode]?.onType, mode);
 }
 
 function updateLineNumbers(mode: string, modeSpec: Record<string, ModeSpec>){
     let config = vscode.workspace.getConfiguration();
-    if(modeSpec[mode]){
-        let numbers = modeSpec[mode].lineNumbers;
-        config.update('editor.lineNumbers', numbers || defaultLineNumbers,
-            vscode.ConfigurationTarget.Global);
-    }
+    let numbers = modeSpec[mode]?.lineNumbers || defaultLineNumbers;
+    config.update('editor.lineNumbers', numbers || defaultLineNumbers,
+        vscode.ConfigurationTarget.Global);
 }
 
 const setModeArgs = z.object({ value: z.string() }).strict();
@@ -51,8 +54,8 @@ async function setMode(args_: unknown): Promise<CommandResult> {
 };
 export let modeSpecs: Record<string, ModeSpec> = {};
 export let defaultMode: string = 'default';
-async function updateModeSpecs(modeSpecs_: Record<string, ModeSpec>){
-    modeSpecs = modeSpecs_;
+async function updateModeSpecs(bindings: Bindings | undefined){
+    modeSpecs = bindings?.mode || {};
     defaultMode = (Object.values(modeSpecs).filter(x => x.default)[0] || {name: 'default'}).name;
     await withState(async state => state.set(MODE, {public: true}, defaultMode).resolve());
 }
@@ -70,7 +73,7 @@ export async function activate(context: vscode.ExtensionContext){
     await updateLineNumConfig();
     vscode.workspace.onDidChangeConfiguration(updateLineNumConfig);
 
-    onConfigUpdate('mode', updateModeSpecs);
+    onChangeBindings(updateModeSpecs);
 
     vscode.window.onDidChangeActiveTextEditor(e => {
         updateCursorAppearance(e, currentMode, modeSpecs);

@@ -4,7 +4,6 @@ import assert from 'assert';
 // as well as import your extension to test it
 import { processBindings } from '../../keybindings/processing';
 import { parseBindings } from '../../keybindings/parsing';
-import { activate as bindingActivate, queryPreset, updatePresets } from '../../keybindings/index';
 
 import { fromZodError } from 'zod-validation-error';
 import { sortBy, isEqual, isUndefined } from 'lodash';
@@ -371,8 +370,9 @@ suite('Keybinding Test Suite', () => {
         [header]
         version = "1.0"
 
-        [define]
-        validModes = ["insert", "capture"]
+        [[mode]]
+        name = "insert"
+        default = true
 
         [[bind]]
         name = "1"

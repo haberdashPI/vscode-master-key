@@ -119,6 +119,12 @@
     ],
     "configuration": {
       "properties": {
+        "master-key.activatedBindingsId": {
+          "title": "Active Master Key Bindings Identifier",
+          "type": "string",
+          "description": "This value is automated, changing it manually can lead the current master key bindings to be in an inconsistent state. Use `Master Key: Activate Keybindings` or `Master Key: Remove Keybindings` to change this setting.",
+          "default": "none"
+        },
         "master-key.presetDirectories": {
           "title": "Directory to search for Master Key presets",
           "type": "array",

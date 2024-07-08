@@ -14,8 +14,12 @@ describe('Search motion command', () => {
             [header]
             version = "1.0"
 
-            [define]
-            validModes = ["insert", "capture", "normal"]
+            [[mode]]
+            name = "insert"
+            default = true
+
+            [[mode]]
+            name = "normal"
 
             [[bind]]
             description = "Enter normal mode"
