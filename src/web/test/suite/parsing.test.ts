@@ -370,8 +370,9 @@ suite('Keybinding Test Suite', () => {
         [header]
         version = "1.0"
 
-        [define]
-        validModes = ["insert", "capture"]
+        [[mode]]
+        name = "insert"
+        default = true
 
         [[bind]]
         name = "1"

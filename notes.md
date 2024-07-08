@@ -3,18 +3,6 @@
 at the end of this milestone I have my first public github repo available for this
 extension
 
-REFACTOR:
-  - all of the code related to syncing keybinding config files with
-  master keys should be pulled out into its own file
-
-  - all of the code related to loading, selecting and creating presets
-  should be split into its own file
-
-  - at the end `keybindings/index.ts` should be pretty clutter free
-
-TODO: write a test for parsing to check that `[[mode]]` sections are defined
-and that `validModes` is not
-
 BUG: repeat argument is not working for the repeat action command (e.g. I cannot repeat the last action ten times)
   + FIXED: this happens because the repeat command runs many `master-key.do` commands
     which resets transient state like `count`
