@@ -18,6 +18,7 @@ https://istanbul.js.org/
   in the extension sandbox
     - VERIFY THAT THIS IS TRUE: run `console.dir(window.__coverage__)`
       and show that it actually gives us something
+      if it does there's hope...
 
 TODO: switch to public repo status, include a license, add a note at the top
 about the repo being in a WIP status
