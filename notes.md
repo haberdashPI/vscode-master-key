@@ -6,6 +6,11 @@ extension
 code coverage?
 https://istanbul.js.org/
 
+  notes: having issue getting coverage report to be generated, even
+  though code apepars to be generated
+  nice little mwe https://github.com/kirksl/karate-istanbul/blob/master/package.json
+  suggests maybe I need to use a specific directory to output the instrumted files
+
 TODO: switch to public repo status, include a license, add a note at the top
 about the repo being in a WIP status
 

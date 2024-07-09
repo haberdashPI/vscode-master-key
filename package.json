@@ -202,7 +202,9 @@
     "lint": "eslint src --ext ts",
     "run-in-browser": "vscode-test-web --browserType=chromium --extensionDevelopmentPath=. .",
     "prewdio": "webpack --env testing",
-    "wdio": "wdio run ./wdio.conf.mts"
+    "wdio": "wdio run ./wdio.conf.mts",
+    "precoverage": "webpack --env testing --env coverage",
+    "coverage": "COVERAGE=true wdio run ./wdio.conf.mts"
   },
   "devDependencies": {
     "@types/assert": "^1.5.10",
@@ -221,9 +223,11 @@
     "@wdio/mocha-framework": "^8.39.0",
     "@wdio/spec-reporter": "^8.39.0",
     "assert": "^2.1.0",
+    "coverage-istanbul-loader": "^3.0.5",
     "eslint": "^8.54.0",
     "jsonc-simple-parser": "^3.0.0",
     "mocha": "^10.2.0",
+    "nyc": "^17.0.0",
     "process": "^0.11.10",
     "ts-loader": "^9.5.1",
     "ts-node": "^10.9.2",

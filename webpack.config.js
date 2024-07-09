@@ -50,9 +50,10 @@ const webExtensionConfig = (env, argv) => ({
         rules: [{
             test: /\.ts$/,
             exclude: /node_modules/,
-            use: [{
-                loader: 'ts-loader'
-            }]
+            use: [
+                ...(env['coverage'] ? [{loader: '@jsdevtools/coverage-istanbul-loader'}] : []),
+                {loader: 'ts-loader'}
+            ]
         }]
     },
     plugins: [
