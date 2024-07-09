@@ -204,7 +204,7 @@
     "prewdio": "webpack --env testing",
     "wdio": "wdio run ./wdio.conf.mts",
     "precoverage": "webpack --env testing --env coverage",
-    "coverage": "COVERAGE=true wdio run ./wdio.conf.mts"
+    "coverage": "COVERAGE=true wdio -- --spec ./test/specs/replay.ux.mts"
   },
   "devDependencies": {
     "@types/assert": "^1.5.10",

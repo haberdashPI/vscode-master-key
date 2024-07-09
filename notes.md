@@ -10,6 +10,14 @@ https://istanbul.js.org/
   though code apepars to be generated
   nice little mwe https://github.com/kirksl/karate-istanbul/blob/master/package.json
   suggests maybe I need to use a specific directory to output the instrumted files
+  I think I have figured out that hte instrumenting works (but I need to delete the existing files to get it compiled right)
+  THEN: I need to have a call *within* the extension that generates the JSON
+  file (it's not yet clear how I escape the sandboxing, since that has
+  been an issue throughout; perhaps I could print to console.log and
+  then somehow get that info), the data should be available under `window.__coverage__`
+  in the extension sandbox
+    - VERIFY THAT THIS IS TRUE: run `console.dir(window.__coverage__)`
+      and show that it actually gives us something
 
 TODO: switch to public repo status, include a license, add a note at the top
 about the repo being in a WIP status

@@ -73,6 +73,7 @@ export const config: Options.Testrunner = {
             // points to directory where extension package.json is located
             extensionPath: __dirname,
             workspacePath: __dirname,
+            storagePath: __dirname + "/.wdio-vscode-service/storage/",
             // optional VS Code settings
             // userSettings: {
             //     // NOTE: these are ignored (at least for 'chrome' browser)
@@ -130,7 +131,7 @@ export const config: Options.Testrunner = {
     // Services take over a specific job you don't want to take care of. They enhance
     // your test setup with almost no effort. Unlike plugins, they don't add new
     // commands. Instead, they hook themselves up into the test process.
-    services: ['vscode'],
+    services: [ 'vscode' ],
 
     // Framework you want to run your specs with.
     // The following are supported: Mocha, Jasmine, and Cucumber
