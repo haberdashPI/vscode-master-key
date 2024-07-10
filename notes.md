@@ -19,6 +19,12 @@ https://istanbul.js.org/
     - VERIFY THAT THIS IS TRUE: run `console.dir(window.__coverage__)`
       and show that it actually gives us something
       if it does there's hope...
+    - if this DOES work out: I can write the coverage data in a new
+      untitled document, and the copy paste it out; this feels ugly
+      but I think it is the only way unless I get the extension
+      to work in vscode rather than the browser
+      or figure out how to write to a file (which I don't think
+      is possible)
 
 TODO: switch to public repo status, include a license, add a note at the top
 about the repo being in a WIP status
