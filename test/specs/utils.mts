@@ -1,11 +1,23 @@
 import { browser, expect } from '@wdio/globals';
 import 'wdio-vscode-service';
 import { Key, WaitUntilOptions } from 'webdriverio';
-import { Input, InputBox, StatusBar, TextEditor, sleep } from 'wdio-vscode-service';
+import { Input, InputBox, StatusBar, TextEditor, Workbench, sleep } from 'wdio-vscode-service';
 import loadash from 'lodash';
 const { isEqual } = loadash;
+import * as fs from 'fs';
+import * as path from 'path';
+
+const COVERAGE_KEY_COMMAND = `
+[[bind]]
+name = "show coverage"
+key = "ctrl+shift+alt+c"
+mode = []
+prefixes = "<all-prefixes>"
+command = "master-key.writeCoverageToEditor"
+`;
 
 export async function setBindings(str: string){
+    str += COVERAGE_KEY_COMMAND;
     const workbench = await browser.getWorkbench();
     browser.keys([Key.Ctrl, 'n']);
     await sleep(500);
@@ -43,6 +55,29 @@ export async function setBindings(str: string){
     });
     expect(message).toBeTruthy();
     return;
+}
+
+export async function storeCoverageStats(name: string){
+    const workbench = await browser.getWorkbench();
+    browser.keys([Key.Ctrl, 'n']);
+    await sleep(500);
+
+    const editorView = await workbench.getEditorView();
+    const tab = await editorView.getActiveTab();
+    const editor = await editorView.openEditor(await tab?.getTitle()!) as TextEditor;
+    await sleep(60000);
+    await enterModalKeys(['ctrl', 'shift', 'alt', 'c']);
+    await sleep(60000);
+    let change = await waitUntilCursorUnmoving(editor);
+    if(change){
+        expect(change.x > 0 || change.y > 0).toBeTruthy();
+    }else{
+        expect(change).toBeTruthy();
+    }
+    let coverageStr = await editor.getText();
+    fs.writeFileSync(
+        path.join(process.env.COVERAGE_PATH || '.', name + ".json"),
+        coverageStr);
 }
 
 export async function cursorToTop(editor: TextEditor){
@@ -217,6 +252,28 @@ async function coordChange(editor: TextEditor, oldpos: {x: number, y: number}): 
     return {y: ydiff, x: xdiff};
 }
 
+export async function waitUntilCursorUnmoving(editor: TextEditor, oldpos?: {x: number, y: number}){
+    if(!oldpos){
+        let [y, x] = await editor.getCoordinates();
+        oldpos = {x, y};
+    }
+
+    let lastMove = {x: 0, y: 0};
+    let stepsUnchanged = 0;
+    return await browser.waitUntil(async() => {
+        let move = await coordChange(editor, oldpos);
+
+        if(isEqual(lastMove, move)){ stepsUnchanged += 1; }
+        else{
+            lastMove = move;
+            stepsUnchanged = 0;
+        };
+        if(stepsUnchanged > 1){
+            return move;
+        }
+    }, {interval: 300, timeout: 9000});
+}
+
 export async function movesCursorInEditor(action: () => Promise<void>, by: [number, number], editor: TextEditor){
     let [y, x] = await editor.getCoordinates();
     let oldpos = {x, y};
@@ -231,21 +288,7 @@ export async function movesCursorInEditor(action: () => Promise<void>, by: [numb
     // but some commands require that we wait before their effects are observed...
     // in this case we need to have some confidence that no further moves are
     // going to happen
-    let stepsUnchanged = 0;
-    let lastMove = {x: 0, y: 0};
-    let maybeActual = await browser.waitUntil(async() => {
-        let move = await coordChange(editor, oldpos);
-
-        if(isEqual(lastMove, move)){ stepsUnchanged += 1; }
-        else{
-            lastMove = move;
-            stepsUnchanged = 0;
-        };
-        if(stepsUnchanged > 1){
-            return move;
-        }
-    }, {interval: 300, timeout: 9000});
-
+    let maybeActual = await waitUntilCursorUnmoving(editor, oldpos);
     expect(maybeActual).toEqual(expected);
 }
 

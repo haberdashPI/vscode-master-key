@@ -1,6 +1,6 @@
 import { browser, expect } from '@wdio/globals';
 import { Key } from 'webdriverio';
-import { setBindings, setupEditor, movesCursorInEditor, enterModalKeys, waitForMode } from './utils.mts';
+import { setBindings, setupEditor, movesCursorInEditor, enterModalKeys, waitForMode, storeCoverageStats } from './utils.mts';
 import { sleep, InputBox, TextEditor, Workbench } from 'wdio-vscode-service';
 
 describe('Replay', () => {
@@ -224,8 +224,6 @@ i j k l`);
         await movesCursorInEditor(async () => {
             await enterModalKeys('q', {key: 'q', updatesStatus: false});
         }, [1, 1], editor);
-
-        await sleep(60000);
     });
 
     it('Replays from history', async () => {
@@ -439,5 +437,9 @@ i j k l`);
             await enterModalKeys({key: ['shift', '2'], count: 2}, 'q',
                 {key: 'c', updatesStatus: false});
         }, [0, 2], editor);
+    });
+
+    after(async () => {
+        await storeCoverageStats('replay');
     });
 });

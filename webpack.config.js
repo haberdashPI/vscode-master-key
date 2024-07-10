@@ -64,7 +64,8 @@ const webExtensionConfig = (env, argv) => ({
             process: 'process/browser', // provide a shim for the global `process` variable
         }),
         new webpack.DefinePlugin({
-            'process.env.TESTING': JSON.stringify(env['testing'] || false)
+            'process.env.TESTING': JSON.stringify(env['testing'] || false),
+            'process.env.COVERAGE': JSON.stringify(env['coverage'] || false)
         })
     ],
     externals: {

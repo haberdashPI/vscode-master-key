@@ -10,3 +10,5 @@ uxtest/temp/**
 .wdio-vscode-service
 test/temp/**
 .nyc_output/**
+coverage/**
+coverage.json

@@ -25,6 +25,15 @@ https://istanbul.js.org/
       to work in vscode rather than the browser
       or figure out how to write to a file (which I don't think
       is possible)
+    - okay: there is hope, I've generated output
+      there is still some debugging to get it working in an automated way
+      (I've mannually copied the data for now)
+      but I can see output in an editor window and when I copy paste that
+      to a file and run the command below I can get meaningful coverage
+      information
+
+        npx nyc report -t test/specs --report-dir coverage --reporter=lcov --reporter=text-summary
+
 
 TODO: switch to public repo status, include a license, add a note at the top
 about the repo being in a WIP status

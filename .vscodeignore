@@ -16,3 +16,5 @@ webpack.config.js
 **/.vscode-test.*
 .wdio-vscode-service
 .nyc_output/**
+coverage/**
+coverage.json
