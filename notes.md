@@ -9,9 +9,13 @@ https://istanbul.js.org/
 TODO: switch to public repo status, include a license, add a note at the top
 about the repo being in a WIP status
 
+
 CI??
   - yes: I can use xvfb
     refer to https://github.com/webdriverio-community/wdio-vscode-service/blob/main/.github/workflows/ci.yml for instance
+
+NOTE: we may need to add multiple retries to tests, CI should pass every time
+if at all possible
 
 BUG: when there are no keys defined the visual keybinding output includes `undefined`
 
