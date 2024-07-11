@@ -1,7 +1,7 @@
 // start with just some basic tests to verify all is well
 
 import { browser, expect } from '@wdio/globals';
-import { setBindings, setupEditor, movesCursorInEditor, enterModalKeys } from './utils.mts';
+import { setBindings, setupEditor, movesCursorInEditor, enterModalKeys, storeCoverageStats } from './utils.mts';
 import 'wdio-vscode-service';
 import { sleep, TextEditor } from 'wdio-vscode-service';
 import { Key } from "webdriverio";
@@ -141,5 +141,9 @@ describe('Command State', () => {
         await editor.moveCursor(1, 5);
         await enterModalKeys(['ctrl', 'l'], ['ctrl', 'shift', 'w']);
         expect(await editor.getSelectedText()).toEqual('This');
+    });
+
+    after(async () => {
+        await storeCoverageStats('commandState');
     });
 });

@@ -2,7 +2,7 @@
 
 import '@wdio/globals';
 import 'wdio-vscode-service';
-import { enterModalKeys, setBindings, setupEditor, movesCursorInEditor } from './utils.mts';
+import { enterModalKeys, setBindings, setupEditor, movesCursorInEditor, storeCoverageStats } from './utils.mts';
 import { TextEditor } from 'wdio-vscode-service';
 import { Key } from "webdriverio";
 
@@ -131,5 +131,9 @@ laborum ad. Dolore exercitation cillum eiusmod culpa minim duis`);
             await enterModalKeys({count: 1, key: ['shift', '1']},
                                  {count: 0, key: ['shift', '0']}, 'l');
         }, [0, 10], editor);
+    });
+
+    after(async () => {
+        await storeCoverageStats('simpleMotion');
     });
 });

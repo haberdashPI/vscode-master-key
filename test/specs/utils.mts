@@ -47,6 +47,10 @@ export async function setBindings(str: string){
         }
     });
     expect(message).toBeTruthy();
+    // downstream tests appear to sometimes be flaky by failing to respond
+    // to bindings appropriately, given vscode some time to actually load/
+    // respond to the new bindings
+    await sleep(2000);
     return;
 }
 
@@ -67,13 +71,19 @@ export async function storeCoverageStats(name: string){
 }
 
 export async function cursorToTop(editor: TextEditor){
+    // this method appears to be a common source unreliable behavior so we do the commands
+    // slowly
     (await editor.elem).click();
+    await sleep(100);
     await browser.keys([Key.Ctrl, 'A']);
+    await sleep(100);
     await browser.keys(Key.ArrowLeft);
+    await sleep(100);
     browser.waitUntil(async () => {
         let coord = await editor.getCoordinates();
         coord[0] === 1 && coord[1] === 1;
     });
+    await sleep(200);
 }
 
 export async function setupEditor(str: string){
@@ -102,7 +112,7 @@ export async function setupEditor(str: string){
     const editor = await editorView.openEditor(title!) as TextEditor;
 
     // set the text
-    console.log("[DEBUG]: setting text to: "+str.slice(0, 10)+"...");
+    console.log("[DEBUG]: setting text to: "+str.slice(0, 50)+"...");
     await editor.setText(str);
 
     // focus the editor

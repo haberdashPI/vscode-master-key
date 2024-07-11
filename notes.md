@@ -118,6 +118,8 @@ FEATURE: require parsing to validate modes to be all negations or all positive m
 
 wishlist:
 
+- once we've improved performance, parallelize the tests more
+
 - test: use selectors to find the text decorations used for search and check their properties
 
 - optimization: most values can be read only, (e.g. definitions) and if we implemented
