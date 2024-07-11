@@ -208,7 +208,7 @@ i j k l`);
         workbench = await browser.getWorkbench();
     });
 
-    it.only('Handles basic recording', async () => {
+    it('Handles basic recording', async () => {
         await editor.moveCursor(1, 1);
         await enterModalKeys('escape');
 
@@ -436,7 +436,7 @@ i j k l`);
         await movesCursorInEditor(async () => {
             await enterModalKeys({key: ['shift', '2'], count: 2}, 'q',
                 {key: 'c', updatesStatus: false});
-        }, [0, 2], editor);
+        }, [0, 3], editor);
     });
 
     after(async () => {

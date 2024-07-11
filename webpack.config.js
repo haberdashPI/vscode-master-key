@@ -22,6 +22,11 @@ const webpack = require('webpack');
 const webExtensionConfig = (env, argv) => ({
     mode: 'none', // this leaves the source code as close as possible to the original (when packaging we set this to 'production')
     target: 'webworker', // extensions run in a webworker context
+    cache: {
+        type: 'filesystem',
+        name: argv.mode + '-testing' + env['testing'] + '-coverage' + env['coverage'],
+        version: '1'
+    },
     entry: {
         'extension': './src/web/extension.ts',
         'test/suite/index': './src/web/test/suite/index.ts',

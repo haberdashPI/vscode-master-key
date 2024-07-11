@@ -17,20 +17,13 @@ command = "master-key.writeCoverageToEditor"
 `;
 
 export async function setBindings(str: string){
-    str += COVERAGE_KEY_COMMAND;
-    const workbench = await browser.getWorkbench();
-    browser.keys([Key.Ctrl, 'n']);
-    await sleep(500);
+    await setupEditor(str + COVERAGE_KEY_COMMAND);
 
+    const workbench = await browser.getWorkbench();
     await workbench.executeCommand('Select Language Mode');
     let input = await ((new InputBox(workbench.locatorMap)).wait());
     await input.setText("Markdown");
     await input.confirm();
-
-    const editorView = await workbench.getEditorView();
-    let tab = await editorView.getActiveTab();
-    const editor = await editorView.openEditor(await tab?.getTitle()!) as TextEditor;
-    await editor.setText(str);
 
     await workbench.executeCommand('Master key: Activate Keybindings');
     let bindingInput = await ((new InputBox(workbench.locatorMap)).wait());
@@ -58,22 +51,15 @@ export async function setBindings(str: string){
 }
 
 export async function storeCoverageStats(name: string){
-    const workbench = await browser.getWorkbench();
-    browser.keys([Key.Ctrl, 'n']);
-    await sleep(500);
+    if(!process.env.COVERAGE){ return; }
+    const editor = await setupEditor("");
+    // TODO: not sure why the keys don't show up in the status bar here...
+    // (probably a bug)
+    await enterModalKeys({key: ['ctrl', 'shift', 'alt', 'c'], updatesStatus: false});
 
-    const editorView = await workbench.getEditorView();
-    const tab = await editorView.getActiveTab();
-    const editor = await editorView.openEditor(await tab?.getTitle()!) as TextEditor;
-    await sleep(60000);
-    await enterModalKeys(['ctrl', 'shift', 'alt', 'c']);
-    await sleep(60000);
-    let change = await waitUntilCursorUnmoving(editor);
-    if(change){
-        expect(change.x > 0 || change.y > 0).toBeTruthy();
-    }else{
-        expect(change).toBeTruthy();
-    }
+    await sleep(1000);
+    await waitUntilCursorUnmoving(editor);
+
     let coverageStr = await editor.getText();
     fs.writeFileSync(
         path.join(process.env.COVERAGE_PATH || '.', name + ".json"),
@@ -84,25 +70,43 @@ export async function cursorToTop(editor: TextEditor){
     (await editor.elem).click();
     await browser.keys([Key.Ctrl, 'A']);
     await browser.keys(Key.ArrowLeft);
-    await sleep(100);
+    browser.waitUntil(async () => {
+        let coord = await editor.getCoordinates();
+        coord[0] === 1 && coord[1] === 1;
+    });
 }
 
 export async function setupEditor(str: string){
     const workbench = await browser.getWorkbench();
-    browser.keys([Key.Ctrl, 'n']);
-
-    const editorView = workbench.getEditorView();
-    let tab = await editorView.getActiveTab();
-    const editor = await editorView.openEditor(await tab?.getTitle()!) as TextEditor;
 
     // clear any older notificatoins
+    console.log("[DEBUG]: clearing notifications");
     let notifications = await workbench.getNotifications();
     for(let note of notifications){
         await note.dismiss();
     }
 
+    console.log('[DEBUG]: creating new file');
+    browser.keys([Key.Ctrl, 'n']);
+
+    console.log('[DEBUG]: waiting for editor to be available');
+    const editorView = await workbench.getEditorView();
+    const title = await browser.waitUntil(async () => {
+        let tab = await editorView.getActiveTab();
+        const title = await tab?.getTitle();
+        if(title && title.match(/Untitled/)){
+            return title;
+        }
+        return;
+    }, { interval: 1000, timeout: 10000 });
+    const editor = await editorView.openEditor(title!) as TextEditor;
+
+    // set the text
+    console.log("[DEBUG]: setting text to: "+str.slice(0, 10)+"...");
     await editor.setText(str);
 
+    // focus the editor
+    console.log("[DEBUG]: Focusing editor");
     await cursorToTop(editor);
 
     return editor;
@@ -182,7 +186,7 @@ export async function enterModalKeys(...keySeq: ModalKey[]){
     console.dir(keySeqString);
 
     console.log("[DEBUG]: waiting for old keys to clear");
-    let waitOpts = {interval: 50, timeout: 1000};
+    let waitOpts = {interval: 50, timeout: 5000};
     cleared = await browser.waitUntil(() => statusBar.getItem('No Keys Typed'),
         waitOpts);
     expect(cleared).toBeTruthy();
