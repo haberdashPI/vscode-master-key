@@ -10,13 +10,17 @@ CI??
 NOTE: we may need to add multiple retries to tests, CI should pass every time
 if at all possible
 
+create release 0.1.0
+
 BUG: when there are no keys defined the visual keybinding output includes `undefined`
 
-NEW TEST: palette commands can no be readily tested, I believe...
+NEW TEST: palette commands can now be readily tested, I believe...
   - check that palette lists things germane to the current bindings
   - if the bindings change, check that this list changes
   - check that the palette shows up automaticlaly (or not) depending on config setting
   - check that change mode affects how palette responds to input
+
+create release 0.1.1
 
 SMALL BUG: should 'esc' really be appended in the status bar since it cancels a prefix sequence... 🤔
 
@@ -27,11 +31,16 @@ unit tests: edge cases with recording edits
   - what about multiple cursors?
   - how do recorded commands interact with the palette?
   - does the command palette show up / not show up with the proper timing?
+
+create release 0.1.2
+
 unit tests: mode capture
   - cook up some tests `onType` setting of modes
 unit tests: parsing of YAML and JSON(C)
   - actually: delete this feature (add it back in later if it feels worth it)
 unit tests: store/restore named commands
+
+create release 0.1.3
 
 UNIT TEST: verify that larkin can be properly loaded/parsed
 
@@ -59,6 +68,8 @@ Key gaps identified by coverage (not listed above):
   - basic validation of visual search (we can inject css ids to make this easy)
 
 ## Visual Documentation Improvements
+
+release 0.2.0 onwards
 
 at the end of this milestone I have documentation sufficient for releasing the extension
 in the vscode and vscodium stores
@@ -91,7 +102,13 @@ IMPROVEMENT: upon activating bindings, show the visual and cheetsheet documentat
 
 IMPROVEMENT: put some examples of cool features from `Larkin` in the README
 
+IMPROVEMENT: use `getExtension` or some such on each required extension, and offer to
+  install if it fails (does this work for any extension? or does `activate` have to return
+  something)
+
 ### Binding Cleanup
+
+release 0.2.x
 
 - Split out any of the commands that are really custom for me that don't make sense to publish.
 - Pair down some of the required extensions.
@@ -100,10 +117,9 @@ IMPROVEMENT: put some examples of cool features from `Larkin` in the README
 ### Before VSCode publish
 
 thoughts: things I must have to release:
-- user documentation (in cheet sheet form)
-- well documented default keybindings
 - keybinding documentation features
   - markdown output / html
+- well documented default keybindings
 + mode customization
   + have an option to allow a default command
     that operates on all keys that *aren't* specified
@@ -124,9 +140,13 @@ after first release
 - speed up:
   - https://www.nicoespeon.com/en/2019/11/fix-vscode-extension-performance-issue/
 
+release 0.3.0
+
 - good documentation of the code
 - good documentation of the binding format
 - vim style bindings? (I think this could come in a separate release; or just never do it, wait until someone wants it)
+
+release 0.3.x
 
 REFACTOR: add prettier config and apply new style to all files
 REFACTOR: cleanup up and document code, make it nice and readable
@@ -136,11 +156,11 @@ REFACTOR: somehow we have to define/organize binding parameters
 
 FEATURE: require parsing to validate modes to be all negations or all positive mode specifications
 
-wishlist:
+## Unorganized Improvements
 
 - once we've improved performance, parallelize the tests more
 
-- test: use selectors to find the text decorations used for search and check their properties
+- test coverage: use selectors to find the text decorations used for search and check their properties
 
 - optimization: most values can be read only, (e.g. definitions) and if we implemented
   these values differently, it would save us some time
@@ -149,9 +169,6 @@ wishlist:
   ID
 
 - have backspace and enter run commands in capture mode
-
-- use `getExtension` on each required extension, and offer to install if it fails
-  (does this work for any extension? or does `activate` have to return something)
 
 - IMPROVEMENT: add command to delete all but primary selection in selection utilities
 

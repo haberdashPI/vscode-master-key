@@ -116,10 +116,14 @@ You can now edit the bindings and/or import bindings from those you've already c
 For detailed notes on development, refer to `notes.md`.
 
 - Release 0.1.0: working and well documented default keybindings
-- Release 0.1.x: improved performance. Through profiling and code review the 0.1.0 functioanlity will be improved in efficiency
-- Release 0.2.x: documentation of all keybinding commands, improve quality of life for those building their own custom extensions. May introduce breaking changes to improve API clarity for these bindings
-- Release 0.2.y: source code documentation — may involve substantial refactor to improve legibility / clarity of code
-- Release 0.3.0: this is the point at which new features will be considered for addition into Master Key
+- Release 0.1.x: improved coverage/testing/stability of existing features
+- Release 0.2.0: missing visual documentation features: markdown summary of bindings
+- Release 0.2.x: improved coverage/stability of visual documentation
+- Initial publish to VSCode here
+- Release 0.3.0: improved performance. Through profiling and code review the 0.2.x functioanlity will be improved in efficiency
+- Release 0.3.x: documentation of all keybinding commands, improve quality of life for those building their own custom extensions. May introduce breaking changes to improve API clarity for these bindings
+- Release 0.3.y: source code documentation — may involve substantial refactor to improve legibility / clarity of code
+- Release 0.4.0: upwards and onwards...
 
 ## Related Work
 
