@@ -41,6 +41,8 @@ jobs:
                   run: npm run ci
             - name: Upload coverage to Codecov
               uses: codecov/codecov-action@v4
+              with:
+                    token: ${{ secrets.CODECOV_TOKEN }}
         #   - uses: actions/upload-artifact@v3
         #     if: failure()
         #     with:
