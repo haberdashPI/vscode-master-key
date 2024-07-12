@@ -205,7 +205,8 @@
     "wdio": "wdio run ./wdio.conf.mts > wdio.log",
     "precoverage": "webpack --env testing --env coverage && mkdir -p coverage/raw",
     "coverage": "COVERAGE=true COVERAGE_PATH=./coverage/raw wdio run ./wdio.conf.mts > wdio.log",
-    "postcoverage": "nyc report -t coverage/raw --report-dir coverage/summary --reporter=lcov --reporter=text"
+    "postcoverage": "nyc report -t coverage/raw --report-dir coverage/summary --reporter=lcov --reporter=text",
+    "ci": "npm run coverage"
   },
   "devDependencies": {
     "@types/assert": "^1.5.10",
