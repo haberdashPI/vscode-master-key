@@ -37,12 +37,10 @@
             run: npm ci
             env:
               DETECT_CHROMEDRIVER_VERSION: true
-          - name: Build
-            run: npm run build
           - name: Run Tests
             uses: coactions/setup-xvfb@v1
             with:
-              run: npm test
+              run: npm run ci
           - name: Upload coverage to Codecov
             uses: codecov/codecov-action@v4
         #   - uses: actions/upload-artifact@v3
