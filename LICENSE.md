@@ -20,13 +20,10 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
-Parts of this project have been copied from or based on review of the following,
-related projects.
+Parts of this software have been derived from the following projects:
 
-Modal Edit
+## Modal Edit
 
-> # The MIT License (MIT)
->
 > **Copyright © 2020 Tommi Johtela**
 >
 > Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -47,10 +44,10 @@ Modal Edit
 > OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 > THE SOFTWARE.
 
-Modal Keys
+## Modal Keys
 
-**Copyright © 2021 David Little**
-
+> **Copyright © 2021 David Little**
+>
 > Permission is hereby granted, free of charge, to any person obtaining a copy
 > of this software and associated documentation files (the "Software"), to deal
 > in the Software without restriction, including without limitation the rights
@@ -69,9 +66,9 @@ Modal Keys
 > OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 > THE SOFTWARE.
 
-Dance
+## Dance
 
-> Copyright 2020-2021 Grégoire Geis
+> **Copyright 2020-2021 Grégoire Geis**
 >
 > Permission to use, copy, modify, and/or distribute this software for any purpose with or
 > without fee is hereby granted, provided that the above copyright notice and this
