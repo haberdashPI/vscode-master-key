@@ -1,11 +1,5 @@
 ## Wrapping up unit tests / stability / coverage
 
-at the end of this milestone I have my first public github repo available for this
-extension
-
-code coverage?
-https://istanbul.js.org/
-
 TODO: switch to public repo status, include a license, add a note at the top
 about the repo being in a WIP status
 
@@ -40,6 +34,29 @@ unit tests: parsing of YAML and JSON(C)
 unit tests: store/restore named commands
 
 UNIT TEST: verify that larkin can be properly loaded/parsed
+
+TODO: include the basic (non ui tests) in coverage
+
+Key gaps identified by coverage (not listed above):
+  - setFlags
+  - use of global state in commands
+    - `editorHasSelection`
+    - `editorHasMultipleSelection`
+    - `firstSelectionOrWord`
+  - testing filter of bindings for palette
+  - test configuration editiing
+    - copy
+    - remove
+    - copy from user / default config
+  - commands
+    - usage of `if` field
+    - error for malformed `repeat` expression
+    - macros: recording and replaying edits
+      - nested macros??
+    - empty search string
+    - premature end of capture and search using enter
+    - escaping a search
+  - basic validation of visual search (we can inject css ids to make this easy)
 
 ## Visual Documentation Improvements
 
@@ -80,7 +97,7 @@ IMPROVEMENT: put some examples of cool features from `Larkin` in the README
 - Pair down some of the required extensions.
 - Offer to install extensions? (maybe when a keybinding fails to run??)
 
-### Before first release
+### Before VSCode publish
 
 thoughts: things I must have to release:
 - user documentation (in cheet sheet form)

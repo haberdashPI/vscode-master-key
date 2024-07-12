@@ -12,3 +12,4 @@ test/temp/**
 .nyc_output/**
 coverage/**
 coverage.json
+wdio.log

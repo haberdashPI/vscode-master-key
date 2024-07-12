@@ -112,8 +112,14 @@ export async function setupEditor(str: string){
     const editor = await editorView.openEditor(title!) as TextEditor;
 
     // set the text
+    // NOTE: setting editor text is somewhat flakey, so we verify that it worked
     console.log("[DEBUG]: setting text to: "+str.slice(0, 50)+"...");
-    await editor.setText(str);
+    await browser.waitUntil(async () => {
+        await editor.setText(str);
+        await waitUntilCursorUnmoving(editor);
+        let text = await editor.getText();
+        return text === str;
+    });
 
     // focus the editor
     console.log("[DEBUG]: Focusing editor");
