@@ -393,6 +393,7 @@ i j k l`);
         text = await editor.getText();
         expect(text).toEqual(`p p c d\ne f g h\ni j k l`);
         await editor.setText(`a b c d\ne f g h\ni j k l`);
+        await sleep(1000);
     });
 
     it('Insert chars', async () => {
@@ -418,7 +419,6 @@ i j k l`);
 
         text = await editor.getText();
         expect(text).toEqual(`fa fb c d\ne f g h\ni j k l`);
-        await editor.setText(`a b c d\ne f g h\ni j k l`);
     });
 
     it('Repeats replay using count', async () => {
