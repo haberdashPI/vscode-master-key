@@ -1,7 +1,11 @@
 # Master Key
 
 [![Project Status: WIP – Initial development is in progress, but there has not yet been a stable, usable release suitable for the public.](https://img.shields.io/badge/Repo%20Status-WIP-yellow)](https://www.repostatus.org/#active)
+[![GitHub Actions](https://github.com/haberdashPI/vscode-master-key/workflows/ci/badge.svg)](https://github.com/haberdashPI/vscode-master-key/actions/workflows/ci.yml)
+**TODO**:
+[![codecov](https://codecov.io/gh/beacon-biosignals/StableHashTraits.jl/branch/main/graph/badge.svg?token=4O1YO0GMNM)](https://codecov.io/gh/beacon-biosignals/StableHashTraits.jl)
 
+**TODO**: docs, and codestyle badges
 > [!WARNING]
 > 🚧 Master Key is still under construction. 🚧
 >

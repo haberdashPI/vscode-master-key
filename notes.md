@@ -12,6 +12,8 @@ if at all possible
 
 create release 0.1.0
 
+NOTE: bug fixes/stability could be added after we add the feature for markdown documentation
+
 BUG: when there are no keys defined the visual keybinding output includes `undefined`
 
 NEW TEST: palette commands can now be readily tested, I believe...
@@ -157,6 +159,8 @@ REFACTOR: somehow we have to define/organize binding parameters
 FEATURE: require parsing to validate modes to be all negations or all positive mode specifications
 
 ## Unorganized Improvements
+
+- HIGH PRIORITY: improve error reporting for keybinding files
 
 - once we've improved performance, parallelize the tests more
 
