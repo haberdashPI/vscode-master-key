@@ -2,7 +2,7 @@
 
 import '@wdio/globals';
 import 'wdio-vscode-service';
-import { enterModalKeys, setBindings, setupEditor, movesCursorInEditor, waitForMode, cursorToTop } from './utils.mts';
+import { enterModalKeys, setBindings, setupEditor, movesCursorInEditor, waitForMode, cursorToTop, storeCoverageStats } from './utils.mts';
 import { StatusBar, TextEditor } from 'wdio-vscode-service';
 import { Key } from "webdriverio";
 import { sleep } from 'wdio-vscode-service';
@@ -103,5 +103,9 @@ describe('Configuration', () => {
         const cursorEl = await browser.$('div[role="presentation"].cursors-layer');
         const cursorClasses = await cursorEl.getAttribute('class');
         expect(cursorClasses).toMatch(/cursor-line-style/);
+    });
+
+    after(async () => {
+        await storeCoverageStats('config');
     });
 });

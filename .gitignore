@@ -9,3 +9,7 @@ utest/out/**
 uxtest/temp/**
 .wdio-vscode-service
 test/temp/**
+.nyc_output/**
+coverage/**
+coverage.json
+wdio.log

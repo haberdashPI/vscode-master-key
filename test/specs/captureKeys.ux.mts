@@ -1,6 +1,6 @@
 import { browser, expect } from '@wdio/globals';
 import { Key } from 'webdriverio';
-import { movesCursorTo, setBindings, setupEditor, movesCursorInEditor, enterModalKeys, cursorToTop, waitForMode } from './utils.mts';
+import { movesCursorTo, setBindings, setupEditor, movesCursorInEditor, enterModalKeys, cursorToTop, waitForMode, storeCoverageStats } from './utils.mts';
 import { sleep, InputBox, TextEditor, Workbench } from 'wdio-vscode-service';
 import lodash from 'lodash';
 const { isEqual } = lodash;
@@ -137,5 +137,9 @@ describe('Search motion command', () => {
         // so this sleep wouldn't be necessary
         await sleep(1000);
         expect(await editor.getText()).toEqual(`fpoobar bum POINT_A`);
+    });
+
+    after(async () => {
+        await storeCoverageStats('captureKeys');
     });
 });

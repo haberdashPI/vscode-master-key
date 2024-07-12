@@ -22,6 +22,11 @@ const webpack = require('webpack');
 const webExtensionConfig = (env, argv) => ({
     mode: 'none', // this leaves the source code as close as possible to the original (when packaging we set this to 'production')
     target: 'webworker', // extensions run in a webworker context
+    cache: {
+        type: 'filesystem',
+        name: argv.mode + '-testing' + env['testing'] + '-coverage' + env['coverage'],
+        version: '1'
+    },
     entry: {
         'extension': './src/web/extension.ts',
         'test/suite/index': './src/web/test/suite/index.ts',
@@ -50,9 +55,10 @@ const webExtensionConfig = (env, argv) => ({
         rules: [{
             test: /\.ts$/,
             exclude: /node_modules/,
-            use: [{
-                loader: 'ts-loader'
-            }]
+            use: [
+                {loader: '@jsdevtools/coverage-istanbul-loader'},
+                {loader: 'ts-loader'}
+            ]
         }]
     },
     plugins: [
@@ -63,7 +69,8 @@ const webExtensionConfig = (env, argv) => ({
             process: 'process/browser', // provide a shim for the global `process` variable
         }),
         new webpack.DefinePlugin({
-            'process.env.TESTING': JSON.stringify(env['testing'] || false)
+            'process.env.TESTING': JSON.stringify(env['testing'] || false),
+            'process.env.COVERAGE': JSON.stringify(env['coverage'] || false)
         })
     ],
     externals: {

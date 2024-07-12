@@ -2,7 +2,7 @@
 
 import '@wdio/globals';
 import 'wdio-vscode-service';
-import { enterModalKeys, setBindings, setupEditor, movesCursorInEditor } from './utils.mts';
+import { enterModalKeys, setBindings, setupEditor, movesCursorInEditor, storeCoverageStats } from './utils.mts';
 import { TextEditor } from 'wdio-vscode-service';
 import { Key } from "webdriverio";
 
@@ -72,13 +72,6 @@ describe('Simple Motions', () => {
             command = "master-key.enterInsert"
             mode = "normal"
 
-            [define.keyNumber]
-            mode = "normal"
-            "shift+0" = 0
-            "shift+1" = 1
-            "shift+2" = 2
-            "shift+3" = 3
-
             [[bind]]
             # NOTE: because of how vscode-extension-tester is implemented
             # numeric values get typed, so we use other keybindings here
@@ -138,5 +131,9 @@ laborum ad. Dolore exercitation cillum eiusmod culpa minim duis`);
             await enterModalKeys({count: 1, key: ['shift', '1']},
                                  {count: 0, key: ['shift', '0']}, 'l');
         }, [0, 10], editor);
+    });
+
+    after(async () => {
+        await storeCoverageStats('simpleMotion');
     });
 });

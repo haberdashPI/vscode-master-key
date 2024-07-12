@@ -1,24 +1,29 @@
 import { browser, expect } from '@wdio/globals';
 import 'wdio-vscode-service';
 import { Key, WaitUntilOptions } from 'webdriverio';
-import { Input, InputBox, StatusBar, TextEditor, sleep } from 'wdio-vscode-service';
+import { Input, InputBox, StatusBar, TextEditor, Workbench, sleep } from 'wdio-vscode-service';
 import loadash from 'lodash';
 const { isEqual } = loadash;
+import * as fs from 'fs';
+import * as path from 'path';
+
+const COVERAGE_KEY_COMMAND = `
+[[bind]]
+name = "show coverage"
+key = "ctrl+shift+alt+c"
+mode = []
+prefixes = "<all-prefixes>"
+command = "master-key.writeCoverageToEditor"
+`;
 
 export async function setBindings(str: string){
-    const workbench = await browser.getWorkbench();
-    browser.keys([Key.Ctrl, 'n']);
-    await sleep(500);
+    await setupEditor(str + COVERAGE_KEY_COMMAND);
 
+    const workbench = await browser.getWorkbench();
     await workbench.executeCommand('Select Language Mode');
     let input = await ((new InputBox(workbench.locatorMap)).wait());
     await input.setText("Markdown");
     await input.confirm();
-
-    const editorView = await workbench.getEditorView();
-    let tab = await editorView.getActiveTab();
-    const editor = await editorView.openEditor(await tab?.getTitle()!) as TextEditor;
-    await editor.setText(str);
 
     await workbench.executeCommand('Master key: Activate Keybindings');
     let bindingInput = await ((new InputBox(workbench.locatorMap)).wait());
@@ -42,32 +47,82 @@ export async function setBindings(str: string){
         }
     });
     expect(message).toBeTruthy();
+    // downstream tests appear to sometimes be flaky by failing to respond
+    // to bindings appropriately, given vscode some time to actually load/
+    // respond to the new bindings
+    await sleep(2000);
     return;
 }
 
+export async function storeCoverageStats(name: string){
+    if(!process.env.COVERAGE){ return; }
+    const editor = await setupEditor("");
+    // TODO: not sure why the keys don't show up in the status bar here...
+    // (probably a bug)
+    await enterModalKeys({key: ['ctrl', 'shift', 'alt', 'c'], updatesStatus: false});
+
+    await sleep(1000);
+    await waitUntilCursorUnmoving(editor);
+
+    let coverageStr = await editor.getText();
+    fs.writeFileSync(
+        path.join(process.env.COVERAGE_PATH || '.', name + ".json"),
+        coverageStr);
+}
+
 export async function cursorToTop(editor: TextEditor){
+    // this method appears to be a common source unreliable behavior so we do the commands
+    // slowly
     (await editor.elem).click();
+    await sleep(100);
     await browser.keys([Key.Ctrl, 'A']);
+    await sleep(100);
     await browser.keys(Key.ArrowLeft);
     await sleep(100);
+    browser.waitUntil(async () => {
+        let coord = await editor.getCoordinates();
+        coord[0] === 1 && coord[1] === 1;
+    });
+    await sleep(200);
 }
 
 export async function setupEditor(str: string){
     const workbench = await browser.getWorkbench();
-    browser.keys([Key.Ctrl, 'n']);
-
-    const editorView = workbench.getEditorView();
-    let tab = await editorView.getActiveTab();
-    const editor = await editorView.openEditor(await tab?.getTitle()!) as TextEditor;
 
     // clear any older notificatoins
+    console.log("[DEBUG]: clearing notifications");
     let notifications = await workbench.getNotifications();
     for(let note of notifications){
         await note.dismiss();
     }
 
-    await editor.setText(str);
+    console.log('[DEBUG]: creating new file');
+    browser.keys([Key.Ctrl, 'n']);
 
+    console.log('[DEBUG]: waiting for editor to be available');
+    const editorView = await workbench.getEditorView();
+    const title = await browser.waitUntil(async () => {
+        let tab = await editorView.getActiveTab();
+        const title = await tab?.getTitle();
+        if(title && title.match(/Untitled/)){
+            return title;
+        }
+        return;
+    }, { interval: 1000, timeout: 10000 });
+    const editor = await editorView.openEditor(title!) as TextEditor;
+
+    // set the text
+    // NOTE: setting editor text is somewhat flakey, so we verify that it worked
+    console.log("[DEBUG]: setting text to: "+str.slice(0, 50)+"...");
+    await browser.waitUntil(async () => {
+        await editor.setText(str);
+        await waitUntilCursorUnmoving(editor);
+        let text = await editor.getText();
+        return text === str;
+    });
+
+    // focus the editor
+    console.log("[DEBUG]: Focusing editor");
     await cursorToTop(editor);
 
     return editor;
@@ -144,12 +199,11 @@ export async function enterModalKeys(...keySeq: ModalKey[]){
     let keySeqString = "";
     let cleared;
 
-    console.dir(keySeqString);
 
-    console.log("[DEBUG]: waiting for old keys to clear");
-    let waitOpts = {interval: 50, timeout: 1000};
+    let waitOpts = {interval: 50, timeout: 5000};
     cleared = await browser.waitUntil(() => statusBar.getItem('No Keys Typed'),
-        waitOpts);
+        { ...waitOpts,
+            timeoutMsg: `Old keys didn't clear, while trying to press \n${JSON.stringify(keySeq, null, 4)}` } );
     expect(cleared).toBeTruthy();
 
     let count = 0;
@@ -161,10 +215,6 @@ export async function enterModalKeys(...keySeq: ModalKey[]){
             throw Error("Keys must all be lower case (use 'shift')");
         }
         const keyCodes = keys.map(k => MODAL_KEY_MAP[k] !== undefined ? MODAL_KEY_MAP[k] : k);
-        console.log("[DEBUG]: keys");
-        console.dir(keys_);
-        console.dir(keyCodes);
-        console.dir(keys);
         const keyCount = modalKeyCount(keys_);
         if(keyCount === undefined){
             let keyString = keys.map(prettifyPrefix).join('');
@@ -180,20 +230,19 @@ export async function enterModalKeys(...keySeq: ModalKey[]){
 
         browser.keys(keyCodes);
         if(modalKeyUpdateStatus(keys_)){
-            console.log("[DEBUG]: looking for new key");
-            console.log("[DEBUG]: target '"+currentKeySeqString+"'");
             let registered = await browser.waitUntil(() =>
                 statusBar.getItem('Keys Typed: '+currentKeySeqString),
-                waitOpts);
+                { ...waitOpts,
+                    timeoutMsg: `UI didn't register typed key: \n${JSON.stringify(currentKeySeqString, null, 4)}` });
             expect(registered).toBeTruthy();
         }else{
             checkCleared = false;
         }
     }
     if(checkCleared){
-        console.log("[DEBUG]: waiting for new key to clear");
         cleared = await browser.waitUntil(() => statusBar.getItem('No Keys Typed'),
-            waitOpts);
+            { ...waitOpts,
+                timeoutMsg: `Final keys didn't clear while pressing \n${JSON.stringify(keySeq, null, 4)}` });
         expect(cleared).toBeTruthy();
     }
 
@@ -217,6 +266,28 @@ async function coordChange(editor: TextEditor, oldpos: {x: number, y: number}): 
     return {y: ydiff, x: xdiff};
 }
 
+export async function waitUntilCursorUnmoving(editor: TextEditor, oldpos?: {x: number, y: number}){
+    if(!oldpos){
+        let [y, x] = await editor.getCoordinates();
+        oldpos = {x, y};
+    }
+
+    let lastMove = {x: 0, y: 0};
+    let stepsUnchanged = 0;
+    return await browser.waitUntil(async() => {
+        let move = await coordChange(editor, oldpos);
+
+        if(isEqual(lastMove, move)){ stepsUnchanged += 1; }
+        else{
+            lastMove = move;
+            stepsUnchanged = 0;
+        };
+        if(stepsUnchanged > 1){
+            return move;
+        }
+    }, {interval: 300, timeout: 9000});
+}
+
 export async function movesCursorInEditor(action: () => Promise<void>, by: [number, number], editor: TextEditor){
     let [y, x] = await editor.getCoordinates();
     let oldpos = {x, y};
@@ -231,21 +302,7 @@ export async function movesCursorInEditor(action: () => Promise<void>, by: [numb
     // but some commands require that we wait before their effects are observed...
     // in this case we need to have some confidence that no further moves are
     // going to happen
-    let stepsUnchanged = 0;
-    let lastMove = {x: 0, y: 0};
-    let maybeActual = await browser.waitUntil(async() => {
-        let move = await coordChange(editor, oldpos);
-
-        if(isEqual(lastMove, move)){ stepsUnchanged += 1; }
-        else{
-            lastMove = move;
-            stepsUnchanged = 0;
-        };
-        if(stepsUnchanged > 1){
-            return move;
-        }
-    }, {interval: 300, timeout: 9000});
-
+    let maybeActual = await waitUntilCursorUnmoving(editor, oldpos);
     expect(maybeActual).toEqual(expected);
 }
 

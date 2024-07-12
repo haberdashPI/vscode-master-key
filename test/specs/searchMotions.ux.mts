@@ -1,6 +1,6 @@
 import { browser, expect } from '@wdio/globals';
 import { Key } from 'webdriverio';
-import { movesCursorTo, setBindings, setupEditor, movesCursorInEditor, enterModalKeys, cursorToTop, waitForMode } from './utils.mts';
+import { movesCursorTo, setBindings, setupEditor, movesCursorInEditor, enterModalKeys, cursorToTop, waitForMode, storeCoverageStats } from './utils.mts';
 import { sleep, InputBox, TextEditor, Workbench } from 'wdio-vscode-service';
 import lodash from 'lodash';
 const { isEqual } = lodash;
@@ -422,5 +422,9 @@ labore elit occaecat cupidatat non POINT_B.`);
             await inputA.confirm();
         }, [0, 18], editor);
         expect(await editor.getSelectedText()).toEqual(' POINT_A');
+    });
+
+    after(async () => {
+        await storeCoverageStats('searchMotion');
     });
 });
