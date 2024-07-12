@@ -1,16 +1,7 @@
 ## Wrapping up unit tests / stability / coverage
 
-TODO: switch to public repo status, include a license, add a note at the top
-about the repo being in a WIP status
-
-CI??
-  - yes: I can use xvfb
-    refer to https://github.com/webdriverio-community/wdio-vscode-service/blob/main/.github/workflows/ci.yml for instance
-
 NOTE: we may need to add multiple retries to tests, CI should pass every time
 if at all possible
-
-create release 0.1.0
 
 NOTE: bug fixes/stability could be added after we add the feature for markdown documentation
 
@@ -118,6 +109,8 @@ release 0.2.x
 
 ### Before VSCode publish
 
+release 0.3.0
+
 thoughts: things I must have to release:
 - keybinding documentation features
   - markdown output / html
@@ -142,13 +135,13 @@ after first release
 - speed up:
   - https://www.nicoespeon.com/en/2019/11/fix-vscode-extension-performance-issue/
 
-release 0.3.0
+release 0.4.0
 
 - good documentation of the code
 - good documentation of the binding format
 - vim style bindings? (I think this could come in a separate release; or just never do it, wait until someone wants it)
 
-release 0.3.x
+release 0.4.x
 
 REFACTOR: add prettier config and apply new style to all files
 REFACTOR: cleanup up and document code, make it nice and readable
