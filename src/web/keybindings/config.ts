@@ -1,48 +1,55 @@
 import * as vscode from 'vscode';
 import hash from 'object-hash';
-import { Utils } from 'vscode-uri';
-import { Bindings, IConfigKeyBinding } from './processing';
+import {Bindings} from './processing';
 
 let storageUri: vscode.Uri;
 export let bindings: Bindings | undefined = undefined;
 let configState: vscode.Memento | undefined = undefined;
 export type ConfigListener = (x: Bindings | undefined) => Promise<void>;
-let listeners: ConfigListener[] = [];
+const listeners: ConfigListener[] = [];
 
-async function updateBindings(event?: vscode.ConfigurationChangeEvent){
-    if(!event || event.affectsConfiguration('master-key')){
-        let config = vscode.workspace.getConfiguration('master-key');
-        let configId = config.get<string>('activatedBindingsId') || 'none';
+async function updateBindings(event?: vscode.ConfigurationChangeEvent) {
+    if (!event || event.affectsConfiguration('master-key')) {
+        const config = vscode.workspace.getConfiguration('master-key');
+        const configId = config.get<string>('activatedBindingsId') || 'none';
         useBindings(configId);
     }
 }
 
-export async function createBindings(newBindings: Bindings){
-    let hashStr = hash(newBindings);
-    let label = newBindings.name + " " + hashStr;
+export async function createBindings(newBindings: Bindings) {
+    const hashStr = hash(newBindings);
+    const label = newBindings.name + ' ' + hashStr;
     bindings = newBindings;
     vscode.workspace.fs.createDirectory(storageUri);
-    let bindingFile = vscode.Uri.joinPath(storageUri, label+'.json');
-    let data = new TextEncoder().encode(JSON.stringify(newBindings));
+    const bindingFile = vscode.Uri.joinPath(storageUri, label + '.json');
+    const data = new TextEncoder().encode(JSON.stringify(newBindings));
     vscode.workspace.fs.writeFile(bindingFile, data);
     return label;
 }
 
-async function useBindings(label: string){
-    if(label === 'none'){
+async function useBindings(label: string) {
+    if (label === 'none') {
         bindings = undefined;
-        if(configState){ for(let fn of (listeners || [])){ await fn(bindings); } }
+        if (configState) {
+            for (const fn of listeners || []) {
+                await fn(bindings);
+            }
+        }
         return;
-    };
-    let configFile = vscode.Uri.joinPath(storageUri, label+'.json');
-    try{
+    }
+    const configFile = vscode.Uri.joinPath(storageUri, label + '.json');
+    try {
         await vscode.workspace.fs.stat(configFile);
-        let data = await vscode.workspace.fs.readFile(configFile);
-        let newBindings = <Bindings>JSON.parse(new TextDecoder().decode(data));
+        const data = await vscode.workspace.fs.readFile(configFile);
+        const newBindings = <Bindings>JSON.parse(new TextDecoder().decode(data));
         bindings = newBindings;
-        if(configState){ for(let fn of (listeners || [])){ await fn(bindings); } }
-    }catch{
-        vscode.window.showErrorMessage("Could not load bindings with label: "+configFile);
+        if (configState) {
+            for (const fn of listeners || []) {
+                await fn(bindings);
+            }
+        }
+    } catch {
+        vscode.window.showErrorMessage('Could not load bindings with label: ' + configFile);
     }
 }
 
@@ -52,17 +59,20 @@ async function useBindings(label: string){
 // settings, they are changes as part of the master keybinding file that gets imported. They
 // define things like how each keybinding mode works, and what
 
-
-export async function onChangeBindings(fn: ConfigListener){
-    if(configState){ await fn(bindings); }
+export async function onChangeBindings(fn: ConfigListener) {
+    if (configState) {
+        await fn(bindings);
+    }
     listeners.push(fn);
     return;
 }
 
-export async function activate(context: vscode.ExtensionContext){
+export async function activate(context: vscode.ExtensionContext) {
     storageUri = context.globalStorageUri;
     configState = context.globalState;
-    for(let fn of (listeners || [])){ await fn(bindings); }
+    for (const fn of listeners || []) {
+        await fn(bindings);
+    }
 
     updateBindings();
     vscode.workspace.onDidChangeConfiguration(updateBindings);

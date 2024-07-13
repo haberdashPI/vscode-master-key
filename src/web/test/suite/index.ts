@@ -2,11 +2,10 @@
 require('mocha/mocha');
 
 export function run(): Promise<void> {
-
     return new Promise((c, e) => {
         mocha.setup({
             ui: 'tdd',
-            reporter: undefined
+            reporter: undefined,
         });
 
         // Bundles all files in the current directory matching `*.test`

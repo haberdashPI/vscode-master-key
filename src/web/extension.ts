@@ -13,17 +13,18 @@ export async function activate(context: vscode.ExtensionContext) {
     await status.activate(context);
     await config.activate(context);
 
-    if(process.env.COVERAGE){
-        context.subscriptions.push(vscode.commands.registerCommand(
-            'master-key.writeCoverageToEditor', () => {
-                let editor = vscode.window.activeTextEditor;
-                if(editor){
-                    let coverage = JSON.stringify(__coverage__);
+    if (process.env.COVERAGE) {
+        context.subscriptions.push(
+            vscode.commands.registerCommand('master-key.writeCoverageToEditor', () => {
+                const editor = vscode.window.activeTextEditor;
+                if (editor) {
+                    const coverage = JSON.stringify(__coverage__);
                     editor.edit(builder => {
                         builder.insert(new vscode.Position(0, 0), coverage);
                     });
                 }
-            }));
+            })
+        );
     }
 }
 

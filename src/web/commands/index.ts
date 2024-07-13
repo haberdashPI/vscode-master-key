@@ -6,11 +6,11 @@ import * as mode from './mode';
 import * as namedStore from './namedStore';
 import * as replay from './replay';
 import * as search from './search';
-import * as prefix from "./prefix";
-import * as palette from "./palette";
-import * as visualKeyDoc from "./visualKeyDoc";
+import * as prefix from './prefix';
+import * as palette from './palette';
+import * as visualKeyDoc from './visualKeyDoc';
 
-export async function activate(context: vscode.ExtensionContext){
+export async function activate(context: vscode.ExtensionContext) {
     await capture.activate(context);
     await count.activate(context);
     await doCommand.activate(context);
@@ -22,6 +22,7 @@ export async function activate(context: vscode.ExtensionContext){
     await palette.activate(context);
     await visualKeyDoc.activate(context);
 
-    context.subscriptions.push(vscode.commands.registerCommand('master-key.ignore',
-        () => undefined));
+    context.subscriptions.push(
+        vscode.commands.registerCommand('master-key.ignore', () => undefined)
+    );
 }

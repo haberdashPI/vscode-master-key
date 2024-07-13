@@ -2,29 +2,31 @@ import assert from 'assert';
 
 // You can import and use all API from the 'vscode' module
 // as well as import your extension to test it
-import { processBindings } from '../../keybindings/processing';
-import { parseBindings } from '../../keybindings/parsing';
+import {processBindings} from '../../keybindings/processing';
+import {parseBindings} from '../../keybindings/parsing';
 
-import { fromZodError } from 'zod-validation-error';
-import { sortBy, isEqual, isUndefined } from 'lodash';
+import {fromZodError} from 'zod-validation-error';
+import {sortBy, isEqual, isUndefined} from 'lodash';
 
 function specForBindings(text: string) {
-    let result = parseBindings(text, 'toml');
+    const result = parseBindings(text, 'toml');
     if (result.success) {
-        let data = processBindings(result.data);
+        const data = processBindings(result.data);
         if (data) {
-            let [spec, problems] = data;
-            if(problems.length > 0){ throw new Error(problems[0]); }
+            const [spec, problems] = data;
+            if (problems.length > 0) {
+                throw new Error(problems[0]);
+            }
             return spec.bind;
         }
     } else {
-        throw new Error("Unexpected parsing failure!: " + fromZodError(result.error));
+        throw new Error('Unexpected parsing failure!: ' + fromZodError(result.error));
     }
-    throw new Error("Unexpected parsing failure!");
+    throw new Error('Unexpected parsing failure!');
 }
 
 suite('Keybinding Test Suite', () => {
-    let simpleFile = `
+    const simpleFile = `
         [header]
         version = "1.0"
         name = "test"
@@ -41,29 +43,35 @@ suite('Keybinding Test Suite', () => {
         command = "barCommand"
     `;
     test('Files can be parsed', () => {
-        let result = parseBindings(simpleFile, 'toml');
+        const result = parseBindings(simpleFile, 'toml');
         assert(result.success);
-        let data = processBindings(result.data);
+        const data = processBindings(result.data);
         assert(result.data);
-        let [spec, defs] = data;
+        const [spec] = data;
         assert(spec);
     });
 
     test('Typos are noted', () => {
-        assert.throws(() => specForBindings(simpleFile.replace('description', 'descrption')),
-            { message: /Unrecognized key\(s\) in object: 'descrption'/ });
-        assert.throws(() => specForBindings(simpleFile.replace('header', 'headr')),
-            { message: /Unrecognized key\(s\) in object: 'headr'/ });
-        assert.throws(() => specForBindings(simpleFile.replace('name', 'nam')),
-            { message: /Unrecognized key\(s\) in object: 'nam'/ });
-        assert.throws(() => specForBindings(simpleFile.replace('bind', 'bnd')),
-            { message: /Unrecognized key\(s\) in object: 'bnd'/ });
-        assert.throws(() => specForBindings(simpleFile.replace('key', 'keye')),
-            { message: /Unrecognized key\(s\) in object: 'keye'/ });
+        assert.throws(
+            () => specForBindings(simpleFile.replace('description', 'descrption')),
+            {message: /Unrecognized key\(s\) in object: 'descrption'/}
+        );
+        assert.throws(() => specForBindings(simpleFile.replace('header', 'headr')), {
+            message: /Unrecognized key\(s\) in object: 'headr'/,
+        });
+        assert.throws(() => specForBindings(simpleFile.replace('name', 'nam')), {
+            message: /Unrecognized key\(s\) in object: 'nam'/,
+        });
+        assert.throws(() => specForBindings(simpleFile.replace('bind', 'bnd')), {
+            message: /Unrecognized key\(s\) in object: 'bnd'/,
+        });
+        assert.throws(() => specForBindings(simpleFile.replace('key', 'keye')), {
+            message: /Unrecognized key\(s\) in object: 'keye'/,
+        });
     });
 
     test('Imports correct number of bindings', () => {
-        let spec = specForBindings(simpleFile);
+        const spec = specForBindings(simpleFile);
         assert.equal(spec.length, 2);
     });
 
@@ -112,28 +120,33 @@ suite('Keybinding Test Suite', () => {
     defItems = sortBy(defItems, x => x.key);
 
     test('Defaults and when expand recursively', () => {
-        assert.equal(defItems[0].key, "a");
-        assert.equal(defItems[0].args.kind, "fookind");
+        assert.equal(defItems[0].key, 'a');
+        assert.equal(defItems[0].args.kind, 'fookind');
         assert.equal(defItems[0].prefixDescriptions.length, 1);
         assert(defItems[0].when.match(/baz > 0/));
-        assert.notEqual(defItems[0].args.do[0].computedArgs?.select, "prefix.startsWith('u')");
-        assert.equal(defItems[0].args.do[0].computedArgs?.value, "count");
+        assert.notEqual(
+            defItems[0].args.do[0].computedArgs?.select,
+            "prefix.startsWith('u')"
+        );
+        assert.equal(defItems[0].args.do[0].computedArgs?.value, 'count');
 
-        let bkeys = defItems.filter(x => x.key === "b" && x.args.kind === "barkind");
+        const bkeys = defItems.filter(x => x.key === 'b' && x.args.kind === 'barkind');
         assert.equal(bkeys.length, 2);
         assert(bkeys[0].when.match(/baz > 0/));
         assert(bkeys[0].when.match(/biz < 10/));
         assert.equal(bkeys[0].args.do[0].computedArgs?.select, "prefix.startsWith('u')");
-        assert.equal(defItems[0].args.do[0].computedArgs?.value, "count");
+        assert.equal(defItems[0].args.do[0].computedArgs?.value, 'count');
 
-        let ckeys = defItems.filter(x => x.key === "c" && x.args.kind === "barkind");
+        const ckeys = defItems.filter(x => x.key === 'c' && x.args.kind === 'barkind');
         assert.equal(ckeys.length, 1);
         assert(ckeys[0].when.match(/baz > 0/));
         assert(!ckeys[0].when.match(/biz < 10/));
     });
 
     test('Detects duplicate path ids', () => {
-        assert.throws(() => specForBindings(`
+        assert.throws(
+            () =>
+                specForBindings(`
             [header]
             version = "1.0"
 
@@ -151,11 +164,13 @@ suite('Keybinding Test Suite', () => {
             key = "a"
             kind = "do"
             command = "fooDo"
-        `), { message: /Defined \[\[path\]\] entries must all have unique 'id' fields/ });
+        `),
+            {message: /Defined \[\[path\]\] entries must all have unique 'id' fields/}
+        );
     });
 
     test('Multi-key bindings expand to individual bindings', () => {
-        let spec = specForBindings(`
+        const spec = specForBindings(`
         [header]
         version = "1.0"
 
@@ -174,12 +189,22 @@ suite('Keybinding Test Suite', () => {
         `);
 
         assert.equal(spec.length, 5);
-        assert(isEqual(spec.map(x => x.key), ["a", "b", "c", "d", "e"]));
-        assert(isEqual(spec.map(x => x.args.do[0].args.text), ["a", "b", "c", "d", "e"]));
+        assert(
+            isEqual(
+                spec.map(x => x.key),
+                ['a', 'b', 'c', 'd', 'e']
+            )
+        );
+        assert(
+            isEqual(
+                spec.map(x => x.args.do[0].args.text),
+                ['a', 'b', 'c', 'd', 'e']
+            )
+        );
     });
 
     test('`key` value is validated', () => {
-        let spec = specForBindings(`
+        const spec = specForBindings(`
         [header]
         version = "1.0"
 
@@ -196,7 +221,9 @@ suite('Keybinding Test Suite', () => {
         `);
         assert.equal(spec.length, 1);
 
-         assert.throws(() => specForBindings(`
+        assert.throws(
+            () =>
+                specForBindings(`
         [header]
         version = "1.0"
 
@@ -210,9 +237,13 @@ suite('Keybinding Test Suite', () => {
         key = ":"
         kind = "all"
         command = "foo"
-        `), {message: /Invalid keybinding/});
+        `),
+            {message: /Invalid keybinding/}
+        );
 
-        assert.throws(() => specForBindings(`
+        assert.throws(
+            () =>
+                specForBindings(`
         [header]
         version = "1.0"
 
@@ -226,9 +257,13 @@ suite('Keybinding Test Suite', () => {
         key = "k+f"
         kind = "all"
         command = "foo"
-        `), {message: /Invalid keybinding/});
+        `),
+            {message: /Invalid keybinding/}
+        );
 
-        assert.throws(() => specForBindings(`
+        assert.throws(
+            () =>
+                specForBindings(`
         [header]
         version = "1.0"
 
@@ -242,12 +277,15 @@ suite('Keybinding Test Suite', () => {
         key = "F"
         kind = "all"
         command = "foo"
-        `), {message: /Invalid keybinding/});
+        `),
+            {message: /Invalid keybinding/}
+        );
     });
 
-
     test('prefixes are validated', () => {
-        assert.throws(() => specForBindings(`
+        assert.throws(
+            () =>
+                specForBindings(`
         [header]
         version = "1.0"
 
@@ -262,11 +300,15 @@ suite('Keybinding Test Suite', () => {
         kind = "all"
         prefixes = ["foobar", ""]
         command = "foo"
-        `), {message: /foobar/});
+        `),
+            {message: /foobar/}
+        );
     });
 
     test('prefixes must be transient', () => {
-        assert.throws(() => specForBindings(`
+        assert.throws(
+            () =>
+                specForBindings(`
         [header]
         version = "1.0"
 
@@ -281,9 +323,11 @@ suite('Keybinding Test Suite', () => {
         kind = "all"
         command = "master-key.prefix"
         resetTransient = true
-        `), {message: /'resetTransient' must be false/});
+        `),
+            {message: /'resetTransient' must be false/}
+        );
 
-        let spec = specForBindings(`
+        const spec = specForBindings(`
         [header]
         version = "1.0"
 
@@ -311,7 +355,9 @@ suite('Keybinding Test Suite', () => {
     });
 
     test('Checks for duplicate bindings', () => {
-        assert.throws(() => specForBindings(`
+        assert.throws(
+            () =>
+                specForBindings(`
         [header]
         version = "1.0"
 
@@ -332,9 +378,13 @@ suite('Keybinding Test Suite', () => {
         key = "a"
         kind = "all"
         command = "foo"
-        `), {message: /Duplicate bindings for 'a' in mode 'default'/});
+        `),
+            {message: /Duplicate bindings for 'a' in mode 'default'/}
+        );
 
-        assert.throws(() => specForBindings(`
+        assert.throws(
+            () =>
+                specForBindings(`
         [header]
         version = "1.0"
 
@@ -364,9 +414,11 @@ suite('Keybinding Test Suite', () => {
         kind = "all"
         mode = "!normal"
         command = "foo"
-        `), {message: /Duplicate bindings for 'a' in mode 'capture'/});
+        `),
+            {message: /Duplicate bindings for 'a' in mode 'capture'/}
+        );
 
-        let bindings = specForBindings(`
+        const bindings = specForBindings(`
         [header]
         version = "1.0"
 
@@ -389,12 +441,12 @@ suite('Keybinding Test Suite', () => {
         command = "foo"
         `);
 
-        let prefixes = bindings.filter(x => x.args.do[0].command === 'master-key.prefix');
+        const prefixes = bindings.filter(x => x.args.do[0].command === 'master-key.prefix');
         assert.equal(prefixes.length, 2);
     });
 
     test('Keybindings with multiple presses are expanded into prefix bindings', () => {
-        let spec = specForBindings(`
+        const spec = specForBindings(`
         [header]
         version = "1.0"
 
@@ -404,12 +456,12 @@ suite('Keybinding Test Suite', () => {
         command = "foo"
         `);
         assert.equal(spec.length, 3);
-        assert.equal(spec.filter(x => x.args.do[0].command === "foo").length, 1);
-        assert(isEqual(spec.map(x => x.key).sort(), ["a", "b", "c"]));
+        assert.equal(spec.filter(x => x.args.do[0].command === 'foo').length, 1);
+        assert(isEqual(spec.map(x => x.key).sort(), ['a', 'b', 'c']));
     });
 
     test('Multiple foreach create a product', () => {
-        let spec = specForBindings(`
+        const spec = specForBindings(`
         [header]
         version = "1.0"
 
@@ -424,7 +476,7 @@ suite('Keybinding Test Suite', () => {
     });
 
     test('Automated prefixes are properly ordered', () => {
-        let spec = specForBindings(`
+        const spec = specForBindings(`
         [header]
         version = "1.0"
 
@@ -446,13 +498,22 @@ suite('Keybinding Test Suite', () => {
         args.flag = "ab_prefix"
         `);
         assert.equal(spec.length, 6);
-        assert(isEqual(spec.map(i => i.key), ["d", "a", "b", "c", "a", "b"]));
-        assert(isEqual(spec.map(i => !!(i.args.do[0]?.args?.automated)),
-                       [false, true, true, false, true, false]));
+        assert(
+            isEqual(
+                spec.map(i => i.key),
+                ['d', 'a', 'b', 'c', 'a', 'b']
+            )
+        );
+        assert(
+            isEqual(
+                spec.map(i => !!i.args.do[0]?.args?.automated),
+                [false, true, true, false, true, false]
+            )
+        );
     });
 
     test('Documentation expands across key variants', () => {
-        let spec = specForBindings(`
+        const spec = specForBindings(`
         [header]
         version = "1.0"
 
@@ -488,13 +549,13 @@ suite('Keybinding Test Suite', () => {
         assert(isEqual(spec[0].args.combinedName, spec[1].args.combinedName));
         assert(isEqual(spec[0].args.combinedDescription, spec[1].args.combinedDescription));
         assert(isUndefined(spec[3].args.description));
-        assert(isEqual(spec[3].args.combinedKey, ""));
-        assert(isEqual(spec[3].args.combinedName, ""));
-        assert(isEqual(spec[3].args.combinedDescription, ""));
+        assert(isEqual(spec[3].args.combinedKey, ''));
+        assert(isEqual(spec[3].args.combinedName, ''));
+        assert(isEqual(spec[3].args.combinedDescription, ''));
     });
 
     test('Keybindings properly resolve `<all-pefixes>` cases', () => {
-        let spec = specForBindings(`
+        const spec = specForBindings(`
         [header]
         version = "1.0"
 

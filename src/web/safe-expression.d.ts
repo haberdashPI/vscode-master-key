@@ -1,11 +1,11 @@
 declare module 'safe-expression' {
     export default SafeExpression;
 
-    export type EvalFun = (scope: {[k: string]: any}) => any
-    class SafeExpression{
+    export type EvalFun = (scope: {[k: string]: any}) => any;
+    class SafeExpression {
         constructor();
     }
-    interface SafeExpression{
+    interface SafeExpression {
         (exp: string): EvalFun;
     }
 }

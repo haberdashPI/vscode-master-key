@@ -1,31 +1,40 @@
 import * as vscode from 'vscode';
-import SafeExpression, { EvalFun } from 'safe-expression';
+import SafeExpression, {EvalFun} from 'safe-expression';
 import jsep from 'jsep';
 const jsepRegex = require('@jsep-plugin/regex');
 import hash from 'object-hash';
-import { mapValues } from 'lodash';
-import { withState } from './state';
+import {mapValues} from 'lodash';
 
-jsep.addBinaryOp("=~", 6);
+jsep.addBinaryOp('=~', 6);
 jsep.plugins.register(jsepRegex.default);
 
 const buildEvaled = new SafeExpression();
 
 export function reifyStrings(obj: any, ev: (str: string) => any): any {
-    if (Array.isArray(obj)) { return obj.map(x => reifyStrings(x, ev)); }
-    if (typeof obj === 'object') {
-        return mapValues(obj, (val, prop) => { return reifyStrings(val, ev); });
+    if (Array.isArray(obj)) {
+        return obj.map(x => reifyStrings(x, ev));
     }
-    if (typeof obj === 'string') { return ev(obj); }
-    if (typeof obj === 'number') { return obj; }
-    if (typeof obj === 'boolean') { return obj; }
-    if (typeof obj === 'undefined') { return obj; }
-    if (typeof obj === 'function') { return obj; }
-    if (typeof obj === 'bigint') { return obj; }
-    if (typeof obj === 'symbol') { return obj; }
+    if (typeof obj === 'object') {
+        return mapValues(obj, (val, prop) => {
+            return reifyStrings(val, ev);
+        });
+    }
+    if (typeof obj === 'string') {
+        return ev(obj);
+    }
+    if (
+        typeof obj === 'number' ||
+        typeof obj === 'boolean' ||
+        typeof obj === 'undefined' ||
+        typeof obj === 'function' ||
+        typeof obj === 'bigint' ||
+        typeof obj === 'symbol'
+    ) {
+        return obj;
+    }
 }
 
-export function expressionId(exp: string){
+export function expressionId(exp: string) {
     return hash(jsep(exp));
 }
 
@@ -34,9 +43,9 @@ export class EvalContext {
     // TODO: we don't need this cache, SafeExpression already does this
     private cache: Record<string, EvalFun> = {};
 
-    reportErrors(){
-        if(this.errors.length > 0){
-            for(let e of this.errors.slice(0, 3)){
+    reportErrors() {
+        if (this.errors.length > 0) {
+            for (const e of this.errors.slice(0, 3)) {
                 vscode.window.showErrorMessage(e);
             }
             this.errors = [];
@@ -44,12 +53,12 @@ export class EvalContext {
     }
 
     evalExpressionsInString(str: string, values: Record<string, any>) {
-        let result = "";
-        let r = /\{[^\}]*\}/g;
+        let result = '';
+        const r = /\{[^\}]*\}/g;
         let match = r.exec(str);
         let startIndex = 0;
         while (match !== null) {
-            let prefix = str.slice(startIndex, match.index);
+            const prefix = str.slice(startIndex, match.index);
             let evaled;
             try {
                 // slice to remove `{` and `}`

@@ -1,154 +1,203 @@
 import * as vscode from 'vscode';
 import z from 'zod';
-import { validateInput, wrappedTranslate } from '../utils';
-import { doArgs } from '../keybindings/parsing';
-import { onResolve, withState, CommandResult, CommandState, recordedCommand, onSet } from '../state';
-import { MODE, defaultMode } from './mode';
-import { captureKeys } from './capture';
-import { COMMAND_HISTORY } from './do';
+import {validateInput, wrappedTranslate} from '../utils';
+import {withState, CommandResult, recordedCommand, onSet} from '../state';
+import {MODE, defaultMode} from './mode';
+import {captureKeys} from './capture';
+import {COMMAND_HISTORY} from './do';
 
-export const searchArgs = z.object({
-    backwards: z.boolean().optional(),
-    caseSensitive: z.boolean().optional(),
-    wrapAround: z.boolean().optional(),
-    acceptAfter: z.number().min(1).optional(),
-    selectTillMatch: z.boolean().optional(),
-    highlightMatches: z.boolean().default(true).optional(),
-    offset: z.enum(["inclusive", "exclusive", "start", "end"]).default("exclusive"),
-    text: z.string().min(1).optional(),
-    regex: z.boolean().optional(),
-    register: z.string().default("default"),
-    skip: z.number().optional().default(0),
-}).strict();
+export const searchArgs = z
+    .object({
+        backwards: z.boolean().optional(),
+        caseSensitive: z.boolean().optional(),
+        wrapAround: z.boolean().optional(),
+        acceptAfter: z.number().min(1).optional(),
+        selectTillMatch: z.boolean().optional(),
+        highlightMatches: z.boolean().default(true).optional(),
+        offset: z.enum(['inclusive', 'exclusive', 'start', 'end']).default('exclusive'),
+        text: z.string().min(1).optional(),
+        regex: z.boolean().optional(),
+        register: z.string().default('default'),
+        skip: z.number().optional().default(0),
+    })
+    .strict();
 export type SearchArgs = z.infer<typeof searchArgs>;
 
-export function* searchMatches(doc: vscode.TextDocument, start: vscode.Position,
-    end: vscode.Position | undefined, target: string, args: SearchArgs) {
-
-    let matchesFn: (line: string, offset: number | undefined) => Generator<[number, number]>;
+export function* searchMatches(
+    doc: vscode.TextDocument,
+    start: vscode.Position,
+    end: vscode.Position | undefined,
+    target: string,
+    args: SearchArgs
+) {
+    let matchesFn: (
+        line: string,
+        offset: number | undefined
+    ) => Generator<[number, number]>;
     if (args.regex) {
-        let matcher = RegExp(target, "g" + (args.caseSensitive ? "" : "i"));
+        const matcher = RegExp(target, 'g' + (args.caseSensitive ? '' : 'i'));
         matchesFn = (line, offset) => regexMatches(matcher, line, !args.backwards, offset);
     } else {
-        let matcher = args.caseSensitive ? target : target.toLowerCase();
-        matchesFn = (line, offset) => stringMatches(matcher, !!args.caseSensitive, line,
-            !args.backwards, offset);
+        const matcher = args.caseSensitive ? target : target.toLowerCase();
+        matchesFn = (line, offset) =>
+            stringMatches(matcher, !!args.caseSensitive, line, !args.backwards, offset);
     }
 
     let offset: number | undefined = start.character;
-    for (const [line, i] of linesOf(doc, start, args.wrapAround || false, !args.backwards)) {
-        if (end && i > end.line) { return; }
+    for (const [line, i] of linesOf(
+        doc,
+        start,
+        args.wrapAround || false,
+        !args.backwards
+    )) {
+        if (end && i > end.line) {
+            return;
+        }
 
-        let matchesItr = matchesFn(line, offset);
-        let matches = !args.backwards ? matchesItr : Array.from(matchesItr).reverse();
+        const matchesItr = matchesFn(line, offset);
+        const matches = !args.backwards ? matchesItr : Array.from(matchesItr).reverse();
 
-        yield* mapIter(matches, ([start, len]) => new vscode.Range(
-            new vscode.Position(i, start),
-            new vscode.Position(i, start + len)
-        ));
+        yield* mapIter(
+            matches,
+            ([start, len]) =>
+                new vscode.Range(
+                    new vscode.Position(i, start),
+                    new vscode.Position(i, start + len)
+                )
+        );
         offset = undefined;
     }
 }
 
-function* mapIter<T, R>(iter: Iterable<T>, fn: (x: T) => R){
-    for(const x of iter){
+function* mapIter<T, R>(iter: Iterable<T>, fn: (x: T) => R) {
+    for (const x of iter) {
         yield fn(x);
     }
 }
 
-function* linesOf(doc: vscode.TextDocument, pos: vscode.Position,
-    wrap: boolean, forward: boolean): Generator<[string, number]>{
-
+function* linesOf(
+    doc: vscode.TextDocument,
+    pos: vscode.Position,
+    wrap: boolean,
+    forward: boolean
+): Generator<[string, number]> {
     yield [doc.lineAt(pos).text, pos.line];
     let line = pos.line + (forward ? 1 : -1);
-    while(forward ? line < doc.lineCount : line >= 0){
+    while (forward ? line < doc.lineCount : line >= 0) {
         yield [doc.lineAt(line).text, line];
-        line += (forward ? 1 : -1);
+        line += forward ? 1 : -1;
     }
-    if(wrap){
+    if (wrap) {
         line = forward ? 0 : doc.lineCount - 1;
-        while(forward ? line < doc.lineCount : line > 0){
+        while (forward ? line < doc.lineCount : line > 0) {
             yield [doc.lineAt(line).text, line];
-            line += (forward ? 1 : -1);
+            line += forward ? 1 : -1;
         }
     }
 }
 
-function* regexMatches(matcher: RegExp, line: string, forward: boolean,
-    offset: number | undefined): Generator<[number, number]>{
+function* regexMatches(
+    matcher: RegExp,
+    line: string,
+    forward: boolean,
+    offset: number | undefined
+): Generator<[number, number]> {
     matcher.lastIndex = 0;
     let match = matcher.exec(line);
-    while(match){
-        if(offset && !forward && match.index > offset){ return; }
-        if(offset === undefined || !forward || match.index > offset){
+    while (match) {
+        if (offset && !forward && match.index > offset) {
+            return;
+        }
+        if (offset === undefined || !forward || match.index > offset) {
             yield [match.index, match[0].length];
         }
-        let newmatch = matcher.exec(line);
-        if(newmatch && newmatch.index > match.index){
+        const newmatch = matcher.exec(line);
+        if (newmatch && newmatch.index > match.index) {
             match = newmatch;
-        }else{
+        } else {
             match = null;
         }
     }
 }
 
-function* stringMatches(matcher: string, caseSensitive: boolean, line: string, forward: boolean,
-    offset: number | undefined): Generator<[number, number]>{
-
-    let searchMe = offset === undefined ? line :
-        (forward ? line.substring(offset) : line.substring(0, offset - 1));
-    let fromOffset = offset === undefined ? 0 : (forward ? offset : 0);
-    if(!caseSensitive){ searchMe = searchMe.toLowerCase(); }
+function* stringMatches(
+    matcher: string,
+    caseSensitive: boolean,
+    line: string,
+    forward: boolean,
+    offset: number | undefined
+): Generator<[number, number]> {
+    let searchMe =
+        offset === undefined
+            ? line
+            : forward
+              ? line.substring(offset)
+              : line.substring(0, offset - 1);
+    const fromOffset = offset === undefined ? 0 : forward ? offset : 0;
+    if (!caseSensitive) {
+        searchMe = searchMe.toLowerCase();
+    }
     let from = searchMe.indexOf(matcher, 0);
-    while(from >= 0){
+    while (from >= 0) {
         yield [from + fromOffset, matcher.length];
-        from = searchMe.indexOf(matcher, from+1);
+        from = searchMe.indexOf(matcher, from + 1);
     }
 }
 
 let searchDecorator: vscode.TextEditorDecorationType;
 let searchOtherDecorator: vscode.TextEditorDecorationType;
 
-class SearchState{
+class SearchState {
     args: SearchArgs;
     _text: string = '';
     _searchFrom: readonly vscode.Selection[] = [];
     oldMode: string;
     modified = false;
-    constructor(args: SearchArgs, mode: string){
+    constructor(args: SearchArgs, mode: string) {
         this.args = args;
         this.oldMode = mode;
     }
-    get text() { return this._text; }
-    set text(str: string){
+    get text() {
+        return this._text;
+    }
+    set text(str: string) {
         this._text = str;
         this.modified = true;
     }
-    get searchFrom() { return this._searchFrom; }
-    set searchFrom(sel: readonly vscode.Selection[]){
+    get searchFrom() {
+        return this._searchFrom;
+    }
+    set searchFrom(sel: readonly vscode.Selection[]) {
         this._searchFrom = sel || [];
         this.modified = true;
     }
 }
 
-let searchStates: Map<vscode.TextEditor, Record<string, SearchState>> = new Map();
-let currentSearch: string = "default";
-function getSearchState(editor: vscode.TextEditor, mode: string, register: string): SearchState {
+const searchStates: Map<vscode.TextEditor, Record<string, SearchState>> = new Map();
+let currentSearch: string = 'default';
+function getSearchState(
+    editor: vscode.TextEditor,
+    mode: string,
+    register: string
+): SearchState {
     let statesForEditor = searchStates.get(editor);
     statesForEditor = statesForEditor ? statesForEditor : {};
     if (!statesForEditor[register]) {
-        let searchState = new SearchState(searchArgs.parse({}), mode);
+        const searchState = new SearchState(searchArgs.parse({}), mode);
         statesForEditor[register] = searchState;
         searchStates.set(editor, statesForEditor);
         return searchState;
     } else {
-        let state =  statesForEditor[register];
+        const state = statesForEditor[register];
         state.oldMode = mode !== 'capture' ? mode : state.oldMode;
         return state;
     }
 }
 
-function getOldSearchState(editor: vscode.TextEditor, register: string): SearchState | undefined {
+function getOldSearchState(
+    editor: vscode.TextEditor,
+    register: string
+): SearchState | undefined {
     let statesForEditor = searchStates.get(editor);
     statesForEditor = statesForEditor ? statesForEditor : {};
     return statesForEditor[register];
@@ -165,8 +214,12 @@ function getOldSearchState(editor: vscode.TextEditor, register: string): SearchS
  * matches are unique. In case the matches overlap, the number of selections
  * will decrease.
  */
-function navigateTo(state: SearchState, editor: vscode.TextEditor, updateSearchFrom: boolean = true) {
-    if (state.text === ""){
+function navigateTo(
+    state: SearchState,
+    editor: vscode.TextEditor,
+    updateSearchFrom: boolean = true
+) {
+    if (state.text === '') {
         /**
          * If search string is empty, we return to the start positions.
          * (clearing the decorators)
@@ -174,42 +227,55 @@ function navigateTo(state: SearchState, editor: vscode.TextEditor, updateSearchF
         editor.selections = state.searchFrom;
         editor.setDecorations(searchDecorator, []);
         editor.setDecorations(searchOtherDecorator, []);
-    }else {
+    } else {
         state.modified = true;
-        let doc = editor.document;
+        const doc = editor.document;
 
         /**
          * searchRanges keeps track of where the searches land
          * (so we can highlight them later on)
          */
-        let searchRanges: vscode.Range[] = [];
+        const searchRanges: vscode.Range[] = [];
 
-        if(updateSearchFrom){ state.searchFrom = editor.selections; }
+        if (updateSearchFrom) {
+            state.searchFrom = editor.selections;
+        }
 
         editor.selections = state.searchFrom.map(sel => {
-            let matches = searchMatches(doc, sel.active, undefined, state.text, state.args);
+            const matches = searchMatches(
+                doc,
+                sel.active,
+                undefined,
+                state.text,
+                state.args
+            );
             let result = matches.next();
             let newSel = sel;
-            while(!result.done){
-                let [active, anchor] = state.args.backwards ?
-                    [result.value.start, result.value.end] :
-                    [result.value.end, result.value.start];
-                newSel = adjustSearchPosition(new vscode.Selection(anchor, active), doc,
+            while (!result.done) {
+                const [active, anchor] = state.args.backwards
+                    ? [result.value.start, result.value.end]
+                    : [result.value.end, result.value.start];
+                newSel = adjustSearchPosition(
+                    new vscode.Selection(anchor, active),
+                    doc,
                     result.value.end.character - result.value.start.character,
-                    state.args);
-                if (state.args.selectTillMatch){
+                    state.args
+                );
+                if (state.args.selectTillMatch) {
                     newSel = new vscode.Selection(sel.anchor, newSel.active);
                 }
 
-                if(!newSel.start.isEqual(sel.start) || !newSel.end.isEqual(sel.end)) { break; }
+                if (!newSel.start.isEqual(sel.start) || !newSel.end.isEqual(sel.end)) {
+                    break;
+                }
 
                 result = matches.next();
             }
-            if(result.done){
+            if (result.done) {
                 // TODO: have a discreted place to say "Pattern not found"
                 // this is what gets called when there is no match
                 return sel;
-            }else{
+            } else {
                 searchRanges.push(result.value);
 
                 return newSel;
@@ -224,14 +290,21 @@ function navigateTo(state: SearchState, editor: vscode.TextEditor, updateSearchF
          * them; we want to mark those that aren't a "current" match (found above)
          * differently so we make sure that they are not part of `searchRanges`
          */
-         if(state.args.highlightMatches !== false){
-            let searchOtherRanges: vscode.Range[] = [];
+        if (state.args.highlightMatches !== false) {
+            const searchOtherRanges: vscode.Range[] = [];
             editor.visibleRanges.forEach(range => {
-                let matches = searchMatches(doc, range.start, range.end, state.text,
-                    {...state.args, backwards: false});
-                for(const matchRange of matches){
-                    if(!searchRanges.find(x =>
-                        x.start.isEqual(matchRange.start) && x.end.isEqual(matchRange.end))){
+                const matches = searchMatches(doc, range.start, range.end, state.text, {
+                    ...state.args,
+                    backwards: false,
+                });
+                for (const matchRange of matches) {
+                    if (
+                        !searchRanges.find(
+                            x =>
+                                x.start.isEqual(matchRange.start) &&
+                                x.end.isEqual(matchRange.end)
+                        )
+                    ) {
                         searchOtherRanges.push(matchRange);
                     }
                 }
@@ -253,73 +326,89 @@ function navigateTo(state: SearchState, editor: vscode.TextEditor, updateSearchF
  * this function; searches are highlighted by default using the same colors as used for
  * built-in search commands.
  */
-function updateSearchHighlights(event?: vscode.ConfigurationChangeEvent){
-    if(!event || event.affectsConfiguration('master-key')){
-        let config = vscode.workspace.getConfiguration('master-key');
-        let matchBackground = config.get<string>('searchMatchBackground');
-        let matchBorder = config.get<string>('searchMatchBorder');
-        let highlightBackground = config.get<string>('searchOtherMatchesBackground');
-        let highlightBorder = config.get<string>('searchOtherMatchesBorder');
+function updateSearchHighlights(event?: vscode.ConfigurationChangeEvent) {
+    if (!event || event.affectsConfiguration('master-key')) {
+        const config = vscode.workspace.getConfiguration('master-key');
+        const matchBackground = config.get<string>('searchMatchBackground');
+        const matchBorder = config.get<string>('searchMatchBorder');
+        const highlightBackground = config.get<string>('searchOtherMatchesBackground');
+        const highlightBorder = config.get<string>('searchOtherMatchesBorder');
 
         searchDecorator = vscode.window.createTextEditorDecorationType({
-            backgroundColor: matchBackground ||
-                new vscode.ThemeColor('editor.findMatchBackground'),
-            borderColor: matchBorder ||
-                new vscode.ThemeColor('editor.findMatchBorder'),
-            borderStyle: "solid"
+            backgroundColor:
+                matchBackground || new vscode.ThemeColor('editor.findMatchBackground'),
+            borderColor: matchBorder || new vscode.ThemeColor('editor.findMatchBorder'),
+            borderStyle: 'solid',
         });
 
         searchOtherDecorator = vscode.window.createTextEditorDecorationType({
-            backgroundColor: highlightBackground ||
+            backgroundColor:
+                highlightBackground ||
                 new vscode.ThemeColor('editor.findMatchHighlightBackground'),
-            borderColor: highlightBorder ||
-                new vscode.ThemeColor('editor.findMatchHighlightBorder'),
-            borderStyle: "solid"
+            borderColor:
+                highlightBorder || new vscode.ThemeColor('editor.findMatchHighlightBorder'),
+            borderStyle: 'solid',
         });
     }
 }
 
-function adjustSearchPosition(sel: vscode.Selection, doc: vscode.TextDocument, len: number, args: SearchArgs){
+function adjustSearchPosition(
+    sel: vscode.Selection,
+    doc: vscode.TextDocument,
+    len: number,
+    args: SearchArgs
+) {
     let offset = 0;
-    let forward = !args.backwards;
-    if(args.offset === 'exclusive'){
+    const forward = !args.backwards;
+    if (args.offset === 'exclusive') {
         offset = forward ? -len : len;
-        if(!args.selectTillMatch) { offset += forward ? -1 : 0; }
-    }else if(args.offset === 'start'){
-        if(forward){ offset = -len; }
-    }else if(args.offset === 'end'){
-        if(!forward){ offset = len; }
-    }else{ // args.offset === 'inclusive' (default)
-        if(!args.selectTillMatch){
+        if (!args.selectTillMatch) {
+            offset += forward ? -1 : 0;
+        }
+    } else if (args.offset === 'start') {
+        if (forward) {
+            offset = -len;
+        }
+    } else if (args.offset === 'end') {
+        if (!forward) {
+            offset = len;
+        }
+    } else {
+        // args.offset === 'inclusive' (default)
+        if (!args.selectTillMatch) {
             offset += forward ? -1 : 0;
         }
     }
 
-    if(offset !== 0){
-        let newpos = wrappedTranslate(sel.active, doc, offset);
+    if (offset !== 0) {
+        const newpos = wrappedTranslate(sel.active, doc, offset);
         return new vscode.Selection(args.selectTillMatch ? sel.anchor : newpos, newpos);
     }
     return sel;
 }
 
-function clearSearchDecorations(editor: vscode.TextEditor){
+function clearSearchDecorations(editor: vscode.TextEditor) {
     editor.setDecorations(searchDecorator, []);
     editor.setDecorations(searchOtherDecorator, []);
 }
 
-function skipTo(state: SearchState, editor: vscode.TextEditor){
-    let skip = state.args.skip || 0;
-    if(skip > 0){
-        for(let i=0; i<skip; i++){ navigateTo(state, editor); }
+function skipTo(state: SearchState, editor: vscode.TextEditor) {
+    const skip = state.args.skip || 0;
+    if (skip > 0) {
+        for (let i = 0; i < skip; i++) {
+            navigateTo(state, editor);
+        }
     }
 }
 
-function searchDecorationCheck(){
-    let editor = vscode.window.activeTextEditor;
+function searchDecorationCheck() {
+    const editor = vscode.window.activeTextEditor;
     if (editor) {
-        let searchState = getOldSearchState(editor, currentSearch);
-        if(searchState){
-            if(!searchState.modified){ clearSearchDecorations(editor); }
+        const searchState = getOldSearchState(editor, currentSearch);
+        if (searchState) {
+            if (!searchState.modified) {
+                clearSearchDecorations(editor);
+            }
             searchState.modified = false;
         }
     }
@@ -327,12 +416,16 @@ function searchDecorationCheck(){
 }
 
 async function search(args_: any[]): Promise<CommandResult> {
-    let editor_ = vscode.window.activeTextEditor;
-    if(!editor_){ return; }
-    let editor = editor_!;
+    const editor_ = vscode.window.activeTextEditor;
+    if (!editor_) {
+        return;
+    }
+    const editor = editor_!;
 
-    let args = validateInput('master-key.search', args_, searchArgs);
-    if(!args){ return; }
+    const args = validateInput('master-key.search', args_, searchArgs);
+    if (!args) {
+        return;
+    }
     currentSearch = args.register;
 
     let mode = '';
@@ -340,48 +433,53 @@ async function search(args_: any[]): Promise<CommandResult> {
         mode = state.get(MODE, defaultMode)!;
         return state;
     });
-    let state = getSearchState(editor, mode, currentSearch);
+    const state = getSearchState(editor, mode, currentSearch);
     state.args = args;
-    state.text = args.text || "";
+    state.text = args.text || '';
     state.searchFrom = editor.selections;
 
-    if(state.text.length > 0){
+    if (state.text.length > 0) {
         navigateTo(state, editor);
         skipTo(state, editor);
         state.searchFrom = editor.selections;
     } else {
         // when there are a fixed number of keys use `type` command
         if (state.args.acceptAfter) {
-            let acceptAfter = state.args.acceptAfter;
+            const acceptAfter = state.args.acceptAfter;
             let stop = false;
             state.text = await captureKeys((result, char) => {
-                if (char === "\n") { stop = true; }
-                else {
+                if (char === '\n') {
+                    stop = true;
+                } else {
                     result += char;
                     state.text = result;
                     navigateTo(state, editor, false);
-                    if (state.text.length >= acceptAfter) { stop = true; }
+                    if (state.text.length >= acceptAfter) {
+                        stop = true;
+                    }
                     // there are other-ways to cancel key capturing so we need to update
                     // the arguments on every keypress
                 }
                 return [result, stop];
             });
-            if (!state.text) { return "cancel"; }
+            if (!state.text) {
+                return 'cancel';
+            }
             skipTo(state, editor);
         } else {
             await withState(async state => {
                 return state.set(MODE, {public: true}, 'capture').resolve();
             });
             let accepted = false;
-            let inputResult = new Promise<string>((resolve, reject) => {
+            const inputResult = new Promise<string>((resolve, reject) => {
                 try {
-                    let inputBox = vscode.window.createInputBox();
+                    const inputBox = vscode.window.createInputBox();
                     if (state.args.regex) {
-                        inputBox.title = "Regex Search";
-                        inputBox.prompt = "Enter regex to search for";
+                        inputBox.title = 'Regex Search';
+                        inputBox.prompt = 'Enter regex to search for';
                     } else {
-                        inputBox.title = "Search";
-                        inputBox.prompt = "Enter text to search for";
+                        inputBox.title = 'Search';
+                        inputBox.prompt = 'Enter text to search for';
                     }
                     inputBox.onDidChangeValue(async (str: string) => {
                         state.text = str;
@@ -393,7 +491,9 @@ async function search(args_: any[]): Promise<CommandResult> {
                         inputBox.dispose();
                     });
                     inputBox.onDidHide(() => {
-                        if (!accepted) { state.text = ""; }
+                        if (!accepted) {
+                            state.text = '';
+                        }
                         resolve(state.text);
                     });
                     inputBox.show();
@@ -408,57 +508,75 @@ async function search(args_: any[]): Promise<CommandResult> {
             return st.set(MODE, {public: true}, state.oldMode).resolve();
         });
     }
-    if(state.text){
+    if (state.text) {
         return {...state.args, text: state.text};
-    }else{
+    } else {
         editor.selections = state.searchFrom;
         revealActive(editor, vscode.TextEditorRevealType.InCenterIfOutsideViewport);
         await withState(async st => {
             return st.set(MODE, {public: true}, state.oldMode).resolve();
         });
-        return "cancel";
+        return 'cancel';
     }
 }
 
-export function revealActive(editor: vscode.TextEditor, revealType?: vscode.TextEditorRevealType){
-    let act = new vscode.Range(editor.selection.active, editor.selection.active);
+export function revealActive(
+    editor: vscode.TextEditor,
+    revealType?: vscode.TextEditorRevealType
+) {
+    const act = new vscode.Range(editor.selection.active, editor.selection.active);
     // TODO: make this customizable
     editor.revealRange(act, revealType);
 }
 
-const matchStepArgs = z.object({register: z.string().default("default"), repeat: z.number().min(0).optional() });
-async function nextMatch(editor: vscode.TextEditor,
-    edit: vscode.TextEditorEdit, args_: unknown): Promise<CommandResult> {
-
-    let args = validateInput('master-key.nextMatch', args_, matchStepArgs);
-    if(!args) { return; }
+const matchStepArgs = z.object({
+    register: z.string().default('default'),
+    repeat: z.number().min(0).optional(),
+});
+async function nextMatch(
+    editor: vscode.TextEditor,
+    edit: vscode.TextEditorEdit,
+    args_: unknown
+): Promise<CommandResult> {
+    const args = validateInput('master-key.nextMatch', args_, matchStepArgs);
+    if (!args) {
+        return;
+    }
     let mode = '';
     await withState(async state => {
         mode = state.get(MODE, defaultMode)!;
         return state;
     });
-    let state = getSearchState(editor, mode, args!.register);
+    const state = getSearchState(editor, mode, args!.register);
     if (state.text) {
-        for(let i=0; i<(args.repeat || 1); i++){ navigateTo(state, editor); }
+        for (let i = 0; i < (args.repeat || 1); i++) {
+            navigateTo(state, editor);
+        }
         revealActive(editor);
     }
     return;
 }
 
-async function previousMatch(editor: vscode.TextEditor,
-    edit: vscode.TextEditorEdit, args_: unknown): Promise<CommandResult> {
-
-    let args = validateInput('master-key.previousMatch', args_, matchStepArgs);
-    if(!args) { return; }
+async function previousMatch(
+    editor: vscode.TextEditor,
+    edit: vscode.TextEditorEdit,
+    args_: unknown
+): Promise<CommandResult> {
+    const args = validateInput('master-key.previousMatch', args_, matchStepArgs);
+    if (!args) {
+        return;
+    }
     let mode = '';
     await withState(async state => {
         mode = state.get(MODE, defaultMode)!;
         return state;
     });
-    let state = getSearchState(editor, mode, args!.register);
+    const state = getSearchState(editor, mode, args!.register);
     if (state.text) {
         state.args.backwards = !state.args.backwards;
-        for(let i=0; i<(args.repeat || 1); i++){ navigateTo(state, editor); }
+        for (let i = 0; i < (args.repeat || 1); i++) {
+            navigateTo(state, editor);
+        }
         revealActive(editor);
         state.args.backwards = !state.args.backwards;
     }
@@ -468,10 +586,27 @@ async function previousMatch(editor: vscode.TextEditor,
 export async function activate(context: vscode.ExtensionContext) {
     // NOTE: `search` must be registered as a normal command, so that its result is returned
     // we need it when call `executeCommand` in `doCommand`.
-    context.subscriptions.push(vscode.commands.registerCommand('master-key.search', recordedCommand(search)));
-    context.subscriptions.push(vscode.commands.registerTextEditorCommand('master-key.nextMatch', recordedCommand(nextMatch)));
-    context.subscriptions.push(vscode.commands.registerTextEditorCommand('master-key.previousMatch', recordedCommand(previousMatch)));
-    context.subscriptions.push(vscode.commands.registerTextEditorCommand('master-key.clearSearchDecorations', clearSearchDecorations));
+    context.subscriptions.push(
+        vscode.commands.registerCommand('master-key.search', recordedCommand(search))
+    );
+    context.subscriptions.push(
+        vscode.commands.registerTextEditorCommand(
+            'master-key.nextMatch',
+            recordedCommand(nextMatch)
+        )
+    );
+    context.subscriptions.push(
+        vscode.commands.registerTextEditorCommand(
+            'master-key.previousMatch',
+            recordedCommand(previousMatch)
+        )
+    );
+    context.subscriptions.push(
+        vscode.commands.registerTextEditorCommand(
+            'master-key.clearSearchDecorations',
+            clearSearchDecorations
+        )
+    );
     updateSearchHighlights();
     vscode.workspace.onDidChangeConfiguration(updateSearchHighlights);
 

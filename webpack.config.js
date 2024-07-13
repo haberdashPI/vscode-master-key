@@ -11,6 +11,7 @@
 
 const path = require('path');
 const webpack = require('webpack');
+const ESLintPlugin = require('eslint-webpack-plugin');
 
 /**
  * webExtensionConfig: webpack configuration function
@@ -25,17 +26,17 @@ const webExtensionConfig = (env, argv) => ({
     cache: {
         type: 'filesystem',
         name: argv.mode + '-testing' + env['testing'] + '-coverage' + env['coverage'],
-        version: '1'
+        version: '1',
     },
     entry: {
-        'extension': './src/web/extension.ts',
+        extension: './src/web/extension.ts',
         'test/suite/index': './src/web/test/suite/index.ts',
     },
     output: {
         filename: '[name].js',
         path: path.join(__dirname, './dist/web'),
-        library: { type: 'commonjs' },
-        devtoolModuleFilenameTemplate: '../../[resource-path]'
+        library: {type: 'commonjs'},
+        devtoolModuleFilenameTemplate: '../../[resource-path]',
     },
     resolve: {
         mainFields: ['browser', 'module', 'main'], // look for `browser` entry point in imported node modules
@@ -47,41 +48,44 @@ const webExtensionConfig = (env, argv) => ({
             // Webpack 5 no longer polyfills Node.js core modules automatically.
             // see https://webpack.js.org/configuration/resolve/#resolvefallback
             // for the list of Node.js core module polyfills.
-            'assert': require.resolve('assert'),
-            'process/browser': require.resolve('process/browser')
-        }
+            assert: require.resolve('assert'),
+            'process/browser': require.resolve('process/browser'),
+        },
     },
     module: {
-        rules: [{
-            test: /\.ts$/,
-            exclude: /node_modules/,
-            use: [
-                {loader: '@jsdevtools/coverage-istanbul-loader'},
-                {loader: 'ts-loader'}
-            ]
-        }]
+        rules: [
+            {
+                test: /\.ts$/,
+                exclude: /node_modules/,
+                use: [
+                    {loader: '@jsdevtools/coverage-istanbul-loader'},
+                    {loader: 'ts-loader'},
+                ],
+            },
+        ],
     },
     plugins: [
+        new ESLintPlugin(),
         new webpack.optimize.LimitChunkCountPlugin({
-            maxChunks: 1 // disable chunks by default since web extensions must be a single bundle
+            maxChunks: 1, // disable chunks by default since web extensions must be a single bundle
         }),
         new webpack.ProvidePlugin({
             process: 'process/browser', // provide a shim for the global `process` variable
         }),
         new webpack.DefinePlugin({
             'process.env.TESTING': JSON.stringify(env['testing'] || false),
-            'process.env.COVERAGE': JSON.stringify(env['coverage'] || false)
-        })
+            'process.env.COVERAGE': JSON.stringify(env['coverage'] || false),
+        }),
     ],
     externals: {
-        'vscode': 'commonjs vscode', // ignored because it doesn't exist
+        vscode: 'commonjs vscode', // ignored because it doesn't exist
     },
     performance: {
-        hints: false
+        hints: false,
     },
     devtool: 'nosources-source-map', // create a source map that points to the original source file
     infrastructureLogging: {
-        level: "log", // enables logging required for problem matchers
+        level: 'log', // enables logging required for problem matchers
     },
 });
 
