@@ -25,8 +25,6 @@ interface ISetOptions {
     public?: boolean;
 }
 
-type ChangeFn<T> = (state: Map<string, unknown>) => T;
-
 interface ICommandState {
     options: Map<string, RStateOptions>;
     resolveListeners: Map<string, Listener>;
@@ -254,22 +252,21 @@ export type WrappedCommandResult = {
     args?: object | 'cancel';
 };
 export function commandArgs(x: unknown): undefined | object | 'cancel' {
-    if ((<any>x)?.id === WRAPPED_UUID) {
+    if ((<WrappedCommandResult>x)?.id === WRAPPED_UUID) {
         return (<WrappedCommandResult>x).args;
     }
 }
 
 export type CommandResult = object | undefined | 'cancel';
-type CommandFn = (...args: any[]) => Promise<CommandResult>;
+type CommandFn = (...args: unknown[]) => Promise<CommandResult>;
 export function recordedCommand(fn: CommandFn) {
-    return async function (...args: any[]): Promise<WrappedCommandResult | undefined> {
-        let rargs;
-        rargs = await fn(...args);
+    return async function (...args: unknown[]): Promise<WrappedCommandResult | undefined> {
+        const rargs: CommandResult = await fn(...args);
         return {id: WRAPPED_UUID, args: rargs};
     };
 }
 
-function addDefinitions(state: CommandState, definitions: any) {
+function addDefinitions(state: CommandState, definitions: Record<string, unknown>) {
     return state.withMutations(state => {
         for (const [k, v] of Object.entries(definitions || {})) {
             state.set(k, {public: true}, v);

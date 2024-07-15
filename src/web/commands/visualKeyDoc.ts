@@ -124,7 +124,7 @@ function keyRows(
     );
 }
 
-function get(x: any, key: string, def: any) {
+function get<T extends object, K extends keyof T>(x: T, key: K, def: T[K]) {
     if (key in x && x[key] !== undefined) {
         return x[key];
     } else {
@@ -263,7 +263,7 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
     private updateKinds(values: CommandState | Map<string, unknown>) {
         const kinds = validateInput(
             'visual-documentation',
-            <any>values.get('kinds') || [],
+            values.get('kinds') || [],
             kindDoc
         );
         this._kinds = {};
@@ -286,7 +286,7 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
             return true;
         });
         this.updateKinds(state);
-        state = state.onSet('kinds', vals => {
+        state = state.onSet('kinds', _vals => {
             this.updateKinds(state);
             return true;
         });
@@ -330,12 +330,12 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
                         row => `
                     <div class="keyboard-row">
                         ${row
-                            .map((key: any) => {
+                            .map((key: IKeyRow) => {
                                 const topId = num++;
                                 const bottomId = num++;
                                 const topLabel = get(key, 'top', '');
                                 return `
-                                <div class="key key-length-${get(key, 'length', 1)}">
+                                <div class="key key-length-${get(key, 'length', '1')}">
                                     ${
                                         topLabel &&
                                         `
@@ -458,7 +458,7 @@ export async function activate(context: vscode.ExtensionContext) {
         )
     );
     context.subscriptions.push(
-        vscode.commands.registerCommand('master-key.toggleVisualDocModifiers', args =>
+        vscode.commands.registerCommand('master-key.toggleVisualDocModifiers', _args =>
             docProvider.toggleModifier()
         )
     );

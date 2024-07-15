@@ -1,14 +1,14 @@
 import * as vscode from 'vscode';
 import z from 'zod';
 import {validateInput} from '../utils';
-import {CommandResult, CommandState} from '../state';
+import {CommandResult} from '../state';
 import {MODE, defaultMode} from './mode';
 import {withState, recordedCommand} from '../state';
 import {DoArgs} from '../keybindings/parsing';
 import {doCommandsCmd} from './do';
 
 let typeSubscription: vscode.Disposable | undefined;
-let onTypeFn: (text: string) => void = async function (text: string) {
+let onTypeFn: (text: string) => void = async function (_text: string) {
     return;
 };
 async function onType(event: {text: string}) {
@@ -34,7 +34,7 @@ export async function runCommandOnKeys(doArgs: DoArgs | undefined, mode: string)
         if (!typeSubscription) {
             try {
                 typeSubscription = vscode.commands.registerCommand('type', onType);
-            } catch (e) {
+            } catch (_) {
                 vscode.window
                     .showErrorMessage(`Master key failed to capture keyboard input. You
                     might have an extension that is already listening to type events
@@ -59,7 +59,7 @@ export async function captureKeys(onUpdate: UpdateFn) {
             try {
                 typeSubscription = vscode.commands.registerCommand('type', onType);
                 return state.set(MODE, {public: true}, 'capture').resolve();
-            } catch (e) {
+            } catch (_) {
                 vscode.window
                     .showErrorMessage(`Master key failed to capture keyboard input. You
                     might have an extension that is already listening to type events
@@ -72,7 +72,7 @@ export async function captureKeys(onUpdate: UpdateFn) {
     let stringResult = '';
     let isResolved = false;
     let resolveFn: (str: string) => void;
-    const stringPromise = new Promise<string>((res, rej) => {
+    const stringPromise = new Promise<string>((res, _rej) => {
         resolveFn = res;
     });
 
@@ -146,7 +146,7 @@ async function captureKeysCmd(args_: unknown): Promise<CommandResult> {
 }
 
 function captureOneKey() {
-    return captureKeys((result, char) => [char, true]);
+    return captureKeys((_result, char) => [char, true]);
 }
 
 const charArgs = z

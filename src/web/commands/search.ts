@@ -415,7 +415,7 @@ function searchDecorationCheck() {
     return true;
 }
 
-async function search(args_: any[]): Promise<CommandResult> {
+async function search(args_: unknown[]): Promise<CommandResult> {
     const editor_ = vscode.window.activeTextEditor;
     if (!editor_) {
         return;
@@ -535,7 +535,7 @@ const matchStepArgs = z.object({
 });
 async function nextMatch(
     editor: vscode.TextEditor,
-    edit: vscode.TextEditorEdit,
+    _edit: vscode.TextEditorEdit,
     args_: unknown
 ): Promise<CommandResult> {
     const args = validateInput('master-key.nextMatch', args_, matchStepArgs);
@@ -559,7 +559,7 @@ async function nextMatch(
 
 async function previousMatch(
     editor: vscode.TextEditor,
-    edit: vscode.TextEditorEdit,
+    _edit: vscode.TextEditorEdit,
     args_: unknown
 ): Promise<CommandResult> {
     const args = validateInput('master-key.previousMatch', args_, matchStepArgs);

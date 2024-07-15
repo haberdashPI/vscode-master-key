@@ -10,6 +10,7 @@ import {
     RawBindingItem,
     ParsedWhen,
     ModeSpec,
+    doArgs,
 } from './parsing';
 import z from 'zod';
 import {
@@ -30,7 +31,7 @@ import {fromZodError} from 'zod-validation-error';
 export interface Bindings {
     name?: string;
     description?: string;
-    define: Record<string, any>;
+    define: Record<string, unknown>;
     mode: Record<string, ModeSpec>;
     bind: IConfigKeyBinding[];
 }
@@ -42,8 +43,9 @@ export function processBindings(spec: BindingSpec): [Bindings, string[]] {
     items = expandPrefixes(items);
     items = expandModes(items, spec.mode, problems);
     items = expandDocsToDuplicates(items);
-    let prefixCodes: PrefixCodes;
-    [items, prefixCodes] = expandKeySequencesAndResolveDuplicates(items, problems);
+    const r = expandKeySequencesAndResolveDuplicates(items, problems);
+    items = r[0];
+    const prefixCodes = r[1];
     items = items.map(moveModeToWhenClause);
     const newItems = items.map(i => movePrefixesToWhenClause(i, prefixCodes));
     const definitions = {...spec.define, prefixCodes: prefixCodes.codes};
@@ -66,24 +68,13 @@ function mapByName(specs: ModeSpec[]) {
     return modeSpecs;
 }
 
-function overwritePrefixesAndWhen(obj_: any, src_: any, key: string) {
+function overwritePrefixesAndWhen(obj_: RawBindingItem, src_: RawBindingItem, key: string) {
     if (key === 'prefixes' || key === 'when') {
         if (src_ !== undefined) {
             return src_;
         } else {
             return obj_;
         }
-    } else {
-        // revert to default behavior
-        return;
-    }
-}
-
-function concatWhens(obj_: any, src_: any, key: string) {
-    if (key === 'when') {
-        const obj: any[] = obj_ === undefined ? [] : !Array.isArray(obj_) ? [obj_] : obj_;
-        const src: any[] = src_ === undefined ? [] : !Array.isArray(src_) ? [src_] : src_;
-        return obj.concat(src);
     } else {
         // revert to default behavior
         return;
@@ -99,7 +90,10 @@ const runCommandsArgs = z.object({
     ),
 });
 
-function expandDefinedCommands(item: RawBindingItem, definitions: any): RawBindingItem {
+function expandDefinedCommands(
+    item: RawBindingItem,
+    definitions: Record<string, unknown> = {}
+): RawBindingItem {
     if (item.command && item.command === 'runCommands') {
         const args = validateInput(
             `key ${item.key}, mode ${item.mode}; runCommands`,
@@ -113,18 +107,13 @@ function expandDefinedCommands(item: RawBindingItem, definitions: any): RawBindi
                       return [{command: cmd}];
                   } else if (cmd.defined) {
                       const definedCommand = <DefinedCommand>cmd;
-                      const commands = definitions[definedCommand.defined];
+                      const commands = doArgs.parse(definitions[definedCommand.defined]);
                       if (!commands) {
                           throw new Error(`Command definition missing under
                         'define.${definedCommand.defined}`);
+                      } else {
+                          return commands;
                       }
-                      return commands.map((cmd: any) => {
-                          if (cmd === 'string') {
-                              return {command: cmd};
-                          } else {
-                              return cmd;
-                          }
-                      });
                   } else {
                       return [cmd];
                   }
@@ -136,7 +125,6 @@ function expandDefinedCommands(item: RawBindingItem, definitions: any): RawBindi
 
 const partialRawBindingItem = rawBindingItem.partial();
 type PartialRawBindingItem = z.infer<typeof partialRawBindingItem>;
-type AppendFields = {when?: string};
 
 function expandDefaultsDefinedAndForeach(
     spec: BindingSpec,
@@ -182,11 +170,16 @@ function expandDefaultsDefinedAndForeach(
             const items = expandForeach(item, spec.define);
             return items
                 .map(item => {
-                    const required = ['key', 'command'];
-                    const missing = required.filter(r => (<any>item)[r] === undefined);
+                    const missing = [];
+                    if (item.key === undefined) {
+                        missing.push('key');
+                    }
+                    if (item.key === undefined) {
+                        missing.push('command');
+                    }
                     if (missing.length > 0) {
                         problems.push(`Problem with binding ${i} ${item.path}:
-                        missing field '${missing[0]}'`);
+                            missing field '${missing[0]}'`);
                         return undefined;
                     }
                     const result = bindingItem.safeParse({
@@ -262,7 +255,7 @@ function expandForVars(
     vars: Record<string, string[]>,
     item: RawBindingItem,
     context: EvalContext,
-    definitions: any[]
+    definitions: object[]
 ): RawBindingItem[] {
     // we've finished accumulating variables, eval all possible definitions
     if (Object.keys(vars).length === 0) {
@@ -390,7 +383,7 @@ function expandPattern(pattern: string): string[] {
     }
 }
 
-function expandForeach(item: RawBindingItem, definitions: any): RawBindingItem[] {
+function expandForeach(item: RawBindingItem, definitions: object): RawBindingItem[] {
     const context = new EvalContext();
     if (item.foreach) {
         const varValues = mapValues(item.foreach, v => flatMap(v, expandPattern));
@@ -503,7 +496,7 @@ export interface IConfigKeyBinding {
 
 function itemToConfigBinding(
     item: BindingItem,
-    defs: Record<string, any>
+    defs: Record<string, unknown>
 ): IConfigKeyBinding {
     const prefixDescriptions = item.prefixes.map(p => {
         const code = defs['prefixCodes'][p];
