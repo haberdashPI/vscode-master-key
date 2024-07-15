@@ -50,8 +50,6 @@ describe('Configuration', () => {
             command = "master-key.enterInsert"
         `);
         editor = await setupEditor(`A simple test`);
-        await cursorToTop(editor);
-        await editor.moveCursor(1, 1);
     });
 
     it('Can make normal mode the default', async() => {
