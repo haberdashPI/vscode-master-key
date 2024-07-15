@@ -259,8 +259,13 @@ function expandForVars(
 ): RawBindingItem[] {
     // we've finished accumulating variables, eval all possible definitions
     if (Object.keys(vars).length === 0) {
-        return definitions.map(defs =>
-            reifyStrings(item, str => context.evalExpressionsInString(str, defs))
+        return definitions.map(
+            defs =>
+                <RawBindingItem>(
+                    reifyStrings(item, str =>
+                        context.evalExpressionsInString(str, <Record<string, unknown>>defs)
+                    )
+                )
         );
     }
     const aKey = Object.keys(vars)[0];

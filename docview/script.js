@@ -35,7 +35,7 @@ window.addEventListener('message', event => {
     const keymap = message.keymap;
     const kinds = message.kinds;
     const config = message.config;
-    const keyRows = message.keyRows;
+    // const keyRows = message.keyRows;
 
     // update keys
     let i = 0;

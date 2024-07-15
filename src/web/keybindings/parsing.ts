@@ -380,7 +380,7 @@ export const bindingSpec = z
                 }
                 return xs;
             }),
-        define: z.record(z.string(), z.any()),
+        define: z.record(z.string(), z.any()).optional().default({}),
     })
     .strict();
 export type BindingSpec = z.infer<typeof bindingSpec>;
