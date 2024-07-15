@@ -254,19 +254,24 @@ export type WrappedCommandResult = {
 export function commandArgs(x: unknown): undefined | object | 'cancel' {
     if ((<WrappedCommandResult>x)?.id === WRAPPED_UUID) {
         return (<WrappedCommandResult>x).args;
+    } else {
+        return undefined;
     }
 }
 
 export type CommandResult = object | undefined | 'cancel';
-type CommandFn = (...args: unknown[]) => Promise<CommandResult>;
-export function recordedCommand(fn: CommandFn) {
-    return async function (...args: unknown[]): Promise<WrappedCommandResult | undefined> {
+type CommandFn<T extends Array<E>, E> = (...args: T) => Promise<CommandResult>;
+export function recordedCommand<T extends Array<E>, E>(fn: CommandFn<T, E>) {
+    return async function (...args: T): Promise<WrappedCommandResult | undefined> {
         const rargs: CommandResult = await fn(...args);
         return {id: WRAPPED_UUID, args: rargs};
     };
 }
 
-function addDefinitions(state: CommandState, definitions: Record<string, unknown>) {
+function addDefinitions(
+    state: CommandState,
+    definitions: Record<string, unknown> | undefined
+) {
     return state.withMutations(state => {
         for (const [k, v] of Object.entries(definitions || {})) {
             state.set(k, {public: true}, v);

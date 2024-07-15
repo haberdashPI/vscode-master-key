@@ -1,18 +1,17 @@
 import * as vscode from 'vscode';
-import z, {record} from 'zod';
+import z from 'zod';
 import {validateInput} from '../utils';
-import {BindingCommand, DoArgs, doArgs} from '../keybindings/parsing';
+import {BindingCommand, doArgs} from '../keybindings/parsing';
 import {
     withState,
     CommandResult,
-    CommandState,
     WrappedCommandResult,
     commandArgs,
     recordedCommand,
 } from '../state';
 import {cloneDeep, merge} from 'lodash';
 import {evalContext, reifyStrings} from '../expressions';
-import {PREFIX_CODE, keySuffix} from './prefix';
+import {keySuffix} from './prefix';
 import {isSingleCommand} from '../keybindings/processing';
 import {MODE, defaultMode, modeSpecs} from './mode';
 import {List} from 'immutable';
@@ -41,7 +40,7 @@ async function doCommand(command: BindingCommand): Promise<BindingCommand | unde
         }
     }
 
-    let reifyArgs: Record<string, any> = command.args || {};
+    let reifyArgs: Record<string, unknown> = command.args || {};
     if (command.computedArgs !== undefined) {
         let computed;
         await withState(async state => {
@@ -193,8 +192,7 @@ let maxHistory = 0;
 export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
     const args = validateInput('master-key.do', args_, runCommandArgs);
     if (args) {
-        let command: any;
-        command = await doCommands(args);
+        const command = await doCommands(args);
         if (!isSingleCommand(args.do, 'master-key.prefix')) {
             await withState(async state => {
                 return state.update<List<unknown>>(
@@ -208,9 +206,11 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
                         ) {
                             recordEdits = vscode.window.activeTextEditor?.document;
                         }
-                        history = history.push({...command, edits: [], recordEdits});
-                        if (history.count() > maxHistory) {
-                            history = history.shift();
+                        if (command !== 'cancel') {
+                            history = history.push({...command, edits: [], recordEdits});
+                            if (history.count() > maxHistory) {
+                                history = history.shift();
+                            }
                         }
                         return history;
                     }

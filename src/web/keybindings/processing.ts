@@ -383,7 +383,10 @@ function expandPattern(pattern: string): string[] {
     }
 }
 
-function expandForeach(item: RawBindingItem, definitions: object): RawBindingItem[] {
+function expandForeach(
+    item: RawBindingItem,
+    definitions: Record<string, unknown>
+): RawBindingItem[] {
     const context = new EvalContext();
     if (item.foreach) {
         const varValues = mapValues(item.foreach, v => flatMap(v, expandPattern));
@@ -498,8 +501,9 @@ function itemToConfigBinding(
     item: BindingItem,
     defs: Record<string, unknown>
 ): IConfigKeyBinding {
+    const prefixCodes = <Record<string, number>>defs['prefixCodes'];
     const prefixDescriptions = item.prefixes.map(p => {
-        const code = defs['prefixCodes'][p];
+        const code = prefixCodes[p];
         return `${code}: ${p}`;
     });
     return {
@@ -510,9 +514,7 @@ function itemToConfigBinding(
         args: {
             ...item.args,
             prefixCode:
-                item.prefixes.length > 0
-                    ? defs['prefixCodes'][item.prefixes[0]]
-                    : undefined,
+                item.prefixes.length > 0 ? prefixCodes[item.prefixes[0]] : undefined,
             mode: item.mode && item.mode.length > 0 ? item.mode[0] : undefined,
             key: <string>item.key,
         },

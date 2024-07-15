@@ -49,7 +49,7 @@ function updateConfig(event?: vscode.ConfigurationChangeEvent) {
     }
 }
 
-export async function activate(context: vscode.ExtensionContext) {
+export async function activate(_context: vscode.ExtensionContext) {
     updateConfig();
     vscode.workspace.onDidChangeConfiguration(updateConfig);
 

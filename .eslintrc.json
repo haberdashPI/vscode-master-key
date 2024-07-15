@@ -13,10 +13,24 @@
                 "ignoreRestSiblings": true
             }
         ],
+        // The below exceptions account for features available when within a VSCode
+        // extension
         "n/no-extraneous-import": [
             "error",
             {
-                "allowModules": ["vscode-uri", "jsonc-simple-parser"]
+                "allowModules": ["vscode-uri"]
+            }
+        ],
+        "n/no-unpublished-require": [
+            "error",
+            {
+                "allowModules": ["jsonc-simple-parser", "mocha"]
+            }
+        ],
+        "n/no-unsupported-features/node-builtins": [
+            "error",
+            {
+                "ignores": ["TextEncoder", "TextDecoder"]
             }
         ]
     }

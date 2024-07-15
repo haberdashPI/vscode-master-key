@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
-import jsep from 'jsep';
-import JSONC from 'jsonc-parser';
+const JSONC = require('jsonc-simple-parser');
 import {Utils} from 'vscode-uri';
 const TOML = require('smol-toml');
 import YAML from 'yaml';
@@ -33,7 +32,7 @@ const bindingHeader = z
         description: z.string().optional(),
     })
     .strict();
-type BindingHeader = z.infer<typeof bindingHeader>;
+// type BindingHeader = z.infer<typeof bindingHeader>;
 
 const rawBindingCommand = z
     .object({
@@ -196,12 +195,12 @@ const bindingKey = z
     .refine(isAllowedKeybinding, keybindingError)
     .transform((x: string) => x.toLowerCase());
 
-function prefixError(arg: string) {
-    return {
-        message: `Expected either an array of kebydinings or the string '<all-prefixes>',
-        but got '${arg}' instead`,
-    };
-}
+// function prefixError(arg: string) {
+//     return {
+//         message: `Expected either an array of kebydinings or the string '<all-prefixes>',
+//         but got '${arg}' instead`,
+//     };
+// }
 
 const parsedWhen = z.object({
     str: z.string(),
@@ -312,7 +311,7 @@ export type BindingItem = z.output<typeof bindingItem>;
 
 export const bindingPath = z.object({
     // TODO: change from an empty `id` path, to fields at the top level in the header
-    id: z.string().regex(/(^$|[a-zA-Z0-9_\-]+(\.[a-zA-Z0-9_\-]+)*)/),
+    id: z.string().regex(/(^$|[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)*)/),
     name: z.string(),
     description: z.string().optional(),
     default: rawBindingItem.partial().optional(),
@@ -346,7 +345,8 @@ export const bindingSpec = z
         mode: modeSpec
             .array()
             .optional()
-            .default([ {
+            .default([
+                {
                     name: 'default',
                     default: true,
                     recordEdits: true,
@@ -380,15 +380,12 @@ export const bindingSpec = z
                 }
                 return xs;
             }),
-        define: z.object({}).passthrough().optional(),
+        define: z.record(z.string(), z.any()),
     })
     .strict();
 export type BindingSpec = z.infer<typeof bindingSpec>;
 
-export function parseBindings<T>(
-    text: string,
-    parse: string | ((data: string) => unknown)
-) {
+export function parseBindings(text: string, parse: string | ((data: string) => unknown)) {
     if (typeof parse === 'string') {
         // TODO: remove this logic and always use TOML for now
         let ext = parse.toLowerCase();

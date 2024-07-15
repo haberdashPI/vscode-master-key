@@ -87,8 +87,7 @@ function formatBindings(name: string, items: IConfigKeyBinding[]) {
 }
 
 export function filterBindingFn(mode?: string, prefixCode?: number) {
-    return function filterBinding(binding_: any) {
-        const binding = <IConfigKeyBinding>binding_;
+    return function filterBinding(binding: IConfigKeyBinding) {
         if (binding.args.hideInPalette) {
             return false;
         }
@@ -292,6 +291,7 @@ export function processParsing<T>(
         for (const issue of parsedBindings.error.issues.slice(0, 3)) {
             showParseError(errorPrefix + 'Parsing error: ', issue);
         }
+        return;
     }
 }
 
@@ -393,6 +393,7 @@ export async function queryPreset(): Promise<Preset | undefined> {
     } else {
         return picked?.preset;
     }
+    return undefined;
 }
 
 async function copyBindingsToNewFile() {

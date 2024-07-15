@@ -10,28 +10,19 @@ jsep.plugins.register(jsepRegex.default);
 
 const buildEvaled = new SafeExpression();
 
-export function reifyStrings(obj: any, ev: (str: string) => any): any {
+export function reifyStrings(obj: unknown, ev: (str: string) => unknown): unknown {
     if (Array.isArray(obj)) {
         return obj.map(x => reifyStrings(x, ev));
     }
     if (typeof obj === 'object') {
-        return mapValues(obj, (val, prop) => {
+        return mapValues(obj, (val, _prop) => {
             return reifyStrings(val, ev);
         });
     }
     if (typeof obj === 'string') {
         return ev(obj);
     }
-    if (
-        typeof obj === 'number' ||
-        typeof obj === 'boolean' ||
-        typeof obj === 'undefined' ||
-        typeof obj === 'function' ||
-        typeof obj === 'bigint' ||
-        typeof obj === 'symbol'
-    ) {
-        return obj;
-    }
+    return obj;
 }
 
 export function expressionId(exp: string) {
@@ -52,9 +43,9 @@ export class EvalContext {
         }
     }
 
-    evalExpressionsInString(str: string, values: Record<string, any>) {
+    evalExpressionsInString(str: string, values: Record<string, unknown>) {
         let result = '';
-        const r = /\{[^\}]*\}/g;
+        const r = /\{[^}]*\}/g;
         let match = r.exec(str);
         let startIndex = 0;
         while (match !== null) {
@@ -63,7 +54,7 @@ export class EvalContext {
             try {
                 // slice to remove `{` and `}`
                 evaled = this.evalStr(match[0].slice(1, -1), values);
-            } catch (e) {
+            } catch (_) {
                 evaled = undefined;
             }
             if (evaled === undefined) {
@@ -79,10 +70,10 @@ export class EvalContext {
         return result;
     }
 
-    evalStr(str: string, values: Record<string, any>) {
+    evalStr(str: string, values: Record<string, unknown>) {
         let exec = this.cache[str];
         if (exec === undefined) {
-            if (str.match(/(?<!(\!|=))=(?!(\>|=))/)) {
+            if (str.match(/(?<!(!|=))=(?!(>|=))/)) {
                 this.errors.push(`Found an isolated "=" in this expression.
                 Your expressions are not permitted to set any values. You should
                 use 'master-key.set' to do that.`);
@@ -90,12 +81,14 @@ export class EvalContext {
             }
             this.cache[str] = exec = buildEvaled(str);
         }
-        let result = str;
+        let result: unknown = str;
         try {
             // do not let the expression modify any of the `values`
             result = exec(values);
-        } catch (e: any) {
-            this.errors.push(`Error evaluating ${str}: ${e.message}`);
+        } catch (e: unknown) {
+            this.errors.push(
+                `Error evaluating ${str}: ${(<Error>e)?.message || '[unavailable]'}`
+            );
             return undefined;
         }
         return result;

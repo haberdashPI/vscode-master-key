@@ -38,7 +38,7 @@ async function evalMatcher(matcher: string, i: number) {
     }
 }
 
-async function selectHistoryCommand<T>(cmd: string, args_: unknown) {
+async function selectHistoryCommand(cmd: string, args_: unknown) {
     const args = validateInput(cmd, args_, selectHistoryArgs);
     if (args) {
         let value: RecordedCommandArgs[] | undefined = undefined;
@@ -107,7 +107,7 @@ async function runCommandHistory(
     for (const cmd of commands) {
         await doCommands(cmd);
 
-        if ((<any>cmd).edits) {
+        if ((<RecordedCommandArgs>cmd).edits) {
             const editor = vscode.window.activeTextEditor;
             if (editor) {
                 const ed = editor;

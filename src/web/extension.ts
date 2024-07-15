@@ -5,7 +5,7 @@ import * as status from './status/index';
 import * as state from './state';
 import * as config from './keybindings/config';
 
-declare let __coverage__: any; // here's hoping this works after istabul instrumentation... 🤞
+declare let __coverage__: object;
 export async function activate(context: vscode.ExtensionContext) {
     await keybindings.activate(context);
     await state.activate(context);

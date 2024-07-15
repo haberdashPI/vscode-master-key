@@ -46,7 +46,7 @@ function togglePaletteMode() {
 }
 
 export async function commandPalette(
-    args_: unknown,
+    _args: unknown,
     opt: {context?: boolean; useKey?: boolean} = {}
 ) {
     const context = opt.context === undefined ? true : opt.context;
