@@ -51,7 +51,7 @@ Key gaps identified by coverage (not listed above):
     - `editorHasMultipleSelection`
     - `firstSelectionOrWord`
   - testing filter of bindings for palette
-  - test configuration editiing
+  - test configuration editing
     - copy
     - remove
     - copy from user / default config
