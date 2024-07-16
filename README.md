@@ -12,7 +12,7 @@
 >
 > The README is a WIP document that will eventually reflect the intended state for release 0.3.0 at which point this extension will be published to VSCode's extension marketplace. For now expect to find missing features, a variety of bugs and incomplete documentation.
 
-Master key helps you to learn, create and use powerful keybindings.
+Master key helps you to learn, create and use powerful keybindings in [VSCode](https://code.visualstudio.com/).
 
 If you want to improve your text editing super powers in VSCode, Master Key might just be the tool for you.
 
