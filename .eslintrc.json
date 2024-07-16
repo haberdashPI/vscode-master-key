@@ -1,22 +1,37 @@
 {
-    "root": true,
-    "parser": "@typescript-eslint/parser",
-    "parserOptions": {
-        "ecmaVersion": 6,
-        "sourceType": "module"
-    },
-    "plugins": [
-        "@typescript-eslint"
-    ],
+    "extends": "./node_modules/gts/",
     "rules": {
-        "@typescript-eslint/naming-convention": "warn",
-        "@typescript-eslint/semi": "warn",
-        "curly": "warn",
-        "eqeqeq": "warn",
-        "no-throw-literal": "warn",
-        "semi": "off"
-    },
-    "ignorePatterns": [
-        "**/*.d.ts"
-    ]
+        "@typescript-eslint/no-unused-vars": [
+            "error",
+            {
+                "args": "all",
+                "argsIgnorePattern": "^_",
+                "caughtErrors": "all",
+                "caughtErrorsIgnorePattern": "^_",
+                "destructuredArrayIgnorePattern": "^_",
+                "varsIgnorePattern": "^_",
+                "ignoreRestSiblings": true
+            }
+        ],
+        // The below exceptions account for features available when within a VSCode
+        // extension
+        "n/no-extraneous-import": [
+            "error",
+            {
+                "allowModules": ["vscode-uri"]
+            }
+        ],
+        "n/no-unpublished-require": [
+            "error",
+            {
+                "allowModules": ["jsonc-simple-parser", "mocha"]
+            }
+        ],
+        "n/no-unsupported-features/node-builtins": [
+            "error",
+            {
+                "ignores": ["TextEncoder", "TextDecoder"]
+            }
+        ]
+    }
 }

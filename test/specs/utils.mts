@@ -125,6 +125,10 @@ export async function setupEditor(str: string){
     console.log("[DEBUG]: Focusing editor");
     await cursorToTop(editor);
 
+    // NOTE: I often see flaky tests at the very start of a spec. My first guess is we need
+    // to give some time for the editor to finish loading stuff asynchronously from
+    // `setupEditor` before it is responsive again.
+    await sleep(1000);
     return editor;
 }
 
