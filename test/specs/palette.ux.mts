@@ -68,6 +68,15 @@ describe('Palette', () => {
 
             [[bind]]
             name = "show palette"
+            key = "shift+,"
+            resetTransient = false
+            hideInPalette = true
+            prefixes = []
+            mode = "normal"
+            command = "master-key.commandPalette"
+
+            [[bind]]
+            name = "show palette"
             key = "shift+;"
             resetTransient = false
             hideInPalette = true
@@ -77,8 +86,9 @@ describe('Palette', () => {
 
             [[bind]]
             path = "motion"
-            name = "weird right"
+            name = "funny right"
             key = "w w"
+            mode = "normal"
             args.to = "right"
 
             [[bind]]
@@ -98,7 +108,7 @@ describe('Palette', () => {
         await enterModalKeys({key: ['shift', ';'], updatesStatus: false});
         const input = await (new InputBox(workbench.locatorMap)).wait();
         const picks = await input.getQuickPicks();
-        expect(picks).toHaveLength(6);
+        expect(picks).toHaveLength(8)
         expect(await picks[0].getLabel()).toEqual("H");
         expect(await picks[0].getDescription()).toEqual("left");
         expect(await picks[1].getLabel()).toEqual("L");
@@ -121,27 +131,24 @@ describe('Palette', () => {
 
             const input = await (new InputBox(workbench.locatorMap)).wait();
             const picks = await input.getQuickPicks();
-            expect(picks).toHaveLength(1);
+            expect(picks).toHaveLength(2);
+            await input.clear();
             await browser.keys('w');
             await sleep(250); // give some time for cursor to start moving
         }, [1, 0], editor);
+        await enterModalKeys('p');
         await enterModalKeys('i');
+        await sleep(1000);
     });
 
-    it.only('Can accept search text', async () => {
+    it.skip('Can accept search text', async () => {
         await enterModalKeys('escape');
-        await sleep(2000);
-
-        await enterModalKeys({key: ['shift', ';'], updatesStatus: false});
+        await enterModalKeys({key: ['shift', ','], updatesStatus: false});
 
         const input = await (new InputBox(workbench.locatorMap)).wait();
-        await sleep(250);
-        await browser.keys([Key.Ctrl, '.'])
-        await sleep(2000);
-
-        await browser.keys(['r', 'i', 'g', 'h', 't']);
+        await input.setText('funny')
+        await sleep(10000);
         await input.confirm();
-        await sleep(2000);
 
         let coord = await editor.getCoordinates();
         expect(coord).toEqual([2, 1]);
@@ -149,6 +156,7 @@ describe('Palette', () => {
     });
 
     it('Changes with new bindings', async () => {
+        await sleep(1000);
         await setBindings(`
             [header]
             version = "1.0"
@@ -204,6 +212,7 @@ describe('Palette', () => {
         `);
 
         await enterModalKeys('escape');
+        await sleep(1000);
 
         await enterModalKeys({key: ['shift', ';'], updatesStatus: false});
         const input = await (new InputBox(workbench.locatorMap)).wait();

@@ -252,7 +252,7 @@ export function activate(context: vscode.ExtensionContext) {
     if (process.env.TESTING) {
         context.subscriptions.push(
             vscode.commands.registerCommand('master-key.togglePaletteDelay', () => {
-                paletteDelay = paletteDelay === 0 ? 500 : 0;
+                paletteDelay = paletteDelay > 0 ? 0 : 500;
             })
         );
     }

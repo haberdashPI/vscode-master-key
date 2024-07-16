@@ -11,6 +11,8 @@ NEW TEST: palette commands can now be readily tested, I believe...
   - check that the palette shows up automaticlaly (or not) depending on config setting
   + check that change mode affects how palette responds to input
 
+TODO: trouble running tests, try running each one individually
+
 NEW TEST: visual keybinding display
     - verify that keys with bindings show up and have color
     - verify that keys without bindings show up as blank
