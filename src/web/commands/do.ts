@@ -248,4 +248,12 @@ export function activate(context: vscode.ExtensionContext) {
     updateConfig();
     console.log('configured max history: ' + maxHistory);
     vscode.workspace.onDidChangeConfiguration(updateConfig);
+
+    if (process.env.TESTING) {
+        context.subscriptions.push(
+            vscode.commands.registerCommand('master-key.togglePaletteDelay', () => {
+                paletteDelay = paletteDelay === 0 ? 500 : 0;
+            })
+        );
+    }
 }

@@ -6,10 +6,10 @@ if at all possible
 NOTE: bug fixes/stability could be added after we add the feature for markdown documentation
 
 NEW TEST: palette commands can now be readily tested, I believe...
-  - check that palette lists things germane to the current bindings
-  - if the bindings change, check that this list changes
+  + check that palette lists things germane to the current bindings
+  + if the bindings change, check that this list changes
   - check that the palette shows up automaticlaly (or not) depending on config setting
-  - check that change mode affects how palette responds to input
+  + check that change mode affects how palette responds to input
 
 NEW TEST: visual keybinding display
     - verify that keys with bindings show up and have color
