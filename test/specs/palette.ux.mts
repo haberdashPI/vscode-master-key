@@ -217,6 +217,6 @@ describe('Palette', () => {
     // currently be automated.
 
     after(async () => {
-        await storeCoverageStats('simpleMotion');
+        await storeCoverageStats('palette');
     });
 });
