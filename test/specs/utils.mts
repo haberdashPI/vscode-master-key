@@ -14,6 +14,7 @@ key = "ctrl+shift+alt+c"
 mode = []
 prefixes = "<all-prefixes>"
 command = "master-key.writeCoverageToEditor"
+hideInPalette = true
 `;
 
 export async function setBindings(str: string){

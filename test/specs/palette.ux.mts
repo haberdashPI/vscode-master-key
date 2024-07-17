@@ -108,7 +108,7 @@ describe('Palette', () => {
         await enterModalKeys({key: ['shift', ';'], updatesStatus: false});
         const input = await (new InputBox(workbench.locatorMap)).wait();
         const picks = await input.getQuickPicks();
-        expect(picks).toHaveLength(8)
+        expect(picks).toHaveLength(7)
         expect(await picks[0].getLabel()).toEqual("H");
         expect(await picks[0].getDescription()).toEqual("left");
         expect(await picks[1].getLabel()).toEqual("L");
@@ -125,34 +125,18 @@ describe('Palette', () => {
     it('Can be displayed after delay', async () => {
         await enterModalKeys('escape');
         await enterModalKeys('p');
-        await movesCursorInEditor(async () => {
-            await enterModalKeys({key: 'w', updatesStatus: false});
-            await sleep(1500); // give time for palette to show up
 
-            const input = await (new InputBox(workbench.locatorMap)).wait();
-            const picks = await input.getQuickPicks();
-            expect(picks).toHaveLength(2);
-            await input.clear();
-            await browser.keys('w');
-            await sleep(250); // give some time for cursor to start moving
-        }, [1, 0], editor);
-        await enterModalKeys('p');
-        await enterModalKeys('i');
-        await sleep(1000);
-    });
-
-    it.skip('Can accept search text', async () => {
-        await enterModalKeys('escape');
-        await enterModalKeys({key: ['shift', ','], updatesStatus: false});
+        await enterModalKeys({key: 'w', updatesStatus: false});
+        await sleep(1500); // give time for palette to show up
 
         const input = await (new InputBox(workbench.locatorMap)).wait();
-        await input.setText('funny')
-        await sleep(10000);
-        await input.confirm();
+        const picks = await input.getQuickPicks();
+        expect(picks).toHaveLength(1);
 
-        let coord = await editor.getCoordinates();
-        expect(coord).toEqual([2, 1]);
+        await browser.keys(Key.Escape);
+        await browser.keys('p');
         await enterModalKeys('i');
+        await sleep(1000);
     });
 
     it('Changes with new bindings', async () => {
@@ -217,7 +201,7 @@ describe('Palette', () => {
         await enterModalKeys({key: ['shift', ';'], updatesStatus: false});
         const input = await (new InputBox(workbench.locatorMap)).wait();
         const picks = await input.getQuickPicks();
-        expect(picks).toHaveLength(4);
+        expect(picks).toHaveLength(3);
         expect(await picks[0].getLabel()).toEqual("J");
         expect(await picks[0].getDescription()).toEqual("down");
         expect(await picks[1].getLabel()).toEqual("K");
@@ -225,6 +209,12 @@ describe('Palette', () => {
         expect(await picks[2].getLabel()).toEqual("I");
         expect(await picks[2].getDescription()).toEqual("insert mode");
     })
+
+    // NOTE: it would be ideal if we could also test how the palette interacts with typing
+    // when there is a delay set, and in the two distinct modes (searching or keybinding).
+    // However the way focus and typing work with chromedriver does not replicate actual UX
+    // interactions as a user at least as far as I can tell, so this behavior cannot
+    // currently be automated.
 
     after(async () => {
         await storeCoverageStats('simpleMotion');
