@@ -331,10 +331,19 @@ const modeSpec = z.object({
 });
 export type ModeSpec = z.output<typeof modeSpec>;
 
+const kindItem = z
+    .object({
+        name: z.string(),
+        description: z.string(),
+    })
+    .strict();
+export type KindItem = z.output<typeof kindItem>;
+
 export const bindingSpec = z
     .object({
         header: bindingHeader,
         bind: rawBindingItem.array(),
+        kind: kindItem.array().optional(),
         path: bindingPath
             .array()
             .refine(xs => uniqBy(xs, x => x.id).length === xs.length, {

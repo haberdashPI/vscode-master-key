@@ -8,6 +8,9 @@ NOTE: some bug fixes/stability could be added after we add the feature for markd
 TODO: trouble running tests, try running each one individually
 
 NEW TEST: visual keybinding display
+    - TODO: our tracking of `kinds` has been lost somewhere in refactoring
+        we need to treat this similarly to the way we treat definitions
+        and then pass it on to the visual docs
     - verify that keys with bindings show up and have color
     - verify that keys without bindings show up as blank
 
