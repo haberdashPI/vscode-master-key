@@ -3,15 +3,17 @@
 NOTE: we may need to add multiple retries to tests, CI should pass every time
 if at all possible
 
-NOTE: bug fixes/stability could be added after we add the feature for markdown documentation
+NOTE: some bug fixes/stability could be added after we add the feature for markdown documentation
+
+TODO: trouble running tests, try running each one individually
+
+NEW TEST: visual keybinding display
+    - verify that keys with bindings show up and have color
+    - verify that keys without bindings show up as blank
 
 BUG: when there are no keys defined the visual keybinding output includes `undefined`
 
-NEW TEST: palette commands can now be readily tested, I believe...
-  - check that palette lists things germane to the current bindings
-  - if the bindings change, check that this list changes
-  - check that the palette shows up automaticlaly (or not) depending on config setting
-  - check that change mode affects how palette responds to input
+NEW TEST: store/restore named commands
 
 create release 0.1.1
 
@@ -31,7 +33,6 @@ unit tests: mode capture
   - cook up some tests `onType` setting of modes
 unit tests: parsing of YAML and JSON(C)
   - actually: delete this feature (add it back in later if it feels worth it)
-unit tests: store/restore named commands
 
 create release 0.1.3
 
@@ -46,7 +47,7 @@ Key gaps identified by coverage (not listed above):
     - `editorHasMultipleSelection`
     - `firstSelectionOrWord`
   - testing filter of bindings for palette
-  - test configuration editiing
+  - test configuration editing
     - copy
     - remove
     - copy from user / default config
