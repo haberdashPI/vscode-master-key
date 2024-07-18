@@ -1,71 +1,3 @@
-## Wrapping up unit tests / stability / coverage
-
-NOTE: we may need to add multiple retries to tests, CI should pass every time
-if at all possible
-
-NOTE: some bug fixes/stability could be added after we add the feature for markdown documentation
-
-TODO: trouble running tests, try running each one individually
-
-NEW TEST: visual keybinding display
-    - TODO: our tracking of `kinds` has been lost somewhere in refactoring
-        we need to treat this similarly to the way we treat definitions
-        and then pass it on to the visual docs
-    - FIX: right now if the kind doesn't exist, it just silently
-      fails to generate a color, we should validate the kinds
-    - verify that keys with bindings show up and have color
-    - verify that keys without bindings show up as blank
-
-BUG: when there are no keys defined the visual keybinding output includes `undefined`
-
-NEW TEST: store/restore named commands
-
-create release 0.1.1
-
-SMALL BUG: should 'esc' really be appended in the status bar since it cancels a prefix sequence... 🤔
-
-unit tests: edge cases with recording edits
-  - how about when I switch documents?
-  - how about when we don't start with normal mode commands?
-  - how about long edits with lots of insert mode commands intersprsed with the edits?
-  - what about multiple cursors?
-  - how do recorded commands interact with the palette?
-  - does the command palette show up / not show up with the proper timing?
-
-create release 0.1.2
-
-unit tests: mode capture
-  - cook up some tests `onType` setting of modes
-unit tests: parsing of YAML and JSON(C)
-  - actually: delete this feature (add it back in later if it feels worth it)
-
-create release 0.1.3
-
-UNIT TEST: verify that larkin can be properly loaded/parsed
-
-TODO: include the basic (non ui tests) in coverage
-
-Key gaps identified by coverage (not listed above):
-  - setFlags
-  - use of global state in commands
-    - `editorHasSelection`
-    - `editorHasMultipleSelection`
-    - `firstSelectionOrWord`
-  - testing filter of bindings for palette
-  - test configuration editing
-    - copy
-    - remove
-    - copy from user / default config
-  - commands
-    - usage of `if` field
-    - error for malformed `repeat` expression
-    - macros: recording and replaying edits
-      - nested macros??
-    - empty search string
-    - premature end of capture and search using enter
-    - escaping a search
-  - basic validation of visual search (we can inject css ids to make this easy)
-
 ## Visual Documentation Improvements
 
 release 0.2.0 onwards
@@ -133,6 +65,56 @@ thoughts: things I must have to release:
   + fix default expansion
 
 WHEN PUBLISHING: get this to work on both stores (the one from microsoft and the one that vscodium uses)
+
+## Additional test coverage
+
+SMALL BUG: should 'esc' really be appended in the status bar since it cancels a prefix sequence... 🤔
+
+NEW TEST: store/restore named commands
+
+unit tests: edge cases with recording edits
+  - how about when I switch documents?
+  - how about when we don't start with normal mode commands?
+  - how about long edits with lots of insert mode commands intersprsed with the edits?
+  - what about multiple cursors?
+  - how do recorded commands interact with the palette?
+  - does the command palette show up / not show up with the proper timing?
+
+create release
+
+unit tests: mode capture
+  - cook up some tests `onType` setting of modes
+unit tests: parsing of YAML and JSON(C)
+  - actually: delete this feature (add it back in later if it feels worth it)
+
+create release
+
+UNIT TEST: verify that larkin can be properly loaded/parsed
+
+TODO: include the basic (non ui tests) in coverage
+
+Gaps in coverage:
+  - setFlags
+  - use of global state in commands
+    - `editorHasSelection`
+    - `editorHasMultipleSelection`
+    - `firstSelectionOrWord`
+  - visualKey
+    - toggling modifier keys
+  - testing filter of bindings for palette
+  - test configuration editing
+    - copy
+    - remove
+    - copy from user / default config
+  - commands
+    - usage of `if` field
+    - error for malformed `repeat` expression
+    - macros: recording and replaying edits
+      - nested macros??
+    - empty search string
+    - premature end of capture and search using enter
+    - escaping a search
+  - basic validation of visual search (we can inject css ids to make this easy)
 
 ## Future releases
 
