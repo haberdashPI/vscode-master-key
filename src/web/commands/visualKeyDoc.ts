@@ -212,6 +212,10 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
                 const key = modifierKey(binding.args.key).sort().join('.');
                 modifierCounts[key] = get(modifierCounts, key, 0) + 1;
             }
+
+            modifierCounts[''] = modifierCounts[''] === undefined ? 0 : modifierCounts[''];
+            modifierCounts['⇧'] =
+                modifierCounts['⇧'] === undefined ? 0 : modifierCounts['⇧'];
             const modifiers = Object.keys(modifierCounts);
             modifiers.sort((x, y) => modifierCounts[y] - modifierCounts[x]);
             this._modifierOrder = modifiers.map(x => x.split('.'));
@@ -311,7 +315,7 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
         // TODO: we need to dynamically update the top and bottom labels depending on
         // modifiers this will require updating the key-label- divs in `script.js`
         const keys = `
-        <div class="container">
+        <div id="master-key-visual-doc" class="container">
             <div class="keyboard">
                 ${keyRows(['⇧'], [''])
                     .map(

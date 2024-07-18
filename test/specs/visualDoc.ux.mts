@@ -2,13 +2,14 @@
 
 import '@wdio/globals';
 import 'wdio-vscode-service';
-import { enterModalKeys, setBindings, setupEditor, movesCursorInEditor, storeCoverageStats } from './utils.mts';
-import { InputBox, sleep, TextEditor, Workbench } from 'wdio-vscode-service';
+import { enterModalKeys, setBindings, setupEditor, movesCursorInEditor, storeCoverageStats, cursorToTop } from './utils.mts';
+import { InputBox, sleep, TextEditor, WebView, Workbench } from 'wdio-vscode-service';
 import { Key } from "webdriverio";
 
 describe('Visual Docs', () => {
     let editor: TextEditor;
     let workbench: Workbench;
+    let docView: WebView;
     before(async () => {
         await setBindings(`
             [header]
@@ -73,6 +74,14 @@ describe('Visual Docs', () => {
             kind = "right"
 
             [[bind]]
+            path = "motion"
+            name = "funny right"
+            key = "w w"
+            mode = "normal"
+            args.to = "right"
+            kind = "right"
+
+            [[bind]]
             name = "insert mode"
             key = "i"
             command = "master-key.enterInsert"
@@ -81,56 +90,74 @@ describe('Visual Docs', () => {
         `);
         editor = await setupEditor(`A simple test`);
         workbench = await browser.getWorkbench();
-    });
-
-    it('Labels Keys', async() => {
-        await browser.keys(Key.Escape);
-        await editor.moveCursor(1, 1);
-
-        await workbench.executeCommand("Master Key: Show Visual Documentation")
-        await sleep(1000);
-
-        const hKey = await browser.$('div.key > div.bottom=left');
-        expect(await hKey).toHaveText('left');
-
-        const jKey = await browser.$('div.key > div.bottom=down');
-        expect(await jKey).toHaveText('down');
-
-        const kKey = await browser.$('div.key > div.bottom=up');
-        expect(await kKey).toHaveText('up');
-
-        const lKey = await browser.$('div.key > div.bottom=right');
-        expect(await lKey).toHaveText('right');
-    });
-
-    it('Colors Keys', async() => {
-        await browser.keys(Key.Escape);
-        await editor.moveCursor(1, 1);
+        await sleep(500);
 
         await workbench.executeCommand("Master Key: Show Visual Documentation")
 
-        const hKey = await browser.$('div.key > div.bottom=h');
-        const hClasses = await hKey.getAttribute('class')
-        expect(hClasses).toMatch('kind-color-1')
+        await cursorToTop(editor);
+        await enterModalKeys('escape');
 
-        const jKey = await browser.$('div.key > div.bottom=j');
-        const jClasses = await jKey.getAttribute('class')
-        expect(jClasses).toMatch('kind-color-1')
-
-        const kKey = await browser.$('div.key > div.bottom=k');
-        const kClasses = await kKey.getAttribute('class')
-        expect(kClasses).toMatch('kind-color-2')
-
-        const lKey = await browser.$('div.key > div.bottom=l');
-        const lClasses = await lKey.getAttribute('class')
-        expect(lClasses).toMatch('kind-color-2')
+        await browser.waitUntil(async () => (await workbench.getAllWebviews()).length > 0)
+        const webviews = await workbench.getAllWebviews();
+        expect(webviews).toHaveLength(1);
+        docView = await webviews[0].wait();
     });
 
-    // NOTE: it would be ideal if we could also test how the palette interacts with typing
-    // when there is a delay set, and in the two distinct modes (searching or keybinding).
-    // However the way focus and typing work with chromedriver does not replicate actual UX
-    // interactions as a user at least as far as I can tell, so this behavior cannot
-    // currently be automated.
+    it('Label Keys', async() => {
+        await docView.open();
+        expect(await browser.$('div#master-key-visual-doc')).toExist();
+
+        const hLabel = await browser.$('div.keyboard').$('div=H');
+        expect(hLabel).toHaveText('H');
+        const hName = (await hLabel.parentElement()).$('div.name.bottom');
+        expect(hName).toHaveText('left');
+        const hClasses = await hName.getAttribute('class')
+        expect(hClasses).toMatch('kind-color-0')
+
+        const jLabel = await browser.$('div.keyboard').$('div=J');
+        expect(jLabel).toHaveText('J');
+        const jName = (await jLabel.parentElement()).$('div.name.bottom');
+        expect(jName).toHaveText('down');
+        const jClasses = await jName.getAttribute('class')
+        expect(jClasses).toMatch('kind-color-0')
+
+        const kLabel = await browser.$('div.keyboard').$('div=K');
+        expect(kLabel).toHaveText('K');
+        const kName = (await kLabel.parentElement()).$('div.name.bottom');
+        expect(kName).toHaveText('up');
+        const kClasses = await kName.getAttribute('class')
+        expect(kClasses).toMatch('kind-color-1')
+
+        const lLabel = await browser.$('div.keyboard').$('div=L');
+        expect(lLabel).toHaveText('L');
+        const lName = (await lLabel.parentElement()).$('div.name.bottom');
+        expect(lName).toHaveText('right');
+        const lClasses = await lName.getAttribute('class')
+        expect(lClasses).toMatch('kind-color-1')
+
+        await docView.close();
+    });
+
+    it('Update with prefix', async() => {
+        await enterModalKeys({key: 'w', updatesStatus: false});
+        await docView.open();
+
+        const disappeared = await browser.waitUntil(async () => {
+            const hLabel = browser.$('div.keyboard').$('div=H');
+            const hName = (await hLabel.parentElement()).$('div.name.bottom');
+            return (await hName.getText()) !== 'left';
+        })
+        expect(disappeared).toBeTruthy();
+
+        const wLabel = await browser.$('div.keyboard').$('div=W');
+        expect(wLabel).toHaveText('W');
+        const wName = (await wLabel.parentElement()).$('div.name.bottom');
+        expect(wName).toHaveText('funny right');
+        const wClasses = await wLabel.getAttribute('class')
+        expect(wClasses).toMatch('kind-color-1')
+
+        await docView.close();
+    });
 
     after(async () => {
         await storeCoverageStats('visualDoc');
