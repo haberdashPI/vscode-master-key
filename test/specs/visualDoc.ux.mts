@@ -153,8 +153,10 @@ describe('Visual Docs', () => {
         expect(wLabel).toHaveText('W');
         const wName = (await wLabel.parentElement()).$('div.name.bottom');
         expect(wName).toHaveText('funny right');
-        const wClasses = await wLabel.getAttribute('class')
-        expect(wClasses).toMatch('kind-color-1')
+        const wClasses = await wLabel.getAttribute('class');
+        expect(wClasses).toMatch('kind-color-1');
+
+        await browser.keys('w');
 
         await docView.close();
     });

@@ -236,7 +236,7 @@ export async function enterModalKeys(...keySeq: ModalKey[]){
         }
         let currentKeySeqString = (count ? count + "× " : '') + keySeqString;
 
-        browser.keys(keyCodes);
+        await browser.keys(keyCodes);
         if(modalKeyUpdateStatus(keys_)){
             let registered = await browser.waitUntil(() =>
                 statusBar.getItem('Keys Typed: '+currentKeySeqString),
