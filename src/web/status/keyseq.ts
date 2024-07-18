@@ -7,7 +7,7 @@ import {prettifyPrefix} from '../utils';
 
 let keyStatusBar: vscode.StatusBarItem | undefined = undefined;
 
-const KEY_DISPLAY_DELAY_DEFAULT = process.env.TESTING ? 100 : 500;
+const KEY_DISPLAY_DELAY_DEFAULT = process.env.TESTING ? 180 : 500;
 let keyDisplayDelay: number = KEY_DISPLAY_DELAY_DEFAULT;
 let statusUpdates = Number.MIN_SAFE_INTEGER;
 
