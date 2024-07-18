@@ -3,9 +3,9 @@ import {withState} from '../state';
 import * as vscode from 'vscode';
 import {MODE} from './mode';
 import z from 'zod';
-import {IConfigKeyBinding} from '../keybindings/processing';
+import {Bindings, IConfigKeyBinding} from '../keybindings/processing';
 import {filterBindingFn} from '../keybindings';
-import {bindings} from '../keybindings/config';
+import {bindings, onChangeBindings} from '../keybindings/config';
 import {PREFIX_CODE} from './prefix';
 import {reverse, uniqBy} from 'lodash';
 import {modifierKey, prettifyPrefix, validateInput} from '../utils';
@@ -132,12 +132,6 @@ function get<T extends object, K extends keyof T>(x: T, key: K, def: T[K]) {
     }
 }
 
-const kindDoc = z.array(
-    z.object({
-        name: z.string(),
-        description: z.string(),
-    })
-);
 interface KindDocEl {
     name: string;
     description: string;
@@ -218,6 +212,10 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
                 const key = modifierKey(binding.args.key).sort().join('.');
                 modifierCounts[key] = get(modifierCounts, key, 0) + 1;
             }
+
+            modifierCounts[''] = modifierCounts[''] === undefined ? 0 : modifierCounts[''];
+            modifierCounts['⇧'] =
+                modifierCounts['⇧'] === undefined ? 0 : modifierCounts['⇧'];
             const modifiers = Object.keys(modifierCounts);
             modifiers.sort((x, y) => modifierCounts[y] - modifierCounts[x]);
             this._modifierOrder = modifiers.map(x => x.split('.'));
@@ -260,15 +258,10 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
         }
     }
 
-    private updateKinds(values: CommandState | Map<string, unknown>) {
-        const kinds = validateInput(
-            'visual-documentation',
-            values.get('kinds') || [],
-            kindDoc
-        );
+    private updateKinds(bindings: Bindings) {
         this._kinds = {};
         let index = 0;
-        for (const kind of kinds || []) {
+        for (const kind of bindings.kind) {
             this._kinds[kind.name] = {...kind, index};
             index++;
         }
@@ -285,11 +278,10 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
             this.updateKeys(vals);
             return true;
         });
-        this.updateKinds(state);
-        state = state.onSet('kinds', _vals => {
-            this.updateKinds(state);
-            return true;
-        });
+        if (bindings) {
+            this.updateKinds(bindings);
+        }
+        onChangeBindings(async x => (x ? this.updateKinds(x) : undefined));
         return state;
     }
 
@@ -323,7 +315,7 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
         // TODO: we need to dynamically update the top and bottom labels depending on
         // modifiers this will require updating the key-label- divs in `script.js`
         const keys = `
-        <div class="container">
+        <div id="master-key-visual-doc" class="container">
             <div class="keyboard">
                 ${keyRows(['⇧'], [''])
                     .map(

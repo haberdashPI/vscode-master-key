@@ -11,6 +11,7 @@ import {
     ParsedWhen,
     ModeSpec,
     doArgs,
+    KindItem,
 } from './parsing';
 import z from 'zod';
 import {
@@ -31,6 +32,7 @@ import {fromZodError} from 'zod-validation-error';
 export interface Bindings {
     name?: string;
     description?: string;
+    kind: KindItem[];
     define: Record<string, unknown>;
     mode: Record<string, ModeSpec>;
     bind: IConfigKeyBinding[];
@@ -52,6 +54,7 @@ export function processBindings(spec: BindingSpec): [Bindings, string[]] {
     const configItems = newItems.map(i => itemToConfigBinding(i, definitions));
     const result: Bindings = {
         name: spec.header.name,
+        kind: spec.kind || [],
         description: spec.header.description,
         define: definitions,
         mode: mapByName(spec.mode),

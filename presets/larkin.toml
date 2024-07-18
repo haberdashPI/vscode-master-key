@@ -58,11 +58,23 @@ lineNumbers = "relative"
 select_on = false
 around_on = false
 
-kinds = [
-    { name = "motions",   description = "These commands move the cursor and/or selections." },
-    { name = "action",   description = "Actions do something with the selected text (e.g. delete it). Unless otherwise noted, in the absence of a selection, an action will modify an entire line, and a count argument indicates the number of lines (e.g. 3d deletes this line and the next 3 lines)." },
-    { name = "util",     description = "Assorted other commands that aren't motions or actions" },
-]
+[[kind]]
+name = "motions"
+description = "These commands move the cursor and/or selections."
+
+[[kind]]
+name = "action"
+description = """
+Actions do something with the selected text (e.g. delete it). Unless otherwise noted, in
+the absence of a selection, an action will modify an entire line, and a count argument
+indicates the number of lines (e.g. 3d deletes this line and the next 3 lines).
+"""
+
+[[kind]]
+name = "util"
+description = """
+Assorted other commands that aren't motions or actions
+"""
 
 [[define.selectLinesDown]]
 command = "selection-utilities.shrinkToActive"
