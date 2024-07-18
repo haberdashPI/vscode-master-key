@@ -11,6 +11,8 @@ NEW TEST: visual keybinding display
     - TODO: our tracking of `kinds` has been lost somewhere in refactoring
         we need to treat this similarly to the way we treat definitions
         and then pass it on to the visual docs
+    - FIX: right now if the kind doesn't exist, it just silently
+      fails to generate a color, we should validate the kinds
     - verify that keys with bindings show up and have color
     - verify that keys without bindings show up as blank
 

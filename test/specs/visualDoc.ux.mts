@@ -22,11 +22,11 @@ describe('Visual Docs', () => {
             name = "normal"
 
             [[kind]]
-            name = "left keys"
+            name = "left"
             description = "more leftward keys"
 
             [[kind]]
-            name = "right keys"
+            name = "right"
             description = "more rightward keys"
 
             [[bind]]
@@ -83,25 +83,47 @@ describe('Visual Docs', () => {
         workbench = await browser.getWorkbench();
     });
 
-    it('Shows All Bindings', async() => {
+    it('Labels Keys', async() => {
+        await browser.keys(Key.Escape);
+        await editor.moveCursor(1, 1);
+
+        await workbench.executeCommand("Master Key: Show Visual Documentation")
+        await sleep(1000);
+
+        const hKey = await browser.$('div.key > div.bottom=left');
+        expect(await hKey).toHaveText('left');
+
+        const jKey = await browser.$('div.key > div.bottom=down');
+        expect(await jKey).toHaveText('down');
+
+        const kKey = await browser.$('div.key > div.bottom=up');
+        expect(await kKey).toHaveText('up');
+
+        const lKey = await browser.$('div.key > div.bottom=right');
+        expect(await lKey).toHaveText('right');
+    });
+
+    it('Colors Keys', async() => {
         await browser.keys(Key.Escape);
         await editor.moveCursor(1, 1);
 
         await workbench.executeCommand("Master Key: Show Visual Documentation")
 
-        const keyEl = await browser.$('');
+        const hKey = await browser.$('div.key > div.bottom=h');
+        const hClasses = await hKey.getAttribute('class')
+        expect(hClasses).toMatch('kind-color-1')
 
-        expect(await picks[0].getLabel()).toEqual("H");
-        expect(await picks[0].getDescription()).toEqual("left");
-        expect(await picks[1].getLabel()).toEqual("L");
-        expect(await picks[1].getDescription()).toEqual("right");
-        expect(await picks[2].getLabel()).toEqual("J");
-        expect(await picks[2].getDescription()).toEqual("down");
-        expect(await picks[3].getLabel()).toEqual("K");
-        expect(await picks[3].getDescription()).toEqual("up");
-        expect(await picks[4].getLabel()).toEqual("I");
-        expect(await picks[4].getDescription()).toEqual("insert mode");
-        await enterModalKeys('i');
+        const jKey = await browser.$('div.key > div.bottom=j');
+        const jClasses = await jKey.getAttribute('class')
+        expect(jClasses).toMatch('kind-color-1')
+
+        const kKey = await browser.$('div.key > div.bottom=k');
+        const kClasses = await kKey.getAttribute('class')
+        expect(kClasses).toMatch('kind-color-2')
+
+        const lKey = await browser.$('div.key > div.bottom=l');
+        const lClasses = await lKey.getAttribute('class')
+        expect(lClasses).toMatch('kind-color-2')
     });
 
     // NOTE: it would be ideal if we could also test how the palette interacts with typing
