@@ -1,4 +1,13 @@
+# # Larkin Key Bindings
+
+# This set of keybindings provides a comprehensive and well tested set of bindings that I use in my daily work. It serves as an example of a fully customized set of keybindings, and demonstrates the full capabilities of master-key.
+
+# The basic logic of these commands are inspired by kakoune: motions generally cause some region of text to be selected, and then actions modify these selections. This is the inverse of vim's motions (`wd` instead of `dw`) and integrates well with many of the existing VSCode extensions which operate on selections or add commands to select regions of text.
+
+# These bindings are named after the middle name of my first child (Larkin).
+
 [header]
+name = "Larkin Key Bindings"
 version = "1.0"
 
 # NOTE: currently this field has no functional effect, it merely serves as documentation.
@@ -20,21 +29,6 @@ requiredExtensions = [
       "koalamer.labeled-bookmarks",
 ]
 
-name = "Larkin Key Bindings"
-description = """
-This set of keybindings provides a comprehensive and well tested set of
-bindings that I use in my daily work. It serves as an example of a fully
-customized set of keybindings, and demonstrates the full capabilities of
-master-key.
-
-The basic logic of these commands are inspired by kakoune: motions generally
-cause some region of text to be selected, and then actions modify these
-selections. This is the inverse of vim's motions (`wd` instead of `dw`) and
-integrates well with many of the existing VSCode extensions which operate on
-selections or add commands to select regions of text.
-
-These bindings are named after the middle name of my first child (Larkin).
-"""
 
 [[mode]]
 name = "insert"
@@ -104,18 +98,17 @@ command = "expandLineSelection"
 [[path]]
 id = "modes"
 name = "Modes"
-description = """
-Larkin uses different modes (like vim). Insert is the default and it
-works the same way VSCode normally does. Upon hitting escape you enter normal
-mode, wherein a variety of behaviors are available to move around and manipulate the
-text.
-
-Refer to the actions section for the various ways you can exit normal mode and
-return to insert mode.
-
-**TODO**: document the other modes
-"""
 default.kind = "util"
+
+# ## Normal Mode
+
+# The default mode in Larkin, is Normal. In this mode, instead of the keys entering text,
+# all keys are commands that modify selections or perform actions on those selections. To
+# exist normal mode you can use `i` to enter Insert mode, which returns VSCode keybindings
+# to their normal state.
+
+# While in Normal model you will see a highlighted section with the text "normal" in the
+# lower left hand corner of the status bar.
 
 [[bind]]
 path = "modes"
@@ -155,45 +148,28 @@ command = "master-key.ignore"
 prefixes = "<all-prefixes>"
 mode = ["normal", "selectedit"]
 when = "editorTextFocus"
+hideInDocs = true
 
 [[path]]
 id = "edit"
 name = "Editor Commands"
-description = """
-Most commands are editing commands, they interact with the text editor, either by
-selecting text in the editor, moving around it, manipulating text in the editor, and
-so forth. There must be an active editor for these commands to work.
-"""
 when = "editorTextFocus && !findWidgetVisible"
 default.mode = "normal"
 
 [[path]]
 id = "edit.count"
 name = "count"
-description = """
-The number keys are used to update the count, which affects how many times the next
-command is repeated, when relevant.
-"""
 default.kind = "count"
 
-[[bind]]
-path = "edit.count"
-# likewise, the numbers affect command count in all modes where text isn't
-# being entered
-foreach.num = ['{key: [0-9]}']
-name = "count {num}"
-key = "{num}"
-command = "master-key.updateCount"
-description = "Add digit {num} to the count argument of a command"
-combinedKey = "0-9"
-combinedName = "count 0-9"
-combinedDescription = "Add digit 1-9 to count argument of a command"
-args.value = "{num}"
-resetTransient = false
-mode = ["!insert", "!capture"]
+# ## Basic motions
 
-## Basic motions
-## --------------------------------
+# These are the most common, simple motions that can be performed in Larkin.
+
+# Selection behavior uses the following logic: motions that move more than one character
+# generally select the text "under" the motion. If a selection already exists (e.g. from a
+# previous motion) additional motions extend that selection. You can always reset the
+# selection using `v`, and several command (e.g. `x`) operate on the next character rather
+# than the current selection.
 
 [[path]]
 id = "edit.motion"
@@ -490,8 +466,28 @@ name = "to bracket"
 description = "Move to matching bracket"
 command = "editor.action.jumpToBracket"
 
-## Repeating Motions
-## --------------------------------
+# ## Repeating Motions
+
+# Like VIM, the numbers keys (0-9) can be typed as a prefix to most commands and serve as `count`
+# argument to that command. In most cases this causes the command to be repeated `count`
+# times e.g. 2w would select the next two words start from the current cursor position.
+
+[[bind]]
+path = "edit.count"
+foreach.num = ['{key: [0-9]}']
+name = "count {num}"
+key = "{num}"
+command = "master-key.updateCount"
+description = "Add digit {num} to the count argument of a command"
+combinedKey = "0-9"
+combinedName = "count 0-9"
+combinedDescription = "Add digit 1-9 to count argument of a command"
+args.value = "{num}"
+resetTransient = false
+mode = ["!insert", "!capture"]
+hideInDocs = true
+
+# There are several ways to repeat or undo previously entered commands, both actions and motions
 
 [[path]]
 id = "edit.motion.history"
@@ -577,8 +573,13 @@ key = "g shift+-"
 combinedName = "edit ←/→"
 command = "workbench.action.navigateForwardInEditLocations"
 
-## Search Motions
-## --------------------------------
+# ## Search Motions
+
+# Search motions accept one or more characters and select text up until the given character.
+# They can sever as very efficient ways to jump to a desired location. E.g. typing `sfod` in
+# normal mode would delete the first three words of the following line of text;
+#
+# > I want some food
 
 [[path]]
 id = "edit.motion.search"

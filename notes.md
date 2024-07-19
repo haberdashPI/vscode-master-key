@@ -2,6 +2,15 @@
 
 release 0.2.0 onwards
 
+plan:
+add comment sections that will get rendered via markdown
+(use a simple line filter approach to generated this document)
+the interleaved toml will need to get parsed and turned into a table
+
+NOTE: by default the bindings don't get displayed, you have to explicitly
+indicate that a section includes bindings I think... (or we could have a
+hideInDocs = true field and show by default)
+
 at the end of this milestone I have documentation sufficient for releasing the extension
 in the vscode and vscodium stores
 
