@@ -472,6 +472,8 @@ command = "editor.action.jumpToBracket"
 # argument to that command. In most cases this causes the command to be repeated `count`
 # times e.g. 2w would select the next two words start from the current cursor position.
 
+# **TODO**: add a manual table here
+
 [[bind]]
 path = "edit.count"
 foreach.num = ['{key: [0-9]}']
@@ -723,8 +725,10 @@ args.offset = "start"
 computedArgs.skip = "count-1"
 args.backwards = true
 
-## Goto commands
-## --------------------------------
+# ## Goto Commands
+
+# Goto commands all begin with the numonic prefix key `g`. They are additional
+# motion commands that compliment the basic motions listed in the previous section.
 
 [[bind]]
 path = "edit.motion"
@@ -1021,8 +1025,15 @@ when = "!(editorLangId == 'markdown' || editorLangId == 'quarto')"
 command = "runCommands"
 args.commands = ["jupyter.gotoPrevCellInFile", "jupyter.selectCell"]
 
-## Match commands
-## --------------------------------
+# ## Match Commands
+
+# Match commands select some syntactical region of text, e.g. in or around parenthesis
+# brackets, idnent level etc...where the `g` prefixed commands move forward or backward
+# these commands move both the start and the end of the selection away from
+# the active cursor position.
+
+# If you accidentally select `around` instead of `in`, you can revise your selection using
+# `R` to narrow to non-white space or `z` to narrow to a subword (e.g. excludes `_`)
 
 [[path]]
 id = "edit.motion.match"
@@ -1438,8 +1449,12 @@ computedArgs.between.from = "captured.slice(0, captured.length/2)"
 computedArgs.between.to = "captured.slice(captured.length/2)"
 args.inclusive = false
 
-## Simple Actions
-## --------------------------------
+# ## Simple Actions
+
+# These are the most common, basic actions available in Larkin that can be used
+# to edit text in relation to the current selection.
+
+# TODO: some of the commands below are motions, move them up to basic motions
 
 [[path]]
 id = "edit.action"
@@ -1447,7 +1462,6 @@ name = "Actions"
 description = "Commands that modify the document or UI"
 default.kind = "action"
 default.mode = "normal"
-
 
 [[path]]
 id = "edit.action.basic"
@@ -1726,7 +1740,7 @@ command = "editor.action.selectAll"
 [[bind]]
 path = "edit.motion"
 key = "shift+r"
-name = "expand no wht"
+name = "trim wht"
 description = "select full line(s), and trim external whitespace"
 command = "selection-utilities.trimSelectionWhitespace"
 
