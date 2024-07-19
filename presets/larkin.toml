@@ -2396,10 +2396,7 @@ command = "selection-utilities.cancelSelection"
 
 # ## Repeat actions
 
-# These commands interact with the history of previously typed commands to repeat
-# something. They
-
-# TODO: stopped here
+# These commands interact with the history of previously typed commands to repeat some sequence of commands. They can record any edits, and any commands that are issued through master key bindings. Commands that are not part of this binding file (e.g. a standard call to Cmd/Ctrl+V to paste) will not be recorded. You can copy your non-master-key bindings over to master key (so that they will be recorded) by making a copy of Larkin using `Edit Preset Copy` and then call `Import Default Bindings` and `Import User Bindings` to then allow all your default and user bindings to be recorded by master key.
 
 [[bind]]
 path = "edit.action.history"
@@ -2488,8 +2485,9 @@ command = "master-key.pushHistoryToStack"
 args.range.from = "i-(count || 0)"
 args.range.to = "i"
 
-## Utilities
-## --------------------------------
+# ## Utility Commands
+
+# These actions include miscellaneous utilities.
 
 [[bind]]
 path = "window"
@@ -2687,10 +2685,9 @@ description = "show GitLens command palette for git"
 key = "tab g g"
 command = "gitlens.gitCommands"
 
-## Leader Commands
-## --------------------------------
+# ## Miscellaneous Commands
 
-# Miscellaneous commands organized under z
+# These miscellaneous utility commands are all organized uner the prefix `tab`.
 
 [[path]]
 id = "edit.util"
