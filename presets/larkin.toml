@@ -466,6 +466,67 @@ name = "to bracket"
 description = "Move to matching bracket"
 command = "editor.action.jumpToBracket"
 
+[[bind]]
+path = "edit.motion.prim"
+key = '\'
+name = "→ sel"
+description = "select *just* the character to the right"
+mode = ["normal", "selectedit"]
+command = "runCommands"
+
+[[bind.args.commands]]
+command = "selection-utilities.shrinkToActive"
+
+[[bind.args.commands]]
+command = "cursorMove"
+args = { to = "right", select = true }
+computedArgs = { value = "count" }
+
+[[bind]]
+path = "edit.motion.prim"
+key = 'shift+\'
+name = "← sel"
+description = "select *just* the character to the left"
+mode = ["normal", "selectedit"]
+command = "runCommands"
+
+[[bind.args.commands]]
+command = "selection-utilities.shrinkToActive"
+
+[[bind.args.commands]]
+command = "cursorMove"
+args = { to = "left", select = true }
+computedArgs = { value = "count" }
+
+[[path]]
+id = "edit.motion.mod"
+name = "Modify Motion Effects"
+description = "Keys that change how other motions work"
+default.kind = "motion"
+
+[[bind]]
+path = "edit.motion.obj"
+key = "shift+4"
+name = "all"
+description = "Select entire document"
+command = "editor.action.selectAll"
+
+[[bind]]
+path = "edit.motion"
+key = "shift+r"
+name = "trim wht"
+description = "select full line(s), and trim external whitespace"
+command = "selection-utilities.trimSelectionWhitespace"
+
+[[bind]]
+path = "edit.motion"
+name = 'narrow to subword'
+description = "Narrow current selection so it starts and stops at a subword (e.g. 'snake' in snake_case)"
+key = "z"
+command = "selection-utilities.narrowTo"
+args.unit = "subident"
+args.boundary = "both"
+
 # ## Repeating Motions
 
 # Like VIM, the numbers keys (0-9) can be typed as a prefix to most commands and serve as `count`
@@ -1454,8 +1515,6 @@ args.inclusive = false
 # These are the most common, basic actions available in Larkin that can be used
 # to edit text in relation to the current selection.
 
-# TODO: some of the commands below are motions, move them up to basic motions
-
 [[path]]
 id = "edit.action"
 name = "Actions"
@@ -1693,67 +1752,6 @@ command = "runCommands"
 args.commands = [ "redo", "selection-utilities.shrinkToActive" ]
 
 [[bind]]
-path = "edit.motion.prim"
-key = '\'
-name = "→ sel"
-description = "select *just* the character to the right"
-mode = ["normal", "selectedit"]
-command = "runCommands"
-
-[[bind.args.commands]]
-command = "selection-utilities.shrinkToActive"
-
-[[bind.args.commands]]
-command = "cursorMove"
-args = { to = "right", select = true }
-computedArgs = { value = "count" }
-
-[[bind]]
-path = "edit.motion.prim"
-key = 'shift+\'
-name = "← sel"
-description = "select *just* the character to the left"
-mode = ["normal", "selectedit"]
-command = "runCommands"
-
-[[bind.args.commands]]
-command = "selection-utilities.shrinkToActive"
-
-[[bind.args.commands]]
-command = "cursorMove"
-args = { to = "left", select = true }
-computedArgs = { value = "count" }
-
-[[path]]
-id = "edit.motion.mod"
-name = "Modify Motion Effects"
-description = "Keys that change how other motions work"
-default.kind = "motion"
-
-[[bind]]
-path = "edit.motion.obj"
-key = "shift+4"
-name = "all"
-description = "Select entire document"
-command = "editor.action.selectAll"
-
-[[bind]]
-path = "edit.motion"
-key = "shift+r"
-name = "trim wht"
-description = "select full line(s), and trim external whitespace"
-command = "selection-utilities.trimSelectionWhitespace"
-
-[[bind]]
-path = "edit.motion"
-name = 'narrow to subword'
-description = "Narrow current selection so it starts and stops at a subword (e.g. 'snake' in snake_case)"
-key = "z"
-command = "selection-utilities.narrowTo"
-args.unit = "subident"
-args.boundary = "both"
-
-[[bind]]
 path = "edit.action.basic"
 name = 'toggle check'
 description = "Toggle a markdown checkbox"
@@ -1899,8 +1897,9 @@ id = "edit.action.history"
 name = "History Commands"
 description = "Commands that interact with edit or cursor history."
 
-## Number actions
-## --------------------------------
+# ## Number actions
+
+# These commands modify or enter numbers in some way.
 
 [[path]]
 id = "edit.action.numbers"
@@ -1933,8 +1932,9 @@ path = "edit.action.numbers"
 key = "shift+="
 command = "extension.decrementSelection"
 
-## Capitalization
-## --------------------------------
+# ## Captilization
+
+# These modify the capitalization of letters in some way.
 
 [[path]]
 id = "edit.action.capitals"
@@ -2047,8 +2047,9 @@ description = "Toggle through all possible cases"
 key = "` `"
 command = "extension.toggleCase"
 
-## Do actions
-## --------------------------------
+# ## "Do" Actions
+
+# These keys are all organized under the `space` key and they "do" something. These are generally more elaborate editing operations in the current editor pane.
 
 [[path]]
 id = "edit.action.do"
@@ -2393,9 +2394,12 @@ args.text = "\n"
 [[bind.args.commands]]
 command = "selection-utilities.cancelSelection"
 
-## Repeat actions
-## --------------------------------
+# ## Repeat actions
 
+# These commands interact with the history of previously typed commands to repeat
+# something. They
+
+# TODO: stopped here
 
 [[bind]]
 path = "edit.action.history"
@@ -2863,8 +2867,10 @@ move to previous change
 key = "tab shift+d"
 command = "workbench.action.editor.previousChange"
 
-## Window manipulation
-## --------------------------------
+# ## Window Manipulation
+
+# These are commands that interact with VSCode's user-interface in some way.
+# rather than edit or moving around in the editor pane.
 
 [[path]]
 id = "window"
@@ -3037,8 +3043,9 @@ key = "tab j"
 command = "selection-utilities.revealActive"
 args.at = "bottom"
 
-## Debugging
-## --------------------------------
+# ## Debugging Commands
+
+# Commands for interacting with VSCode's debugger UI.
 
 [[bind]]
 path = "edit.util"
@@ -3101,8 +3108,12 @@ description = "debug: step out"
 key = "tab b o"
 command = "workbench.action.debug.stepOut"
 
-## Select-edit mode
-## --------------------------------
+# ## Select-edit Mode
+
+# Select-edit mode allows you make a variety of kakune-like modifications to multiple
+# cursors. This lends it self to work flows where you select, e.g. ever line of
+# text as a separate cursor and then filter out the lines you don't want, or e.g. split
+# an array by the comma delimiters and edit each element of the array.
 
 [[path]]
 id = "edit.select_edit"
@@ -3453,8 +3464,11 @@ description = "move cursor to back of selection"
 key = "shift+o"
 command = "selection-utilities.activeAtStart"
 
-## Symmetric Insert Mode
-## --------------------------------
+# ## Symmetric Insert Mode
+
+# Symmetric insert mode allows you to edit text at both the start and the beginning of a selection. When entering a character with a complimentary pair (e.g. `(` to `)`) entry is handled in the expected way. For example if you type `(` at the start of a selection while in symmetric insert mode, `)` will apepar at the end of the selection.
+
+# As a general rule, the letter keys issue commands of various sorts, and the other keys can be used to enter text (since we rarley want to surround a selection with an `a` but might want to surround it with `*` or `/`.
 
 [define.braces]
 
