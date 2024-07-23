@@ -208,6 +208,7 @@ function expandDefaultsDefinedAndForeach(
                             description: item.description,
                             priority: item.priority,
                             hideInPalette: item.hideInPalette,
+                            hideInDocs: item.hideInDocs,
                             combinedName: item.combinedName,
                             combinedKey: item.combinedKey,
                             combinedDescription: item.combinedDescription,
@@ -494,6 +495,7 @@ export interface IConfigKeyBinding {
         description?: string;
         resetTransient?: boolean;
         hideInPalette?: boolean;
+        hideInDocs?: boolean;
         priority: number;
         combinedName: string;
         combinedKey: string;
@@ -616,6 +618,7 @@ function updatePrefixItemAndPrefix(
             kind: automated ? 'prefix' : item.args.name || 'prefix',
             priority: automated ? 0 : item.args.priority,
             hideInPalette: automated ? false : item.args.hideInPalette,
+            hideInDocs: automated ? false : item.args.hideInPalette,
             combinedName: automated ? '' : item.args.combinedName,
             combinedKey: automated ? '' : item.args.combinedKey,
             combinedDescription: automated ? '' : item.args.combinedDescription,

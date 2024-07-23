@@ -6,6 +6,9 @@ import {
     showParseError,
     parseBindingFile,
     vscodeBinding,
+    BindingItem,
+    FullBindingSpec,
+    ParsedResult,
 } from './parsing';
 import {processBindings, IConfigKeyBinding, Bindings, isSingleCommand} from './processing';
 import {uniq, pick} from 'lodash';
@@ -277,8 +280,8 @@ async function insertKeybindingsIntoConfig(
 ////////////////////////////////////////////////////////////////////////////////////////////
 // User-facing commands and helpers
 
-export function processParsing<T>(
-    parsedBindings: z.SafeParseReturnType<T, BindingSpec>,
+export function processParsing(
+    parsedBindings: ParsedResult<FullBindingSpec>,
     errorPrefix: string = ''
 ) {
     if (parsedBindings.success) {
@@ -336,9 +339,7 @@ export async function queryPreset(): Promise<Preset | undefined> {
             if (langId === 'plaintext') {
                 langId = undefined;
             }
-            const bindings = await processParsing(
-                parseBindings(text, langId || Utils.extname(uri))
-            );
+            const bindings = processParsing(await parseBindings(text));
 
             if (bindings) {
                 bindings.name = bindings.name || Utils.basename(uri);

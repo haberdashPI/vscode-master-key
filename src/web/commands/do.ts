@@ -78,6 +78,7 @@ const runCommandArgs = z
         resetTransient: z.boolean().optional().default(true),
         repeat: z.number().min(0).or(z.string()).optional(),
         hideInPalette: z.boolean().default(false).optional(),
+        hideInDocs: z.boolean().default(false).optional(),
         priority: z.number().optional(),
         combinedKey: z.string().optional(),
         combinedName: z.string().optional(),
