@@ -51,9 +51,16 @@ IMPROVEMENT: use `getExtension` or some such on each required extension, and off
   install if it fails (does this work for any extension? or does `activate` have to return
   something)
 
-### Binding Cleanup
+### Optimization
 
 release 0.2.x
+
+Take an first pass at improving performance, identify obvious, simple fixes
+(there are some TODO's) and then profile the extension to look for low-hanging fruit
+
+### Binding Cleanup
+
+release 0.2.y
 
 - Split out any of the commands that are really custom for me that don't make sense to publish.
 - Pair down some of the required extensions.
@@ -66,14 +73,16 @@ release 0.3.0
 thoughts: things I must have to release:
 - keybinding documentation features
   - markdown output / html
-- well documented default keybindings
++ well documented default keybindings
 + mode customization
   + have an option to allow a default command
     that operates on all keys that *aren't* specified
     OR that pass a regex
 - MODERNIZED SELECTION UTILITIES
-  - good documentation
+  - modernized command documentation
   - modern build setup
+  - some basic UX tests
+  - 1.0 release
 + final design of keybinding file that I'm relatively satisfied with
   + fix the repeat keybindings
   + fix default expansion
