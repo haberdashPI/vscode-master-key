@@ -9,6 +9,7 @@ import * as search from './search';
 import * as prefix from './prefix';
 import * as palette from './palette';
 import * as visualKeyDoc from './visualKeyDoc';
+import * as textKeyDoc from './textDocs';
 
 export async function activate(context: vscode.ExtensionContext) {
     await capture.activate(context);
@@ -21,6 +22,7 @@ export async function activate(context: vscode.ExtensionContext) {
     await prefix.activate(context);
     await palette.activate(context);
     await visualKeyDoc.activate(context);
+    await textKeyDoc.activate(context);
 
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.ignore', () => undefined)

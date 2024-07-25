@@ -1,7 +1,7 @@
+import * as vscode from 'vscode';
 import {ZodError} from 'zod';
 import {prettifyPrefix} from '../utils';
 import {BindingSpec, bindingSpec, RawBindingItem} from './parsing';
-import {isSingleCommand} from './processing';
 import {uniqBy, reverse, sortBy} from 'lodash';
 
 const TOML = require('smol-toml');
@@ -10,7 +10,7 @@ function filterBinding(binding: RawBindingItem) {
     if (binding.hideInDocs) {
         return false;
     }
-    if (isSingleCommand(binding.args, 'master-key.ignore')) {
+    if (binding.command === 'master-key.ignore') {
         return false;
     }
     return true;
@@ -20,15 +20,23 @@ export async function parseBindingDocs(str: string) {
     let doc = '';
     let data = '';
     let error: ZodError | undefined = undefined;
-    for (const line of str.split('[\r\n]+')) {
-        if (/^\s*#/.test(line)) {
-            const m = line.match(/^\s*#(.*)/);
-            const content = m === null ? '' : m[0];
+    for (const line of str.split(/[\r\n]+/)) {
+        // comments (excluding those starting with `#-`) are treated as markdown output
+        if (/^\s*#(?!-)/.test(line)) {
+            const m = line.match(/^\s*#\s*(.*)/);
+            const content = m === null ? '' : m[1];
 
-            doc += content;
+            doc += content + '\n';
 
             if (data.length > 0) {
-                const toml = (await TOML).parse(data);
+                let toml;
+                // eslint-disable-next-line no-useless-catch
+                try {
+                    toml = TOML.parse(data);
+                    // eslint-disable-next-line prettier/prettier
+                } catch(e){
+                    vscode.window.showErrorMessage((<Error>e).message);
+                }
                 const parsed = bindingSpec.partial().safeParse(toml);
                 if (parsed.success) {
                     doc += asBindingTable(parsed.data);
@@ -38,7 +46,7 @@ export async function parseBindingDocs(str: string) {
                 data = '';
             }
         } else {
-            data += line;
+            data += line + '\n';
         }
     }
     if (error) {
@@ -52,6 +60,9 @@ function asBindingTable(parsed: Partial<BindingSpec>) {
     let result = '';
     if (parsed.bind) {
         let toShow = parsed.bind.filter(filterBinding);
+        if (toShow.length === 0) {
+            return result;
+        }
         toShow = reverse(uniqBy(reverse(toShow), b => b.key));
         toShow = sortBy(toShow, x => -(x?.priority || 0));
 

@@ -12,7 +12,7 @@ import {
 import {cloneDeep, merge} from 'lodash';
 import {evalContext, reifyStrings} from '../expressions';
 import {keySuffix} from './prefix';
-import {isSingleCommand} from '../keybindings/processing';
+import {isSingleCommand} from '../utils';
 import {MODE, defaultMode, modeSpecs} from './mode';
 import {List} from 'immutable';
 import {commandPalette} from './palette';

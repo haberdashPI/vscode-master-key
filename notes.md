@@ -2,6 +2,9 @@
 
 release 0.2.0 onwards
 
+current issue: we're gerating some docs (might not all be right), but the actually
+loading and display of said output isn't quite working yet
+
 plan:
 add comment sections that will get rendered via markdown
 (use a simple line filter approach to generated this document)
@@ -18,6 +21,8 @@ NOTE: `path` entries should not have documentation; rather there should be a sep
 (perhaps comments?) for how to enter text that becomes part of the markdown output
 
 Visual doc improvements:
+
+BUG FIX: not all colors are showing up in the visual documentation yet
 
 IMPROVEMENT: show keybinding tips (for those general commands useful for examining documentation) in the visual documentation
 for

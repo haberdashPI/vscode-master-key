@@ -6,13 +6,14 @@
 
 # These bindings are named after the middle name of my first child (Larkin).
 
+#- NOTE: this file is used to generate both keybindings and to generate a markdown file that documents the bindings. When comments are prefixed with a `-` they are ignored in the final markdown output. All other comments will become part of the markdown output. Any [[bind]] entries unbroken by normal, markdown-displayed comments will show up in a table in the markdown output. Make sure that the normal comments do not break up TOML data in a way that means it is invalid TOML.
+
 [header]
 name = "Larkin Key Bindings"
 version = "1.0"
 
-# NOTE: currently this field has no functional effect, it merely serves as documentation.
-# However, future version of Master Key may leverage the required extensions in some way to
-# make them easy to install when they are missing
+#- NOTE: currently this field has no functional effect, it merely serves as documentation. However, future version of Master Key may leverage the required extensions in some way to make them easy to install when they are missing
+
 requiredExtensions = [
       "dbankier.vscode-quick-select",
       "haberdashPI.vscode-select-by-indent",
@@ -102,13 +103,14 @@ default.kind = "util"
 
 # ## Normal Mode
 
-# The default mode in Larkin, is Normal. In this mode, instead of the keys entering text,
-# all keys are commands that modify selections or perform actions on those selections. To
-# exist normal mode you can use `i` to enter Insert mode, which returns VSCode keybindings
-# to their normal state.
+# The default mode in Larkin, is Normal. In this mode, instead of the keys entering text, all keys are commands that modify selections or perform actions on those selections. To exist normal mode you can use `i` to enter Insert mode, which returns VSCode keybindings to their normal state.
 
-# While in Normal model you will see a highlighted section with the text "normal" in the
-# lower left hand corner of the status bar.
+# While in Normal model you will see a highlighted section with the text "normal" in the lower left hand corner of the status bar.
+
+# |key|name|mode|description|
+# |---|----|----|-----------|
+# |`ESC` or `^[`|normal| - |enter normal mode|
+#
 
 [[bind]]
 path = "modes"
@@ -121,6 +123,7 @@ combinedDescription = "Enter normal mode"
 key = "{key}"
 mode = []
 hideInPalette = true
+hideInDocs = true
 command = "master-key.enterNormal"
 when = "!findWidgetVisible"
 prefixes = "<all-prefixes>"
@@ -131,24 +134,25 @@ name = "normal"
 foreach.key = ["escape", "ctrl+["]
 key = "{key}"
 hideInPalette = true
+hideInDocs = true
 when = "suggsetWidgetVisible && editorTextFocus && !findWidgetVisible"
 command = "master-key.enterNormal"
 mode = []
 prefixes = "<all-prefixes>"
 
-# in "command" like modes (e.g. normal), typing keys without a command defined below should
-# have no effect
+#- in "command" like modes (e.g. normal), typing keys without a command defined below should have no effect
 [[bind]]
 path = "modes"
 name = "ignore"
 description = "this key does nothing"
-foreach.key = ['{key: .}', 'shift+{key: .}'] # // all keys whose bindings are described by a single character
+foreach.key = ['{key: .}', 'shift+{key: .}'] #- all keys whose bindings are described by a single character
 key = "{key}"
 command = "master-key.ignore"
 prefixes = "<all-prefixes>"
 mode = ["normal", "selectedit"]
 when = "editorTextFocus"
 hideInDocs = true
+hideInPalette = true
 
 [[path]]
 id = "edit"
@@ -165,11 +169,7 @@ default.kind = "count"
 
 # These are the most common, simple motions that can be performed in Larkin.
 
-# Selection behavior uses the following logic: motions that move more than one character
-# generally select the text "under" the motion. If a selection already exists (e.g. from a
-# previous motion) additional motions extend that selection. You can always reset the
-# selection using `v`, and several command (e.g. `x`) operate on the next character rather
-# than the current selection.
+# Selection behavior uses the following logic: motions that move more than one character generally select the text "under" the motion. If a selection already exists (e.g. from a previous motion) additional motions extend that selection. You can always reset the selection using `v`, and several command (e.g. `x`) operate on the next character rather than the current selection.
 
 [[path]]
 id = "edit.motion"
@@ -1529,7 +1529,7 @@ description = "Essential actions required to edit text"
 
 [[bind]]
 path = "edit.action.basic"
-# TODO: add documentation to these basic editor keys
+#- TODO: add documentation to these basic editor keys
 key = "i"
 name = "insert"
 description = "Switch to insert mode (right before character)"
@@ -1726,8 +1726,7 @@ repeat = "count"
 
 [[bind.args.commands]]
 command = "master-key.replayFromHistory"
-# we can repeat any action but history-related actions; we make an exception
-# for replaying macros, which can be repeated
+#- we can repeat any action but history-related actions; we make an exception for replaying macros, which can be repeated
 args.at = """
 commandHistory[i].path.startsWith('edit.action') &&
 (!commandHistory[i].path.startsWith('edit.action.history') ||
@@ -3107,10 +3106,7 @@ command = "workbench.action.debug.stepOut"
 
 # ## Select-edit Mode
 
-# Select-edit mode allows you make a variety of kakune-like modifications to multiple
-# cursors. This lends it self to work flows where you select, e.g. ever line of
-# text as a separate cursor and then filter out the lines you don't want, or e.g. split
-# an array by the comma delimiters and edit each element of the array.
+# Select-edit mode allows you make a variety of kakune-like modifications to multiple cursors. This lends it self to work flows where you select, e.g. ever line of text as a separate cursor and then filter out the lines you don't want, or e.g. split an array by the comma delimiters and edit each element of the array.
 
 [[path]]
 id = "edit.select_edit"

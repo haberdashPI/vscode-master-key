@@ -27,7 +27,7 @@ import {
     merge,
 } from 'lodash';
 import {reifyStrings, EvalContext} from '../expressions';
-import {validateInput} from '../utils';
+import {isSingleCommand, validateInput} from '../utils';
 import {fromZodError} from 'zod-validation-error';
 
 export interface Bindings {
@@ -736,13 +736,6 @@ function expandKeySequencesAndResolveDuplicates(
     }
     const sortedResult = sortBy(Object.values(result), i => i.index);
     return [sortedResult.map(i => i.item), prefixCodes];
-}
-
-export function isSingleCommand(x: DoArgs, cmd: string) {
-    if (x.length > 1) {
-        return false;
-    }
-    return x[0].command === cmd;
 }
 
 function addWithoutDuplicating(

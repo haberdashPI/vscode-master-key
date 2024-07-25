@@ -8,7 +8,8 @@ import {
     FullBindingSpec,
     ParsedResult,
 } from './parsing';
-import {processBindings, IConfigKeyBinding, Bindings, isSingleCommand} from './processing';
+import {processBindings, IConfigKeyBinding, Bindings} from './processing';
+import {isSingleCommand} from '../utils';
 import {uniq, pick} from 'lodash';
 import replaceAll from 'string.prototype.replaceall';
 import {Utils} from 'vscode-uri';

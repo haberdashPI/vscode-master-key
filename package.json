@@ -79,6 +79,11 @@
         "command": "master-key.importDefaultBindings",
         "category": "Master Key",
         "title": "Import Default Bindings"
+      },
+      {
+        "command": "master-key.showTextDoc",
+        "category": "Master Key",
+        "title": "Show Text Documentation"
       }
     ],
     "views": {
