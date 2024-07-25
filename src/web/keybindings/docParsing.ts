@@ -4,7 +4,7 @@ import {BindingSpec, bindingSpec, RawBindingItem} from './parsing';
 import {isSingleCommand} from './processing';
 import {uniqBy, reverse, sortBy} from 'lodash';
 
-const TOML = import('smol-toml');
+const TOML = require('smol-toml');
 
 function filterBinding(binding: RawBindingItem) {
     if (binding.hideInDocs) {

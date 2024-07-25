@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
-const TOML = import('smol-toml');
+const TOML = require('smol-toml');
 import * as semver from 'semver';
-import z, {SafeParseReturnType, ZodIssue} from 'zod';
+import z, {ZodIssue} from 'zod';
 import {ZodError, fromZodError, fromZodIssue} from 'zod-validation-error';
 import {expressionId} from '../expressions';
 import {uniqBy} from 'lodash';
@@ -411,7 +411,7 @@ export type ParsedResult<T> = SuccessResult<T> | ErrorResult;
 export async function parseBindings(text: string): Promise<ParsedResult<FullBindingSpec>> {
     const data = bindingSpec.safeParse((await TOML).parse(text));
     const doc = await parseBindingDocs(text);
-    if (doc.success && data.success){
+    if (doc.success && data.success) {
         return {success: true, data: {...data.data, ...doc.data}};
     } else if (!data.success) {
         return data;

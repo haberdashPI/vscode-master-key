@@ -12,6 +12,7 @@ import {
     ModeSpec,
     doArgs,
     KindItem,
+    FullBindingSpec,
 } from './parsing';
 import z from 'zod';
 import {
@@ -36,9 +37,10 @@ export interface Bindings {
     define: Record<string, unknown>;
     mode: Record<string, ModeSpec>;
     bind: IConfigKeyBinding[];
+    docs: string;
 }
 
-export function processBindings(spec: BindingSpec): [Bindings, string[]] {
+export function processBindings(spec: FullBindingSpec): [Bindings, string[]] {
     const problems: string[] = [];
     let items = expandDefaultsDefinedAndForeach(spec, problems);
     items = items.map((item, i) => requireTransientSequence(item, i, problems));
@@ -59,6 +61,7 @@ export function processBindings(spec: BindingSpec): [Bindings, string[]] {
         define: definitions,
         mode: mapByName(spec.mode),
         bind: configItems,
+        docs: spec.doc || '',
     };
     return [result, problems];
 }

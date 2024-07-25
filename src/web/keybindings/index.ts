@@ -2,11 +2,9 @@ import * as vscode from 'vscode';
 import {searchArgs, searchMatches} from '../commands/search';
 import {
     parseBindings,
-    BindingSpec,
     showParseError,
     parseBindingFile,
     vscodeBinding,
-    BindingItem,
     FullBindingSpec,
     ParsedResult,
 } from './parsing';
@@ -14,7 +12,6 @@ import {processBindings, IConfigKeyBinding, Bindings, isSingleCommand} from './p
 import {uniq, pick} from 'lodash';
 import replaceAll from 'string.prototype.replaceall';
 import {Utils} from 'vscode-uri';
-import z from 'zod';
 import {createBindings} from './config';
 const JSONC = require('jsonc-simple-parser');
 const TOML = require('smol-toml');

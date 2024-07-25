@@ -8,8 +8,8 @@ import {parseBindings} from '../../keybindings/parsing';
 import {fromZodError} from 'zod-validation-error';
 import {sortBy, isEqual, isUndefined} from 'lodash';
 
-function specForBindings(text: string) {
-    const result = parseBindings(text, 'toml');
+async function specForBindings(text: string) {
+    const result = await parseBindings(text);
     if (result.success) {
         const data = processBindings(result.data);
         if (data) {
@@ -25,7 +25,7 @@ function specForBindings(text: string) {
     throw new Error('Unexpected parsing failure!');
 }
 
-suite('Keybinding Test Suite', () => {
+suite('Keybinding Test Suite', async () => {
     const simpleFile = `
         [header]
         version = "1.0"
@@ -42,8 +42,8 @@ suite('Keybinding Test Suite', () => {
         key = "Cmd+b"
         command = "barCommand"
     `;
-    test('Files can be parsed', () => {
-        const result = parseBindings(simpleFile, 'toml');
+    test('Files can be parsed', async () => {
+        const result = await parseBindings(simpleFile);
         assert(result.success);
         const data = processBindings(result.data);
         assert(result.data);
@@ -70,12 +70,12 @@ suite('Keybinding Test Suite', () => {
         });
     });
 
-    test('Imports correct number of bindings', () => {
-        const spec = specForBindings(simpleFile);
+    test('Imports correct number of bindings', async () => {
+        const spec = await specForBindings(simpleFile);
         assert.equal(spec.length, 2);
     });
 
-    let defItems = specForBindings(`
+    let defItems = await specForBindings(`
         [header]
         version = "1.0"
 
@@ -169,8 +169,8 @@ suite('Keybinding Test Suite', () => {
         );
     });
 
-    test('Multi-key bindings expand to individual bindings', () => {
-        const spec = specForBindings(`
+    test('Multi-key bindings expand to individual bindings', async () => {
+        const spec = await specForBindings(`
         [header]
         version = "1.0"
 
@@ -203,8 +203,8 @@ suite('Keybinding Test Suite', () => {
         );
     });
 
-    test('`key` value is validated', () => {
-        const spec = specForBindings(`
+    test('`key` value is validated', async () => {
+        const spec = await specForBindings(`
         [header]
         version = "1.0"
 
@@ -305,7 +305,7 @@ suite('Keybinding Test Suite', () => {
         );
     });
 
-    test('prefixes must be transient', () => {
+    test('prefixes must be transient', async () => {
         assert.throws(
             () =>
                 specForBindings(`
@@ -327,7 +327,7 @@ suite('Keybinding Test Suite', () => {
             {message: /'resetTransient' must be false/}
         );
 
-        const spec = specForBindings(`
+        const spec = await specForBindings(`
         [header]
         version = "1.0"
 
@@ -354,7 +354,7 @@ suite('Keybinding Test Suite', () => {
         assert(spec[1].args.resetTransient);
     });
 
-    test('Checks for duplicate bindings', () => {
+    test('Checks for duplicate bindings', async () => {
         assert.throws(
             () =>
                 specForBindings(`
@@ -418,7 +418,7 @@ suite('Keybinding Test Suite', () => {
             {message: /Duplicate bindings for 'a' in mode 'capture'/}
         );
 
-        const bindings = specForBindings(`
+        const bindings = await specForBindings(`
         [header]
         version = "1.0"
 
@@ -445,8 +445,8 @@ suite('Keybinding Test Suite', () => {
         assert.equal(prefixes.length, 2);
     });
 
-    test('Keybindings with multiple presses are expanded into prefix bindings', () => {
-        const spec = specForBindings(`
+    test('Keybindings with multiple presses are expanded into prefix bindings', async () => {
+        const spec = await specForBindings(`
         [header]
         version = "1.0"
 
@@ -460,8 +460,8 @@ suite('Keybinding Test Suite', () => {
         assert(isEqual(spec.map(x => x.key).sort(), ['a', 'b', 'c']));
     });
 
-    test('Multiple foreach create a product', () => {
-        const spec = specForBindings(`
+    test('Multiple foreach create a product', async () => {
+        const spec = await specForBindings(`
         [header]
         version = "1.0"
 
@@ -475,8 +475,8 @@ suite('Keybinding Test Suite', () => {
         assert.equal(spec.length, 20);
     });
 
-    test('Automated prefixes are properly ordered', () => {
-        const spec = specForBindings(`
+    test('Automated prefixes are properly ordered', async () => {
+        const spec = await specForBindings(`
         [header]
         version = "1.0"
 
@@ -512,8 +512,8 @@ suite('Keybinding Test Suite', () => {
         );
     });
 
-    test('Documentation expands across key variants', () => {
-        const spec = specForBindings(`
+    test('Documentation expands across key variants', async () => {
+        const spec = await specForBindings(`
         [header]
         version = "1.0"
 
@@ -554,8 +554,8 @@ suite('Keybinding Test Suite', () => {
         assert(isEqual(spec[3].args.combinedDescription, ''));
     });
 
-    test('Keybindings properly resolve `<all-pefixes>` cases', () => {
-        const spec = specForBindings(`
+    test('Keybindings properly resolve `<all-pefixes>` cases', async () => {
+        const spec = await specForBindings(`
         [header]
         version = "1.0"
 
