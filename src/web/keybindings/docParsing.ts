@@ -62,6 +62,8 @@ export async function parseBindingDocs(str: string) {
             data += line + '\n';
         }
     }
+    // TODO: insert additional table for remaining data before
+    // returning the result
     if (error) {
         return {success: false, error};
     } else {

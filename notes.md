@@ -2,8 +2,8 @@
 
 release 0.2.0 onwards
 
-current issue: we're gerating some docs (might not all be right), but the actually
-loading and display of said output isn't quite working yet
+current issue: we can show docs, but we're missing things due to the absence of default expansion, I need to pass the fully parsed data so it can be used to re-expand
+bindings that are partially filled out
 
 plan:
 add comment sections that will get rendered via markdown
