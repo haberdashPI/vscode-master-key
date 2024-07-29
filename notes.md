@@ -19,15 +19,6 @@ for
 
 - IMPROVEMENT: show escape/function key row in the visual key doc
 
-write code to convert the toml file to a markdown of organized tables of keybindings
-and provide a command that opens the Markdown preview of this file
-
-write up documentation for the default files
-
-DOCUMENTATION: in documenting macro playback note the limitations of recording the keyboard
-(e.g. that it only records inserts; any modifiers are espected to be commands
-that are recorded)
-
 IMPROVEMENT: upon activating bindings, show the visual and cheetsheet documentation
 
 IMPROVEMENT: put some examples of cool features from `Larkin` in the README
