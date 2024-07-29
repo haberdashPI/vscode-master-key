@@ -1,19 +1,18 @@
 import * as vscode from 'vscode';
 import {ZodError} from 'zod';
-import {prettifyPrefix} from '../utils';
-import {BindingSpec, bindingSpec, ParsedResult, RawBindingCommand, rawBindingItem, RawBindingItem} from './parsing';
-import {uniqBy, reverse, sortBy} from 'lodash';
+import {isSingleCommand, prettifyPrefix} from '../utils';
+import {BindingItem, bindingSpec, ParsedResult, RawBindingItem} from './parsing';
+import {uniqBy, sortBy} from 'lodash';
 import replaceAll from 'string.prototype.replaceall';
-import { parse } from 'path';
-import { Bindings } from './processing';
+import {cloneDeep} from 'lodash';
 
 const TOML = require('smol-toml');
 
-function filterBinding(binding: RawBindingItem) {
-    if (binding.hideInDocs) {
+function filterBinding(binding: BindingItem) {
+    if (binding.args.hideInDocs) {
         return false;
     }
-    if (binding.command === 'master-key.ignore') {
+    if (isSingleCommand(binding.args.do, 'master-key.ignore')) {
         return false;
     }
     return true;
@@ -24,18 +23,20 @@ export interface IParsedBindingDoc {
     items: RawBindingItem[];
 }
 
-function parseDocItems(data: string): ParsedResult<RawBindingItem[]>{
+function parseDocItems(data: string): ParsedResult<RawBindingItem[]> {
     let toml;
     try {
         toml = TOML.parse(data);
     } catch (e) {
         vscode.window.showErrorMessage((<Error>e).message);
     }
-    const parsed = bindingSpec.partial().safeParse(toml);
+    // we exclude all but the bindings, since those are the only ones we care about
+    // validating here
+    const parsed = bindingSpec.partial().safeParse({bind: toml.bind});
     if (parsed.success) {
         if ((parsed.data.bind || []).length > 0) {
             return {success: true, data: parsed.data.bind || []};
-        }else{
+        } else {
             return {success: true, data: []};
         }
     } else {
@@ -85,54 +86,69 @@ export function parseBindingDocs(str: string) {
             data += line + '\n';
         }
     }
-    // TODO: insert additional table for remaining data before
-    // returning the result
+    if (data.length > 0) {
+        const items = parseDocItems(data);
+        if (items.success) {
+            if (items.data.length > 0) {
+                doc.items = items.data;
+            }
+        } else {
+            error = items.error;
+        }
+    }
+    result.push(doc);
+
     if (error) {
         return {success: false, error};
     } else {
-        return {success: true, data: {doc}};
+        return {success: true, data: {doc: result}};
     }
 }
 
-function asBindingTable(parsed: Partial<BindingSpec>) {
+export function asBindingTable(parsed: BindingItem[]) {
     let result = '';
-    if (parsed.bind) {
-        let toShow = parsed.bind.filter(filterBinding);
-        if (toShow.length === 0) {
-            return result;
-        }
-        toShow = reverse(uniqBy(reverse(toShow), b => b.key));
-        toShow = sortBy(toShow, x => -(x?.priority || 0));
-
-        const combinedToShow: typeof toShow = [];
-        let lastItem = toShow[0];
-        combinedToShow.push(lastItem);
-        for (const item of toShow.slice(1)) {
-            if (lastItem.combinedName && lastItem.combinedName === item.combinedName) {
-                lastItem.key = prettifyPrefix(lastItem.combinedKey);
-                lastItem.description = lastItem.combinedDescription;
-            } else {
-                combinedToShow.push(item);
-                lastItem = item;
-            }
-        }
-
-        result += '\n\n|key|name|mode|description|\n';
-        result += '|---|----|----|-----------|\n';
-        for (const item of combinedToShow) {
-            const key = prettifyPrefix(item.key || '');
-            const mode = asArray(item.mode)
-                .map(m => '`' + m + '`')
-                .join(', ');
-            result += `|\`${key}\`|${item.name}|${mode}|${stripNewlines(item.description || '')}|\n`;
-        }
-        result += '\n';
+    let toShow = parsed.filter(filterBinding);
+    if (toShow.length === 0) {
+        return result;
     }
+    toShow = uniqBy(toShow, b => b.key + (b.mode || ''));
+    toShow = sortBy(toShow, x => -(x?.args.priority || 0));
+
+    const combinedToShow: typeof toShow = [];
+    let lastItem = cloneDeep(toShow[0]);
+    combinedToShow.push(lastItem);
+    for (const item of toShow.slice(1)) {
+        console.dir(item);
+        if (
+            lastItem.args.combinedName &&
+            lastItem.args.combinedName === item.args.combinedName
+        ) {
+            const prefixMatch = item.key.match(/(.*)\s\S+$/);
+            const prefix = prefixMatch ? prefixMatch[1] + ' ' : '';
+            lastItem.key = prettifyPrefix(prefix + lastItem.args.combinedKey);
+            lastItem.args.name = lastItem.args.combinedName;
+            lastItem.args.description = lastItem.args.combinedDescription || '';
+        } else {
+            lastItem = cloneDeep(item);
+            combinedToShow.push(lastItem);
+        }
+    }
+
+    result += '\n\n|mode|key|name|description|\n';
+    result += '|---|----|----|-----------|\n';
+    for (const item of combinedToShow) {
+        const key = prettifyPrefix(item.key || '');
+        const mode = asArray(item.mode)
+            .map(m => '`' + m + '`')
+            .join(', ');
+        result += `|${mode}|<code> ${key} </code>|${item.args.name}|${stripNewlines(item.args.description || '')}|\n`;
+    }
+    result += '\n';
     return result;
 }
 
 function stripNewlines(str: string) {
-    replaceAll(str, /[\n\r]+/, ' ');
+    return replaceAll(str, /[\n\r]+/g, ' ');
 }
 
 function asArray<T>(x: T | T[]) {

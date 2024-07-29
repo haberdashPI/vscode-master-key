@@ -29,7 +29,7 @@ import {
 import {reifyStrings, EvalContext} from '../expressions';
 import {isSingleCommand, validateInput} from '../utils';
 import {fromZodError} from 'zod-validation-error';
-import {IParsedBindingDoc} from './docParsing';
+import {asBindingTable, IParsedBindingDoc} from './docParsing';
 
 export interface Bindings {
     name?: string;
@@ -43,8 +43,8 @@ export interface Bindings {
 
 export function processBindings(spec: FullBindingSpec): [Bindings, string[]] {
     const problems: string[] = [];
-    let indexedItems = expandDefaultsDefinedAndForeach(spec, problems);
-    let docs = resolveDocItems(spec.doc || [], indexedItems);
+    const indexedItems = expandDefaultsDefinedAndForeach(spec, problems);
+    const docs = resolveDocItems(indexedItems, spec.doc || []);
     let items = indexedItems.map((item, i) => requireTransientSequence(item, i, problems));
     items = expandPrefixes(items);
     items = expandModes(items, spec.mode, problems);
@@ -134,7 +134,7 @@ function expandDefinedCommands(
 const partialRawBindingItem = rawBindingItem.partial();
 type PartialRawBindingItem = z.infer<typeof partialRawBindingItem>;
 
-interface IIndexed{
+interface IIndexed {
     index: number;
 }
 
@@ -242,16 +242,31 @@ function expandDefaultsDefinedAndForeach(
     return <(BindingItem & IIndexed)[]>items.filter(x => x !== undefined);
 }
 
-function resolveDocItems(item: BindingItem[], doc: IParsedBindingDoc[]){
-    let itemItr = item[Symbol.iterator]();
+function resolveDocItems(items: (BindingItem & IIndexed)[], doc: IParsedBindingDoc[]) {
+    const resolvedItemItr = items[Symbol.iterator]();
+    resolvedItemItr.next();
+    let curResolvedItem: BindingItem & IIndexed = items[0];
     let markdown = '';
-    for(const section of doc){
+    let docItemIndex = 0;
+    for (const section of doc) {
         markdown += section.str;
-        for(const item of section.items){
-
+        const resolvedItems: BindingItem[] = [];
+        for (const _ of section.items) {
+            while (curResolvedItem.index === docItemIndex) {
+                resolvedItems.push(curResolvedItem);
+                const maybeResolvedItem = resolvedItemItr.next();
+                if (maybeResolvedItem.done) {
+                    markdown += asBindingTable(resolvedItems);
+                    return markdown;
+                } else {
+                    curResolvedItem = maybeResolvedItem.value;
+                }
+            }
+            docItemIndex += 1;
         }
+        markdown += asBindingTable(resolvedItems);
     }
-
+    return markdown;
 }
 
 function requireTransientSequence(item: BindingItem, i: number, problems: string[]) {

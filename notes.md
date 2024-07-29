@@ -2,23 +2,8 @@
 
 release 0.2.0 onwards
 
-current issue: we can show docs, but we're missing things due to the absence of default expansion, I need to pass the fully parsed data so it can be used to re-expand
-bindings that are partially filled out
-
-plan:
-add comment sections that will get rendered via markdown
-(use a simple line filter approach to generated this document)
-the interleaved toml will need to get parsed and turned into a table
-
-NOTE: by default the bindings don't get displayed, you have to explicitly
-indicate that a section includes bindings I think... (or we could have a
-hideInDocs = true field and show by default)
-
 at the end of this milestone I have documentation sufficient for releasing the extension
 in the vscode and vscodium stores
-
-NOTE: `path` entries should not have documentation; rather there should be a separate setup
-(perhaps comments?) for how to enter text that becomes part of the markdown output
 
 Visual doc improvements:
 

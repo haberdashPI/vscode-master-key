@@ -71,5 +71,6 @@ export function prettifyPrefix(str: string) {
     // note: a bit hacky, to handle combined key descriptions
     str = replaceAll(str, /(?<!\/) (?!\/)/g, ', ');
     str = replaceAll(str, /escape/gi, 'ESC');
+    str = replaceAll(str, /,{2,}/gi, ',');
     return str;
 }

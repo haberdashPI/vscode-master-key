@@ -395,7 +395,7 @@ export const bindingSpec = z
 export type BindingSpec = z.infer<typeof bindingSpec>;
 
 export type FullBindingSpec = BindingSpec & {
-    doc?: IParsedBindingDoc;
+    doc?: IParsedBindingDoc[];
 };
 
 interface SuccessResult<T> {
@@ -411,10 +411,10 @@ export type ParsedResult<T> = SuccessResult<T> | ErrorResult;
 export async function parseBindings(text: string): Promise<ParsedResult<FullBindingSpec>> {
     const data = bindingSpec.safeParse((await TOML).parse(text));
     if (data.success) {
-        const doc = await parseBindingDocs(text, data.data);
+        const doc = parseBindingDocs(text);
 
-        if(doc.success){
-            return {success: true, data: {...data.data, ...doc.data}};
+        if (doc.success) {
+            return {success: true, data: {...data.data, doc: doc.data?.doc}};
         } else {
             return <ParsedResult<FullBindingSpec>>doc;
         }

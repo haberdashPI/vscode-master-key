@@ -199,6 +199,7 @@ mode = "normal"
 [[bind]]
 path = "edit.motion.prim"
 key = "l"
+combinedName = "←/→"
 name = "→"
 description = "move right"
 args.to = "right"
@@ -237,7 +238,7 @@ command = "cursorHomeSelect"
 path = "edit.motion"
 key = "shift+l"
 name = "end"
-combinedName = "shift+h/shift+l"
+combinedName = "start/end"
 description = "end of line"
 command = "cursorMove"
 args.to = "wrappedLineEnd"
@@ -420,6 +421,7 @@ args.commands = [
 path = "edit.motion.mod"
 key = "shift+v"
 name = "hold selection"
+combinedName = "shrink/hold selection"
 description = """
 all motions extend the selection
 """
@@ -432,6 +434,12 @@ path = "edit.action.open_lines"
 name = "open, act →"
 description = "without selection: open a line below current line and enter insert, with seleciton: move cursort to start"
 key = "o"
+combinedName = "open below/above, act →/←"
+combinedKey = "o/shift+o"
+combinedDescription = """
+without selection: open a line below/abvoe current line and enter insert, with seleciton: move cursort to end/start
+of selection
+"""
 when = "!editorHasSelection"
 command = "runCommands"
 args.commands = ["editor.action.insertLineAfter", "master-key.enterInsert"]
@@ -439,12 +447,14 @@ args.commands = ["editor.action.insertLineAfter", "master-key.enterInsert"]
 [[bind]]
 path = "edit.action.open_lines"
 key = "o"
+combinedName = "open below/above, act →/←"
 when = "editorHasSelection"
 command = "selection-utilities.activeAtEnd"
 
 [[bind]]
 path = "edit.action.open_lines"
 name = "open blw, act ←"
+combinedName = "open below/above, act →/←"
 description = "without selection: open a line above current line and enter insert, with selection: move cursor to end"
 key = "shift+o"
 when = "!editorHasSelection"
@@ -454,6 +464,7 @@ args.commands = [ "editor.action.insertLineBefore", "master-key.enterInsert" ]
 [[bind]]
 path = "edit.action.open_lines"
 name = "open blw, act ←"
+combinedName = "open below/above, act →/←"
 description = "without selection: open a line above current line and enter insert, with selection: move cursor to end"
 key = "shift+o"
 when = "editorHasSelection"
@@ -470,7 +481,10 @@ command = "editor.action.jumpToBracket"
 path = "edit.motion.prim"
 key = '\'
 name = "→ sel"
+combinedName = "→/← sel"
 description = "select *just* the character to the right"
+combinedDescription = "select *just* the character to the right"
+combinedKey = 'shift+\/\'
 mode = ["normal", "selectedit"]
 command = "runCommands"
 
@@ -486,6 +500,7 @@ computedArgs = { value = "count" }
 path = "edit.motion.prim"
 key = 'shift+\'
 name = "← sel"
+combinedName = "→/← sel"
 description = "select *just* the character to the left"
 mode = ["normal", "selectedit"]
 command = "runCommands"
@@ -1467,17 +1482,19 @@ description = "Find text that falls between pairs of characters"
 [[bind]]
 path = "edit.motion.searchpair"
 name = "between pair"
-description = """
-Select between to pairs of the same N characters (m) or distinct sets of N
-characters (s), where N is the count:
-2mt'' would search for a string between '' and ''.
-2ms,,.. would search for a string between ,, and ..
+combinedDescription = """
+Select between pairs of the same N characters (t) or distinct sets of N
+characters (s), where N is the count. Examples:
+2mt'' would search for a string between `''` and `''`.
+2ms,,.. would search for a string between `,,` and `..`.
 """
 key = "m t"
 command = "runCommands"
 combinedName = "between pair/two"
 combinedKey = "t/s"
-combinedDescription = """
+description = """
+Select between pairs of the same N characters, where N is the count.
+Example: 2mt'' would search for a string between '' and ''.
 """
 
 [[bind.args.commands]]
@@ -1497,7 +1514,7 @@ Select between two different sets of N characters, where N is the count e.g.
 2ms,,.. would search for a string between ,, and ..
 """
 key = "m s"
-combinedKey = "t/s"
+combinedName = "between pair/two"
 command = "runCommands"
 
 [[bind.args.commands]]
@@ -1719,6 +1736,7 @@ name = "repeat action"
 description = """
 Repeat the last action command. Actions usually modify the text of a document in one way or
 another. (But, e.g. sending text to the REPL is also considered an editor action).
+See also `,` which repeats the last subject.
 """
 key = "."
 command = "runCommands"
