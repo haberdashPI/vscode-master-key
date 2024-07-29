@@ -6,7 +6,7 @@ import {ZodError, fromZodError, fromZodIssue} from 'zod-validation-error';
 import {expressionId} from '../expressions';
 import {uniqBy} from 'lodash';
 import replaceAll from 'string.prototype.replaceall';
-import {parseBindingDocs} from './docParsing';
+import {IParsedBindingDoc, parseBindingDocs} from './docParsing';
 export const INPUT_CAPTURE_COMMANDS = [
     'captureKeys',
     'replaceChar',
@@ -395,7 +395,7 @@ export const bindingSpec = z
 export type BindingSpec = z.infer<typeof bindingSpec>;
 
 export type FullBindingSpec = BindingSpec & {
-    doc?: string;
+    doc?: IParsedBindingDoc;
 };
 
 interface SuccessResult<T> {
@@ -410,13 +410,16 @@ export type ParsedResult<T> = SuccessResult<T> | ErrorResult;
 
 export async function parseBindings(text: string): Promise<ParsedResult<FullBindingSpec>> {
     const data = bindingSpec.safeParse((await TOML).parse(text));
-    const doc = await parseBindingDocs(text);
-    if (doc.success && data.success) {
-        return {success: true, data: {...data.data, ...doc.data}};
-    } else if (!data.success) {
-        return data;
+    if (data.success) {
+        const doc = await parseBindingDocs(text, data.data);
+
+        if(doc.success){
+            return {success: true, data: {...data.data, ...doc.data}};
+        } else {
+            return <ParsedResult<FullBindingSpec>>doc;
+        }
     } else {
-        return <ParsedResult<FullBindingSpec>>doc;
+        return <ParsedResult<FullBindingSpec>>data;
     }
 }
 

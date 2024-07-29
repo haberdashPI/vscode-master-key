@@ -29,6 +29,7 @@ import {
 import {reifyStrings, EvalContext} from '../expressions';
 import {isSingleCommand, validateInput} from '../utils';
 import {fromZodError} from 'zod-validation-error';
+import {IParsedBindingDoc} from './docParsing';
 
 export interface Bindings {
     name?: string;
@@ -42,8 +43,9 @@ export interface Bindings {
 
 export function processBindings(spec: FullBindingSpec): [Bindings, string[]] {
     const problems: string[] = [];
-    let items = expandDefaultsDefinedAndForeach(spec, problems);
-    items = items.map((item, i) => requireTransientSequence(item, i, problems));
+    let indexedItems = expandDefaultsDefinedAndForeach(spec, problems);
+    let docs = resolveDocItems(spec.doc || [], indexedItems);
+    let items = indexedItems.map((item, i) => requireTransientSequence(item, i, problems));
     items = expandPrefixes(items);
     items = expandModes(items, spec.mode, problems);
     items = expandDocsToDuplicates(items);
@@ -61,7 +63,7 @@ export function processBindings(spec: FullBindingSpec): [Bindings, string[]] {
         define: definitions,
         mode: mapByName(spec.mode),
         bind: configItems,
-        docs: spec.doc || '',
+        docs,
     };
     return [result, problems];
 }
@@ -132,10 +134,14 @@ function expandDefinedCommands(
 const partialRawBindingItem = rawBindingItem.partial();
 type PartialRawBindingItem = z.infer<typeof partialRawBindingItem>;
 
+interface IIndexed{
+    index: number;
+}
+
 function expandDefaultsDefinedAndForeach(
     spec: BindingSpec,
     problems: string[]
-): BindingItem[] {
+): (BindingItem & IIndexed)[] {
     // eslint-disable-next-line @typescript-eslint/naming-convention
     const pathDefaults: Record<string, PartialRawBindingItem> = {'': {}};
     const pathWhens: Record<string, ParsedWhen[]> = {};
@@ -226,14 +232,26 @@ function expandDefaultsDefinedAndForeach(
                         );
                         return undefined;
                     } else {
-                        return result.data;
+                        return {...result.data, index: i};
                     }
                 })
                 .filter(i => i !== undefined);
         }
     });
 
-    return <BindingItem[]>items.filter(x => x !== undefined);
+    return <(BindingItem & IIndexed)[]>items.filter(x => x !== undefined);
+}
+
+function resolveDocItems(item: BindingItem[], doc: IParsedBindingDoc[]){
+    let itemItr = item[Symbol.iterator]();
+    let markdown = '';
+    for(const section of doc){
+        markdown += section.str;
+        for(const item of section.items){
+
+        }
+    }
+
 }
 
 function requireTransientSequence(item: BindingItem, i: number, problems: string[]) {

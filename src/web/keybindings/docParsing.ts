@@ -1,9 +1,11 @@
 import * as vscode from 'vscode';
 import {ZodError} from 'zod';
 import {prettifyPrefix} from '../utils';
-import {BindingSpec, bindingSpec, RawBindingItem} from './parsing';
+import {BindingSpec, bindingSpec, ParsedResult, RawBindingCommand, rawBindingItem, RawBindingItem} from './parsing';
 import {uniqBy, reverse, sortBy} from 'lodash';
 import replaceAll from 'string.prototype.replaceall';
+import { parse } from 'path';
+import { Bindings } from './processing';
 
 const TOML = require('smol-toml');
 
@@ -17,10 +19,35 @@ function filterBinding(binding: RawBindingItem) {
     return true;
 }
 
+export interface IParsedBindingDoc {
+    str: string;
+    items: RawBindingItem[];
+}
+
+function parseDocItems(data: string): ParsedResult<RawBindingItem[]>{
+    let toml;
+    try {
+        toml = TOML.parse(data);
+    } catch (e) {
+        vscode.window.showErrorMessage((<Error>e).message);
+    }
+    const parsed = bindingSpec.partial().safeParse(toml);
+    if (parsed.success) {
+        if ((parsed.data.bind || []).length > 0) {
+            return {success: true, data: parsed.data.bind || []};
+        }else{
+            return {success: true, data: []};
+        }
+    } else {
+        return parsed;
+    }
+}
+
 // TODO: we need to grab the previously computed complete parse we should be able to
 // uniquely match items to the full parse and use that to grab an default expansions
-export async function parseBindingDocs(str: string) {
-    let doc = '';
+export function parseBindingDocs(str: string) {
+    let doc: IParsedBindingDoc = {str: '', items: []};
+    const result: IParsedBindingDoc[] = [];
     let data = '';
     let error: ZodError | undefined = undefined;
     let lastUpdatedDocs = true;
@@ -28,7 +55,7 @@ export async function parseBindingDocs(str: string) {
         // comments (excluding those starting with `#-`) are treated as markdown output
         if (/^\s*$/.test(line)) {
             if (lastUpdatedDocs) {
-                doc += '\n';
+                doc.str += '\n';
             } else {
                 data += '\n';
             }
@@ -36,19 +63,15 @@ export async function parseBindingDocs(str: string) {
             // if there is pending binding data, insert its table before the
             // new section of markdown documentation
             if (data.length > 0) {
-                let toml;
-                // eslint-disable-next-line no-useless-catch
-                try {
-                    toml = TOML.parse(data);
-                    // eslint-disable-next-line prettier/prettier
-                } catch(e){
-                    vscode.window.showErrorMessage((<Error>e).message);
-                }
-                const parsed = bindingSpec.partial().safeParse(toml);
-                if (parsed.success) {
-                    doc += asBindingTable(parsed.data);
+                const items = parseDocItems(data);
+                if (items.success) {
+                    if (items.data.length > 0) {
+                        doc.items = items.data;
+                        result.push(doc);
+                        doc = {str: '', items: []};
+                    }
                 } else {
-                    error = parsed.error;
+                    error = items.error;
                 }
                 data = '';
             }
@@ -56,7 +79,7 @@ export async function parseBindingDocs(str: string) {
             const m = line.match(/^\s*#\s*(.*)/);
             const content = m === null ? '' : m[1];
             lastUpdatedDocs = true;
-            doc += content + '\n';
+            doc.str += content + '\n';
         } else {
             lastUpdatedDocs = false;
             data += line + '\n';
