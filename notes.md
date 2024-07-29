@@ -5,6 +5,8 @@ release 0.2.0 onwards
 at the end of this milestone I have documentation sufficient for releasing the extension
 in the vscode and vscodium stores
 
+write some tests for text docs!
+
 Visual doc improvements:
 
 BUG FIX: not all colors are showing up in the visual documentation yet
