@@ -2,6 +2,8 @@
 
 release 0.2.0 onwards
 
+current issue: `tab /` is not bringing up visual documentation
+
 at the end of this milestone I have documentation sufficient for releasing the extension
 in the vscode and vscodium stores
 
@@ -11,17 +13,7 @@ Visual doc improvements:
 
 BUG FIX: not all colors are showing up in the visual documentation yet
 
-IMPROVEMENT: show keybinding tips (for those general commands useful for examining documentation) in the visual documentation
-for
-  - toggle modifiers
-  - toggle cheetsheet
-  - toggle visual documentation
-  - simple command palette
-  - key suggestions
-
 - IMPROVEMENT: show escape/function key row in the visual key doc
-
-IMPROVEMENT: upon activating bindings, show the visual and cheetsheet documentation
 
 IMPROVEMENT: put some examples of cool features from `Larkin` in the README
 

@@ -414,6 +414,8 @@ export async function selectPreset(preset?: Preset) {
             label,
             preset.bindings.bind
         );
+        await vscode.commands.executeCommand('master-key.showVisualDoc');
+        await vscode.commands.executeCommand('master-key.showTextDoc');
     }
 }
 

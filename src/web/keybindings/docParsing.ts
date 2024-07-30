@@ -118,7 +118,6 @@ export function asBindingTable(parsed: BindingItem[]) {
     let lastItem = cloneDeep(toShow[0]);
     combinedToShow.push(lastItem);
     for (const item of toShow.slice(1)) {
-        console.dir(item);
         if (
             lastItem.args.combinedName &&
             lastItem.args.combinedName === item.args.combinedName

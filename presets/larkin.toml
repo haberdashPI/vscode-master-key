@@ -1,8 +1,10 @@
-# # Larkin Key Bindings
+# # Master Keybindings: Larkin
 
-# This set of keybindings provides a comprehensive and well tested set of bindings that I use in my daily work. It serves as an example of a fully customized set of keybindings, and demonstrates the full capabilities of master-key.
+# Larkin is the default keybinding set that ships with Master Key. It follows in the footsteps of Vim, Kakaune and Helix.
 
-# The basic logic of these commands are inspired by kakoune: motions generally cause some region of text to be selected, and then actions modify these selections. This is the inverse of vim's motions (`wd` instead of `dw`) and integrates well with many of the existing VSCode extensions which operate on selections or add commands to select regions of text.
+# Like its predecessors, Larkin makes use of modal keybindings: in the default mode (Normal) each key on the keyboard, even when you aren't pressing a modifier key, issues a different command. You can exit Normal mode, and return to behavior that is more familiar to users of VSCode (called insert mode) by typing `i`, as well as a variety of other commands (see [Simple Actions](#simple-actions)).
+
+# The overarching logic of these commands generally follow selection-followed-by-action logic. Motions generally cause some region of text to be selected, and then actions modify these selections. This is the inverse of vim's motions: in Larkin you would first select a word (using `w`) and then delete it (`d`). This organization integrates well with many of the existing VSCode extensions which operate on selections or add commands that modify selections.
 
 # These bindings are named after the middle name of my first child (Larkin).
 
@@ -12,7 +14,7 @@
 name = "Larkin Key Bindings"
 version = "1.0"
 
-#- NOTE: currently this field has no functional effect, it merely serves as documentation. However, future version of Master Key may leverage the required extensions in some way to make them easy to install when they are missing
+#- NOTE: currently this field (`requiredExtensions`) has no functional effect, it merely serves as documentation. However, future version of Master Key may leverage the required extensions in some way to make them easy to install when they are missing
 
 requiredExtensions = [
       "dbankier.vscode-quick-select",
@@ -101,15 +103,63 @@ id = "modes"
 name = "Modes"
 default.kind = "util"
 
+# ## Getting Help
+
+# There are three kinds of help available in Master Key.
+
+# 1. The visual documentation shows up in the lower pane and shows the currently available bindings on-top of a keyboard layout.
+# 2. The text documentation is what you are reading now.
+# 3. The suggestion palette shows a list of the current bindings given the current key binding prefix.
+
+[[bind]]
+path = "window"
+key = "shift+;"
+name = "suggest"
+resetTransient = false
+hideInPalette = true
+prefixes = []
+mode = ["!capture", "!insert"]
+description = """
+show command suggestsion within the context of the current mode and keybinding prefix
+(if any keys have already been typed)
+"""
+command = "master-key.commandSuggestions"
+
+[[bind]]
+key = "tab /"
+name = "text docs"
+priority = -1
+mode = "normal"
+description = "Show text documentation for keybindings"
+command = "master-key.showTextDoc"
+
+[[bind]]
+key = "tab shift+/"
+name = "visual doc"
+priority = -1
+mode = "normal"
+description = "Show visual documentation for keybindings"
+command = "master-key.showVisualDoc"
+
+# The suggestion palette can be triggered at any point during a key sequence. So if you type `m` (which is the prefix for all [Match Commands](#match-commands)) and then type `:` you will get a list of all available match commands.
+
+# The visual keybinding documentation is modified by three additional commands that can be used to determine which modifiers are shown.
+
+# - `Master Key: Toggle Visual Doc Modifier by frequency`: changes keybinding modifiers least to most common modifiers across all modifiers defined by Master Key.
+# - `Master Key: Toggle Visual Doc Modifier for Top of Key`: allows you to explicitly change the modifier shown on the top of a key.
+# - `Master Key: Toggle Visual Doc Modifier for Bottom of Key`: allows you to explicitly change the modifier shown on the bottom of a key.
+
+# There are no keybindings for these commands by default.
+
 # ## Normal Mode
 
 # The default mode in Larkin, is Normal. In this mode, instead of the keys entering text, all keys are commands that modify selections or perform actions on those selections. To exist normal mode you can use `i` to enter Insert mode, which returns VSCode keybindings to their normal state.
 
 # While in Normal model you will see a highlighted section with the text "normal" in the lower left hand corner of the status bar.
 
-# |key|name|mode|description|
+# |mode|key|name|description|
 # |---|----|----|-----------|
-# |`ESC` or `^[`|normal| - |enter normal mode|
+# |`-`|`ESC` or `^[`|normal|enter normal mode|
 #
 
 [[bind]]
@@ -2505,20 +2555,6 @@ args.range.to = "i"
 # ## Utility Commands
 
 # These actions include miscellaneous utilities.
-
-[[bind]]
-path = "window"
-key = "shift+;"
-name = "suggest"
-resetTransient = false
-hideInPalette = true
-prefixes = []
-mode = ["!capture", "!insert"]
-description = """
-show command suggestsion within the context of the current mode and keybinding prefix
-(if any keys have already been typed)
-"""
-command = "master-key.commandSuggestions"
 
 [[bind]]
 path = "window"

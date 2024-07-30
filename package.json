@@ -53,7 +53,7 @@
       {
         "command": "master-key.toggleVisualDocModifiers",
         "category": "Master Key",
-        "title": "Toggle visual doc keys from most to least common keybinding modifiers"
+        "title": "Toggle Visual Doc Modifier by frequency"
       },
       {
         "command": "master-key.togglePaletteMode",
