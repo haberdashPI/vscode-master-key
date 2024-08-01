@@ -12,13 +12,19 @@ Visual doc improvements:
 BUG FIX: not all colors are showing up in the visual documentation yet
 - write tests
 
+release 0.2.0
+
 - IMPROVEMENT: show escape/function key row in the visual key doc
+
+release 0.2.1
 
 - IMPROVEMENT: put some examples of cool features from `Larkin` in the README
 
 - IMPROVEMENT: use `getExtension` or some such on each required extension, and offer to
   install if it fails (does this work for any extension? or does `activate` have to return
   something)
+
+release 0.2.2
 
 ### Optimization
 
