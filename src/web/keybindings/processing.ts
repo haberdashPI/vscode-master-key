@@ -165,7 +165,7 @@ function expandDefaultsDefinedAndForeach(
         }
     }
 
-    const items = spec.bind.flatMap((item, i) => {
+    let items = spec.bind.flatMap((item, i) => {
         const itemDefault = pathDefaults[item.path || ''];
         const itemConcatWhen = pathWhens[item.path || ''];
         if (!itemDefault) {
@@ -239,6 +239,7 @@ function expandDefaultsDefinedAndForeach(
         }
     });
 
+    items = sortBy(items, x => x?.args.priority || 0);
     return <(BindingItem & IIndexed)[]>items.filter(x => x !== undefined);
 }
 

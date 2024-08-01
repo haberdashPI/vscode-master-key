@@ -2,8 +2,6 @@
 
 release 0.2.0 onwards
 
-current issue: `tab /` is not bringing up visual documentation
-
 at the end of this milestone I have documentation sufficient for releasing the extension
 in the vscode and vscodium stores
 
@@ -12,12 +10,13 @@ write some tests for text docs!
 Visual doc improvements:
 
 BUG FIX: not all colors are showing up in the visual documentation yet
+- write tests
 
 - IMPROVEMENT: show escape/function key row in the visual key doc
 
-IMPROVEMENT: put some examples of cool features from `Larkin` in the README
+- IMPROVEMENT: put some examples of cool features from `Larkin` in the README
 
-IMPROVEMENT: use `getExtension` or some such on each required extension, and offer to
+- IMPROVEMENT: use `getExtension` or some such on each required extension, and offer to
   install if it fails (does this work for any extension? or does `activate` have to return
   something)
 

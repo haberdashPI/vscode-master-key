@@ -203,6 +203,7 @@ mode = ["normal", "selectedit"]
 when = "editorTextFocus"
 hideInDocs = true
 hideInPalette = true
+priority = -10
 
 [[path]]
 id = "edit"

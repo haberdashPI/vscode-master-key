@@ -6,12 +6,14 @@ import { enterModalKeys, setBindings, setupEditor, movesCursorInEditor, storeCov
 import { InputBox, sleep, TextEditor, WebView, Workbench } from 'wdio-vscode-service';
 import { Key } from "webdriverio";
 
-describe('Visual Docs', () => {
+describe('Binding Docs', () => {
     let editor: TextEditor;
     let workbench: Workbench;
     let docView: WebView;
     before(async () => {
         await setBindings(`
+            # # Test Documentation
+            #- IGNORED COMMENT
             [header]
             version = "1.0"
 
@@ -29,6 +31,10 @@ describe('Visual Docs', () => {
             [[kind]]
             name = "right"
             description = "more rightward keys"
+
+            # ## First Section
+
+            # Cillum adipisicing consequat aliquip Lorem adipisicing minim culpa officia aliquip reprehenderit.
 
             [[bind]]
             name = "normal mode"
@@ -66,6 +72,10 @@ describe('Visual Docs', () => {
             args.to = "down"
             kind = "left"
 
+            # ## Second Section
+
+            # Aliquip ipsum enim cupidatat aute occaecat magna nostrud qui labore.
+
             [[bind]]
             path = "motion"
             name = "up"
@@ -87,6 +97,8 @@ describe('Visual Docs', () => {
             command = "master-key.enterInsert"
             mode = "normal"
             kind = "right"
+
+            # Final paragraph shows up.
         `);
         editor = await setupEditor(`A simple test`);
         workbench = await browser.getWorkbench();
@@ -160,6 +172,8 @@ describe('Visual Docs', () => {
 
         await docView.close();
     });
+
+    // TODO: tests for textual docs here
 
     after(async () => {
         await storeCoverageStats('visualDoc');
