@@ -173,7 +173,21 @@ describe('Binding Docs', () => {
         await docView.close();
     });
 
-    // TODO: tests for textual docs here
+    it.only('To show first section', async() => {
+        await workbench.executeCommand('Master Key: Show Text Documentation')
+
+        const secTitle = await browser.$('div.markdown-body h2');
+        expect(secTitle).toHaveText('First Section');
+
+        // rows of the first table
+        const rows = await browser.$('div.markdown-body table').$$('tbody tr');
+        expect(rows).toHaveLength(4);
+
+        // MORE:
+        // - to show second section
+        // - to show final paragraph
+        // - to not show hidden comment
+    });
 
     after(async () => {
         await storeCoverageStats('visualDoc');
