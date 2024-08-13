@@ -173,8 +173,12 @@ describe('Binding Docs', () => {
         await docView.close();
     });
 
-    it.only('To show first section', async() => {
+    it.only('show first section', async() => {
         await workbench.executeCommand('Master Key: Show Text Documentation')
+        const webviews = await workbench.getAllWebviews();
+        expect(webviews).toHaveLength(2);
+        const mdView = await webviews[1].wait();
+        mdView.open();
 
         const secTitle = await browser.$('div.markdown-body h2');
         expect(secTitle).toHaveText('First Section');
