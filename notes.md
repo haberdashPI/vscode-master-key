@@ -14,7 +14,7 @@ BUG FIX: not all colors are showing up in the visual documentation yet
 
 release 0.2.0
 
-- IMPROVEMENT: show escape/function key row in the visual key doc
+IMPROVEMENT: show escape/function key row in the visual key doc
 
 release 0.2.1
 
