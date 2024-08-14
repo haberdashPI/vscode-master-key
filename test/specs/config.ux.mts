@@ -49,7 +49,9 @@ describe('Configuration', () => {
             key = "i"
             command = "master-key.enterInsert"
         `);
+        await enterModalKeys('i');
         editor = await setupEditor(`A simple test`);
+        await browser.keys(Key.Escape);
     });
 
     it('Can make normal mode the default', async() => {

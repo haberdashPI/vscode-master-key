@@ -103,6 +103,7 @@ describe('Search motion command', () => {
             // TODO: we should have some user feedback for captured keys
             // so this sleep wouldn't be necessary
             await sleep(1000);
+            // TODO: test that escape keeps the cursor at 1,1 (right now it doesn't)
             await browser.keys(Key.Escape);
             await waitForMode('normal');
 

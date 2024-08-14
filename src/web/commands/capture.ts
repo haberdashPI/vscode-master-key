@@ -162,7 +162,7 @@ async function replaceChar(args_: unknown): Promise<CommandResult> {
     }
     const editor = editor_!;
 
-    let args = validateInput(name, args_, charArgs);
+    let args = validateInput('replaceChar', args_, charArgs);
     if (args) {
         const char = args.char === undefined ? await captureOneKey() : args.char;
         editor.edit(edit => {
@@ -182,7 +182,7 @@ async function insertChar(args_: unknown): Promise<CommandResult> {
     }
     const editor = editor_!;
 
-    let args = validateInput(name, args_, charArgs);
+    let args = validateInput('insertChar', args_, charArgs);
     if (args) {
         const char = args.char === undefined ? await captureOneKey() : args.char;
         editor.edit(edit => {

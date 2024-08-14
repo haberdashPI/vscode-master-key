@@ -17,9 +17,9 @@ current issue: wido-vscode-service is failing for web extensions (it works for n
       desktop have different idiosynchroses)
         + simpleMotions
         + commandState
-        - captureKeys
-        - config
-        - palette
+        + captureKeys
+        + config
+        + palette
         - replay
         - searchMotions
         - (and finally) bindingDocs
