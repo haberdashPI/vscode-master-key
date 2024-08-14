@@ -13,6 +13,16 @@ current issue: wido-vscode-service is failing for web extensions (it works for n
         compile to a `test-dist` folder instead of `dist`
       - setup testing to use VSCode instead of Chrome and direct it to the `test-dist`
         folder instead of `dist`
+    - OKAY! that worked, now we have to fix any newly broken tests (the web and
+      desktop have different idiosynchroses)
+        + simpleMotions
+        + commandState
+        - captureKeys
+        - config
+        - palette
+        - replay
+        - searchMotions
+        - (and finally) bindingDocs
 
 write some tests for text docs!
 
