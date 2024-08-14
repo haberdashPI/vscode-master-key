@@ -24,10 +24,11 @@ const ESLintPlugin = require('eslint-webpack-plugin');
  */
 const webExtensionConfig = (env, argv) => ({
     mode: 'none', // this leaves the source code as close as possible to the original (when packaging we set this to 'production')
-    target: 'webworker', // extensions run in a webworker context
+    // NOTE: wdio-vscode-service doesn't play very well with web extensions, so we do UX testing as a desktop extension
+    target: env['wdio'] ? 'node' : 'webworker', // extensions run in a webworker context
     cache: {
         type: 'filesystem',
-        name: argv.mode + '-testing' + env['testing'] + '-coverage' + env['coverage'],
+        name: argv.mode + '-wdio_' + env['wdio'] + '-coverage_' + env['coverage'],
         version: '1',
     },
     entry: {
@@ -36,23 +37,25 @@ const webExtensionConfig = (env, argv) => ({
     },
     output: {
         filename: '[name].js',
-        path: path.join(__dirname, './dist/web'),
+        path: path.join(__dirname, 'dist', env['wdio'] ? 'desktop' : 'web'),
         library: {type: 'commonjs'},
         devtoolModuleFilenameTemplate: '../../[resource-path]',
     },
     resolve: {
-        mainFields: ['browser', 'module', 'main'], // look for `browser` entry point in imported node modules
+        mainFields: env['wdio'] ? ['module', 'main'] : ['browser', 'module', 'main'], // look for `browser` entry point in imported node modules
         extensions: ['.ts', '.js'], // support ts-files and js-files
         alias: {
             // provides alternate implementation for node module and source files
         },
-        fallback: {
-            // Webpack 5 no longer polyfills Node.js core modules automatically.
-            // see https://webpack.js.org/configuration/resolve/#resolvefallback
-            // for the list of Node.js core module polyfills.
-            assert: require.resolve('assert'),
-            'process/browser': require.resolve('process/browser'),
-        },
+        fallback: env['wdio']
+            ? {}
+            : {
+                  // Webpack 5 no longer polyfills Node.js core modules automatically.
+                  // see https://webpack.js.org/configuration/resolve/#resolvefallback
+                  // for the list of Node.js core module polyfills.
+                  assert: require.resolve('assert'),
+                  'process/browser': require.resolve('process/browser'),
+              },
     },
     module: {
         rules: [
@@ -77,7 +80,7 @@ const webExtensionConfig = (env, argv) => ({
             process: 'process/browser', // provide a shim for the global `process` variable
         }),
         new webpack.DefinePlugin({
-            'process.env.TESTING': JSON.stringify(env['testing'] || false),
+            'process.env.TESTING': JSON.stringify(env['wdio'] || false),
             'process.env.COVERAGE': JSON.stringify(env['coverage'] || false),
         }),
     ],

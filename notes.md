@@ -5,6 +5,15 @@ release 0.2.0 onwards
 at the end of this milestone I have documentation sufficient for releasing the extension
 in the vscode and vscodium stores
 
+current issue: wido-vscode-service is failing for web extensions (it works for non-web extensions). Does it work for hybrid projects that compile in both ways? It should...
+  steps:
+    - following the hello-world example create:
+      - a `main` entry for `package.json`: document why its there
+      - a new webpack target to `compile` and `watch` the `main` entry point; they should
+        compile to a `test-dist` folder instead of `dist`
+      - setup testing to use VSCode instead of Chrome and direct it to the `test-dist`
+        folder instead of `dist`
+
 write some tests for text docs!
 
 Visual doc improvements:
