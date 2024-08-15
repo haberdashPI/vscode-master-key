@@ -20,9 +20,11 @@ current issue: wido-vscode-service is failing for web extensions (it works for n
         + captureKeys
         + config
         + palette
-        - replay
-        - searchMotions
+        + replay
+        + searchMotions
         - (and finally) bindingDocs
+
+TODO: remove `cursorToTop` `moveCursor` works just fine in the desktop app
 
 write some tests for text docs!
 
