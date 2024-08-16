@@ -15,6 +15,7 @@ mode = []
 prefixes = "<all-prefixes>"
 command = "master-key.writeCoverageToEditor"
 hideInPalette = true
+hideInDocs = true
 `;
 
 export async function setBindings(str: string){

@@ -6,7 +6,7 @@ import { enterModalKeys, setBindings, setupEditor, movesCursorInEditor, storeCov
 import { InputBox, sleep, TextEditor, WebView, Workbench } from 'wdio-vscode-service';
 import { Key } from "webdriverio";
 
-describe('Binding Docs', () => {
+describe('Visual Docs', () => {
     let editor: TextEditor;
     let workbench: Workbench;
     let docView: WebView;
@@ -105,8 +105,6 @@ describe('Binding Docs', () => {
         await sleep(500);
 
         await workbench.executeCommand("Master Key: Show Visual Documentation")
-
-        await cursorToTop(editor);
         await enterModalKeys('escape');
 
         await browser.waitUntil(async () => (await workbench.getAllWebviews()).length > 0)
@@ -169,28 +167,7 @@ describe('Binding Docs', () => {
         expect(wClasses).toMatch('kind-color-1');
 
         await browser.keys('w');
-
         await docView.close();
-    });
-
-    it.only('show first section', async() => {
-        await workbench.executeCommand('Master Key: Show Text Documentation')
-        const webviews = await workbench.getAllWebviews();
-        expect(webviews).toHaveLength(2);
-        const mdView = await webviews[1].wait();
-        mdView.open();
-
-        const secTitle = await browser.$('div.markdown-body h2');
-        expect(secTitle).toHaveText('First Section');
-
-        // rows of the first table
-        const rows = await browser.$('div.markdown-body table').$$('tbody tr');
-        expect(rows).toHaveLength(4);
-
-        // MORE:
-        // - to show second section
-        // - to show final paragraph
-        // - to not show hidden comment
     });
 
     after(async () => {

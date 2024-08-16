@@ -2,31 +2,8 @@
 
 release 0.2.0 onwards
 
-at the end of this milestone I have documentation sufficient for releasing the extension
-in the vscode and vscodium stores
-
-current issue: wido-vscode-service is failing for web extensions (it works for non-web extensions). Does it work for hybrid projects that compile in both ways? It should...
-  steps:
-    - following the hello-world example create:
-      - a `main` entry for `package.json`: document why its there
-      - a new webpack target to `compile` and `watch` the `main` entry point; they should
-        compile to a `test-dist` folder instead of `dist`
-      - setup testing to use VSCode instead of Chrome and direct it to the `test-dist`
-        folder instead of `dist`
-    - OKAY! that worked, now we have to fix any newly broken tests (the web and
-      desktop have different idiosynchroses)
-        + simpleMotions
-        + commandState
-        + captureKeys
-        + config
-        + palette
-        + replay
-        + searchMotions
-        - (and finally) bindingDocs
-
+TODO: fix bug where final paragraph of docs is dropped
 TODO: remove `cursorToTop` `moveCursor` works just fine in the desktop app
-
-write some tests for text docs!
 
 Visual doc improvements:
 
@@ -35,9 +12,18 @@ BUG FIX: not all colors are showing up in the visual documentation yet
 
 release 0.2.0
 
-IMPROVEMENT: show escape/function key row in the visual key doc
+## Optimization
 
 release 0.2.1
+
+Take an first pass at improving performance, identify obvious, simple fixes
+(there are some TODO's) and then profile the extension to look for low-hanging fruit
+
+## More visual doc improvements
+
+IMPROVEMENT: show escape/function key row in the visual key doc
+
+release 0.2.2
 
 - IMPROVEMENT: put some examples of cool features from `Larkin` in the README
 
@@ -45,16 +31,11 @@ release 0.2.1
   install if it fails (does this work for any extension? or does `activate` have to return
   something)
 
-release 0.2.2
+release 0.2.3
 
-### Optimization
+by the end of this milestone I'm satisfied with the documentation features of the package for an initial release
 
-release 0.2.x
-
-Take an first pass at improving performance, identify obvious, simple fixes
-(there are some TODO's) and then profile the extension to look for low-hanging fruit
-
-### Binding Cleanup
+## Binding Cleanup
 
 release 0.2.y
 
@@ -62,7 +43,7 @@ release 0.2.y
 - Pair down some of the required extensions.
 - Offer to install extensions? (maybe when a keybinding fails to run??)
 
-### Before VSCode publish
+## Before VSCode publish
 
 release 0.3.0
 
