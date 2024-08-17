@@ -249,16 +249,16 @@ function resolveDocItems(items: (BindingItem & IIndexed)[], doc: IParsedBindingD
     let curResolvedItem: BindingItem & IIndexed = items[0];
     let markdown = '';
     let docItemIndex = 0;
+    let abort = false;
     for (const section of doc) {
-        markdown += section.str;
+        markdown += section.str + '\n';
         const resolvedItems: BindingItem[] = [];
         for (const _ of section.items) {
-            while (curResolvedItem.index === docItemIndex) {
+            while (!abort && curResolvedItem.index === docItemIndex) {
                 resolvedItems.push(curResolvedItem);
                 const maybeResolvedItem = resolvedItemItr.next();
                 if (maybeResolvedItem.done) {
-                    markdown += asBindingTable(resolvedItems);
-                    return markdown;
+                    abort = true;
                 } else {
                     curResolvedItem = maybeResolvedItem.value;
                 }

@@ -2,7 +2,7 @@
 
 release 0.2.0 onwards
 
-TODO: fix bug where final paragraph of docs is dropped
+TODO: fix regression where now the markdown preview doesn't seem to be working...
 TODO: remove `cursorToTop` `moveCursor` works just fine in the desktop app
 
 Visual doc improvements:

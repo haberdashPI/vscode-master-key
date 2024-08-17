@@ -81,6 +81,10 @@ export function parseBindingDocs(str: string) {
             const content = m === null ? '' : m[1];
             lastUpdatedDocs = true;
             doc.str += content + '\n';
+        } else if (/^\s*#-/.test(line)) {
+            if (lastUpdatedDocs) {
+                doc.str += '\n';
+            }
         } else {
             lastUpdatedDocs = false;
             data += line + '\n';
