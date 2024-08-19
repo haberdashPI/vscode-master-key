@@ -22,11 +22,11 @@ current issue: wido-vscode-service is failing for web extensions (it works for n
         + palette
         + replay
         + searchMotions
-        - (and finally) bindingDocs
 
-TODO: remove `cursorToTop` `moveCursor` works just fine in the desktop app
 
 write some tests for text docs!
+
+TODO: remove `cursorToTop` `moveCursor` works just fine in the desktop app
 
 Visual doc improvements:
 
@@ -67,8 +67,8 @@ release 0.2.y
 release 0.3.0
 
 thoughts: things I must have to release:
-- keybinding documentation features
-  - markdown output / html
++ keybinding documentation features
+  + markdown output / html
 + well documented default keybindings
 + mode customization
   + have an option to allow a default command
