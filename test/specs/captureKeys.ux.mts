@@ -1,6 +1,6 @@
 import { browser, expect } from '@wdio/globals';
 import { Key } from 'webdriverio';
-import { movesCursorTo, setBindings, setupEditor, movesCursorInEditor, enterModalKeys, cursorToTop, waitForMode, storeCoverageStats } from './utils.mts';
+import { movesCursorTo, setBindings, setupEditor, movesCursorInEditor, enterModalKeys, waitForMode, storeCoverageStats } from './utils.mts';
 import { sleep, InputBox, TextEditor, Workbench } from 'wdio-vscode-service';
 import lodash from 'lodash';
 const { isEqual } = lodash;

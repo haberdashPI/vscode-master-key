@@ -2,15 +2,14 @@
 
 import '@wdio/globals';
 import 'wdio-vscode-service';
-import { setBindings, storeCoverageStats } from './utils.mts';
+import { enterModalKeys, setBindings, storeCoverageStats } from './utils.mts';
+import { sleep } from 'wdio-vscode-service';
 
 describe('Binding Docs', () => {
     before(async () => {
         await setBindings(`
             # # Test Documentation
-            # a little paragraph
-            #
-
+            #- IGNORED COMMENT
             [header]
             version = "1.0"
 
@@ -98,7 +97,11 @@ describe('Binding Docs', () => {
             # Final paragraph shows up.
         `);
 
+        console.log("[DEBUG]: setup bindings")
         const workbench = await browser.getWorkbench();
+        await sleep(5000);
+        // console.log("[DEBUG]: showing documentation")
+        // await workbench.executeCommand('Master Key: Show Text Documentation')
         await browser.waitUntil(async () => (await workbench.getAllWebviews()).length > 1)
         const webviews = await workbench.getAllWebviews();
         expect(webviews).toHaveLength(2);
@@ -132,11 +135,13 @@ describe('Binding Docs', () => {
     });
 
     it('has final paragraph', async () => {
-        const paragraph = await browser.$('div.markdown-body p:nth-of_type(3)');
+        const paragraph = await browser.$('div.markdown-body p:nth-of-type(3)');
         expect(paragraph).toHaveText('Final paragraph shows up.');
     });
 
     after(async () => {
+        await enterModalKeys('escape');
+        await enterModalKeys('i')
         await storeCoverageStats('markdownDoc');
     });
 });

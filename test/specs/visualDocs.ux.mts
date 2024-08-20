@@ -2,9 +2,9 @@
 
 import '@wdio/globals';
 import 'wdio-vscode-service';
-import { enterModalKeys, setBindings, setupEditor, movesCursorInEditor, storeCoverageStats, cursorToTop } from './utils.mts';
-import { InputBox, sleep, TextEditor, WebView, Workbench } from 'wdio-vscode-service';
-import { Key } from "webdriverio";
+import { enterModalKeys, setBindings, setupEditor, storeCoverageStats } from './utils.mts';
+import { sleep, TextEditor, WebView, Workbench } from 'wdio-vscode-service';
+import "webdriverio";
 
 describe('Visual Docs', () => {
     let editor: TextEditor;

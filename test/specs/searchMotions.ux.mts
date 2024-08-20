@@ -1,8 +1,9 @@
 import { browser, expect } from '@wdio/globals';
 import { Key } from 'webdriverio';
-import { movesCursorTo, setBindings, setupEditor, movesCursorInEditor, enterModalKeys, cursorToTop, waitForMode, storeCoverageStats } from './utils.mts';
+import { movesCursorTo, setBindings, setupEditor, movesCursorInEditor, enterModalKeys, waitForMode, storeCoverageStats } from './utils.mts';
 import { sleep, InputBox, TextEditor, Workbench } from 'wdio-vscode-service';
 import lodash from 'lodash';
+import { moveCursor } from 'readline';
 const { isEqual } = lodash;
 
 describe('Search motion command', () => {
@@ -223,9 +224,7 @@ labore elit occaecat cupidatat non POINT_B.`);
             await enterModalKeys('n');
         }, [0, 39], editor);
 
-        await enterModalKeys(['shift', 'i']);
-        await cursorToTop(editor);
-        await enterModalKeys('escape');
+        await editor.moveCursor(1, 1);
 
         await movesCursorTo(async () => {
             await enterModalKeys('w', {key: '/', updatesStatus: false});
@@ -418,6 +417,8 @@ labore elit occaecat cupidatat non POINT_B.`);
     });
 
     after(async () => {
+        await enterModalKeys('escape');
+        await enterModalKeys(['shift', 'i'])
         await storeCoverageStats('searchMotion');
     });
 });
