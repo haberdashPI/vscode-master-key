@@ -1,17 +1,3 @@
-## Visual Documentation Improvements
-
-release 0.2.0 onwards
-
-TODO: fix regression where now the markdown preview doesn't seem to be working...
-TODO: remove `cursorToTop` `moveCursor` works just fine in the desktop app
-
-Visual doc improvements:
-
-BUG FIX: not all colors are showing up in the visual documentation yet
-- write tests
-
-release 0.2.0
-
 ## Optimization
 
 release 0.2.1
