@@ -56,7 +56,7 @@ select_on = false
 around_on = false
 
 [[kind]]
-name = "motions"
+name = "motion"
 description = "These commands move the cursor and/or selections."
 
 [[kind]]
