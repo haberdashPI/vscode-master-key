@@ -2,10 +2,13 @@
 
 import '@wdio/globals';
 import 'wdio-vscode-service';
-import { enterModalKeys, setBindings, storeCoverageStats } from './utils.mts';
-import { sleep } from 'wdio-vscode-service';
+import { setBindings, storeCoverageStats } from './utils.mts';
+import { sleep, WebView } from 'wdio-vscode-service';
+import { Key } from 'webdriverio';
 
 describe('Binding Docs', () => {
+    let mdView: WebView;
+
     before(async () => {
         await setBindings(`
             # # Test Documentation
@@ -105,7 +108,7 @@ describe('Binding Docs', () => {
         await browser.waitUntil(async () => (await workbench.getAllWebviews()).length > 1)
         const webviews = await workbench.getAllWebviews();
         expect(webviews).toHaveLength(2);
-        const mdView = await webviews[1].wait();
+        mdView = await webviews[1].wait();
         mdView.open();
     });
 
@@ -140,8 +143,7 @@ describe('Binding Docs', () => {
     });
 
     after(async () => {
-        await enterModalKeys('escape');
-        await enterModalKeys('i')
+        mdView.close();
         await storeCoverageStats('markdownDoc');
     });
 });
