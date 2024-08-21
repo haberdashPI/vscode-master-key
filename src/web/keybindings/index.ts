@@ -2,16 +2,17 @@ import * as vscode from 'vscode';
 import {searchArgs, searchMatches} from '../commands/search';
 import {
     parseBindings,
-    BindingSpec,
     showParseError,
     parseBindingFile,
     vscodeBinding,
+    FullBindingSpec,
+    ParsedResult,
 } from './parsing';
-import {processBindings, IConfigKeyBinding, Bindings, isSingleCommand} from './processing';
+import {processBindings, IConfigKeyBinding, Bindings} from './processing';
+import {isSingleCommand} from '../utils';
 import {uniq, pick} from 'lodash';
 import replaceAll from 'string.prototype.replaceall';
 import {Utils} from 'vscode-uri';
-import z from 'zod';
 import {createBindings} from './config';
 const JSONC = require('jsonc-simple-parser');
 const TOML = require('smol-toml');
@@ -277,8 +278,8 @@ async function insertKeybindingsIntoConfig(
 ////////////////////////////////////////////////////////////////////////////////////////////
 // User-facing commands and helpers
 
-export function processParsing<T>(
-    parsedBindings: z.SafeParseReturnType<T, BindingSpec>,
+export function processParsing(
+    parsedBindings: ParsedResult<FullBindingSpec>,
     errorPrefix: string = ''
 ) {
     if (parsedBindings.success) {
@@ -336,9 +337,7 @@ export async function queryPreset(): Promise<Preset | undefined> {
             if (langId === 'plaintext') {
                 langId = undefined;
             }
-            const bindings = await processParsing(
-                parseBindings(text, langId || Utils.extname(uri))
-            );
+            const bindings = processParsing(await parseBindings(text));
 
             if (bindings) {
                 bindings.name = bindings.name || Utils.basename(uri);
@@ -415,6 +414,8 @@ export async function selectPreset(preset?: Preset) {
             label,
             preset.bindings.bind
         );
+        await vscode.commands.executeCommand('master-key.showVisualDoc');
+        await vscode.commands.executeCommand('master-key.showTextDoc');
     }
 }
 

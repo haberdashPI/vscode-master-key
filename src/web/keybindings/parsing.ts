@@ -1,14 +1,12 @@
 import * as vscode from 'vscode';
-const JSONC = require('jsonc-simple-parser');
-import {Utils} from 'vscode-uri';
 const TOML = require('smol-toml');
-import YAML from 'yaml';
 import * as semver from 'semver';
 import z, {ZodIssue} from 'zod';
 import {ZodError, fromZodError, fromZodIssue} from 'zod-validation-error';
 import {expressionId} from '../expressions';
 import {uniqBy} from 'lodash';
 import replaceAll from 'string.prototype.replaceall';
+import {IParsedBindingDoc, parseBindingDocs} from './docParsing';
 export const INPUT_CAPTURE_COMMANDS = [
     'captureKeys',
     'replaceChar',
@@ -233,6 +231,7 @@ export const rawBindingItem = z
         name: z.string().optional(),
         description: z.string().optional(),
         hideInPalette: z.boolean().default(false).optional(),
+        hideInDocs: z.boolean().default(false).optional(),
         combinedName: z.string().optional().default(''),
         combinedKey: z.string().optional().default(''),
         combinedDescription: z.string().optional().default(''),
@@ -295,6 +294,7 @@ export const bindingItem = z
                 do: doArgs,
                 path: z.string().optional().default(''),
                 hideInPalette: z.boolean().default(false).optional(),
+                hideInDocs: z.boolean().default(false).optional(),
                 priority: z.number().optional().default(0),
                 combinedName: z.string().optional().default(''),
                 combinedKey: z.string().optional().default(''),
@@ -394,31 +394,37 @@ export const bindingSpec = z
     .strict();
 export type BindingSpec = z.infer<typeof bindingSpec>;
 
-export function parseBindings(text: string, parse: string | ((data: string) => unknown)) {
-    if (typeof parse === 'string') {
-        // TODO: remove this logic and always use TOML for now
-        let ext = parse.toLowerCase();
-        const match = ext.match(/^\.(.+)$/);
-        if (match) {
-            ext = match[1];
-        }
-        if (ext === 'json' || ext === 'jsonc') {
-            return parseBindings(text, JSONC.parse);
-        } else if (ext === 'yaml' || ext === 'yml') {
-            return parseBindings(text, YAML.parse);
-        } else if (ext === 'toml' || ext === 'markdown') {
-            return parseBindings(text, TOML.parse);
+export type FullBindingSpec = BindingSpec & {
+    doc?: IParsedBindingDoc[];
+};
+
+interface SuccessResult<T> {
+    success: true;
+    data: T;
+}
+interface ErrorResult {
+    success: false;
+    error: ZodError;
+}
+export type ParsedResult<T> = SuccessResult<T> | ErrorResult;
+
+export async function parseBindings(text: string): Promise<ParsedResult<FullBindingSpec>> {
+    const data = bindingSpec.safeParse((await TOML).parse(text));
+    if (data.success) {
+        const doc = parseBindingDocs(text);
+
+        if (doc.success) {
+            return {success: true, data: {...data.data, doc: doc.data?.doc}};
         } else {
-            throw new Error('Unexpected file extension: ' + ext);
+            return <ParsedResult<FullBindingSpec>>doc;
         }
     } else {
-        return bindingSpec.safeParse(parse(text));
+        return <ParsedResult<FullBindingSpec>>data;
     }
 }
 
 export async function parseBindingFile(file: vscode.Uri) {
     const fileData = await vscode.workspace.fs.readFile(file);
     const fileText = new TextDecoder().decode(fileData);
-    const ext = Utils.extname(file);
-    return parseBindings(fileText, ext);
+    return parseBindings(fileText);
 }

@@ -1,65 +1,56 @@
-## Visual Documentation Improvements
+## Optimization
 
-release 0.2.0 onwards
+release 0.2.1
 
-at the end of this milestone I have documentation sufficient for releasing the extension
-in the vscode and vscodium stores
+low hanging fruit?: avoid re-rendering visual docs multiple times on every key press
 
-NOTE: `path` entries should not have documentation; rather there should be a separate setup
-(perhaps comments?) for how to enter text that becomes part of the markdown output
+Take an first pass at improving performance, identify obvious, simple fixes
+(there are some TODO's) and then profile the extension to look for low-hanging fruit
 
-Visual doc improvements:
+resource: https://www.nicoespeon.com/en/2019/11/fix-vscode-extension-performance-issue/
 
-IMPROVEMENT: show keybinding tips (for those general commands useful for examining documentation) in the visual documentation
-for
-  - toggle modifiers
-  - toggle cheetsheet
-  - toggle visual documentation
-  - simple command palette
-  - key suggestions
+## More visual doc improvements
 
-- IMPROVEMENT: show escape/function key row in the visual key doc
+IMPROVEMENT: show escape/function key row in the visual key doc
 
-write code to convert the toml file to a markdown of organized tables of keybindings
-and provide a command that opens the Markdown preview of this file
+release 0.2.2
 
-write up documentation for the default files
+- IMPROVEMENT: put some examples of cool features from `Larkin` in the README
 
-DOCUMENTATION: in documenting macro playback note the limitations of recording the keyboard
-(e.g. that it only records inserts; any modifiers are espected to be commands
-that are recorded)
-
-IMPROVEMENT: upon activating bindings, show the visual and cheetsheet documentation
-
-IMPROVEMENT: put some examples of cool features from `Larkin` in the README
-
-IMPROVEMENT: use `getExtension` or some such on each required extension, and offer to
+- IMPROVEMENT: use `getExtension` or some such on each required extension, and offer to
   install if it fails (does this work for any extension? or does `activate` have to return
   something)
 
-### Binding Cleanup
+release 0.2.3
 
-release 0.2.x
+by the end of this milestone I'm satisfied with the documentation features of the package for an initial release
 
+## Binding Cleanup
+
+release 0.2.y
+
+- feature: specify user-specific binding file, apart from activated keybindings
 - Split out any of the commands that are really custom for me that don't make sense to publish.
 - Pair down some of the required extensions.
 - Offer to install extensions? (maybe when a keybinding fails to run??)
 
-### Before VSCode publish
+## Before VSCode publish
 
 release 0.3.0
 
 thoughts: things I must have to release:
-- keybinding documentation features
-  - markdown output / html
-- well documented default keybindings
++ keybinding documentation features
+  + markdown output / html
++ well documented default keybindings
 + mode customization
   + have an option to allow a default command
     that operates on all keys that *aren't* specified
     OR that pass a regex
 - MODERNIZED SELECTION UTILITIES
-  - good documentation
+  - modernized command documentation
   - modern build setup
+  - some basic UX tests
+  - 1.0 release
 + final design of keybinding file that I'm relatively satisfied with
   + fix the repeat keybindings
   + fix default expansion

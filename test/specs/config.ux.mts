@@ -2,7 +2,7 @@
 
 import '@wdio/globals';
 import 'wdio-vscode-service';
-import { enterModalKeys, setBindings, setupEditor, movesCursorInEditor, waitForMode, cursorToTop, storeCoverageStats } from './utils.mts';
+import { enterModalKeys, setBindings, setupEditor, movesCursorInEditor, waitForMode, storeCoverageStats } from './utils.mts';
 import { StatusBar, TextEditor } from 'wdio-vscode-service';
 import { Key } from "webdriverio";
 import { sleep } from 'wdio-vscode-service';
@@ -49,7 +49,9 @@ describe('Configuration', () => {
             key = "i"
             command = "master-key.enterInsert"
         `);
+        await enterModalKeys('i');
         editor = await setupEditor(`A simple test`);
+        await browser.keys(Key.Escape);
     });
 
     it('Can make normal mode the default', async() => {

@@ -12,7 +12,7 @@ import {
 import {cloneDeep, merge} from 'lodash';
 import {evalContext, reifyStrings} from '../expressions';
 import {keySuffix} from './prefix';
-import {isSingleCommand} from '../keybindings/processing';
+import {isSingleCommand} from '../utils';
 import {MODE, defaultMode, modeSpecs} from './mode';
 import {List} from 'immutable';
 import {commandPalette} from './palette';
@@ -78,6 +78,7 @@ const runCommandArgs = z
         resetTransient: z.boolean().optional().default(true),
         repeat: z.number().min(0).or(z.string()).optional(),
         hideInPalette: z.boolean().default(false).optional(),
+        hideInDocs: z.boolean().default(false).optional(),
         priority: z.number().optional(),
         combinedKey: z.string().optional(),
         combinedName: z.string().optional(),

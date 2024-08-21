@@ -3,7 +3,7 @@
   "displayName": "Master Key",
   "publisher": "haberdashPI",
   "description": "Master your keybindings with documentation, discoverability, modal bindings and expressive configuration",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "repository": {
     "url": "https://github.com/haberdashPi/vscode-master-key"
   },
@@ -18,6 +18,7 @@
     "*"
   ],
   "browser": "./dist/web/extension.js",
+  "main": "./dist/desktop/extension.js",
   "contributes": {
     "commands": [
       {
@@ -53,7 +54,7 @@
       {
         "command": "master-key.toggleVisualDocModifiers",
         "category": "Master Key",
-        "title": "Toggle visual doc keys from most to least common keybinding modifiers"
+        "title": "Toggle Visual Doc Modifier by frequency"
       },
       {
         "command": "master-key.togglePaletteMode",
@@ -79,6 +80,11 @@
         "command": "master-key.importDefaultBindings",
         "category": "Master Key",
         "title": "Import Default Bindings"
+      },
+      {
+        "command": "master-key.showTextDoc",
+        "category": "Master Key",
+        "title": "Show Text Documentation"
       }
     ],
     "views": {
@@ -195,6 +201,7 @@
   "scripts": {
     "test": "vscode-test-web --browserType=chromium --extensionDevelopmentPath=. --extensionTestsPath=dist/web/test/suite/index.js",
     "pretest": "npm run compile-web",
+    "posttest": "npm run lint",
     "vscode:prepublish": "npm run package-web",
     "precompile-web": "gts lint",
     "compile-web": "webpack",
@@ -202,10 +209,10 @@
     "package-web": "webpack --mode production --devtool hidden-source-map",
     "lint": "gts lint",
     "run-in-browser": "vscode-test-web --browserType=chromium --extensionDevelopmentPath=. .",
-    "prewdio": "webpack --env testing",
+    "prewdio": "webpack --env wdio",
     "wdio": "wdio run ./wdio.conf.mts > wdio.log",
     "postwdio": "npm run lint",
-    "precoverage": "webpack --env testing --env coverage && mkdir -p coverage/raw",
+    "precoverage": "webpack --env wdio --env coverage && mkdir -p coverage/raw",
     "coverage": "COVERAGE=true COVERAGE_PATH=./coverage/raw wdio run ./wdio.conf.mts",
     "postcoverage": "nyc report -t coverage/raw --report-dir coverage/summary --reporter=lcov --reporter=text",
     "ci": "npm run coverage",

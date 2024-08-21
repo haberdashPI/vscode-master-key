@@ -1,8 +1,9 @@
 import { browser, expect } from '@wdio/globals';
 import { Key } from 'webdriverio';
-import { movesCursorTo, setBindings, setupEditor, movesCursorInEditor, enterModalKeys, cursorToTop, waitForMode, storeCoverageStats } from './utils.mts';
+import { movesCursorTo, setBindings, setupEditor, movesCursorInEditor, enterModalKeys, waitForMode, storeCoverageStats } from './utils.mts';
 import { sleep, InputBox, TextEditor, Workbench } from 'wdio-vscode-service';
 import lodash from 'lodash';
+import { moveCursor } from 'readline';
 const { isEqual } = lodash;
 
 describe('Search motion command', () => {
@@ -27,6 +28,12 @@ describe('Search motion command', () => {
             mode = []
             command = "master-key.enterNormal"
             prefixes = "<all-prefixes>"
+
+            [[bind]]
+            key = "shift+i"
+            name = "insert"
+            mode = "normal"
+            command = "master-key.enterInsert"
 
             [[path]]
             name = "search"
@@ -62,11 +69,6 @@ describe('Search motion command', () => {
             key = "ctrl+/"
             path = "search"
             args.caseSensitive = true
-
-            [[bind]]
-            name = "delete last search char"
-            key = "backspace"
-            command = "deleteLastSearchChar"
 
             [[bind]]
             name = "search (case sensitive)"
@@ -208,7 +210,6 @@ labore elit occaecat cupidatat non POINT_B.`);
         }, [2, 34], editor);
     });
 
-    // TODO: currently failing
     it('Can do a wrap-around search', async () => {
         await editor.moveCursor(1, 1);
         await enterModalKeys('escape');
@@ -223,7 +224,7 @@ labore elit occaecat cupidatat non POINT_B.`);
             await enterModalKeys('n');
         }, [0, 39], editor);
 
-        await cursorToTop(editor);
+        await editor.moveCursor(1, 1);
 
         await movesCursorTo(async () => {
             await enterModalKeys('w', {key: '/', updatesStatus: false});
@@ -264,7 +265,6 @@ labore elit occaecat cupidatat non POINT_B.`);
 
     // broken test
     it.skip('Can handle delete char for acceptAfter', async () => {
-        await cursorToTop(editor);
         await editor.moveCursor(1, 1);
         await enterModalKeys('escape');
 
@@ -290,7 +290,6 @@ labore elit occaecat cupidatat non POINT_B.`);
     });
 
     it('can select till match', async () => {
-        await cursorToTop(editor);
         await editor.moveCursor(1, 1);
         await enterModalKeys('escape');
 
@@ -305,7 +304,6 @@ labore elit occaecat cupidatat non POINT_B.`);
     });
 
     it('Handles inclusive offset', async function() {
-        await cursorToTop(editor);
         await editor.moveCursor(1, 1);
         await enterModalKeys('escape');
 
@@ -323,7 +321,6 @@ labore elit occaecat cupidatat non POINT_B.`);
     });
 
     it('Handles start offset', async function() {
-        await cursorToTop(editor);
         await editor.moveCursor(1, 1);
         await enterModalKeys('escape');
 
@@ -341,7 +338,6 @@ labore elit occaecat cupidatat non POINT_B.`);
     });
 
     it('Handles end offset', async function() {
-        await cursorToTop(editor);
         await editor.moveCursor(1, 1);
         await enterModalKeys('escape');
 
@@ -359,7 +355,6 @@ labore elit occaecat cupidatat non POINT_B.`);
     });
 
     it('Accepts `text` argument.', async () => {
-        await cursorToTop(editor);
         await editor.moveCursor(1, 1);
         await enterModalKeys('escape');
 
@@ -369,7 +364,6 @@ labore elit occaecat cupidatat non POINT_B.`);
     });
 
     it('Handles `regex` option.', async () => {
-        await cursorToTop(editor);
         await editor.moveCursor(1, 1);
         await enterModalKeys('escape');
 
@@ -390,7 +384,6 @@ labore elit occaecat cupidatat non POINT_B.`);
     });
 
     it('Handles multiple registers', async () => {
-        await cursorToTop(editor);
         await editor.moveCursor(1, 1);
         await enterModalKeys('escape');
 
@@ -411,7 +404,6 @@ labore elit occaecat cupidatat non POINT_B.`);
     });
 
     it('Handles post-search commands', async () => {
-        await cursorToTop(editor);
         await editor.moveCursor(1, 1);
         await enterModalKeys('escape');
 
@@ -425,6 +417,8 @@ labore elit occaecat cupidatat non POINT_B.`);
     });
 
     after(async () => {
+        await enterModalKeys('escape');
+        await enterModalKeys(['shift', 'i'])
         await storeCoverageStats('searchMotion');
     });
 });

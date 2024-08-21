@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import z from 'zod';
 import {showParseError} from './keybindings/parsing';
 import replaceAll from 'string.prototype.replaceall';
+import {DoArgs} from './keybindings/parsing';
 
 // function validateInput(command: string, args_: unknown,
 //     using: z.ZodUn);
@@ -16,6 +17,13 @@ export function validateInput<T, Def extends z.ZodTypeDef, I>(
         return;
     }
     return result.data;
+}
+
+export function isSingleCommand(x: DoArgs, cmd: string) {
+    if (x.length > 1) {
+        return false;
+    }
+    return x[0].command === cmd;
 }
 
 export function wrappedTranslate(
@@ -63,5 +71,6 @@ export function prettifyPrefix(str: string) {
     // note: a bit hacky, to handle combined key descriptions
     str = replaceAll(str, /(?<!\/) (?!\/)/g, ', ');
     str = replaceAll(str, /escape/gi, 'ESC');
+    str = replaceAll(str, /,{2,}/gi, ',');
     return str;
 }

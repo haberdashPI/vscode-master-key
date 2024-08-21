@@ -6,6 +6,7 @@ on:
         tags:
             - v[0-9]+.[0-9]+.[0-9]+*
     pull_request:
+        types: ['opened', 'edited', 'reopened', 'synchronize', 'ready_for_review']
     workflow_dispatch:
         inputs:
             node_version:
@@ -19,6 +20,7 @@ on:
 
 jobs:
     build:
+        if: '! github.event.pull_request.draft'
         strategy:
             matrix:
                 os: [ubuntu-latest]

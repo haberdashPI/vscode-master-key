@@ -2,9 +2,9 @@
 
 import '@wdio/globals';
 import 'wdio-vscode-service';
-import { enterModalKeys, setBindings, setupEditor, movesCursorInEditor, storeCoverageStats, cursorToTop } from './utils.mts';
-import { InputBox, sleep, TextEditor, WebView, Workbench } from 'wdio-vscode-service';
-import { Key } from "webdriverio";
+import { enterModalKeys, setBindings, setupEditor, storeCoverageStats } from './utils.mts';
+import { sleep, TextEditor, WebView, Workbench } from 'wdio-vscode-service';
+import "webdriverio";
 
 describe('Visual Docs', () => {
     let editor: TextEditor;
@@ -12,6 +12,8 @@ describe('Visual Docs', () => {
     let docView: WebView;
     before(async () => {
         await setBindings(`
+            # # Test Documentation
+            #- IGNORED COMMENT
             [header]
             version = "1.0"
 
@@ -29,6 +31,10 @@ describe('Visual Docs', () => {
             [[kind]]
             name = "right"
             description = "more rightward keys"
+
+            # ## First Section
+
+            # Cillum adipisicing consequat aliquip Lorem adipisicing minim culpa officia aliquip reprehenderit.
 
             [[bind]]
             name = "normal mode"
@@ -66,6 +72,10 @@ describe('Visual Docs', () => {
             args.to = "down"
             kind = "left"
 
+            # ## Second Section
+
+            # Aliquip ipsum enim cupidatat aute occaecat magna nostrud qui labore.
+
             [[bind]]
             path = "motion"
             name = "up"
@@ -87,14 +97,14 @@ describe('Visual Docs', () => {
             command = "master-key.enterInsert"
             mode = "normal"
             kind = "right"
+
+            # Final paragraph shows up.
         `);
         editor = await setupEditor(`A simple test`);
         workbench = await browser.getWorkbench();
         await sleep(500);
 
         await workbench.executeCommand("Master Key: Show Visual Documentation")
-
-        await cursorToTop(editor);
         await enterModalKeys('escape');
 
         await browser.waitUntil(async () => (await workbench.getAllWebviews()).length > 0)
@@ -157,7 +167,6 @@ describe('Visual Docs', () => {
         expect(wClasses).toMatch('kind-color-1');
 
         await browser.keys('w');
-
         await docView.close();
     });
 

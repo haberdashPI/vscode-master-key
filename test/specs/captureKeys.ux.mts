@@ -1,6 +1,6 @@
 import { browser, expect } from '@wdio/globals';
 import { Key } from 'webdriverio';
-import { movesCursorTo, setBindings, setupEditor, movesCursorInEditor, enterModalKeys, cursorToTop, waitForMode, storeCoverageStats } from './utils.mts';
+import { movesCursorTo, setBindings, setupEditor, movesCursorInEditor, enterModalKeys, waitForMode, storeCoverageStats } from './utils.mts';
 import { sleep, InputBox, TextEditor, Workbench } from 'wdio-vscode-service';
 import lodash from 'lodash';
 const { isEqual } = lodash;
@@ -103,6 +103,7 @@ describe('Search motion command', () => {
             // TODO: we should have some user feedback for captured keys
             // so this sleep wouldn't be necessary
             await sleep(1000);
+            // TODO: test that escape keeps the cursor at 1,1 (right now it doesn't)
             await browser.keys(Key.Escape);
             await waitForMode('normal');
 

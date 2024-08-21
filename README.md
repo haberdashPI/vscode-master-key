@@ -84,7 +84,7 @@ See a quick pick palette of possible bindings for the current mode and prefix of
 ### Keybinding Features
 
 > [!WARNING]
-> For the initial release of Master Key, the Keybinding Features are not yet well documented. The main goal of the 0.1.0 release was to make the default keybindings accessible. See the roadmap section below for details. The finer points of implementing your own keybindings will require some digging into source code and/or asking questions in the discussions section of this repo.
+> For the initial release of Master Key, the Keybinding Features are not yet well documented. The main goal of the 0.3.0 release was to make the default keybindings accessible to new users. See the roadmap section below for details. The finer points of implementing your own keybindings will require some digging into source code and/or asking questions in the discussions section of this repo.
 
 When you create your own keybindings using Mater Key's special `.toml` keybinding format you get several powerful features that make it possible to easily create keybindings that would be difficult or impossible to implement without writing your own extension.
 
@@ -123,12 +123,14 @@ For detailed notes on development, refer to `notes.md`.
 - Release 0.1.0: relatively stable default keybindings
 - Release 0.1.x: improved coverage/testing/stability of existing features
 - Release 0.2.0: missing visual documentation features: markdown summary of bindings
-- Release 0.2.x: improved coverage/stability
+- Release 0.2.x: improved performance/coverage/stability
 - Initial publish to VSCode here: 0.3.0
-- Release 0.4.0: improved performance. Through profiling and code review the 0.2.x functioanlity will be improved in efficiency
 - Release 0.4.x: documentation of all keybinding commands, improve quality of life for those building their own custom extensions. May introduce breaking changes to improve API clarity for these bindings
 - Release 0.4.y: source code documentation — may involve substantial refactor to improve legibility / clarity of code
-- Release 1.0.0
+- Release 1.0.0:
+    - code should be legible
+    - test coverage should be satisfactory
+    - documentation should be largely complete
 - Release 1.x: upwards and onwards...
 
 ## Related Work

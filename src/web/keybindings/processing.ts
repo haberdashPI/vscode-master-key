@@ -12,6 +12,7 @@ import {
     ModeSpec,
     doArgs,
     KindItem,
+    FullBindingSpec,
 } from './parsing';
 import z from 'zod';
 import {
@@ -26,8 +27,9 @@ import {
     merge,
 } from 'lodash';
 import {reifyStrings, EvalContext} from '../expressions';
-import {validateInput} from '../utils';
+import {isSingleCommand, validateInput} from '../utils';
 import {fromZodError} from 'zod-validation-error';
+import {asBindingTable, IParsedBindingDoc} from './docParsing';
 
 export interface Bindings {
     name?: string;
@@ -36,12 +38,14 @@ export interface Bindings {
     define: Record<string, unknown>;
     mode: Record<string, ModeSpec>;
     bind: IConfigKeyBinding[];
+    docs: string;
 }
 
-export function processBindings(spec: BindingSpec): [Bindings, string[]] {
+export function processBindings(spec: FullBindingSpec): [Bindings, string[]] {
     const problems: string[] = [];
-    let items = expandDefaultsDefinedAndForeach(spec, problems);
-    items = items.map((item, i) => requireTransientSequence(item, i, problems));
+    const indexedItems = expandDefaultsDefinedAndForeach(spec, problems);
+    const docs = resolveDocItems(indexedItems, spec.doc || []);
+    let items = indexedItems.map((item, i) => requireTransientSequence(item, i, problems));
     items = expandPrefixes(items);
     items = expandModes(items, spec.mode, problems);
     items = expandDocsToDuplicates(items);
@@ -59,6 +63,7 @@ export function processBindings(spec: BindingSpec): [Bindings, string[]] {
         define: definitions,
         mode: mapByName(spec.mode),
         bind: configItems,
+        docs,
     };
     return [result, problems];
 }
@@ -129,10 +134,14 @@ function expandDefinedCommands(
 const partialRawBindingItem = rawBindingItem.partial();
 type PartialRawBindingItem = z.infer<typeof partialRawBindingItem>;
 
+interface IIndexed {
+    index: number;
+}
+
 function expandDefaultsDefinedAndForeach(
     spec: BindingSpec,
     problems: string[]
-): BindingItem[] {
+): (BindingItem & IIndexed)[] {
     // eslint-disable-next-line @typescript-eslint/naming-convention
     const pathDefaults: Record<string, PartialRawBindingItem> = {'': {}};
     const pathWhens: Record<string, ParsedWhen[]> = {};
@@ -156,7 +165,7 @@ function expandDefaultsDefinedAndForeach(
         }
     }
 
-    const items = spec.bind.flatMap((item, i) => {
+    let items = spec.bind.flatMap((item, i) => {
         const itemDefault = pathDefaults[item.path || ''];
         const itemConcatWhen = pathWhens[item.path || ''];
         if (!itemDefault) {
@@ -208,6 +217,7 @@ function expandDefaultsDefinedAndForeach(
                             description: item.description,
                             priority: item.priority,
                             hideInPalette: item.hideInPalette,
+                            hideInDocs: item.hideInDocs,
                             combinedName: item.combinedName,
                             combinedKey: item.combinedKey,
                             combinedDescription: item.combinedDescription,
@@ -222,14 +232,42 @@ function expandDefaultsDefinedAndForeach(
                         );
                         return undefined;
                     } else {
-                        return result.data;
+                        return {...result.data, index: i};
                     }
                 })
                 .filter(i => i !== undefined);
         }
     });
 
-    return <BindingItem[]>items.filter(x => x !== undefined);
+    items = sortBy(items, x => x?.args.priority || 0);
+    return <(BindingItem & IIndexed)[]>items.filter(x => x !== undefined);
+}
+
+function resolveDocItems(items: (BindingItem & IIndexed)[], doc: IParsedBindingDoc[]) {
+    const resolvedItemItr = items[Symbol.iterator]();
+    resolvedItemItr.next();
+    let curResolvedItem: BindingItem & IIndexed = items[0];
+    let markdown = '';
+    let docItemIndex = 0;
+    let abort = false;
+    for (const section of doc) {
+        markdown += section.str + '\n';
+        const resolvedItems: BindingItem[] = [];
+        for (const _ of section.items) {
+            while (!abort && curResolvedItem.index === docItemIndex) {
+                resolvedItems.push(curResolvedItem);
+                const maybeResolvedItem = resolvedItemItr.next();
+                if (maybeResolvedItem.done) {
+                    abort = true;
+                } else {
+                    curResolvedItem = maybeResolvedItem.value;
+                }
+            }
+            docItemIndex += 1;
+        }
+        markdown += asBindingTable(resolvedItems);
+    }
+    return markdown;
 }
 
 function requireTransientSequence(item: BindingItem, i: number, problems: string[]) {
@@ -494,6 +532,7 @@ export interface IConfigKeyBinding {
         description?: string;
         resetTransient?: boolean;
         hideInPalette?: boolean;
+        hideInDocs?: boolean;
         priority: number;
         combinedName: string;
         combinedKey: string;
@@ -616,6 +655,7 @@ function updatePrefixItemAndPrefix(
             kind: automated ? 'prefix' : item.args.name || 'prefix',
             priority: automated ? 0 : item.args.priority,
             hideInPalette: automated ? false : item.args.hideInPalette,
+            hideInDocs: automated ? false : item.args.hideInPalette,
             combinedName: automated ? '' : item.args.combinedName,
             combinedKey: automated ? '' : item.args.combinedKey,
             combinedDescription: automated ? '' : item.args.combinedDescription,
@@ -730,13 +770,6 @@ function expandKeySequencesAndResolveDuplicates(
     }
     const sortedResult = sortBy(Object.values(result), i => i.index);
     return [sortedResult.map(i => i.item), prefixCodes];
-}
-
-export function isSingleCommand(x: DoArgs, cmd: string) {
-    if (x.length > 1) {
-        return false;
-    }
-    return x[0].command === cmd;
 }
 
 function addWithoutDuplicating(

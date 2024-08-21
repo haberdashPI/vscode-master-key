@@ -15,6 +15,7 @@ mode = []
 prefixes = "<all-prefixes>"
 command = "master-key.writeCoverageToEditor"
 hideInPalette = true
+hideInDocs = true
 `;
 
 export async function setBindings(str: string){
@@ -78,8 +79,9 @@ export async function cursorToTop(editor: TextEditor){
     // this method appears to be a common source unreliable behavior so we do the commands
     // slowly
     (await editor.elem).click();
-    await sleep(100);
-    await browser.keys([Key.Ctrl, 'A']);
+    await sleep(500);
+    const workbench = await browser.getWorkbench();
+    await workbench.executeCommand('Select All');
     await sleep(100);
     await browser.keys(Key.ArrowLeft);
     await sleep(100);
@@ -90,7 +92,7 @@ export async function cursorToTop(editor: TextEditor){
     await sleep(200);
 }
 
-export async function setupEditor(str: string){
+export async function setupEditor(str: string, name: string='test'){
     const workbench = await browser.getWorkbench();
 
     // clear any older notificatoins
@@ -118,16 +120,13 @@ export async function setupEditor(str: string){
     // set the text
     // NOTE: setting editor text is somewhat flakey, so we verify that it worked
     console.log("[DEBUG]: setting text to: "+str.slice(0, 50)+"...");
-    await browser.waitUntil(async () => {
-        await editor.setText(str);
-        await waitUntilCursorUnmoving(editor);
-        let text = await editor.getText();
-        return text === str;
-    });
+    await editor.setText(str);
+    await sleep(300);
+    await waitUntilCursorUnmoving(editor);
 
     // focus the editor
     console.log("[DEBUG]: Focusing editor");
-    await cursorToTop(editor);
+    await editor.moveCursor(1, 1);
 
     // NOTE: I often see flaky tests at the very start of a spec. My first guess is we need
     // to give some time for the editor to finish loading stuff asynchronously from
