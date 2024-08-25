@@ -122,8 +122,13 @@ export class CommandState {
             opt = <ISetOptions | {notSetValue: T}>optOrChange;
             change = <(x: T) => T>change_;
         }
-        const values = this.record.values.update(key, opt.notSetValue, x => change(<T>x));
-        if (values !== this.record.values) {
+        const oldValue = this.record.values.get(key);
+        let newValue;
+        const values = this.record.values.update(key, opt.notSetValue, x => {
+            newValue = change(<T>x);
+            return newValue;
+        });
+        if (newValue !== oldValue) {
             return this.setHelper_(key, opt, values);
         } else {
             return this;
