@@ -1,10 +1,15 @@
+# ---
+# author: David Little
+# license: MIT https://github.com/haberdashPI/vscode-master-key/blob/main/LICENSE.md
+# ---
+
 # # Master Keybindings: Larkin
 
 # Larkin is the default keybinding set that ships with Master Key. It follows in the footsteps of Vim, Kakaune and Helix.
 
-# Like its predecessors, Larkin makes use of modal keybindings: in the default mode (Normal) each key on the keyboard, even when you aren't pressing a modifier key, issues a different command. You can exit Normal mode, and return to behavior that is more familiar to users of VSCode (called insert mode) by typing `i`, as well as a variety of other commands (see [Simple Actions](#simple-actions)).
+# Like its predecessors, Larkin makes use of modal keybindings: in the default mode (Normal) each key on the keyboard, even when you aren't pressing a modifier key, issues a command. You can exit this Normal mode, and return to behavior that is more familiar to users of VSCode (called insert mode) by typing `i` (and a variety of other commands: see [Simple Actions](#simple-actions)).
 
-# The overarching logic of these commands generally follow selection-followed-by-action logic. Motions generally cause some region of text to be selected, and then actions modify these selections. This is the inverse of vim's motions: in Larkin you would first select a word (using `w`) and then delete it (`d`). This organization integrates well with many of the existing VSCode extensions which operate on selections or add commands that modify selections.
+# The overarching logic of these commands generally follow noun-then-verb logic logic. Motions generally cause some region of text to be selected, and then actions modify these selections. This is the inverse of vim's motions, but consistent with most modern editors, kakaune and helx: in Larkin you would first select a word (using `w`) and then delete it (`d`). This organization integrates well with many of the existing VSCode extensions which operate on selections or add commands that modify selections.
 
 # These bindings are named after the middle name of my first child (Larkin).
 
