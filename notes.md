@@ -2,10 +2,7 @@
 
 release 0.2.1
 
-low hanging fruit?: avoid re-rendering visual docs multiple times on every key press
-
-Take an first pass at improving performance, identify obvious, simple fixes
-(there are some TODO's) and then profile the extension to look for low-hanging fruit
+profile the extension to look for low-hanging fruit
 
 resource: https://www.nicoespeon.com/en/2019/11/fix-vscode-extension-performance-issue/
 
