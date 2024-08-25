@@ -74,3 +74,15 @@ export function prettifyPrefix(str: string) {
     str = replaceAll(str, /,{2,}/gi, ',');
     return str;
 }
+
+export interface IIndexed {
+    index: number;
+}
+
+export function get<T extends object, K extends keyof T>(x: T, key: K, def: T[K]) {
+    if (key in x && x[key] !== undefined) {
+        return x[key];
+    } else {
+        return def;
+    }
+}

@@ -27,7 +27,7 @@ import {
     merge,
 } from 'lodash';
 import {reifyStrings, EvalContext} from '../expressions';
-import {isSingleCommand, validateInput} from '../utils';
+import {isSingleCommand, validateInput, IIndexed} from '../utils';
 import {fromZodError} from 'zod-validation-error';
 import {asBindingTable, IParsedBindingDoc} from './docParsing';
 
@@ -134,10 +134,6 @@ function expandDefinedCommands(
 const partialRawBindingItem = rawBindingItem.partial();
 type PartialRawBindingItem = z.infer<typeof partialRawBindingItem>;
 
-interface IIndexed {
-    index: number;
-}
-
 function expandDefaultsDefinedAndForeach(
     spec: BindingSpec,
     problems: string[]
@@ -243,27 +239,35 @@ function expandDefaultsDefinedAndForeach(
     return <(BindingItem & IIndexed)[]>items.filter(x => x !== undefined);
 }
 
+function organizedByIndex<T>(items: (T & IIndexed)[]): T[][] {
+    const indexed: T[][] = [];
+    for (const item of items) {
+        const forIndex = indexed[item.index] === undefined ? [] : indexed[item.index];
+        forIndex.push(item);
+        indexed[item.index] = forIndex;
+    }
+    return indexed;
+}
+
 function resolveDocItems(items: (BindingItem & IIndexed)[], doc: IParsedBindingDoc[]) {
     const resolvedItemItr = items[Symbol.iterator]();
     resolvedItemItr.next();
-    let curResolvedItem: BindingItem & IIndexed = items[0];
     let markdown = '';
-    let docItemIndex = 0;
-    let abort = false;
+
+    const byIndex = organizedByIndex(items);
+
     for (const section of doc) {
         markdown += section.str + '\n';
-        const resolvedItems: BindingItem[] = [];
-        for (const _ of section.items) {
-            while (!abort && curResolvedItem.index === docItemIndex) {
-                resolvedItems.push(curResolvedItem);
-                const maybeResolvedItem = resolvedItemItr.next();
-                if (maybeResolvedItem.done) {
-                    abort = true;
-                } else {
-                    curResolvedItem = maybeResolvedItem.value;
-                }
+        let resolvedItems: BindingItem[] = [];
+        for (const item of section.items) {
+            if (byIndex[item.index] === undefined) {
+                throw Error(
+                    `Master Key, unexpected internal inconsistency: could not find item
+                    index ${item.index} in parsed keybindings. This is a
+                    bug!!`.replace(/\s+/, ' ')
+                );
             }
-            docItemIndex += 1;
+            resolvedItems = resolvedItems.concat(byIndex[item.index]);
         }
         markdown += asBindingTable(resolvedItems);
     }
