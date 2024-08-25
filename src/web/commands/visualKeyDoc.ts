@@ -312,8 +312,6 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
             vscode.Uri.joinPath(this._extensionUri, 'docview', 'script.js')
         );
         let num = 0;
-        // TODO: we need to dynamically update the top and bottom labels depending on
-        // modifiers this will require updating the key-label- divs in `script.js`
         const keys = `
         <div id="master-key-visual-doc" class="container">
             <div class="keyboard">
