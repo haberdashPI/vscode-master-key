@@ -71,6 +71,18 @@ describe('Binding Docs', () => {
             args.to = "down"
             kind = "left"
 
+            #- verify that including lots of ignored keys doesn't mess up display
+            [[bind]]
+            name = "ignore"
+            foreach.key = ['{key: .}']
+            key = "{key}"
+            command = "master-key.ignore"
+            hideInDocs = true
+            hideInPalette = true
+            priority = -10
+            when = "editorTextFocus"
+            mode = "normal"
+
             # ## Second Section
 
             # Aliquip ipsum enim cupidatat aute occaecat magna nostrud qui labore.
@@ -100,9 +112,7 @@ describe('Binding Docs', () => {
             # Final paragraph shows up.
         `);
 
-        console.log("[DEBUG]: setup bindings")
         const workbench = await browser.getWorkbench();
-        await sleep(5000);
         // console.log("[DEBUG]: showing documentation")
         // await workbench.executeCommand('Master Key: Show Text Documentation')
         await browser.waitUntil(async () => (await workbench.getAllWebviews()).length > 1)
