@@ -74,3 +74,7 @@ export function prettifyPrefix(str: string) {
     str = replaceAll(str, /,{2,}/gi, ',');
     return str;
 }
+
+export interface IIndexed {
+    index: number;
+}

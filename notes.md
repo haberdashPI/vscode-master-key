@@ -1,6 +1,12 @@
+## Debug doc problem
+
+While the unit tests for doc display works, somewhere in the process of getting those
+to work, Larkin doc display was broken. I've narrowed this down to an issue with resolving
+the indexing/alignment of the markdown doc parsing and data parsing.
+
 ## Optimization
 
-release 0.2.1
+release 0.2.2
 
 low hanging fruit?: avoid re-rendering visual docs multiple times on every key press
 
