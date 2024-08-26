@@ -1,12 +1,15 @@
-## Debug doc problem
+## Macro Recording Bug
 
-While the unit tests for doc display works, somewhere in the process of getting those
-to work, Larkin doc display was broken. I've narrowed this down to an issue with resolving
-the indexing/alignment of the markdown doc parsing and data parsing.
+release 0.2.2
+
+We don't want to get stuck in an infinite loop of having a macro replay itself, yet
+this currently happens. This is probably due to a poor specification in Larkin,
+but we shouldn't allow the user to create such a painful infinite loop that completely
+locks up VSCode.
 
 ## Optimization
 
-release 0.2.2
+release 0.2.3
 
 low hanging fruit?: avoid re-rendering visual docs multiple times on every key press
 
