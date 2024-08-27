@@ -11,7 +11,7 @@ const selectHistoryArgs = z
     .object({
         range: z.object({from: z.string(), to: z.string()}).optional(),
         at: z.string().optional(),
-        value: z.object({}).array().optional(),
+        value: z.object({}).passthrough().array().optional(),
         register: z.string().optional(),
     })
     .strict()
@@ -149,6 +149,7 @@ async function replayFromHistory(args: unknown): Promise<CommandResult> {
     const commands = await selectHistoryCommand('master-key.replayFromHistory', args);
     if (commands) {
         await runCommandHistory(commands);
+        return {...(<object>args), value: commands};
     }
     return;
 }
