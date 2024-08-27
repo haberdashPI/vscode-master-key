@@ -4,6 +4,14 @@ While the unit tests for doc display works, somewhere in the process of getting 
 to work, Larkin doc display was broken. I've narrowed this down to an issue with resolving
 the indexing/alignment of the markdown doc parsing and data parsing.
 
+I thought I had solved this with 0.2.1, but now I am encounters issues during packaages
+since this is the firs time I am testing out the ability to package the current version in a while. The thing that is making this super tricky is that for purposes of production
+we *don't* want `"main"": "./dist/desktop/extension.js"` present in `package.json`,
+but we need it to be there for running tests. UGH...
+
+I think it would make sense to use "penv": https://www.npmjs.com/package/penv
+It is annoying that I have to revert to this, but that looks like a nice elegant solution.
+
 ## Optimization
 
 release 0.2.2
