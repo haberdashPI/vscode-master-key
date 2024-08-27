@@ -2,6 +2,7 @@ import { browser, expect } from '@wdio/globals';
 import { Key } from 'webdriverio';
 import { setBindings, setupEditor, movesCursorInEditor, enterModalKeys, waitForMode, storeCoverageStats } from './utils.mts';
 import { sleep, InputBox, TextEditor, Workbench } from 'wdio-vscode-service';
+import { moveCursor } from 'readline';
 
 describe('Replay', () => {
     let editor: TextEditor;
@@ -437,6 +438,28 @@ i j k l`);
             await enterModalKeys({key: ['shift', '2'], count: 2}, 'q',
                 {key: 'c', updatesStatus: false});
         }, [0, 3], editor);
+    });
+
+    it('Handles nested replay', async () => {
+        await editor.moveCursor(1, 1);
+        await enterModalKeys('escape');
+
+        await enterModalKeys(['shift', 'q'])
+        await waitForMode('rec: normal');
+        await movesCursorInEditor(async () => {
+            await enterModalKeys('l');
+            await enterModalKeys('q', {key: 'l', updatesStatus: false});
+        }, [0, 2], editor);
+        await enterModalKeys(['shift', 'q']);
+        await waitForMode('normal');
+
+        await movesCursorInEditor(async () => {
+            await enterModalKeys('q', {key: 'q', updatesStatus: false});
+        }, [0, 2], editor);
+
+        await movesCursorInEditor(async () => {
+            await enterModalKeys('q', {key: 'q', updatesStatus: false});
+        }, [0, 2], editor);
     });
 
     after(async () => {

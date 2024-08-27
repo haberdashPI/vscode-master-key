@@ -5,6 +5,7 @@ import {BindingItem, bindingSpec, ParsedResult, RawBindingItem} from './parsing'
 import {uniqBy, sortBy} from 'lodash';
 import replaceAll from 'string.prototype.replaceall';
 import {cloneDeep} from 'lodash';
+import {IIndexed} from '../utils';
 
 const TOML = require('smol-toml');
 
@@ -20,7 +21,7 @@ function filterBinding(binding: BindingItem) {
 
 export interface IParsedBindingDoc {
     str: string;
-    items: RawBindingItem[];
+    items: (RawBindingItem & IIndexed)[];
 }
 
 function parseDocItems(data: string): ParsedResult<RawBindingItem[]> {
@@ -44,6 +45,14 @@ function parseDocItems(data: string): ParsedResult<RawBindingItem[]> {
     }
 }
 
+function addIndexField<T>(xs: T[], i = -1): [(T & IIndexed)[], number] {
+    for (const x of xs) {
+        i += 1;
+        (<T & IIndexed>x).index = i;
+    }
+    return [<(T & IIndexed)[]>xs, i];
+}
+
 // TODO: we need to grab the previously computed complete parse we should be able to
 // uniquely match items to the full parse and use that to grab an default expansions
 export function parseBindingDocs(str: string) {
@@ -52,6 +61,7 @@ export function parseBindingDocs(str: string) {
     let data = '';
     let error: ZodError | undefined = undefined;
     let lastUpdatedDocs = true;
+    let lastIndex = -1;
     for (const line of str.split(/[\r\n]+/)) {
         // comments (excluding those starting with `#-`) are treated as markdown output
         if (/^\s*$/.test(line)) {
@@ -67,7 +77,7 @@ export function parseBindingDocs(str: string) {
                 const items = parseDocItems(data);
                 if (items.success) {
                     if (items.data.length > 0) {
-                        doc.items = items.data;
+                        [doc.items, lastIndex] = addIndexField(items.data, lastIndex);
                         result.push(doc);
                         doc = {str: '', items: []};
                     }
@@ -94,7 +104,7 @@ export function parseBindingDocs(str: string) {
         const items = parseDocItems(data);
         if (items.success) {
             if (items.data.length > 0) {
-                doc.items = items.data;
+                [doc.items, lastIndex] = addIndexField(items.data, lastIndex);
             }
         } else {
             error = items.error;

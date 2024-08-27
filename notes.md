@@ -1,6 +1,6 @@
 ## Optimization
 
-release 0.2.1
+release 0.2.4
 
 profile the extension to look for low-hanging fruit
 

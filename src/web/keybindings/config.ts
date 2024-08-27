@@ -50,7 +50,7 @@ async function useBindings(label: string) {
         }
     } catch (e) {
         console.dir(e);
-        vscode.window.showErrorMessage('Could not load bindings with label: ' + configFile);
+        vscode.window.showErrorMessage('Could not load bindings with label: ' + label);
     }
 }
 
