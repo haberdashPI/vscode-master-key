@@ -4,7 +4,7 @@ import {validateInput} from '../utils';
 import {EvalContext} from '../expressions';
 import {withState, CommandResult, recordedCommand} from '../state';
 import {doCommands, RecordedCommandArgs, RunCommandsArgs, COMMAND_HISTORY} from './do';
-import {uniq, cloneDeep} from 'lodash';
+import {uniq} from 'lodash';
 import {List} from 'immutable';
 
 const selectHistoryArgs = z
@@ -149,7 +149,7 @@ async function replayFromHistory(args: unknown): Promise<CommandResult> {
     const commands = await selectHistoryCommand('master-key.replayFromHistory', args);
     if (commands) {
         await runCommandHistory(commands);
-        return {...(<object>args), value: cloneDeep(commands)};
+        return {...(<object>args), value: commands};
     }
     return;
 }
