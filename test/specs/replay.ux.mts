@@ -448,7 +448,7 @@ i j k l`);
         await waitForMode('rec: normal');
         await movesCursorInEditor(async () => {
             await enterModalKeys('l');
-            await enterModalKeys('q l');
+            await enterModalKeys('q', {key: 'l', updatesStatus: false});
         }, [0, 2], editor);
         await enterModalKeys(['shift', 'q']);
         await waitForMode('normal');
