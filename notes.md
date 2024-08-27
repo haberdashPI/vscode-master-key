@@ -2,12 +2,7 @@
 
 release 0.2.4
 
-low hanging fruit?: avoid re-rendering visual docs multiple times on every key press
-
-Take an first pass at improving performance, identify obvious, simple fixes
-(there are some TODO's) and then profile the extension to look for low-hanging fruit
-
-resource: https://www.nicoespeon.com/en/2019/11/fix-vscode-extension-performance-issue/
+observation: from what I can tell of profiling, it doesn't look like master key is consuming many CPU cycles at all; which is great!! no reason to work on this further
 
 ## More visual doc improvements
 
@@ -46,11 +41,6 @@ thoughts: things I must have to release:
   + have an option to allow a default command
     that operates on all keys that *aren't* specified
     OR that pass a regex
-- MODERNIZED SELECTION UTILITIES
-  - modernized command documentation
-  - modern build setup
-  - some basic UX tests
-  - 1.0 release
 + final design of keybinding file that I'm relatively satisfied with
   + fix the repeat keybindings
   + fix default expansion
@@ -111,18 +101,22 @@ Gaps in coverage:
 
 after first release
 
-- speed up:
-  - https://www.nicoespeon.com/en/2019/11/fix-vscode-extension-performance-issue/
+release 0.3.x
 
-release 0.4.0
+code-reading QOL
+
+- MODERNIZED SELECTION UTILITIES
+  - modernized command documentation
+  - modern build setup
+  - some basic UX tests
+  - 1.0 release
 
 - good documentation of the code
 - good documentation of the binding format
 - vim style bindings? (I think this could come in a separate release; or just never do it, wait until someone wants it)
 
-release 0.4.x
+release 0.3.y
 
-REFACTOR: add prettier config and apply new style to all files
 REFACTOR: cleanup up and document code, make it nice and readable
 REFACTOR: change name of test files to be more consistent
 REFACTOR: somehow we have to define/organize binding parameters
@@ -134,12 +128,14 @@ FEATURE: require parsing to validate modes to be all negations or all positive m
 
 - HIGH PRIORITY: improve error reporting for keybinding files
 
+- coding qol: don't require updates to define what state variables are "public"
+
+- performance: exclude more state properties from getting stored
+  as context values
+
 - once we've improved performance, parallelize the tests more
 
 - test coverage: use selectors to find the text decorations used for search and check their properties
-
-- optimization: most values can be read only, (e.g. definitions) and if we implemented
-  these values differently, it would save us some time
 
 - a command to repair keybindings getting out of sync with the activated bindings
   ID
