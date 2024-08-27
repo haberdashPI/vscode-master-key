@@ -467,10 +467,7 @@ async function loadPresets(allDirs: vscode.Uri[]) {
             }
         } else {
             for (const [filename, type] of await vscode.workspace.fs.readDirectory(dir)) {
-                if (
-                    type === vscode.FileType.File &&
-                    /(json|jsonc|yml|yaml|toml)$/.test(filename)
-                ) {
+                if (type === vscode.FileType.File && /toml$/.test(filename)) {
                     const uri = Utils.joinPath(dir, filename);
                     loadPreset(presets, uri);
                 }

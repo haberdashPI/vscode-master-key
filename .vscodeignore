@@ -1,12 +1,9 @@
 .vscode/**
 .vscode-test-web/**
 src/**
-out/**
 test/**
-uxtest/**
 node_modules/**
 .gitignore
-vsc-extension-quickstart.md
 webpack.config.js
 .yarnrc
 **/tsconfig.json
@@ -19,3 +16,10 @@ webpack.config.js
 coverage/**
 coverage.json
 wdio.log
+.package.json
+README.md
+CHANGELOG.md
+debug-profile.code-profile
+_typos.toml
+notes.md
+npm-run.sh

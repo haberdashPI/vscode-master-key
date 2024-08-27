@@ -13,3 +13,4 @@ test/temp/**
 coverage/**
 coverage.json
 wdio.log
+.package.json
