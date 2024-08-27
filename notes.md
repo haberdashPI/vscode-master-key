@@ -2,9 +2,7 @@
 
 release 0.2.4
 
-profile the extension to look for low-hanging fruit
-
-resource: https://www.nicoespeon.com/en/2019/11/fix-vscode-extension-performance-issue/
+observation: from what I can tell of profiling, it doesn't look like master key is consuming many CPU cycles at all; which is great!! no reason to work on this further
 
 ## More visual doc improvements
 
