@@ -739,7 +739,7 @@ args.register = "search"
 [[bind]]
 path = "edit.motion.search"
 key = "shift+/"
-name = "search bk"
+name = "search ←"
 description = "search backwards"
 combinedName = "search → (←)"
 args.offset = "start"
@@ -1613,6 +1613,8 @@ mode = ["normal", "selectedit", "syminsert"]
 [[bind]]
 path = "edit.action.basic"
 key = "a"
+name = "append"
+description = "insert after cursor"
 mode = ["normal", "selectedit", "syminsert"]
 command = "runCommands"
 args.commands = [

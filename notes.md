@@ -1,10 +1,6 @@
 ## More visual doc improvements
 
-IMPROVEMENT: show escape/function key row in the visual key doc
-
-BUG: why are some of the keys displayed as `undefined` even though their name isn't? (probably something about how keys get merged; make sure we propagate `name` and `description` so they aren't undefined)
-
-release 0.2.2
+release 0.2.5
 
 - IMPROVEMENT: put some examples of cool features from `Larkin` in the README
 
