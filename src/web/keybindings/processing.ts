@@ -39,6 +39,7 @@ export interface Bindings {
     mode: Record<string, ModeSpec>;
     bind: IConfigKeyBinding[];
     docs: string;
+    requiredExtensions: string[];
 }
 
 export function processBindings(spec: FullBindingSpec): [Bindings, string[]] {
@@ -63,6 +64,7 @@ export function processBindings(spec: FullBindingSpec): [Bindings, string[]] {
         define: definitions,
         mode: mapByName(spec.mode),
         bind: configItems,
+        requiredExtensions: spec.header.requiredExtensions || [],
         docs,
     };
     return [result, problems];

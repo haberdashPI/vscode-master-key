@@ -3,7 +3,7 @@
   "displayName": "Master Key",
   "publisher": "haberdashPI",
   "description": "Master your keybindings with documentation, discoverability, modal bindings and expressive configuration",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "repository": {
     "url": "https://github.com/haberdashPi/vscode-master-key"
   },
@@ -39,6 +39,11 @@
         "command": "master-key.showVisualDoc",
         "category": "Master Key",
         "title": "Show Visual Documentation"
+      },
+      {
+        "command": "master-key.installRequiredExtensions",
+        "category": "Master Key",
+        "title": "Install Extensions Required by Keybindings"
       },
       {
         "command": "master-key.setVisualDocTopModifiers",

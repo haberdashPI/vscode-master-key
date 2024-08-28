@@ -410,12 +410,90 @@ async function copyBindingsToNewFile() {
     }
 }
 
+async function handleRequireExtensions(bindings: Bindings) {
+    const items: vscode.QuickPickItem[] = bindings.requiredExtensions.map(id => {
+        const exts = vscode.extensions.all.filter(x => x.id === id);
+        if (exts.length > 0) {
+            return {label: id, detail: 'installed', picked: true};
+        } else {
+            return {
+                label: id,
+                detail: 'uninstalled',
+                picked: false,
+                buttons: [
+                    {iconPath: new vscode.ThemeIcon('eye'), tooltip: 'view extension'},
+                ],
+            };
+        }
+    });
+    if (items.length === 0 || items.every(it => it.detail === 'installed')) {
+        return;
+    }
+    items.unshift({
+        label: 'Install All',
+        picked: false,
+        alwaysShow: true,
+    });
+    const picker = vscode.window.createQuickPick();
+    picker.title = `Extensions Used by ${bindings.name}`;
+    picker.items = items;
+    picker.canSelectMany = true;
+    picker.placeholder =
+        'Indicate extensions to install (review them by clicking on the eye to the right)';
+    picker.ignoreFocusOut = true;
+
+    picker.onDidTriggerItemButton(e => {
+        vscode.commands.executeCommand('workbench.extensions.search', e.item.label);
+    });
+
+    let resolveFn: () => void;
+    const pickPromise = new Promise<void>((res, _rej) => {
+        resolveFn = res;
+    });
+    picker.onDidHide(_ => {
+        resolveFn();
+        picker.dispose();
+    });
+    let accept = false;
+    picker.onDidAccept(_ => {
+        accept = true;
+        picker.hide();
+    });
+    picker.show();
+
+    await pickPromise;
+    if (!accept) {
+        return;
+    }
+
+    if (picker.selectedItems.some(it => it.label === 'Install All')) {
+        for (const item of picker.items) {
+            if (item.detail === 'uninstalled') {
+                await vscode.commands.executeCommand(
+                    'workbench.extensions.installExtension',
+                    item.label
+                );
+            }
+        }
+    }
+
+    for (const item of picker.selectedItems) {
+        if (item.detail === 'uninstalled') {
+            await vscode.commands.executeCommand(
+                'workbench.extensions.installExtension',
+                item.label
+            );
+        }
+    }
+}
+
 export async function selectPreset(preset?: Preset) {
     if (!preset) {
         preset = await queryPreset();
     }
     if (preset) {
         const label = await createBindings(preset.bindings);
+        await handleRequireExtensions(preset.bindings);
         await insertKeybindingsIntoConfig(
             preset.bindings.name || 'none',
             label,
@@ -501,6 +579,12 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.importDefaultBindings', () =>
             copyCommandResultIntoBindingFile('workbench.action.openDefaultKeybindingsFile')
+        )
+    );
+    context.subscriptions.push(
+        vscode.commands.registerCommand(
+            'master-key.installRequiredExtensions',
+            handleRequireExtensions
         )
     );
     context.subscriptions.push(
