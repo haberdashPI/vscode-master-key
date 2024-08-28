@@ -3,10 +3,8 @@
 release 0.2.5
 
 - IMPROVEMENT: put some examples of cool features from `Larkin` in the README
-
-- IMPROVEMENT: use `getExtension` or some such on each required extension, and offer to
-  install if it fails (does this work for any extension? or does `activate` have to return
-  something)
+- maybe some tests for selecting bindings?
+- maybe some tests for selecting extensions?
 
 release 0.2.3
 
