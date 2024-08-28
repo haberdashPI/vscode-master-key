@@ -1,14 +1,16 @@
 ## More visual doc improvements
 
-release 0.2.5
-
-- IMPROVEMENT: put some examples of cool features from `Larkin` in the README
+BUG: why does <code>`o`</code> not show up? (just ends up being `<code> </code>`)???
 - maybe some tests for selecting bindings?
 - maybe some tests for selecting extensions?
 
-release 0.2.3
+release 0.2.5
+
+- IMPROVEMENT: put some examples of cool features from `Larkin` in the README
 
 by the end of this milestone I'm satisfied with the documentation features of the package for an initial release
+
+release 0.2.6
 
 ## Binding Cleanup
 
@@ -17,7 +19,6 @@ release 0.2.y
 - feature: specify user-specific binding file, apart from activated keybindings
 - Split out any of the commands that are really custom for me that don't make sense to publish.
 - Pair down some of the required extensions.
-- Offer to install extensions? (maybe when a keybinding fails to run??)
 
 ## Before VSCode publish
 
