@@ -13,6 +13,7 @@
 # - Command are organized around noun-verb ordering: e.g. `w` selects a word, and `d` will then deletes it.
 # - Selection is sticky: once a selection is created, further commands tend to extend that selection until it is reset (using `v`). However a number of commands are defined to automatically reset the selection (e.g. `mw` creates a new selection around a word).
 
+#
 # These bindings are named after the middle name of my first child (Larkin).
 
 #- NOTE: this file is used to generate both keybindings and to generate a markdown file that documents the bindings. When comments are prefixed with a `-` they are ignored in the final markdown output. All other comments will become part of the markdown output. Any [[bind]] entries unbroken by normal, markdown-displayed comments will show up in a table in the markdown output. Make sure that the normal comments do not break up TOML data in a way that means it is invalid TOML.
@@ -21,16 +22,12 @@
 name = "Larkin Key Bindings"
 version = "1.0"
 
-#- NOTE: currently this field (`requiredExtensions`) has no functional effect, it merely serves as documentation. However, future version of Master Key may leverage the required extensions in some way to make them easy to install when they are missing
-
 requiredExtensions = [
       "dbankier.vscode-quick-select",
       "haberdashPI.vscode-select-by-indent",
       "haberdashPI.selection-utilities",
-      "haberdashPI.move-cursor-by-argument",
       "pustelto.bracketeer",
       "wmaurer.change-case",
-      "pranshuagrawal.toggle-case",
       "albymor.increment-selection",
       "pkief.markdown-checkbox",
       "stkb.rewrap",
@@ -38,7 +35,6 @@ requiredExtensions = [
       "jack89ita.open-file-from-path",
       "koalamer.labeled-bookmarks",
 ]
-
 
 [[mode]]
 name = "insert"
@@ -2109,13 +2105,6 @@ description = "Swap first character to upper case"
 key = "` u"
 command = "extension.changeCase.upperFirst"
 
-[[bind]]
-path = "edit.action.capitals"
-name = 'toggle'
-description = "Toggle through all possible cases"
-key = "` `"
-command = "extension.toggleCase"
-
 # ## "Do" Actions
 
 # These keys are all organized under the `space` key and they "do" something. These are generally more elaborate editing operations in the current editor pane.
@@ -3506,6 +3495,7 @@ command = "selection-utilities.excludeByRegex"
 path = "edit.select_edit"
 key = "o"
 name = "active to front"
+combinedKey = "o/shift+o"
 combinedName = "active to start/end"
 combinedDescription = "move cursor to start/end of selection"
 description = "move cursor to start of selection"
@@ -3656,6 +3646,7 @@ computedArgs.count = "count"
 path = "edit.motion.symmetric"
 key = "o"
 name = "active to front"
+combinedKey = "o/shift+o"
 combinedName = "active to start/end"
 combinedDescription = "move cursor to start/end of selection"
 description = "move cursor to start of selection"

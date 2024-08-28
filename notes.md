@@ -1,6 +1,5 @@
 ## More visual doc improvements
 
-BUG: why does <code>`o`</code> not show up? (just ends up being `<code> </code>`)???
 - maybe some tests for selecting bindings?
 - maybe some tests for selecting extensions?
 
