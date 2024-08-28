@@ -87,9 +87,16 @@ function formatBindings(name: string, items: IConfigKeyBinding[]) {
     );
 }
 
-export function filterBindingFn(mode?: string, prefixCode?: number) {
+export function filterBindingFn(
+    mode?: string,
+    prefixCode?: number,
+    forVisualDoc: boolean = false
+) {
     return function filterBinding(binding: IConfigKeyBinding) {
-        if (binding.args.hideInPalette) {
+        if (binding.args.hideInPalette && !forVisualDoc) {
+            return false;
+        }
+        if (binding.args.hideInDocs && forVisualDoc) {
             return false;
         }
         if (isSingleCommand(binding.args.do, 'master-key.ignore')) {

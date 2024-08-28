@@ -111,6 +111,8 @@
 .key-length-1-75 { flex: 1.75; }
 .key-length-2-25 { flex: 2.25; }
 .key-length-5 { flex: 7; }
+.key-height-0-5 { height: calc(var(--key-height) / 2); }
+/* .key-height-1 { height: var(--key-height) } */
 
 .label {
     height: calc(var(--key-height) / 2 - var(--key-padding));
@@ -136,6 +138,10 @@
     padding-top: var(--key-padding);
     border-top: var(--key-border-width) solid var(--vscode-foreground);
     border-top-left-radius: var(--key-radius);
+}
+
+.key.key-height-0-5 .label.bottom.no-top{
+    height: calc(var(--key-height) / 2 - 2*var(--key-padding))
 }
 
 .name {
@@ -166,4 +172,8 @@
     padding-top: var(--key-padding);
     border-top: var(--key-border-width) solid var(--vscode-foreground);
     border-top-right-radius: var(--key-radius);
+}
+
+.key.key-height-0-5 .name.bottom.no-top{
+    height: calc(var(--key-height) / 2 - 2*var(--key-padding))
 }

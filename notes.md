@@ -1,12 +1,8 @@
-## Optimization
-
-release 0.2.4
-
-observation: from what I can tell of profiling, it doesn't look like master key is consuming many CPU cycles at all; which is great!! no reason to work on this further
-
 ## More visual doc improvements
 
 IMPROVEMENT: show escape/function key row in the visual key doc
+
+BUG: why are some of the keys displayed as `undefined` even though their name isn't? (probably something about how keys get merged; make sure we propagate `name` and `description` so they aren't undefined)
 
 release 0.2.2
 
