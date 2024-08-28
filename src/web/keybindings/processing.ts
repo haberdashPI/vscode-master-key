@@ -505,6 +505,7 @@ function expandDocsToDuplicates(items: BindingItem[]) {
         const oldDocs = itemDocs[key] || {};
         itemDocs[key] = merge(
             pick(item.args, [
+                'name',
                 'description',
                 'combinedName',
                 'combinedDescription',
@@ -656,7 +657,7 @@ function updatePrefixItemAndPrefix(
             ],
             path: item.args.path,
             name: automated ? 'prefix' : item.args.name,
-            kind: automated ? 'prefix' : item.args.name || 'prefix',
+            kind: automated ? 'prefix' : item.args.kind || 'prefix',
             priority: automated ? 0 : item.args.priority,
             hideInPalette: automated ? false : item.args.hideInPalette,
             hideInDocs: automated ? false : item.args.hideInPalette,
