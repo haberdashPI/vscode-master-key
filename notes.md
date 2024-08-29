@@ -1,24 +1,15 @@
-## More visual doc improvements
-
-release 0.2.5
-
-- IMPROVEMENT: put some examples of cool features from `Larkin` in the README
-
-by the end of this milestone I'm satisfied with the documentation features of the package for an initial release
-
 ## Binding Cleanup
 
 BUG: we can't get info about keybindings from a sync'd machine
 
 release 0.2.6
 
-- feature: specify user-specific binding file, apart from activated keybindings
-- Split out any of the commands that are really custom for me that don't make sense to publish.
-- Pair down some of the required extensions?
++ feature: specify user-specific binding file, apart from activated keybindings
++ Split out any of the commands that are really custom for me that don't make sense to publish.
 
 ## Trailing fixes
 
-Working with release 0.2.6 for a while and mark sure there aren't an bugs to fix
+Working with release 0.2.6 for a while and make sure there aren't an bugs to fix
 
 ## Before VSCode publish
 
