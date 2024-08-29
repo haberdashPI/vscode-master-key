@@ -72,15 +72,19 @@ or manuall removal:
 
 Swap selected objects with one another.
 
-
+![example of text exchange](images/readme/exchangetext.webp)
 
 #### Repeat Last Selection / Action
 
 Avoid lengthy key sequences by repeating the last action-related selection with "," and the last action with "."
 
+![example of repeating select/action](images/readme/repeat.webp)
+
 #### Record Commands
 
 Record longer command sequences and replay them.
+
+![example of recording key sequence](images/readme/record.webp)
 
 > [!NOTE]
 > Command command recording comes with a few limitations, refer to the documentation for details
@@ -88,6 +92,8 @@ Record longer command sequences and replay them.
 #### Symmetric Insert
 
 Insert appropriate characters before and after each selection
+
+![example of syminsert mode](images/readme/syminsert.webp)
 
 ### Discoverability Features
 
