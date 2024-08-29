@@ -87,7 +87,7 @@ Record longer command sequences and replay them.
 ![example of recording key sequence](images/readme/record.webp)
 
 > [!NOTE]
-> Command command recording comes with a few limitations, refer to the documentation for details
+> Command recording comes with a few limitations, refer to the cheet sheet on Larkin macros for details
 
 #### Symmetric Insert
 
@@ -101,20 +101,24 @@ Insert appropriate characters before and after each selection
 
 Learn and review your bindings on a keyboard layout
 
-**NOTE**: demo the ability to toggle bindings on the keys
+![example of visual docs](images/readme/visualdoc.jpg)
 
 #### Cheet sheet of keybindings
 
 Review your bindings in a cheet sheet organized by theme
 
+![example of cheet sheet](images/readme/cheatsheet.png)
+
 #### Keybinding hints
 
 See a quick pick palette of possible bindings for the current mode and prefix of keys already pressed
 
+![example of palette](images/readme/palette.png)
+
 ### Keybinding Features
 
 > [!WARNING]
-> For the initial release of Master Key, the Keybinding Features are not yet well documented. The main goal of the 0.3.0 release was to make the default keybindings accessible to new users. See the roadmap section below for details. The finer points of implementing your own keybindings will require some digging into source code and/or asking questions in the discussions section of this repo.
+> For the initial release of Master Key, the Keybinding Features are not yet well documented. You can review the features when copying Larking to your own customization file. The main goal of the 0.3.0 release was to make the default keybindings accessible to new users. See the roadmap section below for details. The finer points of implementing your own keybindings will require some digging into source code and/or asking questions in the discussions section of this repo.
 
 When you create your own keybindings using Mater Key's special `.toml` keybinding format you get several powerful features that make it possible to easily create keybindings that would be difficult or impossible to implement without writing your own extension.
 
@@ -122,21 +126,68 @@ When you create your own keybindings using Mater Key's special `.toml` keybindin
 
 Your bindings can be modal—a special key (like escape) switches you to a different mode where all the keys on your keyboard can be used to issue commands specific to that mode.
 
+```toml
+[[bind]]
+key = "j"
+mode = "normal"
+command = ...
+```
+
 #### Parameteric Bindings
 
 Express an entire series of bindings using the `foreach` field.
+
+```toml
+[[bind]]
+path = "edit.count"
+foreach.num = ['{key: [0-9]}']
+name = "count {num}"
+key = "{num}"
+command = "master-key.updateCount"
+args.value = "{num}"
+```
 
 #### Stateful Bindings
 
 Update state with the `master-key.captureKeys`, `master-key.updateCount`, `master-key.setFlag` or `master-key.storeNamed` and then use this state in downstream commands using `computedArgs` instead of `args` in your keybinding.
 
+```toml
+[[bind]]
+name = "between pair"
+key = "m t"
+description = """
+Select between pairs of the same N characters
+"""
+command = "runCommands"
+
+[[bind.args.commands]]
+command = "master-key.captureKeys"
+args.acceptAfter = 1
+
+[[bind.args.commands]]
+command = "selection-utilities.selectBetween"
+computedArgs.str = "captured"
+args.inclusive = false
+```
+
 #### Record and Repeat Commands
 
 Master key records recent key presses, allowing you to create commands that quickly repeat a previous sequence using `master-key.replayFromHistory` or `master-key.pushHistoryToStack` and `master-key.replayFromStack`. You can disable key press recording by setting `master-key.maxCommandHistory` to 0 in your settings.
 
+```toml
+[[bind]]
+key = ";"
+name = "repeat motion"
+repeat = "count"
+command = "master-key.replayFromHistory"
+args.at = "commandHistory[i].path.startsWith('edit.motion') && commandHistory[i].name != 'repeat motion'"
+```
+
 #### Documented Bindings
 
 Of course, just like all of the built-in bindings in Master Key, you can document your bindings so that they show up legibly within the discoverability features above.
+The toml file is a literate document used to generate the textual documentation
+and all binding's names will show up in the visual documentation as appropriate.
 
 ## Customized Bindings
 

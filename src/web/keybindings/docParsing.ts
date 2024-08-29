@@ -154,7 +154,7 @@ export function asBindingTable(parsed: BindingItem[]) {
         const mode = asArray(item.mode)
             .map(m => '`' + m + '`')
             .join(', ');
-        result += `|${mode}|<code> ${key} </code>|${item.args.name}|${stripNewlines(item.args.description || '')}|\n`;
+        result += `|${mode}|${key}|${item.args.name}|${stripNewlines(item.args.description || '')}|\n`;
     }
     result += '\n';
     return result;
