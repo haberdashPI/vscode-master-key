@@ -5,13 +5,6 @@
 [![codecov](https://codecov.io/gh/haberdashPI/vscode-master-key/graph/badge.svg?token=099XZY1KR9)](https://codecov.io/gh/haberdashPI/vscode-master-key)
 [![Code Style: Google](https://img.shields.io/badge/code%20style-google-blueviolet.svg)](https://github.com/google/gts)
 
-**TODO**: doc badges
-
-> [!WARNING]
-> 🚧 Master Key is still under construction. 🚧
->
-> The README is a WIP document that will eventually reflect the intended state for release 0.3.0 at which point this extension will be published to VSCode's extension marketplace. For now expect to find missing features, a variety of bugs and incomplete documentation.
-
 Master key helps you to learn, create and use powerful keybindings in [VSCode](https://code.visualstudio.com/).
 
 If you want to improve your text editing super powers in VSCode, Master Key might just be the tool for you.
@@ -26,65 +19,98 @@ The easiest way to get started is to activate the built-in keybindings that come
 
 ## Examples
 
-Master Key includes the following features:
-
-**TODO**: insert example gif of each feature below
-
-### Editing Features
-
-Here are some of the cool features that come with the built-in `Larkin` keybindings provided by Master Key with the help of [selection utilities](https://github.com/haberdashPI/vscode-selection-utilities). These bindings following in the footsteps of Vim, Kakaune and Helix.
-
-#### Move by Object
-
-Select by word, line, block and more. Expand by indent, quotes and brackets.
-
-Once you've selected the object, run commands to do stuff (e.g. delete/change/comment)
-
-#### Multi-Cursor Creation and Filtering
-
-Quickly create multiple selections by splitting selections or searching within selections.
-Filter out the ones you don't want either by some filter, or by manually picking out
-one or more you don't want.
-
-#### Exchange Objects
-
-Swap selected objects with one another.
-
-#### Repeat Last Selection / Action
-
-Avoid lengthy key sequences by repeating the last action-related selection with "," and the last action with "."
-
-#### Record Commands
-
-Record longer command sequences and replay them.
-
-> [!NOTE]
-> Command command recording comes with a few limitations, refer to the documentation for details
-
-#### Symmetric Insert
-
-Insert appropriate characters before and after each selection
-
 ### Discoverability Features
 
 #### Visual documentation of keybindings
 
 Learn and review your bindings on a keyboard layout
 
-**NOTE**: demo the ability to toggle bindings on the keys
+![example of visual docs](images/readme/visualdoc.jpg)
 
 #### Cheet sheet of keybindings
 
 Review your bindings in a cheet sheet organized by theme
 
+![example of cheet sheet](images/readme/cheatsheet.png)
+
 #### Keybinding hints
 
-See a quick pick palette of possible bindings for the current mode and prefix of keys already pressed
+See a quick pick palette of possible bindings for the current mode and prefix of keys already pressed.
+
+![example of palette](images/readme/palette.png)
+
+The example above shows the bindings available after pressing `m` in the Larkin keybinding
+set that is included with Master Key.
+
+### Editing Features
+
+Here are some of the cool editing features that come with the built-in `Larkin` keybindings provided by Master Key with the help of [selection utilities](https://github.com/haberdashPI/vscode-selection-utilities). These bindings follow in the footsteps of Vim, Kakaune and Helix.
+
+#### Move by Object
+
+Select by word, line, paragraph and more.
+
+![examples of moving by word, line and paragraph](images/readme/selectby.webp)
+
+Expand by indent, quotes and brackets.
+
+![examples of expanding by indent, quote and brackets](images/readme/expandby.webp)
+
+Once you've selected the object, run commands to do stuff (e.g. delete/change/comment)
+
+#### Multi-Cursor Creation and Filtering
+
+Quickly create multiple selections by splitting selections:
+
+![example of splitting a selection](images/readme/splitselect.webp)
+
+matching by word:
+
+![example of selecting by match](images/readme/selectmatch.webp)
+
+using saved selections:
+
+![example of using saved selections](images/readme/selectsaved.webp)
+
+Filter out the ones you don't want either by pattern:
+
+![example of filtering selections](images/readme/filterselect.webp)
+
+or manuall removal:
+
+![example of seelection deletion](images/readme/deleteselect.webp)
+
+#### Exchange Objects
+
+Swap selected objects with one another.
+
+![example of text exchange](images/readme/exchangetext.webp)
+
+#### Repeat Last Selection / Action
+
+Avoid lengthy key sequences by repeating the last action-related selection with "," and the last action with "."
+
+![example of repeating select/action](images/readme/repeat.webp)
+
+#### Record Commands
+
+Record longer command sequences and replay them.
+
+![example of recording key sequence](images/readme/record.webp)
+
+> [!NOTE]
+> Command recording comes with a few limitations, refer to the cheet sheet on Larkin macros for details
+
+#### Symmetric Insert
+
+Insert appropriate characters before and after each selection
+
+![example of syminsert mode](images/readme/syminsert.webp)
 
 ### Keybinding Features
 
 > [!WARNING]
-> For the initial release of Master Key, the Keybinding Features are not yet well documented. The main goal of the 0.3.0 release was to make the default keybindings accessible to new users. See the roadmap section below for details. The finer points of implementing your own keybindings will require some digging into source code and/or asking questions in the discussions section of this repo.
+> For the initial release of Master Key, the Keybinding Features are not yet well documented. You can review the features when copying Larking to your own customization file. The main goal of the 0.3.0 release was to make the default keybindings accessible to new users. See the roadmap section below for details. The finer points of implementing your own keybindings will require some digging into source code and/or asking questions in the discussions section of this repo.
 
 When you create your own keybindings using Mater Key's special `.toml` keybinding format you get several powerful features that make it possible to easily create keybindings that would be difficult or impossible to implement without writing your own extension.
 
@@ -92,21 +118,68 @@ When you create your own keybindings using Mater Key's special `.toml` keybindin
 
 Your bindings can be modal—a special key (like escape) switches you to a different mode where all the keys on your keyboard can be used to issue commands specific to that mode.
 
+```toml
+[[bind]]
+key = "j"
+mode = "normal"
+command = ...
+```
+
 #### Parameteric Bindings
 
 Express an entire series of bindings using the `foreach` field.
+
+```toml
+[[bind]]
+path = "edit.count"
+foreach.num = ['{key: [0-9]}']
+name = "count {num}"
+key = "{num}"
+command = "master-key.updateCount"
+args.value = "{num}"
+```
 
 #### Stateful Bindings
 
 Update state with the `master-key.captureKeys`, `master-key.updateCount`, `master-key.setFlag` or `master-key.storeNamed` and then use this state in downstream commands using `computedArgs` instead of `args` in your keybinding.
 
+```toml
+[[bind]]
+name = "between pair"
+key = "m t"
+description = """
+Select between pairs of the same N characters
+"""
+command = "runCommands"
+
+[[bind.args.commands]]
+command = "master-key.captureKeys"
+args.acceptAfter = 1
+
+[[bind.args.commands]]
+command = "selection-utilities.selectBetween"
+computedArgs.str = "captured"
+args.inclusive = false
+```
+
 #### Record and Repeat Commands
 
 Master key records recent key presses, allowing you to create commands that quickly repeat a previous sequence using `master-key.replayFromHistory` or `master-key.pushHistoryToStack` and `master-key.replayFromStack`. You can disable key press recording by setting `master-key.maxCommandHistory` to 0 in your settings.
 
+```toml
+[[bind]]
+key = ";"
+name = "repeat motion"
+repeat = "count"
+command = "master-key.replayFromHistory"
+args.at = "commandHistory[i].path.startsWith('edit.motion') && commandHistory[i].name != 'repeat motion'"
+```
+
 #### Documented Bindings
 
 Of course, just like all of the built-in bindings in Master Key, you can document your bindings so that they show up legibly within the discoverability features above.
+The toml file is a literate document used to generate the textual documentation
+and all binding's names will show up in the visual documentation as appropriate.
 
 ## Customized Bindings
 
@@ -153,9 +226,10 @@ And of course, there are many existing editors that Master Key draws inspiration
 
 ## Developer Notes
 
-This repository relies on a working versions of `nvm` installed in bash and a npm version
-matching the version specified in `.nvmrc`. You can satisfy this requirement by copying and
-running the following in bash.
+This repository was designed to be worked with in unix-like environemtns. No effort to
+support development on Windows has been made. The setup relies on a working versions of
+`nvm` installed in bash and an npm version matching the version specified in `.nvmrc`. You
+can satisfy this requirement by copying and running the following in bash.
 
 ```sh
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash # install nvm
@@ -168,5 +242,5 @@ You can then install all dependencies for this project as follows:
 
 ```sh
 nvm use
-npm i
+npm ic
 ```

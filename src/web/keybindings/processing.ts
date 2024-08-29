@@ -39,6 +39,7 @@ export interface Bindings {
     mode: Record<string, ModeSpec>;
     bind: IConfigKeyBinding[];
     docs: string;
+    requiredExtensions: string[];
 }
 
 export function processBindings(spec: FullBindingSpec): [Bindings, string[]] {
@@ -63,6 +64,7 @@ export function processBindings(spec: FullBindingSpec): [Bindings, string[]] {
         define: definitions,
         mode: mapByName(spec.mode),
         bind: configItems,
+        requiredExtensions: spec.header.requiredExtensions || [],
         docs,
     };
     return [result, problems];
@@ -505,6 +507,7 @@ function expandDocsToDuplicates(items: BindingItem[]) {
         const oldDocs = itemDocs[key] || {};
         itemDocs[key] = merge(
             pick(item.args, [
+                'name',
                 'description',
                 'combinedName',
                 'combinedDescription',
@@ -656,7 +659,7 @@ function updatePrefixItemAndPrefix(
             ],
             path: item.args.path,
             name: automated ? 'prefix' : item.args.name,
-            kind: automated ? 'prefix' : item.args.name || 'prefix',
+            kind: automated ? 'prefix' : item.args.kind || 'prefix',
             priority: automated ? 0 : item.args.priority,
             hideInPalette: automated ? false : item.args.hideInPalette,
             hideInDocs: automated ? false : item.args.hideInPalette,

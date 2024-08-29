@@ -1,33 +1,22 @@
-## Optimization
-
-release 0.2.4
-
-observation: from what I can tell of profiling, it doesn't look like master key is consuming many CPU cycles at all; which is great!! no reason to work on this further
-
 ## More visual doc improvements
 
-IMPROVEMENT: show escape/function key row in the visual key doc
-
-release 0.2.2
+release 0.2.5
 
 - IMPROVEMENT: put some examples of cool features from `Larkin` in the README
-
-- IMPROVEMENT: use `getExtension` or some such on each required extension, and offer to
-  install if it fails (does this work for any extension? or does `activate` have to return
-  something)
-
-release 0.2.3
 
 by the end of this milestone I'm satisfied with the documentation features of the package for an initial release
 
 ## Binding Cleanup
 
-release 0.2.y
+release 0.2.6
 
 - feature: specify user-specific binding file, apart from activated keybindings
 - Split out any of the commands that are really custom for me that don't make sense to publish.
-- Pair down some of the required extensions.
-- Offer to install extensions? (maybe when a keybinding fails to run??)
+- Pair down some of the required extensions?
+
+## Trailing fixes
+
+Working with release 0.2.6 for a while and mark sure there aren't an bugs to fix
 
 ## Before VSCode publish
 
@@ -47,9 +36,17 @@ thoughts: things I must have to release:
 
 WHEN PUBLISHING: get this to work on both stores (the one from microsoft and the one that vscodium uses)
 
-## Additional test coverage
+## Stability / test coverage
 
 SMALL BUG: should 'esc' really be appended in the status bar since it cancels a prefix sequence... 🤔
+
+SMALL BUG: I think there are issues when synching across machines and handling
+storage of the keybindings
+
+NEW TESTS: keybindings
+- tests for running various binding commands
+- tests for selecting bindings
+- tests for selecting extensions?
 
 NEW TEST: store/restore named commands
 

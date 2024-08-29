@@ -17,16 +17,36 @@ import {Map} from 'immutable';
 interface IKeyTemplate {
     name?: string;
     length?: string;
-    modifier?: true;
+    modifier?: boolean;
+    firstRow?: boolean;
+    height?: string;
 }
 
 interface IKeyRow {
     top?: string;
     bottom?: string;
     length?: string;
+    height?: string;
 }
 
+const KEY_ABBREV: Record<string, string> = {};
+
 const keyRowsTemplate: IKeyTemplate[][] = [
+    [
+        {name: 'ESC', height: '0-5', firstRow: true},
+        {name: 'F1', height: '0-5', firstRow: true},
+        {name: 'F2', height: '0-5', firstRow: true},
+        {name: 'F3', height: '0-5', firstRow: true},
+        {name: 'F4', height: '0-5', firstRow: true},
+        {name: 'F5', height: '0-5', firstRow: true},
+        {name: 'F6', height: '0-5', firstRow: true},
+        {name: 'F7', height: '0-5', firstRow: true},
+        {name: 'F8', height: '0-5', firstRow: true},
+        {name: 'F9', height: '0-5', firstRow: true},
+        {name: 'F10', height: '0-5', firstRow: true},
+        {name: 'F11', height: '0-5', firstRow: true},
+        {name: 'F12', height: '0-5', firstRow: true},
+    ],
     [
         {name: '`'},
         {name: '1'},
@@ -108,16 +128,18 @@ function keyRows(
 ): IKeyRow[][] {
     return keyRowsTemplate.map(row =>
         row.map(key => {
-            if (key.name && !key.modifier) {
+            if (key.name && !key.modifier && !key.firstRow) {
                 return {
                     top: topModifier?.join() + key.name,
                     bottom: bottomModifier?.join() + key.name,
                     length: key.length,
+                    height: key.height,
                 };
             } else {
                 return {
-                    top: key.name,
+                    bottom: key.name,
                     length: key.length,
+                    height: key.height,
                 };
             }
         })
@@ -224,7 +246,7 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
         }
 
         let curBindings = allBindings.filter(
-            filterBindingFn(<string>values.get(MODE), <number>values.get(PREFIX_CODE))
+            filterBindingFn(<string>values.get(MODE), <number>values.get(PREFIX_CODE), true)
         );
         curBindings = reverse(uniqBy(reverse(curBindings), b => b.args.key));
         this._bindingMap = {};
@@ -242,14 +264,17 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
         for (const row of keyRows(this._topModifier, this._bottomModifier)) {
             for (const key of row) {
                 if (key.top) {
-                    this._keymap[i++] = {label: key.top, ...this._bindingMap[key.top]};
+                    this._keymap[i++] = {
+                        label: key.top,
+                        ...this._bindingMap[get(KEY_ABBREV, key.top, key.top)],
+                    };
                 } else {
                     this._keymap[i++] = {empty: true};
                 }
                 if (key.bottom) {
                     this._keymap[i++] = {
                         label: key.bottom,
-                        ...this._bindingMap[key.bottom],
+                        ...this._bindingMap[get(KEY_ABBREV, key.bottom, key.bottom)],
                     };
                 } else {
                     this._keymap[i++] = {empty: true};
@@ -324,8 +349,9 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
                                 const topId = num++;
                                 const bottomId = num++;
                                 const topLabel = get(key, 'top', '');
+                                const noTop = !(topLabel || false);
                                 return `
-                                <div class="key key-length-${get(key, 'length', '1')}">
+                                <div class="key key-height-${get(key, 'height', '1')} key-length-${get(key, 'length', '1')}">
                                     ${
                                         topLabel &&
                                         `
@@ -335,10 +361,10 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
                                     `
                                     }
 
-                                    <div id="key-label-${bottomId}" class="bottom label ${topLabel ? '' : 'no-top'}">
+                                    <div id="key-label-${bottomId}" class="bottom label ${noTop ? 'no-top' : ''}">
                                         ${get(key, 'bottom', '')}
                                     </div>
-                                    <div id="key-name-${bottomId}" class="bottom name ${topLabel ? '' : 'no-top'}">
+                                    <div id="key-name-${bottomId}" class="bottom name ${noTop ? 'no-top' : ''}">
                                     </div>
                                     <div id="key-detail-${bottomId}" class="detail"></div>
                                 </div>`;
