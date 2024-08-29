@@ -6,15 +6,17 @@ release 0.2.5
 
 by the end of this milestone I'm satisfied with the documentation features of the package for an initial release
 
-release 0.2.6
-
 ## Binding Cleanup
 
-release 0.2.y
+release 0.2.6
 
 - feature: specify user-specific binding file, apart from activated keybindings
 - Split out any of the commands that are really custom for me that don't make sense to publish.
-- Pair down some of the required extensions.
+- Pair down some of the required extensions?
+
+## Trailing fixes
+
+Working with release 0.2.6 for a while and mark sure there aren't an bugs to fix
 
 ## Before VSCode publish
 
@@ -34,9 +36,12 @@ thoughts: things I must have to release:
 
 WHEN PUBLISHING: get this to work on both stores (the one from microsoft and the one that vscodium uses)
 
-## Additional test coverage
+## Stability / test coverage
 
 SMALL BUG: should 'esc' really be appended in the status bar since it cancels a prefix sequence... 🤔
+
+SMALL BUG: I think there are issues when synching across machines and handling
+storage of the keybindings
 
 NEW TESTS: keybindings
 - tests for running various binding commands
