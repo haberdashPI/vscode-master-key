@@ -19,8 +19,6 @@ The easiest way to get started is to activate the built-in keybindings that come
 
 ## Examples
 
-Master Key includes the following features:
-
 ### Discoverability Features
 
 #### Visual documentation of keybindings
