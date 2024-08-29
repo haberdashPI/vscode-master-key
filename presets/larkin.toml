@@ -31,7 +31,6 @@ requiredExtensions = [
       "albymor.increment-selection",
       "pkief.markdown-checkbox",
       "stkb.rewrap",
-      "haberdashPI.terminal-polyglot",
       "jack89ita.open-file-from-path",
       "koalamer.labeled-bookmarks",
 ]
@@ -1112,20 +1111,7 @@ when = "editorTextFocus"
 path = "edit.motion"
 key = "g c"
 name = "cell →"
-description = "next notebook cell"
 combinedName = "cell →/←"
-combinedDescription = "next/prev notebook cell"
-combinedKey = "c/shift+c"
-when = "editorLangId == 'markdown' || editorLangId == 'quarto'"
-command = "runCommands"
-args.commands = ["terminal-polyglot.next-fence-select", "selection-utilities.revealActive"]
-
-[[bind]]
-path = "edit.motion"
-key = "g c"
-name = "cell →"
-combinedName = "cell →/←"
-when = "!(editorLangId == 'markdown' || editorLangId == 'quarto')"
 command = "runCommands"
 args.commands = [ "jupyter.gotoNextCellInFile", "jupyter.selectCell" ]
 description = "previous jupyter notebook cell"
@@ -1136,18 +1122,6 @@ key = "g shift+c"
 name = "cell ←"
 combinedName = "cell →/←"
 description = "previous jupyter notebook cell"
-when = "editorLangId == 'markdown' || editorLangId == 'quarto'"
-command = "runCommands"
-args.commands = ["terminal-polyglot.prev-fence-select", "selection-utilities.revealActive"]
-
-
-[[bind]]
-path = "edit.motion"
-key = "g shift+c"
-name = "cell ←"
-combinedName = "cell →/←"
-description = "previous jupyter notebook cell"
-when = "!(editorLangId == 'markdown' || editorLangId == 'quarto')"
 command = "runCommands"
 args.commands = ["jupyter.gotoPrevCellInFile", "jupyter.selectCell"]
 
@@ -1508,16 +1482,6 @@ path = "edit.motion.match.cell"
 name = "in cell"
 description = "select text within a cell (ala jupyter)"
 key = "m c"
-when = "editorLangId == 'markdown' || editorLangId == 'quarto'"
-command = "runCommands"
-args.commands = ["terminal-polyglot.select-fence", "selection-utilities.revealActive"]
-
-[[bind]]
-path = "edit.motion.match.cell"
-name = "in cell"
-description = "select text within a cell (ala jupyter)"
-key = "m c"
-when = "!(editorLangId == 'markdown' || editorLangId == 'quarto')"
 command = "jupyter.selectCell"
 
 [[path]]
@@ -2379,28 +2343,6 @@ command = "editor.emmet.action.decrementNumberByOne"
 
 [[bind]]
 path = "edit.action.do"
-name = "activate"
-combinedName = "activate / activate tests"
-combinedDescription = "Activate the julia project / julia tests associated with the current file in the active REPL"
-combinedKey = "a/t"
-description = "Activate the julia project associated with the current file in the active REPL"
-key = "space a"
-when = "editorLangId == 'julia'"
-command = "terminal-polyglot.send-command"
-args.cmd = "activate_from(\"%file%\")"
-
-[[bind]]
-path = "edit.action.do"
-name = "activate tests"
-description = "Activate the julia project test environment associated with the current file in the active REPL"
-key = "space t"
-combinedName = "activate / activate tests"
-when = "editorLangId == 'julia'"
-command = "terminal-polyglot.send-command"
-args.cmd = "\nbegin; activate_from(\"%file%\"); using TestEnv; TestEnv.activate(); end"
-
-[[bind]]
-path = "edit.action.do"
 name = 'nb cell'
 description = "Actions related to notebook cells"
 key = "space c"
@@ -2562,111 +2504,6 @@ show command suggestsion within the context of the current mode and keybinding p
 (if any keys have already been typed)
 """
 command = "master-key.commandPalette"
-
-[[bind]]
-path = "edit.action"
-name = "to repl"
-description = """
-send text to a terminal (usually containing a REPL); use language
-specific extensions when available and put the pasted code into a block (when defined)."
-"""
-key = "["
-when = "editorLangId == 'julia' && !editorHasSelection && count >= 1"
-command = "runCommands"
-args.commands = [
-      { defined = "selectLinesDown" },
-      "expandLineSelection", "selection-utilities.trimSelectionWhitespace",
-      "language-julia.executeCodeBlockOrSelectionAndMove",
-      "cursorUndo"
-]
-
-[[bind]]
-path = "edit.action"
-key = "["
-when = "editorLangId == 'julia' && !editorHasSelection && !count"
-command = "runCommands"
-args.commands = [
-      "expandLineSelection", "selection-utilities.trimSelectionWhitespace",
-      "language-julia.executeCodeBlockOrSelectionAndMove",
-      "cursorUndo"
-]
-
-[[bind]]
-path = "edit.action"
-key = "enter"
-when = "editorLangId == 'julia' && editorHasSelection"
-command = "runCommands"
-args.commands = ["selection-utilities.trimSelectionWhitespace",
-        "language-julia.executeCodeBlockOrSelectionAndMove",
-        "cursorUndo"]
-
-[[bind]]
-path = "edit.action"
-key = "enter"
-when = "editorLangId != 'julia' && !(master-key.firstSelectionOrWord =~ /\\n/)"
-command = "runCommands"
-args.commands = ["terminal-polyglot.send-text",
-        "selection-utilities.shrinkToActive"]
-
-[[bind]]
-path = "edit.action"
-name = "repl"
-key = "enter"
-when = "editorLangId != 'julia' && master-key.firstSelectionOrWord =~ /\\n/"
-command = "runCommands"
-args.commands = ["terminal-polyglot.send-block-text",
-      "selection-utilities.shrinkToActive"]
-
-[[bind]]
-path = "edit.action"
-key = "shift+enter"
-name = "to repl (v2)"
-combinedName = "to repl v2 (v3)"
-description = """
-send text to a terminal (usually containing a REPL), placing in a block when defined.
-"""
-combinedDescription = """
-send text to a terminal (usually containing a REPL); v2 places the code in a block when defined (v3 does not).
-"""
-combinedKey = "tab / shift+enter"
-command = "runCommands"
-args.commands = ["terminal-polyglot.send-block-text", "selection-utilities.shrinkToActive"]
-
-[[bind]]
-path = "edit.action"
-key = "tab enter"
-name = "to repl (v3)"
-combinedName = "to repl v2 (v3)"
-description = """
-send text to a terminal (usually containing a REPL)
-"""
-command = "runCommands"
-args.commands = ["terminal-polyglot.send-text", "selection-utilities.shrinkToActive"]
-
-[[bind]]
-path = "edit.action"
-name = "open terminal"
-key = "]"
-when = "master-key.count"
-command = "terminal-polyglot.open-terminal-N"
-computedArgs.index = "count"
-args.focus = false
-
-[[bind]]
-path = "edit.action"
-name = "open terminal"
-key = "]"
-when = "!master-key.count"
-command = "terminal-polyglot.open-terminal"
-computedArgs.index = "count"
-args.focus = false
-
-[[bind]]
-path = "edit.action"
-name = "run in terminal"
-key = "tab shift+r"
-command = "terminal-polyglot.run"
-args.focus = false
 
 [[bind]]
 path = "edit.util"

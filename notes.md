@@ -8,6 +8,8 @@ by the end of this milestone I'm satisfied with the documentation features of th
 
 ## Binding Cleanup
 
+BUG: we can't get info about keybindings from a sync'd machine
+
 release 0.2.6
 
 - feature: specify user-specific binding file, apart from activated keybindings
@@ -35,6 +37,7 @@ thoughts: things I must have to release:
   + fix default expansion
 
 WHEN PUBLISHING: get this to work on both stores (the one from microsoft and the one that vscodium uses)
+- https://github.com/eclipse/openvsx/wiki/Publishing-Extensions
 
 ## Stability / test coverage
 

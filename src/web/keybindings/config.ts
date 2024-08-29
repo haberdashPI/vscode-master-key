@@ -1,8 +1,9 @@
 import * as vscode from 'vscode';
 import hash from 'object-hash';
 import {Bindings} from './processing';
+import {parseBindings} from './parsing';
+import {processParsing} from '.';
 
-let storageUri: vscode.Uri;
 export let bindings: Bindings | undefined = undefined;
 let configState: vscode.Memento | undefined = undefined;
 export type ConfigListener = (x: Bindings | undefined) => Promise<void>;
@@ -16,15 +17,51 @@ async function updateBindings(event?: vscode.ConfigurationChangeEvent) {
     }
 }
 
-export async function createBindings(newBindings: Bindings) {
-    const hashStr = hash(newBindings);
-    const label = newBindings.name + ' ' + hashStr;
-    bindings = newBindings;
-    vscode.workspace.fs.createDirectory(storageUri);
-    const bindingFile = vscode.Uri.joinPath(storageUri, label + '.json');
-    const data = new TextEncoder().encode(JSON.stringify(newBindings));
-    vscode.workspace.fs.writeFile(bindingFile, data);
-    return label;
+export async function createUserBindings(
+    label: string,
+    userBindings: string
+): Promise<[string, Bindings] | [undefined, undefined]> {
+    if (configState) {
+        configState.update('userBindings', userBindings);
+        const newBindings = configState.get(label + ':presetText');
+        const newParsedBindings = processParsing(
+            await parseBindings(newBindings + userBindings)
+        );
+        if (newParsedBindings) {
+            const hashStr = hash(newParsedBindings);
+            const label = newParsedBindings.name + ' ' + hashStr;
+            bindings = newParsedBindings;
+            configState.update(label + ':presetText', newBindings);
+            configState.update(label, bindings);
+            return [label, newParsedBindings];
+        }
+    }
+    return [undefined, undefined];
+}
+
+export async function createBindings(
+    newBindings: string
+): Promise<[string, Bindings] | [undefined, undefined]> {
+    let userBindings;
+    if (configState) {
+        userBindings = configState.get<string>('userBindings') || '';
+    }
+
+    const newParsedBindings = processParsing(
+        await parseBindings(newBindings + userBindings)
+    );
+    if (newParsedBindings) {
+        const hashStr = hash(newParsedBindings);
+        const label = newParsedBindings.name + ' ' + hashStr;
+        bindings = newParsedBindings;
+        if (configState) {
+            configState.update(label + ':presetText', newBindings);
+            configState.update(label, bindings);
+        }
+        return [label, newParsedBindings];
+    } else {
+        return [undefined, undefined];
+    }
 }
 
 async function useBindings(label: string) {
@@ -37,21 +74,19 @@ async function useBindings(label: string) {
         }
         return;
     }
-    const configFile = vscode.Uri.joinPath(storageUri, label + '.json');
-    try {
-        await vscode.workspace.fs.stat(configFile);
-        const data = await vscode.workspace.fs.readFile(configFile);
-        const newBindings = <Bindings>JSON.parse(new TextDecoder().decode(data));
-        bindings = newBindings;
-        if (configState) {
+    if (configState) {
+        if (configState.get(label)) {
+            bindings = configState.get(label);
             for (const fn of listeners || []) {
                 await fn(bindings);
             }
+            return;
         }
-    } catch (e) {
-        console.dir(e);
-        vscode.window.showErrorMessage('Could not load bindings with label: ' + label);
     }
+    vscode.window.showErrorMessage(
+        `Could not load bindings with label: ${label}. Try using Master Key to activate a
+        different set of keybindgs or to reactivate the same binding set.`
+    );
 }
 
 // Config state are global properties of the current keybindings maintained by master key
@@ -69,7 +104,6 @@ export async function onChangeBindings(fn: ConfigListener) {
 }
 
 export async function activate(context: vscode.ExtensionContext) {
-    storageUri = context.globalStorageUri;
     configState = context.globalState;
     for (const fn of listeners || []) {
         await fn(bindings);
