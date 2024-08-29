@@ -7,6 +7,8 @@ release 0.2.6
 + feature: specify user-specific binding file, apart from activated keybindings
 + Split out any of the commands that are really custom for me that don't make sense to publish.
 
+- maybe actually setup tests for all the new stuff in keybindings/index.js??
+
 ## Trailing fixes
 
 Working with release 0.2.6 for a while and make sure there aren't an bugs to fix

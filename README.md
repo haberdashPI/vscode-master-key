@@ -122,7 +122,8 @@ Your bindings can be modal—a special key (like escape) switches you to a diffe
 [[bind]]
 key = "j"
 mode = "normal"
-command = ...
+command = "cursorMove"
+args.to = "down"
 ```
 
 #### Parameteric Bindings
