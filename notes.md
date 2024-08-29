@@ -9,9 +9,16 @@ release 0.2.6
 
 - maybe actually setup tests for all the new stuff in keybindings/index.js??
 
+Binding changes in Larkin:
+- maybe avoid need to use cmd-v so much
+- remove all my extra settings in my own config file
+- insert QOL I loose from that into larkin (or masterkeys.toml, as needed)
+    - up/down page
+    - escape / shift-escape?
+
 ## Trailing fixes
 
-Working with release 0.2.6 for a while and make sure there aren't an bugs to fix
+Working with release 0.2.6 for a while and make sure there aren't any bugs to fix
 
 ## Before VSCode publish
 
