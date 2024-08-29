@@ -28,11 +28,29 @@ The easiest way to get started is to activate the built-in keybindings that come
 
 Master Key includes the following features:
 
-**TODO**: insert example gif of each feature below
+### Discoverability Features
+
+#### Visual documentation of keybindings
+
+Learn and review your bindings on a keyboard layout
+
+![example of visual docs](images/readme/visualdoc.jpg)
+
+#### Cheet sheet of keybindings
+
+Review your bindings in a cheet sheet organized by theme
+
+![example of cheet sheet](images/readme/cheatsheet.png)
+
+#### Keybinding hints
+
+See a quick pick palette of possible bindings for the current mode and prefix of keys already pressed
+
+![example of palette](images/readme/palette.png)
 
 ### Editing Features
 
-Here are some of the cool features that come with the built-in `Larkin` keybindings provided by Master Key with the help of [selection utilities](https://github.com/haberdashPI/vscode-selection-utilities). These bindings following in the footsteps of Vim, Kakaune and Helix.
+Here are some of the cool editing features that come with the built-in `Larkin` keybindings provided by Master Key with the help of [selection utilities](https://github.com/haberdashPI/vscode-selection-utilities). These bindings follow in the footsteps of Vim, Kakaune and Helix.
 
 #### Move by Object
 
@@ -94,26 +112,6 @@ Record longer command sequences and replay them.
 Insert appropriate characters before and after each selection
 
 ![example of syminsert mode](images/readme/syminsert.webp)
-
-### Discoverability Features
-
-#### Visual documentation of keybindings
-
-Learn and review your bindings on a keyboard layout
-
-![example of visual docs](images/readme/visualdoc.jpg)
-
-#### Cheet sheet of keybindings
-
-Review your bindings in a cheet sheet organized by theme
-
-![example of cheet sheet](images/readme/cheatsheet.png)
-
-#### Keybinding hints
-
-See a quick pick palette of possible bindings for the current mode and prefix of keys already pressed
-
-![example of palette](images/readme/palette.png)
 
 ### Keybinding Features
 
@@ -234,9 +232,10 @@ And of course, there are many existing editors that Master Key draws inspiration
 
 ## Developer Notes
 
-This repository relies on a working versions of `nvm` installed in bash and a npm version
-matching the version specified in `.nvmrc`. You can satisfy this requirement by copying and
-running the following in bash.
+This repository was designed to be worked with in unix-like environemtns. No effort to
+support development on Windows has been made. The setup relies on a working versions of
+`nvm` installed in bash and an npm version matching the version specified in `.nvmrc`. You
+can satisfy this requirement by copying and running the following in bash.
 
 ```sh
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash # install nvm
@@ -249,5 +248,5 @@ You can then install all dependencies for this project as follows:
 
 ```sh
 nvm use
-npm i
+npm ic
 ```
