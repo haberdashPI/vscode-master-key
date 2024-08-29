@@ -35,9 +35,12 @@ Review your bindings in a cheet sheet organized by theme
 
 #### Keybinding hints
 
-See a quick pick palette of possible bindings for the current mode and prefix of keys already pressed
+See a quick pick palette of possible bindings for the current mode and prefix of keys already pressed.
 
 ![example of palette](images/readme/palette.png)
+
+The example above shows the bindings available after pressing `m` in the Larkin keybinding
+set that is included with Master Key.
 
 ### Editing Features
 
