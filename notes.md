@@ -1,8 +1,5 @@
 ## More visual doc improvements
 
-- maybe some tests for selecting bindings?
-- maybe some tests for selecting extensions?
-
 release 0.2.5
 
 - IMPROVEMENT: put some examples of cool features from `Larkin` in the README
@@ -40,6 +37,11 @@ WHEN PUBLISHING: get this to work on both stores (the one from microsoft and the
 ## Additional test coverage
 
 SMALL BUG: should 'esc' really be appended in the status bar since it cancels a prefix sequence... 🤔
+
+NEW TESTS: keybindings
+- tests for running various binding commands
+- tests for selecting bindings
+- tests for selecting extensions?
 
 NEW TEST: store/restore named commands
 

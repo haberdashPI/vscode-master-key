@@ -36,19 +36,43 @@ Here are some of the cool features that come with the built-in `Larkin` keybindi
 
 #### Move by Object
 
-Select by word, line, block and more. Expand by indent, quotes and brackets.
+Select by word, line, paragraph and more.
+
+![examples of moving by word, line and paragraph](images/readme/selectby.webp)
+
+Expand by indent, quotes and brackets.
+
+![examples of expanding by indent, quote and brackets](images/readme/expandby.webp)
 
 Once you've selected the object, run commands to do stuff (e.g. delete/change/comment)
 
 #### Multi-Cursor Creation and Filtering
 
-Quickly create multiple selections by splitting selections or searching within selections.
-Filter out the ones you don't want either by some filter, or by manually picking out
-one or more you don't want.
+Quickly create multiple selections by splitting selections:
+
+![example of splitting a selection](images/readme/splitselect.webp)
+
+matching by word:
+
+![example of selecting by match](images/readme/selectmatch.webp)
+
+using saved selections:
+
+![example of using saved selections](images/readme/selectsaved.webp)
+
+Filter out the ones you don't want either by pattern:
+
+![example of filtering selections](images/readme/filterselect.webp)
+
+or manuall removal:
+
+![example of seelection deletion](images/readme/deleteselect.webp)
 
 #### Exchange Objects
 
 Swap selected objects with one another.
+
+
 
 #### Repeat Last Selection / Action
 
