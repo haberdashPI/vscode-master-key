@@ -3,6 +3,8 @@ import hash from 'object-hash';
 import {Bindings} from './processing';
 import {parseBindings} from './parsing';
 import {processParsing} from '.';
+import {get} from '../utils';
+import {inflate, deflate} from 'pako';
 
 export let bindings: Bindings | undefined = undefined;
 let configState: vscode.Memento | undefined = undefined;
@@ -17,50 +19,50 @@ async function updateBindings(event?: vscode.ConfigurationChangeEvent) {
     }
 }
 
+interface IStorage {
+    userBindings?: string;
+    presetBindings?: string;
+}
+
 export async function createUserBindings(
-    label: string,
     userBindings: string
-): Promise<[string, Bindings] | [undefined, undefined]> {
+): Promise<Bindings | undefined> {
     if (configState) {
-        configState.update('userBindings', userBindings);
-        const newBindings = configState.get(label + ':presetText');
+        const config = vscode.workspace.getConfiguration('master-key');
+        const storage = config.get<IStorage>('storage') || {};
+        const newBindings: string = inflate(atob(storage.presetBindings || ''), {
+            to: 'string',
+        });
+
         const newParsedBindings = processParsing(
             await parseBindings(newBindings + userBindings)
         );
         if (newParsedBindings) {
-            const hashStr = hash(newParsedBindings);
-            const label = newParsedBindings.name + ' ' + hashStr;
             bindings = newParsedBindings;
-            configState.update(label + ':presetText', newBindings);
-            configState.update(label, bindings);
-            return [label, newParsedBindings];
+            return newParsedBindings;
         }
     }
-    return [undefined, undefined];
+    return undefined;
 }
 
-export async function createBindings(
-    newBindings: string
-): Promise<[string, Bindings] | [undefined, undefined]> {
-    let userBindings;
-    if (configState) {
-        userBindings = configState.get<string>('userBindings') || '';
-    }
+export async function createBindings(newBindings: string): Promise<Bindings | undefined> {
+    const config = vscode.workspace.getConfiguration('master-key');
+    const storage = config.get<IStorage>('storage') || {};
+
+    const userBindingsData = get(storage, 'userBindings', '');
+    const userBindings: string = inflate(atob(userBindingsData || ''), {to: 'string'});
 
     const newParsedBindings = processParsing(
         await parseBindings(newBindings + userBindings)
     );
     if (newParsedBindings) {
-        const hashStr = hash(newParsedBindings);
-        const label = newParsedBindings.name + ' ' + hashStr;
         bindings = newParsedBindings;
-        if (configState) {
-            configState.update(label + ':presetText', newBindings);
-            configState.update(label, bindings);
-        }
-        return [label, newParsedBindings];
+        const newBindingsData = btoa(deflate(newBindings));
+        storage.presetBindings = newBindingsData;
+        config.update('storage', storage);
+        return newParsedBindings;
     } else {
-        return [undefined, undefined];
+        return undefined;
     }
 }
 
