@@ -586,7 +586,8 @@ path = "edit.motion"
 key = "shift+r"
 name = "trim wht"
 description = "select full line(s), and trim external whitespace"
-command = "selection-utilities.trimSelectionWhitespace"
+command = "runCommands"
+args.commands = ["expandLineSelection", "selection-utilities.trimSelectionWhitespace"]
 
 [[bind]]
 path = "edit.motion"
