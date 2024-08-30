@@ -317,6 +317,9 @@ computedArgs = { value = "count" }
 [[bind.args.commands]]
 command = "expandLineSelection"
 
+[[bind.args.commands]]
+command = "selection-utilities.exchangeAnchorActive"
+
 [[bind]]
 path = "edit.motion.prim"
 key = "shift+j"
