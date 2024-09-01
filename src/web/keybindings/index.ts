@@ -6,6 +6,7 @@ import {
     vscodeBinding,
     FullBindingSpec,
     ParsedResult,
+    ErrorResult,
 } from './parsing';
 import {processBindings, IConfigKeyBinding, Bindings} from './processing';
 import {isSingleCommand} from '../utils';
@@ -150,7 +151,6 @@ async function removeKeybindings() {
     if (ed) {
         const oldBindingsStart = findText(ed.document, 'AUTOMATED BINDINGS START');
         const oldBindingsEnd = findText(ed.document, 'AUTOMATED BINDINGS END');
-        ed.document.getText(oldBindingsStart);
         if (oldBindingsStart && oldBindingsEnd) {
             const range = new vscode.Range(
                 new vscode.Position(
@@ -238,7 +238,6 @@ async function insertKeybindingsIntoConfig(name: string, keyBindings: IConfigKey
             // try and replace the old bindings
             const oldBindingsStart = findText(ed.document, 'AUTOMATED BINDINGS START');
             const oldBindingsEnd = findText(ed.document, 'AUTOMATED BINDINGS END');
-            ed.document.getText(oldBindingsStart);
             if (oldBindingsStart && oldBindingsEnd) {
                 const range = new vscode.Range(
                     new vscode.Position(
@@ -288,7 +287,7 @@ export function processParsing(
         }
         return bindings;
     } else {
-        for (const issue of parsedBindings.error.issues.slice(0, 3)) {
+        for (const issue of (<ErrorResult>parsedBindings).error.issues.slice(0, 3)) {
             showParseError(errorPrefix + 'Parsing error: ', issue);
         }
         return;

@@ -398,11 +398,11 @@ export type FullBindingSpec = BindingSpec & {
     doc?: IParsedBindingDoc[];
 };
 
-interface SuccessResult<T> {
+export interface SuccessResult<T> {
     success: true;
     data: T;
 }
-interface ErrorResult {
+export interface ErrorResult {
     success: false;
     error: ZodError;
 }
