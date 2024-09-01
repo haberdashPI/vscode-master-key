@@ -184,13 +184,15 @@ and all binding's names will show up in the visual documentation as appropriate.
 
 ## Customized Bindings
 
-Okay, so you want to make your own keybindings with Master Key?
+Okay, so you want to customize your keybindings, or create a whoel new preset?
 
 You can start by reviewing the built-in `Larkin` preset using the command `Master Key: Edit Preset Copy`. A new `*.toml` file with the contents of this master-key binding set will be opened. The file has comments throughout which document its use.
 
-You can add additional bindings, which get appended to those of the preset. Create a new toml file and add the bindings you want to append. Then call `Master Key: Activate User Keybindings` on the toml file. You can import existing user bindings to to this toml file, as defined in the normal keybinding file used by VSCode, by calling `Master Key: Import User Keybindings`.
+To simply customize an existing preset, you can add additional bindings, which get appended to those of the preset. Create a new toml file and add the bindings you want to append. Then call `Master Key: Activate User Keybindings` on the toml file. You can import existing user bindings to this toml file, as defined in the normal keybinding file used by VSCode, by calling `Master Key: Import User Keybindings`.
 
-Alternatively you can define your own preset and import bindings from those you've already created in VSCode. Call `Master Key: Import Default/User Keybindings` to add any existing bindings you have to your preset copy. Edit the bindings and update your settings to use them by calling `Master Key: Activate Keybindings` at any time.
+Alternatively you can define your own preset and import bindings from those you've already created in VSCode. Call `Master Key: Import Default/User Keybindings` to add any existing bindings you have to your preset copy. Edit the bindings as desired and update your settings to use them by calling `Master Key: Activate Keybindings` at any time.
+
+Because the error reporting for these binding files is not yet very precise, it is recommended that you add bindings incrementally, and verify that they can be properly loaded by Mater Key. Long-term, better error reporting for these binding files will be available.
 
 ## Roadmap
 
