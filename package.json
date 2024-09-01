@@ -222,16 +222,14 @@
     "prewdio:env": "penv wdio",
     "prewdio:package": "webpack --env wdio",
     "prewdio": "run-s prewdio:*",
-    "wdio": "wdio run ./wdio.conf.mts > wdio.log",
-    "postwdio:lint": "npm run lint",
-    "postwdio:env": "penv base",
-    "postwdio": "run-s postwdio:*",
+    "wdio": "wdio run ./wdio.conf.mts > wdio.log; penv base",
+    "postwdio": "npm run lint",
     "precoverage:dir": "mkdir -p coverage/raw",
     "precoverage:package": "webpack --env wdio --env coverage",
     "precoverage": "run-s prewdio:env precoverage:*",
     "coverage": "COVERAGE=true COVERAGE_PATH=./coverage/raw wdio run ./wdio.conf.mts",
-    "postcoverage:report": "nyc report -t coverage/raw --report-dir coverage/summary --reporter=lcov --reporter=text",
-    "postcoverage": "run-s postcoverage:* postwdio:env",
+    "postcoverage:report": "nyc report -t coverage/raw --report-dir coverage/summary --reporter=lcov --reporter=text; penv base",
+    "postcoverage": "run-s postcoverage:*",
     "ci": "npm run coverage",
     "clean": "gts clean",
     "fix": "gts fix"
@@ -292,9 +290,5 @@
     "yaml": "^2.3.4",
     "zod": "^3.22.4",
     "zod-validation-error": "^2.1.0"
-  },
-  "main": "./dist/desktop/extension.js",
-  "env": {
-    "NODE_ENV": "wdio"
   }
 }
