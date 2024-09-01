@@ -41,12 +41,12 @@ describe('Configuration', () => {
             [[bind]]
             path = "motion"
             name = "right"
-            key = "l"
+            key = "ctrl+l"
             args.to = "right"
 
             [[bind]]
             name = "insert"
-            key = "i"
+            key = "ctrl+i"
             command = "master-key.enterInsert"
         `);
     });
@@ -57,10 +57,14 @@ describe('Configuration', () => {
         const modeItem = await statusBar.getItem('Keybinding Mode: normal');
         expect(modeItem).toBeTruthy();
 
-        await movesCursorInEditor(() => enterModalKeys('l'), [0, 1], editor);
+        await movesCursorInEditor(() => enterModalKeys(['ctrl', 'l']), [0, 1], editor);
     });
 
     it('Correctly sets normal mode appearance', async () => {
+        await enterModalKeys(['ctrl', 'i']);
+        editor = await setupEditor(`A simple test`);
+        await browser.keys(Key.Escape);
+
         // check appearance of cursor and status bar
         const cursorEl = await browser.$('div[role="presentation"].cursors-layer');
         const cursorClasses = await cursorEl.getAttribute('class');
@@ -72,7 +76,7 @@ describe('Configuration', () => {
 
     it('Can allow switch to insert mode', async() => {
         await editor.moveCursor(1, 1);
-        enterModalKeys('i');
+        enterModalKeys(['ctrl', 'i']);
         await waitForMode('insert');
         await browser.keys('i');
         expect(await editor.getText()).toEqual('iA simple test');
