@@ -1708,9 +1708,9 @@ path = "edit.action.clipboard"
 key = "p"
 name = "paste after"
 description = "Paste clipboard after the cursor/selection"
-combinedName = "paste before/after"
-combinedDescription = "Paste clipboard before/after the cursor/selection"
-combinedKey = "p/shift+p"
+combinedName = "paste before/after/in"
+combinedDescription = "Paste clipboard before/after/at the cursor/selection"
+combinedKey = "p/shift+p/ctrl+p"
 when = "editorHasSelection"
 command = "runCommands"
 args.commands = ["selection-utilities.activeAtEnd", "selection-utilities.shrinkToActive", "editor.action.clipboardPasteAction"]
@@ -1719,10 +1719,19 @@ args.commands = ["selection-utilities.activeAtEnd", "selection-utilities.shrinkT
 path = "edit.action.clipboard"
 key = "p"
 name = "paste after"
-combinedName = "paste before/after"
+combinedName = "paste before/after/in"
 when = "!editorHasSelection"
 command = "runCommands"
 args.commands = ["cursorRight", "editor.action.clipboardPasteAction"]
+
+[[bind]]
+path = "edit.action.clipboard"
+key = "ctrl+p"
+name = "paste in"
+combinedName = "paste before/after/in"
+description = "Paste clipboard at location"
+command = "runCommands"
+args.commands = "editor.action.clipboardPasteAction"
 
 [[bind]]
 path = "edit.action.clipboard"
@@ -2506,14 +2515,14 @@ show command suggestsion within the context of the current mode and keybinding p
 command = "master-key.commandPalette"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "git..."
 description = "git commands"
 key = "tab g"
 command = "master-key.prefix"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "pull"
 combinedName = "push/pull"
 description = "pull changes from remote"
@@ -2523,14 +2532,14 @@ key = "tab g p"
 command = "git.pull"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "push"
 description = "push changes to remote"
 key = "tab g shift+p"
 command = "git.push"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "checkout"
 combinedName = "commit/checkout"
 description = "commit changes"
@@ -2540,7 +2549,7 @@ key = "tab g c"
 command = "git.commit"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "checkout"
 combinedName = "commit/checkout"
 description = "checkout changes"
@@ -2548,21 +2557,21 @@ key = "tab g shift+c"
 command = "git.checkout"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "revert range"
 description = "revert unstaged changes in selected range"
 key = "tab g r"
 command = "git.revertSelectedRanges"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "revert range"
 description = "revert unstaged changes in selected range"
 key = "tab g s"
 command = "git.stageSelectedRanges"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "commands..."
 description = "show GitLens command palette for git"
 key = "tab g g"
@@ -2573,26 +2582,26 @@ command = "gitlens.gitCommands"
 # These miscellaneous utility commands are all organized uner the prefix `tab`.
 
 [[path]]
-id = "edit.util"
+id = "window"
 name = "assorted misecellaneous commands"
 default.kind = "util"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "utility"
 key = "tab"
 description = "utility related commands: file opening, window manipulation, debugging etc..."
 command = "master-key.prefix"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "open recent"
 description = "Open recent file"
 key = "tab r"
 command = "workbench.action.openRecent"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "hover"
 description = "show the hover view"
 combinedName = "(debug) hover"
@@ -2602,7 +2611,7 @@ key = "tab h"
 command = "editor.action.showHover"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "debug hover"
 combinedName = "(debug) hover"
 description = "show the debug hover view"
@@ -2610,7 +2619,7 @@ key = "tab shift+h"
 command = "editor.debug.action.showDebugHover"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "add mark"
 combinedName = "add mark / mark..."
 description = "toggle bookmark at given line"
@@ -2622,7 +2631,7 @@ combinedKey = "shift+m / m"
 command = "vsc-labeled-bookmarks.toggleBookmark"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "mark"
 combinedName = "add mark / mark..."
 description = "bookmark related commands"
@@ -2630,7 +2639,7 @@ key = "tab m"
 command = "master-key.prefix"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "mark ↓"
 description = "move to next bookmark"
 combinedName = "mark ↓/↑"
@@ -2641,14 +2650,14 @@ when = "!master-key.select_on && !editorHasSelection"
 command = "vsc-labeled-bookmarks.navigateToNextBookmark"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 combinedName = "mark ↓/↑"
 key = "tab m j"
 when = "master-key.select_on || editorHasSelection"
 command = "vsc-labeled-bookmarks.expandSelectionToNextBookmark"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "mark ↑"
 combinedName = "mark ↓/↑"
 description = "move to previous bookmark"
@@ -2657,7 +2666,7 @@ when = "!master-key.select_on && !editorHasSelection"
 command = "vsc-labeled-bookmarks.navigateToPreviousBookmark"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "mark ↑"
 combinedName = "mark ↓/↑"
 description = "move to previous bookmark"
@@ -2668,21 +2677,21 @@ args.commands = ["vsc-labeled-bookmarks.expandSelectionToPreviousBookmark",
       "selection-utilities.activeAtStart"]
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "remove mark"
 description = "remove bookmark (use quick selection)"
 key = "tab m d"
 command = "vsc-labeled-bookmarks.deleteBookmark"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "nav marks"
 description = "reveal quick selection to move to a bookmark"
 key = "tab m t"
 command = "vsc-labeled-bookmarks.navigateToBookmark"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "error →"
 combinedName = "error →/←"
 combinedDescription = "move to next/previous error"
@@ -2769,21 +2778,21 @@ args.at = "center"
 when = "editorTextFocus"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "window"
 description = "window/editor pane manipulation-related commands"
 key = "tab w"
 command = "master-key.prefix"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "vert/horz"
 key = "tab w r"
 description = "Toggle between horizontal and vertical layouts"
 command = "workbench.action.toggleEditorGroupLayout"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "next window"
 combinedName = "next/previous window"
 description = "move to next window"
@@ -2793,7 +2802,7 @@ combinedKey = "]/["
 command = "workbench.action.focusNextGroup"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "prev window"
 combinedName = "next/previous window"
 description = "move to previous window"
@@ -2801,7 +2810,7 @@ key = "tab ["
 command = "workbench.action.focusPreviousGroup"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "move →"
 combinedName = "move →/←"
 combinedDescription = "move editor to window left/right"
@@ -2811,7 +2820,7 @@ key = "tab w l"
 command = "workbench.action.moveEditorToRightGroup"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "←"
 combinedName = "move →/←"
 description = "move editor to window to left"
@@ -2819,7 +2828,7 @@ key = "tab w h"
 command = "workbench.action.moveEditorToLeftGroup"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "↓"
 combinedName = "move ↓/↑"
 combinedDescription = "move editor to window above/below"
@@ -2829,7 +2838,7 @@ key = "tab w j"
 command = "workbench.action.moveEditorToBelowGroup"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "↑"
 combinedName = "move ↓/↑"
 description = "move editor to window above"
@@ -2837,14 +2846,14 @@ key = "tab w k"
 command = "workbench.action.moveEditorToAboveGroup"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "split editor..."
 description = "split editor to in a given direction"
 key = "tab w s"
 command = "master-key.prefix"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "move →"
 combinedName = "split →/←"
 combinedDescription = "move editor to window left/right"
@@ -2854,7 +2863,7 @@ key = "tab w s l"
 command = "workbench.action.splitEditorRight"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "←"
 combinedName = "split →/←"
 description = "split editor to window to left"
@@ -2862,7 +2871,7 @@ key = "tab w s h"
 command = "workbench.action.splitEditorLeft"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "↓"
 combinedName = "split ↓/↑"
 combinedDescription = "split editor to window above/below"
@@ -2872,7 +2881,7 @@ key = "tab w s j"
 command = "workbench.action.splitEditorDown"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "↑"
 combinedName = "split ↓/↑"
 combinedDescription = "split editor to window above/below"
@@ -2882,28 +2891,28 @@ key = "tab w s k"
 command = "workbench.action.splitEditorUp"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "close pane"
 description = "close the given group of editors"
 key = "tab w x"
 command = "workbench.action.closeEditorsInGroup"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "max"
 description = "minimize size of all other windows"
 key = "tab w shift+m"
 command = "workbench.action.minimizeOtherEditors"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "equal"
 description = "equalize size of all windows"
 key = "tab w ="
 command = "workbench.action.evenEditorWidths"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "curs. win top"
 description = "center window so that primary cursor is at the top"
 key = "tab k"
@@ -2914,7 +2923,7 @@ command = "selection-utilities.revealActive"
 args.at = "top"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "curs. win bot"
 combinedName = "center window top/bottom"
 description = "center window so that primary cursor is at the bottom"
@@ -2927,7 +2936,7 @@ args.at = "bottom"
 # Commands for interacting with VSCode's debugger UI.
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "breakpt."
 combinedName = "breakpt / debug..."
 combinedKey = "shift+b/b"
@@ -2937,7 +2946,7 @@ key = "tab shift+b"
 command = "editor.debug.action.toggleBreakpoint"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "debug..."
 combinedName = "breakpt / debug..."
 description = "assorted debugging actions"
@@ -2945,7 +2954,7 @@ key = "tab b"
 command = "master-key.prefix"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "cond. break"
 description = "conditional breakpoint"
 key = "tab b shift+c"
@@ -2953,35 +2962,35 @@ command = "editor.debug.action.conditionalBreakpoint"
 
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "start"
 description = "start debugging"
 key = "tab b r"
 command = "workbench.action.debug.start"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "continue"
 description = "continue debugging"
 key = "tab b c"
 command = "workbench.action.debug.continue"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "next"
 description = "debug: step over next line"
 key = "tab b j"
 command = "workbench.action.debug.stepOver"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "into"
 description = "debug: step into next line"
 key = "tab b i"
 command = "workbench.action.debug.stepInto"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "out"
 description = "debug: step out"
 key = "tab b o"
