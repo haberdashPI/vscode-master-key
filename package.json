@@ -134,11 +134,11 @@
     ],
     "configuration": {
       "properties": {
-        "master-key.activatedBindingsId": {
-          "title": "Active Master Key Bindings Identifier",
-          "type": "string",
-          "description": "This value is automated, changing it manually can lead the current master key bindings to be in an inconsistent state. Use `Master Key: Activate Keybindings` or `Master Key: Remove Keybindings` to change this setting.",
-          "default": "none"
+        "master-key.storage": {
+          "title": "Internal Storage of Master Key Configuration",
+          "type": "object",
+          "description": "A set of key-value pairs used to store master key configuration.",
+          "default": {}
         },
         "master-key.presetDirectories": {
           "title": "Directory to search for Master Key presets",
@@ -243,6 +243,7 @@
     "@types/mocha": "^10.0.6",
     "@types/node": "20.12.7",
     "@types/object-hash": "^3.0.6",
+    "@types/pako": "^2.0.3",
     "@types/text-encoding": "^0.0.39",
     "@types/vscode": "^1.85.0",
     "@types/webpack-env": "^1.18.4",
@@ -291,5 +292,9 @@
     "yaml": "^2.3.4",
     "zod": "^3.22.4",
     "zod-validation-error": "^2.1.0"
+  },
+  "main": "./dist/desktop/extension.js",
+  "env": {
+    "NODE_ENV": "wdio"
   }
 }

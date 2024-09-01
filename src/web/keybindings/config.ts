@@ -1,5 +1,4 @@
 import * as vscode from 'vscode';
-import hash from 'object-hash';
 import {Bindings} from './processing';
 import {parseBindings} from './parsing';
 import {processParsing} from '.';
@@ -12,10 +11,8 @@ export type ConfigListener = (x: Bindings | undefined) => Promise<void>;
 const listeners: ConfigListener[] = [];
 
 async function updateBindings(event?: vscode.ConfigurationChangeEvent) {
-    if (!event || event.affectsConfiguration('master-key')) {
-        const config = vscode.workspace.getConfiguration('master-key');
-        const configId = config.get<string>('activatedBindingsId') || 'none';
-        useBindings(configId);
+    if (!event || event.affectsConfiguration('master-key.storage')) {
+        useBindings();
     }
 }
 
@@ -24,21 +21,39 @@ interface IStorage {
     presetBindings?: string;
 }
 
+function toZip64(str: string) {
+    const bytes = deflate(str);
+    let binary = '';
+    const len = bytes.byteLength;
+    for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+}
+
+function fromZip64(str: string): string {
+    const result = inflate(
+        Uint8Array.from(atob(str), c => c.charCodeAt(0)),
+        {to: 'string'}
+    );
+    return result || '';
+}
+
 export async function createUserBindings(
     userBindings: string
 ): Promise<Bindings | undefined> {
     if (configState) {
         const config = vscode.workspace.getConfiguration('master-key');
         const storage = config.get<IStorage>('storage') || {};
-        const newBindings: string = inflate(atob(storage.presetBindings || ''), {
-            to: 'string',
-        });
+        const newBindings: string = fromZip64(storage.presetBindings || '');
 
         const newParsedBindings = processParsing(
             await parseBindings(newBindings + userBindings)
         );
         if (newParsedBindings) {
             bindings = newParsedBindings;
+            storage.userBindings = toZip64(userBindings);
+            config.update('storage', storage, vscode.ConfigurationTarget.Global);
             return newParsedBindings;
         }
     }
@@ -50,45 +65,32 @@ export async function createBindings(newBindings: string): Promise<Bindings | un
     const storage = config.get<IStorage>('storage') || {};
 
     const userBindingsData = get(storage, 'userBindings', '');
-    const userBindings: string = inflate(atob(userBindingsData || ''), {to: 'string'});
+    const userBindings: string = fromZip64(userBindingsData || '') || '';
 
     const newParsedBindings = processParsing(
-        await parseBindings(newBindings + userBindings)
+        await parseBindings(newBindings + '\n' + userBindings)
     );
     if (newParsedBindings) {
         bindings = newParsedBindings;
-        const newBindingsData = btoa(deflate(newBindings));
+        const newBindingsData = toZip64(newBindings);
         storage.presetBindings = newBindingsData;
-        config.update('storage', storage);
+        config.update('storage', storage, vscode.ConfigurationTarget.Global);
         return newParsedBindings;
     } else {
         return undefined;
     }
 }
 
-async function useBindings(label: string) {
-    if (label === 'none') {
-        bindings = undefined;
-        if (configState) {
-            for (const fn of listeners || []) {
-                await fn(bindings);
-            }
-        }
-        return;
+async function useBindings() {
+    const config = vscode.workspace.getConfiguration('master-key');
+    const storage = config.get<IStorage>('storage') || {};
+    const preset = fromZip64(storage.presetBindings || '') || '';
+    const user = fromZip64(storage.userBindings || '') || '';
+    const parsedBindings = processParsing(await parseBindings(preset + '\n' + user));
+
+    for (const fn of listeners || []) {
+        await fn(parsedBindings);
     }
-    if (configState) {
-        if (configState.get(label)) {
-            bindings = configState.get(label);
-            for (const fn of listeners || []) {
-                await fn(bindings);
-            }
-            return;
-        }
-    }
-    vscode.window.showErrorMessage(
-        `Could not load bindings with label: ${label}. Try using Master Key to activate a
-        different set of keybindgs or to reactivate the same binding set.`
-    );
 }
 
 // Config state are global properties of the current keybindings maintained by master key

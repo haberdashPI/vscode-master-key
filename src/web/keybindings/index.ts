@@ -219,14 +219,7 @@ async function copyCommandResultIntoBindingFile(command: string) {
     }
 }
 
-async function insertKeybindingsIntoConfig(
-    name: string,
-    label: string,
-    keyBindings: IConfigKeyBinding[]
-) {
-    const config = vscode.workspace.getConfiguration('master-key');
-    await config.update('activatedBindingsId', label, true);
-
+async function insertKeybindingsIntoConfig(name: string, keyBindings: IConfigKeyBinding[]) {
     await vscode.commands.executeCommand('workbench.action.openGlobalKeybindingsFile');
     const ed = vscode.window.activeTextEditor;
     if (ed) {
@@ -505,14 +498,10 @@ async function selectPreset(preset?: Preset) {
         preset = await queryPreset();
     }
     if (preset) {
-        const [label, bindings] = await createBindings(preset.data);
+        const bindings = await createBindings(preset.data);
         if (bindings) {
             await handleRequireExtensions(bindings);
-            await insertKeybindingsIntoConfig(
-                bindings.name || 'none',
-                label,
-                bindings.bind
-            );
+            await insertKeybindingsIntoConfig(bindings.name || 'none', bindings.bind);
             await vscode.commands.executeCommand('master-key.showVisualDoc');
             await vscode.commands.executeCommand('master-key.showTextDoc');
         }
@@ -543,13 +532,9 @@ async function selectUserBindings(file?: vscode.Uri) {
         } else {
             const fileData = await vscode.workspace.fs.readFile(file);
             const data = new TextDecoder().decode(fileData);
-            const [label, bindings] = await createUserBindings(oldLabel, data);
+            const bindings = await createUserBindings(data);
             if (bindings) {
-                await insertKeybindingsIntoConfig(
-                    bindings.name || 'none',
-                    label,
-                    bindings.bind
-                );
+                await insertKeybindingsIntoConfig(bindings.name || 'none', bindings.bind);
             }
         }
     }

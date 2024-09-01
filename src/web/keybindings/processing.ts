@@ -45,7 +45,7 @@ export interface Bindings {
 export function processBindings(spec: FullBindingSpec): [Bindings, string[]] {
     const problems: string[] = [];
     const indexedItems = expandDefaultsDefinedAndForeach(spec, problems);
-    const docs = resolveDocItems(indexedItems, spec.doc || []);
+    const docs = resolveDocItems(indexedItems, spec.doc || [], problems);
     let items = indexedItems.map((item, i) => requireTransientSequence(item, i, problems));
     items = expandPrefixes(items);
     items = expandModes(items, spec.mode, problems);
@@ -251,7 +251,11 @@ function organizedByIndex<T>(items: (T & IIndexed)[]): T[][] {
     return indexed;
 }
 
-function resolveDocItems(items: (BindingItem & IIndexed)[], doc: IParsedBindingDoc[]) {
+function resolveDocItems(
+    items: (BindingItem & IIndexed)[],
+    doc: IParsedBindingDoc[],
+    problems: string[]
+) {
     const resolvedItemItr = items[Symbol.iterator]();
     resolvedItemItr.next();
     let markdown = '';
@@ -263,13 +267,16 @@ function resolveDocItems(items: (BindingItem & IIndexed)[], doc: IParsedBindingD
         let resolvedItems: BindingItem[] = [];
         for (const item of section.items) {
             if (byIndex[item.index] === undefined) {
-                throw Error(
+                problems.push(
                     `Master Key, unexpected internal inconsistency: could not find item
-                    index ${item.index} in parsed keybindings. This is a
-                    bug!!`.replace(/\s+/, ' ')
+                    index ${item.index} in parsed keybindings. This is a bug!!`.replace(
+                        /\s+/,
+                        ' '
+                    )
                 );
+            } else {
+                resolvedItems = resolvedItems.concat(byIndex[item.index]);
             }
-            resolvedItems = resolvedItems.concat(byIndex[item.index]);
         }
         markdown += asBindingTable(resolvedItems);
     }

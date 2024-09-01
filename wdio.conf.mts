@@ -71,6 +71,7 @@ export const config: Options.Testrunner = {
             // points to directory where extension package.json is located
             extensionPath: __dirname,
             workspacePath: __dirname,
+            vscodeArgs: { "profile": 'debug-profile' },
             storagePath: __dirname + "/.wdio-vscode-service/storage/",
             // optional VS Code settings
             // userSettings: {
