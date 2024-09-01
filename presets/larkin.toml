@@ -114,7 +114,7 @@ default.kind = "util"
 # 3. The suggestion palette shows a list of the current bindings given the current key binding prefix.
 
 [[bind]]
-path = "window"
+path = "util"
 key = "shift+;"
 name = "suggest"
 resetTransient = false
@@ -1730,8 +1730,7 @@ key = "ctrl+p"
 name = "paste in"
 combinedName = "paste before/after/in"
 description = "Paste clipboard at location"
-command = "runCommands"
-args.commands = "editor.action.clipboardPasteAction"
+command = "editor.action.clipboardPasteAction"
 
 [[bind]]
 path = "edit.action.clipboard"
@@ -2515,14 +2514,14 @@ show command suggestsion within the context of the current mode and keybinding p
 command = "master-key.commandPalette"
 
 [[bind]]
-path = "window"
+path = "util"
 name = "git..."
 description = "git commands"
 key = "tab g"
 command = "master-key.prefix"
 
 [[bind]]
-path = "window"
+path = "util"
 name = "pull"
 combinedName = "push/pull"
 description = "pull changes from remote"
@@ -2532,14 +2531,14 @@ key = "tab g p"
 command = "git.pull"
 
 [[bind]]
-path = "window"
+path = "util"
 name = "push"
 description = "push changes to remote"
 key = "tab g shift+p"
 command = "git.push"
 
 [[bind]]
-path = "window"
+path = "util"
 name = "checkout"
 combinedName = "commit/checkout"
 description = "commit changes"
@@ -2549,7 +2548,7 @@ key = "tab g c"
 command = "git.commit"
 
 [[bind]]
-path = "window"
+path = "util"
 name = "checkout"
 combinedName = "commit/checkout"
 description = "checkout changes"
@@ -2557,21 +2556,21 @@ key = "tab g shift+c"
 command = "git.checkout"
 
 [[bind]]
-path = "window"
+path = "util"
 name = "revert range"
 description = "revert unstaged changes in selected range"
 key = "tab g r"
 command = "git.revertSelectedRanges"
 
 [[bind]]
-path = "window"
+path = "util"
 name = "revert range"
 description = "revert unstaged changes in selected range"
 key = "tab g s"
 command = "git.stageSelectedRanges"
 
 [[bind]]
-path = "window"
+path = "util"
 name = "commands..."
 description = "show GitLens command palette for git"
 key = "tab g g"
@@ -2582,26 +2581,26 @@ command = "gitlens.gitCommands"
 # These miscellaneous utility commands are all organized uner the prefix `tab`.
 
 [[path]]
-id = "window"
+id = "util"
 name = "assorted misecellaneous commands"
 default.kind = "util"
 
 [[bind]]
-path = "window"
+path = "util"
 name = "utility"
 key = "tab"
 description = "utility related commands: file opening, window manipulation, debugging etc..."
 command = "master-key.prefix"
 
 [[bind]]
-path = "window"
+path = "util"
 name = "open recent"
 description = "Open recent file"
 key = "tab r"
 command = "workbench.action.openRecent"
 
 [[bind]]
-path = "window"
+path = "util"
 name = "hover"
 description = "show the hover view"
 combinedName = "(debug) hover"
@@ -2611,7 +2610,7 @@ key = "tab h"
 command = "editor.action.showHover"
 
 [[bind]]
-path = "window"
+path = "util"
 name = "debug hover"
 combinedName = "(debug) hover"
 description = "show the debug hover view"
@@ -2619,7 +2618,7 @@ key = "tab shift+h"
 command = "editor.debug.action.showDebugHover"
 
 [[bind]]
-path = "window"
+path = "util"
 name = "add mark"
 combinedName = "add mark / mark..."
 description = "toggle bookmark at given line"
@@ -2631,7 +2630,7 @@ combinedKey = "shift+m / m"
 command = "vsc-labeled-bookmarks.toggleBookmark"
 
 [[bind]]
-path = "window"
+path = "util"
 name = "mark"
 combinedName = "add mark / mark..."
 description = "bookmark related commands"
@@ -2639,7 +2638,7 @@ key = "tab m"
 command = "master-key.prefix"
 
 [[bind]]
-path = "window"
+path = "util"
 name = "mark ↓"
 description = "move to next bookmark"
 combinedName = "mark ↓/↑"
@@ -2650,14 +2649,14 @@ when = "!master-key.select_on && !editorHasSelection"
 command = "vsc-labeled-bookmarks.navigateToNextBookmark"
 
 [[bind]]
-path = "window"
+path = "util"
 combinedName = "mark ↓/↑"
 key = "tab m j"
 when = "master-key.select_on || editorHasSelection"
 command = "vsc-labeled-bookmarks.expandSelectionToNextBookmark"
 
 [[bind]]
-path = "window"
+path = "util"
 name = "mark ↑"
 combinedName = "mark ↓/↑"
 description = "move to previous bookmark"
@@ -2666,7 +2665,7 @@ when = "!master-key.select_on && !editorHasSelection"
 command = "vsc-labeled-bookmarks.navigateToPreviousBookmark"
 
 [[bind]]
-path = "window"
+path = "util"
 name = "mark ↑"
 combinedName = "mark ↓/↑"
 description = "move to previous bookmark"
@@ -2677,21 +2676,21 @@ args.commands = ["vsc-labeled-bookmarks.expandSelectionToPreviousBookmark",
       "selection-utilities.activeAtStart"]
 
 [[bind]]
-path = "window"
+path = "util"
 name = "remove mark"
 description = "remove bookmark (use quick selection)"
 key = "tab m d"
 command = "vsc-labeled-bookmarks.deleteBookmark"
 
 [[bind]]
-path = "window"
+path = "util"
 name = "nav marks"
 description = "reveal quick selection to move to a bookmark"
 key = "tab m t"
 command = "vsc-labeled-bookmarks.navigateToBookmark"
 
 [[bind]]
-path = "window"
+path = "util"
 name = "error →"
 combinedName = "error →/←"
 combinedDescription = "move to next/previous error"
@@ -2936,7 +2935,7 @@ args.at = "bottom"
 # Commands for interacting with VSCode's debugger UI.
 
 [[bind]]
-path = "window"
+path = "util"
 name = "breakpt."
 combinedName = "breakpt / debug..."
 combinedKey = "shift+b/b"
@@ -2946,7 +2945,7 @@ key = "tab shift+b"
 command = "editor.debug.action.toggleBreakpoint"
 
 [[bind]]
-path = "window"
+path = "util"
 name = "debug..."
 combinedName = "breakpt / debug..."
 description = "assorted debugging actions"
@@ -2954,7 +2953,7 @@ key = "tab b"
 command = "master-key.prefix"
 
 [[bind]]
-path = "window"
+path = "util"
 name = "cond. break"
 description = "conditional breakpoint"
 key = "tab b shift+c"
@@ -2962,35 +2961,35 @@ command = "editor.debug.action.conditionalBreakpoint"
 
 
 [[bind]]
-path = "window"
+path = "util"
 name = "start"
 description = "start debugging"
 key = "tab b r"
 command = "workbench.action.debug.start"
 
 [[bind]]
-path = "window"
+path = "util"
 name = "continue"
 description = "continue debugging"
 key = "tab b c"
 command = "workbench.action.debug.continue"
 
 [[bind]]
-path = "window"
+path = "util"
 name = "next"
 description = "debug: step over next line"
 key = "tab b j"
 command = "workbench.action.debug.stepOver"
 
 [[bind]]
-path = "window"
+path = "util"
 name = "into"
 description = "debug: step into next line"
 key = "tab b i"
 command = "workbench.action.debug.stepInto"
 
 [[bind]]
-path = "window"
+path = "util"
 name = "out"
 description = "debug: step out"
 key = "tab b o"
