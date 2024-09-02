@@ -57,14 +57,13 @@ describe('Configuration', () => {
         const modeItem = await statusBar.getItem('Keybinding Mode: normal');
         expect(modeItem).toBeTruthy();
 
+        await enterModalKeys(['ctrl', 'i']);
+        editor = await setupEditor(`A simple test`);
+        await browser.keys(Key.Escape);
         await movesCursorInEditor(() => enterModalKeys(['ctrl', 'l']), [0, 1], editor);
     });
 
     it('Correctly sets normal mode appearance', async () => {
-        await enterModalKeys(['ctrl', 'i']);
-        editor = await setupEditor(`A simple test`);
-        await browser.keys(Key.Escape);
-
         // check appearance of cursor and status bar
         const cursorEl = await browser.$('div[role="presentation"].cursors-layer');
         const cursorClasses = await cursorEl.getAttribute('class');
