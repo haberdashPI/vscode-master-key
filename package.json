@@ -290,5 +290,9 @@
     "yaml": "^2.3.4",
     "zod": "^3.22.4",
     "zod-validation-error": "^2.1.0"
+  },
+  "main": "./dist/desktop/extension.js",
+  "env": {
+    "NODE_ENV": "wdio"
   }
 }

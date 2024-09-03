@@ -3,8 +3,10 @@
 import '@wdio/globals';
 import 'wdio-vscode-service';
 import { enterModalKeys, setBindings, setupEditor, movesCursorInEditor, waitForMode, storeCoverageStats } from './utils.mts';
-import { StatusBar, TextEditor } from 'wdio-vscode-service';
-import { Key } from "webdriverio";
+import { InputBox, StatusBar, TextEditor } from 'wdio-vscode-service';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 import { sleep } from 'wdio-vscode-service';
 
 describe('Configuration', () => {
@@ -104,6 +106,51 @@ describe('Configuration', () => {
         const cursorClasses = await cursorEl.getAttribute('class');
         expect(cursorClasses).toMatch(/cursor-line-style/);
     });
+
+    it('Can be loaded from a directory', async () => {
+        fs.mkdtemp(path.join(os.tmpdir(), 'master-key-test-'), async (err, folder) => {
+            if(err) throw err;
+            const a_text = `
+            [header]
+            version = "1.0"
+
+            [[bind]]
+            name = "left"
+            key = "ctrl+l"
+            command = "cursorMove"
+            args.to = "left"
+            `;
+
+            const b_text = `
+            [header]
+            version = "1.0"
+
+            [[bind]]
+            name = "right"
+            key = "ctrl+h"
+            command = "cursorMove"
+            args.to = "right"
+            `
+
+            fs.writeFileSync(path.join(folder, 'a.toml'), a_text);
+            fs.writeFileSync(path.join(folder, 'b.toml'), b_text);
+
+            const workbench = await browser.getWorkbench();
+            const input = await workbench.executeCommand('Master Key: Activate Keybindings');
+            await sleep(500);
+            await input.setText('Directory...');
+            await input.confirm();
+
+            const fileInput = await (new InputBox(workbench.locatorMap)).wait();
+            await fileInput.setText(folder);
+            await fileInput.confirm();
+
+            const bindingInput = await (new InputBox(workbench.locatorMap)).wait();
+            const labels = await bindingInput.quickPickLabel$$;
+            expect(labels).toContain('a.toml');
+            expect(labels).toContain('b.toml');
+        });
+    })
 
     after(async () => {
         await storeCoverageStats('config');

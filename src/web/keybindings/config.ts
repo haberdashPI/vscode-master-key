@@ -22,7 +22,7 @@ interface IStorage {
 }
 
 function toZip64(str: string) {
-    const bytes = deflate(str);
+    const bytes = deflate(str, {level: 9});
     let binary = '';
     const len = bytes.byteLength;
     for (let i = 0; i < len; i++) {
@@ -67,16 +67,21 @@ export async function createBindings(newBindings: string): Promise<Bindings | un
     const userBindingsData = get(storage, 'userBindings', '');
     const userBindings: string = fromZip64(userBindingsData || '') || '';
 
-    const newParsedBindings = processParsing(
-        await parseBindings(newBindings + '\n' + userBindings)
-    );
-    if (newParsedBindings) {
-        bindings = newParsedBindings;
-        const newBindingsData = toZip64(newBindings);
-        storage.presetBindings = newBindingsData;
-        config.update('storage', storage, vscode.ConfigurationTarget.Global);
-        return newParsedBindings;
+    if (newBindings || userBindings) {
+        const newParsedBindings = processParsing(
+            await parseBindings(newBindings + '\n' + userBindings)
+        );
+        if (newParsedBindings) {
+            bindings = newParsedBindings;
+            const newBindingsData = toZip64(newBindings);
+            storage.presetBindings = newBindingsData;
+            config.update('storage', storage, vscode.ConfigurationTarget.Global);
+            return newParsedBindings;
+        } else {
+            return undefined;
+        }
     } else {
+        config.update('storage', {});
         return undefined;
     }
 }
@@ -86,10 +91,15 @@ async function useBindings() {
     const storage = config.get<IStorage>('storage') || {};
     const preset = fromZip64(storage.presetBindings || '') || '';
     const user = fromZip64(storage.userBindings || '') || '';
-    const parsedBindings = processParsing(await parseBindings(preset + '\n' + user));
-
-    for (const fn of listeners || []) {
-        await fn(parsedBindings);
+    if (preset || user) {
+        const parsedBindings = processParsing(await parseBindings(preset + '\n' + user));
+        for (const fn of listeners || []) {
+            await fn(parsedBindings);
+        }
+    } else {
+        for (const fn of listeners || []) {
+            await fn(undefined);
+        }
     }
 }
 

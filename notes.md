@@ -7,7 +7,13 @@ release 0.2.6
 + feature: specify user-specific binding file, apart from activated keybindings
 + Split out any of the commands that are really custom for me that don't make sense to publish.
 
+- FIX: after deleting bindings, `insert/normal` still shows up in mode line
+
 - maybe actually setup tests for all the new stuff in keybindings/index.js??
+    + load presets list from directory
+    - load preset from file
+    - copy preset into file
+    - copy user config into file
 
 Binding changes in Larkin:
 - maybe avoid need to use cmd-v so much

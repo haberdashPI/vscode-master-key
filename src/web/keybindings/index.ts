@@ -143,12 +143,10 @@ async function copyBindings(file: vscode.Uri) {
 }
 
 async function removeKeybindings() {
-    const config = vscode.workspace.getConfiguration('master-key');
-    config.update('activatedBindingsId', 'none', true);
-
     await vscode.commands.executeCommand('workbench.action.openGlobalKeybindingsFile');
     const ed = vscode.window.activeTextEditor;
     if (ed) {
+        await createBindings('');
         const oldBindingsStart = findText(ed.document, 'AUTOMATED BINDINGS START');
         const oldBindingsEnd = findText(ed.document, 'AUTOMATED BINDINGS END');
         if (oldBindingsStart && oldBindingsEnd) {
