@@ -527,19 +527,11 @@ async function selectUserBindings(file?: vscode.Uri) {
         }
     }
     if (file) {
-        const config = vscode.workspace.getConfiguration('master-key');
-        const oldLabel = await config.get<string>('activatedBindingsId');
-        if (!oldLabel) {
-            vscode.window.showErrorMessage(
-                'You must first activate a keybinding preset via `Master Key: Activate Keybindings`'
-            );
-        } else {
-            const fileData = await vscode.workspace.fs.readFile(file);
-            const data = new TextDecoder().decode(fileData);
-            const bindings = await createUserBindings(data);
-            if (bindings) {
-                await insertKeybindingsIntoConfig(bindings.name || 'none', bindings.bind);
-            }
+        const fileData = await vscode.workspace.fs.readFile(file);
+        const data = new TextDecoder().decode(fileData);
+        const bindings = await createUserBindings(data);
+        if (bindings) {
+            await insertKeybindingsIntoConfig(bindings.name || 'none', bindings.bind);
         }
     }
 }
