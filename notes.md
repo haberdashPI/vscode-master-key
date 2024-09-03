@@ -8,8 +8,9 @@ release 0.2.6
 - FIX: keybindings do not update after config updates
 
 - maybe actually setup tests for all the new stuff in keybindings/index.js??
-    - load presets list from directory
-      - debugging adding a directory (weird UX glitches I don't yet understand)
+    + load presets list from directory
+    - checks for user bindings
+    - checks for handling duplicate file names
     - load preset from file
     - copy preset into file
     - copy user config into file
