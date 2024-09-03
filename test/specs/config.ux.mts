@@ -93,6 +93,66 @@ describe('Configuration', () => {
         expect(statusBarClasses).not.toMatch(/warning-kind/);
     });
 
+    it.only('Can be loaded from a directory', async () => {
+        const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'master-key-test-'));
+        const a_text = `
+        [header]
+        version = "1.0"
+
+        [[bind]]
+        name = "left"
+        key = "ctrl+l"
+        command = "cursorMove"
+        args.to = "left"
+        `;
+
+        const b_text = `
+        [header]
+        version = "1.0"
+
+        [[bind]]
+        name = "right"
+        key = "ctrl+h"
+        command = "cursorMove"
+        args.to = "right"
+        `
+
+        fs.writeFileSync(path.join(folder, 'a.toml'), a_text);
+        fs.writeFileSync(path.join(folder, 'b.toml'), b_text);
+
+        if(!editor){
+            editor = await setupEditor(`A simple test`);
+        }
+
+        const workbench = await browser.getWorkbench();
+        const input = await workbench.executeCommand('Master Key: Activate Keybindings');
+        await sleep(500);
+        await input.setText('Directory...');
+        await input.confirm();
+
+        const fileInput = await (new InputBox(workbench.locatorMap)).wait();
+        await sleep(500);
+        await fileInput.clear();
+        await sleep(500);
+        await fileInput.setText(folder);
+        await fileInput.confirm();
+        await sleep(10000);
+
+        const bindingInput = await (new InputBox(workbench.locatorMap)).wait();
+        const items = await bindingInput.getQuickPicks();
+        const toml = [];
+        for(const it of items){
+            const label = await it.getLabel();
+            console.log('[DEBUG] item label: '+label);
+            if (/\.toml$/.test(label)) {
+                toml.push(label)
+            }
+        }
+        expect(toml).toContain('a.toml');
+        expect(toml).toContain('b.toml');
+        expect(toml).toContain('c.toml');
+    })
+
     it('Can be removed', async () => {
         const workbench = await browser.getWorkbench();
         await workbench.executeCommand('Master Key: Remove Keybindings');
@@ -106,51 +166,6 @@ describe('Configuration', () => {
         const cursorClasses = await cursorEl.getAttribute('class');
         expect(cursorClasses).toMatch(/cursor-line-style/);
     });
-
-    it('Can be loaded from a directory', async () => {
-        fs.mkdtemp(path.join(os.tmpdir(), 'master-key-test-'), async (err, folder) => {
-            if(err) throw err;
-            const a_text = `
-            [header]
-            version = "1.0"
-
-            [[bind]]
-            name = "left"
-            key = "ctrl+l"
-            command = "cursorMove"
-            args.to = "left"
-            `;
-
-            const b_text = `
-            [header]
-            version = "1.0"
-
-            [[bind]]
-            name = "right"
-            key = "ctrl+h"
-            command = "cursorMove"
-            args.to = "right"
-            `
-
-            fs.writeFileSync(path.join(folder, 'a.toml'), a_text);
-            fs.writeFileSync(path.join(folder, 'b.toml'), b_text);
-
-            const workbench = await browser.getWorkbench();
-            const input = await workbench.executeCommand('Master Key: Activate Keybindings');
-            await sleep(500);
-            await input.setText('Directory...');
-            await input.confirm();
-
-            const fileInput = await (new InputBox(workbench.locatorMap)).wait();
-            await fileInput.setText(folder);
-            await fileInput.confirm();
-
-            const bindingInput = await (new InputBox(workbench.locatorMap)).wait();
-            const labels = await bindingInput.quickPickLabel$$;
-            expect(labels).toContain('a.toml');
-            expect(labels).toContain('b.toml');
-        });
-    })
 
     after(async () => {
         await storeCoverageStats('config');

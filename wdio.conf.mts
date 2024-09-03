@@ -73,16 +73,9 @@ export const config: Options.Testrunner = {
             workspacePath: __dirname,
             vscodeArgs: {
                 profile: 'debug-profile' ,
-                'enable-features': 'ConversionMeasurement,AttributionReportingCrossAppWeb'
+                'enable-features': 'ConversionMeasurement,AttributionReportingCrossAppWeb',
             },
             storagePath: __dirname + "/.wdio-vscode-service/storage/",
-            // optional VS Code settings
-            // userSettings: {
-            //     // NOTE: these are ignored (at least for 'chrome' browser)
-            //     "editor.fontSize": 14,
-            //     "master-key.keyDisplayDelay": 20,
-            //     "master-key.suggestionDelay": 0,
-            // },
         }
     }],
 

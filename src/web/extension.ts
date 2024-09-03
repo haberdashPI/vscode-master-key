@@ -26,6 +26,14 @@ export async function activate(context: vscode.ExtensionContext) {
             })
         );
     }
+
+    if (process.env.TESTING) {
+        const fileConfig = vscode.workspace.getConfiguration('files');
+        fileConfig.update('simpleDialog.enable', true, vscode.ConfigurationTarget.Global);
+
+        const config = vscode.workspace.getConfiguration('master-key');
+        config.update('presetDirectories', [], vscode.ConfigurationTarget.Global);
+    }
 }
 
 // This method is called when your extension is deactivated

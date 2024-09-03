@@ -15,6 +15,8 @@ release 0.2.6
     - copy preset into file
     - copy user config into file
 
+- FIX: get page scroll with cursor movement (selection-utilities)
+
 Binding changes in Larkin:
 - maybe avoid need to use cmd-v so much
 - remove all my extra settings in my own config file
