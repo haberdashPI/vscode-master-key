@@ -114,7 +114,7 @@ code-reading QOL
 
 - MODERNIZED SELECTION UTILITIES
   - modernized command documentation
-  - modern build setup
+  + modern build setup
   - some basic UX tests
   - 1.0 release
 
