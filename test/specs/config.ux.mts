@@ -206,6 +206,38 @@ describe('Configuration', () => {
         expect(cursorClasses).toMatch(/cursor-line-style/);
     });
 
+    it('Can prevent user binding update absent a preset', async () => {
+        if(!editor) {
+            editor = await setupEditor(`A simple test`);
+        }
+        await editor.moveCursor(1, 1);
+
+
+        const workbench = await browser.getWorkbench();
+        await workbench.executeCommand('Master Key: Remove Keybindings');
+        await waitForMode('default');
+
+        const userFile = `
+        [[bind]]
+        name = "right"
+        key = "ctrl+h"
+        command = "cursorMove"
+        args.to = "right"
+        `;
+        fs.writeFileSync(path.join(folder, 'user.toml'), userFile);
+
+        await workbench.executeCommand('Master Key: Activate User Keybindings');
+        await setFileDialogText(path.join(folder, 'user.toml'));
+
+        let notifs = await workbench.getNotifications();
+        let messages = await Promise.all(notifs.map(n => n.getMessage()));
+        let error = 'User bindings have not been activated ' +
+        'because you have no preset keybindings. Call `Master Key: `' +
+        'Activate Keybindings` to add a preset.'
+
+        expect(messages).toContainEqual(error);
+    });
+
     after(async () => {
         await storeCoverageStats('config');
     });

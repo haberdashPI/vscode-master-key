@@ -12,7 +12,7 @@ release 0.2.6
     + load preset from file
     + checks for user bindings: wip
       + we can add them
-      - we get an error if there are no preset bindings
+      + we get an error if there are no preset bindings
     - checks for handling duplicate file names
     - copy preset into file
     - copy user config into file
