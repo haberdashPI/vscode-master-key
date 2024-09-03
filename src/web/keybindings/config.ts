@@ -47,14 +47,22 @@ export async function createUserBindings(
         const storage = config.get<IStorage>('storage') || {};
         const newBindings: string = fromZip64(storage.presetBindings || '');
 
-        const newParsedBindings = processParsing(
-            await parseBindings(newBindings + userBindings)
-        );
-        if (newParsedBindings) {
-            bindings = newParsedBindings;
-            storage.userBindings = toZip64(userBindings);
-            config.update('storage', storage, vscode.ConfigurationTarget.Global);
-            return newParsedBindings;
+        if (newBindings) {
+            const newParsedBindings = processParsing(
+                await parseBindings(newBindings + userBindings)
+            );
+            if (newParsedBindings) {
+                bindings = newParsedBindings;
+                storage.userBindings = toZip64(userBindings);
+                config.update('storage', storage, vscode.ConfigurationTarget.Global);
+                return newParsedBindings;
+            }
+        } else {
+            vscode.window.showErrorMessage(
+                'User bindings have not been activated ' +
+                    ' because you have no preset keybindings. Call `Master Key: `' +
+                    'Activate Keybindings` to add a preset.'
+            );
         }
     }
     return undefined;
@@ -67,7 +75,7 @@ export async function createBindings(newBindings: string): Promise<Bindings | un
     const userBindingsData = get(storage, 'userBindings', '');
     const userBindings: string = fromZip64(userBindingsData || '') || '';
 
-    if (newBindings || userBindings) {
+    if (newBindings) {
         const newParsedBindings = processParsing(
             await parseBindings(newBindings + '\n' + userBindings)
         );
@@ -81,7 +89,7 @@ export async function createBindings(newBindings: string): Promise<Bindings | un
             return undefined;
         }
     } else {
-        config.update('storage', {});
+        config.update('storage', {}, vscode.ConfigurationTarget.Global);
         return undefined;
     }
 }
@@ -91,7 +99,7 @@ async function useBindings() {
     const storage = config.get<IStorage>('storage') || {};
     const preset = fromZip64(storage.presetBindings || '') || '';
     const user = fromZip64(storage.userBindings || '') || '';
-    if (preset || user) {
+    if (preset) {
         const parsedBindings = processParsing(await parseBindings(preset + '\n' + user));
         for (const fn of listeners || []) {
             await fn(parsedBindings);
