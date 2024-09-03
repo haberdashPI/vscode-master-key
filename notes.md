@@ -1,16 +1,15 @@
 ## Binding Cleanup
 
-BUG: we can't get info about keybindings from a sync'd machine
-
 release 0.2.6
 
 + feature: specify user-specific binding file, apart from activated keybindings
 + Split out any of the commands that are really custom for me that don't make sense to publish.
 
-+ FIX: after deleting bindings, `insert/normal` still shows up in mode line
+- FIX: keybindings do not update after config updates
 
 - maybe actually setup tests for all the new stuff in keybindings/index.js??
-    + load presets list from directory
+    - load presets list from directory
+      - debugging adding a directory (weird UX glitches I don't yet understand)
     - load preset from file
     - copy preset into file
     - copy user config into file
@@ -18,7 +17,7 @@ release 0.2.6
 - FIX: get page scroll with cursor movement (selection-utilities)
 
 Binding changes in Larkin:
-- maybe avoid need to use cmd-v so much
++ maybe avoid need to use cmd-v so much
 - remove all my extra settings in my own config file
 - insert QOL I loose from that into larkin (or masterkeys.toml, as needed)
     - up/down page
@@ -26,7 +25,7 @@ Binding changes in Larkin:
 
 ## Trailing fixes
 
-Working with release 0.2.6 for a while and make sure there aren't any bugs to fix
+Working with release 0.2.6 for a while and make sure there aren't any more bugs to fix
 
 ## Before VSCode publish
 
