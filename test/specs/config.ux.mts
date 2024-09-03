@@ -169,7 +169,7 @@ describe('Configuration', () => {
         expect(modeItem).toBeTruthy();
     });
 
-    it.only('Can add user bindings', async () => {
+    it('Can add user bindings', async () => {
         const userFile = `
         [[bind]]
         name = "right"
@@ -179,14 +179,17 @@ describe('Configuration', () => {
         `;
         fs.writeFileSync(path.join(folder, 'user.toml'), userFile);
 
+        editor = await setupEditor(`A simple test`);
+
         const workbench = await browser.getWorkbench();
         await workbench.executeCommand('Master Key: Activate User Keybindings');
         await setFileDialogText(path.join(folder, 'user.toml'));
 
-        editor = await setupEditor(`A simple test`);
+        await editor.moveCursor(1, 1);
+
         await movesCursorInEditor(async () => {
             await enterModalKeys(['ctrl', 'h']);
-        }, [1, 0], editor);
+        }, [0, 1], editor);
     });
 
     it('Can be removed', async () => {

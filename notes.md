@@ -10,8 +10,8 @@ release 0.2.6
 - maybe actually setup tests for all the new stuff in keybindings/index.js??
     + load presets list from directory
     + load preset from file
-    - checks for user bindings: wip
-      - we can add them
+    + checks for user bindings: wip
+      + we can add them
       - we get an error if there are no preset bindings
     - checks for handling duplicate file names
     - copy preset into file
