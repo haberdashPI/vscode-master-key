@@ -11,7 +11,7 @@ release 0.2.6
     + load presets list from directory
     - checks for user bindings
     - checks for handling duplicate file names
-    - load preset from file
+    + load preset from file
     - copy preset into file
     - copy user config into file
 

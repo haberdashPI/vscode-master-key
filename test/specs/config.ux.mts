@@ -169,21 +169,25 @@ describe('Configuration', () => {
         expect(modeItem).toBeTruthy();
     });
 
-        }
+    it.only('Can add user bindings', async () => {
+        const userFile = `
+        [[bind]]
+        name = "right"
+        key = "ctrl+h"
+        command = "cursorMove"
+        args.to = "right"
+        `;
+        fs.writeFileSync(path.join(folder, 'user.toml'), userFile);
 
-        const bindingInput = await (new InputBox(workbench.locatorMap)).wait();
-        const items = await bindingInput.getQuickPicks();
-        const toml = [];
-        for(const it of items){
-            const label = await it.getLabel();
-            console.log('[DEBUG] item label: '+label);
-            if (/\.toml$/.test(label)) {
-                toml.push(label)
-            }
-        }
-        expect(toml).toContain('a.toml');
-        expect(toml).toContain('b.toml');
-    })
+        const workbench = await browser.getWorkbench();
+        await workbench.executeCommand('Master Key: Activate User Keybindings');
+        await setFileDialogText(path.join(folder, 'user.toml'));
+
+        editor = await setupEditor(`A simple test`);
+        await movesCursorInEditor(async () => {
+            await enterModalKeys(['ctrl', 'h']);
+        }, [1, 0], editor);
+    });
 
     it('Can be removed', async () => {
         const workbench = await browser.getWorkbench();

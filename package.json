@@ -146,6 +146,11 @@
           "description": "A list of directories where additional Master Key presets can be found.",
           "default": []
         },
+        "master-key.definitions": {
+          "title": "Keybinding Definitions",
+          "type": "object",
+          "description": "A set of variables defined by the keybinding mode that are accessible when evaluating `computedArgs`"
+        },
         "master-key.defaultLineNumbers": {
           "title": "Default Line Numbering",
           "type": "string",
@@ -157,6 +162,11 @@
             "interval"
           ],
           "description": "The default line numbering setting, when not explicitly specified by a binding mode. This and the mode's line numbering overwrites the global VSCode setting"
+        },
+        "master-key.mode": {
+          "title": "Keybinding Mode Definitions",
+          "type": "object",
+          "description": "A set of definitions that determine the behavior of each keybinding mode"
         },
         "master-key.maxCommandHistory": {
           "title": "Command History Maximum",
@@ -280,5 +290,9 @@
     "yaml": "^2.3.4",
     "zod": "^3.22.4",
     "zod-validation-error": "^2.1.0"
+  },
+  "main": "./dist/desktop/extension.js",
+  "env": {
+    "NODE_ENV": "wdio"
   }
 }
