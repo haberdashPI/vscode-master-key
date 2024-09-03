@@ -326,18 +326,25 @@ async function makeQuickPicksFromPresets(
         nameCount[name] = count + 1;
     }
 
+    const curNameCount: Record<string, number> = {};
     return (await presetsWithBindings).map(preset => {
         const name = preset.binding?.name || Utils.basename(preset.uri);
+        const count = curNameCount[name] || 0;
+        curNameCount[name] = count + 1;
         if (nameCount[name] > 1) {
-            return {preset, label: `${name} (${nameCount[name]})`, detail: preset.uri.path};
+            return {
+                preset,
+                label: `${name} (${curNameCount[name]})`,
+                detail: preset.uri.path,
+            };
         } else {
             return {preset, label: name};
         }
     });
 }
 
-export async function queryPreset(newDirs: string[] = []): Promise<Preset | undefined> {
-    const options = await makeQuickPicksFromPresets(await keybindingPresets, newDirs);
+export async function queryPreset(): Promise<Preset | undefined> {
+    const options = await makeQuickPicksFromPresets(await keybindingPresets);
     options.push(
         {label: 'add new presets...', kind: vscode.QuickPickItemKind.Separator},
         {label: 'Current File', command: 'current'},
@@ -397,7 +404,7 @@ export async function queryPreset(newDirs: string[] = []): Promise<Preset | unde
                 dirs,
                 vscode.ConfigurationTarget.Global
             );
-            return queryPreset(dirs);
+            return queryPreset();
         }
     } else {
         return picked?.preset;
@@ -586,7 +593,7 @@ async function loadPresets(allDirs: vscode.Uri[]) {
             for (const [filename, type] of await vscode.workspace.fs.readDirectory(dir)) {
                 if (type === vscode.FileType.File && /toml$/.test(filename)) {
                     const uri = Utils.joinPath(dir, filename);
-                    loadPreset(presets, uri);
+                    await loadPreset(presets, uri);
                 }
             }
         }
