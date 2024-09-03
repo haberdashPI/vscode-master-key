@@ -16,14 +16,13 @@ release 0.2.6
     - checks for handling duplicate file names
     - copy preset into file
     - copy user config into file
-
-- FIX: get page scroll with cursor movement (selection-utilities)
+    - test required extension installation
 
 Binding changes in Larkin:
 + maybe avoid need to use cmd-v so much
 - remove all my extra settings in my own config file
 - insert QOL I loose from that into larkin (or masterkeys.toml, as needed)
-    - up/down page
+    + up/down page
     - escape / shift-escape?
 
 ## Trailing fixes
