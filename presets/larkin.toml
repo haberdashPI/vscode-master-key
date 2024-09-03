@@ -337,6 +337,29 @@ command = "expandLineSelection"
 
 [[bind]]
 path = "edit.motion.prim"
+key = "ctrl+d"
+name = "pg ↓"
+combinedName = "pg ↓/↑"
+combinedKey = "ctrl+d/ctrl+u"
+combinedDescription = "page down/up"
+description = "page down"
+command = "editorScroll"
+args.to = "down"
+args.by = "halfPage"
+args.valueu = "count"
+
+[[bind]]
+path = "edit.motion.prim"
+key = "ctrl+u"
+name = "pg ↑"
+combinedName = "pg ↓/↑"
+description = "page up"
+command = "editorScroll"
+args.to = "up"
+args.by = "halfPage"
+
+[[bind]]
+path = "edit.motion.prim"
 key = "shift+x"
 name = "exapand"
 description = "expand selections to full lines"
