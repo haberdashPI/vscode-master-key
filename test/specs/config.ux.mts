@@ -59,7 +59,7 @@ describe('Configuration', () => {
 
         await enterModalKeys(['ctrl', 'i']);
         editor = await setupEditor(`A simple test`);
-        await browser.keys(Key.Escape);
+        await enterModalKeys('escape');
         await movesCursorInEditor(() => enterModalKeys(['ctrl', 'l']), [0, 1], editor);
     });
 
@@ -75,7 +75,7 @@ describe('Configuration', () => {
 
     it('Can allow switch to insert mode', async() => {
         await editor.moveCursor(1, 1);
-        enterModalKeys(['ctrl', 'i']);
+        await enterModalKeys(['ctrl', 'i']);
         await waitForMode('insert');
         await browser.keys('i');
         expect(await editor.getText()).toEqual('iA simple test');
