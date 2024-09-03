@@ -319,3 +319,26 @@ export async function movesCursorTo(action: () => Promise<void>, by: [number, nu
     let newpos = await editor.getCoordinates();
     expect({y: newpos[0], x: newpos[1]}).toEqual({y: by[0], x: by[1]});
 }
+
+export async function setFileDialogText(str: string) {
+    const workbench = await browser.getWorkbench();
+    const fileInput = await (new InputBox(workbench.locatorMap)).wait();
+    await sleep(100);
+    // clearing text for this input box seems to work a little differently than the
+    // normal up, so we have to manually remove the text before setting the text
+    const input_ = await fileInput.inputBox$.$(fileInput.locators.input)
+    await input_.click();
+    await browser.keys([Key.Ctrl, 'a'])
+    await browser.keys(Key.Backspace);
+    await sleep(100);
+    await fileInput.setText(str);
+    // confirmation is also flakey
+    await sleep(100);
+    await fileInput.confirm();
+    await sleep(100);
+    try {
+        fileInput.confirm();
+    } catch(e) {
+        console.dir(e);
+    }
+}

@@ -2,7 +2,7 @@
 
 import '@wdio/globals';
 import 'wdio-vscode-service';
-import { enterModalKeys, setBindings, setupEditor, movesCursorInEditor, waitForMode, storeCoverageStats } from './utils.mts';
+import { enterModalKeys, setBindings, setupEditor, movesCursorInEditor, waitForMode, storeCoverageStats, setFileDialogText } from './utils.mts';
 import { InputBox, StatusBar, TextEditor } from 'wdio-vscode-service';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -13,6 +13,7 @@ import { Key } from 'webdriverio';
 
 describe('Configuration', () => {
     let editor: TextEditor;
+    let folder: string;
     before(async () => {
         await setBindings(`
             [header]
@@ -53,6 +54,39 @@ describe('Configuration', () => {
             key = "ctrl+i"
             command = "master-key.enterInsert"
         `);
+
+        folder = fs.mkdtempSync(path.join(os.tmpdir(), 'master-key-test-'));
+
+        const a_text = `
+        [header]
+        version = "1.0"
+        name = "A bindings"
+
+        [[mode]]
+        name = "abind"
+        default = true
+
+        [[bind]]
+        name = "left"
+        key = "ctrl+l"
+        command = "cursorMove"
+        args.to = "left"
+        `;
+
+        const b_text = `
+        [header]
+        version = "1.0"
+        name = "B bindings"
+
+        [[bind]]
+        name = "right"
+        key = "ctrl+h"
+        command = "cursorMove"
+        args.to = "right"
+        `
+
+        fs.writeFileSync(path.join(folder, 'a.toml'), a_text);
+        fs.writeFileSync(path.join(folder, 'b.toml'), b_text);
     });
 
     it('Can make normal mode the default', async() => {
@@ -96,32 +130,6 @@ describe('Configuration', () => {
     });
 
     it('Can be loaded from a directory', async () => {
-        const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'master-key-test-'));
-        const a_text = `
-        [header]
-        version = "1.0"
-
-        [[bind]]
-        name = "left"
-        key = "ctrl+l"
-        command = "cursorMove"
-        args.to = "left"
-        `;
-
-        const b_text = `
-        [header]
-        version = "1.0"
-
-        [[bind]]
-        name = "right"
-        key = "ctrl+h"
-        command = "cursorMove"
-        args.to = "right"
-        `
-
-        fs.writeFileSync(path.join(folder, 'a.toml'), a_text);
-        fs.writeFileSync(path.join(folder, 'b.toml'), b_text);
-
         if(!editor){
             editor = await setupEditor(`A simple test`);
         }
@@ -132,24 +140,35 @@ describe('Configuration', () => {
         await input.setText('Directory...');
         await input.confirm();
 
-        const fileInput = await (new InputBox(workbench.locatorMap)).wait();
-        await sleep(100);
-        // clearing text for this input box seems to work a little differently than the
-        // normal up, so we have to manually remove the text before setting the text
-        const input_ = await fileInput.inputBox$.$(fileInput.locators.input)
-        await input_.click();
-        await browser.keys([Key.Ctrl, 'a'])
-        await browser.keys(Key.Backspace);
-        await sleep(100);
-        await fileInput.setText(folder+"/");
-        // confirmation is also flakey
-        await sleep(100);
-        await fileInput.confirm();
-        await sleep(100);
-        try {
-            fileInput.confirm();
-        } catch(e) {
-            console.dir(e);
+        await setFileDialogText(folder+"/");
+        const bindingInput = await (new InputBox(workbench.locatorMap)).wait();
+        const items = await bindingInput.getQuickPicks();
+
+        const labels = [];
+        for(const it of items){
+            labels.push(await it.getLabel());
+        }
+        expect(labels).toContain('A bindings');
+        expect(labels).toContain('B bindings');
+    });
+
+    it('Can load from a file', async () => {
+        if(!editor){
+            editor = await setupEditor(`A simple test`);
+        }
+
+        const workbench = await browser.getWorkbench();
+        const input = await workbench.executeCommand('Master Key: Activate Keybindings');
+        await sleep(500);
+        await input.setText('File...');
+        await input.confirm();
+
+        await setFileDialogText(path.join(folder, 'a.toml'));
+        const statusBar = await (new StatusBar(workbench.locatorMap));
+        const modeItem = await statusBar.getItem('Keybinding Mode: abind');
+        expect(modeItem).toBeTruthy();
+    });
+
         }
 
         const bindingInput = await (new InputBox(workbench.locatorMap)).wait();
@@ -165,8 +184,6 @@ describe('Configuration', () => {
         expect(toml).toContain('a.toml');
         expect(toml).toContain('b.toml');
     })
-
-    // TODO: proper handling of duplicate names
 
     it('Can be removed', async () => {
         const workbench = await browser.getWorkbench();
