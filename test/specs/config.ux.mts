@@ -73,6 +73,7 @@ describe('Configuration', () => {
         args.to = "left"
         `;
 
+
         const b_text = `
         [header]
         version = "1.0"
@@ -85,8 +86,26 @@ describe('Configuration', () => {
         args.to = "right"
         `
 
+        const c_text = `
+        [header]
+        version = "1.0"
+        name = "A bindings"
+
+        [[mode]]
+        name = "abind"
+        default = true
+
+        [[bind]]
+        name = "left"
+        key = "ctrl+d"
+        command = "cursorMove"
+        args.to = "left"
+        `;
+
+        fs.mkdirSync(path.join(folder, 'others'));
         fs.writeFileSync(path.join(folder, 'a.toml'), a_text);
         fs.writeFileSync(path.join(folder, 'b.toml'), b_text);
+        fs.writeFileSync(path.join(folder, 'others', 'c.toml'), c_text)
     });
 
     it('Can make normal mode the default', async() => {
@@ -149,6 +168,30 @@ describe('Configuration', () => {
             labels.push(await it.getLabel());
         }
         expect(labels).toContain('A bindings');
+        expect(labels).toContain('B bindings');
+    });
+
+    it('Can be loaded from a directory', async () => {
+        if(!editor){
+            editor = await setupEditor(`A simple test`);
+        }
+
+        const workbench = await browser.getWorkbench();
+        const input = await workbench.executeCommand('Master Key: Activate Keybindings');
+        await sleep(500);
+        await input.setText('Directory...');
+        await input.confirm();
+
+        await setFileDialogText(path.join(folder, "others"));
+        const bindingInput = await (new InputBox(workbench.locatorMap)).wait();
+        const items = await bindingInput.getQuickPicks();
+
+        const labels = [];
+        for(const it of items){
+            labels.push(await it.getLabel());
+        }
+        expect(labels).toContain('A bindings (1)');
+        expect(labels).toContain('A bindings (2)');
         expect(labels).toContain('B bindings');
     });
 
