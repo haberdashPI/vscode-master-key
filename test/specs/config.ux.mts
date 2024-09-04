@@ -3,7 +3,7 @@
 import '@wdio/globals';
 import 'wdio-vscode-service';
 import { enterModalKeys, setBindings, setupEditor, movesCursorInEditor, waitForMode, storeCoverageStats, setFileDialogText } from './utils.mts';
-import { InputBox, StatusBar, TextEditor } from 'wdio-vscode-service';
+import { EditorView, InputBox, StatusBar, TextEditor } from 'wdio-vscode-service';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
@@ -229,6 +229,7 @@ describe('Configuration', () => {
         await setFileDialogText(path.join(folder, 'user.toml'));
 
         await editor.moveCursor(1, 1);
+        await sleep(200);
 
         await movesCursorInEditor(async () => {
             await enterModalKeys(['ctrl', 'h']);
@@ -307,6 +308,63 @@ describe('Configuration', () => {
         const copyEditorText = await copyEditor.getText();
         expect(copyEditorText).toMatch(/name = "Larkin Key Bindings"/);
     });
+
+    it.only('Can copy user config', async () => {
+        if(!editor) {
+            editor = await setupEditor(`A simple test`);
+        }
+        await editor.moveCursor(1, 1);
+
+        const workbench = await browser.getWorkbench();
+        await workbench.executeCommand('Master Key: Remove Keybindings');
+
+        const editorView = await workbench.getEditorView();
+        const keyEditor = await editorView.openEditor("keybindings.json") as TextEditor;
+
+        if(keyEditor){
+            keyEditor.setText(`[
+                {
+                    "key": "ctrl+g",
+                    "command": "foo"
+                }
+            ]`);
+            await keyEditor.save();
+            await sleep(10000);
+
+            await setBindings(`
+                [header]
+                version = "1.0"
+                name = "Some Bindings"
+
+                [[bind]]
+                key = "ctrl+c"
+                command = "bar"
+            `)
+
+            const bindingEditor = await setupEditor(`
+                [header]
+                version = "1.0"
+                name = "Some New Bindings"
+
+                [[bind]]
+                key = "ctrl+h"
+                command = "baz"
+            `)
+            const workbench = await browser.getWorkbench();
+            let input = await workbench.executeCommand('Select Language Mode');
+            await sleep(500);
+            await input.setText("Markdown");
+            await input.confirm();
+
+            await workbench.executeCommand('Master Key: Import User Bindings');
+            const bindingText = await bindingEditor.getText();
+            expect(bindingText).toMatch(/key\s*=\s*"ctrl\+h"/);
+            expect(bindingText).toMatch(/key\s*=\s*"ctrl\+g"/);
+            expect(bindingText).not.toMatch(/key\s*=\s*"ctrl\+c"/);
+        }else{
+            expect(false).toBeTruthy();
+        }
+    })
 
     after(async () => {
         await storeCoverageStats('config');
