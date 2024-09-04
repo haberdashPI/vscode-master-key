@@ -5,7 +5,7 @@
 
 # # Master Keybindings: Larkin
 
-# Larkin is the default keybinding set that ships with Master Key. It follows in the footsteps of Vim, Kakaune and Helix.
+# Larkin is the default keybinding set that ships with Master Key. It follows in the footsteps of Vim, Kakoune and Helix.
 
 # Some key features:
 
@@ -316,6 +316,9 @@ computedArgs = { value = "count" }
 [[bind.args.commands]]
 command = "expandLineSelection"
 
+[[bind.args.commands]]
+command = "selection-utilities.exchangeAnchorActive"
+
 [[bind]]
 path = "edit.motion.prim"
 key = "shift+j"
@@ -505,12 +508,12 @@ args.value = true
 [[bind]]
 path = "edit.action.open_lines"
 name = "open, act →"
-description = "without selection: open a line below current line and enter insert, with seleciton: move cursort to start"
+description = "without selection: open a line below current line and enter insert, with selection: move cursor to start"
 key = "o"
 combinedName = "open below/above, act →/←"
 combinedKey = "o/shift+o"
 combinedDescription = """
-without selection: open a line below/abvoe current line and enter insert, with seleciton: move cursort to end/start
+without selection: open a line below/above current line and enter insert, with selection: move cursor to end/start
 of selection
 """
 when = "!editorHasSelection"
@@ -604,7 +607,8 @@ path = "edit.motion"
 key = "shift+r"
 name = "trim wht"
 description = "select full line(s), and trim external whitespace"
-command = "selection-utilities.trimSelectionWhitespace"
+command = "runCommands"
+args.commands = ["expandLineSelection", "selection-utilities.trimSelectionWhitespace"]
 
 [[bind]]
 path = "edit.motion"
@@ -617,9 +621,9 @@ args.boundary = "both"
 
 # ## Repeating Motions
 
-# Like VIM, the number keys (0-9) can be typed as a prefix to most commands and serve as `count`
+# Like VIM, the number keys (0-9) can be typed as a prefix to most commands and serve as a `count`
 # argument to that command. In most cases this causes the command to be repeated `count`
-# times e.g. 2w would select the next two words start from the current cursor position.
+# times e.g. 2w would select the next two words starting from the current cursor position.
 
 [[bind]]
 path = "edit.count"
@@ -725,7 +729,7 @@ command = "workbench.action.navigateForwardInEditLocations"
 # ## Search Motions
 
 # Search motions accept one or more characters and select text up until the given character.
-# They can sever as very efficient ways to jump to a desired location. E.g. typing `sfod` in
+# They can serve as very efficient ways to jump to a desired location. E.g. typing `sfod` in
 # normal mode would delete the first three words of the following line of text;
 #
 # > I want some food
@@ -746,7 +750,7 @@ key = "/"
 name = "search →"
 description = "search forwards"
 combinedName = "search → (←)"
-combinedDescription = "search forwards (backgwards)"
+combinedDescription = "search forwards (backwards)"
 combinedKey = "/ (shift+/)"
 args.offset = "start"
 args.register = "search"
@@ -874,7 +878,7 @@ args.backwards = true
 
 # ## Goto Commands
 
-# Goto commands all begin with the numonic prefix key `g`. They are additional
+# Goto commands all begin with the mnemonic prefix key `g`. They are additional
 # motion commands that compliment the basic motions listed in the previous section.
 
 [[bind]]
@@ -1107,7 +1111,7 @@ description = "go to the definition of symbol under cursor"
 key = "g d"
 combinedName = "go to (aside)"
 combinedKey = "(shift+)d"
-combinedDescription = "go to the definition of symbol (in ean editor to the side)"
+combinedDescription = "go to the definition of symbol (in an editor to the side)"
 command = "editor.action.revealDefinition"
 when = "editorTextFocus"
 
@@ -1172,7 +1176,7 @@ path = "edit.motion.match"
 key = "m"
 name = "match"
 description = """
-Find the closet character range matching a specified object.
+Find the closest character range matching a specified object.
 """
 kind = "motion"
 command = "master-key.prefix"
@@ -1406,7 +1410,7 @@ will seek out larger and larger scopes
 combinedName = "in/arnd quotes"
 combinedKey = "'/shift+'"
 combinedDescription = """
-select around/within current quotes; repeated calls to this command
+select within/around current quotes; repeated calls to this command
 will seek out larger and larger scopes
 """
 command = "bracketeer.selectQuotesContent"
@@ -2170,7 +2174,7 @@ command = "editor.action.insertLineBefore"
 [[bind]]
 path = "edit.action.do"
 name = 'sym insert'
-description = "Insert a character a pair around a character"
+description = "Insert a character pair around a character"
 priority = 1
 key = "space i"
 combinedName = "sym insert (mode)"
@@ -2530,7 +2534,7 @@ hideInPalette = true
 mode = []
 prefixes = "<all-prefixes>"
 description = """
-show command suggestsion within the context of the current mode and keybinding prefix
+show command suggestions within the context of the current mode and keybinding prefix
 (if any keys have already been typed)
 """
 command = "master-key.commandPalette"
@@ -3019,7 +3023,7 @@ command = "workbench.action.debug.stepOut"
 
 # ## Select-edit Mode
 
-# Select-edit mode allows you make a variety of kakune-like modifications of one or more cursors. This lends it self to work flows such as:
+# Select-edit mode allows you make a variety of kakoune-like modifications of one or more cursors. This lends itself to work flows such as:
 #
 # - select every line of text as a separate cursor, then filter out the lines you don't want
 # - split an array by comma delimiters and edit each element of the array.

@@ -44,7 +44,7 @@ set that is included with Master Key.
 
 ### Editing Features
 
-Here are some of the cool editing features that come with the built-in `Larkin` keybindings provided by Master Key with the help of [selection utilities](https://github.com/haberdashPI/vscode-selection-utilities). These bindings follow in the footsteps of Vim, Kakaune and Helix.
+Here are some of the cool editing features that come with the built-in `Larkin` keybindings provided by Master Key with the help of [selection utilities](https://github.com/haberdashPI/vscode-selection-utilities). These bindings follow in the footsteps of Vim, Kakoune and Helix.
 
 #### Move by Object
 
@@ -112,7 +112,7 @@ Insert appropriate characters before and after each selection
 > [!WARNING]
 > For the initial release of Master Key, the Keybinding Features are not yet well documented. You can review the features when copying Larkin to your own customization file. The main goal of the 0.3.0 release was to make the default keybindings accessible to new users. See the roadmap section below for details. The finer points of implementing your own keybindings will require some digging into source code and/or asking questions in the discussions section of this repo.
 
-When you create your own keybindings using Mater Key's special `.toml` keybinding format you get several powerful features that make it possible to easily create keybindings that would be difficult or impossible to implement without writing your own extension.
+When you create your own keybindings using Master Key's special `.toml` keybinding format you get several powerful features that make it possible to easily create keybindings that would be difficult or impossible to implement without writing your own extension.
 
 #### Modal Bindings
 
@@ -229,13 +229,13 @@ And of course, there are many existing editors that Master Key draws inspiration
 
 - [vim](https://www.vim.org/)
 - [emacs](https://www.gnu.org/software/emacs/)
-- [kakune](https://github.com/mawww/kakoune)
+- [kakoune](https://github.com/mawww/kakoune)
 - [helix](https://helix-editor.com/)
 
 ## Developer Notes
 
-This repository was designed to be worked with in unix-like environemtns. No effort to
-support development on Windows has been made. The setup relies on a working versions of
+This repository was designed to be worked with in unix-like environments. No effort to
+support development on Windows has been made. The setup relies on a working version of
 `nvm` installed in bash and an npm version matching the version specified in `.nvmrc`. You
 can satisfy this requirement by copying and running the following in bash.
 
