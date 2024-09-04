@@ -281,6 +281,33 @@ describe('Configuration', () => {
         expect(messages).toContainEqual(error);
     });
 
+    it('Can create editable copy', async () => {
+        if(!editor) {
+            editor = await setupEditor(`A simple test`);
+        }
+        await editor.moveCursor(1, 1);
+
+        const workbench = await browser.getWorkbench();
+        const input = await workbench.executeCommand('Edit Preset Copy');
+        await input.setText('Larkin');
+        await input.confirm();
+
+        const editorView = await workbench.getEditorView();
+        await sleep(500);
+        const title = await browser.waitUntil(async () => {
+            let tab = await editorView.getActiveTab();
+            const title = await tab?.getTitle();
+            if(title && title.match(/Untitled/)){
+                return title;
+            }
+            return;
+        }, { interval: 1000, timeout: 10000 });
+        const copyEditor = await editorView.openEditor(title!) as TextEditor;
+
+        const copyEditorText = await copyEditor.getText();
+        expect(copyEditorText).toMatch(/name = "Larkin Key Bindings"/);
+    });
+
     after(async () => {
         await storeCoverageStats('config');
     });
