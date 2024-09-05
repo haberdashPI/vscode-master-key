@@ -2,10 +2,8 @@
 
 import '@wdio/globals';
 import 'wdio-vscode-service';
-import { enterModalKeys, setBindings, setupEditor, movesCursorInEditor, waitForMode, storeCoverageStats, setFileDialogText } from './utils.mts';
+import { setBindings, setupEditor, storeCoverageStats } from './utils.mts';
 import { TextEditor } from 'wdio-vscode-service';
-import * as fs from 'fs';
-import * as path from 'path';
 import { sleep } from 'wdio-vscode-service';
 
 
@@ -14,13 +12,16 @@ describe('Configuration Editing', () => {
 
     it.only('Can create editable copy', async () => {
         editor = await setupEditor(`A simple test`);
+        await sleep(200);
         await editor.moveCursor(1, 1);
 
+        console.log('[DEBUG]: call `Edit Preset Copy`')
         const workbench = await browser.getWorkbench();
         const input = await workbench.executeCommand('Edit Preset Copy');
         await input.setText('Larkin');
         await input.confirm();
 
+        console.log('[DEBUG]: obtain editor object of preset copy')
         const editorView = await workbench.getEditorView();
         await sleep(500);
         const title = await browser.waitUntil(async () => {
@@ -32,8 +33,11 @@ describe('Configuration Editing', () => {
             return;
         }, { interval: 1000, timeout: 10000 });
         const copyEditor = await editorView.openEditor(title!) as TextEditor;
+
+        console.log('[DEBUG]: click editor')
         copyEditor.moveCursor(1, 1);
 
+        console.log('[DEBUG]: getting text')
         const copyEditorText = await copyEditor.getText();
         expect(copyEditorText).toMatch(/name = "Larkin Key Bindings"/);
     });
@@ -42,6 +46,7 @@ describe('Configuration Editing', () => {
         console.log('[DEBUG]: copy user config test');
         if (!editor) {
             editor = await setupEditor(`A simple test`);
+            await sleep(200);
         }
         await editor.moveCursor(1, 1);
 
