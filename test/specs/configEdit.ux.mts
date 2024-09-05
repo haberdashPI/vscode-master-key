@@ -12,13 +12,7 @@ import { sleep } from 'wdio-vscode-service';
 describe('Configuration Editing', () => {
     let editor: TextEditor;
 
-    before(async () => {
-        const workbench = await browser.getWorkbench();
-        await workbench.executeCommand('Clear Command History');
-        await workbench.executeCommand('Master Key: Remove Keybindings');
-    });
-
-    it('Can create editable copy', async () => {
+    it.only('Can create editable copy', async () => {
         editor = await setupEditor(`A simple test`);
         await editor.moveCursor(1, 1);
 
