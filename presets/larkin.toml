@@ -2610,6 +2610,7 @@ command = "gitlens.gitCommands"
 id = "util"
 name = "assorted misecellaneous commands"
 default.kind = "util"
+when = "editorTextFocus && !findWidgetVisible"
 
 [[bind]]
 path = "util"
