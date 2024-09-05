@@ -211,6 +211,29 @@ describe('Configuration', () => {
         expect(modeItem).toBeTruthy();
     });
 
+    it('Can add user bindings', async () => {
+        editor = await setupEditor(`A simple test`);
+        const userFile = `
+            [[bind]]
+            name = "right"
+            key = "ctrl+shift+k"
+            command = "cursorMove"
+            args.to = "right"
+            `;
+        fs.writeFileSync(path.join(folder, 'user.toml'), userFile);
+
+        const workbench = await browser.getWorkbench();
+        await workbench.executeCommand('Master Key: Activate User Keybindings');
+        await setFileDialogText(path.join(folder, 'user.toml'));
+
+        await editor.moveCursor(1, 1);
+        await sleep(200);
+
+        await movesCursorInEditor(async () => {
+            await enterModalKeys(['ctrl', 'shift', 'k']);
+        }, [0, 1], editor);
+    });
+
     it('Can be removed', async () => {
         editor = await setupEditor(`A simple test`);
         const workbench = await browser.getWorkbench();
@@ -259,15 +282,12 @@ describe('Configuration', () => {
     });
 
     after(async () => {
-        console.log('[DEBUG]: begin after');
-        await sleep(200);
+        // since we're messing with bindings, we need to setup a clean state that will
+        // ensure the coverage command is available
         await setBindings(`
             [header]
             version = "1.0"
 
-            [[bind]]
-            key = "a"
-            command = "foo"
         `);
 
         await storeCoverageStats('config');

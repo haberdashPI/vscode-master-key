@@ -16,7 +16,6 @@ release 0.2.6
     + checks for handling duplicate file names
     + copy preset into file
     + copy user config into file
-    - test required extension installation
 
 Binding changes in Larkin:
 + maybe avoid need to use cmd-v so much
