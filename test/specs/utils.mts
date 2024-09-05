@@ -19,10 +19,12 @@ hideInDocs = true
 `;
 
 export async function setBindings(str: string){
-    await setupEditor(str + COVERAGE_KEY_COMMAND);
+    const editor = await setupEditor(str + COVERAGE_KEY_COMMAND);
+    await editor.moveCursor(1, 1);
 
     console.log('[DEBUG]: select language')
     const workbench = await browser.getWorkbench();
+    await workbench.executeCommand('Clear Command History');
     let input = await workbench.executeCommand('Select Language Mode');
     await sleep(500)
     await input.setText("Markdown");
