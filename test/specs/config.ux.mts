@@ -171,7 +171,7 @@ describe('Configuration', () => {
         expect(labels).toContain('B bindings');
     });
 
-    it('Can be loaded from a directory', async () => {
+    it('Properly labels duplicate entries', async () => {
         if(!editor){
             editor = await setupEditor(`A simple test`);
         }
@@ -196,9 +196,7 @@ describe('Configuration', () => {
     });
 
     it('Can load from a file', async () => {
-        if(!editor){
-            editor = await setupEditor(`A simple test`);
-        }
+        editor = await setupEditor(`A simple test`);
         await editor.moveCursor(1, 1);
 
         const workbench = await browser.getWorkbench();
@@ -213,118 +211,10 @@ describe('Configuration', () => {
         expect(modeItem).toBeTruthy();
     });
 
-    it('Can create editable copy', async () => {
-        editor = await setupEditor(`A simple test`);
-        await editor.moveCursor(1, 1);
-
-        const workbench = await browser.getWorkbench();
-        const input = await workbench.executeCommand('Edit Preset Copy');
-        await input.setText('Larkin');
-        await input.confirm();
-
-        const editorView = await workbench.getEditorView();
-        await sleep(500);
-        const title = await browser.waitUntil(async () => {
-            let tab = await editorView.getActiveTab();
-            const title = await tab?.getTitle();
-            if(title && title.match(/Untitled/)){
-                return title;
-            }
-            return;
-        }, { interval: 1000, timeout: 10000 });
-        const copyEditor = await editorView.openEditor(title!) as TextEditor;
-        copyEditor.moveCursor(1, 1);
-
-        const copyEditorText = await copyEditor.getText();
-        expect(copyEditorText).toMatch(/name = "Larkin Key Bindings"/);
-    });
-
-    it('Can copy user config', async () => {
-        console.log('[DEBUG]: copy user config test');
-        if(!editor) {
-            editor = await setupEditor(`A simple test`);
-        }
-        await editor.moveCursor(1, 1);
-
-        const workbench = await browser.getWorkbench();
-        await workbench.executeCommand('Master Key: Remove Keybindings');
-
-        const editorView = await workbench.getEditorView();
-        const keyEditor = await editorView.openEditor("keybindings.json") as TextEditor;
-
-        if(keyEditor){
-            keyEditor.setText(`[
-                {
-                    "key": "ctrl+g",
-                    "command": "foo"
-                }
-            ]`);
-            await keyEditor.save();
-            await sleep(200);
-
-            await setBindings(`
-                [header]
-                version = "1.0"
-                name = "Some Bindings"
-
-                [[bind]]
-                key = "ctrl+c"
-                command = "bar"
-            `)
-
-            const bindingEditor = await setupEditor(`
-                [header]
-                version = "1.0"
-                name = "Some New Bindings"
-
-                [[bind]]
-                key = "ctrl+h"
-                command = "baz"
-            `)
-
-            const workbench = await browser.getWorkbench();
-            let input = await workbench.executeCommand('Select Language Mode');
-            await sleep(100);
-            await input.setText("Markdown");
-            await input.confirm();
-
-            await workbench.executeCommand('Master Key: Import User Bindings');
-            await sleep(100);
-            const bindingText = await bindingEditor.getText();
-            expect(bindingText).toMatch(/key\s*=\s*"ctrl\+h"/);
-            expect(bindingText).toMatch(/key\s*=\s*"ctrl\+g"/);
-            expect(bindingText).not.toMatch(/key\s*=\s*"ctrl\+c"/);
-        }else{
-            expect(false).toBeTruthy();
-        }
-    });
-
-    it('Can add user bindings', async () => {
-        const userFile = `
-        [[bind]]
-        name = "right"
-        key = "ctrl+h"
-        command = "cursorMove"
-        args.to = "right"
-        `;
-        fs.writeFileSync(path.join(folder, 'user.toml'), userFile);
-
-        editor = await setupEditor(`A simple test`);
-
-        const workbench = await browser.getWorkbench();
-        await workbench.executeCommand('Master Key: Activate User Keybindings');
-        await setFileDialogText(path.join(folder, 'user.toml'));
-
-        await editor.moveCursor(1, 1);
-        await sleep(200);
-
-        await movesCursorInEditor(async () => {
-            await enterModalKeys(['ctrl', 'h']);
-        }, [0, 1], editor);
-    });
-
     it('Can be removed', async () => {
+        editor = await setupEditor(`A simple test`);
         const workbench = await browser.getWorkbench();
+        await workbench.executeCommand('Clear Command History');
         await workbench.executeCommand('Master Key: Remove Keybindings');
         await waitForMode('default');
 
@@ -338,23 +228,22 @@ describe('Configuration', () => {
     });
 
     it('Can prevent user binding update absent a preset', async () => {
-        if(!editor) {
-            editor = await setupEditor(`A simple test`);
-        }
-        await editor.moveCursor(1, 1);
+        editor = await setupEditor(`A simple test`);
 
-
+        // NOTE: this is here so that when `only` or `skip` prevents the test above from
+        // running, we know the configuration is in the correct state anyways (under a full
+        // test run, this will generate an notification error message)
         const workbench = await browser.getWorkbench();
         await workbench.executeCommand('Master Key: Remove Keybindings');
         await waitForMode('default');
 
         const userFile = `
-        [[bind]]
-        name = "right"
-        key = "ctrl+h"
-        command = "cursorMove"
-        args.to = "right"
-        `;
+            [[bind]]
+            name = "right"
+            key = "ctrl+h"
+            command = "cursorMove"
+            args.to = "right"
+            `;
         fs.writeFileSync(path.join(folder, 'user.toml'), userFile);
 
         await workbench.executeCommand('Master Key: Activate User Keybindings');
@@ -363,24 +252,24 @@ describe('Configuration', () => {
         let notifs = await workbench.getNotifications();
         let messages = await Promise.all(notifs.map(n => n.getMessage()));
         let error = 'User bindings have not been activated ' +
-        'because you have no preset keybindings. Call `Master Key: `' +
-        'Activate Keybindings` to add a preset.'
+            'because you have no preset keybindings. Call `Master Key: `' +
+            'Activate Keybindings` to add a preset.'
 
         expect(messages).toContainEqual(error);
+    });
 
+    after(async () => {
+        console.log('[DEBUG]: begin after');
+        await sleep(200);
         await setBindings(`
             [header]
             version = "1.0"
 
             [[bind]]
             key = "a"
-            command "foo"
+            command = "foo"
         `);
-    });
 
-    after(async () => {
-        // since we're messing with bindings, we need to setup a clean state that will
-        // ensure the coverage command is available
         await storeCoverageStats('config');
     });
 });

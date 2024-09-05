@@ -25,14 +25,18 @@ export async function setBindings(str: string){
     console.log('[DEBUG]: select language')
     const workbench = await browser.getWorkbench();
     await workbench.executeCommand('Clear Command History');
+    await sleep(200);
     let input = await workbench.executeCommand('Select Language Mode');
     await sleep(500)
     await input.setText("Markdown");
     await input.confirm();
 
     console.log('[DEBUG]: activate bindings')
-    input = await workbench.executeCommand('Master key: Activate Keybindings');
+    await workbench.executeCommand('Clear Command History');
+    await sleep(200);
+    await workbench.executeCommand('Master key: Activate Keybindings');
     await sleep(500);
+    input = await (new InputBox(workbench.locatorMap)).wait()
     await input.setText("Current File");
     await input.confirm();
 
