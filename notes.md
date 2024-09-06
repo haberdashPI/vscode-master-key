@@ -49,6 +49,9 @@ WHEN PUBLISHING: get this to work on both stores (the one from microsoft and the
 
 ## Stability / test coverage
 
+SMALL FEATURE: allow `-` prefix on commands to bypass `do` wrapping and
+remove a binding (will need to validate that some fields are `undefined` in this case)
+
 SMALL BUG: should 'esc' really be appended in the status bar since it cancels a prefix sequence... 🤔
 
 SMALL BUG: I think there are issues when synching across machines and handling
