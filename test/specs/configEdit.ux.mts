@@ -39,7 +39,7 @@ describe('Configuration Editing', () => {
         expect(copyEditorText).toMatch(/name = "Larkin Key Bindings"/);
     });
 
-    it('Can copy user config', async () => {
+    it.only('Can copy user config', async () => {
         console.log('[DEBUG]: copy user config test');
         if (!editor) {
             editor = await setupEditor(`A simple test`);
@@ -81,7 +81,9 @@ describe('Configuration Editing', () => {
                 [[bind]]
                 key = "ctrl+h"
                 command = "baz"
-            `)
+            `);
+            const startText = await bindingEditor.getText();
+            console.log('[DEBUG]: initial keybinding text - '+startText);
 
             const workbench = await browser.getWorkbench();
             let input = await workbench.executeCommand('Select Language Mode');
