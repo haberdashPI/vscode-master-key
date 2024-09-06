@@ -19,18 +19,17 @@ describe('Configuration Editing', () => {
 
         console.log('[DEBUG]: obtain editor object of preset copy')
         const editorView = await workbench.getEditorView();
-        const title = await browser.waitUntil(async () => {
-            let tab = await editorView.getActiveTab();
-            const title = await tab?.getTitle();
-            if(title && title.match(/Untitled/)){
-                tab?.select();
-                return title;
-            }
-            return;
-        }, { interval: 1000, timeout: 10000 });
-        console.log('[DEBUG]: found tab title - '+title)
-        await sleep(200);
-        const copyEditor = await editorView.openEditor(title!) as TextEditor;
+        // const title = await browser.waitUntil(async () => {
+        //     let tab = await editorView.getActiveTab();
+        //     const title = await tab?.getTitle();
+        //     if(title && title.match(/Untitled/)){
+        //         tab?.select();
+        //         return title;
+        //     }
+        //     return;
+        // }, { interval: 1000, timeout: 10000 });
+        // console.log('[DEBUG]: found tab title - '+title)
+        const copyEditor = await editorView.openEditor('Untitled-1') as TextEditor;
 
         console.log('[DEBUG]: click editor')
         copyEditor.moveCursor(1, 1);

@@ -49,6 +49,8 @@ WHEN PUBLISHING: get this to work on both stores (the one from microsoft and the
 
 ## Stability / test coverage
 
+BUG: when using the extension with a remote machine the visual doc, or palette info doesn't show up (this is probably related to the issue about the docs not being updated when I first open; remote use could easily change the timing of things, revealing a race condition). What's weird about this is that the text docs *do* show up.
+
 SMALL FEATURE: allow `-` prefix on commands to bypass `do` wrapping and
 remove a binding (will need to validate that some fields are `undefined` in this case)
 
