@@ -17,6 +17,12 @@ describe('Configuration Editing', () => {
         await input.setText('Larkin');
         await input.confirm();
 
+        let notifications = await workbench.getNotifications();
+        for(let note of notifications){
+            console.log('[INFO]: notification message — '+(await note.getMessage()));
+            await note.dismiss();
+        }
+
         console.log('[DEBUG]: obtain editor object of preset copy')
         const editorView = await workbench.getEditorView();
         // const title = await browser.waitUntil(async () => {
