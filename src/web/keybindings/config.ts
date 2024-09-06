@@ -104,10 +104,12 @@ async function useBindings() {
         for (const fn of listeners || []) {
             await fn(parsedBindings);
         }
+        bindings = parsedBindings;
     } else {
         for (const fn of listeners || []) {
             await fn(undefined);
         }
+        bindings = undefined;
     }
 }
 

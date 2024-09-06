@@ -306,7 +306,15 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
         if (bindings) {
             this.updateKinds(bindings);
         }
-        onChangeBindings(async x => (x ? this.updateKinds(x) : undefined));
+        onChangeBindings(async x => {
+            if (x) {
+                this.updateKinds(x);
+                await withState(async state => {
+                    this.updateKeys(state);
+                    return state;
+                });
+            }
+        });
         return state;
     }
 
