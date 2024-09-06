@@ -32,6 +32,7 @@ describe('Configuration Editing', () => {
             }
             return;
         }, { interval: 1000, timeout: 10000 });
+        console.log('[DEBUG]: found tab title - '+title)
         const copyEditor = await editorView.openEditor(title!) as TextEditor;
 
         console.log('[DEBUG]: click editor')
