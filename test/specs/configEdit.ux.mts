@@ -10,8 +10,7 @@ import { sleep } from 'wdio-vscode-service';
 describe('Configuration Editing', () => {
     let editor: TextEditor;
 
-    it.only('Can create editable copy', async () => {
-        console.log('[DEBUG]: call `Edit Preset Copy`')
+    it('Can create editable copy', async () => {
         const workbench = await browser.getWorkbench();
         const input = await workbench.executeCommand('Edit Preset Copy');
         await input.setText('Larkin');
@@ -19,28 +18,23 @@ describe('Configuration Editing', () => {
 
         let notifications = await workbench.getNotifications();
         for(let note of notifications){
-            console.log('[INFO]: notification message — '+(await note.getMessage()));
             await note.dismiss();
         }
 
-        console.log('[DEBUG]: obtain editor object of preset copy')
         const editorView = await workbench.getEditorView();
-        // const title = await browser.waitUntil(async () => {
-        //     let tab = await editorView.getActiveTab();
-        //     const title = await tab?.getTitle();
-        //     if(title && title.match(/Untitled/)){
-        //         tab?.select();
-        //         return title;
-        //     }
-        //     return;
-        // }, { interval: 1000, timeout: 10000 });
-        // console.log('[DEBUG]: found tab title - '+title)
+        const title = await browser.waitUntil(async () => {
+            let tab = await editorView.getActiveTab();
+            const title = await tab?.getTitle();
+            if(title && title.match(/Untitled/)){
+                tab?.select();
+                return title;
+            }
+            return;
+        }, { interval: 1000, timeout: 10000 });
         const copyEditor = await editorView.openEditor('Untitled-1') as TextEditor;
 
-        console.log('[DEBUG]: click editor')
         copyEditor.moveCursor(1, 1);
 
-        console.log('[DEBUG]: getting text')
         const copyEditorText = await copyEditor.getText();
         expect(copyEditorText).toMatch(/name = "Larkin Key Bindings"/);
     });
