@@ -50,6 +50,8 @@ describe('Configuration Editing', () => {
         const workbench = await browser.getWorkbench();
         await workbench.executeCommand('Master Key: Remove Keybindings');
 
+        // NOTE: this doesn't work *UNLESS* there are bindings available
+        // (since we need `keybindings.json` open)
         const editorView = await workbench.getEditorView();
         const keyEditor = await editorView.openEditor("keybindings.json") as TextEditor;
 
