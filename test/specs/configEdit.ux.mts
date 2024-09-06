@@ -13,7 +13,6 @@ describe('Configuration Editing', () => {
     it.only('Can create editable copy', async () => {
         editor = await setupEditor(`A simple test`);
         await sleep(200);
-        await editor.moveCursor(1, 1);
 
         console.log('[DEBUG]: call `Edit Preset Copy`')
         const workbench = await browser.getWorkbench();
@@ -23,7 +22,6 @@ describe('Configuration Editing', () => {
 
         console.log('[DEBUG]: obtain editor object of preset copy')
         const editorView = await workbench.getEditorView();
-        await sleep(500);
         const title = await browser.waitUntil(async () => {
             let tab = await editorView.getActiveTab();
             const title = await tab?.getTitle();
@@ -32,7 +30,8 @@ describe('Configuration Editing', () => {
             }
             return;
         }, { interval: 1000, timeout: 10000 });
-        console.log('[DEBUG]: found tab title - '+title)
+        console.log('[DEBUG]: found tab title - ')
+        await sleep(200);
         const copyEditor = await editorView.openEditor(title!) as TextEditor;
 
         console.log('[DEBUG]: click editor')
