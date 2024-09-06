@@ -11,9 +11,6 @@ describe('Configuration Editing', () => {
     let editor: TextEditor;
 
     it.only('Can create editable copy', async () => {
-        editor = await setupEditor(`A simple test`);
-        await sleep(200);
-
         console.log('[DEBUG]: call `Edit Preset Copy`')
         const workbench = await browser.getWorkbench();
         const input = await workbench.executeCommand('Edit Preset Copy');
@@ -26,11 +23,12 @@ describe('Configuration Editing', () => {
             let tab = await editorView.getActiveTab();
             const title = await tab?.getTitle();
             if(title && title.match(/Untitled/)){
+                tab?.select();
                 return title;
             }
             return;
         }, { interval: 1000, timeout: 10000 });
-        console.log('[DEBUG]: found tab title - ')
+        console.log('[DEBUG]: found tab title - '+title)
         await sleep(200);
         const copyEditor = await editorView.openEditor(title!) as TextEditor;
 

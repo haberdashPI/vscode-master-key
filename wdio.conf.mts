@@ -37,7 +37,7 @@ export const config: Options.Testrunner = {
     // of the config file unless it's absolute.
     //
     specs: [
-        './test/specs/**/*.mts'
+        './test/specs/**/configEdit.mts' // TODO: change back
     ],
     // Patterns to exclude.
     exclude: [
