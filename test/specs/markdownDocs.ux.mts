@@ -2,9 +2,8 @@
 
 import '@wdio/globals';
 import 'wdio-vscode-service';
-import { setBindings, storeCoverageStats } from './utils.mts';
-import { sleep, WebView } from 'wdio-vscode-service';
-import { Key } from 'webdriverio';
+import {setBindings, storeCoverageStats} from './utils.mts';
+import {WebView} from 'wdio-vscode-service';
 
 describe('Binding Docs', () => {
     let mdView: WebView;
@@ -115,14 +114,14 @@ describe('Binding Docs', () => {
         const workbench = await browser.getWorkbench();
         // console.log("[DEBUG]: showing documentation")
         // await workbench.executeCommand('Master Key: Show Text Documentation')
-        await browser.waitUntil(async () => (await workbench.getAllWebviews()).length > 1)
+        await browser.waitUntil(async () => (await workbench.getAllWebviews()).length > 1);
         const webviews = await workbench.getAllWebviews();
         expect(webviews).toHaveLength(2);
         mdView = await webviews[1].wait();
         mdView.open();
     });
 
-    it('has first section', async() => {
+    it('has first section', async () => {
         const secTitle = await browser.$('div.markdown-body h2');
         expect(secTitle).toHaveText('First Section');
 
@@ -136,14 +135,16 @@ describe('Binding Docs', () => {
         expect(secTitle).toHaveText('Second Section');
         await secTitle.click();
 
-        const rows = await browser.$('div.markdown-body table:nth-of-type(2)').$$('tbody tr');
+        const rows = await browser
+            .$('div.markdown-body table:nth-of-type(2)')
+            .$$('tbody tr');
         expect(rows).toHaveLength(3);
     });
 
     it('hides comments with `#-`', async () => {
         const paragraph = await browser.$('div.markdown-body p');
         expect(paragraph).toExist();
-        const text = (await paragraph.getText());
+        const text = await paragraph.getText();
         expect(text).not.toMatch(/IGNORED/);
     });
 

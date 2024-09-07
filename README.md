@@ -110,7 +110,7 @@ Insert appropriate characters before and after each selection
 ### Keybinding Features
 
 > [!WARNING]
-> For the initial release of Master Key, the Keybinding Features are not yet well documented. You can review the features when copying Larking to your own customization file. The main goal of the 0.3.0 release was to make the default keybindings accessible to new users. See the roadmap section below for details. The finer points of implementing your own keybindings will require some digging into source code and/or asking questions in the discussions section of this repo.
+> For the initial release of Master Key, the Keybinding Features are not yet well documented. You can review the features when copying Larkin to your own customization file. The main goal of the 0.3.0 release was to make the default keybindings accessible to new users. See the roadmap section below for details. The finer points of implementing your own keybindings will require some digging into source code and/or asking questions in the discussions section of this repo.
 
 When you create your own keybindings using Master Key's special `.toml` keybinding format you get several powerful features that make it possible to easily create keybindings that would be difficult or impossible to implement without writing your own extension.
 
@@ -122,7 +122,8 @@ Your bindings can be modal—a special key (like escape) switches you to a diffe
 [[bind]]
 key = "j"
 mode = "normal"
-command = ...
+command = "cursorMove"
+args.to = "down"
 ```
 
 #### Parameteric Bindings
@@ -183,11 +184,15 @@ and all binding's names will show up in the visual documentation as appropriate.
 
 ## Customized Bindings
 
-Okay, so you want to make your own keybindings with Master Key?
+Okay, so you want to customize your keybindings, or create a whole new preset?
 
-You can start by modifying the built-in `Larkin` preset using the command `Master Key: Edit Preset Copy`. A new `*.toml` file with the contents of this master-key binding set will be opened. The file has comments throughout which document its use.
+You can start by reviewing the built-in `Larkin` preset using the command `Master Key: Edit Preset Copy`. A new `*.toml` file with the contents of this master-key binding set will be opened. The file has comments throughout which document its use.
 
-You can now edit the bindings and/or import bindings from those you've already created in VSCode. Call `Master Key: Import Default/User Keybindings` to add any existing bindings you have. Edit the bindings and update your settings to use them by calling `Master Key: Activate Keybindings` at any time.
+To simply customize an existing preset, you can add additional bindings, which get appended to those of the preset. Create a new toml file and add the bindings you want to append. Then call `Master Key: Activate User Keybindings` on the toml file. You can import existing user bindings to this toml file, as defined in the normal keybinding file used by VSCode, by calling `Master Key: Import User Keybindings`.
+
+Alternatively you can define your own preset and import bindings from those you've already created in VSCode. Call `Master Key: Import Default/User Keybindings` to add any existing bindings you have to your preset copy. Edit the bindings as desired and update your settings to use them by calling `Master Key: Activate Keybindings` at any time.
+
+Because the error reporting for these binding files is not yet very precise, it is recommended that you add bindings incrementally, and verify that they can be properly loaded by Mater Key. Long-term, better error reporting for these binding files will be available.
 
 ## Roadmap
 
@@ -198,8 +203,11 @@ For detailed notes on development, refer to `notes.md`.
 - Release 0.2.0: missing visual documentation features: markdown summary of bindings
 - Release 0.2.x: improved performance/coverage/stability
 - Initial publish to VSCode here: 0.3.0
-- Release 0.4.x: documentation of all keybinding commands, improve quality of life for those building their own custom extensions. May introduce breaking changes to improve API clarity for these bindings
-- Release 0.4.y: source code documentation — may involve substantial refactor to improve legibility / clarity of code
+- 0.3.x: improved code coverage, stability improvements
+- Release 0.4.x: documentation of all keybinding commands. May introduce breaking changes to improve API clarity for these bindings.
+- Release 0.4.y: more precise binding error report: use VSCode language server features to
+  get detailed line and character error indicators for binding-file problems
+- Release 0.4.z: source code documentation — may involve substantial refactor to improve legibility / clarity of code
 - Release 1.0.0:
     - code should be legible
     - test coverage should be satisfactory

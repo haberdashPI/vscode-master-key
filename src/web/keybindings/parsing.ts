@@ -212,7 +212,7 @@ export function parseWhen(when_: string | string[] | undefined): ParsedWhen[] {
         w = replaceAll(
             w,
             /editorTextFocus/g,
-            '(editorTextFocus || master-key.keybindingPaletteBindingMode)'
+            '(editorTextFocus || master-key.keybindingPaletteOpen && master-key.keybindingPaletteBindingMode)'
         );
         // let p = jsep(w);
         return {str: w, id: expressionId(w)};
@@ -398,11 +398,11 @@ export type FullBindingSpec = BindingSpec & {
     doc?: IParsedBindingDoc[];
 };
 
-interface SuccessResult<T> {
+export interface SuccessResult<T> {
     success: true;
     data: T;
 }
-interface ErrorResult {
+export interface ErrorResult {
     success: false;
     error: ZodError;
 }

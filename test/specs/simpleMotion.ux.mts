@@ -2,9 +2,15 @@
 
 import '@wdio/globals';
 import 'wdio-vscode-service';
-import { enterModalKeys, setBindings, setupEditor, movesCursorInEditor, storeCoverageStats } from './utils.mts';
-import { TextEditor } from 'wdio-vscode-service';
-import { Key } from "webdriverio";
+import {
+    enterModalKeys,
+    setBindings,
+    setupEditor,
+    movesCursorInEditor,
+    storeCoverageStats,
+} from './utils.mts';
+import {TextEditor} from 'wdio-vscode-service';
+import {Key} from 'webdriverio';
 
 describe('Simple Motions', () => {
     let editor: TextEditor;
@@ -84,7 +90,8 @@ describe('Simple Motions', () => {
             args.value = "{num}"
             resetTransient = false
         `);
-        editor = await setupEditor(`Anim reprehenderit voluptate magna excepteur dolore aliqua minim labore est
+        editor =
+            await setupEditor(`Anim reprehenderit voluptate magna excepteur dolore aliqua minim labore est
 consectetur ullamco ullamco aliqua ex. Pariatur officia nostrud pariatur ex
 dolor magna. Consequat cupidatat amet nostrud proident occaecat ex.
 Ex cillum duis anim dolor cupidatat non nostrud non et sint ullamco. Consectetur consequat
@@ -92,7 +99,7 @@ ipsum ex labore enim. Amet do commodo et occaecat proident ex cupidatat in. Quis
 laborum ad. Dolore exercitation cillum eiusmod culpa minim duis`);
     });
 
-    it('Can move cursor', async() => {
+    it('Can move cursor', async () => {
         await browser.keys(Key.Escape);
         await editor.moveCursor(1, 1);
 
@@ -109,28 +116,51 @@ laborum ad. Dolore exercitation cillum eiusmod culpa minim duis`);
         await movesCursorInEditor(() => enterModalKeys(['shift', 'l']), [0, 2], editor);
     });
 
-    it('Can use `count`', async function(){
+    it('Can use `count`', async () => {
         await editor.moveCursor(1, 1);
         await browser.keys([Key.Escape]);
 
         for (let c = 1; c <= 3; c++) {
-            await movesCursorInEditor(async () => {
-                await enterModalKeys({count: c, key:['shift', String(c)]}, 'j');
-            }, [1*c, 0], editor);
-            await movesCursorInEditor(async () => {
-                await enterModalKeys({count: c, key: ['shift', String(c)]}, 'l');
-            }, [0, 1*c], editor);
-            await movesCursorInEditor(async () => {
-                await enterModalKeys({count: c, key: ['shift', String(c)]}, 'h');
-            }, [0, -1*c], editor);
-            await movesCursorInEditor(async () => {
-                await enterModalKeys({count: c, key: ['shift', String(c)]}, 'k');
-            }, [-1*c, 0], editor);
+            await movesCursorInEditor(
+                async () => {
+                    await enterModalKeys({count: c, key: ['shift', String(c)]}, 'j');
+                },
+                [1 * c, 0],
+                editor
+            );
+            await movesCursorInEditor(
+                async () => {
+                    await enterModalKeys({count: c, key: ['shift', String(c)]}, 'l');
+                },
+                [0, 1 * c],
+                editor
+            );
+            await movesCursorInEditor(
+                async () => {
+                    await enterModalKeys({count: c, key: ['shift', String(c)]}, 'h');
+                },
+                [0, -1 * c],
+                editor
+            );
+            await movesCursorInEditor(
+                async () => {
+                    await enterModalKeys({count: c, key: ['shift', String(c)]}, 'k');
+                },
+                [-1 * c, 0],
+                editor
+            );
         }
-        await movesCursorInEditor(async () => {
-            await enterModalKeys({count: 1, key: ['shift', '1']},
-                                 {count: 0, key: ['shift', '0']}, 'l');
-        }, [0, 10], editor);
+        await movesCursorInEditor(
+            async () => {
+                await enterModalKeys(
+                    {count: 1, key: ['shift', '1']},
+                    {count: 0, key: ['shift', '0']},
+                    'l'
+                );
+            },
+            [0, 10],
+            editor
+        );
     });
 
     after(async () => {

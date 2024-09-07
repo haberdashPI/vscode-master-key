@@ -1,8 +1,14 @@
-import { browser, expect } from '@wdio/globals';
-import { Key } from 'webdriverio';
-import { setBindings, setupEditor, movesCursorInEditor, enterModalKeys, waitForMode, storeCoverageStats } from './utils.mts';
-import { sleep, InputBox, TextEditor, Workbench } from 'wdio-vscode-service';
-import { moveCursor } from 'readline';
+import {browser, expect} from '@wdio/globals';
+import {Key} from 'webdriverio';
+import {
+    setBindings,
+    setupEditor,
+    movesCursorInEditor,
+    enterModalKeys,
+    waitForMode,
+    storeCoverageStats,
+} from './utils.mts';
+import {sleep, InputBox, TextEditor, Workbench} from 'wdio-vscode-service';
 
 describe('Replay', () => {
     let editor: TextEditor;
@@ -215,30 +221,46 @@ i j k l`);
 
         await enterModalKeys(['shift', 'q']);
         await waitForMode('rec: normal');
-        await movesCursorInEditor(async () => {
-            await enterModalKeys('l');
-            await enterModalKeys('j');
-        }, [1, 1], editor);
+        await movesCursorInEditor(
+            async () => {
+                await enterModalKeys('l');
+                await enterModalKeys('j');
+            },
+            [1, 1],
+            editor
+        );
         await enterModalKeys(['shift', 'q']);
         await waitForMode('normal');
 
-        await movesCursorInEditor(async () => {
-            await enterModalKeys('q', {key: 'q', updatesStatus: false});
-        }, [1, 1], editor);
+        await movesCursorInEditor(
+            async () => {
+                await enterModalKeys('q', {key: 'q', updatesStatus: false});
+            },
+            [1, 1],
+            editor
+        );
     });
 
     it('Replays from history', async () => {
         await editor.moveCursor(1, 1);
         await enterModalKeys('escape');
 
-        await movesCursorInEditor(async () => {
-            await enterModalKeys('l');
-            await enterModalKeys('j');
-        }, [1, 1], editor);
+        await movesCursorInEditor(
+            async () => {
+                await enterModalKeys('l');
+                await enterModalKeys('j');
+            },
+            [1, 1],
+            editor
+        );
 
-        await movesCursorInEditor(async () => {
-            await enterModalKeys('q', {key: 'l', updatesStatus: false});
-        }, [1, 0], editor);
+        await movesCursorInEditor(
+            async () => {
+                await enterModalKeys('q', {key: 'l', updatesStatus: false});
+            },
+            [1, 0],
+            editor
+        );
     });
 
     it('Replays counts', async () => {
@@ -246,14 +268,22 @@ i j k l`);
         await enterModalKeys('escape');
 
         await enterModalKeys(['shift', 'q']);
-        await movesCursorInEditor(async () => {
-            await enterModalKeys({key: ['shift', '3'], count: 3}, 'l');
-        }, [0, 3], editor);
+        await movesCursorInEditor(
+            async () => {
+                await enterModalKeys({key: ['shift', '3'], count: 3}, 'l');
+            },
+            [0, 3],
+            editor
+        );
         await enterModalKeys(['shift', 'q']);
 
-        await movesCursorInEditor(async () => {
-            await enterModalKeys('q', {key: 'q', updatesStatus: false});
-        }, [0, 3], editor);
+        await movesCursorInEditor(
+            async () => {
+                await enterModalKeys('q', {key: 'q', updatesStatus: false});
+            },
+            [0, 3],
+            editor
+        );
     });
 
     it('Replays search', async () => {
@@ -261,19 +291,27 @@ i j k l`);
         await enterModalKeys('escape');
 
         await enterModalKeys(['shift', 'q']);
-        await movesCursorInEditor(async () => {
-            await enterModalKeys({key: '/', updatesStatus: false});
-            const input = await (new InputBox(workbench.locatorMap)).wait();
-            await input.setText('c d');
-            await input.confirm();
-        }, [0, 3], editor);
+        await movesCursorInEditor(
+            async () => {
+                await enterModalKeys({key: '/', updatesStatus: false});
+                const input = await new InputBox(workbench.locatorMap).wait();
+                await input.setText('c d');
+                await input.confirm();
+            },
+            [0, 3],
+            editor
+        );
         await enterModalKeys(['shift', 'q']);
 
         await editor.moveCursor(1, 1);
-        await movesCursorInEditor(async () => {
-            await editor.typeText('q');
-            await editor.typeText('q');
-        }, [0, 3], editor);
+        await movesCursorInEditor(
+            async () => {
+                await editor.typeText('q');
+                await editor.typeText('q');
+            },
+            [0, 3],
+            editor
+        );
     });
 
     it('Replays search with `acceptAfter`', async () => {
@@ -281,18 +319,26 @@ i j k l`);
         await enterModalKeys('escape');
 
         await enterModalKeys(['shift', 'q']);
-        await movesCursorInEditor(async () => {
-            await enterModalKeys({key: 't', updatesStatus: false});
-            await waitForMode('rec: capture');
-            await browser.keys('c');
-        }, [0, 3], editor);
+        await movesCursorInEditor(
+            async () => {
+                await enterModalKeys({key: 't', updatesStatus: false});
+                await waitForMode('rec: capture');
+                await browser.keys('c');
+            },
+            [0, 3],
+            editor
+        );
         await enterModalKeys(['shift', 'q']);
 
         await editor.moveCursor(1, 1);
-        await movesCursorInEditor(async () => {
-            await editor.typeText('q');
-            await editor.typeText('q');
-        }, [0, 3], editor);
+        await movesCursorInEditor(
+            async () => {
+                await editor.typeText('q');
+                await editor.typeText('q');
+            },
+            [0, 3],
+            editor
+        );
     });
 
     it('Replays search with canceled entry', async () => {
@@ -300,22 +346,30 @@ i j k l`);
         await enterModalKeys('escape');
 
         await enterModalKeys(['shift', 'q']);
-        await movesCursorInEditor(async () => {
-            await enterModalKeys({key: 't', updatesStatus: false});
-            await waitForMode('rec: capture');
-            browser.keys(Key.Escape);
-            await waitForMode('rec: normal');
-            await enterModalKeys({key: 't', updatesStatus: false});
-            await waitForMode('rec: capture');
-            await browser.keys('c');
-        }, [0, 3], editor);
+        await movesCursorInEditor(
+            async () => {
+                await enterModalKeys({key: 't', updatesStatus: false});
+                await waitForMode('rec: capture');
+                browser.keys(Key.Escape);
+                await waitForMode('rec: normal');
+                await enterModalKeys({key: 't', updatesStatus: false});
+                await waitForMode('rec: capture');
+                await browser.keys('c');
+            },
+            [0, 3],
+            editor
+        );
         await enterModalKeys(['shift', 'q']);
 
         await editor.moveCursor(1, 1);
-        await movesCursorInEditor(async () => {
-            await editor.typeText('q');
-            await editor.typeText('q');
-        }, [0, 3], editor);
+        await movesCursorInEditor(
+            async () => {
+                await editor.typeText('q');
+                await editor.typeText('q');
+            },
+            [0, 3],
+            editor
+        );
     });
 
     it('Replays captured keys', async () => {
@@ -323,21 +377,29 @@ i j k l`);
         await enterModalKeys('escape');
 
         await enterModalKeys(['shift', 'q']);
-        await movesCursorInEditor(async () => {
-            await enterModalKeys({key: 's', updatesStatus: false});
-            await waitForMode('rec: capture');
-            await browser.keys('c');
-            // TODO: someday we can avoid this second long pause
-            await sleep(1000);
-            await browser.keys(' ');
-        }, [0, 3], editor);
+        await movesCursorInEditor(
+            async () => {
+                await enterModalKeys({key: 's', updatesStatus: false});
+                await waitForMode('rec: capture');
+                await browser.keys('c');
+                // TODO: someday we can avoid this second long pause
+                await sleep(1000);
+                await browser.keys(' ');
+            },
+            [0, 3],
+            editor
+        );
         await enterModalKeys(['shift', 'q']);
 
         await editor.moveCursor(1, 1);
-        await movesCursorInEditor(async () => {
-            await editor.typeText('q');
-            await editor.typeText('q');
-        }, [0, 3], editor);
+        await movesCursorInEditor(
+            async () => {
+                await editor.typeText('q');
+                await editor.typeText('q');
+            },
+            [0, 3],
+            editor
+        );
     });
 
     it('Replays canceled capture keys', async () => {
@@ -345,29 +407,37 @@ i j k l`);
         await enterModalKeys('escape');
 
         await enterModalKeys(['shift', 'q']);
-        await movesCursorInEditor(async () => {
-            await enterModalKeys({key: 's', updatesStatus: false});
-            await waitForMode('rec: capture');
-            await browser.keys('c');
-            // TODO: someday we can avoid this second long pause
-            await sleep(1000);
-            browser.keys(Key.Escape);
-            await waitForMode('rec: normal');
+        await movesCursorInEditor(
+            async () => {
+                await enterModalKeys({key: 's', updatesStatus: false});
+                await waitForMode('rec: capture');
+                await browser.keys('c');
+                // TODO: someday we can avoid this second long pause
+                await sleep(1000);
+                browser.keys(Key.Escape);
+                await waitForMode('rec: normal');
 
-            await enterModalKeys({key: 's', updatesStatus: false});
-            await waitForMode('rec: capture');
-            await browser.keys('c');
-            // TODO: someday we can avoid this second long pause
-            await sleep(1000);
-            await browser.keys(' ');
-        }, [0, 3], editor);
+                await enterModalKeys({key: 's', updatesStatus: false});
+                await waitForMode('rec: capture');
+                await browser.keys('c');
+                // TODO: someday we can avoid this second long pause
+                await sleep(1000);
+                await browser.keys(' ');
+            },
+            [0, 3],
+            editor
+        );
         await enterModalKeys(['shift', 'q']);
 
         await editor.moveCursor(1, 1);
-        await movesCursorInEditor(async () => {
-            await editor.typeText('q');
-            await editor.typeText('q');
-        }, [0, 3], editor);
+        await movesCursorInEditor(
+            async () => {
+                await editor.typeText('q');
+                await editor.typeText('q');
+            },
+            [0, 3],
+            editor
+        );
     });
 
     it('Replaces chars', async () => {
@@ -382,7 +452,7 @@ i j k l`);
         await enterModalKeys(['shift', 'q']);
 
         let text = await editor.getText();
-        expect(text).toEqual(`p b c d\ne f g h\ni j k l`);
+        expect(text).toEqual('p b c d\ne f g h\ni j k l');
 
         await editor.moveCursor(1, 3);
         await enterModalKeys('q', {key: 'q', updatesStatus: false});
@@ -392,8 +462,8 @@ i j k l`);
         await sleep(1500);
 
         text = await editor.getText();
-        expect(text).toEqual(`p p c d\ne f g h\ni j k l`);
-        await editor.setText(`a b c d\ne f g h\ni j k l`);
+        expect(text).toEqual('p p c d\ne f g h\ni j k l');
+        await editor.setText('a b c d\ne f g h\ni j k l');
         await sleep(1000);
     });
 
@@ -409,7 +479,7 @@ i j k l`);
         await enterModalKeys(['shift', 'q']);
 
         let text = await editor.getText();
-        expect(text).toEqual(`fa b c d\ne f g h\ni j k l`);
+        expect(text).toEqual('fa b c d\ne f g h\ni j k l');
 
         await editor.moveCursor(1, 4);
         await enterModalKeys('q', {key: 'q', updatesStatus: false});
@@ -419,7 +489,7 @@ i j k l`);
         await sleep(1500);
 
         text = await editor.getText();
-        expect(text).toEqual(`fa fb c d\ne f g h\ni j k l`);
+        expect(text).toEqual('fa fb c d\ne f g h\ni j k l');
     });
 
     it('Repeats replay using count', async () => {
@@ -428,38 +498,60 @@ i j k l`);
 
         await enterModalKeys(['shift', 'q']);
         await waitForMode('rec: normal');
-        await movesCursorInEditor(async () => {
-            await enterModalKeys('l');
-        }, [0, 1], editor);
+        await movesCursorInEditor(
+            async () => {
+                await enterModalKeys('l');
+            },
+            [0, 1],
+            editor
+        );
         await enterModalKeys(['shift', 'q']);
         await waitForMode('normal');
 
-        await movesCursorInEditor(async () => {
-            await enterModalKeys({key: ['shift', '2'], count: 2}, 'q',
-                {key: 'c', updatesStatus: false});
-        }, [0, 3], editor);
+        await movesCursorInEditor(
+            async () => {
+                await enterModalKeys({key: ['shift', '2'], count: 2}, 'q', {
+                    key: 'c',
+                    updatesStatus: false,
+                });
+            },
+            [0, 3],
+            editor
+        );
     });
 
     it('Handles nested replay', async () => {
         await editor.moveCursor(1, 1);
         await enterModalKeys('escape');
 
-        await enterModalKeys(['shift', 'q'])
+        await enterModalKeys(['shift', 'q']);
         await waitForMode('rec: normal');
-        await movesCursorInEditor(async () => {
-            await enterModalKeys('l');
-            await enterModalKeys('q', {key: 'l', updatesStatus: false});
-        }, [0, 2], editor);
+        await movesCursorInEditor(
+            async () => {
+                await enterModalKeys('l');
+                await enterModalKeys('q', {key: 'l', updatesStatus: false});
+            },
+            [0, 2],
+            editor
+        );
         await enterModalKeys(['shift', 'q']);
         await waitForMode('normal');
 
-        await movesCursorInEditor(async () => {
-            await enterModalKeys('q', {key: 'q', updatesStatus: false});
-        }, [0, 2], editor);
+        await movesCursorInEditor(
+            async () => {
+                await enterModalKeys('q', {key: 'q', updatesStatus: false});
+            },
+            [0, 2],
+            editor
+        );
 
-        await movesCursorInEditor(async () => {
-            await enterModalKeys('q', {key: 'q', updatesStatus: false});
-        }, [0, 2], editor);
+        await movesCursorInEditor(
+            async () => {
+                await enterModalKeys('q', {key: 'q', updatesStatus: false});
+            },
+            [0, 2],
+            editor
+        );
     });
 
     after(async () => {

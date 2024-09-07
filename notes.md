@@ -1,22 +1,15 @@
-## More visual doc improvements
-
-release 0.2.5
-
-- IMPROVEMENT: put some examples of cool features from `Larkin` in the README
-
-by the end of this milestone I'm satisfied with the documentation features of the package for an initial release
-
-## Binding Cleanup
-
-release 0.2.6
-
-- feature: specify user-specific binding file, apart from activated keybindings
-- Split out any of the commands that are really custom for me that don't make sense to publish.
-- Pair down some of the required extensions?
-
 ## Trailing fixes
 
-Working with release 0.2.6 for a while and mark sure there aren't an bugs to fix
+- small fix: label extenesions as 'not found' rather than 'uninstalled' since they are
+clearly inconsistent with the install state (not sure what's up with that, but not worth
+fixing)
+
+Working with release 0.2.6 for a while and make sure there aren't any more bugs to fix
+
+- remove all my extra settings in my own config file
+- insert QOL I loose from that into larkin (or masterkeys.toml, as needed)
+    + up/down page
+    - escape / shift-escape?
 
 ## Before VSCode publish
 
@@ -35,8 +28,14 @@ thoughts: things I must have to release:
   + fix default expansion
 
 WHEN PUBLISHING: get this to work on both stores (the one from microsoft and the one that vscodium uses)
+- https://github.com/eclipse/openvsx/wiki/Publishing-Extensions
 
 ## Stability / test coverage
+
+BUG: when using the extension with a remote machine the visual doc, or palette info doesn't show up (this is probably related to the issue about the docs not being updated when I first open; remote use could easily change the timing of things, revealing a race condition). What's weird about this is that the text docs *do* show up.
+
+SMALL FEATURE: allow `-` prefix on commands to bypass `do` wrapping and
+remove a binding (will need to validate that some fields are `undefined` in this case)
 
 SMALL BUG: should 'esc' really be appended in the status bar since it cancels a prefix sequence... 🤔
 
@@ -104,7 +103,7 @@ code-reading QOL
 
 - MODERNIZED SELECTION UTILITIES
   - modernized command documentation
-  - modern build setup
+  + modern build setup
   - some basic UX tests
   - 1.0 release
 

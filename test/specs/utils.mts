@@ -1,9 +1,9 @@
-import { browser, expect } from '@wdio/globals';
+import {browser, expect} from '@wdio/globals';
 import 'wdio-vscode-service';
-import { Key, WaitUntilOptions } from 'webdriverio';
-import { Input, InputBox, StatusBar, TextEditor, Workbench, sleep } from 'wdio-vscode-service';
+import {Key, WaitUntilOptions} from 'webdriverio';
+import {InputBox, StatusBar, TextEditor, Workbench, sleep} from 'wdio-vscode-service';
 import loadash from 'lodash';
-const { isEqual } = loadash;
+const {isEqual} = loadash;
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -18,36 +18,41 @@ hideInPalette = true
 hideInDocs = true
 `;
 
-export async function setBindings(str: string){
-    await setupEditor(str + COVERAGE_KEY_COMMAND);
+export async function setBindings(str: string) {
+    const editor = await setupEditor(str + COVERAGE_KEY_COMMAND);
+    await editor.moveCursor(1, 1);
 
-    console.log('[DEBUG]: select language')
+    console.log('[DEBUG]: select language');
     const workbench = await browser.getWorkbench();
+    await workbench.executeCommand('Clear Command History');
+    await sleep(200);
     let input = await workbench.executeCommand('Select Language Mode');
-    await sleep(500)
-    await input.setText("Markdown");
-    await input.confirm();
-
-    console.log('[DEBUG]: activate bindings')
-    input = await workbench.executeCommand('Master key: Activate Keybindings');
     await sleep(500);
-    await input.setText("Current File");
+    await input.setText('Markdown');
     await input.confirm();
 
-    console.log('[DEBUG]: await notification')
+    console.log('[DEBUG]: activate bindings');
+    await workbench.executeCommand('Clear Command History');
+    await sleep(200);
+    await workbench.executeCommand('Master key: Activate Keybindings');
+    await sleep(500);
+    input = await new InputBox(workbench.locatorMap).wait();
+    await input.setText('Current File');
+    await input.confirm();
+
+    console.log('[DEBUG]: await notification');
     const messagePattern = /Your master keybindings have/;
-    let message = await browser.waitUntil(async () => {
+    const message = await browser.waitUntil(async () => {
         const notifs = await workbench.getNotifications();
-        if(notifs.length > 0){
-            for(let not of notifs){
+        if (notifs.length > 0) {
+            for (const not of notifs) {
                 const m = await not.getMessage();
-                if(messagePattern.test(m)){
+                console.log('[UTIL]: notification message — ' + m);
+                if (messagePattern.test(m)) {
                     return m;
-                }else{
-                    console.log("[UTIL]: notification message — "+m);
                 }
             }
-        }else{
+        } else {
             return false;
         }
     });
@@ -59,9 +64,11 @@ export async function setBindings(str: string){
     return;
 }
 
-export async function storeCoverageStats(name: string){
-    if(!process.env.COVERAGE){ return; }
-    const editor = await setupEditor("");
+export async function storeCoverageStats(name: string) {
+    if (!process.env.COVERAGE) {
+        return;
+    }
+    const editor = await setupEditor('');
     // TODO: not sure why the keys don't show up in the status bar here...
     // (probably a bug)
     await enterModalKeys({key: ['ctrl', 'shift', 'alt', 'c'], updatesStatus: false});
@@ -69,13 +76,14 @@ export async function storeCoverageStats(name: string){
     await sleep(1000);
     await waitUntilCursorUnmoving(editor);
 
-    let coverageStr = await editor.getText();
+    const coverageStr = await editor.getText();
     fs.writeFileSync(
-        path.join(process.env.COVERAGE_PATH || '.', name + ".json"),
-        coverageStr);
+        path.join(process.env.COVERAGE_PATH || '.', name + '.json'),
+        coverageStr
+    );
 }
 
-export async function cursorToTop(editor: TextEditor){
+export async function cursorToTop(editor: TextEditor) {
     // this method appears to be a common source unreliable behavior so we do the commands
     // slowly
     (await editor.elem).click();
@@ -86,46 +94,59 @@ export async function cursorToTop(editor: TextEditor){
     await browser.keys(Key.ArrowLeft);
     await sleep(100);
     browser.waitUntil(async () => {
-        let coord = await editor.getCoordinates();
+        const coord = await editor.getCoordinates();
         coord[0] === 1 && coord[1] === 1;
     });
     await sleep(200);
 }
 
-export async function setupEditor(str: string, name: string='test'){
+export async function getEditorMatching(workbench: Workbench, r: RegExp | string) {
+    const editorView = await workbench.getEditorView();
+    const title = await browser.waitUntil(
+        async () => {
+            const tab = await editorView.getActiveTab();
+            const title = await tab?.getTitle();
+            if (title && title.match(r)) {
+                return title;
+            }
+            return;
+        },
+        {interval: 1000, timeout: 10000}
+    );
+
+    return (await editorView.openEditor(title!)) as TextEditor;
+}
+
+export async function clearNotifications(workbench: Workbench) {
+    const notifications = await workbench.getNotifications();
+    for (const note of notifications) {
+        await note.dismiss();
+    }
+}
+
+export async function setupEditor(str: string) {
     const workbench = await browser.getWorkbench();
 
     // clear any older notificatoins
-    console.log("[DEBUG]: clearing notifications");
-    let notifications = await workbench.getNotifications();
-    for(let note of notifications){
-        await note.dismiss();
-    }
+    console.log('[DEBUG]: clearing notifications');
+    clearNotifications(workbench);
 
-    console.log('[DEBUG]: creating new file');
+    console.log('[DEBUG]: opening new editor pane');
     browser.keys([Key.Ctrl, 'n']);
-
-    console.log('[DEBUG]: waiting for editor to be available');
-    const editorView = await workbench.getEditorView();
-    const title = await browser.waitUntil(async () => {
-        let tab = await editorView.getActiveTab();
-        const title = await tab?.getTitle();
-        if(title && title.match(/Untitled/)){
-            return title;
-        }
-        return;
-    }, { interval: 1000, timeout: 10000 });
-    const editor = await editorView.openEditor(title!) as TextEditor;
+    const editor = await getEditorMatching(workbench, /Untitled/);
 
     // set the text
     // NOTE: setting editor text is somewhat flakey, so we verify that it worked
-    console.log("[DEBUG]: setting text to: "+str.slice(0, 50)+"...");
+    console.log('[DEBUG]: setting text to: ' + str.slice(0, 200) + '...');
     await editor.setText(str);
-    await sleep(300);
     await waitUntilCursorUnmoving(editor);
+    await sleep(100);
+    const text = await editor.getText();
+
+    expect(text).toEqual(str);
 
     // focus the editor
-    console.log("[DEBUG]: Focusing editor");
+    console.log('[DEBUG]: Focusing editor');
     await editor.moveCursor(1, 1);
 
     // NOTE: I often see flaky tests at the very start of a spec. My first guess is we need
@@ -135,7 +156,7 @@ export async function setupEditor(str: string, name: string='test'){
     return editor;
 }
 
-export function prettifyPrefix(str: string){
+export function prettifyPrefix(str: string) {
     str = str.toUpperCase();
     str = str.replace(/shift(\+|$)/gi, '⇧');
     str = str.replace(/ctrl(\+|$)/gi, '^');
@@ -143,179 +164,232 @@ export function prettifyPrefix(str: string){
     str = str.replace(/meta(\+|$)/gi, '◆');
     str = str.replace(/win(\+|$)/gi, '⊞');
     str = str.replace(/cmd(\+|$)/gi, '⌘');
-    str = str.replace(/escape/gi, "ESC");
+    str = str.replace(/escape/gi, 'ESC');
     return str;
 }
 
 // TODO: test out and get this function working
 const MODAL_KEY_MAP: Record<string, string> = {
-    'shift': Key.Shift,
-    'alt': Key.Alt,
-    'tab': Key.Tab,
-    'cmd': Key.Command,
-    'ctrl': Key.Control,
-    'escape': Key.Escape,
-    'space': Key.Space
+    shift: Key.Shift,
+    alt: Key.Alt,
+    tab: Key.Tab,
+    cmd: Key.Command,
+    ctrl: Key.Control,
+    escape: Key.Escape,
+    space: Key.Space,
 };
 
 // TODO: implement count
 interface ModalKeySpec {
-    key: string | string[]
-    count?: number
-    updatesStatus?: boolean
+    key: string | string[];
+    count?: number;
+    updatesStatus?: boolean;
 }
 type ModalKey = string | string[] | ModalKeySpec;
 function modalKeyToStringArray(key: ModalKey): string[] {
     let simpleKey: string | string[];
-    if((key as ModalKeySpec).key){
+    if ((key as ModalKeySpec).key) {
         simpleKey = (key as ModalKeySpec).key;
-    }else{
-        simpleKey = (key as string | string[]);
+    } else {
+        simpleKey = key as string | string[];
     }
-    if(Array.isArray(simpleKey)){
+    if (Array.isArray(simpleKey)) {
         return simpleKey;
-    }else{
+    } else {
         return [simpleKey];
     }
-};
+}
 
-function modalKeyCount(key: ModalKey){
-    if((key as ModalKeySpec).key){
+function modalKeyCount(key: ModalKey) {
+    if ((key as ModalKeySpec).key) {
         return (key as ModalKeySpec).count;
-    }else{
+    } else {
         return undefined;
     }
 }
 
-function modalKeyUpdateStatus(key: ModalKey){
-    if((key as ModalKeySpec).key){
-        let update = (key as ModalKeySpec).updatesStatus;
-        if(update === undefined){
+function modalKeyUpdateStatus(key: ModalKey) {
+    if ((key as ModalKeySpec).key) {
+        const update = (key as ModalKeySpec).updatesStatus;
+        if (update === undefined) {
             return true;
-        }else{
+        } else {
             return update;
         }
-    }else{
+    } else {
         return true;
     }
 }
 
-export async function enterModalKeys(...keySeq: ModalKey[]){
+export async function enterModalKeys(...keySeq: ModalKey[]) {
     const workbench = await browser.getWorkbench();
-    const statusBar = await (new StatusBar(workbench.locatorMap));
-    let keySeqString = "";
+    const statusBar = await new StatusBar(workbench.locatorMap);
+    let keySeqString = '';
     let cleared;
 
-
-    let waitOpts = {interval: 50, timeout: 5000};
-    cleared = await browser.waitUntil(() => statusBar.getItem('No Keys Typed'),
-        { ...waitOpts,
-            timeoutMsg: `Old keys didn't clear, while trying to press \n${JSON.stringify(keySeq, null, 4)}` } );
+    const waitOpts = {interval: 50, timeout: 5000};
+    cleared = await browser.waitUntil(() => statusBar.getItem('No Keys Typed'), {
+        ...waitOpts,
+        timeoutMsg: `Old keys didn't clear, while trying to press \n${JSON.stringify(keySeq, null, 4)}`,
+    });
     expect(cleared).toBeTruthy();
 
     let count = 0;
     let checkCleared = true;
-    for(const keys_ of keySeq){
+    for (const keys_ of keySeq) {
         checkCleared = true;
         const keys = modalKeyToStringArray(keys_);
-        if(!isEqual(keys.map(x => x.toLowerCase()), keys)){
+        if (
+            !isEqual(
+                keys.map(x => x.toLowerCase()),
+                keys
+            )
+        ) {
             throw Error("Keys must all be lower case (use 'shift')");
         }
-        const keyCodes = keys.map(k => MODAL_KEY_MAP[k] !== undefined ? MODAL_KEY_MAP[k] : k);
+        const keyCodes = keys.map(k =>
+            MODAL_KEY_MAP[k] !== undefined ? MODAL_KEY_MAP[k] : k
+        );
         const keyCount = modalKeyCount(keys_);
-        if(keyCount === undefined){
-            let keyString = keys.map(prettifyPrefix).join('');
-            if(keySeqString){
-                keySeqString += ", " + keyString;
-            }else{
+        if (keyCount === undefined) {
+            const keyString = keys.map(prettifyPrefix).join('');
+            if (keySeqString) {
+                keySeqString += ', ' + keyString;
+            } else {
                 keySeqString = keyString;
             }
-        }else{
+        } else {
             count = count * 10 + keyCount;
         }
-        let currentKeySeqString = (count ? count + "× " : '') + keySeqString;
+        const currentKeySeqString = (count ? count + '× ' : '') + keySeqString;
 
         // we do *NOT* await here, so that we can catch display events that are fast
         browser.keys(keyCodes);
-        if(modalKeyUpdateStatus(keys_)){
-            let registered = await browser.waitUntil(() =>
-                statusBar.getItem('Keys Typed: '+currentKeySeqString),
-                { ...waitOpts,
-                    timeoutMsg: `UI didn't register typed key: \n${JSON.stringify(currentKeySeqString, null, 4)}` });
+        if (modalKeyUpdateStatus(keys_)) {
+            const registered = await browser.waitUntil(
+                () => statusBar.getItem('Keys Typed: ' + currentKeySeqString),
+                {
+                    ...waitOpts,
+                    timeoutMsg: `UI didn't register typed key: \n${JSON.stringify(currentKeySeqString, null, 4)}`,
+                }
+            );
             expect(registered).toBeTruthy();
-        }else{
+        } else {
             checkCleared = false;
         }
     }
-    if(checkCleared){
-        cleared = await browser.waitUntil(() => statusBar.getItem('No Keys Typed'),
-            { ...waitOpts,
-                timeoutMsg: `Final keys didn't clear while pressing \n${JSON.stringify(keySeq, null, 4)}` });
+    if (checkCleared) {
+        cleared = await browser.waitUntil(() => statusBar.getItem('No Keys Typed'), {
+            ...waitOpts,
+            timeoutMsg: `Final keys didn't clear while pressing \n${JSON.stringify(keySeq, null, 4)}`,
+        });
         expect(cleared).toBeTruthy();
     }
 
     return;
 }
 
-export async function waitForMode(mode: string, opts: Partial<WaitUntilOptions> = {}){
+export async function waitForMode(mode: string, opts: Partial<WaitUntilOptions> = {}) {
     const workbench = await browser.getWorkbench();
-    const statusBar = await (new StatusBar(workbench.locatorMap));
-    let modeSet = await browser.waitUntil(() =>
-        statusBar.getItem('Keybinding Mode: '+mode),
-        opts);
+    const statusBar = await new StatusBar(workbench.locatorMap);
+    const modeSet = await browser.waitUntil(
+        () => statusBar.getItem('Keybinding Mode: ' + mode),
+        opts
+    );
     expect(modeSet).toBeTruthy();
     return;
 }
 
-async function coordChange(editor: TextEditor, oldpos: {x: number, y: number}): Promise<{x: number, y: number}> {
-    let newpos = await editor.getCoordinates();
-    let ydiff = newpos[0] - oldpos.y;
-    let xdiff = newpos[1] - oldpos.x;
+async function coordChange(
+    editor: TextEditor,
+    oldpos: {x: number; y: number}
+): Promise<{x: number; y: number}> {
+    const newpos = await editor.getCoordinates();
+    const ydiff = newpos[0] - oldpos.y;
+    const xdiff = newpos[1] - oldpos.x;
     return {y: ydiff, x: xdiff};
 }
 
-export async function waitUntilCursorUnmoving(editor: TextEditor, oldpos?: {x: number, y: number}){
-    if(!oldpos){
-        let [y, x] = await editor.getCoordinates();
+export async function waitUntilCursorUnmoving(
+    editor: TextEditor,
+    oldpos?: {x: number; y: number}
+) {
+    if (!oldpos) {
+        const [y, x] = await editor.getCoordinates();
         oldpos = {x, y};
     }
 
     let lastMove = {x: 0, y: 0};
     let stepsUnchanged = 0;
-    return await browser.waitUntil(async() => {
-        let move = await coordChange(editor, oldpos);
+    return await browser.waitUntil(
+        async () => {
+            const move = await coordChange(editor, oldpos);
 
-        if(isEqual(lastMove, move)){ stepsUnchanged += 1; }
-        else{
-            lastMove = move;
-            stepsUnchanged = 0;
-        };
-        if(stepsUnchanged > 1){
-            return move;
-        }
-    }, {interval: 300, timeout: 9000});
+            if (isEqual(lastMove, move)) {
+                stepsUnchanged += 1;
+            } else {
+                lastMove = move;
+                stepsUnchanged = 0;
+            }
+            if (stepsUnchanged > 1) {
+                return move;
+            }
+        },
+        {interval: 300, timeout: 9000}
+    );
 }
 
-export async function movesCursorInEditor(action: () => Promise<void>, by: [number, number], editor: TextEditor){
-    let [y, x] = await editor.getCoordinates();
-    let oldpos = {x, y};
+export async function movesCursorInEditor(
+    action: () => Promise<void>,
+    by: [number, number],
+    editor: TextEditor
+) {
+    const [y, x] = await editor.getCoordinates();
+    const oldpos = {x, y};
     await action();
-    let expected = {y: by[0], x: by[1]};
-    let actual = await coordChange(editor, oldpos);
+    const expected = {y: by[0], x: by[1]};
+    const actual = await coordChange(editor, oldpos);
     // most of the time we can just run `expect` right away...
-    if(isEqual(actual, expected)){
+    if (isEqual(actual, expected)) {
         expect(actual).toEqual(expected);
         return;
     }
     // but some commands require that we wait before their effects are observed...
     // in this case we need to have some confidence that no further moves are
     // going to happen
-    let maybeActual = await waitUntilCursorUnmoving(editor, oldpos);
+    const maybeActual = await waitUntilCursorUnmoving(editor, oldpos);
     expect(maybeActual).toEqual(expected);
 }
 
-export async function movesCursorTo(action: () => Promise<void>, by: [number, number], editor: TextEditor){
+export async function movesCursorTo(
+    action: () => Promise<void>,
+    by: [number, number],
+    editor: TextEditor
+) {
     await action();
-    let newpos = await editor.getCoordinates();
+    const newpos = await editor.getCoordinates();
     expect({y: newpos[0], x: newpos[1]}).toEqual({y: by[0], x: by[1]});
+}
+
+export async function setFileDialogText(str: string) {
+    const workbench = await browser.getWorkbench();
+    const fileInput = await new InputBox(workbench.locatorMap).wait();
+    await sleep(100);
+    // clearing text for this input box seems to work a little differently than the
+    // normal up, so we have to manually remove the text before setting the text
+    const input_ = await fileInput.inputBox$.$(fileInput.locators.input);
+    await input_.click();
+    await browser.keys([Key.Ctrl, 'a']);
+    await browser.keys(Key.Backspace);
+    await sleep(100);
+    await fileInput.setText(str);
+    // confirmation is also flakey
+    await sleep(100);
+    await fileInput.confirm();
+    await sleep(100);
+    try {
+        fileInput.confirm();
+    } catch (e) {
+        console.dir(e);
+    }
 }

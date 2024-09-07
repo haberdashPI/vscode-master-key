@@ -17,8 +17,8 @@ export const config: Options.Testrunner = {
         autoCompile: true,
         tsNodeOpts: {
             project: './test/tsconfig.json',
-            transpileOnly: true
-        }
+            transpileOnly: true,
+        },
     },
 
     //
@@ -36,10 +36,7 @@ export const config: Options.Testrunner = {
     // The path of the spec files will be resolved relative from the directory of
     // of the config file unless it's absolute.
     //
-    specs: [
-        './test/specs/**/*.mts'
-    ],
-    // Patterns to exclude.
+    specs: ['./test/specs/**/*.ux.mts'],
     exclude: [
         // 'path/to/excluded/files'
     ],
@@ -65,22 +62,22 @@ export const config: Options.Testrunner = {
     // Sauce Labs platform configurator - a great tool to configure your capabilities:
     // https://saucelabs.com/platform/platform-configurator
     //
-    capabilities: [{
-        browserName: 'vscode',
-        'wdio:vscodeOptions': {
-            // points to directory where extension package.json is located
-            extensionPath: __dirname,
-            workspacePath: __dirname,
-            storagePath: __dirname + "/.wdio-vscode-service/storage/",
-            // optional VS Code settings
-            // userSettings: {
-            //     // NOTE: these are ignored (at least for 'chrome' browser)
-            //     "editor.fontSize": 14,
-            //     "master-key.keyDisplayDelay": 20,
-            //     "master-key.suggestionDelay": 0,
-            // },
-        }
-    }],
+    capabilities: [
+        {
+            browserName: 'vscode',
+            'wdio:vscodeOptions': {
+                // points to directory where extension package.json is located
+                extensionPath: __dirname,
+                workspacePath: __dirname,
+                vscodeArgs: {
+                    profile: 'debug-profile',
+                    'enable-features':
+                        'ConversionMeasurement,AttributionReportingCrossAppWeb',
+                },
+                storagePath: __dirname + '/.wdio-vscode-service/storage/',
+            },
+        },
+    ],
 
     //
     // ===================
@@ -89,7 +86,7 @@ export const config: Options.Testrunner = {
     // Define all options that are relevant for the WebdriverIO instance here
     //
     // Level of logging verbosity: trace | debug | info | warn | error | silent
-    logLevel: process.env.COVERAGE ? 'warn' : 'info',
+    logLevel: process.env.COVERAGE ? 'warn' : 'warn', // TODO: change back
     //
     // Set specific log levels per logger
     // loggers:
@@ -129,7 +126,7 @@ export const config: Options.Testrunner = {
     // Services take over a specific job you don't want to take care of. They enhance
     // your test setup with almost no effort. Unlike plugins, they don't add new
     // commands. Instead, they hook themselves up into the test process.
-    services: [ 'vscode' ],
+    services: ['vscode'],
 
     // Framework you want to run your specs with.
     // The following are supported: Mocha, Jasmine, and Cucumber
@@ -158,7 +155,7 @@ export const config: Options.Testrunner = {
     // See the full list at http://mochajs.org/
     mochaOpts: {
         ui: 'bdd',
-        timeout: 60000
+        timeout: 60000,
     },
 
     //
@@ -258,7 +255,6 @@ export const config: Options.Testrunner = {
     // afterTest: function(test, context, { error, result, duration, passed, retries }) {
     // },
 
-
     /**
      * Hook that gets executed after the suite has ended
      * @param {object} suite suite details
@@ -302,22 +298,22 @@ export const config: Options.Testrunner = {
     // onComplete: function(exitCode, config, capabilities, results) {
     // },
     /**
-    * Gets executed when a refresh happens.
-    * @param {string} oldSessionId session ID of the old session
-    * @param {string} newSessionId session ID of the new session
-    */
+     * Gets executed when a refresh happens.
+     * @param {string} oldSessionId session ID of the old session
+     * @param {string} newSessionId session ID of the new session
+     */
     // onReload: function(oldSessionId, newSessionId) {
     // }
     /**
-    * Hook that gets executed before a WebdriverIO assertion happens.
-    * @param {object} params information about the assertion to be executed
-    */
+     * Hook that gets executed before a WebdriverIO assertion happens.
+     * @param {object} params information about the assertion to be executed
+     */
     // beforeAssertion: function(params) {
     // }
     /**
-    * Hook that gets executed after a WebdriverIO assertion happened.
-    * @param {object} params information about the assertion that was executed, including its results
-    */
+     * Hook that gets executed after a WebdriverIO assertion happened.
+     * @param {object} params information about the assertion that was executed, including its results
+     */
     // afterAssertion: function(params) {
     // }
 };

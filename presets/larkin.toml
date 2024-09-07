@@ -31,7 +31,6 @@ requiredExtensions = [
       "albymor.increment-selection",
       "pkief.markdown-checkbox",
       "stkb.rewrap",
-      "haberdashPI.terminal-polyglot",
       "jack89ita.open-file-from-path",
       "koalamer.labeled-bookmarks",
 ]
@@ -115,7 +114,7 @@ default.kind = "util"
 # 3. The suggestion palette shows a list of the current bindings given the current key binding prefix.
 
 [[bind]]
-path = "window"
+path = "util"
 key = "shift+;"
 name = "suggest"
 resetTransient = false
@@ -338,6 +337,28 @@ computedArgs = { value = "count" }
 
 [[bind.args.commands]]
 command = "expandLineSelection"
+
+[[bind]]
+path = "edit.motion.prim"
+key = "ctrl+d"
+name = "pg ↓"
+combinedName = "pg ↓/↑"
+combinedKey = "ctrl+d/ctrl+u"
+combinedDescription = "move down/up, relative to page size"
+description = "move down, relative to page size"
+command = "selection-utilities.activePageMove"
+args.dir = "down"
+computedArgs.count = "(count || 1)/3"
+
+[[bind]]
+path = "edit.motion.prim"
+key = "ctrl+u"
+name = "pg ↑"
+combinedName = "pg ↓/↑"
+description = "move up, relative to page size"
+command = "selection-utilities.activePageMove"
+args.dir = "up"
+computedArgs.count = "(count || 1)/3"
 
 [[bind]]
 path = "edit.motion.prim"
@@ -1116,20 +1137,7 @@ when = "editorTextFocus"
 path = "edit.motion"
 key = "g c"
 name = "cell →"
-description = "next notebook cell"
 combinedName = "cell →/←"
-combinedDescription = "next/prev notebook cell"
-combinedKey = "c/shift+c"
-when = "editorLangId == 'markdown' || editorLangId == 'quarto'"
-command = "runCommands"
-args.commands = ["terminal-polyglot.next-fence-select", "selection-utilities.revealActive"]
-
-[[bind]]
-path = "edit.motion"
-key = "g c"
-name = "cell →"
-combinedName = "cell →/←"
-when = "!(editorLangId == 'markdown' || editorLangId == 'quarto')"
 command = "runCommands"
 args.commands = [ "jupyter.gotoNextCellInFile", "jupyter.selectCell" ]
 description = "previous jupyter notebook cell"
@@ -1140,18 +1148,6 @@ key = "g shift+c"
 name = "cell ←"
 combinedName = "cell →/←"
 description = "previous jupyter notebook cell"
-when = "editorLangId == 'markdown' || editorLangId == 'quarto'"
-command = "runCommands"
-args.commands = ["terminal-polyglot.prev-fence-select", "selection-utilities.revealActive"]
-
-
-[[bind]]
-path = "edit.motion"
-key = "g shift+c"
-name = "cell ←"
-combinedName = "cell →/←"
-description = "previous jupyter notebook cell"
-when = "!(editorLangId == 'markdown' || editorLangId == 'quarto')"
 command = "runCommands"
 args.commands = ["jupyter.gotoPrevCellInFile", "jupyter.selectCell"]
 
@@ -1512,16 +1508,6 @@ path = "edit.motion.match.cell"
 name = "in cell"
 description = "select text within a cell (ala jupyter)"
 key = "m c"
-when = "editorLangId == 'markdown' || editorLangId == 'quarto'"
-command = "runCommands"
-args.commands = ["terminal-polyglot.select-fence", "selection-utilities.revealActive"]
-
-[[bind]]
-path = "edit.motion.match.cell"
-name = "in cell"
-description = "select text within a cell (ala jupyter)"
-key = "m c"
-when = "!(editorLangId == 'markdown' || editorLangId == 'quarto')"
 command = "jupyter.selectCell"
 
 [[path]]
@@ -1748,9 +1734,9 @@ path = "edit.action.clipboard"
 key = "p"
 name = "paste after"
 description = "Paste clipboard after the cursor/selection"
-combinedName = "paste before/after"
-combinedDescription = "Paste clipboard before/after the cursor/selection"
-combinedKey = "p/shift+p"
+combinedName = "paste before/after/in"
+combinedDescription = "Paste clipboard before/after/at the cursor/selection"
+combinedKey = "p/shift+p/ctrl+p"
 when = "editorHasSelection"
 command = "runCommands"
 args.commands = ["selection-utilities.activeAtEnd", "selection-utilities.shrinkToActive", "editor.action.clipboardPasteAction"]
@@ -1759,10 +1745,18 @@ args.commands = ["selection-utilities.activeAtEnd", "selection-utilities.shrinkT
 path = "edit.action.clipboard"
 key = "p"
 name = "paste after"
-combinedName = "paste before/after"
+combinedName = "paste before/after/in"
 when = "!editorHasSelection"
 command = "runCommands"
 args.commands = ["cursorRight", "editor.action.clipboardPasteAction"]
+
+[[bind]]
+path = "edit.action.clipboard"
+key = "ctrl+p"
+name = "paste in"
+combinedName = "paste before/after/in"
+description = "Paste clipboard at location"
+command = "editor.action.clipboardPasteAction"
 
 [[bind]]
 path = "edit.action.clipboard"
@@ -2383,28 +2377,6 @@ command = "editor.emmet.action.decrementNumberByOne"
 
 [[bind]]
 path = "edit.action.do"
-name = "activate"
-combinedName = "activate / activate tests"
-combinedDescription = "Activate the julia project / julia tests associated with the current file in the active REPL"
-combinedKey = "a/t"
-description = "Activate the julia project associated with the current file in the active REPL"
-key = "space a"
-when = "editorLangId == 'julia'"
-command = "terminal-polyglot.send-command"
-args.cmd = "activate_from(\"%file%\")"
-
-[[bind]]
-path = "edit.action.do"
-name = "activate tests"
-description = "Activate the julia project test environment associated with the current file in the active REPL"
-key = "space t"
-combinedName = "activate / activate tests"
-when = "editorLangId == 'julia'"
-command = "terminal-polyglot.send-command"
-args.cmd = "\nbegin; activate_from(\"%file%\"); using TestEnv; TestEnv.activate(); end"
-
-[[bind]]
-path = "edit.action.do"
 name = 'nb cell'
 description = "Actions related to notebook cells"
 key = "space c"
@@ -2568,119 +2540,14 @@ show command suggestions within the context of the current mode and keybinding p
 command = "master-key.commandPalette"
 
 [[bind]]
-path = "edit.action"
-name = "to repl"
-description = """
-send text to a terminal (usually containing a REPL); use language
-specific extensions when available and put the pasted code into a block (when defined).
-"""
-key = "["
-when = "editorLangId == 'julia' && !editorHasSelection && count >= 1"
-command = "runCommands"
-args.commands = [
-      { defined = "selectLinesDown" },
-      "expandLineSelection", "selection-utilities.trimSelectionWhitespace",
-      "language-julia.executeCodeBlockOrSelectionAndMove",
-      "cursorUndo"
-]
-
-[[bind]]
-path = "edit.action"
-key = "["
-when = "editorLangId == 'julia' && !editorHasSelection && !count"
-command = "runCommands"
-args.commands = [
-      "expandLineSelection", "selection-utilities.trimSelectionWhitespace",
-      "language-julia.executeCodeBlockOrSelectionAndMove",
-      "cursorUndo"
-]
-
-[[bind]]
-path = "edit.action"
-key = "enter"
-when = "editorLangId == 'julia' && editorHasSelection"
-command = "runCommands"
-args.commands = ["selection-utilities.trimSelectionWhitespace",
-        "language-julia.executeCodeBlockOrSelectionAndMove",
-        "cursorUndo"]
-
-[[bind]]
-path = "edit.action"
-key = "enter"
-when = "editorLangId != 'julia' && !(master-key.firstSelectionOrWord =~ /\\n/)"
-command = "runCommands"
-args.commands = ["terminal-polyglot.send-text",
-        "selection-utilities.shrinkToActive"]
-
-[[bind]]
-path = "edit.action"
-name = "repl"
-key = "enter"
-when = "editorLangId != 'julia' && master-key.firstSelectionOrWord =~ /\\n/"
-command = "runCommands"
-args.commands = ["terminal-polyglot.send-block-text",
-      "selection-utilities.shrinkToActive"]
-
-[[bind]]
-path = "edit.action"
-key = "shift+enter"
-name = "to repl (v2)"
-combinedName = "to repl v2 (v3)"
-description = """
-send text to a terminal (usually containing a REPL), placing in a block when defined.
-"""
-combinedDescription = """
-send text to a terminal (usually containing a REPL); v2 places the code in a block when defined (v3 does not).
-"""
-combinedKey = "tab / shift+enter"
-command = "runCommands"
-args.commands = ["terminal-polyglot.send-block-text", "selection-utilities.shrinkToActive"]
-
-[[bind]]
-path = "edit.action"
-key = "tab enter"
-name = "to repl (v3)"
-combinedName = "to repl v2 (v3)"
-description = """
-send text to a terminal (usually containing a REPL)
-"""
-command = "runCommands"
-args.commands = ["terminal-polyglot.send-text", "selection-utilities.shrinkToActive"]
-
-[[bind]]
-path = "edit.action"
-name = "open terminal"
-key = "]"
-when = "master-key.count"
-command = "terminal-polyglot.open-terminal-N"
-computedArgs.index = "count"
-args.focus = false
-
-[[bind]]
-path = "edit.action"
-name = "open terminal"
-key = "]"
-when = "!master-key.count"
-command = "terminal-polyglot.open-terminal"
-computedArgs.index = "count"
-args.focus = false
-
-[[bind]]
-path = "edit.action"
-name = "run in terminal"
-key = "tab shift+r"
-command = "terminal-polyglot.run"
-args.focus = false
-
-[[bind]]
-path = "edit.util"
+path = "util"
 name = "git..."
 description = "git commands"
 key = "tab g"
 command = "master-key.prefix"
 
 [[bind]]
-path = "edit.util"
+path = "util"
 name = "pull"
 combinedName = "push/pull"
 description = "pull changes from remote"
@@ -2690,14 +2557,14 @@ key = "tab g p"
 command = "git.pull"
 
 [[bind]]
-path = "edit.util"
+path = "util"
 name = "push"
 description = "push changes to remote"
 key = "tab g shift+p"
 command = "git.push"
 
 [[bind]]
-path = "edit.util"
+path = "util"
 name = "checkout"
 combinedName = "commit/checkout"
 description = "commit changes"
@@ -2707,7 +2574,7 @@ key = "tab g c"
 command = "git.commit"
 
 [[bind]]
-path = "edit.util"
+path = "util"
 name = "checkout"
 combinedName = "commit/checkout"
 description = "checkout changes"
@@ -2715,21 +2582,21 @@ key = "tab g shift+c"
 command = "git.checkout"
 
 [[bind]]
-path = "edit.util"
+path = "util"
 name = "revert range"
 description = "revert unstaged changes in selected range"
 key = "tab g r"
 command = "git.revertSelectedRanges"
 
 [[bind]]
-path = "edit.util"
+path = "util"
 name = "revert range"
 description = "revert unstaged changes in selected range"
 key = "tab g s"
 command = "git.stageSelectedRanges"
 
 [[bind]]
-path = "edit.util"
+path = "util"
 name = "commands..."
 description = "show GitLens command palette for git"
 key = "tab g g"
@@ -2740,26 +2607,27 @@ command = "gitlens.gitCommands"
 # These miscellaneous utility commands are all organized uner the prefix `tab`.
 
 [[path]]
-id = "edit.util"
+id = "util"
 name = "assorted misecellaneous commands"
 default.kind = "util"
+when = "editorTextFocus && !findWidgetVisible"
 
 [[bind]]
-path = "edit.util"
+path = "util"
 name = "utility"
 key = "tab"
 description = "utility related commands: file opening, window manipulation, debugging etc..."
 command = "master-key.prefix"
 
 [[bind]]
-path = "edit.util"
+path = "util"
 name = "open recent"
 description = "Open recent file"
 key = "tab r"
 command = "workbench.action.openRecent"
 
 [[bind]]
-path = "edit.util"
+path = "util"
 name = "hover"
 description = "show the hover view"
 combinedName = "(debug) hover"
@@ -2769,7 +2637,7 @@ key = "tab h"
 command = "editor.action.showHover"
 
 [[bind]]
-path = "edit.util"
+path = "util"
 name = "debug hover"
 combinedName = "(debug) hover"
 description = "show the debug hover view"
@@ -2777,7 +2645,7 @@ key = "tab shift+h"
 command = "editor.debug.action.showDebugHover"
 
 [[bind]]
-path = "edit.util"
+path = "util"
 name = "add mark"
 combinedName = "add mark / mark..."
 description = "toggle bookmark at given line"
@@ -2789,7 +2657,7 @@ combinedKey = "shift+m / m"
 command = "vsc-labeled-bookmarks.toggleBookmark"
 
 [[bind]]
-path = "edit.util"
+path = "util"
 name = "mark"
 combinedName = "add mark / mark..."
 description = "bookmark related commands"
@@ -2797,7 +2665,7 @@ key = "tab m"
 command = "master-key.prefix"
 
 [[bind]]
-path = "edit.util"
+path = "util"
 name = "mark ↓"
 description = "move to next bookmark"
 combinedName = "mark ↓/↑"
@@ -2808,14 +2676,14 @@ when = "!master-key.select_on && !editorHasSelection"
 command = "vsc-labeled-bookmarks.navigateToNextBookmark"
 
 [[bind]]
-path = "edit.util"
+path = "util"
 combinedName = "mark ↓/↑"
 key = "tab m j"
 when = "master-key.select_on || editorHasSelection"
 command = "vsc-labeled-bookmarks.expandSelectionToNextBookmark"
 
 [[bind]]
-path = "edit.util"
+path = "util"
 name = "mark ↑"
 combinedName = "mark ↓/↑"
 description = "move to previous bookmark"
@@ -2824,7 +2692,7 @@ when = "!master-key.select_on && !editorHasSelection"
 command = "vsc-labeled-bookmarks.navigateToPreviousBookmark"
 
 [[bind]]
-path = "edit.util"
+path = "util"
 name = "mark ↑"
 combinedName = "mark ↓/↑"
 description = "move to previous bookmark"
@@ -2835,21 +2703,21 @@ args.commands = ["vsc-labeled-bookmarks.expandSelectionToPreviousBookmark",
       "selection-utilities.activeAtStart"]
 
 [[bind]]
-path = "edit.util"
+path = "util"
 name = "remove mark"
 description = "remove bookmark (use quick selection)"
 key = "tab m d"
 command = "vsc-labeled-bookmarks.deleteBookmark"
 
 [[bind]]
-path = "edit.util"
+path = "util"
 name = "nav marks"
 description = "reveal quick selection to move to a bookmark"
 key = "tab m t"
 command = "vsc-labeled-bookmarks.navigateToBookmark"
 
 [[bind]]
-path = "edit.util"
+path = "util"
 name = "error →"
 combinedName = "error →/←"
 combinedDescription = "move to next/previous error"
@@ -2936,21 +2804,21 @@ args.at = "center"
 when = "editorTextFocus"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "window"
 description = "window/editor pane manipulation-related commands"
 key = "tab w"
 command = "master-key.prefix"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "vert/horz"
 key = "tab w r"
 description = "Toggle between horizontal and vertical layouts"
 command = "workbench.action.toggleEditorGroupLayout"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "next window"
 combinedName = "next/previous window"
 description = "move to next window"
@@ -2960,7 +2828,7 @@ combinedKey = "]/["
 command = "workbench.action.focusNextGroup"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "prev window"
 combinedName = "next/previous window"
 description = "move to previous window"
@@ -2968,7 +2836,7 @@ key = "tab ["
 command = "workbench.action.focusPreviousGroup"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "move →"
 combinedName = "move →/←"
 combinedDescription = "move editor to window left/right"
@@ -2978,7 +2846,7 @@ key = "tab w l"
 command = "workbench.action.moveEditorToRightGroup"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "←"
 combinedName = "move →/←"
 description = "move editor to window to left"
@@ -2986,7 +2854,7 @@ key = "tab w h"
 command = "workbench.action.moveEditorToLeftGroup"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "↓"
 combinedName = "move ↓/↑"
 combinedDescription = "move editor to window above/below"
@@ -2996,7 +2864,7 @@ key = "tab w j"
 command = "workbench.action.moveEditorToBelowGroup"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "↑"
 combinedName = "move ↓/↑"
 description = "move editor to window above"
@@ -3004,14 +2872,14 @@ key = "tab w k"
 command = "workbench.action.moveEditorToAboveGroup"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "split editor..."
 description = "split editor to in a given direction"
 key = "tab w s"
 command = "master-key.prefix"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "move →"
 combinedName = "split →/←"
 combinedDescription = "move editor to window left/right"
@@ -3021,7 +2889,7 @@ key = "tab w s l"
 command = "workbench.action.splitEditorRight"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "←"
 combinedName = "split →/←"
 description = "split editor to window to left"
@@ -3029,7 +2897,7 @@ key = "tab w s h"
 command = "workbench.action.splitEditorLeft"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "↓"
 combinedName = "split ↓/↑"
 combinedDescription = "split editor to window above/below"
@@ -3039,7 +2907,7 @@ key = "tab w s j"
 command = "workbench.action.splitEditorDown"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "↑"
 combinedName = "split ↓/↑"
 combinedDescription = "split editor to window above/below"
@@ -3049,28 +2917,28 @@ key = "tab w s k"
 command = "workbench.action.splitEditorUp"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "close pane"
 description = "close the given group of editors"
 key = "tab w x"
 command = "workbench.action.closeEditorsInGroup"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "max"
 description = "minimize size of all other windows"
 key = "tab w shift+m"
 command = "workbench.action.minimizeOtherEditors"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "equal"
 description = "equalize size of all windows"
 key = "tab w ="
 command = "workbench.action.evenEditorWidths"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "curs. win top"
 description = "center window so that primary cursor is at the top"
 key = "tab k"
@@ -3081,7 +2949,7 @@ command = "selection-utilities.revealActive"
 args.at = "top"
 
 [[bind]]
-path = "edit.util"
+path = "window"
 name = "curs. win bot"
 combinedName = "center window top/bottom"
 description = "center window so that primary cursor is at the bottom"
@@ -3094,7 +2962,7 @@ args.at = "bottom"
 # Commands for interacting with VSCode's debugger UI.
 
 [[bind]]
-path = "edit.util"
+path = "util"
 name = "breakpt."
 combinedName = "breakpt / debug..."
 combinedKey = "shift+b/b"
@@ -3104,7 +2972,7 @@ key = "tab shift+b"
 command = "editor.debug.action.toggleBreakpoint"
 
 [[bind]]
-path = "edit.util"
+path = "util"
 name = "debug..."
 combinedName = "breakpt / debug..."
 description = "assorted debugging actions"
@@ -3112,7 +2980,7 @@ key = "tab b"
 command = "master-key.prefix"
 
 [[bind]]
-path = "edit.util"
+path = "util"
 name = "cond. break"
 description = "conditional breakpoint"
 key = "tab b shift+c"
@@ -3120,35 +2988,35 @@ command = "editor.debug.action.conditionalBreakpoint"
 
 
 [[bind]]
-path = "edit.util"
+path = "util"
 name = "start"
 description = "start debugging"
 key = "tab b r"
 command = "workbench.action.debug.start"
 
 [[bind]]
-path = "edit.util"
+path = "util"
 name = "continue"
 description = "continue debugging"
 key = "tab b c"
 command = "workbench.action.debug.continue"
 
 [[bind]]
-path = "edit.util"
+path = "util"
 name = "next"
 description = "debug: step over next line"
 key = "tab b j"
 command = "workbench.action.debug.stepOver"
 
 [[bind]]
-path = "edit.util"
+path = "util"
 name = "into"
 description = "debug: step into next line"
 key = "tab b i"
 command = "workbench.action.debug.stepInto"
 
 [[bind]]
-path = "edit.util"
+path = "util"
 name = "out"
 description = "debug: step out"
 key = "tab b o"

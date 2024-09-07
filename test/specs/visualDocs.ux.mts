@@ -2,11 +2,12 @@
 
 import '@wdio/globals';
 import 'wdio-vscode-service';
-import { enterModalKeys, setBindings, setupEditor, storeCoverageStats } from './utils.mts';
-import { sleep, TextEditor, WebView, Workbench } from 'wdio-vscode-service';
-import "webdriverio";
+import {enterModalKeys, setBindings, setupEditor, storeCoverageStats} from './utils.mts';
+import {sleep, TextEditor, WebView, Workbench} from 'wdio-vscode-service';
+import 'webdriverio';
 
 describe('Visual Docs', () => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     let editor: TextEditor;
     let workbench: Workbench;
     let docView: WebView;
@@ -100,20 +101,20 @@ describe('Visual Docs', () => {
 
             # Final paragraph shows up.
         `);
-        editor = await setupEditor(`A simple test`);
+        editor = await setupEditor('A simple test');
         workbench = await browser.getWorkbench();
         await sleep(500);
 
-        await workbench.executeCommand("Master Key: Show Visual Documentation")
+        await workbench.executeCommand('Master Key: Show Visual Documentation');
         await enterModalKeys('escape');
 
-        await browser.waitUntil(async () => (await workbench.getAllWebviews()).length > 0)
+        await browser.waitUntil(async () => (await workbench.getAllWebviews()).length > 0);
         const webviews = await workbench.getAllWebviews();
         expect(webviews).toHaveLength(1);
         docView = await webviews[0].wait();
     });
 
-    it('Label Keys', async() => {
+    it('Label Keys', async () => {
         await docView.open();
         expect(await browser.$('div#master-key-visual-doc')).toExist();
 
@@ -121,34 +122,34 @@ describe('Visual Docs', () => {
         expect(hLabel).toHaveText('H');
         const hName = (await hLabel.parentElement()).$('div.name.bottom');
         expect(hName).toHaveText('left');
-        const hClasses = await hName.getAttribute('class')
-        expect(hClasses).toMatch('kind-color-0')
+        const hClasses = await hName.getAttribute('class');
+        expect(hClasses).toMatch('kind-color-0');
 
         const jLabel = await browser.$('div.keyboard').$('div=J');
         expect(jLabel).toHaveText('J');
         const jName = (await jLabel.parentElement()).$('div.name.bottom');
         expect(jName).toHaveText('down');
-        const jClasses = await jName.getAttribute('class')
-        expect(jClasses).toMatch('kind-color-0')
+        const jClasses = await jName.getAttribute('class');
+        expect(jClasses).toMatch('kind-color-0');
 
         const kLabel = await browser.$('div.keyboard').$('div=K');
         expect(kLabel).toHaveText('K');
         const kName = (await kLabel.parentElement()).$('div.name.bottom');
         expect(kName).toHaveText('up');
-        const kClasses = await kName.getAttribute('class')
-        expect(kClasses).toMatch('kind-color-1')
+        const kClasses = await kName.getAttribute('class');
+        expect(kClasses).toMatch('kind-color-1');
 
         const lLabel = await browser.$('div.keyboard').$('div=L');
         expect(lLabel).toHaveText('L');
         const lName = (await lLabel.parentElement()).$('div.name.bottom');
         expect(lName).toHaveText('right');
-        const lClasses = await lName.getAttribute('class')
-        expect(lClasses).toMatch('kind-color-1')
+        const lClasses = await lName.getAttribute('class');
+        expect(lClasses).toMatch('kind-color-1');
 
         await docView.close();
     });
 
-    it('Update with prefix', async() => {
+    it('Update with prefix', async () => {
         await enterModalKeys({key: 'w', updatesStatus: false});
         await docView.open();
 
@@ -156,7 +157,7 @@ describe('Visual Docs', () => {
             const hLabel = browser.$('div.keyboard').$('div=H');
             const hName = (await hLabel.parentElement()).$('div.name.bottom');
             return (await hName.getText()) !== 'left';
-        })
+        });
         expect(disappeared).toBeTruthy();
 
         const wLabel = await browser.$('div.keyboard').$('div=W');
