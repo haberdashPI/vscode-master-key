@@ -82,6 +82,7 @@ describe('Configuration Editing', () => {
                 key = "ctrl+h"
                 command = "baz"
             `);
+            await sleep(500);
             const startText = await bindingEditor.getText();
             console.log('[DEBUG]: initial keybinding text - '+startText);
 
