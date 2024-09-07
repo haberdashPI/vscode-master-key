@@ -2,9 +2,9 @@
 
 import '@wdio/globals';
 import 'wdio-vscode-service';
-import { enterModalKeys, setBindings, setupEditor, movesCursorInEditor, storeCoverageStats } from './utils.mts';
-import { InputBox, sleep, TextEditor, Workbench } from 'wdio-vscode-service';
-import { Key } from "webdriverio";
+import {enterModalKeys, setBindings, setupEditor, storeCoverageStats} from './utils.mts';
+import {InputBox, sleep, TextEditor, Workbench} from 'wdio-vscode-service';
+import {Key} from 'webdriverio';
 
 describe('Palette', () => {
     let editor: TextEditor;
@@ -97,28 +97,28 @@ describe('Palette', () => {
             mode = "normal"
             command = "master-key.togglePaletteDelay"
         `);
-        editor = await setupEditor(`A simple test`);
+        editor = await setupEditor('A simple test');
         workbench = await browser.getWorkbench();
     });
 
-    it('Shows All Bindings', async() => {
+    it('Shows All Bindings', async () => {
         await browser.keys(Key.Escape);
         await editor.moveCursor(1, 1);
 
         await enterModalKeys({key: ['shift', ';'], updatesStatus: false});
-        const input = await (new InputBox(workbench.locatorMap)).wait();
+        const input = await new InputBox(workbench.locatorMap).wait();
         const picks = await input.getQuickPicks();
-        expect(picks).toHaveLength(7)
-        expect(await picks[0].getLabel()).toEqual("H");
-        expect(await picks[0].getDescription()).toEqual("left");
-        expect(await picks[1].getLabel()).toEqual("L");
-        expect(await picks[1].getDescription()).toEqual("right");
-        expect(await picks[2].getLabel()).toEqual("J");
-        expect(await picks[2].getDescription()).toEqual("down");
-        expect(await picks[3].getLabel()).toEqual("K");
-        expect(await picks[3].getDescription()).toEqual("up");
-        expect(await picks[4].getLabel()).toEqual("I");
-        expect(await picks[4].getDescription()).toEqual("insert mode");
+        expect(picks).toHaveLength(7);
+        expect(await picks[0].getLabel()).toEqual('H');
+        expect(await picks[0].getDescription()).toEqual('left');
+        expect(await picks[1].getLabel()).toEqual('L');
+        expect(await picks[1].getDescription()).toEqual('right');
+        expect(await picks[2].getLabel()).toEqual('J');
+        expect(await picks[2].getDescription()).toEqual('down');
+        expect(await picks[3].getLabel()).toEqual('K');
+        expect(await picks[3].getDescription()).toEqual('up');
+        expect(await picks[4].getLabel()).toEqual('I');
+        expect(await picks[4].getDescription()).toEqual('insert mode');
         await enterModalKeys('i');
     });
 
@@ -129,7 +129,7 @@ describe('Palette', () => {
         await enterModalKeys({key: 'w', updatesStatus: false});
         await sleep(1500); // give time for palette to show up
 
-        const input = await (new InputBox(workbench.locatorMap)).wait();
+        const input = await new InputBox(workbench.locatorMap).wait();
         const picks = await input.getQuickPicks();
         expect(picks).toHaveLength(1);
 
@@ -199,16 +199,16 @@ describe('Palette', () => {
         await sleep(1000);
 
         await enterModalKeys({key: ['shift', ';'], updatesStatus: false});
-        const input = await (new InputBox(workbench.locatorMap)).wait();
+        const input = await new InputBox(workbench.locatorMap).wait();
         const picks = await input.getQuickPicks();
         expect(picks).toHaveLength(3);
-        expect(await picks[0].getLabel()).toEqual("J");
-        expect(await picks[0].getDescription()).toEqual("down");
-        expect(await picks[1].getLabel()).toEqual("K");
-        expect(await picks[1].getDescription()).toEqual("up");
-        expect(await picks[2].getLabel()).toEqual("I");
-        expect(await picks[2].getDescription()).toEqual("insert mode");
-    })
+        expect(await picks[0].getLabel()).toEqual('J');
+        expect(await picks[0].getDescription()).toEqual('down');
+        expect(await picks[1].getLabel()).toEqual('K');
+        expect(await picks[1].getDescription()).toEqual('up');
+        expect(await picks[2].getLabel()).toEqual('I');
+        expect(await picks[2].getDescription()).toEqual('insert mode');
+    });
 
     // NOTE: it would be ideal if we could also test how the palette interacts with typing
     // when there is a delay set, and in the two distinct modes (searching or keybinding).

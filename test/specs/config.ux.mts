@@ -2,14 +2,20 @@
 
 import '@wdio/globals';
 import 'wdio-vscode-service';
-import { enterModalKeys, setBindings, setupEditor, movesCursorInEditor, waitForMode, storeCoverageStats, setFileDialogText } from './utils.mts';
-import { EditorView, InputBox, StatusBar, TextEditor } from 'wdio-vscode-service';
+import {
+    enterModalKeys,
+    setBindings,
+    setupEditor,
+    movesCursorInEditor,
+    waitForMode,
+    storeCoverageStats,
+    setFileDialogText,
+} from './utils.mts';
+import {InputBox, StatusBar, TextEditor} from 'wdio-vscode-service';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { sleep } from 'wdio-vscode-service';
-import { Key } from 'webdriverio';
-
+import {sleep} from 'wdio-vscode-service';
 
 describe('Configuration', () => {
     let editor: TextEditor;
@@ -73,7 +79,6 @@ describe('Configuration', () => {
         args.to = "left"
         `;
 
-
         const b_text = `
         [header]
         version = "1.0"
@@ -84,7 +89,7 @@ describe('Configuration', () => {
         key = "ctrl+h"
         command = "cursorMove"
         args.to = "right"
-        `
+        `;
 
         const c_text = `
         [header]
@@ -105,17 +110,17 @@ describe('Configuration', () => {
         fs.mkdirSync(path.join(folder, 'others'));
         fs.writeFileSync(path.join(folder, 'a.toml'), a_text);
         fs.writeFileSync(path.join(folder, 'b.toml'), b_text);
-        fs.writeFileSync(path.join(folder, 'others', 'c.toml'), c_text)
+        fs.writeFileSync(path.join(folder, 'others', 'c.toml'), c_text);
     });
 
-    it('Can make normal mode the default', async() => {
+    it('Can make normal mode the default', async () => {
         const workbench = await browser.getWorkbench();
-        const statusBar = await (new StatusBar(workbench.locatorMap));
+        const statusBar = await new StatusBar(workbench.locatorMap);
         const modeItem = await statusBar.getItem('Keybinding Mode: normal');
         expect(modeItem).toBeTruthy();
 
         await enterModalKeys(['ctrl', 'i']);
-        editor = await setupEditor(`A simple test`);
+        editor = await setupEditor('A simple test');
         await enterModalKeys('escape');
         await movesCursorInEditor(() => enterModalKeys(['ctrl', 'l']), [0, 1], editor);
     });
@@ -130,7 +135,7 @@ describe('Configuration', () => {
         expect(statusBarClasses).toMatch(/warning-kind/);
     });
 
-    it('Can allow switch to insert mode', async() => {
+    it('Can allow switch to insert mode', async () => {
         await editor.moveCursor(1, 1);
         await enterModalKeys(['ctrl', 'i']);
         await waitForMode('insert');
@@ -149,8 +154,8 @@ describe('Configuration', () => {
     });
 
     it('Can be loaded from a directory', async () => {
-        if(!editor){
-            editor = await setupEditor(`A simple test`);
+        if (!editor) {
+            editor = await setupEditor('A simple test');
         }
 
         const workbench = await browser.getWorkbench();
@@ -159,12 +164,12 @@ describe('Configuration', () => {
         await input.setText('Directory...');
         await input.confirm();
 
-        await setFileDialogText(folder+"/");
-        const bindingInput = await (new InputBox(workbench.locatorMap)).wait();
+        await setFileDialogText(folder + '/');
+        const bindingInput = await new InputBox(workbench.locatorMap).wait();
         const items = await bindingInput.getQuickPicks();
 
         const labels = [];
-        for(const it of items){
+        for (const it of items) {
             labels.push(await it.getLabel());
         }
         expect(labels).toContain('A bindings');
@@ -172,8 +177,8 @@ describe('Configuration', () => {
     });
 
     it('Properly labels duplicate entries', async () => {
-        if(!editor){
-            editor = await setupEditor(`A simple test`);
+        if (!editor) {
+            editor = await setupEditor('A simple test');
         }
 
         const workbench = await browser.getWorkbench();
@@ -182,12 +187,12 @@ describe('Configuration', () => {
         await input.setText('Directory...');
         await input.confirm();
 
-        await setFileDialogText(path.join(folder, "others"));
-        const bindingInput = await (new InputBox(workbench.locatorMap)).wait();
+        await setFileDialogText(path.join(folder, 'others'));
+        const bindingInput = await new InputBox(workbench.locatorMap).wait();
         const items = await bindingInput.getQuickPicks();
 
         const labels = [];
-        for(const it of items){
+        for (const it of items) {
             labels.push(await it.getLabel());
         }
         expect(labels).toContain('A bindings (1)');
@@ -196,7 +201,7 @@ describe('Configuration', () => {
     });
 
     it('Can load from a file', async () => {
-        editor = await setupEditor(`A simple test`);
+        editor = await setupEditor('A simple test');
         await editor.moveCursor(1, 1);
 
         const workbench = await browser.getWorkbench();
@@ -206,13 +211,13 @@ describe('Configuration', () => {
         await input.confirm();
 
         await setFileDialogText(path.join(folder, 'a.toml'));
-        const statusBar = await (new StatusBar(workbench.locatorMap));
+        const statusBar = await new StatusBar(workbench.locatorMap);
         const modeItem = await statusBar.getItem('Keybinding Mode: abind');
         expect(modeItem).toBeTruthy();
     });
 
     it('Can add user bindings', async () => {
-        editor = await setupEditor(`A simple test`);
+        editor = await setupEditor('A simple test');
         const userFile = `
             [[bind]]
             name = "right"
@@ -229,13 +234,17 @@ describe('Configuration', () => {
         await editor.moveCursor(1, 1);
         await sleep(200);
 
-        await movesCursorInEditor(async () => {
-            await enterModalKeys(['ctrl', 'shift', 'k']);
-        }, [0, 1], editor);
+        await movesCursorInEditor(
+            async () => {
+                await enterModalKeys(['ctrl', 'shift', 'k']);
+            },
+            [0, 1],
+            editor
+        );
     });
 
     it('Can be removed', async () => {
-        editor = await setupEditor(`A simple test`);
+        editor = await setupEditor('A simple test');
         const workbench = await browser.getWorkbench();
         await workbench.executeCommand('Clear Command History');
         await workbench.executeCommand('Master Key: Remove Keybindings');
@@ -251,7 +260,7 @@ describe('Configuration', () => {
     });
 
     it('Can prevent user binding update absent a preset', async () => {
-        editor = await setupEditor(`A simple test`);
+        editor = await setupEditor('A simple test');
 
         // NOTE: this is here so that when `only` or `skip` prevents the test above from
         // running, we know the configuration is in the correct state anyways (under a full
@@ -272,11 +281,12 @@ describe('Configuration', () => {
         await workbench.executeCommand('Master Key: Activate User Keybindings');
         await setFileDialogText(path.join(folder, 'user.toml'));
 
-        let notifs = await workbench.getNotifications();
-        let messages = await Promise.all(notifs.map(n => n.getMessage()));
-        let error = 'User bindings have not been activated ' +
+        const notifs = await workbench.getNotifications();
+        const messages = await Promise.all(notifs.map(n => n.getMessage()));
+        const error =
+            'User bindings have not been activated ' +
             'because you have no preset keybindings. Call `Master Key: `' +
-            'Activate Keybindings` to add a preset.'
+            'Activate Keybindings` to add a preset.';
 
         expect(messages).toContainEqual(error);
     });

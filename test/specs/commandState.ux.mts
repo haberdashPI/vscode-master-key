@@ -1,10 +1,15 @@
 // start with just some basic tests to verify all is well
 
-import { browser, expect } from '@wdio/globals';
-import { setBindings, setupEditor, movesCursorInEditor, enterModalKeys, storeCoverageStats } from './utils.mts';
+import {browser, expect} from '@wdio/globals';
+import {
+    setBindings,
+    setupEditor,
+    movesCursorInEditor,
+    enterModalKeys,
+    storeCoverageStats,
+} from './utils.mts';
 import 'wdio-vscode-service';
-import { sleep, TextEditor } from 'wdio-vscode-service';
-import { Key } from "webdriverio";
+import {TextEditor} from 'wdio-vscode-service';
 
 describe('Command State', () => {
     let editor: TextEditor;
@@ -90,53 +95,73 @@ describe('Command State', () => {
             when = "master-key.select_on"
             command = "cursorWordLeftSelect"
         `);
-        editor = await setupEditor(`This is a short, simple sentence`);
+        editor = await setupEditor('This is a short, simple sentence');
     });
 
     it('Handles Automated Prefixes', async () => {
         await editor.moveCursor(1, 1);
 
-        await movesCursorInEditor(async () => {
-            await enterModalKeys(['ctrl', 'h'], ['shift', 'ctrl', "1"]);
-        }, [0, 1], editor);
+        await movesCursorInEditor(
+            async () => {
+                await enterModalKeys(['ctrl', 'h'], ['shift', 'ctrl', '1']);
+            },
+            [0, 1],
+            editor
+        );
     });
 
-    it("Handles Flagged Prefixs", async function(){
+    it('Handles Flagged Prefixs', async () => {
         await editor.moveCursor(1, 1);
 
-        await movesCursorInEditor(async () => {
-            await enterModalKeys(['ctrl', 'shift', 'w']);
-        }, [0, 4], editor);
+        await movesCursorInEditor(
+            async () => {
+                await enterModalKeys(['ctrl', 'shift', 'w']);
+            },
+            [0, 4],
+            editor
+        );
 
         await enterModalKeys(['ctrl', 'l'], ['ctrl', 'shift', 'w']);
-        expect(await editor.getSelectedText()).toEqual(" is");
+        expect(await editor.getSelectedText()).toEqual(' is');
     });
 
-    it('Resets state on error',async () => {
+    it('Resets state on error', async () => {
         await editor.moveCursor(1, 1);
 
         await enterModalKeys(['ctrl', 'h'], ['ctrl', 'shift', 'w']);
         const workbench = await browser.getWorkbench();
         const notifs = await workbench.getNotifications();
-        let messages = await Promise.all(notifs.map(n => n.getMessage()));
+        const messages = await Promise.all(notifs.map(n => n.getMessage()));
         expect(messages).toContainEqual("command 'notACommand' not found");
 
-        await movesCursorInEditor(async () => {
-            await enterModalKeys(['ctrl','h'], ['shift', 'ctrl', '1']);
-        }, [0, 1], editor);
+        await movesCursorInEditor(
+            async () => {
+                await enterModalKeys(['ctrl', 'h'], ['shift', 'ctrl', '1']);
+            },
+            [0, 1],
+            editor
+        );
     });
 
-    it("Allows key mode to changes commands", async () => {
+    it('Allows key mode to changes commands', async () => {
         await editor.moveCursor(1, 6);
         await enterModalKeys(['ctrl', 'shift', 'l']);
 
-        await movesCursorInEditor(async () => {
-            await enterModalKeys(['ctrl','h'], ['shift', 'ctrl', '1']);
-        }, [0, -1], editor);
+        await movesCursorInEditor(
+            async () => {
+                await enterModalKeys(['ctrl', 'h'], ['shift', 'ctrl', '1']);
+            },
+            [0, -1],
+            editor
+        );
 
-        await movesCursorInEditor(async () => {
-            await enterModalKeys(['ctrl', 'shift', 'w']);
-        }, [0, -4], editor);
+        await movesCursorInEditor(
+            async () => {
+                await enterModalKeys(['ctrl', 'shift', 'w']);
+            },
+            [0, -4],
+            editor
+        );
 
         await editor.moveCursor(1, 5);
         await enterModalKeys(['ctrl', 'l'], ['ctrl', 'shift', 'w']);

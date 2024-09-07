@@ -18,7 +18,9 @@ release 0.2.6
     + copy user config into file
 
 - get all tests to run on CI
-- fix linting for tests
++ fix linting for tests
+- take any flakey BS in tests and move them to utils.ux.mts; to make tests easy to read
+and make it easier to make new tests
 
 Binding changes in Larkin:
 + maybe avoid need to use cmd-v so much
