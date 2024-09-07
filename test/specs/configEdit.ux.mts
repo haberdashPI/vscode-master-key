@@ -2,12 +2,12 @@
 
 import '@wdio/globals';
 import 'wdio-vscode-service';
-import { setBindings, setupEditor, storeCoverageStats } from './utils.mts';
-import { TextEditor } from 'wdio-vscode-service';
-import { sleep } from 'wdio-vscode-service';
-
+import {setBindings, setupEditor, storeCoverageStats} from './utils.mts';
+import {TextEditor} from 'wdio-vscode-service';
+import {sleep} from 'wdio-vscode-service';
 
 describe('Configuration Editing', () => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     let editor: TextEditor;
 
     it('Can create editable copy', async () => {
@@ -16,22 +16,25 @@ describe('Configuration Editing', () => {
         await input.setText('Larkin');
         await input.confirm();
 
-        let notifications = await workbench.getNotifications();
-        for(let note of notifications){
+        const notifications = await workbench.getNotifications();
+        for (const note of notifications) {
             await note.dismiss();
         }
 
         const editorView = await workbench.getEditorView();
-        const title = await browser.waitUntil(async () => {
-            let tab = await editorView.getActiveTab();
-            const title = await tab?.getTitle();
-            if(title && title.match(/Untitled/)){
-                tab?.select();
-                return title;
-            }
-            return;
-        }, { interval: 1000, timeout: 10000 });
-        const copyEditor = await editorView.openEditor('Untitled-1') as TextEditor;
+        const title = await browser.waitUntil(
+            async () => {
+                const tab = await editorView.getActiveTab();
+                const title = await tab?.getTitle();
+                if (title && title.match(/Untitled/)) {
+                    tab?.select();
+                    return title;
+                }
+                return;
+            },
+            {interval: 1000, timeout: 10000}
+        );
+        const copyEditor = (await editorView.openEditor(title!)) as TextEditor;
 
         copyEditor.moveCursor(1, 1);
 
@@ -39,17 +42,17 @@ describe('Configuration Editing', () => {
         expect(copyEditorText).toMatch(/name = "Larkin Key Bindings"/);
     });
 
+    // eslint-disable-next-line no-restricted-properties
     it.only('Can copy user config', async () => {
         const workbench = await browser.getWorkbench();
         await browser.executeWorkbench(vscode => {
             vscode.commands.executeCommand('workbench.action.openGlobalKeybindingsFile');
         });
 
-
         // NOTE: this doesn't work *UNLESS* there are bindings available
         // (since we need `keybindings.json` open)
         const editorView = await workbench.getEditorView();
-        const keyEditor = await editorView.openEditor("keybindings.json") as TextEditor;
+        const keyEditor = (await editorView.openEditor('keybindings.json')) as TextEditor;
 
         if (keyEditor) {
             keyEditor.setText(`[
@@ -61,7 +64,7 @@ describe('Configuration Editing', () => {
             await keyEditor.save();
             await sleep(200);
 
-            console.log('[DEBUG]: setting bindings')
+            console.log('[DEBUG]: setting bindings');
             await setBindings(`
                 [header]
                 version = "1.0"
@@ -74,7 +77,7 @@ describe('Configuration Editing', () => {
 
             await sleep(200);
 
-            console.log('[DEBUG]: creating new binding setup')
+            console.log('[DEBUG]: creating new binding setup');
             const bindingEditor = await setupEditor(`
                 [header]
                 version = "1.0"
@@ -86,12 +89,12 @@ describe('Configuration Editing', () => {
             `);
             await sleep(500);
             const startText = await bindingEditor.getText();
-            console.log('[DEBUG]: initial keybinding text - '+startText);
+            console.log('[DEBUG]: initial keybinding text - ' + startText);
 
             const workbench = await browser.getWorkbench();
-            let input = await workbench.executeCommand('Select Language Mode');
+            const input = await workbench.executeCommand('Select Language Mode');
             await sleep(100);
-            await input.setText("Markdown");
+            await input.setText('Markdown');
             await input.confirm();
 
             await workbench.executeCommand('Master Key: Import User Bindings');
