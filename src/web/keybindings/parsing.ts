@@ -212,7 +212,7 @@ export function parseWhen(when_: string | string[] | undefined): ParsedWhen[] {
         w = replaceAll(
             w,
             /editorTextFocus/g,
-            '(editorTextFocus || master-key.keybindingPaletteBindingMode)'
+            '(editorTextFocus || master-key.keybindingPaletteOpen && master-key.keybindingPaletteBindingMode)'
         );
         // let p = jsep(w);
         return {str: w, id: expressionId(w)};
