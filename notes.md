@@ -32,20 +32,15 @@ WHEN PUBLISHING: get this to work on both stores (the one from microsoft and the
 
 ## Stability / test coverage
 
+CLEANUP: there are lots of context values getting added that don't have to be; (could task
+to combine with updating how/where the `public` nature of editor state is specified)
+
 BUG: when using the extension with a remote machine the visual doc, or palette info doesn't show up (this is probably related to the issue about the docs not being updated when I first open; remote use could easily change the timing of things, revealing a race condition). What's weird about this is that the text docs *do* show up.
 
 SMALL FEATURE: allow `-` prefix on commands to bypass `do` wrapping and
 remove a binding (will need to validate that some fields are `undefined` in this case)
 
 SMALL BUG: should 'esc' really be appended in the status bar since it cancels a prefix sequence... 🤔
-
-SMALL BUG: I think there are issues when synching across machines and handling
-storage of the keybindings
-
-NEW TESTS: keybindings
-- tests for running various binding commands
-- tests for selecting bindings
-- tests for selecting extensions?
 
 NEW TEST: store/restore named commands
 
