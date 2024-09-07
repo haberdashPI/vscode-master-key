@@ -217,7 +217,7 @@ describe('Configuration', () => {
     });
 
     // eslint-disable-next-line no-restricted-properties
-    it.only('Can add user bindings', async () => {
+    it('Can add user bindings', async () => {
         editor = await setupEditor('A simple test');
         const userFile = `
             [[bind]]
