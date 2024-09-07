@@ -143,7 +143,7 @@ export async function setupEditor(str: string) {
     // show any notifications
     const notifs = await workbench.getNotifications();
     for (const note of notifs) {
-        console.log('[DEBUG]: message - ' + await note.getMessage());
+        console.log('[DEBUG]: message - ' + (await note.getMessage()));
     }
 
     expect(text).toEqual(str);
