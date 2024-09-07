@@ -47,10 +47,9 @@ export async function setBindings(str: string){
         if(notifs.length > 0){
             for(let not of notifs){
                 const m = await not.getMessage();
+                console.log("[UTIL]: notification message — "+m);
                 if(messagePattern.test(m)){
                     return m;
-                }else{
-                    console.log("[UTIL]: notification message — "+m);
                 }
             }
         }else{
@@ -125,10 +124,13 @@ export async function setupEditor(str: string, name: string='test'){
 
     // set the text
     // NOTE: setting editor text is somewhat flakey, so we verify that it worked
-    console.log("[DEBUG]: setting text to: "+str.slice(0, 50)+"...");
+    console.log("[DEBUG]: setting text to: "+str.slice(0, 200)+"...");
     await editor.setText(str);
     await sleep(300);
     await waitUntilCursorUnmoving(editor);
+    const text = await editor.getText();
+    console.log('[DEBUG]: actual text'+str.slice(0, 200)+"...");
+    expect(text).toEqual(str);
 
     // focus the editor
     console.log("[DEBUG]: Focusing editor");

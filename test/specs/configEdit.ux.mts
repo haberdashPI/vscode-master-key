@@ -72,6 +72,8 @@ describe('Configuration Editing', () => {
                 command = "bar"
             `);
 
+            await sleep(200);
+
             console.log('[DEBUG]: creating new binding setup')
             const bindingEditor = await setupEditor(`
                 [header]
