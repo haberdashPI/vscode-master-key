@@ -114,7 +114,6 @@ export async function setupEditor(str: string) {
     browser.keys([Key.Ctrl, 'n']);
 
     console.log('[DEBUG]: waiting for editor to be available');
-    await sleep(200);
     const editorView = await workbench.getEditorView();
     const title = await browser.waitUntil(
         async () => {
@@ -128,23 +127,24 @@ export async function setupEditor(str: string) {
         {interval: 1000, timeout: 10000}
     );
     console.log('[DEBUG]: found editor tab title — ' + title);
+
+    // clear any older notificatoins
+    console.log('[DEBUG]: clearing notifications');
+    const notifs = await workbench.getNotifications();
+    for (const note of notifs) {
+        console.log('[DEBUG] message – ' + (await note.getMessage()));
+        await note.dismiss();
+    }
+
     const editor = (await editorView.openEditor(title!)) as TextEditor;
 
     // set the text
     // NOTE: setting editor text is somewhat flakey, so we verify that it worked
     console.log('[DEBUG]: setting text to: ' + str.slice(0, 200) + '...');
-    await sleep(100);
     await editor.setText(str);
-    await sleep(100);
     await waitUntilCursorUnmoving(editor);
     await sleep(100);
     const text = await editor.getText();
-
-    // show any notifications
-    const notifs = await workbench.getNotifications();
-    for (const note of notifs) {
-        console.log('[DEBUG]: message - ' + (await note.getMessage()));
-    }
 
     expect(text).toEqual(str);
 
