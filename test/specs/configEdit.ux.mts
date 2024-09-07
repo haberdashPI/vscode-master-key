@@ -3,7 +3,7 @@
 import '@wdio/globals';
 import 'wdio-vscode-service';
 import {setBindings, setupEditor, storeCoverageStats} from './utils.mts';
-import {TextEditor} from 'wdio-vscode-service';
+import {TextEditor, Workbench} from 'wdio-vscode-service';
 import {sleep} from 'wdio-vscode-service';
 
 describe('Configuration Editing', () => {
@@ -103,6 +103,10 @@ describe('Configuration Editing', () => {
     });
 
     after(async () => {
+        const workbench = await browser.getWorkbench();
+        await workbench.executeCommand('Clear Command History');
+        await workbench.executeCommand('Master Key: Remove Keybindings');
+
         // since we're messing with bindings, we need to setup a clean state that will
         // ensure the coverage command is available
         await setBindings(`
