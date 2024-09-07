@@ -1,32 +1,8 @@
-## Binding Cleanup
-
-release 0.2.6
-
-+ feature: specify user-specific binding file, apart from activated keybindings
-+ Split out any of the commands that are really custom for me that don't make sense to publish.
-
-- FIX: visual keybindings do not update after config updates
-
-+ maybe actually setup tests for all the new stuff in keybindings/index.js??
-    + load presets list from directory
-    + load preset from file
-    + checks for user bindings: wip
-      + we can add them
-      + we get an error if there are no preset bindings
-    + checks for handling duplicate file names
-    + copy preset into file
-    + copy user config into file
-
-+ get all tests to run on CI
-+ fix linting for tests
-+ fix: `keybindingPaletteMode is getting stuck on again
-+ take any flakey BS in tests and move them to utils.ux.mts; to make tests easy to read
-and make it easier to make new tests
-
-Binding changes in Larkin:
-+ maybe avoid need to use cmd-v so much
-
 ## Trailing fixes
+
+- small fix: label extenesions as 'not found' rather than 'uninstalled' since they are
+clearly inconsistent with the install state (not sure what's up with that, but not worth
+fixing)
 
 Working with release 0.2.6 for a while and make sure there aren't any more bugs to fix
 
