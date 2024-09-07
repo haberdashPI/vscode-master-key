@@ -17,22 +17,23 @@ release 0.2.6
     + copy preset into file
     + copy user config into file
 
-- get all tests to run on CI
++ get all tests to run on CI
 + fix linting for tests
 + fix: `keybindingPaletteMode is getting stuck on again
-- take any flakey BS in tests and move them to utils.ux.mts; to make tests easy to read
++ take any flakey BS in tests and move them to utils.ux.mts; to make tests easy to read
 and make it easier to make new tests
 
 Binding changes in Larkin:
 + maybe avoid need to use cmd-v so much
-- remove all my extra settings in my own config file
-- insert QOL I loose from that into larkin (or masterkeys.toml, as needed)
-    + up/down page
-    - escape / shift-escape?
 
 ## Trailing fixes
 
 Working with release 0.2.6 for a while and make sure there aren't any more bugs to fix
+
+- remove all my extra settings in my own config file
+- insert QOL I loose from that into larkin (or masterkeys.toml, as needed)
+    + up/down page
+    - escape / shift-escape?
 
 ## Before VSCode publish
 
