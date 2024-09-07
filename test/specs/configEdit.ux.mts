@@ -40,15 +40,11 @@ describe('Configuration Editing', () => {
     });
 
     it.only('Can copy user config', async () => {
-        console.log('[DEBUG]: copy user config test');
-        if (!editor) {
-            editor = await setupEditor(`A simple test`);
-            await sleep(200);
-        }
-        await editor.moveCursor(1, 1);
-
         const workbench = await browser.getWorkbench();
-        await workbench.executeCommand('Master Key: Remove Keybindings');
+        await browser.executeWorkbench(vscode => {
+            vscode.commands.executeCommand('workbench.action.openGlobalKeybindingsFile');
+        });
+
 
         // NOTE: this doesn't work *UNLESS* there are bindings available
         // (since we need `keybindings.json` open)
@@ -65,6 +61,7 @@ describe('Configuration Editing', () => {
             await keyEditor.save();
             await sleep(200);
 
+            console.log('[DEBUG]: setting bindings')
             await setBindings(`
                 [header]
                 version = "1.0"
@@ -73,8 +70,9 @@ describe('Configuration Editing', () => {
                 [[bind]]
                 key = "ctrl+c"
                 command = "bar"
-            `)
+            `);
 
+            console.log('[DEBUG]: creating new binding setup')
             const bindingEditor = await setupEditor(`
                 [header]
                 version = "1.0"
