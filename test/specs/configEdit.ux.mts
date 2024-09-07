@@ -3,7 +3,7 @@
 import '@wdio/globals';
 import 'wdio-vscode-service';
 import {setBindings, setupEditor, storeCoverageStats} from './utils.mts';
-import {TextEditor, Workbench} from 'wdio-vscode-service';
+import {TextEditor} from 'wdio-vscode-service';
 import {sleep} from 'wdio-vscode-service';
 
 describe('Configuration Editing', () => {
@@ -39,8 +39,7 @@ describe('Configuration Editing', () => {
         expect(copyEditorText).toMatch(/name = "Larkin Key Bindings"/);
     });
 
-    // eslint-disable-next-line no-restricted-properties
-    it.only('Can copy user config', async () => {
+    it('Can copy user config', async () => {
         const workbench = await browser.getWorkbench();
         await browser.executeWorkbench(vscode => {
             vscode.commands.executeCommand('workbench.action.openGlobalKeybindingsFile');
