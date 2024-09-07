@@ -133,7 +133,7 @@ export async function setupEditor(str: string) {
 
     console.log('[DEBUG]: opening new editor pane');
     browser.keys([Key.Ctrl, 'n']);
-    const editor = await getEditorMatching(workbench, /Utitled/);
+    const editor = await getEditorMatching(workbench, /Untitled/);
 
     // set the text
     // NOTE: setting editor text is somewhat flakey, so we verify that it worked
