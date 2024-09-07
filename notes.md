@@ -19,6 +19,7 @@ release 0.2.6
 
 - get all tests to run on CI
 + fix linting for tests
+- fix: `keybindingPaletteMode is getting stuck on again
 - take any flakey BS in tests and move them to utils.ux.mts; to make tests easy to read
 and make it easier to make new tests
 
