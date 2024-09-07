@@ -127,17 +127,25 @@ export async function setupEditor(str: string) {
         },
         {interval: 1000, timeout: 10000}
     );
-    console.log('[DEBUG]: found editor tab title — '+title);
+    console.log('[DEBUG]: found editor tab title — ' + title);
     const editor = (await editorView.openEditor(title!)) as TextEditor;
 
     // set the text
     // NOTE: setting editor text is somewhat flakey, so we verify that it worked
     console.log('[DEBUG]: setting text to: ' + str.slice(0, 200) + '...');
+    await sleep(100);
     await editor.setText(str);
-    await sleep(300);
+    await sleep(100);
     await waitUntilCursorUnmoving(editor);
-    await sleep(300);
+    await sleep(100);
     const text = await editor.getText();
+
+    // show any notifications
+    const notifs = await workbench.getNotifications();
+    for (const note of notifs) {
+        console.log('[DEBUG]: message - ' + await note.getMessage());
+    }
+
     expect(text).toEqual(str);
 
     // focus the editor
