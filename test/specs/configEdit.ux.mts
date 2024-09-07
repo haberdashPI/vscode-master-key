@@ -68,7 +68,7 @@ describe('Configuration Editing', () => {
                 name = "Some Bindings"
 
                 [[bind]]
-                key = "ctrl+c"
+                key = "ctrl+l"
                 command = "bar"
             `);
 
@@ -99,7 +99,7 @@ describe('Configuration Editing', () => {
             const bindingText = await bindingEditor.getText();
             expect(bindingText).toMatch(/key\s*=\s*"ctrl\+h"/);
             expect(bindingText).toMatch(/key\s*=\s*"ctrl\+g"/);
-            expect(bindingText).not.toMatch(/key\s*=\s*"ctrl\+c"/);
+            expect(bindingText).not.toMatch(/key\s*=\s*"ctrl\+l"/);
         } else {
             expect(false).toBeTruthy();
         }
