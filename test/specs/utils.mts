@@ -1,7 +1,7 @@
 import {browser, expect} from '@wdio/globals';
 import 'wdio-vscode-service';
 import {Key, WaitUntilOptions} from 'webdriverio';
-import {InputBox, StatusBar, TextEditor, sleep} from 'wdio-vscode-service';
+import {InputBox, StatusBar, TextEditor, Workbench, sleep} from 'wdio-vscode-service';
 import loadash from 'lodash';
 const {isEqual} = loadash;
 import * as fs from 'fs';
@@ -100,43 +100,40 @@ export async function cursorToTop(editor: TextEditor) {
     await sleep(200);
 }
 
-export async function setupEditor(str: string) {
-    const workbench = await browser.getWorkbench();
-
-    // clear any older notificatoins
-    console.log('[DEBUG]: clearing notifications');
-    const notifications = await workbench.getNotifications();
-    for (const note of notifications) {
-        await note.dismiss();
-    }
-
-    console.log('[DEBUG]: creating new file');
-    browser.keys([Key.Ctrl, 'n']);
-
-    console.log('[DEBUG]: waiting for editor to be available');
+export async function getEditorMatching(workbench: Workbench, r: RegExp | string) {
     const editorView = await workbench.getEditorView();
     const title = await browser.waitUntil(
         async () => {
             const tab = await editorView.getActiveTab();
             const title = await tab?.getTitle();
-            if (title && title.match(/Untitled/)) {
+            if (title && title.match(r)) {
                 return title;
             }
             return;
         },
         {interval: 1000, timeout: 10000}
     );
-    console.log('[DEBUG]: found editor tab title — ' + title);
+
+    return (await editorView.openEditor(title!)) as TextEditor;
+}
+
+export async function clearNotifications(workbench: Workbench) {
+    const notifications = await workbench.getNotifications();
+    for (const note of notifications) {
+        await note.dismiss();
+    }
+}
+
+export async function setupEditor(str: string) {
+    const workbench = await browser.getWorkbench();
 
     // clear any older notificatoins
     console.log('[DEBUG]: clearing notifications');
-    const notifs = await workbench.getNotifications();
-    for (const note of notifs) {
-        console.log('[DEBUG] message – ' + (await note.getMessage()));
-        await note.dismiss();
-    }
+    clearNotifications(workbench);
 
-    const editor = (await editorView.openEditor(title!)) as TextEditor;
+    console.log('[DEBUG]: opening new editor pane');
+    browser.keys([Key.Ctrl, 'n']);
+    const editor = await getEditorMatching(workbench, /Utitled/);
 
     // set the text
     // NOTE: setting editor text is somewhat flakey, so we verify that it worked

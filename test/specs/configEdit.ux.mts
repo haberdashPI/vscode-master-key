@@ -2,7 +2,13 @@
 
 import '@wdio/globals';
 import 'wdio-vscode-service';
-import {setBindings, setupEditor, storeCoverageStats} from './utils.mts';
+import {
+    clearNotifications,
+    getEditorMatching,
+    setBindings,
+    setupEditor,
+    storeCoverageStats,
+} from './utils.mts';
 import {TextEditor} from 'wdio-vscode-service';
 import {sleep} from 'wdio-vscode-service';
 
@@ -12,29 +18,9 @@ describe('Configuration Editing', () => {
         const input = await workbench.executeCommand('Edit Preset Copy');
         await input.setText('Larkin');
         await input.confirm();
+        await clearNotifications(workbench);
 
-        const notifications = await workbench.getNotifications();
-        for (const note of notifications) {
-            await note.dismiss();
-        }
-
-        const editorView = await workbench.getEditorView();
-        const title = await browser.waitUntil(
-            async () => {
-                const tab = await editorView.getActiveTab();
-                const title = await tab?.getTitle();
-                if (title && title.match(/Untitled/)) {
-                    tab?.select();
-                    return title;
-                }
-                return;
-            },
-            {interval: 1000, timeout: 10000}
-        );
-        const copyEditor = (await editorView.openEditor(title!)) as TextEditor;
-
-        copyEditor.moveCursor(1, 1);
-
+        const copyEditor = await getEditorMatching(workbench, /Untitled/);
         const copyEditorText = await copyEditor.getText();
         expect(copyEditorText).toMatch(/name = "Larkin Key Bindings"/);
     });
@@ -45,8 +31,6 @@ describe('Configuration Editing', () => {
             vscode.commands.executeCommand('workbench.action.openGlobalKeybindingsFile');
         });
 
-        // NOTE: this doesn't work *UNLESS* there are bindings available
-        // (since we need `keybindings.json` open)
         const editorView = await workbench.getEditorView();
         const keyEditor = (await editorView.openEditor('keybindings.json')) as TextEditor;
 
