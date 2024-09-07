@@ -7,9 +7,6 @@ import {TextEditor} from 'wdio-vscode-service';
 import {sleep} from 'wdio-vscode-service';
 
 describe('Configuration Editing', () => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    let editor: TextEditor;
-
     it('Can create editable copy', async () => {
         const workbench = await browser.getWorkbench();
         const input = await workbench.executeCommand('Edit Preset Copy');

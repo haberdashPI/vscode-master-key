@@ -114,6 +114,7 @@ export async function setupEditor(str: string) {
     browser.keys([Key.Ctrl, 'n']);
 
     console.log('[DEBUG]: waiting for editor to be available');
+    await sleep(200);
     const editorView = await workbench.getEditorView();
     const title = await browser.waitUntil(
         async () => {
@@ -126,6 +127,7 @@ export async function setupEditor(str: string) {
         },
         {interval: 1000, timeout: 10000}
     );
+    console.log('[DEBUG]: found editor tab title — '+title);
     const editor = (await editorView.openEditor(title!)) as TextEditor;
 
     // set the text
@@ -136,7 +138,6 @@ export async function setupEditor(str: string) {
     await waitUntilCursorUnmoving(editor);
     await sleep(300);
     const text = await editor.getText();
-    console.log('[DEBUG]: actual text' + text.slice(0, 200) + '...');
     expect(text).toEqual(str);
 
     // focus the editor
