@@ -77,6 +77,11 @@
         "title": "Deactivate Master Keybindings"
       },
       {
+        "command": "master-key.installKeybindingExtensions",
+        "category": "Master Key",
+        "title" : "Install Active Keybinding Extensions"
+      },
+      {
         "command": "master-key.editPreset",
         "category": "Master Key",
         "title": "Edit Preset Copy"

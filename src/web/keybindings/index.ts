@@ -8,6 +8,7 @@ import {
     ParsedResult,
     ErrorResult,
 } from './parsing';
+import * as config from './config';
 import {processBindings, IConfigKeyBinding, Bindings} from './processing';
 import {isSingleCommand} from '../utils';
 import {uniq, pick} from 'lodash';
@@ -236,6 +237,7 @@ async function insertKeybindingsIntoConfig(name: string, keyBindings: IConfigKey
             // try and replace the old bindings
             const oldBindingsStart = findText(ed.document, 'AUTOMATED BINDINGS START');
             const oldBindingsEnd = findText(ed.document, 'AUTOMATED BINDINGS END');
+            let installed = false;
             if (oldBindingsStart && oldBindingsEnd) {
                 const range = new vscode.Range(
                     new vscode.Position(
@@ -251,8 +253,7 @@ async function insertKeybindingsIntoConfig(name: string, keyBindings: IConfigKey
                 });
                 ed.revealRange(new vscode.Range(range.start, range.start));
                 await vscode.commands.executeCommand('workbench.action.files.save');
-                vscode.window.showInformationMessage(`Your master keybindings have
-                    been updated in \`keybindings.json\`.`);
+                installed = true;
             } else if (oldBindingsEnd || oldBindingsStart) {
                 vscode.window.showErrorMessage(`You appear to have altered the comments
                     around the automated bindings. Please delete the old, automated
@@ -264,8 +265,24 @@ async function insertKeybindingsIntoConfig(name: string, keyBindings: IConfigKey
                 });
                 ed.revealRange(new vscode.Range(insertAt, insertAt));
                 await vscode.commands.executeCommand('workbench.action.files.save');
-                vscode.window.showInformationMessage(`Your master keybindings have
-                    been inserted into \`keybindings.json\`.`);
+                installed = true;
+            }
+
+            if (installed) {
+                vscode.window
+                    .showInformationMessage(
+                        `Master keybindings were added to \`keybindings.json\`.
+                        Install associated extensions with the \`Master Key: Install Active
+                        Keybinding Extensions\` command`.replace(/\S+/, ' '),
+                        {},
+                        'Install Extensions'
+                    )
+                    .then(async request => {
+                        if (request === 'Install Extensions') {
+                            return await handleRequireExtensions();
+                        }
+                        return undefined;
+                    });
             }
         }
     }
@@ -420,15 +437,26 @@ async function copyBindingsToNewFile() {
     }
 }
 
-async function handleRequireExtensions(bindings: Bindings) {
+async function handleRequireExtensions(bindings_?: Bindings) {
+    let bindings: Bindings;
+    if (bindings_) {
+        bindings = bindings_;
+    } else {
+        if (config.bindings) {
+            bindings = config.bindings;
+        } else {
+            return;
+        }
+    }
+
     const items: vscode.QuickPickItem[] = bindings.requiredExtensions.map(id => {
         const exts = vscode.extensions.all.filter(x => x.id === id);
         if (exts.length > 0) {
-            return {label: id, detail: 'installed', picked: true};
+            return {label: id, detail: 'already installed', picked: true};
         } else {
             return {
                 label: id,
-                detail: 'uninstalled',
+                detail: 'unknown status',
                 picked: false,
                 buttons: [
                     {iconPath: new vscode.ThemeIcon('eye'), tooltip: 'view extension'},
@@ -436,20 +464,19 @@ async function handleRequireExtensions(bindings: Bindings) {
             };
         }
     });
-    if (items.length === 0 || items.every(it => it.detail === 'installed')) {
+    if (items.length === 0 || items.every(it => it.detail === 'already installed')) {
         return;
     }
     items.unshift({
         label: 'Install All',
         picked: false,
-        alwaysShow: true,
     });
     const picker = vscode.window.createQuickPick();
     picker.title = `Extensions Used by ${bindings.name}`;
     picker.items = items;
     picker.canSelectMany = true;
-    picker.placeholder =
-        'Indicate extensions to install (review them by clicking on the eye to the right)';
+    picker.placeholder = 'Select extensions to install';
+    picker.matchOnDetail;
     picker.ignoreFocusOut = true;
 
     picker.onDidTriggerItemButton(e => {
@@ -478,7 +505,7 @@ async function handleRequireExtensions(bindings: Bindings) {
 
     if (picker.selectedItems.some(it => it.label === 'Install All')) {
         for (const item of picker.items) {
-            if (item.detail === 'uninstalled') {
+            if (item.detail === 'unknown status') {
                 await vscode.commands.executeCommand(
                     'workbench.extensions.installExtension',
                     item.label
@@ -488,7 +515,7 @@ async function handleRequireExtensions(bindings: Bindings) {
     }
 
     for (const item of picker.selectedItems) {
-        if (item.detail === 'uninstalled') {
+        if (item.detail === 'unknown status') {
             await vscode.commands.executeCommand(
                 'workbench.extensions.installExtension',
                 item.label
@@ -630,6 +657,11 @@ export async function activate(context: vscode.ExtensionContext) {
     );
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.removePreset', removeKeybindings)
+    );
+    context.subscriptions.push(
+        vscode.commands.registerCommand('master-key.installKeybindingExtensions', () =>
+            handleRequireExtensions()
+        )
     );
 
     console.log('presetdir: ' + Utils.joinPath(context.extensionUri, 'presets').toString());
