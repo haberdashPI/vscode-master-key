@@ -528,7 +528,7 @@ async function handleRequireExtensions(bindings_?: Bindings) {
     }
 }
 
-async function selectPreset(preset?: Preset) {
+async function activateBindings(preset?: Preset) {
     if (!preset) {
         preset = await queryPreset();
     }
@@ -635,7 +635,7 @@ let extensionPresetsDir: vscode.Uri;
 
 export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
-        vscode.commands.registerCommand('master-key.selectPreset', selectPreset)
+        vscode.commands.registerCommand('master-key.activateBindings', activateBindings)
     );
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.selectUserBindings', selectUserBindings)
@@ -660,7 +660,7 @@ export async function activate(context: vscode.ExtensionContext) {
         )
     );
     context.subscriptions.push(
-        vscode.commands.registerCommand('master-key.removePreset', removeKeybindings)
+        vscode.commands.registerCommand('master-key.deactivateBindings', removeKeybindings)
     );
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.installKeybindingExtensions', () =>

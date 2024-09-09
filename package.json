@@ -22,7 +22,7 @@
   "contributes": {
     "commands": [
       {
-        "command": "master-key.selectPreset",
+        "command": "master-key.activateBindings",
         "category": "Master Key",
         "title": "Activate Keybindings"
       },
@@ -72,7 +72,7 @@
         "title": "Toggle palette input mode"
       },
       {
-        "command": "master-key.removeBindings",
+        "command": "master-key.deactivateBindings",
         "category": "Master Key",
         "title": "Deactivate Master Keybindings"
       },
