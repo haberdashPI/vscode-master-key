@@ -72,9 +72,9 @@
         "title": "Toggle palette input mode"
       },
       {
-        "command": "master-key.removePreset",
+        "command": "master-key.removeBindings",
         "category": "Master Key",
-        "title": "Remove Keybindings"
+        "title": "Deactivate Master Keybindings"
       },
       {
         "command": "master-key.editPreset",

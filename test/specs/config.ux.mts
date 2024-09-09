@@ -243,7 +243,7 @@ describe('Configuration', () => {
         editor = await setupEditor('A simple test');
         const workbench = await browser.getWorkbench();
         await workbench.executeCommand('Clear Command History');
-        await workbench.executeCommand('Master Key: Remove Keybindings');
+        await workbench.executeCommand('Master Key: Deactivate Keybindings');
         await waitForMode('default');
 
         const statusBarEl = await browser.$('div[aria-label="Keybinding Mode: default"]');
@@ -262,7 +262,7 @@ describe('Configuration', () => {
         // running, we know the configuration is in the correct state anyways (under a full
         // test run, this will generate an notification error message)
         const workbench = await browser.getWorkbench();
-        await workbench.executeCommand('Master Key: Remove Keybindings');
+        await workbench.executeCommand('Master Key: Deactivate Keybindings');
         await waitForMode('default');
 
         const userFile = `
@@ -290,7 +290,7 @@ describe('Configuration', () => {
     after(async () => {
         const workbench = await browser.getWorkbench();
         await workbench.executeCommand('Clear Command History');
-        await workbench.executeCommand('Master Key: Remove Keybindings');
+        await workbench.executeCommand('Master Key: Deactivate Keybindings');
 
         // since we're messing with bindings, we need to setup a clean state that will
         // ensure the coverage command is available
