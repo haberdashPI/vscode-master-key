@@ -271,9 +271,13 @@ async function insertKeybindingsIntoConfig(name: string, keyBindings: IConfigKey
             if (installed) {
                 vscode.window
                     .showInformationMessage(
-                        `Master keybindings were added to \`keybindings.json\`.
-                        Install associated extensions with the \`Master Key: Install Active
-                        Keybinding Extensions\` command`.replace(/\S+/, ' '),
+                        replaceAll(
+                            `Master keybindings were added to \`keybindings.json\`.
+                            Install associated extensions with the \`Master Key: Install Active
+                            Keybinding Extensions\` command`,
+                            /\s+/g,
+                            ' '
+                        ),
                         {},
                         'Install Extensions'
                     )

@@ -41,7 +41,7 @@ export async function setBindings(str: string) {
     await input.confirm();
 
     console.log('[DEBUG]: await notification');
-    const messagePattern = /Your master keybindings have/;
+    const messagePattern = /Master keybindings were added to /;
     const message = await browser.waitUntil(async () => {
         const notifs = await workbench.getNotifications();
         if (notifs.length > 0) {
