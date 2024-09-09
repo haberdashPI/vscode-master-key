@@ -1,13 +1,16 @@
-# Master Key
+<h1><img src="logo.png" width="50" alt="M" style="padding-right: 0.2em"/>aster Key</h1>
 
-[![Project Status: WIP – Initial development is in progress, but there has not yet been a stable, usable release suitable for the public.](https://img.shields.io/badge/Repo%20Status-WIP-yellow)](https://www.repostatus.org/#active)
+[![Project Status: WIP – Initial development is in progress, but there has not yet been a stable, usable release suitable for the public.](https://img.shields.io/badge/Repo%20Status-Active-green)](https://www.repostatus.org/#active)
 [![CI](https://github.com/haberdashPI/vscode-master-key/actions/workflows/ci.yml/badge.svg)](https://github.com/haberdashPI/vscode-master-key/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/haberdashPI/vscode-master-key/graph/badge.svg?token=099XZY1KR9)](https://codecov.io/gh/haberdashPI/vscode-master-key)
-[![Code Style: Google](https://img.shields.io/badge/code%20style-google-blueviolet.svg)](https://github.com/google/gts)
+[![Code Style: Google](https://img.shields.io/badge/code%20style-google-blueviolet.png)](https://github.com/google/gts)
 
 Master key helps you to learn, create and use powerful keybindings in [VSCode](https://code.visualstudio.com/).
 
 If you want to improve your text editing super powers in VSCode, Master Key might just be the tool for you.
+
+> [!NOTE]
+> A message to power users: Master Key has been envisioned as a set of tools to make it easy to create powerful keybinding specifications for VSCode. While it currently only comes with a single binding set (used for daily work by @haberdashPI), it was built with the intent that additional binding sets (e.g. for a more Vim-like or Emacs-like experience) can be easily created. See the sections on [Keybinding Features](#keybinding-features) and [Customized Bindings](#customized-bindings) for more details.
 
 ## To get started
 
@@ -16,6 +19,8 @@ The easiest way to get started is to activate the built-in keybindings that come
 1. Install this extension
 2. Run the command `Master Key: Activate Keybindings`.
 3. Select the built-in binding set "Larkin".
+
+If at some point you decide you want to stop using Master Key, you can remove any bindings it added to your configuration by calling `Master Key: Deactivate Keybindings`.
 
 ## Examples
 
@@ -60,7 +65,7 @@ Once you've selected the object, run commands to do stuff (e.g. delete/change/co
 
 #### Multi-Cursor Creation and Filtering
 
-Quickly create multiple selections by splitting selections:
+Quickly create multiple selections, by splitting selections:
 
 ![example of splitting a selection](images/readme/splitselect.webp)
 
@@ -68,11 +73,11 @@ matching by word:
 
 ![example of selecting by match](images/readme/selectmatch.webp)
 
-using saved selections:
+or using saved selections:
 
 ![example of using saved selections](images/readme/selectsaved.webp)
 
-Filter out the ones you don't want either by pattern:
+Filter out the ones you don't want, either by pattern:
 
 ![example of filtering selections](images/readme/filterselect.webp)
 
@@ -99,7 +104,7 @@ Record longer command sequences and replay them.
 ![example of recording key sequence](images/readme/record.webp)
 
 > [!NOTE]
-> Command recording comes with a few limitations, refer to the cheet sheet on Larkin macros for details
+> Command recording comes with a few limitations. Master key can record any edits, and any commands that are issued through master key bindings. Commands that are not part of this binding file (e.g. a standard call to Cmd/Ctrl+V to paste) will not be recorded. You can copy your non-master-key bindings over to master key (so that they will be recorded) by [customizing your bindings](#customized-bindings) and using `Import Default Bindings` and `Import User Bindings` to allow all of the default and user bindings stored in VSCOde's normal keybinding files to be recorded by master key. (You will have to remove your original user bindings from the VSCOde `keybinding.json` file manually)
 
 #### Symmetric Insert
 
@@ -188,11 +193,15 @@ Okay, so you want to customize your keybindings, or create a whole new preset?
 
 You can start by reviewing the built-in `Larkin` preset using the command `Master Key: Edit Preset Copy`. A new `*.toml` file with the contents of this master-key binding set will be opened. The file has comments throughout which document its use.
 
-To simply customize an existing preset, you can add additional bindings, which get appended to those of the preset. Create a new toml file and add the bindings you want to append. Then call `Master Key: Activate User Keybindings` on the toml file. You can import existing user bindings to this toml file, as defined in the normal keybinding file used by VSCode, by calling `Master Key: Import User Keybindings`.
+> [!WARNING]
+> Because the error reporting for master keybinding files is not yet very precise, it is recommended that you edit bindings incrementally (e.g. by slowly creating new bundings or by slowly uncommenting an entire binding set you have imported). In this way you can ensure that the changes you've made can be properly activated by Mater Key. Long-term, better error reporting for these binding files will be available.
 
-Alternatively you can define your own preset and import bindings from those you've already created in VSCode. Call `Master Key: Import Default/User Keybindings` to add any existing bindings you have to your preset copy. Edit the bindings as desired and update your settings to use them by calling `Master Key: Activate Keybindings` at any time.
+To simply customize an existing preset, you can append additional bindings by activating user bindings: create a new toml file and enter the bindings you want to append. Then call `Master Key: Activate User Keybindings` on the toml file you just created. You can import existing user bindings, from `keyindings.json`, by calling `Master Key: Import User Keybindings`.
 
-Because the error reporting for these binding files is not yet very precise, it is recommended that you add bindings incrementally, and verify that they can be properly loaded by Mater Key. Long-term, better error reporting for these binding files will be available.
+Alternatively you can define your own preset and import bindings from those you've already created in VSCode. Create a preset copy by calling `Master Key: Edit Preset Copy` and then call `Master Key: Import Default/User Keybindings` to add any existing bindings you have to your preset copy. Edit the bindings as desired and update your settings to use them by calling `Master Key: Activate Keybindings` at any time.
+
+> [!NOTE]
+> Normal VSCode User keybindings always take precedence over master keybindings. (It would be rude to have Master Key automatically insert bindings with higher priority than user specified customizations). Make sure you delete any user keybindings from your `keybindings.json` file after importing them into your master keybindings `.toml` file.
 
 ## Roadmap
 
@@ -213,6 +222,12 @@ For detailed notes on development, refer to `notes.md`.
     - test coverage should be satisfactory
     - documentation should be largely complete
 - Release 1.x: upwards and onwards...
+  - support for more keyboard layouts for visual docs
+  - search: `showCount` displays movement count overlaid with each highlight
+  - additional keybinding sets: e.g. vim, emacs
+  - API improvements for new editor sets
+  - keybinding debug QOL features: show the binding that was run for a given key sequence
+  - clipboard registers
 
 ## Related Work
 
