@@ -132,6 +132,9 @@ FEATURE: require parsing to validate modes to be all negations or all positive m
   ID
 
 - have backspace and enter run commands in capture mode
+    - relate: change capture mode so it accepts all keys it can (and you can define what sequence
+  cancels), rather than newlines being always marked as cancel
+
 
 - IMPROVEMENT: add command to delete all but primary selection in selection utilities
 
@@ -150,9 +153,6 @@ FEATURE: require parsing to validate modes to be all negations or all positive m
 
 - careful optimization: clean up code to do fewer dumb repetivie things
   that slow down performance
-
-- unit tests for visual doc?? (what would this even look like?? sounds time consuming
-  and not very much gain would be had)
 
 - place frequently used commands near the bottom of the command palette
 
@@ -181,21 +181,9 @@ FEATURE: require parsing to validate modes to be all negations or all positive m
 - maybe the parse errors can be added to the problems window? (and just have one error
   message for all problems)
 
-- change capture mode so it accepts all keys it can (and you can define what sequence
-  cancels), rather than newlines being always marked as cancel
-
 - quick win: master-key.ignore shouldn't need to be passed to
   master-key.do (we can just call ignore directly)
   -NOTE: the same might be said for `prefix` command
-
-- status bar updates are called a lot, maybe reduce this
-
-- layred keybindings: you can specify a
-  - user binding file
-  - workspace binding file
-
-- users should be able to populate their own bindings file with one of the existing
-  presets as to serve as a starting point
 
 - validate the arguments to master-key commands so that these come up during import
   of a preset rather than when you run a command
@@ -206,8 +194,6 @@ FEATURE: require parsing to validate modes to be all negations or all positive m
   and it doesn't need to be explicitly defined)
 
 - `{defined}` commands should work inside `runCommands`
-
-- insert character can be repeated
 
 - store from history can take a count or it can use a quick pick that lists the name
   of all recent commands and an index that you can then select two indices from
