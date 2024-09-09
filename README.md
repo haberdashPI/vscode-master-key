@@ -1,6 +1,6 @@
 <h1><img src="logo.png" width="50" alt="M" style="padding-right: 0.2em"/>aster Key</h1>
 
-[![Project Status: WIP – Initial development is in progress, but there has not yet been a stable, usable release suitable for the public.](https://img.shields.io/badge/Repo%20Status-Active-green)](https://www.repostatus.org/#active)
+[![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://img.shields.io/badge/Repo%20Status-Active-green)](https://www.repostatus.org/#active)
 [![CI](https://github.com/haberdashPI/vscode-master-key/actions/workflows/ci.yml/badge.svg)](https://github.com/haberdashPI/vscode-master-key/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/haberdashPI/vscode-master-key/graph/badge.svg?token=099XZY1KR9)](https://codecov.io/gh/haberdashPI/vscode-master-key)
 [![Code Style: Google](https://img.shields.io/badge/code%20style-google-blueviolet.png)](https://github.com/google/gts)
@@ -115,7 +115,7 @@ Insert appropriate characters before and after each selection
 ### Keybinding Features
 
 > [!WARNING]
-> For the initial release of Master Key, the Keybinding Features are not yet well documented. You can review the features when copying Larkin to your own customization file. The main goal of the 0.3.0 release was to make the default keybindings accessible to new users. See the roadmap section below for details. The finer points of implementing your own keybindings will require some digging into source code and/or asking questions in the discussions section of this repo.
+> For the initial release of Master Key, the Keybinding Features are not yet well documented. You can review the format when copying Larkin to your own customization file (via `Master Key: Edit Preset Copy`). The main goal of the 0.3.0 release was to make the default keybindings accessible to new users. See the [roadmap](#roadmap) for the versions expected to include better support for creating new keybinding presets. Before those milestones, the finer points of implementing your own keybindings could require some digging into source code and/or asking questions in the discussions section of this repo. These details are also currently subject to change.
 
 When you create your own keybindings using Master Key's special `.toml` keybinding format you get several powerful features that make it possible to easily create keybindings that would be difficult or impossible to implement without writing your own extension.
 
@@ -154,7 +154,8 @@ Update state with the `master-key.captureKeys`, `master-key.updateCount`, `maste
 name = "between pair"
 key = "m t"
 description = """
-Select between pairs of the same N characters
+Select between a pair of the specified character. Example: `m t '` would
+select all characters that fell between two single quote characters.
 """
 command = "runCommands"
 
