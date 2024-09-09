@@ -606,9 +606,8 @@ command = "editor.action.selectAll"
 path = "edit.motion"
 key = "shift+r"
 name = "trim wht"
-description = "select full line(s), and trim external whitespace"
-command = "runCommands"
-args.commands = ["expandLineSelection", "selection-utilities.trimSelectionWhitespace"]
+description = "trim external whitespace"
+command = "selection-utilities.trimSelectionWhitespace"
 
 [[bind]]
 path = "edit.motion"
