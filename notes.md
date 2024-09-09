@@ -119,6 +119,9 @@ FEATURE: require parsing to validate modes to be all negations or all positive m
 
 - HIGH PRIORITY: improve error reporting for keybinding files
 
+- Only show mode column in visual documentation when at least one binding is
+defined for a specific mode
+
 - coding qol: don't require updates to define what state variables are "public"
 
 - performance: exclude more state properties from getting stored
