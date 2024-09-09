@@ -514,6 +514,12 @@ async function selectPreset(preset?: Preset) {
 
 async function selectUserBindings(file?: vscode.Uri) {
     if (!file) {
+        const currentUri = vscode.window.activeTextEditor?.document.fileName;
+        let currentFile;
+        if (currentUri) {
+            currentFile = vscode.Uri.from({scheme: 'file', path: currentUri});
+        }
+
         const files = await vscode.window.showOpenDialog({
             openLabel: 'Import User Bindings',
             // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -521,6 +527,7 @@ async function selectUserBindings(file?: vscode.Uri) {
             canSelectFiles: true,
             canSelectFolders: false,
             canSelectMany: false,
+            defaultUri: currentFile,
         });
         if (files && files.length === 1) {
             file = files[0];
