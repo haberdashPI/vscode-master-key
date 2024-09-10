@@ -277,13 +277,19 @@ describe('Configuration', () => {
         await workbench.executeCommand('Master Key: Activate User Keybindings');
         await setFileDialogText(path.join(folder, 'user.toml'));
 
-        const notifs = await workbench.getNotifications();
-        const messages = await Promise.all(notifs.map(n => n.getMessage()));
         const error =
             'User bindings have not been activated ' +
             'because you have no preset keybindings. Call `Master Key: `' +
             'Activate Keybindings` to add a preset.';
-
+        const messages = await browser.waitUntil(async () => {
+            const notifs = await workbench.getNotifications();
+            const messages = await Promise.all(notifs.map(n => n.getMessage()));
+            if (messages.some(x => x === error)) {
+                return messages;
+            } else {
+                return false;
+            }
+        });
         expect(messages).toContainEqual(error);
     });
 

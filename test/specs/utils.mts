@@ -139,8 +139,8 @@ export async function setupEditor(str: string) {
     // NOTE: setting editor text is somewhat flakey, so we verify that it worked
     console.log('[DEBUG]: setting text to: ' + str.slice(0, 200) + '...');
     await editor.setText(str);
+    await sleep(300);
     await waitUntilCursorUnmoving(editor);
-    await sleep(100);
     const text = await editor.getText();
 
     expect(text).toEqual(str);
