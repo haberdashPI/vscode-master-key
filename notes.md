@@ -32,20 +32,15 @@ WHEN PUBLISHING: get this to work on both stores (the one from microsoft and the
 
 ## Stability / test coverage
 
+CLEANUP: there are lots of context values getting added that don't have to be; (could task
+to combine with updating how/where the `public` nature of editor state is specified)
+
 BUG: when using the extension with a remote machine the visual doc, or palette info doesn't show up (this is probably related to the issue about the docs not being updated when I first open; remote use could easily change the timing of things, revealing a race condition). What's weird about this is that the text docs *do* show up.
 
 SMALL FEATURE: allow `-` prefix on commands to bypass `do` wrapping and
 remove a binding (will need to validate that some fields are `undefined` in this case)
 
 SMALL BUG: should 'esc' really be appended in the status bar since it cancels a prefix sequence... 🤔
-
-SMALL BUG: I think there are issues when synching across machines and handling
-storage of the keybindings
-
-NEW TESTS: keybindings
-- tests for running various binding commands
-- tests for selecting bindings
-- tests for selecting extensions?
 
 NEW TEST: store/restore named commands
 
@@ -124,6 +119,9 @@ FEATURE: require parsing to validate modes to be all negations or all positive m
 
 - HIGH PRIORITY: improve error reporting for keybinding files
 
+- Only show mode column in visual documentation when at least one binding is
+defined for a specific mode
+
 - coding qol: don't require updates to define what state variables are "public"
 
 - performance: exclude more state properties from getting stored
@@ -137,6 +135,9 @@ FEATURE: require parsing to validate modes to be all negations or all positive m
   ID
 
 - have backspace and enter run commands in capture mode
+    - relate: change capture mode so it accepts all keys it can (and you can define what sequence
+  cancels), rather than newlines being always marked as cancel
+
 
 - IMPROVEMENT: add command to delete all but primary selection in selection utilities
 
@@ -155,9 +156,6 @@ FEATURE: require parsing to validate modes to be all negations or all positive m
 
 - careful optimization: clean up code to do fewer dumb repetivie things
   that slow down performance
-
-- unit tests for visual doc?? (what would this even look like?? sounds time consuming
-  and not very much gain would be had)
 
 - place frequently used commands near the bottom of the command palette
 
@@ -186,21 +184,9 @@ FEATURE: require parsing to validate modes to be all negations or all positive m
 - maybe the parse errors can be added to the problems window? (and just have one error
   message for all problems)
 
-- change capture mode so it accepts all keys it can (and you can define what sequence
-  cancels), rather than newlines being always marked as cancel
-
 - quick win: master-key.ignore shouldn't need to be passed to
   master-key.do (we can just call ignore directly)
   -NOTE: the same might be said for `prefix` command
-
-- status bar updates are called a lot, maybe reduce this
-
-- layred keybindings: you can specify a
-  - user binding file
-  - workspace binding file
-
-- users should be able to populate their own bindings file with one of the existing
-  presets as to serve as a starting point
 
 - validate the arguments to master-key commands so that these come up during import
   of a preset rather than when you run a command
@@ -211,8 +197,6 @@ FEATURE: require parsing to validate modes to be all negations or all positive m
   and it doesn't need to be explicitly defined)
 
 - `{defined}` commands should work inside `runCommands`
-
-- insert character can be repeated
 
 - store from history can take a count or it can use a quick pick that lists the name
   of all recent commands and an index that you can then select two indices from

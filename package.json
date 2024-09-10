@@ -4,6 +4,7 @@
   "publisher": "haberdashPI",
   "description": "Master your keybindings with documentation, discoverability, modal bindings and expressive configuration",
   "version": "0.2.6",
+  "logo": "logo.png",
   "repository": {
     "url": "https://github.com/haberdashPi/vscode-master-key"
   },
@@ -21,7 +22,7 @@
   "contributes": {
     "commands": [
       {
-        "command": "master-key.selectPreset",
+        "command": "master-key.activateBindings",
         "category": "Master Key",
         "title": "Activate Keybindings"
       },
@@ -71,9 +72,14 @@
         "title": "Toggle palette input mode"
       },
       {
-        "command": "master-key.removePreset",
+        "command": "master-key.deactivateBindings",
         "category": "Master Key",
-        "title": "Remove Keybindings"
+        "title": "Deactivate Master Keybindings"
+      },
+      {
+        "command": "master-key.installKeybindingExtensions",
+        "category": "Master Key",
+        "title": "Install Active Keybinding Extensions"
       },
       {
         "command": "master-key.editPreset",

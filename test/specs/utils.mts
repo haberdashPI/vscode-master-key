@@ -41,7 +41,7 @@ export async function setBindings(str: string) {
     await input.confirm();
 
     console.log('[DEBUG]: await notification');
-    const messagePattern = /Your master keybindings have/;
+    const messagePattern = /Master keybindings were added to /;
     const message = await browser.waitUntil(async () => {
         const notifs = await workbench.getNotifications();
         if (notifs.length > 0) {
@@ -139,8 +139,8 @@ export async function setupEditor(str: string) {
     // NOTE: setting editor text is somewhat flakey, so we verify that it worked
     console.log('[DEBUG]: setting text to: ' + str.slice(0, 200) + '...');
     await editor.setText(str);
+    await sleep(300);
     await waitUntilCursorUnmoving(editor);
-    await sleep(100);
     const text = await editor.getText();
 
     expect(text).toEqual(str);

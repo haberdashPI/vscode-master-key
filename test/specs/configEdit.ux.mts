@@ -88,7 +88,7 @@ describe('Configuration Editing', () => {
     after(async () => {
         const workbench = await browser.getWorkbench();
         await workbench.executeCommand('Clear Command History');
-        await workbench.executeCommand('Master Key: Remove Keybindings');
+        await workbench.executeCommand('Master Key: Deactivate Keybindings');
 
         // since we're messing with bindings, we need to setup a clean state that will
         // ensure the coverage command is available

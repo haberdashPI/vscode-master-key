@@ -606,9 +606,8 @@ command = "editor.action.selectAll"
 path = "edit.motion"
 key = "shift+r"
 name = "trim wht"
-description = "select full line(s), and trim external whitespace"
-command = "runCommands"
-args.commands = ["expandLineSelection", "selection-utilities.trimSelectionWhitespace"]
+description = "trim external whitespace"
+command = "selection-utilities.trimSelectionWhitespace"
 
 [[bind]]
 path = "edit.motion"
@@ -2432,7 +2431,7 @@ command = "selection-utilities.cancelSelection"
 
 # ## Repeat actions
 
-# These commands interact with the history of previously typed commands to repeat some sequence of commands. They can record any edits, and any commands that are issued through master key bindings. Commands that are not part of this binding file (e.g. a standard call to Cmd/Ctrl+V to paste) will not be recorded. You can copy your non-master-key bindings over to master key (so that they will be recorded) by making a copy of Larkin using `Edit Preset Copy` and then call `Import Default Bindings` and `Import User Bindings` to then allow all your default and user bindings to be recorded by master key.
+# These commands interact with the history of previously typed commands to repeat some sequence of commands. They can record any edits, and any commands that are issued through master key bindings. Commands that are not part of this binding file (e.g. a standard call to Cmd/Ctrl+V to paste) will not be recorded. You can copy your non-master-key bindings over to master key (so that they will be recorded) by [customizing your bindings](#customized-bindings) and using `Import Default Bindings` and `Import User Bindings` to allow all of the default and user bindings stored in VSCOde's normal keybinding files to be recorded by master key. (You will have to remove your original user bindings from the VSCOde `keybinding.json` file manually)
 
 [[bind]]
 path = "edit.action.history"
