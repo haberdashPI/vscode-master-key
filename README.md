@@ -1,4 +1,5 @@
-<h1><img src="logo.png" alt="M" style="width: 1.75em; padding-right: 0.25em; margin-bottom: -0.17em"/>aster Key</h1>
+<!--NOTE: `width: 1.75em` appears to be ignored when the file is displayed in the github repo -->
+<h1><img src="logo.png" alt="M" width="50" style="width: 1.75em; padding-right: 0.25em; margin-bottom: -0.17em"/>aster Key</h1>
 
 [![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://img.shields.io/badge/Repo%20Status-Active-green)](https://www.repostatus.org/#active)
 [![CI](https://github.com/haberdashPI/vscode-master-key/actions/workflows/ci.yml/badge.svg)](https://github.com/haberdashPI/vscode-master-key/actions/workflows/ci.yml)
