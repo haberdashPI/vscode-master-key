@@ -1,4 +1,4 @@
-<h1><img src="logo.png" width="50" alt="M" style="padding-right: 0.2em"/>aster Key</h1>
+<h1><img src="logo.png" alt="M" style="width: 1.75em; padding-right: 0.25em; margin-bottom: -0.17em"/>aster Key</h1>
 
 [![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://img.shields.io/badge/Repo%20Status-Active-green)](https://www.repostatus.org/#active)
 [![CI](https://github.com/haberdashPI/vscode-master-key/actions/workflows/ci.yml/badge.svg)](https://github.com/haberdashPI/vscode-master-key/actions/workflows/ci.yml)
@@ -10,7 +10,7 @@ Master key helps you to learn, create and use powerful keybindings in [VSCode](h
 If you want to improve your text editing super powers in VSCode, Master Key might just be the tool for you.
 
 > [!NOTE]
-> A message to power users: Master Key has been envisioned as a set of tools to make it easy to create powerful keybinding specifications for VSCode. While it currently only comes with a single binding set (used for daily work by @haberdashPI), it was built with the intent that additional binding sets (e.g. for a more Vim-like or Emacs-like experience) can be easily created. See the sections on [Keybinding Features](#keybinding-features) and [Customized Bindings](#customized-bindings) for more details.
+> To power users: Master Key was envisioned as a set of tools to make it easy to create powerful keybinding specifications that match your editor style of choice (modal, chorded, etc...). There are currently some limitations, noted in [Keybinding Features](#keybinding-features) and [Customized Bindings](#customized-bindings) when creating custom binding sets.
 
 ## To get started
 
@@ -20,7 +20,7 @@ The easiest way to get started is to activate the built-in keybindings that come
 2. Run the command `Master Key: Activate Keybindings`
 3. Select the built-in binding set "Larkin"
 
-If at some point you decide you want to stop using Master Key, you can remove any bindings it added to your configuration by calling `Master Key: Deactivate Keybindings`.
+You can revert these changes later using `Master Key: Deactivate Keybindings`.
 
 ## Discoverability Features
 
@@ -101,18 +101,18 @@ Record longer command sequences and replay them. These are sometimes referred to
 ![example of recording key sequence](images/readme/record.webp)
 
 > [!NOTE]
-> Command recording comes with a few limitations. Master key can record any edits, and any commands that are issued through master key bindings. Commands that are not part of this binding file (e.g. a standard call to Cmd/Ctrl+V to paste) will not be recorded. You can copy your non-master-key bindings over to master key (so that they will be recorded) by [customizing your bindings](#customized-bindings) and using `Import Default Bindings` and `Import User Bindings` to allow all of the default and user bindings stored in VSCOde's normal keybinding files to be recorded by master key. (You will have to remove your original user bindings from the VSCOde `keybinding.json` file manually)
+> Command recording comes with a few limitations. Master key can record any edits, and any commands that are issued through master key bindings. Commands that are not part of this binding file (e.g. a standard call to Cmd/Ctrl+V to paste) will not be recorded. You can copy your non-master-key bindings over to Master Key (so that they will be recorded) by [customizing your bindings](#customized-bindings) and using `Import Default Bindings` and `Import User Bindings` to allow all of the default and user bindings stored in VSCode's normal keybinding files to be recorded by Master Key. (You will have to remove your original user bindings from the VSCode `keybinding.json` file manually)
 
 ### Symmetric Insert
 
-Insert appropriate characters before and after each selection:
+Insert or remove appropriate characters before and after each selection:
 
 ![example of syminsert mode](images/readme/syminsert.webp)
 
 ## Keybinding Features
 
 > [!WARNING]
-> For the initial release of Master Key, the Keybinding Features are not yet well documented. You can review the format when copying Larkin to your own customization file (via `Master Key: Edit Preset Copy`). The main goal of the 0.3.0 release was to make the default keybindings accessible to new users. See the [roadmap](#roadmap) for the versions expected to include better support for creating new keybinding presets. Before those milestones, the finer points of implementing your own keybindings could require some digging into source code and/or asking questions in the discussions section of this repo. These details are also currently subject to change.
+> For the initial release of Master Key, the keybinding features are not yet well documented. You can review the format when copying Larkin to your own customization file (via `Master Key: Edit Preset Copy`). The main goal of the 0.3.0 release was to make the default keybindings accessible to new users. See the [roadmap](#roadmap) for the versions expected to include better support for creating new keybinding presets. Before those milestones, the finer points of implementing your own keybindings could require some digging into source code and/or asking questions in the discussions section of this repo. These details are also currently subject to change.
 
 When you create your own keybindings using Master Key's special `.toml` keybinding format you get several powerful features that make it possible to easily create keybindings that would be difficult or impossible to implement without writing your own extension.
 
@@ -168,7 +168,7 @@ args.inclusive = false
 
 ### Record and Repeat Commands
 
-Master key records recent key presses, allowing you to create commands that quickly repeat a previous sequence using `master-key.replayFromHistory` or `master-key.pushHistoryToStack` and `master-key.replayFromStack`. You can disable key press recording by setting `master-key.maxCommandHistory` to 0 in your settings.
+Master key records recent key presses, allowing you to create commands that quickly repeat a previous sequence using `master-key.replayFromHistory` or `master-key.pushHistoryToStack` and `master-key.replayFromStack`. You can determine how much history is recorded by setting `master-key.maxCommandHistory` in your settings.
 
 ```toml
 [[bind]]
@@ -194,10 +194,10 @@ You can start by reviewing the built-in `Larkin` preset using the command `Maste
 
 To simply customize an existing preset, you can append additional bindings by activating user bindings: create a new toml file and enter the bindings you want to append. Then call `Master Key: Activate User Keybindings` on the toml file you just created. You can import existing user bindings, from `keyindings.json`, by calling `Master Key: Import User Keybindings`.
 
-Alternatively you can define your own preset and import bindings from those you've already created in VSCode. Create a preset copy by calling `Master Key: Edit Preset Copy` and then call `Master Key: Import Default/User Keybindings` to add any existing bindings you have to your preset copy. Edit the bindings as desired and update your settings to use them by calling `Master Key: Activate Keybindings` at any time.
-
 > [!NOTE]
-> Normal VSCode User keybindings always take precedence over master keybindings. (It would be rude to have Master Key automatically insert bindings with higher priority than user specified customizations). Make sure you delete any user keybindings from your `keybindings.json` file after importing them into your master keybindings `.toml` file.
+> Normal VSCode user keybindings always take precedence over master keybindings. (It would be rude to have Master Key automatically insert bindings with higher priority than user specified customizations). Make sure you delete any user keybindings from your `keybindings.json` file after importing them into your master keybindings `.toml` file.
+
+Alternatively you can define your own preset and import bindings from those you've already created in VSCode. Create a preset copy by calling `Master Key: Edit Preset Copy` and then you may want to call `Master Key: Import Default Keybindings` to add any existing bindings you have to your preset copy. Edit the bindings as desired and update your settings to use them by calling `Master Key: Activate Keybindings` at any time.
 
 ## Roadmap
 
