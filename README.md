@@ -202,8 +202,6 @@ Alternatively you can define your own preset and import bindings from those you'
 
 ## Roadmap
 
-For detailed notes on development, refer to `notes.md`.
-
 - Release 0.1.0: relatively stable default keybindings
 - Release 0.1.x: improved coverage/testing/stability of existing features
 - Release 0.2.0: missing visual documentation features: markdown summary of bindings
