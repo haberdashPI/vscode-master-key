@@ -727,9 +727,7 @@ command = "workbench.action.navigateForwardInEditLocations"
 
 # ## Search Motions
 
-# Search motions accept one or more characters and select text up until the given character.
-# They can serve as very efficient ways to jump to a desired location. E.g. typing `sfod` in
-# normal mode would delete the first three words of the following line of text;
+# Search motions accept one or more characters and select text up until the given character. Search commands are case insensitive by default. They can serve as very efficient ways to jump to a desired location. E.g. typing `sfod` in normal mode would delete the first three words of the following line of text
 #
 # > I want some food
 

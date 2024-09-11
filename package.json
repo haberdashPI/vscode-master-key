@@ -2,7 +2,7 @@
   "name": "master-key",
   "displayName": "Master Key",
   "publisher": "haberdashPI",
-  "description": "Master your keybindings with documentation, discoverability, modal bindings and expressive configuration",
+  "description": "Master your keybindings with documentation, discoverability, modal bindings, macros and expressive configuration",
   "version": "0.3.1",
   "icon": "logo.png",
   "repository": {
