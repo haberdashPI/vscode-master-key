@@ -185,8 +185,9 @@ foreach.key = ["escape", "ctrl+["]
 key = "{key}"
 hideInPalette = true
 hideInDocs = true
-when = "suggsetWidgetVisible && editorTextFocus && !findWidgetVisible"
-command = "master-key.enterNormal"
+when = "suggestWidgetVisible && editorTextFocus && !findWidgetVisible"
+command = "runCommands"
+args.commands = ["hideSuggestWidget", "master-key.enterNormal"]
 mode = []
 prefixes = "<all-prefixes>"
 
@@ -655,7 +656,11 @@ Repeat the last motion command. Motions usually move the cursor or change the se
 """
 repeat = "count"
 command = "master-key.replayFromHistory"
-args.at = "commandHistory[i].path.startsWith('edit.motion') && commandHistory[i].name != 'repeat motion'"
+args.at = """
+commandHistory[i].path.startsWith('edit.motion') &&
+commandHistory[i].name != 'repeat motion' &&
+commandHistory[i].name != 'shrink selection'
+"""
 
 [[bind]]
 path = "edit.motion.history"
@@ -1750,6 +1755,8 @@ args.commands = ["cursorRight", "editor.action.clipboardPasteAction"]
 [[bind]]
 path = "edit.action.clipboard"
 key = "ctrl+p"
+when = "!suggestWidgetVisible"
+mode = ["normal", "insert"]
 name = "paste in"
 combinedName = "paste before/after/in"
 description = "Paste clipboard at location"
