@@ -342,6 +342,7 @@ command = "expandLineSelection"
 [[bind]]
 path = "edit.motion.prim"
 key = "ctrl+d"
+mode = ["normal", "insert"]
 name = "pg ↓"
 combinedName = "pg ↓/↑"
 combinedKey = "ctrl+d/ctrl+u"
@@ -354,6 +355,7 @@ computedArgs.count = "(count || 1)/3"
 [[bind]]
 path = "edit.motion.prim"
 key = "ctrl+u"
+mode = ["normal", "insert"]
 name = "pg ↑"
 combinedName = "pg ↓/↑"
 description = "move up, relative to page size"
@@ -1043,30 +1045,6 @@ computedArgs.value = "count || 1"
 
 [[bind]]
 path = "edit.motion.obj"
-key = "g /"
-priority = 1
-name = "comment →"
-description = "next comment"
-combinedKey = "/ (shift+/)"
-combinedName = "comment → (←)"
-combinedDescription = "move to next (previous) comment"
-args.unit = "comment"
-args.boundary = "both"
-computedArgs = { value = "count || 1" }
-
-[[bind]]
-path = "edit.motion.obj"
-key = "g shift+/"
-priority = 1
-name = "comment ←"
-combinedName = "comment → (←)"
-description = "previous comment"
-args.unit = "comment"
-args.boundary = "both"
-computedArgs = { value = "-(count || 1)" }
-
-[[bind]]
-path = "edit.motion.obj"
 key = "g 0"
 priority = 1
 name = "sec →"
@@ -1480,25 +1458,6 @@ all text at the same indentation level and the line just above it (ala python sy
 """
 combinedName = "in/arnd"
 command = "vscode-select-by-indent.select-outer-top-only"
-
-[[bind]]
-path = "edit.motion.match.obj"
-key = "m /"
-name = "comment →"
-combinedName = "comment →/←"
-combinedKey = "/ (shift+/)"
-args.unit = "comment"
-args.boundary = "both"
-computedArgs.value = "count || 1"
-
-[[bind]]
-path = "edit.motion.match.obj"
-key = "m shift+/"
-name = "comment ←"
-combinedName = "comment →/←"
-args.unit = "comment"
-args.boundary = "both"
-computedArgs.value = "-(count || 1)"
 
 [[path]]
 id = "edit.motion.match.cell"
