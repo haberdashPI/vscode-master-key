@@ -10,7 +10,7 @@
 # Some key features:
 
 # - Commands are modal: most actions are available in `normal` mode, while typing occurs in `insert` mode
-# - Command are organized around noun-verb ordering: e.g. `w` selects a word, and `d` will then deletes it.
+# - Command are organized around noun-verb ordering: e.g. `w` selects a word, and `d` will then delete it.
 # - Selection is sticky: once a selection is created, further commands tend to extend that selection until it is reset (using `v`). However a number of commands are defined to automatically reset the selection (e.g. `mw` creates a new selection around a word).
 
 #
@@ -351,6 +351,7 @@ description = "move down, relative to page size"
 command = "selection-utilities.activePageMove"
 args.dir = "down"
 computedArgs.count = "(count || 1)/3"
+computedArgs.select = "mode == 'normal'"
 
 [[bind]]
 path = "edit.motion.prim"
@@ -362,6 +363,7 @@ description = "move up, relative to page size"
 command = "selection-utilities.activePageMove"
 args.dir = "up"
 computedArgs.count = "(count || 1)/3"
+computedArgs.select = "mode == 'normal'"
 
 [[bind]]
 path = "edit.motion.prim"
