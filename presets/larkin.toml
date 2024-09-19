@@ -1304,7 +1304,7 @@ key = "m shift+0"
 name = "arn subsec ←"
 combinedName = "around subsection →/←"
 args.unit = "subsection"
-computedArgs.value = "count || 1"
+computedArgs.value = "-(count || 1)"
 
 [[bind]]
 path = "edit.motion.match.obj"
@@ -1321,7 +1321,7 @@ key = "m shift+9"
 name = "in subsec ←"
 combinedName = "in subsection →/←"
 args.unit = "subsection"
-computedArgs.value = "count || 1"
+computedArgs.value = "-(count || 1)"
 
 [[bind]]
 path = "edit.motion.match"
@@ -3158,12 +3158,8 @@ insert cursor on line above
 combinedDescription = "insert cursor on line above/below"
 key = "shift+k"
 combinedKey = "shift+k/j"
-command = "runCommands"
+command = "editor.action.insertCursorAbove"
 repeat = "count"
-args.commands = [
-      { command = "master-key.setMode", args = { value = "selectedit" } },
-      { command = "editor.action.insertCursorAbove" }
-]
 
 [[bind]]
 path = "edit.select_edit"
@@ -3173,12 +3169,8 @@ description = """
 insert cursor on line below
 """
 key = "shift+j"
-command = "runCommands"
+command = "editor.action.insertCursorBelow"
 repeat = "count-1"
-args.commands = [
-      { command = "master-key.setMode", args = { value = "selectedit" }},
-      { command = "editor.action.insertCursorBelow" }
-]
 
 [[bind]]
 path = "edit.select_edit"
