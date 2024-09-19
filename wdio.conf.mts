@@ -86,7 +86,7 @@ export const config: Options.Testrunner = {
     // Define all options that are relevant for the WebdriverIO instance here
     //
     // Level of logging verbosity: trace | debug | info | warn | error | silent
-    logLevel: process.env.COVERAGE ? 'warn' : 'info', // TODO: change back
+    logLevel: process.env.COVERAGE ? 'warn' : 'info',
     //
     // Set specific log levels per logger
     // loggers:
