@@ -371,6 +371,7 @@ key = "shift+x"
 name = "exapand"
 description = "expand selections to full lines"
 command = "expandLineSelection"
+repeat = "count"
 
 [[path]]
 id = "edit.motion.obj"
@@ -613,6 +614,30 @@ key = "shift+r"
 name = "trim wht"
 description = "trim external whitespace"
 command = "selection-utilities.trimSelectionWhitespace"
+
+[[bind]]
+path = "edit.motion.obj"
+name = "→ num."
+description = "Move to next number"
+key = "shift+3"
+combinedName = "→/← num."
+combinedDescription = "Move to next/prev number"
+combinedKey = "shift+3/2"
+args.unit = "number"
+args.selectWhole = true
+args.boundary = "both"
+computedArgs.value = "(count || 1)"
+
+[[bind]]
+path = "edit.motion.obj"
+name = "← num."
+description = "Move to next number"
+key = "shift+2"
+combinedName = "→/← num."
+args.unit = "number"
+args.selectWhole = true
+args.boundary = "both"
+computedArgs.value = "-(count || 1)"
 
 [[bind]]
 path = "edit.motion"
@@ -1215,7 +1240,7 @@ key = "m e"
 name = "in subwrd"
 combinedName = "in → subword/word"
 combinedKey = "e/shift+e"
-args.unit = "subword"
+args.unit = "subident"
 args.boundary = "both"
 computedArgs.value = "count || 1"
 
@@ -1279,7 +1304,7 @@ key = "m shift+0"
 name = "arn subsec ←"
 combinedName = "around subsection →/←"
 args.unit = "subsection"
-computedArgs.value = "count || 1"
+computedArgs.value = "-(count || 1)"
 
 [[bind]]
 path = "edit.motion.match.obj"
@@ -1296,7 +1321,7 @@ key = "m shift+9"
 name = "in subsec ←"
 combinedName = "in subsection →/←"
 args.unit = "subsection"
-computedArgs.value = "count || 1"
+computedArgs.value = "-(count || 1)"
 
 [[bind]]
 path = "edit.motion.match"
@@ -3133,12 +3158,8 @@ insert cursor on line above
 combinedDescription = "insert cursor on line above/below"
 key = "shift+k"
 combinedKey = "shift+k/j"
-command = "runCommands"
+command = "editor.action.insertCursorAbove"
 repeat = "count"
-args.commands = [
-      { command = "master-key.setMode", args = { value = "selectedit" } },
-      { command = "editor.action.insertCursorAbove" }
-]
 
 [[bind]]
 path = "edit.select_edit"
@@ -3148,12 +3169,8 @@ description = """
 insert cursor on line below
 """
 key = "shift+j"
-command = "runCommands"
-repeat = "count"
-args.commands = [
-      { command = "master-key.setMode", args = { value = "selectedit" }},
-      { command = "editor.action.insertCursorBelow" }
-]
+command = "editor.action.insertCursorBelow"
+repeat = "count-1"
 
 [[bind]]
 path = "edit.select_edit"
@@ -3166,7 +3183,7 @@ mode if all selections are deleted.
 """
 key = "d"
 command = "selection-utilities.deletePrimary"
-repeat = 'count'
+repeat = "count-1"
 
 [[bind]]
 path = "edit.select_edit"
