@@ -2475,7 +2475,7 @@ key = "q s"
 command = "master-key.storeNamed"
 args.description = "Save Macro"
 args.name = "macro"
-args.contents = "macro[macro.length-count-1]"
+args.contents = "macro[macro.length-(count || 0)-1]"
 
 [[bind]]
 path = "edit.action.history"

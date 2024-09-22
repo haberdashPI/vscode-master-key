@@ -202,6 +202,34 @@ describe('Replay', () => {
             args.at = "i"
 
             [[bind]]
+            path = "replay"
+            name = "store macro"
+            key = "q s"
+            command = "master-key.storeNamed"
+            args.description = "Save Macro"
+            args.name = "macro"
+            args.contents = "macro[macro.length-(count || 0)-1]"
+
+            [[bind]]
+            path = "replay"
+            name = "replay stored"
+            key = "q r"
+            command = "runCommands"
+
+            [[bind.args.commands]]
+            command = "master-key.restoreNamed"
+            args.description = "Replay Macro"
+            args.name = "macro"
+
+            [[bind.args.commands]]
+            command = "master-key.pushHistoryToStack"
+            computedArgs.value = "captured"
+
+            [[bind.args.commands]]
+            command = "master-key.replayFromStack"
+            args.index = 0
+
+            [[bind]]
             key = "shift+2"
             mode = "normal"
             name = "count 2"
@@ -516,6 +544,61 @@ i j k l`);
                 });
             },
             [0, 3],
+            editor
+        );
+    });
+
+    it('Can be stored/restored', async () => {
+        await editor.moveCursor(1, 1);
+        await enterModalKeys('escape');
+
+        // record move A
+        await enterModalKeys(['shift', 'q']);
+        await waitForMode('rec: normal');
+        await movesCursorInEditor(
+            async () => {
+                await enterModalKeys('l');
+                await enterModalKeys('j');
+            },
+            [1, 1],
+            editor
+        );
+        await enterModalKeys(['shift', 'q']);
+        await waitForMode('normal');
+
+        // store move A
+        await enterModalKeys('q', {key: 's', updatesStatus: false});
+        await sleep(200);
+        const saveInput = new InputBox(workbench.locatorMap);
+        await saveInput.wait();
+        await saveInput.setText('foo');
+        await saveInput.confirm();
+
+        // record move B
+        await enterModalKeys(['shift', 'q']);
+        await waitForMode('rec: normal');
+        await movesCursorInEditor(
+            async () => {
+                await enterModalKeys('h');
+                await enterModalKeys('k');
+            },
+            [-1, -1],
+            editor
+        );
+        await enterModalKeys(['shift', 'q']);
+        await waitForMode('normal');
+
+        // replay move B
+        await movesCursorInEditor(
+            async () => {
+                await enterModalKeys('q', {key: 'r', updatesStatus: false});
+                await sleep(200);
+                const restoreInput = new InputBox(workbench.locatorMap);
+                await restoreInput.wait();
+                await restoreInput.setText('foo');
+                await saveInput.confirm();
+            },
+            [1, 1],
             editor
         );
     });

@@ -62,7 +62,6 @@ async function storeNamed(args_: unknown): Promise<CommandResult> {
                         {
                             label: 'Existing Names:',
                             kind: vscode.QuickPickItemKind.Separator,
-                            alwaysShow: true,
                         }
                     );
                     picker.items = options;

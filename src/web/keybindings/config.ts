@@ -3,6 +3,7 @@ import {Bindings} from './processing';
 import {parseBindings} from './parsing';
 import {processParsing} from '.';
 import {get} from '../utils';
+// eslint-disable-next-line n/no-extraneous-import
 import {inflate, deflate} from 'pako';
 
 export let bindings: Bindings | undefined = undefined;

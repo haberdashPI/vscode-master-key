@@ -24,3 +24,14 @@ debug-profile.code-profile
 _typos.toml
 notes.md
 npm-run.sh
+.eslintrc
+.eslintignore
+.mocharc.js
+.nvmrc
+.prettierignore
+environments.json
+wdio.conf.mts
+.github/**
+docs/**
+logo/**
+dist/desktop/**
