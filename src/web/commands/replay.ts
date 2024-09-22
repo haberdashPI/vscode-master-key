@@ -15,8 +15,8 @@ const selectHistoryArgs = z
         register: z.string().optional(),
     })
     .strict()
-    .refine(x => x.at || x.range, {
-        message: 'Either `at` or `range` is required.',
+    .refine(x => x.at || x.range || x.value, {
+        message: 'Either `at`, `range` or `value` is required.',
     });
 
 const evalContext = new EvalContext();
