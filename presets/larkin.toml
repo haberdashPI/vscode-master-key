@@ -28,7 +28,6 @@ requiredExtensions = [
       "haberdashPI.selection-utilities",
       "pustelto.bracketeer",
       "wmaurer.change-case",
-      "albymor.increment-selection",
       "pkief.markdown-checkbox",
       "stkb.rewrap",
       "jack89ita.open-file-from-path",
@@ -1962,28 +1961,16 @@ description = "Commands that modify one or more numbers"
 [[bind]]
 path = "edit.action.numbers"
 name = 'inc #'
-description = "Increment a number by 1 (increases increment for subsequent selections)"
+description = "Increment a number by 1"
 key = "="
-when = "editorHasMultipleSelections"
-command = "editor.emmet.action.incrementNumberByOne"
-
-[[bind]]
-path = "edit.action.numbers"
-key = "="
-command = "extension.incrementSelection"
+command = "selection-utilities.incrementNumber"
 
 [[bind]]
 path = "edit.action.numbers"
 name = 'dec #'
-description = "Decrement a number by 1 (increases increment for subsequent selections)"
+description = "Decrement a number by 1 "
 key = "shift+="
-when = "editorHasMultipleSelections"
-command = "editor.emmet.action.decrementNumberByOne"
-
-[[bind]]
-path = "edit.action.numbers"
-key = "shift+="
-command = "extension.decrementSelection"
+command = "selection-utilities.decrementNumber"
 
 # ## Captilization
 
@@ -2351,19 +2338,19 @@ command = "editor.action.blockComment"
 path = "edit.action.do"
 name = 'inc all #'
 combinedName = "inc/dec all #"
-combinedDescription = "Increment/decrement all numbers by 1"
+combinedDescription = "Increment/decrement selected numbers; increment/decrement increases per selection"
 combinedKey = "=/shift+="
-description = "Increment all numbers by 1"
+description = "Increment selected numbers; increment increases per selection"
 key = "space ="
-command = "editor.emmet.action.incrementNumberByOne"
+command = "selection-utilities.incrementNumberPerSelection"
 
 [[bind]]
 path = "edit.action.do"
 name = 'dec all #'
 combinedName = "inc/dec all #"
-description = "Decrement all numbers by 1"
+description = "Decrement selected numbers; decrement increases per selection"
 key = "space shift+="
-command = "editor.emmet.action.decrementNumberByOne"
+command = "selection-utilities.decrementNumberPerSelection"
 
 [[bind]]
 path = "edit.action.do"
