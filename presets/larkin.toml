@@ -28,7 +28,6 @@ requiredExtensions = [
       "haberdashPI.selection-utilities",
       "pustelto.bracketeer",
       "wmaurer.change-case",
-      "albymor.increment-selection",
       "pkief.markdown-checkbox",
       "stkb.rewrap",
       "jack89ita.open-file-from-path",
