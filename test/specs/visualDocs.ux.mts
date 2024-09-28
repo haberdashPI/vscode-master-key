@@ -99,6 +99,30 @@ describe('Visual Docs', () => {
             mode = "normal"
             kind = "right"
 
+            [[bind]]
+            path = "motion"
+            key = "ctrl+i"
+            name = "magic insert"
+            command = "foobar"
+            mode = "normal"
+            kind = "right"
+
+            [[bind]]
+            path = "motion"
+            key = "ctrl+o"
+            name = "magic outsert"
+            command = "foobiz"
+            mode = "normal"
+            kind = "right"
+
+            [[bind]]
+            path = "motion"
+            key = "alt+i"
+            name = "evil insert"
+            command = "die"
+            mode = "normal"
+            kind = "right"
+
             # Final paragraph shows up.
         `);
         editor = await setupEditor('A simple test');
@@ -169,6 +193,37 @@ describe('Visual Docs', () => {
 
         await browser.keys('w');
         await docView.close();
+    });
+
+    it('Toggled by command', async () => {
+        await browser.executeWorkbench(vscode => {
+            vscode.commands.executeCommand('master-key.toggleVisualDocModifiers');
+        });
+
+        await docView.open();
+
+        const iLabel = await browser.$('div.keyboard').$('div*=I');
+        expect(iLabel).toMatch(/I/);
+        const iLowerName = (await iLabel.parentElement()).$('div.name.bottom');
+        expect(iLowerName).toEqual('magic insert');
+        const iUpperName = (await iLabel.parentElement()).$('div.name.top');
+        expect(iUpperName).toEqual('evil insert');
+
+        const kLabel = await browser.$('div.keyboard').$('div*=K');
+        expect(kLabel).toMatch(/K/);
+        const kName = (await iLabel.parentElement()).$('div.name.bottom');
+        expect(kName).toEqual('');
+
+        await browser.executeWorkbench(vscode => {
+            vscode.commands.executeCommand('master-key.toggleVisualDocModifiers');
+        });
+
+        const hLabel = await browser.$('div.keyboard').$('div=H');
+        expect(hLabel).toHaveText('H');
+        const hName = (await hLabel.parentElement()).$('div.name.bottom');
+        expect(hName).toHaveText('left');
+        const hClasses = await hName.getAttribute('class');
+        expect(hClasses).toMatch('kind-color-0');
     });
 
     after(async () => {
