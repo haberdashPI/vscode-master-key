@@ -99,6 +99,30 @@ describe('Visual Docs', () => {
             mode = "normal"
             kind = "right"
 
+            [[bind]]
+            path = "motion"
+            key = "ctrl+i"
+            name = "magic insert"
+            command = "foobar"
+            mode = "normal"
+            kind = "right"
+
+            [[bind]]
+            path = "motion"
+            key = "ctrl+o"
+            name = "magic outsert"
+            command = "foobiz"
+            mode = "normal"
+            kind = "right"
+
+            [[bind]]
+            path = "motion"
+            key = "alt+i"
+            name = "evil insert"
+            command = "die"
+            mode = "normal"
+            kind = "right"
+
             # Final paragraph shows up.
         `);
         editor = await setupEditor('A simple test');
@@ -168,6 +192,57 @@ describe('Visual Docs', () => {
         expect(wClasses).toMatch('kind-color-1');
 
         await browser.keys('w');
+        await docView.close();
+    });
+
+    it('Toggled by command', async () => {
+        await docView.open();
+
+        // eslint-disable-next-line prefer-const
+        let iLabel = await browser.$('div.keyboard').$('div*=I');
+        expect(await iLabel.getText()).toMatch(/I/);
+        let iLowerName = (await iLabel.parentElement()).$('div.name.bottom');
+        expect(iLowerName).toHaveText('insert');
+        let iUpperName = (await iLabel.parentElement()).$('div.name.top');
+        expect(iUpperName).toHaveText('magic insert');
+
+        let oLabel = await browser.$('div.keyboard').$('div*=0');
+        expect(await oLabel.getText()).toMatch(/0/);
+        let oName = (await iLabel.parentElement()).$('div.name.top');
+        expect(oName).toHaveText('magic outsert');
+
+        await browser.executeWorkbench(vscode => {
+            vscode.commands.executeCommand('master-key.toggleVisualDocModifiers');
+        });
+
+        iLabel = await browser.$('div.keyboard').$('div*=I');
+        expect(await iLabel.getText()).toMatch(/I/);
+        iLowerName = (await iLabel.parentElement()).$('div.name.bottom');
+        expect(iLowerName).toHaveText('insert');
+        iUpperName = (await iLabel.parentElement()).$('div.name.top');
+        expect(iUpperName).toHaveText('evil insert');
+
+        oLabel = await browser.$('div.keyboard').$('div*=O');
+        expect(await oLabel.getText()).toMatch(/O/);
+        oName = (await iLabel.parentElement()).$('div.name.top');
+        expect(oName).toHaveText('');
+
+        await browser.executeWorkbench(vscode => {
+            vscode.commands.executeCommand('master-key.toggleVisualDocModifiers');
+        });
+
+        iLabel = await browser.$('div.keyboard').$('div*=I');
+        expect(await iLabel.getText()).toMatch(/I/);
+        iLowerName = (await iLabel.parentElement()).$('div.name.bottom');
+        expect(iLowerName).toHaveText('insert');
+        iUpperName = (await iLabel.parentElement()).$('div.name.top');
+        expect(iUpperName).toHaveText('magic insert');
+
+        oLabel = await browser.$('div.keyboard').$('div*=0');
+        expect(await oLabel.getText()).toMatch(/0/);
+        oName = (await iLabel.parentElement()).$('div.name.top');
+        expect(oName).toHaveText('magic outsert');
+
         await docView.close();
     });
 
