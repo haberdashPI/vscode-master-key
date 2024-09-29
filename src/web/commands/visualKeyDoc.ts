@@ -2,13 +2,12 @@ import {CommandState} from '../state';
 import {withState} from '../state';
 import * as vscode from 'vscode';
 import {MODE} from './mode';
-import z from 'zod';
 import {Bindings, IConfigKeyBinding} from '../keybindings/processing';
 import {filterBindingFn} from '../keybindings';
 import {bindings, onChangeBindings} from '../keybindings/config';
 import {PREFIX_CODE} from './prefix';
 import {reverse, uniqBy} from 'lodash';
-import {modifierKey, prettifyPrefix, validateInput} from '../utils';
+import {modifierKey, prettifyPrefix} from '../utils';
 import {Map} from 'immutable';
 
 // TODO: use KeyboardLayoutMap to improve behavior
@@ -216,16 +215,24 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
                 this._modifierSetIndex += 2;
             }
         }
-        this._bottomModifier = this._modifierOrder[this._modifierSetIndex];
-        this._topModifier =
+        const a = this._modifierOrder[this._modifierSetIndex];
+        const b =
             this._modifierOrder[(this._modifierSetIndex + 1) % this._modifierOrder.length];
+        const aLength = a.map(x => x.length).reduce((x, y) => x + y);
+        const bLength = b.map(x => x.length).reduce((x, y) => x + y);
+        if (aLength > bLength) {
+            this._topModifier = a;
+            this._bottomModifier = b;
+        } else {
+            this._topModifier = b;
+            this._bottomModifier = a;
+        }
+
         this.updateKeyHelper();
         this.refresh();
     }
 
     private updateKeys(values: CommandState | Map<string, unknown>) {
-        // TODO: prevent this from being updated on every keypress
-        // e.g. when pressing single-key commands
         const allBindings = bindings?.bind || [];
         if (this._oldBindings !== allBindings) {
             this._modifierSetIndex = 0;
@@ -235,9 +242,21 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
                 modifierCounts[key] = get(modifierCounts, key, 0) + 1;
             }
 
-            modifierCounts[''] = modifierCounts[''] === undefined ? 0 : modifierCounts[''];
-            modifierCounts['⇧'] =
-                modifierCounts['⇧'] === undefined ? 0 : modifierCounts['⇧'];
+            // handle cases where there are fewer than 2 modifier keys in the
+            // binding set
+            if (Object.keys(modifierCounts).length < 1) {
+                modifierCounts[''] =
+                    modifierCounts[''] === undefined ? 0 : modifierCounts[''];
+            }
+            if (Object.keys(modifierCounts).length < 2) {
+                const modifier = Object.keys(modifierCounts)[0];
+                if (modifierCounts[modifier + '⇧'] === undefined) {
+                    modifierCounts[modifier] = 0;
+                } else {
+                    modifierCounts[modifier] = modifierCounts[modifier + '⇧'];
+                }
+            }
+
             const modifiers = Object.keys(modifierCounts);
             modifiers.sort((x, y) => modifierCounts[y] - modifierCounts[x]);
             this._modifierOrder = modifiers.map(x => x.split('.'));
@@ -403,55 +422,6 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
     }
 }
 
-const visualDocModifierArgs = z.object({
-    modifiers: z.array(z.string()).optional(),
-});
-async function setVisualDocModifier(
-    pos: 'top' | 'bottom',
-    provider: DocViewProvider,
-    args_: unknown
-) {
-    let modifiers: string[];
-    if (args_) {
-        const args = validateInput(
-            `master-key.setVisualDoc${pos}Modifiers`,
-            args_,
-            visualDocModifierArgs
-        );
-        if (args?.modifiers) {
-            modifiers = args.modifiers;
-        } else {
-            return;
-        }
-    } else {
-        // TODO: make this list specific to the platform
-        const items: vscode.QuickPickItem[] = [
-            {label: '^', description: 'control'},
-            {label: '⌘', description: 'command'},
-            {label: '⌥', description: 'alt'},
-            {label: '⇧', description: 'shift'},
-        ];
-        const picked = pos === 'top' ? provider.topModifier : provider.bottomModifier;
-        for (const item of items) {
-            item.picked = picked.some(x => x === item.label);
-        }
-        const selections = await vscode.window.showQuickPick(items, {
-            canPickMany: true,
-            matchOnDescription: true,
-        });
-        if (selections) {
-            modifiers = selections.map(sel => sel.label);
-        } else {
-            return;
-        }
-    }
-    if (pos === 'top') {
-        provider.topModifier = modifiers;
-    } else {
-        provider.bottomModifier = modifiers;
-    }
-}
-
 async function showVisualDoc() {
     const editor = vscode.window.activeTextEditor;
     await vscode.commands.executeCommand('workbench.view.extension.masterKeyVisualDoc');
@@ -471,16 +441,6 @@ export async function activate(context: vscode.ExtensionContext) {
     // TODO: only show command in os x
     // TODO: make a meta key for linux (and windows for windows)
     // TODO: the modifiers need to be able to be combined...
-    context.subscriptions.push(
-        vscode.commands.registerCommand('master-key.setVisualDocTopModifiers', args =>
-            setVisualDocModifier('top', docProvider, args)
-        )
-    );
-    context.subscriptions.push(
-        vscode.commands.registerCommand('master-key.setVisualDocBottomModifiers', args =>
-            setVisualDocModifier('bottom', docProvider, args)
-        )
-    );
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.toggleVisualDocModifiers', _args =>
             docProvider.toggleModifier()
