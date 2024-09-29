@@ -218,7 +218,10 @@ async function copyCommandResultIntoBindingFile(command: string) {
     }
 }
 
-async function insertKeybindingsIntoConfig(name: string, keyBindings: IConfigKeyBinding[]) {
+async function insertKeybindingsIntoConfig(bindings: Bindings) {
+    const name = bindings.name || 'none';
+    const keyBindings = bindings.bind;
+
     await vscode.commands.executeCommand('workbench.action.openGlobalKeybindingsFile');
     const ed = vscode.window.activeTextEditor;
     if (ed) {
@@ -269,6 +272,12 @@ async function insertKeybindingsIntoConfig(name: string, keyBindings: IConfigKey
             }
 
             if (installed) {
+                if ((bindings.requiredExtensions || []).length === 0) {
+                    vscode.window.showInformationMessage(
+                        'Master keybindings were added to `keybindings.json`'
+                    );
+                    return;
+                }
                 vscode.window
                     .showInformationMessage(
                         replaceAll(
@@ -536,7 +545,7 @@ async function activateBindings(preset?: Preset) {
         const bindings = await createBindings(preset.data);
         if (bindings) {
             await handleRequireExtensions(bindings);
-            await insertKeybindingsIntoConfig(bindings.name || 'none', bindings.bind);
+            await insertKeybindingsIntoConfig(bindings);
             await vscode.commands.executeCommand('master-key.showVisualDoc');
             await vscode.commands.executeCommand('master-key.showTextDoc');
         }
@@ -569,7 +578,7 @@ async function selectUserBindings(file?: vscode.Uri) {
         const data = new TextDecoder().decode(fileData);
         const bindings = await createUserBindings(data);
         if (bindings) {
-            await insertKeybindingsIntoConfig(bindings.name || 'none', bindings.bind);
+            await insertKeybindingsIntoConfig(bindings);
         }
     }
 }
