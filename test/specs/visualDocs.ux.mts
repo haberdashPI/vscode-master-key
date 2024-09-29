@@ -242,6 +242,8 @@ describe('Visual Docs', () => {
         expect(await oLabel.getText()).toMatch(/0/);
         oName = (await iLabel.parentElement()).$('div.name.top');
         expect(oName).toHaveText('magic outsert');
+
+        await docView.close();
     });
 
     after(async () => {
