@@ -352,7 +352,7 @@ describe('Configuration', () => {
             editor
         );
 
-        await enterModalKeys('ctrl+]');
+        await enterModalKeys(['ctrl', ']']);
 
         await movesCursorInEditor(
             async () => await enterModalKeys(['ctrl', 'h']),
