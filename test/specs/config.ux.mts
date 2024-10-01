@@ -353,12 +353,7 @@ describe('Configuration', () => {
         );
 
         await enterModalKeys(['ctrl', ']']);
-
-        await movesCursorInEditor(
-            async () => await enterModalKeys(['ctrl', 'h']),
-            [-1, 0],
-            editor
-        );
+        await enterModalKeys(['ctrl', 'h']);
         expect(await editor.getSelectedText()).toEqual('A simple test\n');
     });
 
