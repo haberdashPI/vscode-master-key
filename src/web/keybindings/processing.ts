@@ -80,9 +80,9 @@ function mapByName(specs: ModeSpec[]) {
 
 function mergeArgs(obj_: RawBindingItem, src_: RawBindingItem, key: string) {
     if (key === 'args' || key === 'computedArgs') {
-        return merge(obj_, src_)
+        return merge(obj_, src_);
     }
-    return 
+    return;
 }
 
 const runCommandsArgs = z.object({
