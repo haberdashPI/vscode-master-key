@@ -293,8 +293,7 @@ describe('Configuration', () => {
         expect(messages).toContainEqual(error);
     });
 
-    // eslint-disable-next-line no-restricted-properties
-    it.only('Can overwrite default mode', async () => {
+    it('Can overwrite default mode', async () => {
         await setBindings(`
             [header]
             name = "Debug Key Bindings"
