@@ -310,14 +310,14 @@ describe('Configuration', () => {
             [[bind]]
             name = "mode a"
             key = "ctrl+["
-            command = "setMode"
-            args = "a"
+            command = "master-key.setMode"
+            args.value = "a"
 
             [[bind]]
             name = "mode b"
             key = "ctrl+]"
-            command = "setMode"
-            args = "b"
+            command = "master-key.setMode"
+            args.value = "b"
 
             [[path]]
             id = "actions"
@@ -353,6 +353,7 @@ describe('Configuration', () => {
         );
 
         await enterModalKeys(['ctrl', ']']);
+        await waitForMode('b');
         await enterModalKeys(['ctrl', 'h']);
         expect(await editor.getSelectedText()).toEqual('A simple test\n');
     });
