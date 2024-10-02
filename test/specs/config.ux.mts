@@ -293,6 +293,70 @@ describe('Configuration', () => {
         expect(messages).toContainEqual(error);
     });
 
+    it('Can overwrite default mode', async () => {
+        await setBindings(`
+            [header]
+            name = "Debug Key Bindings"
+            version = "1.0"
+
+            [[mode]]
+            name = "a"
+            default = true
+
+            [[mode]]
+            name = "b"
+
+            [[bind]]
+            name = "mode a"
+            key = "ctrl+["
+            command = "master-key.setMode"
+            args.value = "a"
+
+            [[bind]]
+            name = "mode b"
+            key = "ctrl+]"
+            command = "master-key.setMode"
+            args.value = "b"
+
+            [[path]]
+            id = "actions"
+            name = "Actions"
+            default.mode = ["a", "b"]
+            default.args.to = "up"
+            default.args.select = false
+
+            [[bind]]
+            path = "actions"
+            key = "ctrl+h"
+            name = "x"
+            command = "cursorMove"
+            args = { to = "down"}
+            mode = ["a"]
+
+            [[bind]]
+            path = "actions"
+            key = "ctrl+h"
+            name = "x"
+            command = "cursorMove"
+            computedArgs = { select = true }
+            mode = ["b"]
+        `);
+
+        editor = await setupEditor('A simple test\nwith two lines');
+        await editor.moveCursor(1, 1);
+
+        await movesCursorInEditor(
+            async () => await enterModalKeys(['ctrl', 'h']),
+            [1, 0],
+            editor
+        );
+
+        await enterModalKeys(['ctrl', ']']);
+        await waitForMode('b');
+        await enterModalKeys(['ctrl', 'h']);
+        expect(await editor.getSelectedText()).toEqual('A simple test\n');
+    });
+
     after(async () => {
         const workbench = await browser.getWorkbench();
         await workbench.executeCommand('Clear Command History');

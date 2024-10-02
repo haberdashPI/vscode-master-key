@@ -20,11 +20,11 @@ import {
     pick,
     isEqual,
     omit,
-    mergeWith,
     cloneDeep,
     flatMap,
     mapValues,
     merge,
+    assignWith,
 } from 'lodash';
 import {reifyStrings, EvalContext} from '../expressions';
 import {isSingleCommand, validateInput, IIndexed} from '../utils';
@@ -78,17 +78,11 @@ function mapByName(specs: ModeSpec[]) {
     return modeSpecs;
 }
 
-function overwritePrefixesAndWhen(obj_: RawBindingItem, src_: RawBindingItem, key: string) {
-    if (key === 'prefixes' || key === 'when') {
-        if (src_ !== undefined) {
-            return src_;
-        } else {
-            return obj_;
-        }
-    } else {
-        // revert to default behavior
-        return;
+function mergeArgs(obj_: RawBindingItem, src_: RawBindingItem, key: string) {
+    if (key === 'args' || key === 'computedArgs') {
+        return merge(obj_, src_);
     }
+    return;
 }
 
 const runCommandsArgs = z.object({
@@ -157,7 +151,7 @@ function expandDefaultsDefinedAndForeach(
                 whens = cloneDeep(pathWhens[prefix]);
             }
         }
-        pathDefaults[path.id] = mergeWith(defaults, path.default, overwritePrefixesAndWhen);
+        pathDefaults[path.id] = assignWith(defaults, path.default, mergeArgs);
         if (path.when) {
             pathWhens[path.id] = whens.concat(path.when);
         }
@@ -170,7 +164,7 @@ function expandDefaultsDefinedAndForeach(
             problems.push(`The path '${item.path}' is undefined.`);
             return undefined;
         } else {
-            item = mergeWith(cloneDeep(itemDefault), item, overwritePrefixesAndWhen);
+            item = assignWith(cloneDeep(itemDefault), item, mergeArgs);
             if (item.when) {
                 item.when = itemConcatWhen ? item.when.concat(itemConcatWhen) : item.when;
             } else if (itemConcatWhen) {

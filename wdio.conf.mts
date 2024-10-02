@@ -71,8 +71,6 @@ export const config: Options.Testrunner = {
                 workspacePath: __dirname,
                 vscodeArgs: {
                     profile: 'debug-profile',
-                    'enable-features':
-                        'ConversionMeasurement,AttributionReportingCrossAppWeb',
                 },
                 storagePath: __dirname + '/.wdio-vscode-service/storage/',
             },
