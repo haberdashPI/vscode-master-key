@@ -1866,6 +1866,17 @@ args.commands = ["editor.action.clipboardCopyAction", "selection-utilities.shrin
 
 [[bind]]
 path = "edit.action.clipboard"
+key = "y"
+when = "master-key.count > 1"
+command = "runCommands"
+args.commands = [
+      { defined = "selectLinesDown" },
+      "editor.action.clipboardCopyAction",
+      "selection-utilities.shrinkToActive"
+]
+
+[[bind]]
+path = "edit.action.clipboard"
 key = "shift+y"
 name = "copy (eol/up)"
 description = "without a count: copy to end of line; with a count: copy this and the previous N lines"
@@ -1875,7 +1886,7 @@ args.commands = [
       "selection-utilities.shrinkToActive",
       { command = "cursorMove", args = { to = "wrappedLineEnd", select = true} },
       "editor.action.clipboardCopyAction",
-      "editor.action.shrinkToActive"
+      "selection-utilities.shrinkToActive"
 ]
 
 [[bind]]
@@ -1886,7 +1897,7 @@ command = "runCommands"
 args.commands = [
       { defined = "selectLinesUp" },
       "editor.action.clipboardCopyAction",
-      "editor.action.shrinkToActive"
+      "selection-utilities.shrinkToActive"
 ]
 
 [[path]]
@@ -1908,20 +1919,27 @@ path = "edit.action.indent"
 key = "shift+."
 name = "indent"
 description = "Indent lines"
-when = "master-key.count >= 1"
-command = "runCommands"
-args.commands = [
-      { defined = "selectLinesDown" },
-      "editor.action.indentLines",
-      "selection-utilities.shrinkToActive"
-]
+command = "editor.action.indentLines"
 
 [[bind]]
 path = "edit.action.indent"
 key = "shift+."
 name = "indent"
 description = "Indent lines"
-command = "editor.action.indentLines"
+when = "master-key.count >= 1"
+command = "runCommands"
+args.commands = [
+      { defined = "selectLinesDown" },
+      "editor.action.indentLines"
+]
+
+[[bind]]
+path = "edit.action.indent"
+key = "shift+,"
+name = "deindent"
+when = "master-key.count < 1"
+description = "De-indent lines"
+command = "editor.action.outdentLines"
 
 [[bind]]
 path = "edit.action.indent"
@@ -1935,14 +1953,6 @@ args.commands = [
       "editor.action.outdentLines",
       "selection-utilities.shrinkToActive"
 ]
-
-[[bind]]
-path = "edit.action.indent"
-key = "shift+,"
-name = "deindent"
-when = "master-key.count < 1"
-description = "De-indent lines"
-command = "editor.action.outdentLines"
 
 [[path]]
 id = "edit.action.history"
@@ -2209,6 +2219,14 @@ command = "editor.action.joinLines"
 [[bind]]
 path = "edit.action.do"
 key = "space f"
+name = "format"
+combinedName = "format / format document"
+when = "master-key.count < 1"
+command = "editor.action.formatSelection"
+
+[[bind]]
+path = "edit.action.do"
+key = "space f"
 combinedName = "format / format document"
 combinedKey = "f/shift+f"
 combinedDescription = "Format selection / document"
@@ -2221,14 +2239,6 @@ args.commands = [
       "editor.action.formatSelection",
       "selection-utilities.shrinkToActive"
 ]
-
-[[bind]]
-path = "edit.action.do"
-key = "space f"
-name = "format"
-combinedName = "format / format document"
-when = "master-key.count < 1"
-command = "editor.action.formatSelection"
 
 [[bind]]
 path = "edit.action.do"
@@ -2294,6 +2304,13 @@ Operations that modify comments
 [[bind]]
 path = "edit.action.do"
 key = "space /"
+combinedName = "(block) comment"
+when = "master-key.count < 1"
+command = "editor.action.commentLine"
+
+[[bind]]
+path = "edit.action.do"
+key = "space /"
 name = "comment lines"
 combinedName = "(block) comment"
 combinedDescription = "Toggle (block) comment"
@@ -2308,10 +2325,10 @@ args.commands = [
 
 [[bind]]
 path = "edit.action.do"
-key = "space /"
-combinedName = "(block) comment"
+key = "space shift+/"
 when = "master-key.count < 1"
-command = "editor.action.commentLine"
+combinedName = "(block) comment"
+command = "editor.action.blockComment"
 
 [[bind]]
 path = "edit.action.do"
@@ -2326,13 +2343,6 @@ args.commands = [
       "editor.action.blockComment",
       "selection-utilities.shrinkToActive",
 ]
-
-[[bind]]
-path = "edit.action.do"
-key = "space shift+/"
-when = "master-key.count < 1"
-combinedName = "(block) comment"
-command = "editor.action.blockComment"
 
 [[bind]]
 path = "edit.action.do"
