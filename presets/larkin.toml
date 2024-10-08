@@ -1875,7 +1875,7 @@ args.commands = [
       "selection-utilities.shrinkToActive",
       { command = "cursorMove", args = { to = "wrappedLineEnd", select = true} },
       "editor.action.clipboardCopyAction",
-      "editor.action.shrinkToActive"
+      "selection-utilities.shrinkToActive"
 ]
 
 [[bind]]
@@ -1886,7 +1886,7 @@ command = "runCommands"
 args.commands = [
       { defined = "selectLinesUp" },
       "editor.action.clipboardCopyAction",
-      "editor.action.shrinkToActive"
+      "selection-utilities.shrinkToActive"
 ]
 
 [[path]]
