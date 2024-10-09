@@ -471,10 +471,10 @@ function expandModes(
     items: BindingItem[],
     validModes: ModeSpec[],
     problems: string[],
-    modes: ModeSpec[],
+    modes: ModeSpec[]
 ) {
     const defaultMode = validModes.filter(x => x.default)[0]; // validation should guarantee a single match
-    const fallbacks: Record<string, string> = {}
+    const fallbacks: Record<string, string> = {};
     for (const mode of modes) {
         if (mode.fallbackBindings) {
             fallbacks[mode.fallbackBindings] = mode.name;
@@ -495,10 +495,13 @@ function expandModes(
                 .map(x => x.name)
                 .filter(mode => !exclude.some(x => x === mode));
 
-            const implicitModes: string[] = []
+            // add modes that are implicitly present due to fallbacks
+            const implicitModes: string[] = [];
             for (const mode of modes) {
-                let implicitMode = fallbacks[mode])
-
+                const implicitMode = fallbacks[mode];
+                if (implicitMode) {
+                    implicitModes.push(implicitMode);
+                }
             }
         }
         if (modes.length === 0) {
