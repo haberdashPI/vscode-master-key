@@ -48,7 +48,7 @@ export function processBindings(spec: FullBindingSpec): [Bindings, string[]] {
     const docs = resolveDocItems(indexedItems, spec.doc || [], problems);
     let items = indexedItems.map((item, i) => requireTransientSequence(item, i, problems));
     items = expandPrefixes(items);
-    items = expandModes(items, spec.mode, problems);
+    items = expandModes(items, spec.mode, problems, spec.mode);
     items = expandDocsToDuplicates(items);
     const r = expandKeySequencesAndResolveDuplicates(items, problems);
     items = r[0];
@@ -467,8 +467,19 @@ function expandPrefixes(items: BindingItem[]) {
     });
 }
 
-function expandModes(items: BindingItem[], validModes: ModeSpec[], problems: string[]) {
+function expandModes(
+    items: BindingItem[],
+    validModes: ModeSpec[],
+    problems: string[],
+    modes: ModeSpec[],
+) {
     const defaultMode = validModes.filter(x => x.default)[0]; // validation should guarantee a single match
+    const fallbacks: Record<string, string> = {}
+    for (const mode of modes) {
+        if (mode.fallbackBindings) {
+            fallbacks[mode.fallbackBindings] = mode.name;
+        }
+    }
     return flatMap(items, (item: BindingItem): BindingItem[] => {
         let modes = item.mode || [defaultMode.name];
         if (modes.length > 0 && modes[0].startsWith('!')) {
@@ -483,6 +494,12 @@ function expandModes(items: BindingItem[], validModes: ModeSpec[], problems: str
             modes = validModes
                 .map(x => x.name)
                 .filter(mode => !exclude.some(x => x === mode));
+
+            const implicitModes: string[] = []
+            for (const mode of modes) {
+                let implicitMode = fallbacks[mode])
+
+            }
         }
         if (modes.length === 0) {
             return [item];

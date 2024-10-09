@@ -327,6 +327,7 @@ const modeSpec = z.object({
         .enum(['Line', 'Block', 'Underline', 'LineThin', 'BlockOutline', 'UnderlineThin'])
         .default('Line'),
     onType: doArgs.optional(),
+    fallbackBindings: z.string().optional().default(''),
     lineNumbers: z.enum(['relative', 'on', 'off', 'interval']).optional(),
 });
 export type ModeSpec = z.output<typeof modeSpec>;
@@ -385,6 +386,7 @@ export const bindingSpec = z
                         default: false,
                         recordEdits: false,
                         highlight: 'Highlight',
+                        fallbackBindings: '',
                     });
                 }
                 return xs;
