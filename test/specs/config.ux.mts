@@ -174,9 +174,9 @@ describe('Configuration', () => {
     });
 
     it('Can add fallback bindings', async () => {
-        editor = await setupEditor('A simple test');
-        await enterModalKeys(['ctrl', 'i']);
+        await editor.moveCursor(1, 1);
         await enterModalKeys('escape');
+        editor = await setupEditor('A simple test');
         await enterModalKeys(['ctrl', 'u']);
         await waitForMode('normal-left');
         await movesCursorInEditor(() => enterModalKeys(['ctrl', 'l']), [0, 1], editor);
