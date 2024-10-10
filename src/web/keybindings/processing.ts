@@ -48,7 +48,7 @@ export function processBindings(spec: FullBindingSpec): [Bindings, string[]] {
     const docs = resolveDocItems(indexedItems, spec.doc || [], problems);
     let items = indexedItems.map((item, i) => requireTransientSequence(item, i, problems));
     items = expandPrefixes(items);
-    items = expandModes(items, spec.mode, problems);
+    items = expandModes(items, spec.mode, problems, spec.mode);
     items = expandDocsToDuplicates(items);
     const r = expandKeySequencesAndResolveDuplicates(items, problems);
     items = r[0];
@@ -467,27 +467,49 @@ function expandPrefixes(items: BindingItem[]) {
     });
 }
 
-function expandModes(items: BindingItem[], validModes: ModeSpec[], problems: string[]) {
+function expandModes(
+    items: BindingItem[],
+    validModes: ModeSpec[],
+    problems: string[],
+    modes: ModeSpec[]
+) {
     const defaultMode = validModes.filter(x => x.default)[0]; // validation should guarantee a single match
+    const fallbacks: Record<string, string> = {};
+    for (const mode of modes) {
+        if (mode.fallbackBindings) {
+            fallbacks[mode.fallbackBindings] = mode.name;
+        }
+    }
     return flatMap(items, (item: BindingItem): BindingItem[] => {
-        let modes = item.mode || [defaultMode.name];
-        if (modes.length > 0 && modes[0].startsWith('!')) {
-            if (modes.some(x => !x.startsWith('!'))) {
+        let itemModes = item.mode || [defaultMode.name];
+        if (itemModes.length > 0 && itemModes[0].startsWith('!')) {
+            if (itemModes.some(x => !x.startsWith('!'))) {
                 problems.push(
-                    `Either all or none of the modes for binding ${item.key} ` +
+                    `Either all or none of the itemModes for binding ${item.key} ` +
                         "must be prefixed with '!'"
                 );
-                modes = modes.filter(x => x.startsWith('!'));
+                itemModes = itemModes.filter(x => x.startsWith('!'));
             }
-            const exclude = modes.map(m => m.slice(1));
-            modes = validModes
+            const exclude = itemModes.map(m => m.slice(1));
+            itemModes = validModes
                 .map(x => x.name)
                 .filter(mode => !exclude.some(x => x === mode));
         }
-        if (modes.length === 0) {
+
+        // add modes that are implicitly present due to fallbacks
+        const implicitModes: string[] = [];
+        for (const mode of itemModes) {
+            const implicitMode = fallbacks[mode];
+            if (implicitMode) {
+                implicitModes.push(implicitMode);
+            }
+        }
+        itemModes = itemModes.concat(implicitModes);
+
+        if (itemModes.length === 0) {
             return [item];
         } else {
-            return modes.map(m => ({...item, mode: [m]}));
+            return itemModes.map(m => ({...item, mode: [m]}));
         }
     });
 }

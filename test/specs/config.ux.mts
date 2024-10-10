@@ -59,6 +59,26 @@ describe('Configuration', () => {
             name = "insert"
             key = "ctrl+i"
             command = "master-key.enterInsert"
+            mode = "normal"
+
+            [[bind]]
+            name = "normal-left mode"
+            key = "ctrl+u"
+            command = "master-key.setMode"
+            args.value = "normal-left"
+
+            [[mode]]
+            name = "normal-left"
+            fallbackBindings = "normal"
+
+            [[bind]]
+            path = "motion"
+            key = "ctrl+h"
+            mode = "normal-left"
+            name = "left"
+            when = "editorTextFocus"
+            command = "cursorMove"
+            args.to = "left"
         `);
 
         folder = fs.mkdtempSync(path.join(os.tmpdir(), 'master-key-test-'));
@@ -151,6 +171,16 @@ describe('Configuration', () => {
         const statusBarEl = await browser.$('div[aria-label="Keybinding Mode: insert"]');
         const statusBarClasses = await statusBarEl.getAttribute('class');
         expect(statusBarClasses).not.toMatch(/warning-kind/);
+    });
+
+    it('Can add fallback bindings', async () => {
+        await editor.moveCursor(1, 1);
+        await enterModalKeys('escape');
+        editor = await setupEditor('A simple test');
+        await enterModalKeys(['ctrl', 'u']);
+        await waitForMode('normal-left');
+        await movesCursorInEditor(() => enterModalKeys(['ctrl', 'l']), [0, 1], editor);
+        await movesCursorInEditor(() => enterModalKeys(['ctrl', 'h']), [0, -1], editor);
     });
 
     it('Can be loaded from a directory', async () => {
