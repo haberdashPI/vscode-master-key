@@ -173,8 +173,7 @@ describe('Configuration', () => {
         expect(statusBarClasses).not.toMatch(/warning-kind/);
     });
 
-    // eslint-disable-next-line no-restricted-properties
-    it.only('Can add fallback bindings', async () => {
+    it('Can add fallback bindings', async () => {
         await enterModalKeys(['ctrl', 'i']);
         editor = await setupEditor('A simple test');
         await enterModalKeys('escape');
