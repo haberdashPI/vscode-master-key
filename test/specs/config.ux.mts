@@ -56,6 +56,13 @@ describe('Configuration', () => {
             args.to = "right"
 
             [[bind]]
+            path = "motion"
+            name = "double right"
+            key = "ctrl+shift+l"
+            args.to = "right"
+            computedArgs.value = 2
+
+            [[bind]]
             name = "insert"
             key = "ctrl+i"
             command = "master-key.enterInsert"
@@ -79,6 +86,14 @@ describe('Configuration', () => {
             when = "editorTextFocus"
             command = "cursorMove"
             args.to = "left"
+
+            [[bind]]
+            path = "motion"
+            name = "double left"
+            mode = "normal-left"
+            key = "ctrl+shift+l"
+            args.to = "left"
+            computedArgs.value = 2
         `);
 
         folder = fs.mkdtempSync(path.join(os.tmpdir(), 'master-key-test-'));
@@ -174,13 +189,25 @@ describe('Configuration', () => {
     });
 
     it('Can add fallback bindings', async () => {
-        await editor.moveCursor(1, 1);
         await enterModalKeys('escape');
         editor = await setupEditor('A simple test');
+        await editor.moveCursor(1, 1);
+        await movesCursorInEditor(
+            () => enterModalKeys(['ctrl', 'shift', 'l']),
+            [0, 2],
+            editor
+        );
         await enterModalKeys(['ctrl', 'u']);
         await waitForMode('normal-left');
         await movesCursorInEditor(() => enterModalKeys(['ctrl', 'l']), [0, 1], editor);
         await movesCursorInEditor(() => enterModalKeys(['ctrl', 'h']), [0, -1], editor);
+        await movesCursorInEditor(() => enterModalKeys(['ctrl', 'l']), [0, 1], editor);
+        await movesCursorInEditor(() => enterModalKeys(['ctrl', 'l']), [0, 1], editor);
+        await movesCursorInEditor(
+            () => enterModalKeys(['ctrl', 'shift', 'l']),
+            [0, -2],
+            editor
+        );
     });
 
     it('Can be loaded from a directory', async () => {

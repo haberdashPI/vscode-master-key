@@ -8,13 +8,13 @@ import {
     ParsedResult,
     ErrorResult,
 } from './parsing';
-import * as config from './config';
 import {processBindings, IConfigKeyBinding, Bindings} from './processing';
 import {isSingleCommand} from '../utils';
 import {uniq, pick} from 'lodash';
 import replaceAll from 'string.prototype.replaceall';
 import {Utils} from 'vscode-uri';
-import {createBindings, createUserBindings} from './config';
+import {clearUserBindings, createBindings, createUserBindings} from './config';
+import * as config from './config';
 const JSONC = require('jsonc-simple-parser');
 const TOML = require('smol-toml');
 
@@ -552,6 +552,13 @@ async function activateBindings(preset?: Preset) {
     }
 }
 
+async function deleteUserBindings() {
+    const bindings = await clearUserBindings();
+    if (bindings) {
+        insertKeybindingsIntoConfig(bindings);
+    }
+}
+
 async function selectUserBindings(file?: vscode.Uri) {
     if (!file) {
         const currentUri = vscode.window.activeTextEditor?.document.fileName;
@@ -648,6 +655,9 @@ export async function activate(context: vscode.ExtensionContext) {
     );
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.selectUserBindings', selectUserBindings)
+    );
+    context.subscriptions.push(
+        vscode.commands.registerCommand('master-key.removeUserBindings', deleteUserBindings)
     );
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.editPreset', copyBindingsToNewFile)
