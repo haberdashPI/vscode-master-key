@@ -287,7 +287,11 @@ export const bindingItem = z
         key: bindingKey,
         when: parsedWhen.array(),
         command: z.literal('master-key.do'),
-        mode: z.string().array().optional(),
+        mode: z
+            .string()
+            .or(z.object({implicit: z.string()}))
+            .array()
+            .optional(),
         prefixes: z.string().array().optional().default(['']),
         args: z
             .object({
