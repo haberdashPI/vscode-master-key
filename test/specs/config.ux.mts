@@ -273,8 +273,7 @@ describe('Configuration', () => {
         expect(modeItem).toBeTruthy();
     });
 
-    // eslint-disable-next-line no-restricted-properties
-    it('Can add user bindings', async () => {
+    it('Can add and remove user bindings', async () => {
         editor = await setupEditor('A simple test');
         const userFile = `
             [[bind]]
@@ -292,8 +291,11 @@ describe('Configuration', () => {
         const editorView = await workbench.getEditorView();
         const keyEditor = (await editorView.openEditor('keybindings.json')) as TextEditor;
         const keyText = await keyEditor.getText();
-        console.log('[DEBUG]: key text — ' + keyText);
         expect(keyText).toMatch(/"ctrl\+shift\+k"/);
+
+        await workbench.executeCommand('Master Key: Deactivate User Keybindings');
+        const removedKeyText = await keyEditor.getText();
+        expect(removedKeyText).not.toMatch(/"ctrl\+shift\+k"/);
     });
 
     it('Can be removed', async () => {
