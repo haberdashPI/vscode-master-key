@@ -40,6 +40,22 @@ function fromZip64(str: string): string {
     return result || '';
 }
 
+export async function clearUserBindings() {
+    if (configState) {
+        const config = vscode.workspace.getConfiguration('master-key');
+        const storage = config.get<IStorage>('storage') || {};
+        storage.userBindings = undefined;
+        config.update('storage', storage, vscode.ConfigurationTarget.Global);
+        const newBindings: string = fromZip64(storage.presetBindings || '');
+        const newParsedBindings = processParsing(await parseBindings(newBindings));
+        if (newParsedBindings) {
+            bindings = newParsedBindings;
+            return newParsedBindings;
+        }
+    }
+    return undefined;
+}
+
 export async function createUserBindings(
     userBindings: string
 ): Promise<Bindings | undefined> {

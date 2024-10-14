@@ -25,6 +25,7 @@ import {
     mapValues,
     merge,
     assignWith,
+    uniq,
 } from 'lodash';
 import {reifyStrings, EvalContext} from '../expressions';
 import {isSingleCommand, validateInput, IIndexed} from '../utils';
@@ -53,6 +54,7 @@ export function processBindings(spec: FullBindingSpec): [Bindings, string[]] {
     const r = expandKeySequencesAndResolveDuplicates(items, problems);
     items = r[0];
     const prefixCodes = r[1];
+    items = items.map(makeModesExplicit);
     items = items.map(moveModeToWhenClause);
     const newItems = items.map(i => movePrefixesToWhenClause(i, prefixCodes));
     const definitions = {...spec.define, prefixCodes: prefixCodes.codes};
@@ -481,7 +483,8 @@ function expandModes(
         }
     }
     return flatMap(items, (item: BindingItem): BindingItem[] => {
-        let itemModes = item.mode || [defaultMode.name];
+        // NOTE: we know there are no implicit modes inserted before this function is called
+        let itemModes = <string[]>(item.mode || [defaultMode.name]);
         if (itemModes.length > 0 && itemModes[0].startsWith('!')) {
             if (itemModes.some(x => !x.startsWith('!'))) {
                 problems.push(
@@ -497,19 +500,21 @@ function expandModes(
         }
 
         // add modes that are implicitly present due to fallbacks
-        const implicitModes: string[] = [];
+        const implicitModes: (string | {implicit: string})[] = [];
         for (const mode of itemModes) {
             const implicitMode = fallbacks[mode];
             if (implicitMode) {
-                implicitModes.push(implicitMode);
+                implicitModes.push({implicit: implicitMode});
             }
         }
-        itemModes = itemModes.concat(implicitModes);
+        const finalModes = uniq(
+            (<(string | {implicit: string})[]>itemModes).concat(implicitModes)
+        );
 
-        if (itemModes.length === 0) {
+        if (finalModes.length === 0) {
             return [item];
         } else {
-            return itemModes.map(m => ({...item, mode: [m]}));
+            return finalModes.map(m => ({...cloneDeep(item), mode: [m]}));
         }
     });
 }
@@ -574,6 +579,13 @@ export interface IConfigKeyBinding {
     };
 }
 
+function makeModesExplicit(binding: BindingItem) {
+    return {
+        ...binding,
+        mode: binding.mode?.map(m => (<{implicit: string}>m)?.implicit || m),
+    };
+}
+
 function itemToConfigBinding(
     item: BindingItem,
     defs: Record<string, unknown>
@@ -592,7 +604,9 @@ function itemToConfigBinding(
             ...item.args,
             prefixCode:
                 item.prefixes.length > 0 ? prefixCodes[item.prefixes[0]] : undefined,
-            mode: item.mode && item.mode.length > 0 ? item.mode[0] : undefined,
+            // NOTE: because we called makeModesExplicit before calling
+            // `itemToConfigBinding` we can safley assume the elements are strings
+            mode: item.mode && item.mode.length > 0 ? <string>item.mode[0] : undefined,
             key: <string>item.key,
         },
     };
@@ -802,6 +816,10 @@ function expandKeySequencesAndResolveDuplicates(
     return [sortedResult.map(i => i.item), prefixCodes];
 }
 
+function modeIsImplicit(mode: (string | {implicit: string})[] | undefined) {
+    return (<{implicit: string}>(mode || [])[0])?.implicit;
+}
+
 function addWithoutDuplicating(
     map: BindingMap,
     index: number,
@@ -837,6 +855,13 @@ function addWithoutDuplicating(
                 map[key] = {item: newItem, index};
                 return map;
             }
+        } else if (modeIsImplicit(newItem.mode)) {
+            // use existing item
+            return map;
+        } else if (modeIsImplicit(existingItem.mode)) {
+            // use existing item
+            map[key] = {item: newItem, index};
+            return map;
         }
 
         // else: we have two conflicting items
