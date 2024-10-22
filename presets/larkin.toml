@@ -1453,7 +1453,7 @@ command = "extension.selectInTag"
 
 [[bind]]
 path = "edit.motion.match.syntax"
-key = "m space"
+key = "m i"
 name = "in indent"
 description = "all text at the same indentation level"
 combinedName = "in/arnd"
@@ -1466,7 +1466,7 @@ command = "vscode-select-by-indent.select-inner"
 
 [[bind]]
 path = "edit.motion.match.syntax"
-key = "m shift+space"
+key = "m shift+i"
 name = "arnd indent"
 description = """
 all text at the same indentation level along with the line above and below
@@ -1477,7 +1477,7 @@ command = "vscode-select-by-indent.select-outer"
 
 [[bind]]
 path = "edit.motion.match.syntax"
-key = "m g space"
+key = "m g i"
 name = "indent+top"
 description = """
 all text at the same indentation level and the line just above it (ala python syntax)
