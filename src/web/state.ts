@@ -300,7 +300,9 @@ const setFlagArgs = z
 async function setFlag(args_: unknown): Promise<CommandResult> {
     const args = validateInput('master-key.setFlag', args_, setFlagArgs);
     if (args) {
-        const opt = !args.transient ? {} : {transient: {reset: false}};
+        const opt: ISetOptions = !args.transient
+            ? {public: true}
+            : {public: true, transient: {reset: false}};
         const a = args;
         await withState(async state => {
             return state.set(a.name, opt, a.value);
