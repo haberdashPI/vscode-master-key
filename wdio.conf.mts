@@ -64,6 +64,7 @@ export const config: Options.Testrunner = {
     //
     capabilities: [
         {
+            version: '1.92.2',
             browserName: 'vscode',
             'wdio:vscodeOptions': {
                 // points to directory where extension package.json is located
