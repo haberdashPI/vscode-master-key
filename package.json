@@ -282,5 +282,9 @@
     "string.prototype.replaceall": "^1.0.8",
     "zod": "^3.22.4",
     "zod-validation-error": "^2.1.0"
+  },
+  "main": "./dist/desktop/extension.js",
+  "env": {
+    "NODE_ENV": "wdio"
   }
 }
