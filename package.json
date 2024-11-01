@@ -3,7 +3,7 @@
   "displayName": "Master Key",
   "publisher": "haberdashPI",
   "description": "Master your keybindings with documentation, discoverability, modal bindings, macros and expressive configuration",
-  "version": "0.3.11",
+  "version": "0.3.8",
   "icon": "logo.png",
   "repository": {
     "url": "https://github.com/haberdashPi/vscode-master-key"
@@ -282,5 +282,9 @@
     "string.prototype.replaceall": "^1.0.8",
     "zod": "^3.22.4",
     "zod-validation-error": "^2.1.0"
+  },
+  "main": "./dist/desktop/extension.js",
+  "env": {
+    "NODE_ENV": "wdio"
   }
 }

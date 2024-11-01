@@ -50,6 +50,14 @@ describe('Command State', () => {
             when = "editorTextFocus"
 
             [[bind]]
+            name = "hold select"
+            key = "shift+alt+l"
+            mode = ["left", "default"]
+            command = "master-key.setFlag"
+            args.name = "select_on"
+            args.value = true
+
+            [[bind]]
             name = "prepare select"
             key = "ctrl+l"
             mode = ["left", "default"]
@@ -122,6 +130,22 @@ describe('Command State', () => {
         );
 
         await enterModalKeys(['ctrl', 'l'], ['ctrl', 'shift', 'w']);
+        expect(await editor.getSelectedText()).toEqual(' is');
+    });
+
+    it('Handles flag setting', async () => {
+        await editor.moveCursor(1, 1);
+
+        await movesCursorInEditor(
+            async () => {
+                await enterModalKeys(['ctrl', 'shift', 'w']);
+            },
+            [0, 4],
+            editor
+        );
+
+        await enterModalKeys(['shift', 'alt', 'l']);
+        await enterModalKeys(['ctrl', 'shift', 'w']);
         expect(await editor.getSelectedText()).toEqual(' is');
     });
 
