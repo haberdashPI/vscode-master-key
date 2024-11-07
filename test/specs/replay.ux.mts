@@ -39,7 +39,7 @@ describe('Replay', () => {
             default.command = "cursorMove"
             default.mode = "normal"
             default.when = "editorTextFocus"
-            default.computedArgs.value = "count"
+            default.computedArgs.value = "count || 1"
 
             [[bind]]
             path = "motion"
@@ -73,8 +73,8 @@ describe('Replay', () => {
 
             [[bind.args.commands]]
             command = "cursorMove"
-            computedArgs.value = "count"
-            args.to = "left"
+            computedArgs.value = "count || 1"
+            args.to = "right"
 
             [[bind.args.commands]]
             command = "cursorMove"
@@ -312,7 +312,7 @@ i j k l`);
         );
     });
 
-    it.only('Replays `if` commands', async () => {
+    it('Replays `if` commands', async () => {
         await editor.moveCursor(1, 1);
         await enterModalKeys('escape');
 

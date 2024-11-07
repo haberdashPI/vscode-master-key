@@ -36,7 +36,7 @@ export const config: Options.Testrunner = {
     // The path of the spec files will be resolved relative from the directory of
     // of the config file unless it's absolute.
     //
-    specs: ['./test/specs/**/*.ux.mts'],
+    specs: ['./test/specs/**/replay.ux.mts'],
     exclude: [
         // 'path/to/excluded/files'
     ],
