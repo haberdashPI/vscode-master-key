@@ -8,6 +8,7 @@ import {
     setupEditor,
     movesCursorInEditor,
     storeCoverageStats,
+    clearNotifications,
 } from './utils.mts';
 import {TextEditor} from 'wdio-vscode-service';
 import {Key} from 'webdriverio';
@@ -72,6 +73,23 @@ describe('Simple Motions', () => {
             args.to = "right"
             repeat = 1
 
+            # TODO: write a test for these
+            [[bind]]
+            mode = "normal"
+            name = "down (repeat)"
+            key = "shift+j"
+            command = "cursorMove"
+            args.to = "down"
+            repeat = "1+2"
+
+            [[bind]]
+            mode = "normal"
+            name = "down (bad repeat)"
+            key = "ctrl+j"
+            command = "cursorMove"
+            args.to = "down"
+            repeat = "'a'+'b'"
+
             [[bind]]
             name = "insert mode"
             key = "i"
@@ -114,6 +132,24 @@ laborum ad. Dolore exercitation cillum eiusmod culpa minim duis`);
         await browser.keys([Key.Escape]);
 
         await movesCursorInEditor(() => enterModalKeys(['shift', 'l']), [0, 2], editor);
+        await movesCursorInEditor(() => enterModalKeys(['shift', 'j']), [4, 0], editor);
+
+        const workbench = await browser.getWorkbench();
+        clearNotifications(workbench);
+        enterModalKeys({key: ['ctrl', 'j'], updatesStatus: false});
+        const matches = await browser.waitUntil(async () => {
+            const notifs = await workbench.getNotifications();
+            const messages = await Promise.all(notifs.map(n => n.getMessage()));
+            const matches = messages.filter(x =>
+                x.match(/The expression.*did not.*number/)
+            );
+            if (matches.length > 0) {
+                return matches;
+            } else {
+                return false;
+            }
+        });
+        expect(matches).toHaveLength(1);
     });
 
     it('Can use `count`', async () => {
