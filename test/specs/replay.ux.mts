@@ -39,7 +39,7 @@ describe('Replay', () => {
             default.command = "cursorMove"
             default.mode = "normal"
             default.when = "editorTextFocus"
-            default.computedArgs.value = "count"
+            default.computedArgs.value = "count || 1"
 
             [[bind]]
             path = "motion"
@@ -73,7 +73,8 @@ describe('Replay', () => {
 
             [[bind.args.commands]]
             command = "cursorMove"
-            args.to = "left"
+            computedArgs.value = "count || 1"
+            args.to = "right"
 
             [[bind.args.commands]]
             command = "cursorMove"
@@ -86,9 +87,6 @@ describe('Replay', () => {
             default.mode = "normal"
 
             [[bind]]
-            # NOTE: because of how vscode-extension-tester is implemented
-            # numeric values get typed, so we use other keybindings here
-            # to avoid picking up this typed keys
             foreach.num = ["{key: [0-3]}"]
             key = "shift+{num}"
             mode = "normal"
@@ -310,6 +308,47 @@ i j k l`);
                 await enterModalKeys('q', {key: 'q', updatesStatus: false});
             },
             [0, 3],
+            editor
+        );
+    });
+
+    it('Replays `if` commands', async () => {
+        await editor.moveCursor(1, 1);
+        await enterModalKeys('escape');
+
+        await enterModalKeys(['shift', 'q']);
+        await movesCursorInEditor(
+            async () => {
+                await enterModalKeys(['shift', 'l']);
+            },
+            [0, 1],
+            editor
+        );
+        await enterModalKeys(['shift', 'q']);
+        await movesCursorInEditor(
+            async () => {
+                await enterModalKeys('q', {key: 'q', updatesStatus: false});
+            },
+            [0, 1],
+            editor
+        );
+
+        await enterModalKeys(['shift', 'q']);
+        await movesCursorInEditor(
+            async () => {
+                await enterModalKeys({key: ['shift', '3'], count: 3}, ['shift', 'l']);
+            },
+            [1, 3],
+            editor
+        );
+        await enterModalKeys(['shift', 'q']);
+
+        await editor.moveCursor(1, 1);
+        await movesCursorInEditor(
+            async () => {
+                await enterModalKeys('q', {key: 'q', updatesStatus: false});
+            },
+            [1, 3],
             editor
         );
     });
