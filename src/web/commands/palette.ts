@@ -18,7 +18,7 @@ function setPickerText() {
         if (paletteBindingMode) {
             currentPicker.placeholder = 'Run a command by pressing its keybinding.';
         } else {
-            currentPicker.placeholder = 'Search the command by their description.';
+            currentPicker.placeholder = 'Search the commands by their description.';
         }
         let mode;
         if (paletteBindingMode) {
