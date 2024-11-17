@@ -38,11 +38,6 @@
         "title": "Key Suggestions..."
       },
       {
-        "command": "master-key.commandPalette",
-        "category": "Master Key",
-        "title": "Simple Command Palette"
-      },
-      {
         "command": "master-key.showVisualDoc",
         "category": "Master Key",
         "title": "Show Visual Documentation"
@@ -128,10 +123,6 @@
       {
         "key": "ctrl+shift+;",
         "command": "master-key.commandSuggestions"
-      },
-      {
-        "key": "ctrl+alt+;",
-        "command": "master-key.commandPalette"
       },
       {
         "key": "ctrl+.",

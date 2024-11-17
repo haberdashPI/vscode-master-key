@@ -2,7 +2,14 @@
 
 import '@wdio/globals';
 import 'wdio-vscode-service';
-import {enterModalKeys, setBindings, setupEditor, storeCoverageStats} from './utils.mts';
+import {
+    enterModalKeys,
+    movesCursorInEditor,
+    setBindings,
+    setupEditor,
+    storeCoverageStats,
+    waitForMode,
+} from './utils.mts';
 import {InputBox, sleep, TextEditor, Workbench} from 'wdio-vscode-service';
 import {Key} from 'webdriverio';
 
@@ -31,6 +38,7 @@ describe('Palette', () => {
             [[path]]
             id = "motion"
             name = "basic motions"
+            when = "editorTextFocus"
             default.command = "cursorMove"
             default.mode = "normal"
             default.when = "editorTextFocus"
@@ -39,12 +47,15 @@ describe('Palette', () => {
             [[bind]]
             path = "motion"
             name = "left"
+            combinedName = "left/right"
+            combinedKey = "h/l"
             key = "h"
             args.to = "left"
 
             [[bind]]
             path = "motion"
             name = "right"
+            combinedName = "left/right"
             key = "l"
             args.to = "right"
 
@@ -64,16 +75,8 @@ describe('Palette', () => {
             name = "insert mode"
             key = "i"
             command = "master-key.enterInsert"
+            when = "editorTextFocus"
             mode = "normal"
-
-            [[bind]]
-            name = "show palette"
-            key = "shift+,"
-            resetTransient = false
-            hideInPalette = true
-            prefixes = []
-            mode = "normal"
-            command = "master-key.commandPalette"
 
             [[bind]]
             name = "show palette"
@@ -81,6 +84,7 @@ describe('Palette', () => {
             resetTransient = false
             hideInPalette = true
             prefixes = []
+            when = "editorTextFocus"
             mode = "normal"
             command = "master-key.commandSuggestions"
 
@@ -88,6 +92,7 @@ describe('Palette', () => {
             path = "motion"
             name = "funny right"
             key = "w w"
+            when = "editorTextFocus"
             mode = "normal"
             args.to = "right"
 
@@ -95,9 +100,10 @@ describe('Palette', () => {
             name = "toggle palette"
             key = "p"
             mode = "normal"
+            when = "editorTextFocus"
             command = "master-key.togglePaletteDelay"
         `);
-        editor = await setupEditor('A simple test');
+        editor = await setupEditor('A simple test\nfor palettes');
         workbench = await browser.getWorkbench();
     });
 
@@ -108,22 +114,38 @@ describe('Palette', () => {
         await enterModalKeys({key: ['shift', ';'], updatesStatus: false});
         const input = await new InputBox(workbench.locatorMap).wait();
         const picks = await input.getQuickPicks();
-        expect(picks).toHaveLength(7);
-        expect(await picks[0].getLabel()).toEqual('H');
-        expect(await picks[0].getDescription()).toEqual('left');
-        expect(await picks[1].getLabel()).toEqual('L');
-        expect(await picks[1].getDescription()).toEqual('right');
-        expect(await picks[2].getLabel()).toEqual('J');
-        expect(await picks[2].getDescription()).toEqual('down');
-        expect(await picks[3].getLabel()).toEqual('K');
-        expect(await picks[3].getDescription()).toEqual('up');
-        expect(await picks[4].getLabel()).toEqual('I');
-        expect(await picks[4].getDescription()).toEqual('insert mode');
+        expect(picks).toHaveLength(6);
+        expect(await picks[0].getLabel()).toEqual('H/L');
+        expect(await picks[0].getDescription()).toEqual('left/right');
+        expect(await picks[1].getLabel()).toEqual('J');
+        expect(await picks[1].getDescription()).toEqual('down');
+        expect(await picks[2].getLabel()).toEqual('K');
+        expect(await picks[2].getDescription()).toEqual('up');
+        expect(await picks[3].getLabel()).toEqual('I');
+        expect(await picks[3].getDescription()).toEqual('insert mode');
         await enterModalKeys('i');
+        await waitForMode('insert');
+    });
+
+    it('Can toggle modes', async () => {
+        await browser.keys(Key.Escape);
+        await editor.moveCursor(1, 1);
+
+        await enterModalKeys({key: ['shift', ';'], updatesStatus: false});
+        const input = await new InputBox(workbench.locatorMap).wait();
+        await movesCursorInEditor(
+            async () => {
+                await browser.keys([Key.Control, '.']);
+                await input.setText('down');
+                await input.confirm();
+            },
+            [1, 0],
+            editor
+        );
     });
 
     it('Can be displayed after delay', async () => {
-        await enterModalKeys('escape');
+        await browser.keys(Key.Escape);
         await enterModalKeys('p');
 
         await enterModalKeys({key: 'w', updatesStatus: false});

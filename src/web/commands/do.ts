@@ -163,7 +163,7 @@ export async function doCommands(args: RunCommandsArgs): Promise<CommandResult> 
             setTimeout(async () => {
                 if (currentPaletteUpdate === paletteUpdate) {
                     registerPaletteUpdate();
-                    commandPalette(undefined, {context: true, useKey: true});
+                    commandPalette(undefined, {useKey: true});
                 }
             }, paletteDelay);
         }
