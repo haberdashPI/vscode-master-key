@@ -3,15 +3,14 @@ import {prettifyPrefix} from '../utils';
 import {withState} from '../state';
 import {filterBindingFn} from '../keybindings';
 import {bindings} from '../keybindings/config';
-import {PREFIX_CODE, prefixCodes} from './prefix';
+import {PREFIX_CODE} from './prefix';
 import {MODE, defaultMode} from './mode';
-import {IConfigKeyBinding, PrefixCodes} from '../keybindings/processing';
+import {IConfigKeyBinding} from '../keybindings/processing';
 import {COMMAND_HISTORY, RunCommandsArgs, doCommandsCmd} from './do';
 import {reverse, uniqBy, sortBy} from 'lodash';
 import replaceAll from 'string.prototype.replaceall';
 
 let paletteBindingMode = false;
-let paletteBindingContext = false;
 let currentPicker: vscode.QuickPick<{label: string; args: RunCommandsArgs}> | undefined =
     undefined;
 function setPickerText() {
@@ -27,10 +26,7 @@ function setPickerText() {
         } else {
             mode = 'Search mode';
         }
-        let context = '';
-        if (paletteBindingContext) {
-            context = 'Context Specific ';
-        }
+        const context = 'Context Specific ';
         currentPicker.title = `Master Key ${context}Palette: ${mode} (^. changes mode)`;
     }
 }
@@ -45,17 +41,12 @@ function togglePaletteMode() {
     setPickerText();
 }
 
-export async function commandPalette(
-    _args: unknown,
-    opt: {context?: boolean; useKey?: boolean} = {}
-) {
-    const context = opt.context === undefined ? true : opt.context;
+export async function commandPalette(_args: unknown, opt: {useKey?: boolean} = {}) {
     const useKey = opt.useKey || false;
 
     const state = await withState(async s => s);
     if (state) {
         let availableBindings: IConfigKeyBinding[];
-        let codes: PrefixCodes | undefined = undefined;
         const prefixCode = state.get<number>(PREFIX_CODE, 0)!;
         const mode = state.get<string>(MODE, defaultMode)!;
         paletteBindingMode = useKey;
@@ -64,36 +55,16 @@ export async function commandPalette(
             'master-key.keybindingPaletteBindingMode',
             paletteBindingMode
         );
-        if (context) {
-            availableBindings = <IConfigKeyBinding[]>(
-                (bindings?.bind || []).filter(filterBindingFn(mode, prefixCode))
-            );
-        } else {
-            await withState(async state => {
-                [state, codes] = prefixCodes(state);
-                return state;
-            });
-            // TODO: filter to commands that are actually usable in the command palette
-            // (atlernatively, commands can set their own state somehow)
-            availableBindings = <IConfigKeyBinding[]>(
-                (bindings?.bind || []).filter(filterBindingFn())
-            );
-        }
+        availableBindings = <IConfigKeyBinding[]>(
+            (bindings?.bind || []).filter(filterBindingFn(mode, prefixCode))
+        );
         availableBindings = reverse(
             uniqBy(reverse(availableBindings), b => (b.args.key || '') + b.args.prefixCode)
         );
 
         let picks = availableBindings.map(binding => {
             let key = binding.args.key;
-            if (!context && codes) {
-                const seq = codes.nameFor(binding.args.prefixCode || 0);
-                if (seq && seq.length > 0) {
-                    key = seq + ' ' + key;
-                }
-                key = prettifyPrefix(key);
-            } else {
-                key = prettifyPrefix(key);
-            }
+            key = prettifyPrefix(key);
 
             return {
                 label: key,
@@ -135,7 +106,6 @@ export async function commandPalette(
         }>();
         currentPicker = picker;
         let accepted = false;
-        paletteBindingContext = context;
         setPickerText();
         picker.items = filteredPicks;
         picker.matchOnDescription = true;
@@ -217,13 +187,8 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand('master-key.togglePaletteMode', togglePaletteMode)
     );
     context.subscriptions.push(
-        vscode.commands.registerCommand('master-key.commandPalette', x =>
-            commandPalette(x, {context: false})
-        )
-    );
-    context.subscriptions.push(
         vscode.commands.registerCommand('master-key.commandSuggestions', x =>
-            commandPalette(x, {context: true, useKey: true})
+            commandPalette(x, {useKey: true})
         )
     );
 }

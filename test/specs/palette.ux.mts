@@ -2,7 +2,13 @@
 
 import '@wdio/globals';
 import 'wdio-vscode-service';
-import {enterModalKeys, setBindings, setupEditor, storeCoverageStats} from './utils.mts';
+import {
+    enterModalKeys,
+    movesCursorInEditor,
+    setBindings,
+    setupEditor,
+    storeCoverageStats,
+} from './utils.mts';
 import {InputBox, sleep, TextEditor, Workbench} from 'wdio-vscode-service';
 import {Key} from 'webdriverio';
 
@@ -39,12 +45,15 @@ describe('Palette', () => {
             [[bind]]
             path = "motion"
             name = "left"
+            combinedName = "left/right"
+            combinedKey = "h/l"
             key = "h"
             args.to = "left"
 
             [[bind]]
             path = "motion"
             name = "right"
+            combinedName = "left/right"
             key = "l"
             args.to = "right"
 
@@ -65,15 +74,6 @@ describe('Palette', () => {
             key = "i"
             command = "master-key.enterInsert"
             mode = "normal"
-
-            [[bind]]
-            name = "show palette"
-            key = "shift+,"
-            resetTransient = false
-            hideInPalette = true
-            prefixes = []
-            mode = "normal"
-            command = "master-key.commandPalette"
 
             [[bind]]
             name = "show palette"
@@ -109,10 +109,8 @@ describe('Palette', () => {
         const input = await new InputBox(workbench.locatorMap).wait();
         const picks = await input.getQuickPicks();
         expect(picks).toHaveLength(7);
-        expect(await picks[0].getLabel()).toEqual('H');
-        expect(await picks[0].getDescription()).toEqual('left');
-        expect(await picks[1].getLabel()).toEqual('L');
-        expect(await picks[1].getDescription()).toEqual('right');
+        expect(await picks[0].getLabel()).toEqual('H/L');
+        expect(await picks[0].getDescription()).toEqual('left/right');
         expect(await picks[2].getLabel()).toEqual('J');
         expect(await picks[2].getDescription()).toEqual('down');
         expect(await picks[3].getLabel()).toEqual('K');
@@ -120,6 +118,24 @@ describe('Palette', () => {
         expect(await picks[4].getLabel()).toEqual('I');
         expect(await picks[4].getDescription()).toEqual('insert mode');
         await enterModalKeys('i');
+    });
+
+    it('Can toggle modes', async () => {
+        await browser.keys(Key.Escape);
+        await editor.moveCursor(1, 1);
+
+        await enterModalKeys({key: ['shift', ';'], updatesStatus: false});
+        const input = await new InputBox(workbench.locatorMap).wait();
+        await movesCursorInEditor(
+            async () => {
+                await browser.keys([Key.Control, '.']);
+                await input.setText('down');
+                await input.confirm();
+            },
+            [1, 0],
+            editor
+        );
+        await browser.keys([Key.Control, '.']);
     });
 
     it('Can be displayed after delay', async () => {
