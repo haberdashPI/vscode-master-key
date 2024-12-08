@@ -40,7 +40,7 @@ jobs:
             - name: Setup Headless Display
               uses: pyvista/setup-headless-display-action@v3
             - name: Run Tests
-              run: npm run test
+              run: npm run ci
             - name: Upload coverage to Codecov
               uses: codecov/codecov-action@v4
               with:
