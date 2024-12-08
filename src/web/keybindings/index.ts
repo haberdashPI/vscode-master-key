@@ -519,20 +519,36 @@ async function handleRequireExtensions(bindings_?: Bindings) {
     if (picker.selectedItems.some(it => it.label === 'Install All')) {
         for (const item of picker.items) {
             if (item.detail === 'unknown status') {
-                await vscode.commands.executeCommand(
-                    'workbench.extensions.installExtension',
-                    item.label
-                );
+                try {
+                    await vscode.commands.executeCommand(
+                        'workbench.extensions.installExtension',
+                        item.label
+                    );
+                } catch (e) {
+                    vscode.window.showErrorMessage(
+                        'Error installing extension: ' + item.label
+                    );
+                    console.log('Error installing extension: ' + item.label);
+                    console.dir(e);
+                    throw e;
+                }
             }
         }
     }
 
     for (const item of picker.selectedItems) {
         if (item.detail === 'unknown status') {
-            await vscode.commands.executeCommand(
-                'workbench.extensions.installExtension',
-                item.label
-            );
+            try {
+                await vscode.commands.executeCommand(
+                    'workbench.extensions.installExtension',
+                    item.label
+                );
+            } catch (e) {
+                vscode.window.showErrorMessage('Error installing extension: ' + item.label);
+                console.log('Error installing extension: ' + item.label);
+                console.dir(e);
+                throw e;
+            }
         }
     }
 }
