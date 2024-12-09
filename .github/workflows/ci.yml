@@ -22,6 +22,7 @@ jobs:
     build:
         if: '! github.event.pull_request.draft'
         strategy:
+            fail-fast: false
             matrix:
                 os: [ubuntu-latest]
         runs-on: ${{ matrix.os }}
@@ -36,10 +37,10 @@ jobs:
               run: npm ci
               env:
                   DETECT_CHROMEDRIVER_VERSION: true
+            - name: Setup Headless Display
+              uses: pyvista/setup-headless-display-action@v3
             - name: Run Tests
-              uses: coactions/setup-xvfb@v1
-              with:
-                  run: npm run ci
+              run: npm run ci
             - name: Upload coverage to Codecov
               uses: codecov/codecov-action@v4
               with:
