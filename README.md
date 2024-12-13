@@ -18,8 +18,12 @@ If you want to improve your text editing super powers in VSCode, Master Key migh
 The easiest way to get started is to activate the built-in keybindings that come with Master Key.
 
 1. Install this extension
-2. Run the command `Master Key: Activate Keybindings`
-3. Select the built-in binding set "Larkin"
+2. On windows only: restart VSCode — there is an [active investigation to avoid this workaround](https://github.com/haberdashPI/vscode-master-key/issues/51).
+3. Run the command `Master Key: Activate Keybindings`
+4. Select the built-in binding set "Larkin"
+
+> [!WARNING]
+> The Larkin keybindings will ask to install some additional extensions. If you choose to install these, one of them, "Rewrap" is not signed by the Marketplace Store. You may have to install this extension manually, rather than using Master Key's UI. Note however that this should not interfere with the activation and use of your keybindings, other than the commands that make use of this specific extension.
 
 You can revert these changes later using `Master Key: Deactivate Keybindings`.
 
@@ -244,18 +248,16 @@ And of course, there are many existing editors that Master Key draws inspiration
 
 ## Developer Notes
 
-This repository was designed to be worked with in unix-like environments. No effort to support development on Windows has been made. The setup relies on a working version of `nvm` installed in bash and an npm version matching the version specified in `.nvmrc`. You can satisfy this requirement by copying and running the following in bash.
+This repository was designed to be worked with in unix-like environments. No effort to support development on Windows has been made. The setup relies on a working version of `mise` installed. You can satisfy this requirement by copying and running the following in bash.
 
 ```sh
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash # install nvm
-export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # load nvm
-nvm install # install npm version found in `.nvmrc`
+curl https://mise.run | sh
 ```
 
 You can then install all dependencies for this project as follows:
 
 ```sh
-nvm use
+mise activate
+mise install
 npm ic
 ```

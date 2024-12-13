@@ -480,10 +480,6 @@ async function handleRequireExtensions(bindings_?: Bindings) {
     if (items.length === 0 || items.every(it => it.detail === 'already installed')) {
         return;
     }
-    items.unshift({
-        label: 'Install All',
-        picked: false,
-    });
     const picker = vscode.window.createQuickPick();
     picker.title = `Extensions Used by ${bindings.name}`;
     picker.items = items;
@@ -516,26 +512,6 @@ async function handleRequireExtensions(bindings_?: Bindings) {
         return;
     }
 
-    if (picker.selectedItems.some(it => it.label === 'Install All')) {
-        for (const item of picker.items) {
-            if (item.detail === 'unknown status') {
-                try {
-                    await vscode.commands.executeCommand(
-                        'workbench.extensions.installExtension',
-                        item.label
-                    );
-                } catch (e) {
-                    vscode.window.showErrorMessage(
-                        'Error installing extension: ' + item.label
-                    );
-                    console.log('Error installing extension: ' + item.label);
-                    console.dir(e);
-                    throw e;
-                }
-            }
-        }
-    }
-
     for (const item of picker.selectedItems) {
         if (item.detail === 'unknown status') {
             try {
@@ -547,7 +523,6 @@ async function handleRequireExtensions(bindings_?: Bindings) {
                 vscode.window.showErrorMessage('Error installing extension: ' + item.label);
                 console.log('Error installing extension: ' + item.label);
                 console.dir(e);
-                throw e;
             }
         }
     }

@@ -29,9 +29,9 @@ requiredExtensions = [
       "pustelto.bracketeer",
       "wmaurer.change-case",
       "pkief.markdown-checkbox",
-      "stkb.rewrap",
       "jack89ita.open-file-from-path",
       "koalamer.labeled-bookmarks",
+      "stkb.rewrap",
 ]
 
 [[mode]]
