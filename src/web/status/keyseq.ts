@@ -4,6 +4,7 @@ import {PREFIX} from '../commands/prefix';
 import {COUNT} from '../commands/count';
 import {Map} from 'immutable';
 import {prettifyPrefix} from '../utils';
+import {normalizeLayoutIndependentString} from '../keybindings/layout';
 
 let keyStatusBar: vscode.StatusBarItem | undefined = undefined;
 
@@ -15,7 +16,8 @@ function updateKeyStatus(values: Map<string, unknown>) {
     if (keyStatusBar !== undefined && keyDisplayDelay > 0) {
         const count = <number>values.get(COUNT, 0);
         let plannedUpdate = count ? count + '× ' : '';
-        plannedUpdate += prettifyPrefix(<string>values.get(PREFIX, ''));
+        const keyseq = normalizeLayoutIndependentString(<string>values.get(PREFIX, ''));
+        plannedUpdate += prettifyPrefix(keyseq);
         if (plannedUpdate.length > 0) {
             keyStatusBar.text = plannedUpdate;
             keyStatusBar.accessibilityInformation = {label: 'Keys Typed: ' + plannedUpdate};

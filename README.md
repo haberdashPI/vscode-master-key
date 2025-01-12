@@ -35,11 +35,11 @@ Learn and review your bindings on a keyboard layout:
 
 ![example of visual docs](images/readme/visualdoc.jpg)
 
-### Cheet sheet of keybindings
+### Cheat sheet of keybindings
 
-Review your bindings in a cheet sheet organized by theme:
+Review your bindings in a cheat sheet organized by theme:
 
-![example of cheet sheet](images/readme/cheatsheet.png)
+![example of cheat sheet](images/readme/cheatsheet.png)
 
 ### Keybinding hints
 

@@ -2,7 +2,6 @@ import hash from 'object-hash';
 import {
     parseWhen,
     bindingItem,
-    DoArgs,
     DefinedCommand,
     BindingItem,
     BindingSpec,
@@ -13,6 +12,7 @@ import {
     doArgs,
     KindItem,
     FullBindingSpec,
+    IConfigKeyBinding,
 } from './parsing';
 import z from 'zod';
 import {
@@ -263,13 +263,17 @@ function resolveDocItems(
         let resolvedItems: BindingItem[] = [];
         for (const item of section.items) {
             if (byIndex[item.index] === undefined) {
-                problems.push(
-                    `Master Key, unexpected internal inconsistency: could not find item
-                    index ${item.index} in parsed keybindings. This is a bug!!`.replace(
-                        /\s+/,
-                        ' '
-                    )
-                );
+                if (item.command !== 'master-key.ignore') {
+                    problems.push(
+                        `Master Key, unexpected internal inconsistency: could not find item
+                        index ${item.index} in parsed keybindings. This is a bug!! Item
+                        was supposed to have name '${item.name}' with command
+                        '${item.command}'.`.replace(/\s+/, ' ')
+                    );
+                    console.log('Internal inconsistency, could not find following item.');
+                    console.dir(item);
+                    console.dir(byIndex);
+                }
             } else {
                 resolvedItems = resolvedItems.concat(byIndex[item.index]);
             }
@@ -327,101 +331,38 @@ function expandForVars(
     return expandForVars(omit(vars, aKey), item, context, newDefs);
 }
 
+// linting disabled for legibility of an unusual constant
+/* eslint-disable */
 const ALL_KEYS = [
-    'f0',
-    'f1',
-    'f2',
-    'f3',
-    'f4',
-    'f5',
-    'f6',
-    'f7',
-    'f8',
-    'f9',
-    'f10',
-    'f11',
-    'f12',
-    '0',
-    '1',
-    '2',
-    '3',
-    '4',
-    '5',
-    '6',
-    '7',
-    '8',
-    '9',
-    'a',
-    'b',
-    'c',
-    'd',
-    'e',
-    'f',
-    'g',
-    'h',
-    'i',
-    'j',
-    'k',
-    'l',
-    'm',
-    'n',
-    'o',
-    'p',
-    'q',
-    'r',
-    's',
-    't',
-    'u',
-    'v',
-    'w',
-    'x',
-    'y',
-    'z',
-    '`',
-    '-',
-    '=',
-    '[',
-    ']',
-    '\\',
-    ';',
-    "'",
-    ',',
-    '.',
-    '/',
-    'left',
-    'up',
-    'right',
-    'down',
-    'pageup',
-    'pagedown',
-    'end',
-    'home',
-    'tab',
-    'enter',
-    'escape',
-    'space',
-    'backspace',
-    'delete',
-    'pausebreak',
-    'capslock',
-    'insert',
-    'numpad0',
-    'numpad1',
-    'numpad2',
-    'numpad3',
-    'numpad4',
-    'numpad5',
-    'numpad6',
-    'numpad7',
-    'numpad8',
-    'numpad9',
-    'numpad_multiply',
-    'numpad_add',
-    'numpad_separator',
-    'numpad_subtract',
-    'numpad_decimal',
-    'numpad_divide',
+    'f0', 'f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9', 'f10', 'f11', 'f12',
+    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q',
+    'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+    '`', '-', '=', '[', ']', '\\', ';', "'", ',', '.', '/',
+    'left', 'up', 'right', 'down', 'pageup', 'pagedown', 'end', 'home', 'tab', 'enter',
+    'escape', 'space', 'backspace', 'delete', 'pausebreak', 'capslock', 'insert',
+    'numpad0', 'numpad1', 'numpad2', 'numpad3', 'numpad4', 'numpad5', 'numpad6', 'numpad7',
+    'numpad8', 'numpad9', 'numpad_multiply', 'numpad_add', 'numpad_separator',
+    'numpad_subtract', 'numpad_decimal', 'numpad_divide',
+    "[F1]", "[F2]", "[F3]", "[F4]", "[F5]", "[F6]", "[F7]", "[F8]", "[F9]",
+    "[F10]", "[F11]", "[F12]", "[F13]", "[F14]", "[F15]", "[F16]", "[F17]", "[F18]", "[F19]",
+    "[KeyA]", "[KeyB]", "[KeyC]", "[KeyD]", "[KeyE]", "[KeyF]", "[KeyG]", "[KeyH]", "[KeyI]",
+    "[KeyJ]", "[KeyK]", "[KeyL]", "[KeyM]", "[KeyN]", "[KeyO]", "[KeyP]", "[KeyQ]", "[KeyR]",
+    "[KeyS]", "[KeyT]", "[KeyU]", "[KeyV]", "[KeyW]", "[KeyX]", "[KeyY]", "[KeyZ]",
+    "[Digit0]", "[Digit1]", "[Digit2]", "[Digit3]", "[Digit4]", "[Digit5]", "[Digit6]",
+    "[Digit7]", "[Digit8]", "[Digit9]",
+    "[Backquote]", "[Minus]", "[Equal]", "[BracketLeft]", "[BracketRight]", "[Backslash]",
+    "[Semicolon]", "[Quote]", "[Comma]", "[Period]", "[Slash]",
+    "[ArrowLeft]", "[ArrowUp]", "[ArrowRight]", "[ArrowDown]", "[PageUp]", "[PageDown]",
+    "[End]", "[Home]", "[Tab]", "[Enter]", "[Escape]", "[Space]", "[Backspace]",
+    "[Delete]", "[Pause]", "[CapsLock]", "[Insert]",
+    "[Numpad0]", "[Numpad1]", "[Numpad2]", "[Numpad3]", "[Numpad4]", "[Numpad5]",
+    "[Numpad6]", "[Numpad7]", "[Numpad8]", "[Numpad9]",
+    "[NumpadMultiply]", "[NumpadAdd]", "[NumpadComma]", "[NumpadSubtract]",
+    "[NumpadDecimal]", "[NumpadDivide]",
 ];
+/* eslint-enable */
+
 const REGEX_KEY_REGEX = /\{key(:\s*(.*))?\}/;
 
 function expandPattern(pattern: string): string[] {
@@ -553,30 +494,6 @@ function expandDocsToDuplicates(items: BindingItem[]) {
     }
 
     return items;
-}
-
-export interface IConfigKeyBinding {
-    key: string;
-    command: 'master-key.do';
-    prefixDescriptions: string[];
-    when: string;
-    args: {
-        do: DoArgs;
-        key: string; // repeated here so that commands can display the key pressed
-        name?: string;
-        description?: string;
-        resetTransient?: boolean;
-        hideInPalette?: boolean;
-        hideInDocs?: boolean;
-        priority: number;
-        combinedName: string;
-        combinedKey: string;
-        combinedDescription: string;
-        kind: string;
-        path: string;
-        mode: string | undefined;
-        prefixCode: number | undefined;
-    };
 }
 
 function makeModesExplicit(binding: BindingItem) {

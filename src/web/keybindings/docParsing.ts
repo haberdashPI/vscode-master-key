@@ -6,6 +6,7 @@ import {uniqBy, sortBy} from 'lodash';
 import replaceAll from 'string.prototype.replaceall';
 import {cloneDeep} from 'lodash';
 import {IIndexed} from '../utils';
+import {normalizeLayoutIndependentString} from './layout';
 
 const TOML = require('smol-toml');
 
@@ -53,8 +54,6 @@ function addIndexField<T>(xs: T[], i = -1): [(T & IIndexed)[], number] {
     return [<(T & IIndexed)[]>xs, i];
 }
 
-// TODO: we need to grab the previously computed complete parse we should be able to
-// uniquely match items to the full parse and use that to grab an default expansions
 export function parseBindingDocs(str: string) {
     let doc: IParsedBindingDoc = {str: '', items: []};
     const result: IParsedBindingDoc[] = [];
@@ -138,7 +137,10 @@ export function asBindingTable(parsed: BindingItem[]) {
         ) {
             const prefixMatch = item.key.match(/(.*)\s\S+$/);
             const prefix = prefixMatch ? prefixMatch[1] + ' ' : '';
-            lastItem.key = prettifyPrefix(prefix + lastItem.args.combinedKey);
+            const keyseq = normalizeLayoutIndependentString(
+                prefix + lastItem.args.combinedKey
+            );
+            lastItem.key = prettifyPrefix(keyseq);
             lastItem.args.name = lastItem.args.combinedName;
             lastItem.args.description = lastItem.args.combinedDescription || '';
         } else {
@@ -150,9 +152,10 @@ export function asBindingTable(parsed: BindingItem[]) {
     result += '\n\n|mode|key|name|description|\n';
     result += '|---|----|----|-----------|\n';
     for (const item of combinedToShow) {
-        const key = prettifyPrefix(item.key || '');
+        const keyseq = normalizeLayoutIndependentString(item.key || '');
+        const key = prettifyPrefix(keyseq);
         const mode = asArray(item.mode)
-            .map(m => '`' + m + '`')
+            .map(m => (m === undefined ? '' : '`' + m + '`'))
             .join(', ');
         result += `|${mode}|${key}|${item.args.name}|${stripNewlines(item.args.description || '')}|\n`;
     }

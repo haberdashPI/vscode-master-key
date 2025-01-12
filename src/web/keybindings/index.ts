@@ -7,8 +7,9 @@ import {
     FullBindingSpec,
     ParsedResult,
     ErrorResult,
+    IConfigKeyBinding,
 } from './parsing';
-import {processBindings, IConfigKeyBinding, Bindings} from './processing';
+import {processBindings, Bindings} from './processing';
 import {isSingleCommand} from '../utils';
 import {uniq, pick} from 'lodash';
 import replaceAll from 'string.prototype.replaceall';
@@ -296,6 +297,17 @@ async function insertKeybindingsIntoConfig(bindings: Bindings) {
                         }
                         return undefined;
                     });
+                if (bindings.bind.some(b => /\[[^\]]+\]/.test(b.key))) {
+                    vscode.window.showInformationMessage(
+                        replaceAll(
+                            `The assigned bindings include layout independent bindings. When you
+                            see keys surrounded by "[" and "]", they refer to the U.S. Layout
+                            location of these characters.`,
+                            /\s+/g,
+                            ' '
+                        )
+                    );
+                }
             }
         }
     }
@@ -609,7 +621,7 @@ export async function updatePresets(event?: vscode.ConfigurationChangeEvent) {
     }
 }
 
-const presetFiles = ['larkin.toml'];
+const presetFiles = ['larkin.toml', 'larkin_layout.toml'];
 
 async function loadPreset(presets: Preset[], uri: vscode.Uri) {
     const fileData = await vscode.workspace.fs.readFile(uri);

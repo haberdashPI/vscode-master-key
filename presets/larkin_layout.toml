@@ -3,11 +3,11 @@
 # license: MIT https://github.com/haberdashPI/vscode-master-key/blob/main/LICENSE.md
 # ---
 
-# # Master Keybindings: Larkin
+# # Master Keybindings: Larkin (Layout Dependent)
 
-# Larkin is the default keybinding set that ships with Master Key. It follows in the footsteps of Vim, Kakoune and Helix.
+# Larkin is the default keybinding set that ships with Master Key. It follows in the footsteps of Vim, Kakoune and Helix. This is the version of Larkin that uses a layout dependent keymap.
 
-# > ⚠️ **Warning**: These bindings use a layout independent keymap. This means the key names may not match those on your keyboard but will instead match those shown in the layout visible in the visual documentation. They follow the U.S. Keyboard Layout. Layout independent keys are surrounded with `[]` to make clear they are not layout dependent. If your needs require a layout dependent keymap consider using `Larkin (Layout Dependent)`.
+# > ⚠️ **Warning**: These bindings use a layout dependent keymap. This means the key always match those on your keyboard. If your needs require a layout independent keymap consider using `Larkin` which selects key bindings based on the U.S. Keyboard Layout.
 
 #
 # Some key features:
@@ -22,7 +22,7 @@
 #- NOTE: this file is used to generate both keybindings and to generate a markdown file that documents the bindings. When comments are prefixed with a `-` they are ignored in the final markdown output. All other comments will become part of the markdown output. Any [[bind]] entries unbroken by normal, markdown-displayed comments will show up in a table in the markdown output. Make sure that the normal comments do not break up TOML data in a way that means it is invalid TOML.
 
 [header]
-name = "Larkin"
+name = "Larkin (Layout Dependent)"
 version = "1.0"
 
 requiredExtensions = [
@@ -117,7 +117,7 @@ default.kind = "util"
 
 [[bind]]
 path = "util"
-key = "shift+[Semicolon]"
+key = "shift+;"
 name = "suggest"
 resetTransient = false
 hideInPalette = true
@@ -129,7 +129,7 @@ show command suggestions within the context of the current mode and keybinding p
 command = "master-key.commandSuggestions"
 
 [[bind]]
-key = "[Tab] [Slash]"
+key = "tab /"
 name = "text docs"
 priority = -1
 mode = "normal"
@@ -137,7 +137,7 @@ description = "Show text documentation for keybindings"
 command = "master-key.showTextDoc"
 
 [[bind]]
-key = "[Tab] shift+[Slash]"
+key = "tab shift+/"
 name = "visual doc"
 priority = -1
 mode = "normal"
@@ -168,8 +168,8 @@ command = "master-key.showVisualDoc"
 path = "modes"
 name = "normal"
 description = "Enter normal mode"
-foreach.key = ["[Escape]", "ctrl+[BracketLeft]"]
-combinedKey = "[Escape]/ctrl+[BracketLeft]"
+foreach.key = ["escape", "ctrl+["]
+combinedKey = "escape/ctrl+["
 combinedName = "normal"
 combinedDescription = "Enter normal mode"
 key = "{key}"
@@ -183,7 +183,7 @@ prefixes = "<all-prefixes>"
 [[bind]]
 path = "modes"
 name = "normal"
-foreach.key = ["[Escape]", "ctrl+[BracketLeft]"]
+foreach.key = ["escape", "ctrl+["]
 key = "{key}"
 hideInPalette = true
 hideInDocs = true
@@ -198,7 +198,7 @@ prefixes = "<all-prefixes>"
 path = "modes"
 name = "ignore"
 description = "this key does nothing"
-foreach.key = ['{key: \[[^]]\]}', 'shift+{key: \[[^]]\]}', '{key: .}', '{key: shift+.}']
+foreach.key = ['{key: .}', 'shift+{key: .}'] #- all keys whose bindings are described by a single character
 key = "{key}"
 command = "master-key.ignore"
 prefixes = "<all-prefixes>"
@@ -241,10 +241,10 @@ default.computedArgs.select = "editorHasSelection || select_on"
 
 [[bind]]
 path = "edit.motion.prim"
-key = "[KeyH]"
+key = "h"
 name = "←"
 combinedName = "←/→"
-combinedKey = "[KeyH]/[KeyL]"
+combinedKey = "h/l"
 combinedDescription = "move left/right"
 description = "move left"
 args.to = "left"
@@ -252,7 +252,7 @@ mode = "normal"
 
 [[bind]]
 path = "edit.motion.prim"
-key = "[KeyL]"
+key = "l"
 combinedName = "←/→"
 name = "→"
 description = "move right"
@@ -260,10 +260,10 @@ args.to = "right"
 
 [[bind]]
 path = "edit.motion.prim"
-key = "[KeyJ]"
+key = "j"
 name = "↓"
 combinedName = "↓/↑"
-combinedKey = "[KeyJ]/[KeyK]"
+combinedKey = "j/k"
 combinedDescription = "move down/up"
 description = "move down"
 args.to = "down"
@@ -271,7 +271,7 @@ args.by = "wrappedLine"
 
 [[bind]]
 path = "edit.motion.prim"
-key = "[KeyK]"
+key = "k"
 name = "↑"
 description = "move up"
 combinedName = "↓/↑"
@@ -280,17 +280,17 @@ args.by = "wrappedLine"
 
 [[bind]]
 path = "edit.motion.prim"
-key = "shift+[KeyH]"
+key = "shift+h"
 name = "start"
 description = "start of line (alternates between first non-white and first)"
 combinedName = "start/end"
-combinedKey = "shift+[KeyH]/shift+[KeyL]"
+combinedKey = "shift+h/shift+l"
 combinedDescription = "move to start/end of line"
 command = "cursorHomeSelect"
 
-[[bind]] #- we don't use prim because we don't want the defaults
+[[bind]] # we don't use prim because we don't want the defaults
 path = "edit.motion"
-key = "shift+[KeyL]"
+key = "shift+l"
 name = "end"
 combinedName = "start/end"
 description = "end of line"
@@ -300,11 +300,11 @@ args.select = true
 
 [[bind]]
 path = "edit.motion.prim"
-key = "shift+[KeyK]"
+key = "shift+k"
 name = "sel ↑"
 combinedName = "sel ↑/↓"
 combinedDescription = "select lines up/down"
-combinedKey = "shift+[KeyK]/shift+[KeyJ]"
+combinedKey = "shift+k/shift+j"
 description = "select lines upwards"
 command = "runCommands"
 
@@ -324,7 +324,7 @@ command = "selection-utilities.exchangeAnchorActive"
 
 [[bind]]
 path = "edit.motion.prim"
-key = "shift+[KeyJ]"
+key = "shift+j"
 name = "sel ↓"
 combinedName = "sel ↑/↓"
 description = "select lines downwards"
@@ -343,11 +343,11 @@ command = "expandLineSelection"
 
 [[bind]]
 path = "edit.motion.prim"
-key = "ctrl+[KeyD]"
+key = "ctrl+d"
 mode = ["normal", "insert"]
 name = "pg ↓"
 combinedName = "pg ↓/↑"
-combinedKey = "ctrl+[KeyD]/ctrl+[KeyU]"
+combinedKey = "ctrl+d/ctrl+u"
 combinedDescription = "move down/up, relative to page size"
 description = "move down, relative to page size"
 command = "selection-utilities.activePageMove"
@@ -357,7 +357,7 @@ computedArgs.select = "mode == 'normal'"
 
 [[bind]]
 path = "edit.motion.prim"
-key = "ctrl+[KeyU]"
+key = "ctrl+u"
 mode = ["normal", "insert"]
 name = "pg ↑"
 combinedName = "pg ↓/↑"
@@ -369,7 +369,7 @@ computedArgs.select = "mode == 'normal'"
 
 [[bind]]
 path = "edit.motion.prim"
-key = "shift+[KeyX]"
+key = "shift+x"
 name = "exapand"
 description = "expand selections to full lines"
 command = "expandLineSelection"
@@ -387,18 +387,18 @@ default.args.select = true
 
 [[bind]]
 path = "edit.motion.obj"
-key = "[KeyW]"
+key = "w"
 name = "subwrd →"
 description = "next subword (camel/snake case)"
 combinedName = "subwrd ←/→"
 combinedDescription = "next/prev subword (camel/snake case)"
-combinedKey = "[KeyW]/[KeyB]"
+combinedKey = "w/b"
 args.unit = "subword"
 computedArgs.value = "count || 1"
 
 [[bind]]
 path = "edit.motion.obj"
-key = "[KeyB]"
+key = "b"
 name = "subwrd ←"
 description = "previous subword (camel/snake case)"
 combinedName = "subwrd ←/→"
@@ -407,18 +407,18 @@ computedArgs.value = "-count || -1"
 
 [[bind]]
 path = "edit.motion.obj"
-key = "shift+[KeyW]"
+key = "shift+w"
 name = "word →"
 description = "next word"
 combinedName = "word ←/→"
 combinedDescription = "next/prev word"
-combinedKey = "shift+[KeyW]/[KeyB]"
+combinedKey = "shift+w/b"
 args.unit = "word"
 computedArgs.value = "count || 1"
 
 [[bind]]
 path = "edit.motion.obj"
-key = "shift+[KeyB]"
+key = "shift+b"
 name = "word ←"
 combinedName = "word ←/→"
 description = "previous word"
@@ -428,7 +428,7 @@ computedArgs.value = "-count || -1"
 
 [[bind]]
 path = "edit.motion.obj"
-key = "[KeyE]"
+key = "e"
 name = "subwrd end"
 description = "next subword (camel/snake case) end"
 args.unit = "subword"
@@ -437,7 +437,7 @@ computedArgs.value = "count || 1"
 
 [[bind]]
 path = "edit.motion.obj"
-key = "shift+[KeyE]"
+key = "shift+e"
 name = "word end"
 description = "next word end"
 args.unit = "word"
@@ -446,18 +446,18 @@ computedArgs.value = "count || 1"
 
 [[bind]]
 path = "edit.motion.obj"
-key = "shift+[BracketRight]"
+key = "shift+]"
 name = "parag. →"
 description = "next paragraph"
 combinedName = "paragraph →/←"
 combinedDescription = "next/previous paragraph"
-combinedKey = "shift+[BracketRight]/[BracketLeft]"
+combinedKey = "shift+]/["
 args.unit = "paragraph"
 computedArgs.value = "count || 1"
 
 [[bind]]
 path = "edit.motion.obj"
-key = "shift+[BracketLeft]"
+key = "shift+["
 name = "parag. ←"
 combinedName = "paragraph →/←"
 description = "previous paragraph"
@@ -466,18 +466,18 @@ computedArgs.value = "-(count || 1)"
 
 [[bind]]
 path = "edit.motion.obj"
-key = "shift+[Digit0]"
+key = "shift+0"
 name = "subsec →"
 description = "next subsection"
 combinedName = "subsec →/←"
 combinedDescription = "next/previous subsection"
-combinedKey = "shift+[Digit0]/[Digit9]"
+combinedKey = "shift+0/9"
 args.unit = "subsection"
 computedArgs.value = "count || 1"
 
 [[bind]]
 path = "edit.motion.obj"
-key = "shift+[Digit9]"
+key = "shift+9"
 name = "subsec ←"
 description = "previous subsection"
 combinedName = "subsec →/←"
@@ -486,7 +486,7 @@ computedArgs.value = "-(count || 1)"
 
 [[bind]]
 path = "edit.motion.prim"
-key = "[KeyV]"
+key = "v"
 name = "shrink selection"
 combinedName = "shrink/hold selection"
 combinedDescription = """
@@ -503,7 +503,7 @@ args.commands = [
 
 [[bind]]
 path = "edit.motion.mod"
-key = "shift+[KeyV]"
+key = "shift+v"
 name = "hold selection"
 combinedName = "shrink/hold selection"
 description = """
@@ -517,9 +517,9 @@ args.value = true
 path = "edit.action.open_lines"
 name = "open, act →"
 description = "without selection: open a line below current line and enter insert, with selection: move cursor to start"
-key = "[KeyO]"
+key = "o"
 combinedName = "open below/above, act →/←"
-combinedKey = "[KeyO]/shift+[KeyO]"
+combinedKey = "o/shift+o"
 combinedDescription = """
 without selection: open a line below/above current line and enter insert, with selection: move cursor to end/start
 of selection
@@ -530,7 +530,7 @@ args.commands = ["editor.action.insertLineAfter", "master-key.enterInsert"]
 
 [[bind]]
 path = "edit.action.open_lines"
-key = "[KeyO]"
+key = "o"
 combinedName = "open below/above, act →/←"
 when = "editorHasSelection"
 command = "selection-utilities.activeAtEnd"
@@ -540,7 +540,7 @@ path = "edit.action.open_lines"
 name = "open blw, act ←"
 combinedName = "open below/above, act →/←"
 description = "without selection: open a line above current line and enter insert, with selection: move cursor to end"
-key = "shift+[KeyO]"
+key = "shift+o"
 when = "!editorHasSelection"
 command = "runCommands"
 args.commands = [ "editor.action.insertLineBefore", "master-key.enterInsert" ]
@@ -550,25 +550,25 @@ path = "edit.action.open_lines"
 name = "open blw, act ←"
 combinedName = "open below/above, act →/←"
 description = "without selection: open a line above current line and enter insert, with selection: move cursor to end"
-key = "shift+[KeyO]"
+key = "shift+o"
 when = "editorHasSelection"
 command = "selection-utilities.activeAtStart"
 
 [[bind]]
 path = "edit.motion"
-key = "shift+[Digit5]"
+key = "shift+5"
 name = "to bracket"
 description = "Move to matching bracket"
 command = "editor.action.jumpToBracket"
 
 [[bind]]
 path = "edit.motion.prim"
-key = '[Backslash]'
+key = '\'
 name = "→ sel"
 combinedName = "→/← sel"
 description = "select *just* the character to the right"
 combinedDescription = "select *just* the character to the right"
-combinedKey = 'shift+[Backslash]/[Backslash]'
+combinedKey = 'shift+\/\'
 mode = ["normal", "selectedit"]
 command = "runCommands"
 
@@ -582,7 +582,7 @@ computedArgs = { value = "count" }
 
 [[bind]]
 path = "edit.motion.prim"
-key = 'shift+[Backslash]'
+key = 'shift+\'
 name = "← sel"
 combinedName = "→/← sel"
 description = "select *just* the character to the left"
@@ -605,14 +605,14 @@ default.kind = "motion"
 
 [[bind]]
 path = "edit.motion.obj"
-key = "shift+[Digit4]"
+key = "shift+4"
 name = "all"
 description = "Select entire document"
 command = "editor.action.selectAll"
 
 [[bind]]
 path = "edit.motion"
-key = "shift+[KeyR]"
+key = "shift+r"
 name = "trim wht"
 description = "trim external whitespace"
 command = "selection-utilities.trimSelectionWhitespace"
@@ -621,10 +621,10 @@ command = "selection-utilities.trimSelectionWhitespace"
 path = "edit.motion.obj"
 name = "→ num."
 description = "Move to next number"
-key = "shift+[Digit3]"
+key = "shift+3"
 combinedName = "→/← num."
 combinedDescription = "Move to next/prev number"
-combinedKey = "shift+[Digit3]/[Digit2]"
+combinedKey = "shift+3/2"
 args.unit = "number"
 args.selectWhole = true
 args.boundary = "both"
@@ -634,7 +634,7 @@ computedArgs.value = "(count || 1)"
 path = "edit.motion.obj"
 name = "← num."
 description = "Move to next number"
-key = "shift+[Digit2]"
+key = "shift+2"
 combinedName = "→/← num."
 args.unit = "number"
 args.selectWhole = true
@@ -645,7 +645,7 @@ computedArgs.value = "-(count || 1)"
 path = "edit.motion"
 name = 'narrow to subword'
 description = "Narrow current selection so it starts and stops at a subword (e.g. 'snake' in snake_case)"
-key = "[KeyZ]"
+key = "z"
 command = "selection-utilities.narrowTo"
 args.unit = "subident"
 args.boundary = "both"
@@ -660,12 +660,12 @@ args.boundary = "both"
 path = "edit.count"
 foreach.num = ['{key: [0-9]}']
 name = "count {num}"
-key = "[Digit{num}]"
+key = "{num}"
 command = "master-key.updateCount"
 description = "Add digit {num} to the count argument of a command"
-combinedKey = "[Digit0]-[Digit9]"
+combinedKey = "0-9"
 combinedName = "count 0-9"
-combinedDescription = "Add digit 0-9 to count argument of a command"
+combinedDescription = "Add digit 1-9 to count argument of a command"
 args.value = "{num}"
 resetTransient = false
 mode = ["!insert", "!capture"]
@@ -680,7 +680,7 @@ description = "Commands that repeat some kind of motion"
 
 [[bind]]
 path = "edit.motion.history"
-key = "[Semicolon]"
+key = ";"
 name = "repeat motion"
 description = """
 Repeat the last motion command. Motions usually move the cursor or change the selection.
@@ -688,9 +688,9 @@ Repeat the last motion command. Motions usually move the cursor or change the se
 repeat = "count"
 command = "master-key.replayFromHistory"
 args.at = """
-commandHistory[KeyI].path.startsWith('edit.motion') &&
-commandHistory[KeyI].name != 'repeat motion' &&
-commandHistory[KeyI].name != 'shrink selection'
+commandHistory[i].path.startsWith('edit.motion') &&
+commandHistory[i].name != 'repeat motion' &&
+commandHistory[i].name != 'shrink selection'
 """
 
 [[bind]]
@@ -701,10 +701,10 @@ Repeat the subject: a motion command that occurred right before an action. For
 instance `w` followed by `d` selects a word and deletes it. The `w` command would be the
 last subject until some new action is run after `d`. See also `.` which repeats the last action.
 """
-key = "[Comma]"
+key = ","
 command = "master-key.replayFromHistory"
 args.at = """
-commandHistory[KeyI].path.startsWith("edit.motion") &&
+commandHistory[i].path.startsWith("edit.motion") &&
 commandHistory[i+1].path.startsWith("edit.action") &&
 !(commandHistory[i+1].name.startsWith("repeat ") &&
   commandHistory[i+1].path.startsWith("edit.action.history"))
@@ -713,16 +713,16 @@ commandHistory[i+1].path.startsWith("edit.action") &&
 [[bind]]
 path = "edit.motion.history"
 name = "cursor undo"
-key = "[Minus]"
+key = "-"
 combinedName = "cursor undo/redo"
-combinedKey = "[Minus]/shift+[Minus]"
+combinedKey = "-/shift+-"
 command = "cursorUndo"
 
 [[bind]]
 path = "edit.motion.history"
 name = "cursor redo"
 combinedName = "cursor undo/redo"
-key = "shift+[Minus]"
+key = "shift+-"
 command = "cursorRedo"
 
 [[bind]]
@@ -730,9 +730,9 @@ path = "edit.motion.history"
 name = "nav ←"
 description = "Go back in navigation history (e.g. goto definition)"
 combinedName = "nav ←/→"
-combinedKey = "[KeyN]/shift+[KeyN]"
+combinedKey = "n/shift+n"
 combinedDescription = "Go back/forward in navigation history"
-key = "[KeyG] [KeyN]"
+key = "g n"
 command = "workbench.action.navigateBackInNavigationLocations"
 
 [[bind]]
@@ -740,16 +740,16 @@ path = "edit.motion.history"
 name = "nav →"
 combinedName = "nav ←/→"
 description = "Go forward in navigation history (e.g. goto definition)"
-key = "[KeyG] shift+[KeyN]"
+key = "g shift+n"
 command = "workbench.action.navigateForwardInNavigationLocations"
 
 [[bind]]
 path = "edit.motion.history"
 name = "edit hist ←"
 description = "Go back in edit history"
-key = "[KeyG] [Minus]"
+key = "g -"
 combinedName = "edit ←/→"
-combinedKey = "[Minus]/shift+[Minus]"
+combinedKey = "-/shift+-"
 combinedDescription = "Go back/forward in edit history"
 command = "workbench.action.navigateBackInEditLocations"
 
@@ -757,7 +757,7 @@ command = "workbench.action.navigateBackInEditLocations"
 path = "edit.motion.history"
 name = "edit hist →"
 description = "Go forward in edit history)"
-key = "[KeyG] shift+[Minus]"
+key = "g shift+-"
 combinedName = "edit ←/→"
 command = "workbench.action.navigateForwardInEditLocations"
 
@@ -779,18 +779,18 @@ default.args.wrapAround = true
 
 [[bind]]
 path = "edit.motion.search"
-key = "[Slash]"
+key = "/"
 name = "search →"
 description = "search forwards"
 combinedName = "search → (←)"
 combinedDescription = "search forwards (backwards)"
-combinedKey = "[Slash] (shift+[Slash])"
+combinedKey = "/ (shift+/)"
 args.offset = "start"
 args.register = "search"
 
 [[bind]]
 path = "edit.motion.search"
-key = "shift+[Slash]"
+key = "shift+/"
 name = "search ←"
 description = "search backwards"
 combinedName = "search → (←)"
@@ -800,7 +800,7 @@ args.backwards = true
 
 [[bind]]
 path = "edit.motion.search"
-key = "[KeyN]"
+key = "n"
 name = "→ search"
 description = "Go to the next match of the search query"
 command = "master-key.nextMatch"
@@ -809,7 +809,7 @@ computedArgs.repeat = "(count || 1)-1"
 
 [[bind]]
 path = "edit.motion.search"
-key = "shift+[KeyN]"
+key = "shift+n"
 name = "← search"
 description = "Go to the previous match of the search query"
 command = "master-key.previousMatch"
@@ -818,19 +818,19 @@ computedArgs.repeat = "(count || 1)-1"
 
 [[bind]]
 path = "edit.motion.search"
-key = "shift+[Digit8]"
+key = "shift+8"
 name = "match →"
 description = "Next match to object under cursor"
 combinedName = "match →/←"
 combinedDescription = "Next/previous match to object under cursor"
-combinedKey = "shift+[Digit8]/[Digit7]"
+combinedKey = "shift+8/7"
 computedArgs.text = "firstSelectionOrWord"
 args.offset = "start"
 args.register = "search"
 
 [[bind]]
 path = "edit.motion.search"
-key = "shift+[Digit7]"
+key = "shift+7"
 name = "match ←"
 description = "Previous match to object under cursor"
 combinedName = "match →/←"
@@ -841,19 +841,19 @@ args.backwards = true
 
 [[bind]]
 path = "edit.motion.search"
-key = "[KeyF]"
+key = "f"
 name = "find char"
 description = "Find the next char (include char in selection)"
 combinedName = "find char (back)"
 combinedDescription = "Find the next (previous) char (include char in selection)"
-combinedKey = "[KeyF] (shift+[KeyF])"
+combinedKey = "f (shift+f)"
 args.acceptAfter = 1
 computedArgs.skip = "count-1"
 args.offset = "inclusive"
 
 [[bind]]
 path = "edit.motion.search"
-key = "shift+[KeyF]"
+key = "shift+f"
 name = "find char back"
 description = "Find the previous char (include char in selection)"
 combinedName = "find char (back)"
@@ -864,11 +864,11 @@ computedArgs.skip = "count-1"
 
 [[bind]]
 path = "edit.motion.search"
-key = "[KeyT]"
+key = "t"
 name = "to char"
 description = "Find the next char (exclude char in selection)"
 combinedName = "to char (back)"
-combinedKey = "[KeyT] (shift+[KeyT])"
+combinedKey = "t (shift+t)"
 combinedDescription = "Find the next/previous char (exclude char in selection)"
 args.acceptAfter = 1
 args.offset = "start"
@@ -876,7 +876,7 @@ computedArgs.skip = "count-1"
 
 [[bind]]
 path = "edit.motion.search"
-key = "shift+[KeyT]"
+key = "shift+t"
 name = "to char back"
 description = "Find the previous char (exclude char in selection)"
 combinedName = "to char (back)"
@@ -887,12 +887,12 @@ computedArgs.skip = "count-1"
 
 [[bind]]
 path = "edit.motion.search"
-key = "[KeyS]"
+key = "s"
 name = "find char pair"
 description = "To next character pair"
 combinedName = "char pair →/←"
 combinedDescription = "To next character pair"
-combinedKey = "[KeyS]/shift+[KeyS]"
+combinedKey = "s/shift+s"
 args.acceptAfter = 2
 args.offset = "start"
 computedArgs.skip = "count-1"
@@ -900,7 +900,7 @@ mode = "normal"
 
 [[bind]]
 path = "edit.motion.search"
-key = "shift+[KeyS]"
+key = "shift+s"
 name = "char pair back"
 description = "To previous character pair"
 combinedName = "char pair →/←"
@@ -916,7 +916,7 @@ args.backwards = true
 
 [[bind]]
 path = "edit.motion"
-key = "[KeyG]"
+key = "g"
 priority = 1
 name = "goto"
 command = "master-key.prefix"
@@ -927,11 +927,11 @@ or backwards in some direction.
 
 [[bind]]
 path = "edit.motion.prim"
-key = "[KeyG] [KeyJ]"
+key = "g j"
 priority = 1
 name = "unwrp ↓"
 combinedName = "unwrap ↓/↑"
-combinedKey = "[KeyJ]/[KeyK]"
+combinedKey = "j/k"
 combinedDescription = """
 move cursor up/down unwrapped text line; if a single line is wrapped into multiple lines by
 the editor, this command skips all such wrapped lines
@@ -945,7 +945,7 @@ args.by = "line"
 
 [[bind]]
 path = "edit.motion.prim"
-key = "[KeyG] [KeyK]"
+key = "g k"
 priority = 1
 name = "unwrp ↑"
 combinedName = "unwrap ↓/↑"
@@ -955,11 +955,11 @@ args.by = "line"
 
 [[bind]]
 path = "edit.motion.prim"
-key = "[KeyG] shift+[KeyK]"
+key = "g shift+k"
 priority = 1
 combinedName = "unwrp sel ↑/↓"
 combinedDescription = "select unwrapped lines up/down"
-combinedKey = "shift+[KeyK]/[KeyJ]"
+combinedKey = "shift+k/j"
 name = "unwrp sel ↑"
 description = "select unwrapped lines upwards"
 command = "runCommands"
@@ -977,7 +977,7 @@ command = "expandLineSelection"
 
 [[bind]]
 path = "edit.motion.prim"
-key = "[KeyG] shift+[KeyJ]"
+key = "g shift+j"
 priority = 1
 name = "sel ↓"
 combinedName = "unwrp sel ↑/↓"
@@ -997,18 +997,18 @@ command = "expandLineSelection"
 
 [[bind]]
 path = "edit.motion.prim"
-key = "shift+[KeyG]"
+key = "shift+g"
 priority = 1
 name = "doc end"
 description = "select to end of document"
 combinedName = "doc top/bottom"
 combinedDescription = "select to top/bottom of document"
-combinedKey = "[Comma]/[Period]"
+combinedKey = ",/."
 command = "cursorBottomSelect"
 
 [[bind]]
 path = "edit.motion.prim"
-key = "[KeyG] [KeyG]"
+key = "g g"
 priority = 1
 name = "doc start"
 description = "select to start (line) of document."
@@ -1031,7 +1031,7 @@ computedArgs.lineNumber = "count"
 
 [[bind]]
 path = "edit.motion.prim"
-key = "[KeyG] [KeyG]"
+key = "g g"
 priority = 1
 name = "doc start"
 description = "select to start of document"
@@ -1040,21 +1040,21 @@ when = "master-key.count <= 1"
 
 [[bind]]
 path = "edit.motion.obj"
-key = "[KeyG] [KeyW]"
+key = "g w"
 priority = 1
 name = "WORD →"
 combinedName = "WORD →/←"
 combinedDescription = """
 next/prev WORD;  e.g. contiguous non-whitespace region
 """
-combinedKey = "[KeyW]/[KeyB]"
+combinedKey = "w/b"
 description = "next WORD; e.g. contiguous non-whitespace region"
 args.unit = "WORD"
 computedArgs.value = "count || 1"
 
 [[bind]]
 path = "edit.motion.obj"
-key = "[KeyG] [KeyB]"
+key = "g b"
 priority = 1
 name = "WORD ←"
 combinedName = "WORD →/←"
@@ -1064,7 +1064,7 @@ computedArgs.value = "-count || -1"
 
 [[bind]]
 path = "edit.motion.obj"
-key = "[KeyG] [KeyE]"
+key = "g e"
 priority = 1
 name = "WORD end →"
 description = "next WORD end; e.g. contiguous non-whitespace region"
@@ -1074,19 +1074,19 @@ computedArgs.value = "count || 1"
 
 [[bind]]
 path = "edit.motion.obj"
-key = "[KeyG] [Digit0]"
+key = "g 0"
 priority = 1
 name = "sec →"
 description = "next section"
 combinedName = "sec →/←"
 combinedDescription = "next/previous section"
-combinedKey = "[Digit0]/[Digit9]"
+combinedKey = "0/9"
 args.unit = "section"
 computedArgs.value = "count || 1"
 
 [[bind]]
 path = "edit.motion.obj"
-key = "[KeyG] [Digit9]"
+key = "g 9"
 priority = 1
 name = "sec ←"
 description = "previous section"
@@ -1099,7 +1099,7 @@ path = "window"
 name = "goto line"
 priority = 1
 description = "goto line command"
-key = "[KeyG] [KeyL]"
+key = "g l"
 command = "workbench.action.gotoLine"
 when = "editorTextFocus"
 
@@ -1108,7 +1108,7 @@ path = "window"
 name = "to refs"
 priority = 1
 description = "jump to a location where this symbol is referenced"
-key = "[KeyG] [KeyR]"
+key = "g r"
 command = "editor.action.goToReferences"
 when = "editorTextFocus"
 
@@ -1117,9 +1117,9 @@ path = "window"
 name = "go to"
 priority = 1
 description = "go to the definition of symbol under cursor"
-key = "[KeyG] [KeyD]"
+key = "g d"
 combinedName = "go to (aside)"
-combinedKey = "(shift+)[KeyD]"
+combinedKey = "(shift+)d"
 combinedDescription = "go to the definition of symbol (in an editor to the side)"
 command = "editor.action.revealDefinition"
 when = "editorTextFocus"
@@ -1129,7 +1129,7 @@ path = "window"
 name = "go to, aside"
 priority = 1
 description = "go to the definition of symbol under cursor in an editor to the side"
-key = "[KeyG] shift+[KeyD]"
+key = "g shift+d"
 combinedName = "go to (aside)"
 command = "editor.action.revealDefinitionAside"
 when = "editorTextFocus"
@@ -1138,13 +1138,13 @@ when = "editorTextFocus"
 path = "window"
 name = "open"
 description = "open the file name under the cursor"
-key = "[KeyG] [KeyF]"
+key = "g f"
 command = "extension.openFileFromPath"
 when = "editorTextFocus"
 
 [[bind]]
 path = "edit.motion"
-key = "[KeyG] [KeyC]"
+key = "g c"
 name = "cell →"
 combinedName = "cell →/←"
 command = "runCommands"
@@ -1153,7 +1153,7 @@ description = "previous jupyter notebook cell"
 
 [[bind]]
 path = "edit.motion"
-key = "[KeyG] shift+[KeyC]"
+key = "g shift+c"
 name = "cell ←"
 combinedName = "cell →/←"
 description = "previous jupyter notebook cell"
@@ -1182,7 +1182,7 @@ default.args.boundary = "start"
 
 [[bind]]
 path = "edit.motion.match"
-key = "[KeyM]"
+key = "m"
 name = "match"
 description = """
 Find the closest character range matching a specified object.
@@ -1192,7 +1192,7 @@ command = "master-key.prefix"
 
 [[bind]]
 path = "edit.motion.match"
-key = "[KeyM] [KeyM]"
+key = "m m"
 prefixes = [""]
 name = "smart expand"
 description = "Use VSCode's built-in smart expansion command"
@@ -1200,18 +1200,18 @@ command = "editor.action.smartSelect.expand"
 
 [[bind]]
 path = "edit.motion.match.obj"
-key = "[KeyM] [KeyW]"
+key = "m w"
 name = "around subwrd →"
 description = "(camel/snake case)"
 combinedName = "around subwrd ←/→"
 combinedDescription = "(camel/snake case)"
-combinedKey = "[KeyW]/[KeyB]"
+combinedKey = "w/b"
 args.unit = "subword"
 computedArgs.value = "count || 1"
 
 [[bind]]
 path = "edit.motion.match.obj"
-key = "[KeyM] [KeyB]"
+key = "m b"
 name = "around subwrd ←"
 description = "(camel/snake case)"
 combinedName = "around subwrd ←/→"
@@ -1220,16 +1220,16 @@ computedArgs.value = "-count || -1"
 
 [[bind]]
 path = "edit.motion.match.obj"
-key = "[KeyM] shift+[KeyW]"
+key = "m shift+w"
 name = "ard word →"
 combinedName = "around word →/←"
-combinedKey = "shift+[KeyW]/[KeyB]"
+combinedKey = "shift+w/b"
 args.unit = "word"
 computedArgs.value = "count || 1"
 
 [[bind]]
 path = "edit.motion.match.obj"
-key = "[KeyM] shift+[KeyB]"
+key = "m shift+b"
 name = "ard word ←"
 combinedName = "around word →/←"
 prefixes = [""]
@@ -1238,17 +1238,17 @@ computedArgs.value = "-count || -1"
 
 [[bind]]
 path = "edit.motion.match.obj"
-key = "[KeyM] [KeyE]"
+key = "m e"
 name = "in subwrd"
 combinedName = "in → subword/word"
-combinedKey = "[KeyE]/shift+[KeyE]"
+combinedKey = "e/shift+e"
 args.unit = "subident"
 args.boundary = "both"
 computedArgs.value = "count || 1"
 
 [[bind]]
 path = "edit.motion.match.obj"
-key = "[KeyM] shift+[KeyE]"
+key = "m shift+e"
 name = "in word"
 combinedName = "in → subword/word"
 args.unit = "word"
@@ -1257,17 +1257,17 @@ computedArgs.value = "count || 1"
 
 [[bind]]
 path = "edit.motion.match.obj"
-key = "[KeyM] [KeyP]"
+key = "m p"
 name = "in parag. →"
 combinedName = "in paragraph →/←"
-combinedKey = "[KeyP]/[KeyO]"
+combinedKey = "p/o"
 args.boundary = "both"
 args.unit = "paragraph"
 computedArgs.value = "count || 1"
 
 [[bind]]
 path = "edit.motion.match.obj"
-key = "[KeyM] [KeyO]"
+key = "m o"
 name = "in parag. ←"
 combinedName = "in paragraph →/←"
 args.unit = "paragraph"
@@ -1276,16 +1276,16 @@ computedArgs.value = "-(count || 1)"
 
 [[bind]]
 path = "edit.motion.match.obj"
-key = "[KeyM] shift+[KeyP]"
+key = "m shift+p"
 name = "arn parag. →"
 combinedName = "around paragraph →/←"
-combinedKey = "shift+[KeyP]/shift+[KeyO]"
+combinedKey = "shift+p/shift+o"
 args.unit = "paragraph"
 computedArgs.value = "count || 1"
 
 [[bind]]
 path = "edit.motion.match.obj"
-key = "[KeyM] shift+[KeyO]"
+key = "m shift+o"
 name = "arn parag. ←"
 combinedName = "around paragraph →/←"
 args.unit = "paragraph"
@@ -1293,16 +1293,16 @@ computedArgs.value = "-(count || 1)"
 
 [[bind]]
 path = "edit.motion.match.obj"
-key = "[KeyM] [Digit0]"
+key = "m 0"
 name = "arn subsec →"
 combinedName = "around subsection →/←"
-combinedKey = "[Digit0]/shift+[Digit0]"
+combinedKey = "0/shift+0"
 args.unit = "subsection"
 computedArgs.value = "count || 1"
 
 [[bind]]
 path = "edit.motion.match.obj"
-key = "[KeyM] shift+[Digit0]"
+key = "m shift+0"
 name = "arn subsec ←"
 combinedName = "around subsection →/←"
 args.unit = "subsection"
@@ -1310,16 +1310,16 @@ computedArgs.value = "-(count || 1)"
 
 [[bind]]
 path = "edit.motion.match.obj"
-key = "[KeyM] [Digit9]"
+key = "m 9"
 name = "in subsec →"
 combinedName = "in subsection →/←"
-combinedKey = "[Digit9]/shift+[Digit9]"
+combinedKey = "9/shift+9"
 args.unit = "subsection"
 computedArgs.value = "count || 1"
 
 [[bind]]
 path = "edit.motion.match.obj"
-key = "[KeyM] shift+[Digit9]"
+key = "m shift+9"
 name = "in subsec ←"
 combinedName = "in subsection →/←"
 args.unit = "subsection"
@@ -1327,23 +1327,23 @@ computedArgs.value = "-(count || 1)"
 
 [[bind]]
 path = "edit.motion.match"
-key = "[KeyM] [KeyG]"
+key = "m g"
 name = "other..."
 description = "additional objects to match..."
 command = "master-key.prefix"
 
 [[bind]]
 path = "edit.motion.match.obj"
-key = "[KeyM] [KeyG] [Digit0]"
+key = "m g 0"
 name = "section →"
 combinedName = "section →/←"
-combinedKey = "[Digit0]/[Digit9]"
+combinedKey = "0/9"
 args.unit = "section"
 computedArgs.value = "count || 1"
 
 [[bind]]
 path = "edit.motion.match.obj"
-key = "[KeyM] [KeyG] [Digit9]"
+key = "m g 9"
 name = "section ←"
 combinedName = "section →/←"
 args.unit = "section"
@@ -1351,16 +1351,16 @@ computedArgs.value = "-(count || 1)"
 
 [[bind]]
 path = "edit.motion.match.obj"
-key = "m [KeyG] [KeyW]"
+key = "m g w"
 name = "around WORD →"
 combinedName = "around WORD →/←"
-combinedKey = "[KeyW]/[KeyB]"
+combinedKey = "w/b"
 args.unit = "WORD"
 computedArgs.value = "count || 1"
 
 [[bind]]
 path = "edit.motion.match.obj"
-key = "m [KeyG] [KeyB]"
+key = "m g b"
 name = "around WORD ←"
 combinedName = "around WORD →/←"
 args.unit = "WORD"
@@ -1368,7 +1368,7 @@ computedArgs.value = "-(count || 1)"
 
 [[bind]]
 path = "edit.motion.match.obj"
-key = "m [KeyG] [KeyE]"
+key = "m g e"
 name = "in WORD"
 args.unit = "WORD"
 args.boundary = "both"
@@ -1383,10 +1383,10 @@ selection commands that move by a predefined syntactic object like brackets and 
 
 [[bind]]
 path = "edit.motion.match.syntax"
-key = "[KeyM] [BracketLeft]"
+key = "m ["
 name = "in parens"
 combinedName = "in/arnd parens"
-combinedKey = "[BracketLeft]/shift+[BracketLeft]"
+combinedKey = "[/shift+["
 combinedDescription = """
 expand inside/around parens/brackets/braces and their contents; repeated calls to this command
 will seek out larger and larger scopes
@@ -1399,7 +1399,7 @@ command = "selection-utilities.expandWithinBrackets"
 
 [[bind]]
 path = "edit.motion.match.syntax"
-key = "[KeyM] shift+[BracketLeft]"
+key = "m shift+["
 name = "arnd parens"
 combinedName = "in/arnd parens"
 description = """
@@ -1410,14 +1410,14 @@ command = "selection-utilities.expandAroundBrackets"
 
 [[bind]]
 path = "edit.motion.match.syntax"
-key = "[KeyM] [Quote]"
+key = "m '"
 name = "in quotes"
 description = """
 select within current quotes; repeated calls to this command
 will seek out larger and larger scopes
 """
 combinedName = "in/arnd quotes"
-combinedKey = "[Quote]/shift+[Quote]"
+combinedKey = "'/shift+'"
 combinedDescription = """
 select within/around current quotes; repeated calls to this command
 will seek out larger and larger scopes
@@ -1426,7 +1426,7 @@ command = "bracketeer.selectQuotesContent"
 
 [[bind]]
 path = "edit.motion.match.syntax"
-key = "[KeyM] shift+[Quote]"
+key = "m shift+'"
 name = "around quotes"
 combinedName = "in/arnd quotes"
 description = """
@@ -1438,17 +1438,17 @@ args.commands = ["bracketeer.selectQuotesContent", "bracketeer.selectQuotesConte
 
 [[bind]]
 path = "edit.motion.match.syntax"
-key = "[KeyM] shift+[Period]"
+key = "m shift+."
 name = "in <>"
 description = "text inside angle brackets"
 combinedName = "in <> / in ><"
-combinedKey = "shift+[Period] / shift+[Comma]"
+combinedKey = "shift+. / shift+,"
 combinedDescription = "text inside angle brackets / pairs (e.g. text in <a>text</a>)"
 command = "extension.selectAngleBrackets"
 
 [[bind]]
 path = "edit.motion.match.syntax"
-key = "[KeyM] shift+[Comma]"
+key = "m shift+,"
 name = "in ><"
 combinedName = "in <> / in ><"
 description = "text inside tag pairs (e.g. <a>text</a>)"
@@ -1456,11 +1456,11 @@ command = "extension.selectInTag"
 
 [[bind]]
 path = "edit.motion.match.syntax"
-key = "[KeyM] [KeyI]"
+key = "m i"
 name = "in indent"
 description = "all text at the same indentation level"
 combinedName = "in/arnd"
-combinedKey = "[space]/shift+[space]"
+combinedKey = "space/shift+space"
 combinedDescription = """
 all text at the same indentation level / all indentation along with the line above and
 below this (ala c-like syntax)
@@ -1469,7 +1469,7 @@ command = "vscode-select-by-indent.select-inner"
 
 [[bind]]
 path = "edit.motion.match.syntax"
-key = "[KeyM] shift+[KeyI]"
+key = "m shift+i"
 name = "arnd indent"
 description = """
 all text at the same indentation level along with the line above and below
@@ -1480,7 +1480,7 @@ command = "vscode-select-by-indent.select-outer"
 
 [[bind]]
 path = "edit.motion.match.syntax"
-key = "m [KeyG] [KeyI]"
+key = "m g i"
 name = "indent+top"
 description = """
 all text at the same indentation level and the line just above it (ala python syntax)
@@ -1497,7 +1497,7 @@ description = "Motions that match some range of characters by predefined regex"
 path = "edit.motion.match.cell"
 name = "in cell"
 description = "select text within a cell (ala jupyter)"
-key = "[KeyM] [KeyC]"
+key = "m c"
 command = "jupyter.selectCell"
 
 [[path]]
@@ -1514,10 +1514,10 @@ characters (s), where N is the count. Examples:
 2mt'' would search for a string between `''` and `''`.
 2ms,,.. would search for a string between `,,` and `..`.
 """
-key = "[KeyM] [KeyT]"
+key = "m t"
 command = "runCommands"
 combinedName = "between pair/two"
-combinedKey = "[KeyT]/[KeyS]"
+combinedKey = "t/s"
 description = """
 Select between pairs of the same N characters, where N is the count.
 Example: 2mt'' would search for a string between '' and ''.
@@ -1539,7 +1539,7 @@ description = """
 Select between two different sets of N characters, where N is the count e.g.
 2ms,,.. would search for a string between ,, and ..
 """
-key = "[KeyM] [KeyS]"
+key = "m s"
 combinedName = "between pair/two"
 command = "runCommands"
 
@@ -1573,7 +1573,7 @@ description = "Essential actions required to edit text"
 [[bind]]
 path = "edit.action.basic"
 #- TODO: add documentation to these basic editor keys
-key = "[KeyI]"
+key = "i"
 name = "insert"
 description = "Switch to insert mode (right before character)"
 command = "runCommands"
@@ -1582,7 +1582,7 @@ mode = ["normal", "selectedit", "syminsert"]
 
 [[bind]]
 path = "edit.action.basic"
-key = "[KeyA]"
+key = "a"
 name = "append"
 description = "insert after cursor"
 mode = ["normal", "selectedit", "syminsert"]
@@ -1595,7 +1595,7 @@ args.commands = [
 
 [[bind]]
 path = "edit.action.basic"
-key = "shift+[KeyI]"
+key = "shift+i"
 name = "insert start"
 mode = ["normal", "selectedit", "syminsert"]
 command = "runCommands"
@@ -1606,7 +1606,7 @@ args.commands = [
 
 [[bind]]
 path = "edit.action.basic"
-key = "shift+[KeyA]"
+key = "shift+a"
 name = "insert end"
 mode = ["normal", "selectedit", "syminsert"]
 command = "runCommands"
@@ -1617,7 +1617,7 @@ args.commands = [
 
 [[bind]]
 path = "edit.action.basic"
-key = "[KeyC]"
+key = "c"
 name = "change"
 description = """
 Without a count: change selected region of text. With a count:
@@ -1629,14 +1629,14 @@ args.commands = ["deleteRight", "editor.action.insertLineBefore", "master-key.en
 
 [[bind]]
 path = "edit.action.basic"
-key = "[KeyC]"
+key = "c"
 when = "!editorHasMultilineSelection && editorHasSelection"
 command = "runCommands"
 args.commands = ["deleteRight", "master-key.enterInsert"]
 
 [[bind]]
 path = "edit.action.basic"
-key = "[KeyC]"
+key = "c"
 when = "!editorHasSelection && master-key.count <= 1"
 command = "runCommands"
 args.commands = [
@@ -1648,7 +1648,7 @@ args.commands = [
 
 [[bind]]
 path = "edit.action.basic"
-key = "[KeyC]"
+key = "c"
 when = "!editorHasSelection && master-key.count > 1"
 command = "runCommands"
 args.commands = [
@@ -1660,7 +1660,7 @@ args.commands = [
 
 [[bind]]
 path = "edit.action.basic"
-key = "shift+[KeyC]"
+key = "shift+c"
 name = "change to/back"
 description = """Without a count: change from current char to end of line. With a count:
 change the previous `count` lines.
@@ -1676,7 +1676,7 @@ args.commands = [
 
 [[bind]]
 path = "edit.action.basic"
-key = "shift+[KeyC]"
+key = "shift+c"
 mode = ["normal", "selectedit"]
 when = "master-key.count > 1"
 command = "runCommands"
@@ -1689,7 +1689,7 @@ args.commands = [
 
 [[bind]]
 path = "edit.action.basic"
-key = "[KeyX]"
+key = "x"
 mode = "normal"
 name = "delete char"
 command = "runCommands"
@@ -1701,14 +1701,14 @@ args.commands = [
 
 [[bind]]
 path = "edit.action.basic"
-key = "[KeyR]"
+key = "r"
 name = "replace char"
 description = "replace the character under the cursor"
 command = "master-key.replaceChar"
 
 [[bind]]
 path = "edit.action.basic"
-key = "ctrl+[KeyI]"
+key = "ctrl+i"
 name = "insert char"
 mode = ["normal", "selectedit"]
 description = "insert a character in front of the cursor"
@@ -1721,19 +1721,19 @@ description = "Operations that manipulate the clipboard in some way."
 
 [[bind]]
 path = "edit.action.clipboard"
-key = "[KeyP]"
+key = "p"
 name = "paste after"
 description = "Paste clipboard after the cursor/selection"
 combinedName = "paste before/after/in"
 combinedDescription = "Paste clipboard before/after/at the cursor/selection"
-combinedKey = "[KeyP]/shift+[KeyP]/ctrl+[KeyP]"
+combinedKey = "p/shift+p/ctrl+p"
 when = "editorHasSelection"
 command = "runCommands"
 args.commands = ["selection-utilities.activeAtEnd", "selection-utilities.shrinkToActive", "editor.action.clipboardPasteAction"]
 
 [[bind]]
 path = "edit.action.clipboard"
-key = "[KeyP]"
+key = "p"
 name = "paste after"
 combinedName = "paste before/after/in"
 when = "!editorHasSelection"
@@ -1742,7 +1742,7 @@ args.commands = ["cursorRight", "editor.action.clipboardPasteAction"]
 
 [[bind]]
 path = "edit.action.clipboard"
-key = "ctrl+[KeyP]"
+key = "ctrl+p"
 when = "!suggestWidgetVisible"
 mode = ["normal", "insert"]
 name = "paste in"
@@ -1752,7 +1752,7 @@ command = "editor.action.clipboardPasteAction"
 
 [[bind]]
 path = "edit.action.clipboard"
-key = "shift+[KeyP]"
+key = "shift+p"
 name = "paste before"
 combinedName = "paste before/after"
 description = "Paste before the cursor/selection"
@@ -1762,7 +1762,7 @@ args.commands = ["selection-utilities.activeAtStart", "selection-utilities.shrin
 
 [[bind]]
 path = "edit.action.clipboard"
-key = "shift+[KeyP]"
+key = "shift+p"
 combinedName = "paste before/after"
 when = "!editorHasSelection"
 command = "runCommands"
@@ -1776,7 +1776,7 @@ Repeat the last action command. Actions usually modify the text of a document in
 another. (But, e.g. sending text to the REPL is also considered an editor action).
 See also `,` which repeats the last subject.
 """
-key = "[Period]"
+key = "."
 command = "runCommands"
 repeat = "count"
 
@@ -1784,9 +1784,9 @@ repeat = "count"
 command = "master-key.replayFromHistory"
 #- we can repeat any action but history-related actions; we make an exception for replaying macros, which can be repeated
 args.at = """
-commandHistory[KeyI].path.startsWith('edit.action') &&
-(!commandHistory[KeyI].path.startsWith('edit.action.history') ||
- commandHistory[KeyI].name == 'replay')
+commandHistory[i].path.startsWith('edit.action') &&
+(!commandHistory[i].path.startsWith('edit.action.history') ||
+ commandHistory[i].name == 'replay')
 """
 
 [[bind.args.commands]]
@@ -1795,14 +1795,14 @@ command = "master-key.enterNormal"
 [[bind]]
 path = "edit.action.history"
 name = "undo"
-key = "[KeyU]"
+key = "u"
 command = "runCommands"
 args.commands = [ "undo", "selection-utilities.shrinkToActive" ]
 
 [[bind]]
 path = "edit.action.history"
 name = "redo"
-key = "shift+[KeyU]"
+key = "shift+u"
 command = "runCommands"
 args.commands = [ "redo", "selection-utilities.shrinkToActive" ]
 
@@ -1810,12 +1810,12 @@ args.commands = [ "redo", "selection-utilities.shrinkToActive" ]
 path = "edit.action.basic"
 name = 'toggle check'
 description = "Toggle a markdown checkbox"
-key = "shift+[Digit6]"
+key = "shift+6"
 command = "markdown-checkbox.markCheckbox"
 
 [[bind]]
 path = "edit.action.clipboard"
-key = "[KeyD]"
+key = "d"
 name = "delete"
 description = """
 Without a count: delete selected text (and store to clipboard). With a
@@ -1831,7 +1831,7 @@ args.commands = [
 
 [[bind]]
 path = "edit.action.clipboard"
-key = "[KeyD]"
+key = "d"
 when = "editorHasSelection"
 command = "runCommands"
 args.commands = [
@@ -1841,7 +1841,7 @@ args.commands = [
 
 [[bind]]
 path = "edit.action.clipboard"
-key = "shift+[KeyD]"
+key = "shift+d"
 mode = "normal"
 name = "without count: Delete from cursor to end of line; with count: Delete from current line up `count` number of keys."
 command = "runCommands"
@@ -1853,7 +1853,7 @@ args.commands = [
 
 [[bind]]
 path = "edit.action.clipboard"
-key = "shift+[KeyD]"
+key = "shift+d"
 mode = "normal"
 when = "master-key.count > 1"
 command = "runCommands"
@@ -1861,7 +1861,7 @@ args.commands = [{ defined = "selectLinesUp" }, "deleteRight"]
 
 [[bind]]
 path = "edit.action.clipboard"
-key = "[KeyY]"
+key = "y"
 name = "copy"
 description = "copy selected text to clipboard"
 command = "runCommands"
@@ -1869,7 +1869,7 @@ args.commands = ["editor.action.clipboardCopyAction", "selection-utilities.shrin
 
 [[bind]]
 path = "edit.action.clipboard"
-key = "[KeyY]"
+key = "y"
 when = "master-key.count > 1"
 command = "runCommands"
 args.commands = [
@@ -1880,7 +1880,7 @@ args.commands = [
 
 [[bind]]
 path = "edit.action.clipboard"
-key = "shift+[KeyY]"
+key = "shift+y"
 name = "copy (eol/up)"
 description = "without a count: copy to end of line; with a count: copy this and the previous N lines"
 when = "master-key.count <= 1"
@@ -1894,7 +1894,7 @@ args.commands = [
 
 [[bind]]
 path = "edit.action.clipboard"
-key = "shift+[KeyY]"
+key = "shift+y"
 when = "master-key.count > 1"
 command = "runCommands"
 args.commands = [
@@ -1919,14 +1919,14 @@ Operations that affect line indentation
 
 [[bind]]
 path = "edit.action.indent"
-key = "shift+[Period]"
+key = "shift+."
 name = "indent"
 description = "Indent lines"
 command = "editor.action.indentLines"
 
 [[bind]]
 path = "edit.action.indent"
-key = "shift+[Period]"
+key = "shift+."
 name = "indent"
 description = "Indent lines"
 when = "master-key.count >= 1"
@@ -1938,7 +1938,7 @@ args.commands = [
 
 [[bind]]
 path = "edit.action.indent"
-key = "shift+[Comma]"
+key = "shift+,"
 name = "deindent"
 when = "master-key.count < 1"
 description = "De-indent lines"
@@ -1946,7 +1946,7 @@ command = "editor.action.outdentLines"
 
 [[bind]]
 path = "edit.action.indent"
-key = "shift+[Comma]"
+key = "shift+,"
 name = "deindent"
 when = "master-key.count >= 1"
 description = "Deindent lines"
@@ -1975,14 +1975,14 @@ description = "Commands that modify one or more numbers"
 path = "edit.action.numbers"
 name = 'inc #'
 description = "Increment a number by 1"
-key = "[Equal]"
+key = "="
 command = "selection-utilities.incrementNumber"
 
 [[bind]]
 path = "edit.action.numbers"
 name = 'dec #'
 description = "Decrement a number by 1 "
-key = "shift+[Equal]"
+key = "shift+="
 command = "selection-utilities.decrementNumber"
 
 # ## Captilization
@@ -1999,98 +1999,98 @@ default.mode = ["normal", "selectedit"]
 path = "edit.action.capitals"
 name = 'camel'
 description = "Swap style to lower camel case (`camelCase`)"
-key = "` [KeyC]"
+key = "` c"
 command = "extension.changeCase.camel"
 
 [[bind]]
 path = "edit.action.capitals"
 name = 'constant'
 description = "Swap style to constant (`IS_CONSTANT`)"
-key = "` shift+[KeyU]"
+key = "` shift+u"
 command = "extension.changeCase.constant"
 
 [[bind]]
 path = "edit.action.capitals"
 name = 'dot'
 description = "Swap style to dot case (`dot.case`)"
-key = "` [Period]"
+key = "` ."
 command = "extension.changeCase.dot"
 
 [[bind]]
 path = "edit.action.capitals"
 name = 'kebab'
 description = "Swap style to kebab case (`kebab-case`)"
-key = "` [Minus]"
+key = "` -"
 command = "extension.changeCase.kebab"
 
 [[bind]]
 path = "edit.action.capitals"
 name = 'all lower'
 description = "Swap all to lower case"
-key = "` shift+[KeyL]"
+key = "` shift+l"
 command = "extension.changeCase.lower"
 
 [[bind]]
 path = "edit.action.capitals"
 name = 'first lower'
 description = "Swap first letter to lower case"
-key = "` [KeyL]"
+key = "` l"
 command = "extension.changeCase.lowerFirst"
 
 [[bind]]
 path = "edit.action.capitals"
 name = 'spaces'
 description = "Swap to spaces (`camelCase` -> `camel case`)"
-key = "` [Space]"
+key = "` space"
 command = "extension.changeCase.no"
 
 [[bind]]
 path = "edit.action.capitals"
 name = 'Camel'
 description = "Swap to upper camel case (`CamelCase`)"
-key = "` shift+[KeyC]"
+key = "` shift+c"
 command = "extension.changeCase.pascal"
 
 [[bind]]
 path = "edit.action.capitals"
 name = 'path'
 description = "Swap to 'path' case (`path/case`)"
-key = "` [Slash]"
+key = "` /"
 command = "extension.changeCase.path"
 
 [[bind]]
 path = "edit.action.capitals"
 name = 'snake'
 description = "Swap to snake case (`snake_case`)"
-key = "` shift+[Minus]"
+key = "` shift+-"
 command = "extension.changeCase.snake"
 
 [[bind]]
 path = "edit.action.capitals"
 name = 'swap'
 description = "Swap upper and lower case letters"
-key = "` [KeyS]"
+key = "` s"
 command = "extension.changeCase.swap"
 
 [[bind]]
 path = "edit.action.capitals"
 name = 'title'
 description = "Swap to title case (all words have first upper case letter)"
-key = "` [KeyT]"
+key = "` t"
 command = "extension.changeCase.title"
 
 [[bind]]
 path = "edit.action.capitals"
 name = 'all upper'
 description = "Swap to use all upper case letters"
-key = "` shift+[KeyY]"
+key = "` shift+y"
 command = "extension.changeCase.upper"
 
 [[bind]]
 path = "edit.action.capitals"
 name = 'first upper'
 description = "Swap first character to upper case"
-key = "` [KeyU]"
+key = "` u"
 command = "extension.changeCase.upperFirst"
 
 # ## "Do" Actions
@@ -2106,7 +2106,7 @@ default.mode = "normal"
 [[bind]]
 path = "edit.action.do"
 name = "do"
-key = "[Space]"
+key = "space"
 description = "additional actions, mostly for modifying specific syntactic formats"
 command = "master-key.prefix"
 
@@ -2114,10 +2114,10 @@ command = "master-key.prefix"
 path = "edit.action.do"
 name = "paste after line"
 combinedName = "paste after/before line"
-combinedKey = "[KeyP]/shift+[KeyP]"
+combinedKey = "p/shift+p"
 description = "Paste text after current line"
 priority = 2
-key = "[Space] [KeyP]"
+key = "space p"
 command = "runCommands"
 args.commands = [
       "expandLineSelection",
@@ -2132,7 +2132,7 @@ priority = 2
 name = "paste before line"
 combinedName = "paste after/before line"
 description = "Paste text before current line"
-key = "[Space] shift+[KeyP]"
+key = "space shift+p"
 command = "runCommands"
 args.commands = [
       "expandLineSelection",
@@ -2147,9 +2147,9 @@ priority = 2
 name = "add line below"
 combinedName = "add line below/above"
 combinedDescription = "open a line below/above current line"
-combinedKey = "[KeyO]/shift+[KeyO]"
+combinedKey = "o/shift+o"
 description = "open a line below current line"
-key = "[Space] [KeyO]"
+key = "space o"
 command = "editor.action.insertLineAfter"
 
 [[bind]]
@@ -2158,7 +2158,7 @@ name = "add line above"
 priority = 2
 combinedName = "add line below/above"
 description = "open a line above current line"
-key = "[Space] shift+[KeyO]"
+key = "space shift+o"
 command = "editor.action.insertLineBefore"
 
 [[bind]]
@@ -2166,10 +2166,10 @@ path = "edit.action.do"
 name = 'sym insert'
 description = "Insert a character pair around a character"
 priority = 1
-key = "[Space] [KeyI]"
+key = "space i"
 combinedName = "sym insert (mode)"
 combinedDescription = "Insert characters around pair (switching to syminster mode until hitting  again)"
-combinedKey = "[KeyI]/shift+[KeyI]"
+combinedKey = "i/shift+i"
 command = "runCommands"
 
 [[bind.args.commands]]
@@ -2186,17 +2186,17 @@ args.followCursor = true
 path = "edit.action.do"
 name = 'trim white'
 description = "Delete all external whitespace (left and right edges)"
-key = "[Space] shift+[Minus]"
+key = "space shift+-"
 command = "selection-utilities.trimWhitespace"
 
 [[bind]]
 path = "edit.action.do"
-key = "[Space] [KeyW]"
+key = "space w"
 name = "wrap p"
 combinedName = "wrap/join lines"
 description = "wrap paragraph text, preserving commenting"
 combinedDescription = "wrap paragraph text, preserving commenting / join lines together"
-combinedKey = "[KeyW]/[KeyJ]"
+combinedKey = "w/j"
 command = "rewrap.rewrapComment"
 
 [[bind]]
@@ -2204,7 +2204,7 @@ path = "edit.action.basic"
 name = 'join'
 combinedName = "wrap/join lines"
 description = "Remove newline between current and next line"
-key = "[Space] [KeyJ]"
+key = "space j"
 mode = ["normal", "selectedit"]
 when = "!editorHasSelection"
 command = "runCommands"
@@ -2216,12 +2216,12 @@ combinedName = "wrap/join lines"
 name = 'join'
 description = "Remove newline between current and next line"
 mode = ["normal", "selectedit"]
-key = "[Space] [KeyJ]"
+key = "space j"
 command = "editor.action.joinLines"
 
 [[bind]]
 path = "edit.action.do"
-key = "[Space] [KeyF]"
+key = "space f"
 name = "format"
 combinedName = "format / format document"
 when = "master-key.count < 1"
@@ -2229,9 +2229,9 @@ command = "editor.action.formatSelection"
 
 [[bind]]
 path = "edit.action.do"
-key = "[Space] [KeyF]"
+key = "space f"
 combinedName = "format / format document"
-combinedKey = "[KeyF]/shift+[KeyF]"
+combinedKey = "f/shift+f"
 combinedDescription = "Format selection / document"
 name = "format"
 description = "Format sel"
@@ -2245,7 +2245,7 @@ args.commands = [
 
 [[bind]]
 path = "edit.action.do"
-key = "[Space] shift+[KeyF]"
+key = "space shift+f"
 name = "format doc"
 combinedName = "format / format document"
 command = "editor.action.formatDocument"
@@ -2259,42 +2259,42 @@ description = "Commands that edit two matching brackets or quotes."
 path = "edit.action.do"
 name = 'parens'
 description = "actions related to various brackets (`[`, `(`, `{`)"
-key = "[Space] [BracketLeft]"
+key = "space ["
 command = "master-key.prefix"
 
 [[bind]]
 path = "edit.action.do"
 name = 'remove'
 description = "Removes surrounding pairs"
-key = "[Space] [BracketLeft] [KeyD]"
+key = "space [ d"
 command = "bracketeer.removeBrackets"
 
 [[bind]]
 path = "edit.action.do"
 name = 'parens/brackets'
 description = "Swap between `[`, `(` and `{`"
-key = "[Space] [BracketLeft] [KeyS]"
+key = "space [ s"
 command = "bracketeer.swapBrackets"
 
 [[bind]]
 path = "edit.action.do"
 name = 'quotes'
 description = "Actions related to quotes"
-key = "[Space] [Quote]"
+key = "space '"
 command = "master-key.prefix"
 
 [[bind]]
 path = "edit.action.do"
 name = 'remove'
 description = "Removes quotes (', \" or `)"
-key = "[Space] [Quote] [KeyD]"
+key = "space ' d"
 command = "bracketeer.removeQuotes"
 
 [[bind]]
 path = "edit.action.do"
 name = 'swap'
 description = "Swap quotes (', \" or `)"
-key = "[Space] [Quote] [KeyS]"
+key = "space ' s"
 command = "bracketeer.swapQuotes"
 
 [[path]]
@@ -2306,18 +2306,18 @@ Operations that modify comments
 
 [[bind]]
 path = "edit.action.do"
-key = "[Space] [Slash]"
+key = "space /"
 combinedName = "(block) comment"
 when = "master-key.count < 1"
 command = "editor.action.commentLine"
 
 [[bind]]
 path = "edit.action.do"
-key = "[Space] [Slash]"
+key = "space /"
 name = "comment lines"
 combinedName = "(block) comment"
 combinedDescription = "Toggle (block) comment"
-combinedKey = "(shift+)[Slash]"
+combinedKey = "(shift+)/"
 description = "select next comment"
 when = "master-key.count >= 1"
 command = "runCommands"
@@ -2328,14 +2328,14 @@ args.commands = [
 
 [[bind]]
 path = "edit.action.do"
-key = "[Space] shift+[Slash]"
+key = "space shift+/"
 when = "master-key.count < 1"
 combinedName = "(block) comment"
 command = "editor.action.blockComment"
 
 [[bind]]
 path = "edit.action.do"
-key = "[Space] shift+[Slash]"
+key = "space shift+/"
 name = "block comment lines"
 combinedName = "(block) comment"
 description = "select previous comment"
@@ -2352,9 +2352,9 @@ path = "edit.action.do"
 name = 'inc all #'
 combinedName = "inc/dec all #"
 combinedDescription = "Increment/decrement selected numbers; increment/decrement increases per selection"
-combinedKey = "[Equal]/shift+[Equal]"
+combinedKey = "=/shift+="
 description = "Increment selected numbers; increment increases per selection"
-key = "[Space] [Equal]"
+key = "space ="
 command = "selection-utilities.incrementNumberPerSelection"
 
 [[bind]]
@@ -2362,19 +2362,19 @@ path = "edit.action.do"
 name = 'dec all #'
 combinedName = "inc/dec all #"
 description = "Decrement selected numbers; decrement increases per selection"
-key = "[Space] shift+[Equal]"
+key = "space shift+="
 command = "selection-utilities.decrementNumberPerSelection"
 
 [[bind]]
 path = "edit.action.do"
 name = 'nb cell'
 description = "Actions related to notebook cells"
-key = "[Space] [KeyC]"
+key = "space c"
 command = "master-key.prefix"
 
 [[bind]]
 path = "edit.action.do"
-key = "[Space] [KeyC] [KeyI]"
+key = "space c i"
 when = "editorLangId == 'quarto'"
 command = "quarto.insertCodeCell"
 name = "insert cell"
@@ -2382,13 +2382,13 @@ description = "insert a new cell in a notebook"
 
 [[bind]]
 path = "edit.action.do"
-key = "[Space] [KeyC] [KeyS]"
+key = "space c s"
 when = "editorLangId != 'quarto'"
 command = "jupyter.selectCell"
 
 [[bind]]
 path = "edit.action.basic"
-key = "[Space] [Period]"
+key = "space ."
 name = 'sent. lines'
 description = "Split paragraph into one line per sentence"
 mode = "normal"
@@ -2428,7 +2428,7 @@ command = "selection-utilities.cancelSelection"
 path = "edit.action.history"
 name = "record"
 description = "Start/stop recording Master Key commands"
-key = "shift+[KeyQ]"
+key = "shift+q"
 when = "!master-key.record"
 command = "master-key.record"
 args.on = true
@@ -2440,7 +2440,7 @@ description = """
 Start/stop recording key presses defined by Master Key pushing it to the
 top of the `history` stack once recording finishes."
 """
-key = "shift+[KeyQ]"
+key = "shift+q"
 when = "master-key.record"
 command = "runCommands"
 
@@ -2460,7 +2460,7 @@ description = """
 Replay the Master Key command sequence at the top of the `history` stack. Specifying
 a count requests the Nth most recent item on this stack.
 """
-key = "[KeyQ] [KeyQ]"
+key = "q q"
 command = "master-key.replayFromStack"
 computedArgs.index = "count"
 
@@ -2471,7 +2471,7 @@ description = """
 Stores the top of the `history` stack into a named register. Specifying a count stores the
 Nth most recent item on this stack.
 """
-key = "[KeyQ] [KeyS]"
+key = "q s"
 command = "master-key.storeNamed"
 args.description = "Save Macro"
 args.name = "macro"
@@ -2484,7 +2484,7 @@ description = """
 Replay a recorded Master Key command sequence from a named register, pushing
 it to the front of the history stack.
 """
-key = "[KeyQ] [KeyR]"
+key = "q r"
 command = "runCommands"
 
 [[bind.args.commands]]
@@ -2506,7 +2506,7 @@ name = "store last"
 description = """
 Store the N most recently run commands as a macro, where N is the count (defaulting to 1).
 """
-key = "[KeyQ] [KeyL]"
+key = "q l"
 command = "master-key.pushHistoryToStack"
 args.range.from = "i-(count || 0)"
 args.range.to = "i"
@@ -2517,7 +2517,7 @@ args.range.to = "i"
 
 [[bind]]
 path = "window"
-key = "shift+ctrl+[Semicolon]"
+key = "shift+ctrl+;"
 name = "palette"
 resetTransient = false
 hideInPalette = true
@@ -2527,13 +2527,13 @@ description = """
 show command suggestions within the context of the current mode and keybinding prefix
 (if any keys have already been typed)
 """
-command = "master-key.commandSuggestions"
+command = "master-key.commandPalette"
 
 [[bind]]
 path = "util"
 name = "git..."
 description = "git commands"
-key = "[Tab] [KeyG]"
+key = "tab g"
 command = "master-key.prefix"
 
 [[bind]]
@@ -2542,15 +2542,15 @@ name = "pull"
 combinedName = "push/pull"
 description = "pull changes from remote"
 combinedDescription = "pull from/push to remote"
-combinedKey = "[KeyP]/shift+[KeyP]"
-key = "[Tab] [KeyG] [KeyP]"
+combinedKey = "p/shift+p"
+key = "tab g p"
 command = "git.pull"
 
 [[bind]]
 path = "util"
 name = "push"
 description = "push changes to remote"
-key = "[Tab] [KeyG] shift+[KeyP]"
+key = "tab g shift+p"
 command = "git.push"
 
 [[bind]]
@@ -2559,8 +2559,8 @@ name = "checkout"
 combinedName = "commit/checkout"
 description = "commit changes"
 combinedDescription = "commit/checkout git changes"
-combinedKey = "[KeyC]/shift+[KeyC]"
-key = "[Tab] [KeyG] [KeyC]"
+combinedKey = "c/shift+c"
+key = "tab g c"
 command = "git.commit"
 
 [[bind]]
@@ -2568,28 +2568,28 @@ path = "util"
 name = "checkout"
 combinedName = "commit/checkout"
 description = "checkout changes"
-key = "[Tab] [KeyG] shift+[KeyC]"
+key = "tab g shift+c"
 command = "git.checkout"
 
 [[bind]]
 path = "util"
 name = "revert range"
 description = "revert unstaged changes in selected range"
-key = "[Tab] [KeyG] [KeyR]"
+key = "tab g r"
 command = "git.revertSelectedRanges"
 
 [[bind]]
 path = "util"
 name = "revert range"
 description = "revert unstaged changes in selected range"
-key = "[Tab] [KeyG] [KeyS]"
+key = "tab g s"
 command = "git.stageSelectedRanges"
 
 [[bind]]
 path = "util"
 name = "commands..."
 description = "show GitLens command palette for git"
-key = "[Tab] [KeyG] [KeyG]"
+key = "tab g g"
 command = "gitlens.gitCommands"
 
 # ## Miscellaneous Commands
@@ -2605,7 +2605,7 @@ when = "editorTextFocus && !findWidgetVisible"
 [[bind]]
 path = "util"
 name = "utility"
-key = "[Tab]"
+key = "tab"
 description = "utility related commands: file opening, window manipulation, debugging etc..."
 command = "master-key.prefix"
 
@@ -2613,7 +2613,7 @@ command = "master-key.prefix"
 path = "util"
 name = "open recent"
 description = "Open recent file"
-key = "[Tab] [KeyR]"
+key = "tab r"
 command = "workbench.action.openRecent"
 
 [[bind]]
@@ -2622,8 +2622,8 @@ name = "hover"
 description = "show the hover view"
 combinedName = "(debug) hover"
 combinedDescription = "show the (debug) hover view"
-combinedKey = "(shift+)[KeyH]"
-key = "[Tab] [KeyH]"
+combinedKey = "(shift+)h"
+key = "tab h"
 command = "editor.action.showHover"
 
 [[bind]]
@@ -2631,7 +2631,7 @@ path = "util"
 name = "debug hover"
 combinedName = "(debug) hover"
 description = "show the debug hover view"
-key = "[Tab] shift+[KeyH]"
+key = "tab shift+h"
 command = "editor.debug.action.showDebugHover"
 
 [[bind]]
@@ -2642,8 +2642,8 @@ description = "toggle bookmark at given line"
 combinedDescription = """
 toggle bookmark at given line / bookmark related commands
 """
-key = "[Tab] shift+[KeyM]"
-combinedKey = "shift+[KeyM] / [KeyM]"
+key = "tab shift+m"
+combinedKey = "shift+m / m"
 command = "vsc-labeled-bookmarks.toggleBookmark"
 
 [[bind]]
@@ -2651,7 +2651,7 @@ path = "util"
 name = "mark"
 combinedName = "add mark / mark..."
 description = "bookmark related commands"
-key = "[Tab] [KeyM]"
+key = "tab m"
 command = "master-key.prefix"
 
 [[bind]]
@@ -2660,15 +2660,15 @@ name = "mark ↓"
 description = "move to next bookmark"
 combinedName = "mark ↓/↑"
 combinedDescription = "move to next/previous bookmark"
-combinedKey = "[KeyJ]/[KeyK]"
-key = "[Tab] [KeyM] [KeyJ]"
+combinedKey = "j/k"
+key = "tab m j"
 when = "!master-key.select_on && !editorHasSelection"
 command = "vsc-labeled-bookmarks.navigateToNextBookmark"
 
 [[bind]]
 path = "util"
 combinedName = "mark ↓/↑"
-key = "[Tab] [KeyM] [KeyJ]"
+key = "tab m j"
 when = "master-key.select_on || editorHasSelection"
 command = "vsc-labeled-bookmarks.expandSelectionToNextBookmark"
 
@@ -2677,7 +2677,7 @@ path = "util"
 name = "mark ↑"
 combinedName = "mark ↓/↑"
 description = "move to previous bookmark"
-key = "[Tab] [KeyM] [KeyK]"
+key = "tab m k"
 when = "!master-key.select_on && !editorHasSelection"
 command = "vsc-labeled-bookmarks.navigateToPreviousBookmark"
 
@@ -2686,7 +2686,7 @@ path = "util"
 name = "mark ↑"
 combinedName = "mark ↓/↑"
 description = "move to previous bookmark"
-key = "[Tab] [KeyM] [KeyK]"
+key = "tab m k"
 when = "master-key.select_on || editorHasSelection"
 command = "runCommands"
 args.commands = ["vsc-labeled-bookmarks.expandSelectionToPreviousBookmark",
@@ -2696,14 +2696,14 @@ args.commands = ["vsc-labeled-bookmarks.expandSelectionToPreviousBookmark",
 path = "util"
 name = "remove mark"
 description = "remove bookmark (use quick selection)"
-key = "[Tab] [KeyM] [KeyD]"
+key = "tab m d"
 command = "vsc-labeled-bookmarks.deleteBookmark"
 
 [[bind]]
 path = "util"
 name = "nav marks"
 description = "reveal quick selection to move to a bookmark"
-key = "[Tab] [KeyM] [KeyT]"
+key = "tab m t"
 command = "vsc-labeled-bookmarks.navigateToBookmark"
 
 [[bind]]
@@ -2711,11 +2711,11 @@ path = "util"
 name = "error →"
 combinedName = "error →/←"
 combinedDescription = "move to next/previous error"
-combinedKey = "[KeyE]/shift+[KeyE]"
+combinedKey = "e/shift+e"
 description = """
 move to next error
 """
-key = "[Tab] [KeyE]"
+key = "tab e"
 command = "editor.action.marker.next"
 
 [[bind]]
@@ -2725,7 +2725,7 @@ combinedName = "error →/←"
 description = """
 move to previous error
 """
-key = "[Tab] shift+[KeyE]"
+key = "tab shift+e"
 command = "editor.action.marker.prev"
 
 [[bind]]
@@ -2733,11 +2733,11 @@ path = "edit.motion"
 name = "diff →"
 combinedName = "diff →/←"
 combinedDescription = "move to and show next/previous diff"
-combinedKey = "[KeyC]/shift+[KeyC]"
+combinedKey = "c/shift+c"
 description = """
 move to and show next diff
 """
-key = "[Tab] [KeyC]"
+key = "tab c"
 command = "editor.action.dirtydiff.next"
 
 [[bind]]
@@ -2747,7 +2747,7 @@ combinedName = "diff →/←"
 description = """
 move to and show previous diff
 """
-key = "[Tab] shift+[KeyC]"
+key = "tab shift+c"
 command = "editor.action.dirtydiff.previous"
 
 [[bind]]
@@ -2755,11 +2755,11 @@ path = "edit.motion"
 name = "change →"
 combinedName = "change →/←"
 combinedDescription = "move to next/previous file change"
-combinedKey = "[KeyD]/shift+[KeyD]"
+combinedKey = "d/shift+d"
 description = """
 move to next file change
 """
-key = "[Tab] [KeyD]"
+key = "tab d"
 command = "workbench.action.editor.nextChange"
 
 [[bind]]
@@ -2769,7 +2769,7 @@ combinedName = "change →/←"
 description = """
 move to previous change
 """
-key = "[Tab] shift+[KeyD]"
+key = "tab shift+d"
 command = "workbench.action.editor.previousChange"
 
 # ## Window Manipulation
@@ -2788,7 +2788,7 @@ when = "editorTextFocus && !findWidgetVisible"
 path = "window"
 name = "cntr win"
 description = "center window at primary cursor position"
-key = "[Tab] [KeyL]"
+key = "tab l"
 command = "selection-utilities.revealActive"
 args.at = "center"
 when = "editorTextFocus"
@@ -2797,13 +2797,13 @@ when = "editorTextFocus"
 path = "window"
 name = "window"
 description = "window/editor pane manipulation-related commands"
-key = "[Tab] [KeyW]"
+key = "tab w"
 command = "master-key.prefix"
 
 [[bind]]
 path = "window"
 name = "vert/horz"
-key = "[Tab] [KeyW] [KeyR]"
+key = "tab w r"
 description = "Toggle between horizontal and vertical layouts"
 command = "workbench.action.toggleEditorGroupLayout"
 
@@ -2813,8 +2813,8 @@ name = "next window"
 combinedName = "next/previous window"
 description = "move to next window"
 combinedDescription = "move to next/prev window"
-key = "[Tab] [BracketRight]"
-combinedKey = "[BracketRight]/[BracketLeft]"
+key = "tab ]"
+combinedKey = "]/["
 command = "workbench.action.focusNextGroup"
 
 [[bind]]
@@ -2822,7 +2822,7 @@ path = "window"
 name = "prev window"
 combinedName = "next/previous window"
 description = "move to previous window"
-key = "[Tab] [BracketLeft]"
+key = "tab ["
 command = "workbench.action.focusPreviousGroup"
 
 [[bind]]
@@ -2830,9 +2830,9 @@ path = "window"
 name = "move →"
 combinedName = "move →/←"
 combinedDescription = "move editor to window left/right"
-combinedKey = "[KeyL]/[KeyH]"
+combinedKey = "l/h"
 description = "move editor to window to left"
-key = "[Tab] [KeyW] [KeyL]"
+key = "tab w l"
 command = "workbench.action.moveEditorToRightGroup"
 
 [[bind]]
@@ -2840,7 +2840,7 @@ path = "window"
 name = "←"
 combinedName = "move →/←"
 description = "move editor to window to left"
-key = "[Tab] [KeyW] [KeyH]"
+key = "tab w h"
 command = "workbench.action.moveEditorToLeftGroup"
 
 [[bind]]
@@ -2848,9 +2848,9 @@ path = "window"
 name = "↓"
 combinedName = "move ↓/↑"
 combinedDescription = "move editor to window above/below"
-combinedKey = "[KeyJ]/[KeyK]"
+combinedKey = "j/k"
 description = "move editor to window below"
-key = "[Tab] [KeyW] [KeyJ]"
+key = "tab w j"
 command = "workbench.action.moveEditorToBelowGroup"
 
 [[bind]]
@@ -2858,14 +2858,14 @@ path = "window"
 name = "↑"
 combinedName = "move ↓/↑"
 description = "move editor to window above"
-key = "[Tab] [KeyW] [KeyK]"
+key = "tab w k"
 command = "workbench.action.moveEditorToAboveGroup"
 
 [[bind]]
 path = "window"
 name = "split editor..."
 description = "split editor to in a given direction"
-key = "[Tab] [KeyW] [KeyS]"
+key = "tab w s"
 command = "master-key.prefix"
 
 [[bind]]
@@ -2873,9 +2873,9 @@ path = "window"
 name = "move →"
 combinedName = "split →/←"
 combinedDescription = "move editor to window left/right"
-combinedKey = "[KeyL]/[KeyH]"
+combinedKey = "l/h"
 description = "split editor to window to left"
-key = "[Tab] w [KeyS] [KeyL]"
+key = "tab w s l"
 command = "workbench.action.splitEditorRight"
 
 [[bind]]
@@ -2883,7 +2883,7 @@ path = "window"
 name = "←"
 combinedName = "split →/←"
 description = "split editor to window to left"
-key = "[Tab] w [KeyS] [KeyH]"
+key = "tab w s h"
 command = "workbench.action.splitEditorLeft"
 
 [[bind]]
@@ -2891,9 +2891,9 @@ path = "window"
 name = "↓"
 combinedName = "split ↓/↑"
 combinedDescription = "split editor to window above/below"
-combinedKey = "[KeyJ]/[KeyK]"
+combinedKey = "j/k"
 description = "split editor to window below"
-key = "[Tab] w [KeyS] [KeyJ]"
+key = "tab w s j"
 command = "workbench.action.splitEditorDown"
 
 [[bind]]
@@ -2901,40 +2901,40 @@ path = "window"
 name = "↑"
 combinedName = "split ↓/↑"
 combinedDescription = "split editor to window above/below"
-combinedKey = "[KeyJ]/[KeyK]"
+combinedKey = "j/k"
 description = "split editor to window below"
-key = "[Tab] w [KeyS] [KeyK]"
+key = "tab w s k"
 command = "workbench.action.splitEditorUp"
 
 [[bind]]
 path = "window"
 name = "close pane"
 description = "close the given group of editors"
-key = "[Tab] [KeyW] [KeyX]"
+key = "tab w x"
 command = "workbench.action.closeEditorsInGroup"
 
 [[bind]]
 path = "window"
 name = "max"
 description = "minimize size of all other windows"
-key = "[Tab] [KeyW] shift+[KeyM]"
+key = "tab w shift+m"
 command = "workbench.action.minimizeOtherEditors"
 
 [[bind]]
 path = "window"
 name = "equal"
 description = "equalize size of all windows"
-key = "[Tab] [KeyW] [Equal]"
+key = "tab w ="
 command = "workbench.action.evenEditorWidths"
 
 [[bind]]
 path = "window"
 name = "curs. win top"
 description = "center window so that primary cursor is at the top"
-key = "[Tab] [KeyK]"
+key = "tab k"
 combinedName = "center window top/bottom"
 combinedDescription = "center window so that primary cursor is at the top/bottom"
-combinedKey = "[KeyK]/[KeyJ]"
+combinedKey = "k/j"
 command = "selection-utilities.revealActive"
 args.at = "top"
 
@@ -2943,7 +2943,7 @@ path = "window"
 name = "curs. win bot"
 combinedName = "center window top/bottom"
 description = "center window so that primary cursor is at the bottom"
-key = "[Tab] [KeyJ]"
+key = "tab j"
 command = "selection-utilities.revealActive"
 args.at = "bottom"
 
@@ -2955,10 +2955,10 @@ args.at = "bottom"
 path = "util"
 name = "breakpt."
 combinedName = "breakpt / debug..."
-combinedKey = "shift+[KeyB]/[KeyB]"
+combinedKey = "shift+b/b"
 description = "toggle debug breakpoint"
 combinedDescription = "toggle debug breakpoint / debug related commands..."
-key = "[Tab] shift+[KeyB]"
+key = "tab shift+b"
 command = "editor.debug.action.toggleBreakpoint"
 
 [[bind]]
@@ -2966,14 +2966,14 @@ path = "util"
 name = "debug..."
 combinedName = "breakpt / debug..."
 description = "assorted debugging actions"
-key = "[Tab] [KeyB]"
+key = "tab b"
 command = "master-key.prefix"
 
 [[bind]]
 path = "util"
 name = "cond. break"
 description = "conditional breakpoint"
-key = "[Tab] [KeyB] shift+[KeyC]"
+key = "tab b shift+c"
 command = "editor.debug.action.conditionalBreakpoint"
 
 
@@ -2981,35 +2981,35 @@ command = "editor.debug.action.conditionalBreakpoint"
 path = "util"
 name = "start"
 description = "start debugging"
-key = "[Tab] [KeyB] [KeyR]"
+key = "tab b r"
 command = "workbench.action.debug.start"
 
 [[bind]]
 path = "util"
 name = "continue"
 description = "continue debugging"
-key = "[Tab] [KeyB] [KeyC]"
+key = "tab b c"
 command = "workbench.action.debug.continue"
 
 [[bind]]
 path = "util"
 name = "next"
 description = "debug: step over next line"
-key = "[Tab] [KeyB] [KeyJ]"
+key = "tab b j"
 command = "workbench.action.debug.stepOver"
 
 [[bind]]
 path = "util"
 name = "into"
 description = "debug: step into next line"
-key = "[Tab] [KeyB] [KeyI]"
+key = "tab b i"
 command = "workbench.action.debug.stepInto"
 
 [[bind]]
 path = "util"
 name = "out"
 description = "debug: step out"
-key = "[Tab] [KeyB] [KeyO]"
+key = "tab b o"
 command = "workbench.action.debug.stepOut"
 
 # ## Select-edit Mode
@@ -3034,16 +3034,16 @@ name = "select-edit"
 description = """
 Enter a mode where you can edit and manipulate (possibly multiple) selections.
 """
-key = "[Quote]"
+key = "'"
 command = "master-key.setMode"
 args.value = "selectedit"
 mode = "normal"
 
 [[bind]]
 path = "edit.select_edit"
-key = "shift+[Quote]"
+key = "shift+'"
 combinedName = "rm cursors"
-combinedKey = "shift/ctrl+[Quote]"
+combinedKey = "shift/ctrl+'"
 combinedDescription = "Delete all selections and return to normal (multiple key variants)"
 name = "del. cursors"
 description = "Delete all selections and return to normal"
@@ -3053,7 +3053,7 @@ mode = ["selectedit", "normal"]
 
 [[bind]]
 path = "edit.select_edit"
-key = "ctrl+[Quote]"
+key = "ctrl+'"
 mode = ["insert", "selectedit", "normal"]
 name = "rm cursors"
 combinedName = "rm cursors"
@@ -3065,7 +3065,7 @@ args.commands = ["selection-utilities.cancelSelection", "master-key.enterNormal"
 path = "edit.select_edit"
 name = 'normal'
 description = "return to normal mode"
-key = "[Quote]"
+key = "'"
 command = "master-key.enterNormal"
 
 [[bind]]
@@ -3074,8 +3074,8 @@ name = "add →"
 combinedName = "add →/←"
 description = "add cursor at the next match to the primary cursor's text"
 combinedDescription = "add cursor at the next/previous match to the primary cursor's text"
-key = "[KeyL]"
-combinedKey = "[KeyL]/[KeyH]"
+key = "l"
+combinedKey = "l/h"
 repeat = "count"
 command = "selection-utilities.addNext"
 
@@ -3084,7 +3084,7 @@ path = "edit.select_edit"
 name = "add ←"
 combinedName = "add →/←"
 description = "add cursor at the previous match to the primary cursor's text"
-key = "[KeyH]"
+key = "h"
 command = "selection-utilities.addPrev"
 repeat = 'count'
 
@@ -3094,8 +3094,8 @@ name = "skip →"
 combinedName = "skip →/←"
 description = "move primary cursor to the next match of the primary cursor's text"
 combinedDescription = "move primary cursor to the next/previous match of the primary cursor's text"
-key = "shift+[KeyL]"
-combinedKey = "shift+[KeyL]/[KeyH]"
+key = "shift+l"
+combinedKey = "shift+l/h"
 command = "selection-utilities.skipNext"
 repeat = "count"
 
@@ -3104,7 +3104,7 @@ path = "edit.select_edit"
 name = "skip ←"
 combinedName = "skip →/←"
 description = "move primary cursor to the previous match of the primary cursor's text"
-key = "shift+[KeyH]"
+key = "shift+h"
 command = "selection-utilities.skipPrev"
 repeat = 'count'
 
@@ -3112,14 +3112,14 @@ repeat = 'count'
 path = "edit.select_edit"
 name = "align ←"
 description = "align selections left"
-key = "[Equal]"
+key = "="
 command = "selection-utilities.alignSelectionsLeft"
 
 [[bind]]
 path = "edit.select_edit"
 name = "align →"
 description = "align selections right"
-key = "shift+[Equal]"
+key = "shift+="
 command = "selection-utilities.alignSelectionsRight"
 
 [[bind]]
@@ -3134,8 +3134,8 @@ combinedDescription = """
 make the next/previous selection primary; primary selections determine from where you add cursors,
 what cursor you delete, and where the cursor goes when you clear or save selections
 """
-key = "[KeyJ]"
-combinedKey = "[KeyJ]/[KeyL]"
+key = "j"
+combinedKey = "j/l"
 command = "selection-utilities.movePrimaryRight"
 repeat = 'count'
 
@@ -3144,7 +3144,7 @@ path = "edit.select_edit"
 name = "← sel"
 combinedName = "→/← sel"
 description = "make the previous selection primary; primary selections determine from where you add cursors, what cursor you delete, and where the cursor goes when you clear or save selections"
-key = "[KeyK]"
+key = "k"
 command = "selection-utilities.movePrimaryLeft"
 repeat = 'count'
 
@@ -3156,8 +3156,8 @@ description = """
 insert cursor on line above
 """
 combinedDescription = "insert cursor on line above/below"
-key = "shift+[KeyK]"
-combinedKey = "shift+[KeyK]/[KeyJ]"
+key = "shift+k"
+combinedKey = "shift+k/j"
 command = "editor.action.insertCursorAbove"
 repeat = "count"
 
@@ -3168,7 +3168,7 @@ combinedName = "insert ↑/↓"
 description = """
 insert cursor on line below
 """
-key = "shift+[KeyJ]"
+key = "shift+j"
 command = "editor.action.insertCursorBelow"
 repeat = "count-1"
 
@@ -3181,7 +3181,7 @@ combinedDescription = """
 Remove either the primary selection or all selections. Return to normal
 mode if all selections are deleted.
 """
-key = "[KeyD]"
+key = "d"
 command = "selection-utilities.deletePrimary"
 repeat = "count-1"
 
@@ -3189,7 +3189,7 @@ repeat = "count-1"
 path = "edit.select_edit"
 name = 'del. others'
 description = "delete all other cursors but the primary selection"
-key = "shift+[KeyD]"
+key = "shift+d"
 command = "removeSecondaryCursors"
 
 [[bind]]
@@ -3199,7 +3199,7 @@ description = """
 save all selections to the default register.
 Use a count to specify an alternate register
 """
-key = "[KeyC]"
+key = "c"
 command = "runCommands"
 args.commands = [
       { command = "selection-utilities.appendToMemory", computedArgs = { register = "count || 'default'" } },
@@ -3213,7 +3213,7 @@ description = """
 load previously saved selections in the default register.
 Use a count to specify an alternate register
 """
-key = "[KeyV]"
+key = "v"
 command = "runCommands"
 args.commands = [
       { command = "selection-utilities.restoreAndClear", computedArgs = { register = "count || 'default'" } },
@@ -3225,7 +3225,7 @@ name = "exchange sel"
 description = """
 exchange selections: with no saved selection, saves the selection, with saved selections exchanges text of current selections with those of the saved selections (number of selections must match). Use a count to specify an alternate register.
 """
-key = "[KeyX]"
+key = "x"
 command = "runCommands"
 args.commands = [
       { command = "selection-utilities.swapWithMemory", computedArgs = {register = "count || 'default'"} },
@@ -3239,7 +3239,7 @@ description = """
 remove the most recently saved selection from the list of saved selections
 """
 command = "runCommands"
-key = "[KeyN]"
+key = "n"
 args.commands = [
       { command = "selection-utilities.deleteLastSaved", computedArgs = {register = "count || 'default'"} },
       "master-key.enterNormal"
@@ -3247,7 +3247,7 @@ args.commands = [
 
 [[bind]]
 path = "edit.select_edit"
-key = "shift+[Enter]"
+key = "shift+enter"
 name = "split sel"
 description = """
 split selection into multiple selections by new line charactesr
@@ -3260,14 +3260,14 @@ name = "sel all"
 description = """
 create a selection for every match of the current word (or selection)
 """
-key = "shift+[Digit8]"
+key = "shift+8"
 command = "editor.action.selectHighlights"
 
 [[bind]]
 path = "edit.select_edit"
 name = "character"
 description = "split by a given character"
-key = "[KeyS]"
+key = "s"
 command = "runCommands"
 
 [[bind.args.commands]]
@@ -3282,7 +3282,7 @@ computedArgs.text = "captured"
 path = "edit.select_edit"
 name = "string"
 description = "split by a given string"
-key = "shift+[KeyS]"
+key = "shift+s"
 command = "selection-utilities.splitBy"
 
 [[bind]]
@@ -3291,7 +3291,7 @@ name = "include"
 description = """
 Include all selections that contain a given marker
 """
-key = "[KeyF]"
+key = "f"
 command = "selection-utilities.includeBy"
 
 [[bind]]
@@ -3300,56 +3300,56 @@ name = "exclude"
 description = """
 Exclude all selections that contain a given marker
 """
-key = "shift+[KeyF]"
+key = "shift+f"
 command = "selection-utilities.excludeBy"
 
 [[bind]]
 path = "edit.select_edit"
 name = "create"
 description = "create selections of given string scoped to the current selections"
-key = "[Slash]"
+key = "/"
 command = "selection-utilities.createBy"
 
 [[bind]]
 path = "edit.select_edit"
 name = "regex"
 description = "operations by regex rather than string"
-key = "[KeyR]"
+key = "r"
 command = "master-key.prefix"
 
 [[bind]]
 path = "edit.select_edit"
 name = "split"
 description = "split by a given regular expression"
-key = "[KeyR] shift+[KeyS]"
+key = "r shift+s"
 command = "selection-utilities.splitByRegex"
 
 [[bind]]
 path = "edit.select_edit"
 name = "create"
 description = "create selections of given regular expression scoped to the current selections"
-key = "[KeyR] [Slash]"
+key = "r /"
 command = "selection-utilities.createByRegex"
 
 [[bind]]
 path = "edit.select_edit"
 name = "include"
 description = "Include all selections that contain a given regular expression"
-key = "[KeyR] [KeyF]"
+key = "r f"
 command = "selection-utilities.includeByRegex"
 
 [[bind]]
 path = "edit.select_edit"
 name = "exclude"
 description = "Exclude all selections that contain a given regular expression"
-key = "[KeyR] shift+[KeyF]"
+key = "r shift+f"
 command = "selection-utilities.excludeByRegex"
 
 [[bind]]
 path = "edit.select_edit"
-key = "[KeyO]"
+key = "o"
 name = "active to front"
-combinedKey = "[KeyO]/shift+[KeyO]"
+combinedKey = "o/shift+o"
 combinedName = "active to start/end"
 combinedDescription = "move cursor to start/end of selection"
 description = "move cursor to start of selection"
@@ -3360,7 +3360,7 @@ path = "edit.select_edit"
 name = "active to end"
 combinedName = "active to start/end"
 description = "move cursor to back of selection"
-key = "shift+[KeyO]"
+key = "shift+o"
 command = "selection-utilities.activeAtStart"
 
 # ## Symmetric Insert Mode
@@ -3426,7 +3426,7 @@ In this mode all commands and character insertions happen at both ends of
 the selection
 """
 mode = "normal"
-key = "[Space] shift+[KeyI]"
+key = "space shift+i"
 combinedName = "sym insert (mode)"
 command = "master-key.setMode"
 args.value = "syminsert"
@@ -3435,13 +3435,13 @@ args.value = "syminsert"
 path = "edit.action.symmetric"
 name = "Normal"
 description = "Return to normal model"
-key = "[Enter]"
+key = "enter"
 command = "master-key.setMode"
 mode = "syminsert"
 
 [[bind]]
 path = "edit.action.symmetric"
-foreach.key = ['{key: \[KeyA-Z]\]}', '{key: shift+\[KeyA-Z]\]}']
+foreach.key = ["{key: [a-z]}", "shift+{key: [a-z]}"]
 name = ""
 description = "this key is ignored and has no associated command in syminsert mode"
 key = "{key}"
@@ -3453,7 +3453,7 @@ hideInPalette = true
 [[bind]]
 name = "esc. char"
 path = "edit.action.symmetric"
-key = "[Backslash]"
+key = "\\"
 description = "Insert escaped character"
 command = "runCommands"
 
@@ -3470,7 +3470,7 @@ args.followCursor = true
 [[bind]]
 path = "edit.action.symmetric"
 name = "delete"
-key = "[KeyX]"
+key = "x"
 description = """
 delete the first and last adjacent character when cursor is at end of selection and
 delete the first and last character *in* the selection when cursor is at the start of the
@@ -3482,7 +3482,7 @@ args.followCursor = true
 
 [[bind]]
 path = "edit.motion.symmetric"
-key = "[KeyL]"
+key = "l"
 name = "sel →"
 description = "shrink/grow selections in direction that's rightwards from cursor"
 command = "selection-utilities.adjustSelections"
@@ -3491,7 +3491,7 @@ computedArgs.count = "count"
 
 [[bind]]
 path = "edit.motion.symmetric"
-key = "[KeyH]"
+key = "h"
 name = "sel ←"
 description = "shrink/grow selections in direction that's leftwards from cursor"
 command = "selection-utilities.adjustSelections"
@@ -3500,9 +3500,9 @@ computedArgs.count = "count"
 
 [[bind]]
 path = "edit.motion.symmetric"
-key = "[KeyO]"
+key = "o"
 name = "active to front"
-combinedKey = "[KeyO]/shift+[KeyO]"
+combinedKey = "o/shift+o"
 combinedName = "active to start/end"
 combinedDescription = "move cursor to start/end of selection"
 description = "move cursor to start of selection"
@@ -3513,24 +3513,24 @@ path = "edit.motion.symmetric"
 name = "active to end"
 combinedName = "active to start/end"
 description = "move cursor to back of selection"
-key = "shift+[KeyO]"
+key = "shift+o"
 command = "selection-utilities.activeAtStart"
 
 [[bind]]
 path = "edit.action.symmetric"
 name = "undo"
-key = "[KeyU]"
+key = "u"
 command = "undo"
 
 [[bind]]
 path = "edit.action.symmetric"
 name = "redo"
-key = "shift+[KeyU]"
+key = "shift+u"
 command = "redo"
 
 [[bind]]
 path = "edit.motion.symmetric"
-key = "[KeyV]"
+key = "v"
 name = "shrink selection"
 description = """
 reduce all selections to length zero and return to normal mode
