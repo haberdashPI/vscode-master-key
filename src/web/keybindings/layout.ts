@@ -36,6 +36,42 @@ export const LI_KEY_TO_KEY = {
 }
 /* eslint-enable */
 
+// linting disabled for legibility of an unusual constant
+/* eslint-disable */
+// TODO: convert strings to regexes
+export const KEY_TO_LI_KEY = {
+    "f1": "[F1]", "f2": "[F2]", "f3": "[F3]", "f4": "[F4]", "f5": "[F5]", "f6": "[F6]",
+    "f7": "[F7]", "f8": "[F8]", "f9": "[F9]", "f10": "[F10]", "f11": "[F11]",
+    "f12": "[F12]", "f13": "[F13]", "f14": "[F14]", "f15": "[F15]", "f16": "[F16]",
+    "f17": "[F17]", "f18": "[F18]", "f19": "[F19]",
+    "a": "[KeyA]", "b": "[KeyB]", "c": "[KeyC]", "d": "[KeyD]", "e": "[KeyE]",
+    "f": "[KeyF]", "g": "[KeyG]", "h": "[KeyH]", "i": "[KeyI]", "j": "[KeyJ]",
+    "k": "[KeyK]", "l": "[KeyL]", "m": "[KeyM]", "n": "[KeyN]", "o": "[KeyO]",
+    "p": "[KeyP]", "q": "[KeyQ]", "r": "[KeyR]", "s": "[KeyS]", "t": "[KeyT]",
+    "u": "[KeyU]", "v": "[KeyV]", "w": "[KeyW]", "x": "[KeyX]", "y": "[KeyY]",
+    "z": "[KeyZ]",
+    "0": "[Digit0]", "1": "[Digit1]", "2": "[Digit2]", "3": "[Digit3]",
+    "4": "[Digit4]", "5": "[Digit5]", "6": "[Digit6]", "7": "[Digit7]",
+    "8": "[Digit8]", "9": "[Digit9]",
+    "`": "[Backquote]", "-": "[Minus]", "=": "[Equal]", "\\[": "[BracketLeft]",
+    "\\]": "[BracketRight]", "\\\\": "[Backslash]", ";": "[Semicolon]", "'": "[Quote]",
+    ",": "[Comma]", "\\.": "[Period]", "/": "[Slash]",
+    "left": "[ArrowLeft]", "up": "[ArrowUp]", "right": "[ArrowRight]",
+    "down": "[ArrowDown]",
+    "pageup": "[PageUp]", "pagedown": "[PageDown]", "end": "[End]", "home": "[Home]",
+    "tab": "[Tab]", "enter": "[Enter]", "escape": "[Escape]", "space": "[Space]",
+    "backspace": "[Backspace]", "delete": "[Delete]", "pause": "[Pause]",
+    "capslock": "[CapsLock]", "insert": "[Insert]",
+    "numpad0": "[Numpad0]", "numpad1": "[Numpad1]", "numpad2": "[Numpad2]",
+    "numpad3": "[Numpad3]", "numpad4": "[Numpad4]", "numpad5": "[Numpad5]",
+    "numpad6": "[Numpad6]", "numpad7": "[Numpad7]", "numpad8": "[Numpad8]",
+    "numpad9": "[Numpad9]",
+    "numpad_multiply": "[NumpadMultiply]", "numpad_add": "[NumpadAdd]",
+    "numpad_separator": "[NumpadComma]", "numpad_subtract": "[NumpadSubtract]",
+    "numpad_decimal": "[NumpadDecimal]", "numpad_divide": "[NumpadDivide]",
+}
+/* eslint-enable */
+
 export function normalizeLayoutIndependentBindings(
     curBindings: IConfigKeyBinding[],
     opts: {noBrackets: boolean} = {noBrackets: false}
@@ -44,6 +80,13 @@ export function normalizeLayoutIndependentBindings(
         const key = normalizeLayoutIndependentString(b.args.key, opts);
         return {...b, args: {...b.args, key}};
     });
+}
+
+export function toLayoutIndependentString(key: string) {
+    for (const [fromKey, toLiKey] of Object.entries(KEY_TO_LI_KEY)) {
+        key = replaceAll(key, RegExp('^' + fromKey + '$', 'ig'), toLiKey);
+    }
+    return key;
 }
 
 export function normalizeLayoutIndependentString(
