@@ -64,20 +64,18 @@ export async function commandPalette(_args: unknown, opt: {useKey?: boolean} = {
         availableBindings = <IConfigKeyBinding[]>(
             (bindings?.bind || []).filter(filterBindingFn(mode, prefixCode))
         );
-        const originalKeys = availableBindings.map(b => b.args.key);
         availableBindings = normalizeLayoutIndependentBindings(availableBindings);
         availableBindings = reverse(
             uniqBy(reverse(availableBindings), b => (b.args.key || '') + b.args.prefixCode)
         );
 
-        let picks = availableBindings.map((binding, i) => {
+        let picks = availableBindings.map(binding => {
             let key = binding.args.key;
             key = prettifyPrefix(key);
 
             return {
                 label: key,
-                description:
-                    binding.args.name + (originalKeys[i] !== key ? LAYOUT_MARKER : ''),
+                description: binding.args.name + (/\[.+\]/.test(key) ? LAYOUT_MARKER : ''),
                 detail: replaceAll(binding.args.description || '', /\n/g, ' '),
                 args: binding.args,
             };
@@ -95,9 +93,7 @@ export async function commandPalette(_args: unknown, opt: {useKey?: boolean} = {
 
         let lastPick = picks[0];
         filteredPicks.push(lastPick);
-        let i = 0;
         for (const pick of picks.slice(1)) {
-            i++;
             if (
                 lastPick.args.combinedName &&
                 lastPick.args.combinedName === pick.args.combinedName
@@ -108,7 +104,7 @@ export async function commandPalette(_args: unknown, opt: {useKey?: boolean} = {
                 lastPick.label = prettifyPrefix(combinedKey);
                 lastPick.description =
                     lastPick.args.combinedName +
-                    (originalKeys[i] !== pick.label ? LAYOUT_MARKER : '');
+                    (/\[.+\]/.test(combinedKey) ? LAYOUT_MARKER : '');
                 lastPick.detail = lastPick.args.combinedDescription || '';
             } else {
                 filteredPicks.push(pick);
