@@ -24,7 +24,7 @@
 #- NOTE: this file is used to generate both keybindings and to generate a markdown file that documents the bindings. When comments are prefixed with a `-` they are ignored in the final markdown output. All other comments will become part of the markdown output. Any [[bind]] entries unbroken by normal, markdown-displayed comments will show up in a table in the markdown output. Make sure that the normal comments do not break up TOML data in a way that means it is invalid TOML.
 
 [header]
-name = "Larkin (Layout Dependent)"
+name = "Larkin"
 version = "1.0"
 
 requiredExtensions = [
