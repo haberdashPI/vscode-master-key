@@ -37,11 +37,14 @@ async function updateModeKeyCapture(mode: string, modeSpec: Record<string, ModeS
 function updateLineNumbers(mode: string, modeSpec: Record<string, ModeSpec>) {
     const config = vscode.workspace.getConfiguration();
     const numbers = modeSpec[mode]?.lineNumbers || defaultLineNumbers;
-    config.update(
-        'editor.lineNumbers',
-        numbers || defaultLineNumbers,
-        vscode.ConfigurationTarget.Global
-    );
+    // TODO: currently I just disable this behavior as it causes the cursor to
+    // move around unexpectedly. I will need to remove all of the code covering
+    // this behavior in a future release
+    // config.update(
+    //     'editor.lineNumbers',
+    //     numbers || defaultLineNumbers,
+    //     vscode.ConfigurationTarget.Global
+    // );
 }
 
 const setModeArgs = z.object({value: z.string()}).strict();

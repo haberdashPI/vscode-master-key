@@ -41,7 +41,6 @@ requiredExtensions = [
 
 [[mode]]
 name = "insert"
-lineNumbers = "on"
 recordEdits = true
 
 [[mode]]
@@ -49,13 +48,11 @@ name = "normal"
 default = true
 highlight = "Highlight"
 cursorShape = "Block"
-lineNumbers = "relative"
 
 [[mode]]
 name = "selectedit"
 highlight = "Highlight"
 cursorShape = "BlockOutline"
-lineNumbers = "relative"
 
 [define]
 select_on = false
@@ -3390,7 +3387,6 @@ command = "selection-utilities.activeAtStart"
 name = "syminsert"
 highlight = "Highlight"
 cursorShape = "BlockOutline"
-lineNumbers = "relative"
 
 [[mode.onType]]
 command = "selection-utilities.insertAround"

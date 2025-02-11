@@ -13,6 +13,9 @@ If you want to improve your text editing super powers in VSCode, Master Key migh
 > [!NOTE]
 > To power users: Master Key was envisioned as a set of tools to make it easy to create powerful keybinding specifications that match your editor style of choice (modal, chorded, etc...). There are currently some limitations, noted in [Keybinding Features](#keybinding-features) and [Customized Bindings](#customized-bindings) when creating custom binding sets.
 
+> [!WARN]
+> The most recent versions of Master Key have disabled the feature allowing the user to to modify how line numbers are set in different modes. This feature depended on a bit of a hack and in recent versions of VSCode this hack no longer works; to avoid buggy cursor motion this feature is currently disabled until a better solution can be provided by upstream.
+
 ## To get started
 
 The easiest way to get started is to activate the built-in keybindings that come with Master Key.
