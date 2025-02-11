@@ -34,19 +34,6 @@ async function updateModeKeyCapture(mode: string, modeSpec: Record<string, ModeS
     runCommandOnKeys(modeSpec[mode]?.onType, mode);
 }
 
-function updateLineNumbers(mode: string, modeSpec: Record<string, ModeSpec>) {
-    const config = vscode.workspace.getConfiguration();
-    const numbers = modeSpec[mode]?.lineNumbers || defaultLineNumbers;
-    // TODO: currently I just disable this behavior as it causes the cursor to
-    // move around unexpectedly. I will need to remove all of the code covering
-    // this behavior in a future release
-    // config.update(
-    //     'editor.lineNumbers',
-    //     numbers || defaultLineNumbers,
-    //     vscode.ConfigurationTarget.Global
-    // );
-}
-
 const setModeArgs = z.object({value: z.string()}).strict();
 async function setMode(args_: unknown): Promise<CommandResult> {
     const args = validateInput('master-key.setMode', args_, setModeArgs);
@@ -65,19 +52,8 @@ async function updateModeSpecs(bindings: Bindings | undefined) {
     await withState(async state => state.set(MODE, {public: true}, defaultMode).resolve());
 }
 
-let defaultLineNumbers: string = 'on';
-async function updateLineNumConfig(event?: vscode.ConfigurationChangeEvent) {
-    if (!event || event?.affectsConfiguration('master-key')) {
-        const config = vscode.workspace.getConfiguration('master-key');
-        defaultLineNumbers = config.get<string>('defaultLineNumbers') || 'on';
-    }
-}
-
 let currentMode = 'default';
 export async function activate(context: vscode.ExtensionContext) {
-    await updateLineNumConfig();
-    vscode.workspace.onDidChangeConfiguration(updateLineNumConfig);
-
     onChangeBindings(updateModeSpecs);
 
     vscode.window.onDidChangeActiveTextEditor(e => {
@@ -114,7 +90,6 @@ export async function activate(context: vscode.ExtensionContext) {
                 modeSpecs || {}
             );
             updateModeKeyCapture(newMode, modeSpecs || {});
-            updateLineNumbers(newMode, modeSpecs || {});
             currentMode = newMode;
         }
         return true;

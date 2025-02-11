@@ -332,7 +332,6 @@ const modeSpec = z.object({
         .default('Line'),
     onType: doArgs.optional(),
     fallbackBindings: z.string().optional().default(''),
-    lineNumbers: z.enum(['relative', 'on', 'off', 'interval']).optional(),
 });
 export type ModeSpec = z.output<typeof modeSpec>;
 
