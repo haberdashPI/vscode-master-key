@@ -5,7 +5,11 @@ import {filterBindingFn} from '../keybindings';
 import {bindings} from '../keybindings/config';
 import {PREFIX_CODE} from './prefix';
 import {MODE, defaultMode} from './mode';
-import {IConfigKeyBinding} from '../keybindings/processing';
+import {IConfigKeyBinding} from '../keybindings/parsing';
+import {
+    normalizeLayoutIndependentBindings,
+    normalizeLayoutIndependentString,
+} from '../keybindings/layout';
 import {COMMAND_HISTORY, RunCommandsArgs, doCommandsCmd} from './do';
 import {reverse, uniqBy, sortBy} from 'lodash';
 import replaceAll from 'string.prototype.replaceall';
@@ -41,6 +45,8 @@ function togglePaletteMode() {
     setPickerText();
 }
 
+const LAYOUT_MARKER = ' (U.S. layout)';
+
 export async function commandPalette(_args: unknown, opt: {useKey?: boolean} = {}) {
     const useKey = opt.useKey || false;
 
@@ -58,6 +64,7 @@ export async function commandPalette(_args: unknown, opt: {useKey?: boolean} = {
         availableBindings = <IConfigKeyBinding[]>(
             (bindings?.bind || []).filter(filterBindingFn(mode, prefixCode))
         );
+        availableBindings = normalizeLayoutIndependentBindings(availableBindings);
         availableBindings = reverse(
             uniqBy(reverse(availableBindings), b => (b.args.key || '') + b.args.prefixCode)
         );
@@ -68,7 +75,7 @@ export async function commandPalette(_args: unknown, opt: {useKey?: boolean} = {
 
             return {
                 label: key,
-                description: binding.args.name,
+                description: binding.args.name + (/\[.+\]/.test(key) ? LAYOUT_MARKER : ''),
                 detail: replaceAll(binding.args.description || '', /\n/g, ' '),
                 args: binding.args,
             };
@@ -91,8 +98,13 @@ export async function commandPalette(_args: unknown, opt: {useKey?: boolean} = {
                 lastPick.args.combinedName &&
                 lastPick.args.combinedName === pick.args.combinedName
             ) {
-                lastPick.label = prettifyPrefix(lastPick.args.combinedKey);
-                lastPick.description = lastPick.args.combinedName;
+                const combinedKey = normalizeLayoutIndependentString(
+                    lastPick.args.combinedKey
+                );
+                lastPick.label = prettifyPrefix(combinedKey);
+                lastPick.description =
+                    lastPick.args.combinedName +
+                    (/\[.+\]/.test(combinedKey) ? LAYOUT_MARKER : '');
                 lastPick.detail = lastPick.args.combinedDescription || '';
             } else {
                 filteredPicks.push(pick);

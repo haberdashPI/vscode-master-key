@@ -32,10 +32,11 @@ export async function setBindings(str: string) {
     await input.confirm();
 
     console.log('[DEBUG]: activate bindings');
-    await workbench.executeCommand('Clear Command History');
     await sleep(200);
-    await workbench.executeCommand('Master key: Activate Keybindings');
-    await sleep(500);
+    await browser.executeWorkbench(async vscode => {
+        vscode.commands.executeCommand('master-key.activateBindings');
+    });
+    await sleep(200);
     input = await new InputBox(workbench.locatorMap).wait();
     await input.setText('Current File');
     await input.confirm();
@@ -247,9 +248,13 @@ export async function enterModalKeys(...keySeq: ModalKey[]) {
         ) {
             throw Error("Keys must all be lower case (use 'shift')");
         }
-        const keyCodes = keys.map(k =>
-            MODAL_KEY_MAP[k] !== undefined ? MODAL_KEY_MAP[k] : k
-        );
+        const keyCodes = keys.map(k => {
+            if (MODAL_KEY_MAP[k] !== undefined) {
+                return MODAL_KEY_MAP[k];
+            } else {
+                return k.replace(/\[(.*?)\]/, '$1');
+            }
+        });
         const keyCount = modalKeyCount(keys_);
         if (keyCount === undefined) {
             const keyString = keys.map(prettifyPrefix).join('');

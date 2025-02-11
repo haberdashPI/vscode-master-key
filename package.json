@@ -132,6 +132,12 @@
     ],
     "configuration": {
       "properties": {
+        "master-key.layoutIndependence": {
+          "title": "Use Layout Independent Bindings",
+          "type": "boolean",
+          "description": "When enabled, bindings do not match the keys on your keyboard, instead matching the keys on the default US layout.",
+          "default": false
+        },
         "master-key.storage": {
           "title": "Internal Storage of Master Key Configuration",
           "type": "object",

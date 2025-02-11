@@ -22,7 +22,7 @@ describe('Configuration Editing', () => {
 
         const copyEditor = await getEditorMatching(workbench, /Untitled/);
         const copyEditorText = await copyEditor.getText();
-        expect(copyEditorText).toMatch(/name = "Larkin Key Bindings"/);
+        expect(copyEditorText).toMatch(/name = "Larkin"/);
     });
 
     it('Can copy user config', async () => {

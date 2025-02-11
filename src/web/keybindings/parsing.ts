@@ -434,3 +434,27 @@ export async function parseBindingFile(file: vscode.Uri) {
     const fileText = new TextDecoder().decode(fileData);
     return parseBindings(fileText);
 }
+
+export interface IConfigKeyBinding {
+    key: string;
+    command: 'master-key.do';
+    prefixDescriptions: string[];
+    when: string;
+    args: {
+        do: DoArgs;
+        key: string; // repeated here so that commands can display the key pressed
+        name?: string;
+        description?: string;
+        resetTransient?: boolean;
+        hideInPalette?: boolean;
+        hideInDocs?: boolean;
+        priority: number;
+        combinedName: string;
+        combinedKey: string;
+        combinedDescription: string;
+        kind: string;
+        path: string;
+        mode: string | undefined;
+        prefixCode: number | undefined;
+    };
+}

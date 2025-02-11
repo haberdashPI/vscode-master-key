@@ -2,7 +2,9 @@ import {CommandState} from '../state';
 import {withState} from '../state';
 import * as vscode from 'vscode';
 import {MODE} from './mode';
-import {Bindings, IConfigKeyBinding} from '../keybindings/processing';
+import {IConfigKeyBinding} from '../keybindings/parsing';
+import {Bindings} from '../keybindings/processing';
+import {normalizeLayoutIndependentBindings} from '../keybindings/layout';
 import {filterBindingFn} from '../keybindings';
 import {bindings, onChangeBindings} from '../keybindings/config';
 import {PREFIX_CODE} from './prefix';
@@ -267,6 +269,7 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
         let curBindings = allBindings.filter(
             filterBindingFn(<string>values.get(MODE), <number>values.get(PREFIX_CODE), true)
         );
+        curBindings = normalizeLayoutIndependentBindings(curBindings, {noBrackets: true});
         curBindings = reverse(uniqBy(reverse(curBindings), b => b.args.key));
         this._bindingMap = {};
         for (const binding of curBindings) {

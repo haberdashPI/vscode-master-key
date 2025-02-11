@@ -111,6 +111,20 @@ export async function createBindings(newBindings: string): Promise<Bindings | un
     }
 }
 
+export async function getBindings() {
+    const config = vscode.workspace.getConfiguration('master-key');
+    const storage = config.get<IStorage>('storage') || {};
+    const preset = fromZip64(storage.presetBindings || '') || '';
+    const user = fromZip64(storage.userBindings || '') || '';
+    if (preset) {
+        const parsedBindings = processParsing(await parseBindings(preset + '\n' + user));
+        bindings = parsedBindings;
+    } else {
+        bindings = undefined;
+    }
+    return bindings;
+}
+
 async function useBindings() {
     const config = vscode.workspace.getConfiguration('master-key');
     const storage = config.get<IStorage>('storage') || {};

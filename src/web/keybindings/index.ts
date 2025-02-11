@@ -7,14 +7,16 @@ import {
     FullBindingSpec,
     ParsedResult,
     ErrorResult,
+    IConfigKeyBinding,
 } from './parsing';
-import {processBindings, IConfigKeyBinding, Bindings} from './processing';
+import {processBindings, Bindings} from './processing';
 import {isSingleCommand} from '../utils';
 import {uniq, pick} from 'lodash';
 import replaceAll from 'string.prototype.replaceall';
 import {Utils} from 'vscode-uri';
-import {clearUserBindings, createBindings, createUserBindings} from './config';
+import {clearUserBindings, createBindings, createUserBindings, getBindings} from './config';
 import * as config from './config';
+import {toLayoutIndependentString} from './layout';
 const JSONC = require('jsonc-simple-parser');
 const TOML = require('smol-toml');
 
@@ -57,20 +59,55 @@ function findText(doc: vscode.TextDocument, text: string) {
     return firstMatchResult.value;
 }
 
+let layoutIndependence = false;
+
+let layoutIndependenceUpdateCount = 0;
+async function updateConfig(
+    event: vscode.ConfigurationChangeEvent | undefined,
+    updateKeys: boolean = true
+) {
+    if (!event || event?.affectsConfiguration('master-key')) {
+        const config = vscode.workspace.getConfiguration('master-key');
+        const newLayoutIndependence = config.get<boolean>('layoutIndependence') || false;
+        if (layoutIndependence !== newLayoutIndependence && updateKeys) {
+            layoutIndependence = newLayoutIndependence;
+            const bindings = await getBindings();
+            if (bindings) {
+                // NOTE: since this is an expensive operation that modifies GUI elements,
+                // and the user is probably interacting with GUI elements, we want to delay
+                // this effect a bit, and only implement the change if it is the most
+                // recent call to `updateConfig`
+                const myCount = ++layoutIndependenceUpdateCount;
+                await sleep(250);
+                if (myCount === layoutIndependenceUpdateCount) {
+                    // we'll on reach this point if another call to `updateConfig` that
+                    // changed `layoutIndependence` has already occurred
+                    insertKeybindingsIntoConfig(bindings);
+                }
+            }
+        }
+    }
+}
+
 function formatBindings(name: string, items: IConfigKeyBinding[]) {
     let json = '';
     for (const item of items) {
-        if (item.prefixDescriptions.length > 0) {
+        const finalItem = {...item};
+        if (layoutIndependence) {
+            finalItem.key = toLayoutIndependentString(finalItem.key);
+        }
+
+        if (finalItem.prefixDescriptions.length > 0) {
             let comment =
                 'Automated binding; avoid editing manually, instead use one of these commands';
             comment += "'Master Key: Select Binding Preset";
             comment += "'Master Key: Remove Bindings";
             comment += 'Prefix Codes:\n';
-            comment += item.prefixDescriptions.join('\n');
+            comment += finalItem.prefixDescriptions.join('\n');
             json += replaceAll(comment, /^\s*(?=\S+)/gm, '    // ') + '\n';
         }
         json += replaceAll(
-            JSON.stringify(pick(item, ['key', 'when', 'command', 'args']), null, 4),
+            JSON.stringify(pick(finalItem, ['key', 'when', 'command', 'args']), null, 4),
             /^/gm,
             '    '
         );
@@ -218,6 +255,10 @@ async function copyCommandResultIntoBindingFile(command: string) {
     }
 }
 
+function sleep(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 async function insertKeybindingsIntoConfig(bindings: Bindings) {
     const name = bindings.name || 'none';
     const keyBindings = bindings.bind;
@@ -296,6 +337,17 @@ async function insertKeybindingsIntoConfig(bindings: Bindings) {
                         }
                         return undefined;
                     });
+                if (bindings.bind.some(b => /\[[^\]]+\]/.test(b.key))) {
+                    vscode.window.showInformationMessage(
+                        replaceAll(
+                            `The assigned bindings include layout independent bindings. When you
+                            see keys surrounded by "[" and "]", they refer to the U.S. Layout
+                            location of these characters.`,
+                            /\s+/g,
+                            ' '
+                        )
+                    );
+                }
             }
         }
     }
@@ -609,7 +661,7 @@ export async function updatePresets(event?: vscode.ConfigurationChangeEvent) {
     }
 }
 
-const presetFiles = ['larkin.toml'];
+const presetFiles = ['larkin.toml', 'larkin_layout.toml'];
 
 async function loadPreset(presets: Preset[], uri: vscode.Uri) {
     const fileData = await vscode.workspace.fs.readFile(uri);
@@ -641,6 +693,9 @@ async function loadPresets(allDirs: vscode.Uri[]) {
 let extensionPresetsDir: vscode.Uri;
 
 export async function activate(context: vscode.ExtensionContext) {
+    updateConfig(undefined, false);
+    vscode.workspace.onDidChangeConfiguration(updateConfig);
+
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.activateBindings', activateBindings)
     );
