@@ -61,6 +61,7 @@ function findText(doc: vscode.TextDocument, text: string) {
 
 let layoutIndependence = false;
 
+let layoutIndependenceUpdateCount = 0;
 async function updateConfig(
     event: vscode.ConfigurationChangeEvent | undefined,
     updateKeys: boolean = true
@@ -74,10 +75,15 @@ async function updateConfig(
             if (bindings) {
                 // NOTE: since this is an expensive operation that modifies GUI elements,
                 // and the user is probably interacting with GUI elements, we want to delay
-                // this effect a bit
-                // TODO: throttle the operation here
+                // this effect a bit, and only implement the change if it is the most
+                // recent call to `updateConfig`
+                const myCount = ++layoutIndependenceUpdateCount;
                 await sleep(250);
-                insertKeybindingsIntoConfig(bindings);
+                if (myCount === layoutIndependenceUpdateCount) {
+                    // we'll on reach this point if another call to `updateConfig` that
+                    // changed `layoutIndependence` has already occurred
+                    insertKeybindingsIntoConfig(bindings);
+                }
             }
         }
     }
