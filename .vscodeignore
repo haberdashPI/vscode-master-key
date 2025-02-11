@@ -35,3 +35,4 @@ wdio.conf.mts
 docs/**
 logo/**
 dist/desktop/**
+.jj/**
