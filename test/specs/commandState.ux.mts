@@ -9,7 +9,7 @@ import {
     storeCoverageStats,
 } from './utils.mts';
 import 'wdio-vscode-service';
-import {TextEditor} from 'wdio-vscode-service';
+import {sleep, TextEditor} from 'wdio-vscode-service';
 
 describe('Command State', () => {
     let editor: TextEditor;
@@ -33,6 +33,13 @@ describe('Command State', () => {
             key = "ctrl+shift+l"
             command = "master-key.setMode"
             args.value = "left"
+
+            [[bind]]
+            name = "default mode"
+            key = "escape"
+            command = "master-key.setMode"
+            args.value = "default"
+            mode = []
 
             [[bind]]
             name = "move right"
@@ -90,6 +97,32 @@ describe('Command State', () => {
             key = "ctrl+shift+w"
             when = "master-key.select_on"
             command = "cursorWordEndRightSelect"
+
+            [[bind]]
+            name = "delete"
+            key = "ctrl+shift+d"
+            command = "runCommands"
+
+            [[bind.args.commands]]
+            command = "master-key.prefix"
+
+            [[bind.args.commands]]
+            command = "master-key.storeCommand"
+            args.command = "deleteRight"
+            args.register = "operation"
+
+            [[bind]]
+            name = "word motion"
+            key = "ctrl+e"
+            prefixes = ["ctrl+shift+d"] # this is simply to demonstrate that we could include all operator prefixes here
+            command = "runCommands"
+
+            [[bind.args.commands]]
+            command = "cursorWordEndRightSelect"
+
+            [[bind.args.commands]]
+            command = "master-key.executeStoredCommand"
+            args.register = "operation"
 
             [[bind]]
             path = "word"
@@ -190,6 +223,14 @@ describe('Command State', () => {
         await editor.moveCursor(1, 5);
         await enterModalKeys(['ctrl', 'l'], ['ctrl', 'shift', 'w']);
         expect(await editor.getSelectedText()).toEqual('This');
+        await enterModalKeys('escape');
+    });
+
+    it('Can run stored commands', async () => {
+        await editor.moveCursor(1, 1);
+        await sleep(1000);
+        await enterModalKeys(['ctrl', 'shift', 'd'], ['ctrl', 'e']);
+        expect(await editor.getText()).toEqual(' is a short, simple sentence');
     });
 
     after(async () => {

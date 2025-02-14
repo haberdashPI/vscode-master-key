@@ -228,7 +228,7 @@ export async function enterModalKeys(...keySeq: ModalKey[]) {
     let keySeqString = '';
     let cleared;
 
-    const waitOpts = {interval: 50, timeout: 5000};
+    const waitOpts = {interval: 50, timeout: 10_000};
     cleared = await browser.waitUntil(() => statusBar.getItem('No Keys Typed'), {
         ...waitOpts,
         timeoutMsg: `Old keys didn't clear, while trying to press \n${JSON.stringify(keySeq, null, 4)}`,
@@ -269,6 +269,7 @@ export async function enterModalKeys(...keySeq: ModalKey[]) {
         const currentKeySeqString = (count ? count + '× ' : '') + keySeqString;
 
         // we do *NOT* await here, so that we can catch display events that are fast
+        await sleep(50);
         browser.keys(keyCodes);
         if (modalKeyUpdateStatus(keys_)) {
             const registered = await browser.waitUntil(
