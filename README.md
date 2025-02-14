@@ -25,9 +25,6 @@ The easiest way to get started is to activate the built-in keybindings that come
 3. Run the command `Master Key: Activate Keybindings`
 4. Select the built-in binding set "Larkin"
 
-> [!WARNING]
-> The Larkin keybindings will ask to install some additional extensions. If you choose to install these, one of them, "Rewrap" is not signed by the Marketplace Store. You may have to install this extension manually, rather than using Master Key's UI. Note however that this should not interfere with the activation and use of your keybindings, other than the commands that make use of this specific extension.
-
 You can revert these changes later using `Master Key: Deactivate Keybindings`.
 
 ## Discoverability Features

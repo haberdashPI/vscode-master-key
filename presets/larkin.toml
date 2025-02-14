@@ -36,7 +36,7 @@ requiredExtensions = [
       "pkief.markdown-checkbox",
       "jack89ita.open-file-from-path",
       "koalamer.labeled-bookmarks",
-      "stkb.rewrap",
+      "dnut.rewrap-revived",
 ]
 
 [[mode]]
