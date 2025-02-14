@@ -123,7 +123,7 @@ describe('Palette', () => {
         expect(await picks[2].getDescription()).toEqual('up');
         expect(await picks[3].getLabel()).toEqual('I');
         expect(await picks[3].getDescription()).toEqual('insert mode');
-        await enterModalKeys('i');
+        await enterModalKeys({key: 'i', updatesStatus: false});
         await waitForMode('insert');
     });
 
@@ -149,7 +149,7 @@ describe('Palette', () => {
         await enterModalKeys('p');
 
         await enterModalKeys({key: 'w', updatesStatus: false});
-        await sleep(1500); // give time for palette to show up
+        await sleep(2500); // give time for palette to show up
 
         const input = await new InputBox(workbench.locatorMap).wait();
         const picks = await input.getQuickPicks();
@@ -217,7 +217,7 @@ describe('Palette', () => {
             command = "master-key.commandSuggestions"
         `);
 
-        await enterModalKeys('escape');
+        await browser.keys(Key.Escape);
         await sleep(1000);
 
         await enterModalKeys({key: ['shift', ';'], updatesStatus: false});

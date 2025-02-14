@@ -3,7 +3,7 @@
   "displayName": "Master Key",
   "publisher": "haberdashPI",
   "description": "Master your keybindings with documentation, discoverability, modal bindings, macros and expressive configuration",
-  "version": "0.3.13",
+  "version": "0.3.15",
   "icon": "logo.png",
   "repository": {
     "url": "https://github.com/haberdashPi/vscode-master-key"
@@ -171,6 +171,7 @@
         "master-key.suggestionDelay": {
           "title": "Suggestion Delay",
           "type": "integer",
+          "default": 500,
           "description": "Time to wait, in milliseconds, before showing command suggestions for multi-key commands (set to 0 to disable)"
         },
         "master-key.keyDisplayDelay": {
