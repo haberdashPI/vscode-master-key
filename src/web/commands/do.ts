@@ -119,8 +119,7 @@ async function resolveRepeat(args: RunCommandsArgs): Promise<number> {
     }
 }
 
-const PALETTE_DELAY_DEFAULT = process.env.TESTING ? 0 : 500;
-let paletteDelay: number = PALETTE_DELAY_DEFAULT;
+let paletteDelay: number = 0;
 let paletteUpdate = Number.MIN_SAFE_INTEGER;
 
 function registerPaletteUpdate() {
@@ -232,11 +231,13 @@ function updateConfig(event?: vscode.ConfigurationChangeEvent) {
         } else {
             maxHistory = configMaxHistory;
         }
-        const configPaletteDelay = config.get<number>('suggestionDelay');
-        if (configPaletteDelay === undefined) {
-            paletteDelay = PALETTE_DELAY_DEFAULT;
-        } else {
-            paletteDelay = configPaletteDelay;
+        if (!(process.env.TESTING || process.env.COVERAGE)) {
+            const configPaletteDelay = config.get<number>('suggestionDelay');
+            if (configPaletteDelay === undefined) {
+                paletteDelay = 0;
+            } else {
+                paletteDelay = configPaletteDelay;
+            }
         }
     }
 }
@@ -250,10 +251,12 @@ export function activate(context: vscode.ExtensionContext) {
     console.log('configured max history: ' + maxHistory);
     vscode.workspace.onDidChangeConfiguration(updateConfig);
 
-    if (process.env.TESTING) {
+    if (process.env.TESTING || process.env.COVERAGE) {
+        paletteDelay = 0;
         context.subscriptions.push(
             vscode.commands.registerCommand('master-key.togglePaletteDelay', () => {
                 paletteDelay = paletteDelay > 0 ? 0 : 500;
+                console.log('paletteDelay: ' + paletteDelay);
             })
         );
     }
