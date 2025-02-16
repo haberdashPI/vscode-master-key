@@ -128,7 +128,7 @@ export async function clearNotifications(workbench: Workbench) {
 export async function setupEditor(str: string) {
     const workbench = await browser.getWorkbench();
 
-    // clear any older notificatoins
+    // clear any older notifications
     console.log('[DEBUG]: clearing notifications');
     clearNotifications(workbench);
 
@@ -222,18 +222,47 @@ function modalKeyUpdateStatus(key: ModalKey) {
     }
 }
 
+export async function waitForClearedKeyStatus(
+    keySeq: ModalKey[],
+    workbench?: Workbench,
+    statusBar?: StatusBar
+) {
+    workbench = workbench || (await browser.getWorkbench());
+    statusBar = statusBar || (await new StatusBar(workbench.locatorMap));
+    const waitOpts = {interval: 50, timeout: 10_000};
+    const cleared = await browser.waitUntil(() => statusBar.getItem('No Keys Typed'), {
+        ...waitOpts,
+        timeoutMsg: `Old keys didn't clear, while trying to press \n${JSON.stringify(keySeq, null, 4)}`,
+    });
+    expect(cleared).toBeTruthy();
+}
+
+export async function waitForKeysTyped(
+    currentKeySeqString: string,
+    workbench?: Workbench,
+    statusBar?: StatusBar
+) {
+    workbench = workbench || (await browser.getWorkbench());
+    statusBar = statusBar || (await new StatusBar(workbench.locatorMap));
+    const waitOpts = {interval: 10, timeout: 10_000};
+    const registered = await browser.waitUntil(
+        () => statusBar.getItem('Keys Typed: ' + currentKeySeqString),
+        {
+            ...waitOpts,
+            timeoutMsg: `UI didn't register typed key: \n${JSON.stringify(currentKeySeqString, null, 4)}`,
+        }
+    );
+    expect(registered).toBeTruthy();
+}
+
 export async function enterModalKeys(...keySeq: ModalKey[]) {
+    const waitOpts = {interval: 50, timeout: 5000};
     const workbench = await browser.getWorkbench();
     const statusBar = await new StatusBar(workbench.locatorMap);
     let keySeqString = '';
     let cleared;
 
-    const waitOpts = {interval: 50, timeout: 10_000};
-    cleared = await browser.waitUntil(() => statusBar.getItem('No Keys Typed'), {
-        ...waitOpts,
-        timeoutMsg: `Old keys didn't clear, while trying to press \n${JSON.stringify(keySeq, null, 4)}`,
-    });
-    expect(cleared).toBeTruthy();
+    waitForClearedKeyStatus(keySeq, workbench, statusBar);
 
     let count = 0;
     let checkCleared = true;
@@ -272,14 +301,7 @@ export async function enterModalKeys(...keySeq: ModalKey[]) {
         await sleep(50);
         browser.keys(keyCodes);
         if (modalKeyUpdateStatus(keys_)) {
-            const registered = await browser.waitUntil(
-                () => statusBar.getItem('Keys Typed: ' + currentKeySeqString),
-                {
-                    ...waitOpts,
-                    timeoutMsg: `UI didn't register typed key: \n${JSON.stringify(currentKeySeqString, null, 4)}`,
-                }
-            );
-            expect(registered).toBeTruthy();
+            await waitForKeysTyped(currentKeySeqString, workbench, statusBar);
         } else {
             checkCleared = false;
         }

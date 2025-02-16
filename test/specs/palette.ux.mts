@@ -156,7 +156,8 @@ describe('Palette', () => {
         expect(picks).toHaveLength(1);
 
         await browser.keys(Key.Escape);
-        await browser.keys('p');
+        await sleep(1000);
+        await enterModalKeys('p');
         await enterModalKeys('i');
         await sleep(1000);
     });
