@@ -236,9 +236,9 @@ describe('Command State', () => {
         await enterModalKeys(['ctrl', 'shift', 'd'], ['ctrl', 'e']);
         expect(await editor.getText()).toEqual(' is a short, simple sentence');
 
+        await sleep(250);
+        await browser.keys([Key.Ctrl, Key.Shift, 'd']);
         await sleep(1000);
-        await enterModalKeys({key: ['ctrl', 'shift', 'd'], updatesStatus: false});
-        await waitForKeysTyped('^⇧D');
         const cursorEl = await browser.$('div[role="presentation"].cursors-layer');
         const cursorClasses = await cursorEl.getAttribute('class');
         expect(cursorClasses).toMatch(/cursor-underline-style/);

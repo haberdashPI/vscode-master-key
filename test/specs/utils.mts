@@ -238,10 +238,12 @@ export async function waitForClearedKeyStatus(
 }
 
 export async function waitForKeysTyped(
+    keyCodes: string[],
     currentKeySeqString: string,
     workbench?: Workbench,
     statusBar?: StatusBar
 ) {
+    browser.keys(keyCodes);
     workbench = workbench || (await browser.getWorkbench());
     statusBar = statusBar || (await new StatusBar(workbench.locatorMap));
     const waitOpts = {interval: 10, timeout: 10_000};
@@ -299,10 +301,10 @@ export async function enterModalKeys(...keySeq: ModalKey[]) {
 
         // we do *NOT* await here, so that we can catch display events that are fast
         await sleep(50);
-        browser.keys(keyCodes);
         if (modalKeyUpdateStatus(keys_)) {
-            await waitForKeysTyped(currentKeySeqString, workbench, statusBar);
+            await waitForKeysTyped(keyCodes, currentKeySeqString, workbench, statusBar);
         } else {
+            browser.keys(keyCodes);
             checkCleared = false;
         }
     }
