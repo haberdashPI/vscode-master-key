@@ -17,7 +17,9 @@ import {MODE, defaultMode, modeSpecs} from './mode';
 import {List} from 'immutable';
 import {commandPalette} from './palette';
 
-async function doCommand(command: BindingCommand): Promise<BindingCommand | undefined> {
+export async function doCommand(
+    command: BindingCommand
+): Promise<BindingCommand | undefined> {
     const reifiedCommand = cloneDeep(command);
     if (command.if !== undefined) {
         let doRun: unknown = undefined;
@@ -71,7 +73,7 @@ async function doCommand(command: BindingCommand): Promise<BindingCommand | unde
     return reifiedCommand;
 }
 
-const runCommandArgs = z
+export const runCommandsArgs = z
     .object({
         do: doArgs,
         key: z.string().optional(),
@@ -91,7 +93,7 @@ const runCommandArgs = z
         mode: z.string().optional(),
     })
     .strict();
-export type RunCommandsArgs = z.input<typeof runCommandArgs>;
+export type RunCommandsArgs = z.input<typeof runCommandsArgs>;
 
 export type RecordedCommandArgs = RunCommandsArgs & {
     recordEdits: vscode.TextDocument | undefined; // if editing is being recorded, the text document where those edits are happening
@@ -190,7 +192,7 @@ export const COMMAND_HISTORY = 'commandHistory';
 let maxHistory = 0;
 
 export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
-    const args = validateInput('master-key.do', args_, runCommandArgs);
+    const args = validateInput('master-key.do', args_, runCommandsArgs);
     if (args) {
         const command = await doCommands(args);
         if (!isSingleCommand(args.do, 'master-key.prefix')) {

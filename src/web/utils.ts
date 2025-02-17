@@ -26,6 +26,10 @@ export function isSingleCommand(x: DoArgs, cmd: string) {
     return x[0].command === cmd;
 }
 
+export function hasCommand(x: DoArgs, cmd: string) {
+    return x.some(x => x.command === cmd);
+}
+
 export function wrappedTranslate(
     x: vscode.Position,
     doc: vscode.TextDocument,

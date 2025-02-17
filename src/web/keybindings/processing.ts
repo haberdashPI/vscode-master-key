@@ -28,7 +28,7 @@ import {
     uniq,
 } from 'lodash';
 import {reifyStrings, EvalContext} from '../expressions';
-import {isSingleCommand, validateInput, IIndexed} from '../utils';
+import {isSingleCommand, validateInput, IIndexed, hasCommand} from '../utils';
 import {fromZodError} from 'zod-validation-error';
 import {asBindingTable, IParsedBindingDoc} from './docParsing';
 
@@ -570,7 +570,7 @@ function movePrefixesToWhenClause(item: BindingItem, prefixCodes: PrefixCodes) {
         const allowed = item.prefixes
             .map(a => {
                 if (prefixCodes.codes[a] === undefined) {
-                    throw Error(`Unexpected missing prefix code for prefix: ${a}`);
+                    throw Error(`Unexpected missing prefix code for prefix: '${a}'`);
                 } else {
                     return `master-key.prefixCode == ${prefixCodes.codes[a]}`;
                 }
@@ -598,35 +598,72 @@ function updatePrefixItemAndPrefix(
     }
     prefix += key;
 
-    const newItem = {
-        key,
-        command: item.command,
-        args: {
-            do: [
-                {
-                    command: 'master-key.prefix',
-                    args: {
-                        code: prefixCodes.codeFor(prefix),
-                        automated,
+    let newItem: BindingItem;
+    if (automated) {
+        newItem = {
+            key,
+            command: item.command,
+            args: {
+                do: [
+                    {
+                        command: 'master-key.prefix',
+                        args: {
+                            code: prefixCodes.codeFor(prefix),
+                            automated,
+                        },
                     },
-                },
-            ],
-            path: item.args.path,
-            name: automated ? 'prefix' : item.args.name,
-            kind: automated ? 'prefix' : item.args.kind || 'prefix',
-            priority: automated ? 0 : item.args.priority,
-            hideInPalette: automated ? false : item.args.hideInPalette,
-            hideInDocs: automated ? false : item.args.hideInPalette,
-            combinedName: automated ? '' : item.args.combinedName,
-            combinedKey: automated ? '' : item.args.combinedKey,
-            combinedDescription: automated ? '' : item.args.combinedDescription,
-            resetTransient: automated ? false : item.args.resetTransient,
-            repeat: 0,
-        },
-        when: item.when,
-        prefixes: [oldPrefix],
-        mode: item.mode,
-    };
+                ],
+                path: item.args.path,
+                name: 'prefix',
+                kind: 'prefix',
+                priority: 0,
+                hideInPalette: false,
+                hideInDocs: false,
+                combinedName: '',
+                combinedKey: '',
+                combinedDescription: '',
+                resetTransient: false,
+                repeat: 0,
+            },
+            when: item.when,
+            prefixes: [oldPrefix],
+            mode: item.mode,
+        };
+    } else {
+        newItem = {
+            key,
+            command: item.command,
+            args: {
+                do: item.args.do.map(command => {
+                    if (command.command === 'master-key.prefix') {
+                        return {
+                            command: 'master-key.prefix',
+                            args: {
+                                code: prefixCodes.codeFor(prefix),
+                                automated,
+                            },
+                        };
+                    } else {
+                        return command;
+                    }
+                }),
+                path: item.args.path,
+                name: item.args.name,
+                kind: item.args.kind || 'prefix',
+                priority: item.args.priority,
+                hideInPalette: item.args.hideInPalette,
+                hideInDocs: item.args.hideInPalette,
+                combinedName: item.args.combinedName,
+                combinedKey: item.args.combinedKey,
+                combinedDescription: item.args.combinedDescription,
+                resetTransient: item.args.resetTransient,
+                repeat: 0,
+            },
+            when: item.when,
+            prefixes: [oldPrefix],
+            mode: item.mode,
+        };
+    }
 
     return [newItem, prefix];
 }
@@ -691,7 +728,7 @@ function expandKeySequencesAndResolveDuplicates(
             const suffixKey = keySeq[keySeq.length - 1];
             // we have to inject the appropriate prefix code if this is a user
             // defined keybinding that calls `master-key.prefix
-            if (isSingleCommand(item.args.do, 'master-key.prefix')) {
+            if (hasCommand(item.args.do, 'master-key.prefix')) {
                 requireConcretePrefixes(item, problems);
                 const [prefixItem, itemPrefix] = updatePrefixItemAndPrefix(
                     item,
@@ -762,16 +799,19 @@ function addWithoutDuplicating(
             map[key] = {item: newItem, index};
             return map;
         } else if (
-            isSingleCommand(newItem.args.do, 'master-key.prefix') &&
-            isSingleCommand(existingItem.args.do, 'master-key.prefix')
+            hasCommand(newItem.args.do, 'master-key.prefix') &&
+            isSingleCommand(existingItem.args.do, 'master-key.prefix') &&
+            existingItem.args.do[0].args?.automated
         ) {
-            if (newItem.args.do[0].args?.automated) {
-                // use the existing newItem
-                return map;
-            } else if (existingItem.args.do[0].args?.automated) {
-                map[key] = {item: newItem, index};
-                return map;
-            }
+            // use the existing newItem
+            map[key] = {item: newItem, index};
+            return map;
+        } else if (
+            isSingleCommand(newItem.args.do, 'master-key.prefix') &&
+            hasCommand(existingItem.args.do, 'master-key.prefix') &&
+            newItem.args.do[0].args?.automated
+        ) {
+            return map;
         } else if (modeIsImplicit(newItem.mode)) {
             // use existing item
             return map;
