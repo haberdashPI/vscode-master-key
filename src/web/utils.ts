@@ -90,3 +90,39 @@ export function get<T extends object, K extends keyof T>(x: T, key: K, def: T[K]
         return def;
     }
 }
+
+export const CURSOR_STYLES = {
+    Line: vscode.TextEditorCursorStyle.Line,
+    Block: vscode.TextEditorCursorStyle.Block,
+    Underline: vscode.TextEditorCursorStyle.Underline,
+    LineThin: vscode.TextEditorCursorStyle.LineThin,
+    BlockOutline: vscode.TextEditorCursorStyle.BlockOutline,
+    UnderlineThin: vscode.TextEditorCursorStyle.UnderlineThin,
+};
+
+export const CURSOR_SHAPES: [string, ...string[]] = [
+    'Line',
+    'Block',
+    'Underline',
+    'LineThin',
+    'BlockOutline',
+    'UnderlineThin',
+];
+
+export type CursorShape =
+    | 'Line'
+    | 'Block'
+    | 'Underline'
+    | 'LineThin'
+    | 'BlockOutline'
+    | 'UnderlineThin';
+
+export function updateCursorAppearance(
+    editor: vscode.TextEditor | undefined,
+    cursorShape: CursorShape
+) {
+    if (editor) {
+        editor.options.cursorStyle =
+            CURSOR_STYLES[cursorShape] || vscode.TextEditorCursorStyle.Line;
+    }
+}
