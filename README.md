@@ -5,18 +5,19 @@
 [![CI](https://github.com/haberdashPI/vscode-master-key/actions/workflows/ci.yml/badge.svg)](https://github.com/haberdashPI/vscode-master-key/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/haberdashPI/vscode-master-key/graph/badge.svg?token=099XZY1KR9)](https://codecov.io/gh/haberdashPI/vscode-master-key)
 [![Code Style: Google](https://img.shields.io/badge/code%20style-google-blueviolet.png)](https://github.com/google/gts)
+[![Docs](https://img.shields.io/badge/docs-stable-blue.png)](haberdashpi.github.io/vscode-master-key)
 
 Master key helps you to learn, create and use powerful keybindings in [VSCode](https://code.visualstudio.com/).
 
 If you want to improve your text editing super powers in VSCode, Master Key might just be the tool for you.
 
 > [!NOTE]
-> To power users: Master Key was envisioned as a set of tools to make it easy to create powerful keybinding specifications that match your editor style of choice (modal, chorded, etc...). There are currently some limitations, noted in [Keybinding Features](#keybinding-features) and [Customized Bindings](#customized-bindings) when creating custom binding sets.
+> To power users: Master Key was envisioned as a set of tools to make it easy to create powerful keybinding specifications that match your editor style of choice (modal, chorded, etc...). This goal remains a work in progress, and you are encouraged to review the limitations noted in [Keybinding Features](#keybinding-features) and [Customized Bindings](haberdashpi.github.io/vscode-master-key/guide.html#customizing-bindings).
 
-> [!WARNING]
-> The most recent versions of Master Key have disabled the feature allowing the user to to modify how line numbers are set in different modes. This feature depended on a bit of a hack and in recent versions of VSCode this hack no longer works; to avoid buggy cursor motion this feature is currently disabled until a better solution can be provided by upstream.
+## Getting Started
 
-## To get started
+<!-- text between _BEGIN/_END comments is extracted and inserted into the docs -->
+<!-- GETTING_STARTED_BEGIN -->
 
 The easiest way to get started is to activate the built-in keybindings that come with Master Key.
 
@@ -25,9 +26,21 @@ The easiest way to get started is to activate the built-in keybindings that come
 3. Run the command `Master Key: Activate Keybindings`
 4. Select the built-in binding set "Larkin"
 
+<!-- GETTING_STARTED_END -->
+
 You can revert these changes later using `Master Key: Deactivate Keybindings`.
 
-## Discoverability Features
+To modify or create your own bindings [read the documentation](haberdashpi.github.io/vscode-master-key).
+
+## Feature Highlights
+
+Master key has quite of a few features, including:
+
+- **Keybinding Discoverability**: Bindings show up on a keyboard visualization. Binding files are literate TOML that is converted into markdown documentation. Multi-key sequences reveal a popup list of suggested keybinding completions (ala Kakaune / Helix / LazyVim).
+- **Record and repeat commands**: Record sequences of commands and parametrically select which ones to replay.
+- **Rich, parametric keybinding specification**: Modal bindings, simple `foreach` expressions, parametric type-event interception, expression evaluation in command arguments, simple state management.
+
+## Feature Tour
 
 ### Visual documentation of keybindings
 
@@ -187,64 +200,6 @@ args.at = "commandHistory[i].path.startsWith('edit.motion') && commandHistory[i]
 ### Documented Bindings
 
 Of course, just like all of the built-in bindings in Master Key, you can document your bindings so that they show up legibly within the discoverability features above. The toml file is a literate document used to generate the textual documentation and all binding's names will show up in the visual documentation as appropriate.
-
-## Customized Bindings
-
-Okay, so you want to customize your keybindings, or create a whole new preset?
-
-You can start by reviewing the built-in `Larkin` preset using the command `Master Key: Edit Preset Copy`. A new `*.toml` file with the contents of this master-key binding set will be opened. The file has comments throughout which document its use.
-
-> [!WARNING]
-> Because the error reporting for master keybinding files is not yet very precise, it is recommended that you edit bindings incrementally (e.g. by slowly creating new bindings or by slowly uncommenting an entire binding set you have imported). In this way you can ensure that the changes you've made can be properly activated by Mater Key. Long-term, better error reporting for these binding files will be available.
-
-To simply customize an existing preset, you can append additional bindings by activating user bindings: create a new toml file and enter the bindings you want to append. Then call `Master Key: Activate User Keybindings` on the toml file you just created. You can import existing user bindings, from `keyindings.json`, by calling `Master Key: Import User Keybindings`.
-
-> [!NOTE]
-> Normal VSCode user keybindings always take precedence over master keybindings. (It would be rude to have Master Key automatically insert bindings with higher priority than user specified customizations). Make sure you delete any user keybindings from your `keybindings.json` file after importing them into your master keybindings `.toml` file.
-
-Alternatively you can define your own preset and import bindings from those you've already created in VSCode. Create a preset copy by calling `Master Key: Edit Preset Copy` and then you may want to call `Master Key: Import Default Keybindings` to add any existing bindings you have to your preset copy. Edit the bindings as desired and update your settings to use them by calling `Master Key: Activate Keybindings` at any time.
-
-## Roadmap
-
-- Release 0.1.0: relatively stable default keybindings
-- Release 0.1.x: improved coverage/testing/stability of existing features
-- Release 0.2.0: missing visual documentation features: markdown summary of bindings
-- Release 0.2.x: improved performance/coverage/stability
-- Initial publish to VSCode here: 0.3.0
-- 0.3.x: improved code coverage, stability improvements
-- Release 0.4.x: documentation of all keybinding commands. May introduce breaking changes to improve API clarity for these bindings.
-- Release 0.4.y: more precise binding error report: use VSCode language server features to
-  get detailed line and character error indicators for binding-file problems
-- Release 0.4.z: source code documentation — may involve substantial refactor to improve legibility / clarity of code
-- Release 1.0.0:
-    - code should be legible
-    - test coverage should be satisfactory
-    - documentation should be largely complete
-- Release 1.x: upwards and onwards...
-  - support for more keyboard layouts for visual docs
-  - search: `showCount` displays movement count overlaid with each highlight
-  - additional keybinding sets: e.g. vim, emacs
-  - API improvements for new editor sets
-  - keybinding debug QOL features: show the binding that was run for a given key sequence
-  - clipboard registers
-
-## Related Work
-
-Master Key follows in the footsteps of many other extensions:
-
-- [VSCodeVim](https://github.com/VSCodeVim/Vim)
-- [vscode-neovim](https://github.com/asvetliakov/vscode-neovim)
-- [Awesome Emacs Keymap](https://github.com/whitphx/vscode-emacs-mcx)
-- [Dance](https://github.com/71/dance)
-- [ModalEdit](https://github.com/johtela/vscode-modaledit)
-- [ModalKeys](https://github.com/haberdashPI/vscode-modal-keys)
-
-And of course, there are many existing editors that Master Key draws inspiration from:
-
-- [vim](https://www.vim.org/)
-- [emacs](https://www.gnu.org/software/emacs/)
-- [kakoune](https://github.com/mawww/kakoune)
-- [helix](https://helix-editor.com/)
 
 ## Developer Notes
 
