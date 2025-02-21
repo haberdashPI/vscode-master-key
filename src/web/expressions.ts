@@ -45,15 +45,15 @@ export class EvalContext {
 
     evalExpressionsInString(str: string, values: Record<string, unknown>) {
         let result = '';
-        const r = /\{[^}]*\}/g;
+        const r = /\{\{(.(?!\}\}))*.\}\}/g;
         let match = r.exec(str);
         let startIndex = 0;
         while (match !== null) {
             const prefix = str.slice(startIndex, match.index);
             let evaled;
             try {
-                // slice to remove `{` and `}`
-                evaled = this.evalStr(match[0].slice(1, -1), values);
+                // slice to remove `{{` and `}}`
+                evaled = this.evalStr(match[0].slice(2, -2), values);
             } catch (_) {
                 evaled = undefined;
             }
@@ -76,7 +76,7 @@ export class EvalContext {
             if (str.match(/(?<!(!|=))=(?!(>|=))/)) {
                 this.errors.push(`Found an isolated "=" in this expression.
                 Your expressions are not permitted to set any values. You should
-                use 'master-key.set' to do that.`);
+                use 'master-key.setFlag' to do that.`);
                 return undefined;
             }
             this.cache[str] = exec = buildEvaled(str);

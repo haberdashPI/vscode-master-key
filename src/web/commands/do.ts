@@ -86,7 +86,7 @@ export const runCommandsArgs = z
         combinedName: z.string().optional(),
         combinedDescription: z.string().optional(),
         kind: z.string().optional(),
-        path: z.string().optional(),
+        defaults: z.string().optional(),
         name: z.string().optional(),
         description: z.string().optional(),
         prefixCode: z.number().optional(),

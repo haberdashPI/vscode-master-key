@@ -79,18 +79,18 @@ suite('Keybinding Test Suite', async () => {
         [header]
         version = "1.0"
 
-        [[path]]
+        [[default]]
         id = ""
         name = "Base"
 
-        [[path]]
+        [[default]]
         id = "foo"
         name = "Foo"
         default.kind = "fookind"
         default.computedArgs.value = "count"
         when = "baz > 0"
 
-        [[path]]
+        [[default]]
         id = "foo.bar"
         name = "FooBar"
         default.prefixes = ["", "u"]
@@ -98,20 +98,20 @@ suite('Keybinding Test Suite', async () => {
         default.computedArgs.select = "prefix.startsWith('u')"
 
         [[bind]]
-        path = "foo"
+        defaults = "foo"
         name = "1"
         key = "a"
         command = "fooDo"
 
         [[bind]]
-        path = "foo.bar"
+        defaults = "foo.bar"
         name = "2"
         key = "b"
         when = "biz < 10"
         command = "barDoo"
 
         [[bind]]
-        path = "foo.bar"
+        defaults = "foo.bar"
         name = "3"
         key = "c"
         prefixes = [""]
@@ -143,29 +143,29 @@ suite('Keybinding Test Suite', async () => {
         assert(!ckeys[0].when.match(/biz < 10/));
     });
 
-    test('Detects duplicate path ids', () => {
+    test('Detects duplicate default ids', () => {
         assert.throws(
             () =>
                 specForBindings(`
             [header]
             version = "1.0"
 
-            [[path]]
+            [[default]]
             id = "foo"
             name = "Foo"
 
-            [[path]]
+            [[default]]
             id = "foo"
             name = "FooAgain"
 
             [[bind]]
-            path = "foo"
+            defaults = "foo"
             name = "1"
             key = "a"
             kind = "do"
             command = "fooDo"
         `),
-            {message: /Defined \[\[path\]\] entries must all have unique 'id' fields/}
+            {message: /Defined \[\[default\]\] entries must all have unique 'id' fields/}
         );
     });
 
@@ -174,12 +174,12 @@ suite('Keybinding Test Suite', async () => {
         [header]
         version = "1.0"
 
-        [[path]]
+        [[default]]
         id = "bind"
         name = "All Bindings"
 
         [[bind]]
-        path = "bind"
+        defaults = "bind"
         name = "1"
         foreach.key = ['{key: [a-e]}']
         key = "{key}"
@@ -208,12 +208,12 @@ suite('Keybinding Test Suite', async () => {
         [header]
         version = "1.0"
 
-        [[path]]
+        [[default]]
         id = "bind"
         name = "All Bindings"
 
         [[bind]]
-        path = "bind"
+        defaults = "bind"
         name = "1"
         key = "Cmd+a"
         kind = "all"
@@ -227,12 +227,12 @@ suite('Keybinding Test Suite', async () => {
         [header]
         version = "1.0"
 
-        [[path]]
+        [[default]]
         id = "bind"
         name = "All Bindings"
 
         [[bind]]
-        path = "bind"
+        defaults = "bind"
         name = "2"
         key = ":"
         kind = "all"
@@ -247,12 +247,12 @@ suite('Keybinding Test Suite', async () => {
         [header]
         version = "1.0"
 
-        [[path]]
+        [[default]]
         id = "bind"
         name = "All Bindings"
 
         [[bind]]
-        path = "bind"
+        defaults = "bind"
         name = "2"
         key = "k+f"
         kind = "all"
@@ -267,12 +267,12 @@ suite('Keybinding Test Suite', async () => {
         [header]
         version = "1.0"
 
-        [[path]]
+        [[default]]
         id = "bind"
         name = "All Bindings"
 
         [[bind]]
-        path = "bind"
+        defaults = "bind"
         name = "2"
         key = "F"
         kind = "all"
@@ -289,12 +289,12 @@ suite('Keybinding Test Suite', async () => {
         [header]
         version = "1.0"
 
-        [[path]]
+        [[default]]
         id = "bind"
         name = "All Bindings"
 
         [[bind]]
-        path = "bind"
+        defaults = "bind"
         name = "2"
         key = "k"
         kind = "all"
@@ -312,12 +312,12 @@ suite('Keybinding Test Suite', async () => {
         [header]
         version = "1.0"
 
-        [[path]]
+        [[default]]
         id = "bind"
         name = "All Bindings"
 
         [[bind]]
-        path = "bind"
+        defaults = "bind"
         name = "2"
         key = "k"
         kind = "all"
@@ -331,19 +331,19 @@ suite('Keybinding Test Suite', async () => {
         [header]
         version = "1.0"
 
-        [[path]]
+        [[default]]
         id = "bind"
         name = "All Bindings"
 
         [[bind]]
-        path = "bind"
+        defaults = "bind"
         name = "2"
         key = "k"
         kind = "all"
         command = "master-key.prefix"
 
         [[bind]]
-        path = "bind"
+        defaults = "bind"
         name = "3"
         key = "j"
         kind = "all"
@@ -361,19 +361,19 @@ suite('Keybinding Test Suite', async () => {
         [header]
         version = "1.0"
 
-        [[path]]
+        [[default]]
         id = "bind"
         name = "All Bindings"
 
         [[bind]]
-        path = "bind"
+        defaults = "bind"
         name = "1"
         key = "a"
         kind = "all"
         command = "foo"
 
         [[bind]]
-        path = "bind"
+        defaults = "bind"
         name = "2"
         key = "a"
         kind = "all"
@@ -395,12 +395,12 @@ suite('Keybinding Test Suite', async () => {
         [[mode]]
         name = "normal"
 
-        [[path]]
+        [[default]]
         id = "bind"
         name = "All Bindings"
 
         [[bind]]
-        path = "bind"
+        defaults = "bind"
         name = "1"
         key = "a"
         kind = "all"
@@ -408,7 +408,7 @@ suite('Keybinding Test Suite', async () => {
         command = "foo"
 
         [[bind]]
-        path = "bind"
+        defaults = "bind"
         name = "2"
         key = "a"
         kind = "all"
@@ -518,7 +518,7 @@ suite('Keybinding Test Suite', async () => {
         version = "1.0"
 
         [[bind]]
-        path = ""
+        defaults = ""
         name = "a"
         description = "boop"
         combinedName = "boop/aba"
@@ -529,14 +529,14 @@ suite('Keybinding Test Suite', async () => {
         command = "do"
 
         [[bind]]
-        path = ""
+        defaults = ""
         name = "a"
         key = "k"
         when = "biz < 5"
         command = "do"
 
         [[bind]]
-        path = ""
+        defaults = ""
         name = "a"
         key = "h k"
         when = "biz > 5"

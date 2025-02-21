@@ -235,7 +235,7 @@ export const rawBindingItem = z
         combinedName: z.string().optional().default(''),
         combinedKey: z.string().optional().default(''),
         combinedDescription: z.string().optional().default(''),
-        path: z.string().optional(),
+        defaults: z.string().optional(),
         priority: z.number().default(0).optional(),
         kind: z.string().optional(),
         key: z.string().optional(),
@@ -296,7 +296,7 @@ export const bindingItem = z
         args: z
             .object({
                 do: doArgs,
-                path: z.string().optional().default(''),
+                defaults: z.string().optional().default(''),
                 hideInPalette: z.boolean().default(false).optional(),
                 hideInDocs: z.boolean().default(false).optional(),
                 priority: z.number().optional().default(0),
@@ -313,13 +313,17 @@ export const bindingItem = z
     .strict();
 export type BindingItem = z.output<typeof bindingItem>;
 
-export const bindingPath = z.object({
-    // TODO: change from an empty `id` path, to fields at the top level in the header
+export const bindingDefault = z.object({
+    // TODO: change from an empty `id` defaults, to fields at the top level in the header
     id: z.string().regex(/(^$|[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)*)/),
     name: z.string(),
     description: z.string().optional(),
     default: rawBindingItem.partial().optional(),
-    when: z.string().optional().transform(parseWhen).pipe(parsedWhen.array().optional()),
+    appendWhen: z
+        .string()
+        .optional()
+        .transform(parseWhen)
+        .pipe(parsedWhen.array().optional()),
 });
 
 const modeSpec = z.object({
@@ -348,10 +352,10 @@ export const bindingSpec = z
         header: bindingHeader,
         bind: rawBindingItem.array(),
         kind: kindItem.array().optional(),
-        path: bindingPath
+        default: bindingDefault
             .array()
             .refine(xs => uniqBy(xs, x => x.id).length === xs.length, {
-                message: "Defined [[path]] entries must all have unique 'id' fields.",
+                message: "Defined [[defaults]] entries must all have unique 'id' fields.",
             })
             .optional()
             .default([]),
@@ -452,7 +456,7 @@ export interface IConfigKeyBinding {
         combinedKey: string;
         combinedDescription: string;
         kind: string;
-        path: string;
+        defaults: string;
         mode: string | undefined;
         prefixCode: number | undefined;
     };

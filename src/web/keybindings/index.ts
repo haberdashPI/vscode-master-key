@@ -729,11 +729,6 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.deactivateBindings', removeKeybindings)
     );
-    context.subscriptions.push(
-        vscode.commands.registerCommand('master-key.installKeybindingExtensions', () =>
-            handleRequireExtensions()
-        )
-    );
 
     console.log('presetdir: ' + Utils.joinPath(context.extensionUri, 'presets').toString());
     extensionPresetsDir = Utils.joinPath(context.extensionUri, 'presets/');
