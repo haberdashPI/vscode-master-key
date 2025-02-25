@@ -523,8 +523,8 @@ labore elit occaecat cupidatat non POINT_B.`);
     });
 
     after(async () => {
-        await enterModalKeys('escape');
-        await enterModalKeys(['shift', 'i']);
+        await browser.keys('escape');
+        await browser.keys([Key.Shift, 'i']);
         await storeCoverageStats('searchMotion');
     });
 });

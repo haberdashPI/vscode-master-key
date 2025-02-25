@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import z from 'zod';
 import {onResolve} from '../state';
-import {validateInput} from '../utils';
+import {updateCursorAppearance, validateInput} from '../utils';
 import {withState, recordedCommand, CommandResult} from '../state';
 import {ModeSpec} from '../keybindings/parsing';
 import {runCommandOnKeys} from './capture';
@@ -9,26 +9,6 @@ import {onChangeBindings} from '../keybindings/config';
 import {Bindings} from '../keybindings/processing';
 
 export const MODE = 'mode';
-
-const CURSOR_STYLES = {
-    Line: vscode.TextEditorCursorStyle.Line,
-    Block: vscode.TextEditorCursorStyle.Block,
-    Underline: vscode.TextEditorCursorStyle.Underline,
-    LineThin: vscode.TextEditorCursorStyle.LineThin,
-    BlockOutline: vscode.TextEditorCursorStyle.BlockOutline,
-    UnderlineThin: vscode.TextEditorCursorStyle.UnderlineThin,
-};
-
-function updateCursorAppearance(
-    editor: vscode.TextEditor | undefined,
-    mode: string,
-    modeSpec: Record<string, ModeSpec>
-) {
-    if (editor) {
-        editor.options.cursorStyle =
-            CURSOR_STYLES[modeSpec[mode]?.cursorShape] || vscode.TextEditorCursorStyle.Line;
-    }
-}
 
 async function updateModeKeyCapture(mode: string, modeSpec: Record<string, ModeSpec>) {
     runCommandOnKeys(modeSpec[mode]?.onType, mode);
@@ -51,13 +31,18 @@ async function updateModeSpecs(bindings: Bindings | undefined) {
         .name;
     await withState(async state => state.set(MODE, {public: true}, defaultMode).resolve());
 }
+export function restoreModesCursorState() {
+    const shape = modeSpecs[currentMode]?.cursorShape || 'Line';
+    updateCursorAppearance(vscode.window.activeTextEditor, shape);
+}
 
 let currentMode = 'default';
 export async function activate(context: vscode.ExtensionContext) {
     onChangeBindings(updateModeSpecs);
 
     vscode.window.onDidChangeActiveTextEditor(e => {
-        updateCursorAppearance(e, currentMode, modeSpecs);
+        const shape = modeSpecs[currentMode]?.cursorShape || 'Line';
+        updateCursorAppearance(e, shape);
     });
 
     context.subscriptions.push(
@@ -84,11 +69,8 @@ export async function activate(context: vscode.ExtensionContext) {
         // with scopes and async that I don't understand???)
         const newMode = <string>values.get(MODE, defaultMode);
         if (cmode !== newMode) {
-            updateCursorAppearance(
-                vscode.window.activeTextEditor,
-                newMode,
-                modeSpecs || {}
-            );
+            const shape = (modeSpecs || {})[newMode]?.cursorShape || 'Line';
+            updateCursorAppearance(vscode.window.activeTextEditor, shape);
             updateModeKeyCapture(newMode, modeSpecs || {});
             currentMode = newMode;
         }

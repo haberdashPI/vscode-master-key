@@ -1,12 +1,15 @@
 // start with just some basic tests to verify all is well
 
 import {browser, expect} from '@wdio/globals';
+import {Key} from 'webdriverio';
 import {
     setBindings,
     setupEditor,
     movesCursorInEditor,
     enterModalKeys,
     storeCoverageStats,
+    waitForClearedKeyStatus,
+    waitForKeysTyped,
 } from './utils.mts';
 import 'wdio-vscode-service';
 import {sleep, TextEditor} from 'wdio-vscode-service';
@@ -105,6 +108,7 @@ describe('Command State', () => {
 
             [[bind.args.commands]]
             command = "master-key.prefix"
+            args.cursor = "Underline"
 
             [[bind.args.commands]]
             command = "master-key.storeCommand"
@@ -231,6 +235,25 @@ describe('Command State', () => {
         await sleep(1000);
         await enterModalKeys(['ctrl', 'shift', 'd'], ['ctrl', 'e']);
         expect(await editor.getText()).toEqual(' is a short, simple sentence');
+
+        await sleep(250);
+        await browser.keys([Key.Ctrl, Key.Shift, 'd']);
+        await sleep(1000);
+        const cursorEl = await browser.$('div[role="presentation"].cursors-layer');
+        const cursorClasses = await cursorEl.getAttribute('class');
+        expect(cursorClasses).toMatch(/cursor-underline-style/);
+
+        await sleep(2000);
+        browser.keys([Key.Control, 'e']);
+        await waitForClearedKeyStatus([
+            ['ctrl', 'shift', 'd'],
+            ['ctrl', 'e'],
+        ]);
+        const cursorEl2 = await browser.$('div[role="presentation"].cursors-layer');
+        const cursorClasses2 = await cursorEl2.getAttribute('class');
+        expect(cursorClasses2).toMatch(/cursor-line-style/);
+
+        expect(await editor.getText()).toEqual(' a short, simple sentence');
     });
 
     after(async () => {
