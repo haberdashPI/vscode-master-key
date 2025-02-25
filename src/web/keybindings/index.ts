@@ -85,6 +85,8 @@ async function updateConfig(
                     insertKeybindingsIntoConfig(bindings);
                 }
             }
+        } else {
+            layoutIndependence = newLayoutIndependence;
         }
     }
 }
