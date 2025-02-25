@@ -84,7 +84,11 @@ export function normalizeLayoutIndependentBindings(
 
 export function toLayoutIndependentString(key: string) {
     for (const [fromKey, toLiKey] of Object.entries(KEY_TO_LI_KEY)) {
-        key = replaceAll(key, RegExp('^' + fromKey + '$', 'ig'), toLiKey);
+        key = replaceAll(
+            key,
+            RegExp('(?<![a-z0-9])' + fromKey + '(?![a-z0-9])', 'ig'),
+            toLiKey
+        );
     }
     return key;
 }
