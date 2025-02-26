@@ -3,7 +3,7 @@
   "displayName": "Master Key",
   "publisher": "haberdashPI",
   "description": "Master your keybindings with documentation, discoverability, modal bindings, macros and expressive configuration",
-  "version": "0.3.19",
+  "version": "0.4.0",
   "icon": "logo.png",
   "repository": {
     "url": "https://github.com/haberdashPi/vscode-master-key"
@@ -48,16 +48,6 @@
         "title": "Install Extensions Required by Keybindings"
       },
       {
-        "command": "master-key.setVisualDocTopModifiers",
-        "category": "Master Key",
-        "title": "Toggle Visual Doc Modifier for Top of Key"
-      },
-      {
-        "command": "master-key.setVisualDocBottomModifiers",
-        "category": "Master Key",
-        "title": "Toggle Visual Doc Modifier for Bottom of Key"
-      },
-      {
         "command": "master-key.toggleVisualDocModifiers",
         "category": "Master Key",
         "title": "Toggle Visual Doc Modifier by frequency"
@@ -73,14 +63,9 @@
         "title": "Deactivate Master Keybindings"
       },
       {
-        "command": "master-key.installKeybindingExtensions",
-        "category": "Master Key",
-        "title": "Install Active Keybinding Extensions"
-      },
-      {
         "command": "master-key.editPreset",
         "category": "Master Key",
-        "title": "Edit Preset Copy"
+        "title": "New Keybinding Copy"
       },
       {
         "command": "master-key.importUserBindings",

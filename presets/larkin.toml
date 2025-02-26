@@ -103,7 +103,6 @@ command = "expandLineSelection"
 
 [[path]]
 id = "modes"
-name = "Modes"
 default.kind = "util"
 
 # ## Getting Help
@@ -164,7 +163,7 @@ foreach.key = ["escape", "ctrl+["]
 combinedKey = "escape/ctrl+["
 combinedName = "normal"
 combinedDescription = "Enter normal mode"
-key = "{key}"
+key = "{{key}}"
 mode = []
 hideInPalette = true
 hideInDocs = false
@@ -176,7 +175,7 @@ prefixes = "<all-prefixes>"
 path = "modes"
 name = "normal"
 foreach.key = ["escape", "ctrl+["]
-key = "{key}"
+key = "{{key}}"
 hideInPalette = true
 hideInDocs = true
 when = "suggestWidgetVisible && editorTextFocus && !findWidgetVisible"
@@ -190,8 +189,8 @@ prefixes = "<all-prefixes>"
 path = "modes"
 name = "ignore"
 description = "this key does nothing"
-foreach.key = ['{key: .}', 'shift+{key: .}'] #- all keys whose bindings are described by a single character
-key = "{key}"
+foreach.key = ['{{key: .}}', 'shift+{{key: .}}'] #- all keys whose bindings are described by a single character
+key = "{{key}}"
 command = "master-key.ignore"
 prefixes = "<all-prefixes>"
 mode = ["normal", "selectedit"]
@@ -202,13 +201,11 @@ priority = -10
 
 [[path]]
 id = "edit"
-name = "Editor Commands"
 when = "editorTextFocus && !findWidgetVisible"
 default.mode = "normal"
 
 [[path]]
 id = "edit.count"
-name = "count"
 default.kind = "count"
 
 # ## Basic motions
@@ -219,14 +216,10 @@ default.kind = "count"
 
 [[path]]
 id = "edit.motion"
-name = "Motions"
-description = "Commands that move the cursors and/or selections"
 default.kind = "motion"
 
 [[path]]
 id = "edit.motion.prim"
-name = "Primitive Motions"
-description = "Motions fundamental to moving around in the editor."
 default.command = "cursorMove"
 default.computedArgs.value = "count"
 default.computedArgs.select = "editorHasSelection || select_on"
@@ -369,10 +362,6 @@ repeat = "count"
 
 [[path]]
 id = "edit.motion.obj"
-name = "Motions defined by various regex and syntactical objects"
-description = """
-motions that move by a predefined syntactic object (e.g. word, paragraph, etc...)
-"""
 default.command = "selection-utilities.moveBy"
 default.args.boundary = "start"
 default.args.select = true
@@ -591,8 +580,6 @@ computedArgs = { value = "count" }
 
 [[path]]
 id = "edit.motion.mod"
-name = "Modify Motion Effects"
-description = "Keys that change how other motions work"
 default.kind = "motion"
 
 [[bind]]
@@ -650,15 +637,15 @@ args.boundary = "both"
 
 [[bind]]
 path = "edit.count"
-foreach.num = ['{key: [0-9]}']
-name = "count {num}"
-key = "{num}"
+foreach.num = ['{{key: [0-9]}}']
+name = "count {{num}}"
+key = "{{num}}"
 command = "master-key.updateCount"
-description = "Add digit {num} to the count argument of a command"
+description = "Add digit {{num}} to the count argument of a command"
 combinedKey = "0-9"
 combinedName = "count 0-9"
 combinedDescription = "Add digit 1-9 to count argument of a command"
-args.value = "{num}"
+args.value = "{{num}}"
 resetTransient = false
 mode = ["!insert", "!capture"]
 hideInDocs = true
@@ -667,8 +654,6 @@ hideInDocs = true
 
 [[path]]
 id = "edit.motion.history"
-name = "motion history"
-description = "Commands that repeat some kind of motion"
 
 [[bind]]
 path = "edit.motion.history"
@@ -761,8 +746,6 @@ command = "workbench.action.navigateForwardInEditLocations"
 
 [[path]]
 id = "edit.motion.search"
-name = "Search Related Motions"
-description = "Motions related to searching for text in a document"
 default.command = "master-key.search"
 default.args.caseSensitive = false
 default.args.backwards = false
@@ -1160,13 +1143,9 @@ args.commands = ["jupyter.gotoPrevCellInFile", "jupyter.selectCell"]
 
 [[path]]
 id = "edit.motion.match"
-name = "Matching Motions"
-description = "Motions that match some range of characters"
 
 [[path]]
 id = "edit.motion.match.obj"
-name = "Matching Object Motions"
-description = "Motions that match some range of characters by predefined regex"
 default.command = "selection-utilities.moveBy"
 default.kind = "motion"
 default.args.selectWhole = true
@@ -1368,10 +1347,6 @@ computedArgs.value = "count || 1"
 
 [[path]]
 id = "edit.motion.match.syntax"
-name = "Motions around syntactic objects (e.g. parentheses and quotes)"
-description = """
-selection commands that move by a predefined syntactic object like brackets and quotes
-"""
 
 [[bind]]
 path = "edit.motion.match.syntax"
@@ -1482,8 +1457,6 @@ command = "vscode-select-by-indent.select-outer-top-only"
 
 [[path]]
 id = "edit.motion.match.cell"
-name = "Matching Object Motions"
-description = "Motions that match some range of characters by predefined regex"
 
 [[bind]]
 path = "edit.motion.match.cell"
@@ -1494,8 +1467,6 @@ command = "jupyter.selectCell"
 
 [[path]]
 id = "edit.motion.searchpair"
-name = "Search pairs"
-description = "Find text that falls between pairs of characters"
 
 [[bind]]
 path = "edit.motion.searchpair"
@@ -1552,15 +1523,11 @@ args.inclusive = false
 
 [[path]]
 id = "edit.action"
-name = "Actions"
-description = "Commands that modify the document or UI"
 default.kind = "action"
 default.mode = "normal"
 
 [[path]]
 id = "edit.action.basic"
-name = "Basic Actions"
-description = "Essential actions required to edit text"
 
 [[bind]]
 path = "edit.action.basic"
@@ -1708,8 +1675,6 @@ command = "master-key.insertChar"
 
 [[path]]
 id = "edit.action.clipboard"
-name = "Clipboard Operations"
-description = "Operations that manipulate the clipboard in some way."
 
 [[bind]]
 path = "edit.action.clipboard"
@@ -1897,17 +1862,9 @@ args.commands = [
 
 [[path]]
 id = "edit.action.open_lines"
-name = "Line opening actions"
-description = """
-These commands provides several ways of adding lines above or below the current line
-"""
 
 [[path]]
 id = "edit.action.indent"
-name = "Indentation"
-description = """
-Operations that affect line indentation
-"""
 
 [[bind]]
 path = "edit.action.indent"
@@ -1951,8 +1908,6 @@ args.commands = [
 
 [[path]]
 id = "edit.action.history"
-name = "History Commands"
-description = "Commands that interact with edit or cursor history."
 
 # ## Number actions
 
@@ -1960,8 +1915,6 @@ description = "Commands that interact with edit or cursor history."
 
 [[path]]
 id = "edit.action.numbers"
-name = "Number Editing"
-description = "Commands that modify one or more numbers"
 
 [[bind]]
 path = "edit.action.numbers"
@@ -1983,8 +1936,6 @@ command = "selection-utilities.decrementNumber"
 
 [[path]]
 id = "edit.action.capitals"
-name = "Capitlization Actions"
-description = "Actions that change how words are capitalized"
 default.mode = ["normal", "selectedit"]
 
 [[bind]]
@@ -2091,8 +2042,6 @@ command = "extension.changeCase.upperFirst"
 
 [[path]]
 id = "edit.action.do"
-name = "'Do' actions"
-description = "Additional actions organized under the `'` (or 'do') prefix."
 default.mode = "normal"
 
 [[bind]]
@@ -2244,8 +2193,6 @@ command = "editor.action.formatDocument"
 
 [[path]]
 id = "edit.action.brackets"
-name = 'Bracket/Quote Editing'
-description = "Commands that edit two matching brackets or quotes."
 
 [[bind]]
 path = "edit.action.do"
@@ -2291,10 +2238,6 @@ command = "bracketeer.swapQuotes"
 
 [[path]]
 id = "edit.action.comment"
-name = "Comments"
-description = """
-Operations that modify comments
-"""
 
 [[bind]]
 path = "edit.action.do"
@@ -2590,8 +2533,6 @@ command = "gitlens.gitCommands"
 
 [[path]]
 id = "util"
-name = "assorted misecellaneous commands"
-default.kind = "util"
 when = "editorTextFocus && !findWidgetVisible"
 
 [[bind]]
@@ -2770,8 +2711,6 @@ command = "workbench.action.editor.previousChange"
 
 [[path]]
 id = "window"
-name = "Window Manipulation"
-description = "Commands for navigating and manipulating the window/editor panes in some way"
 default.kind = "util"
 default.mode = "normal"
 when = "editorTextFocus && !findWidgetVisible"
@@ -3015,8 +2954,6 @@ command = "workbench.action.debug.stepOut"
 
 [[path]]
 id = "edit.select_edit"
-name = "Selection Editing"
-description = "Various kakaune inspired commands for editing multiple selections"
 default.mode = "selectedit"
 default.kind = "motion"
 
@@ -3396,15 +3333,11 @@ args.followCursor = true
 
 [[path]]
 id = "edit.action.symmetric"
-name = "Symmetric Operations"
-description = "Operations that occur at both ends of a selection"
 default.kind = "action"
 default.mode = "syminsert"
 
 [[path]]
 id = "edit.motion.symmetric"
-name = "Symmetric Motions"
-description = "Motions that occur at both ends of a selection"
 default.kind = "motion"
 default.mode = "syminsert"
 
@@ -3432,10 +3365,10 @@ mode = "syminsert"
 
 [[bind]]
 path = "edit.action.symmetric"
-foreach.key = ["{key: [a-z]}", "shift+{key: [a-z]}"]
+foreach.key = ["{{key: [a-z]}}", "shift+{{key: [a-z]}}"]
 name = ""
 description = "this key is ignored and has no associated command in syminsert mode"
-key = "{key}"
+key = "{{key}}"
 command = "master-key.ignore"
 mode = "syminsert"
 hideInDocs = true
