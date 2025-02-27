@@ -1,0 +1,107 @@
+[header]
+version = "0.2.0"
+
+[[comment]]
+extension = "*.md"
+start = '<!--\s*START_DOCS\s*-->'
+each_line = '<!--(.*)-->' # some lines will, and some lines wont' have this
+stop = '<!--\s*STOP_DOCS\s*-->'
+
+[[template.all]]
+tags = ["bindingField"]
+file = ".vitepress/bindings.mjs"
+output = """
+export const bindingItems = [
+    {{#items}}
+    { text: '{{bindingField}}', link: '/bindings/{{bindingField}}' },
+    {{/items}}
+]
+"""
+
+[[template.all]]
+tags = ["bindingField", "description"]
+file = "bindings/index.md"
+order = 5
+output = """
+{{#items}}
+- [`{{bindingField}}`](/bindings/{{bindingField}}.md): {{description}}
+{{/items}}
+"""
+
+[[template.all]]
+tags = ["userCommand"]
+file = ".vitepress/commands.mjs"
+output = """
+export const userCommandItems = [
+    {{#items}}
+    { text: '{{userCommand}}', link: '/commands/index#user-commands' },
+    {{/items}}
+]
+"""
+
+[[template.all]]
+tags = ["command"]
+file = ".vitepress/commands.mjs"
+output = """
+export const commandItems = [
+    {{#items}}
+    { text: '{{command}}', link: '/commands/{{command}}.md' },
+    {{/items}}
+]
+"""
+
+[[template.all]]
+tags = ["userCommand", "name"]
+file = "commands/index.md"
+output = """
+## User Commands
+
+User commands take no arguments and generally interact with the user-interface of VSCode.
+
+{{#items}}
+- `Master Key: {{name}}` (`master-key.{{userCommand}}`) — {{{__body__}}}
+{{/items}}
+"""
+
+[[template.all]]
+tags = ["command"]
+file = "commands/index.md"
+output = """
+## Keybinding Commands
+
+Keybinding commands usually have at least one argument and are expected to primarily be
+used when defining keybindings in a [master keybinding TOML file](/bindings).
+
+{{#items}}
+{{#section}}
+
+### {{.}}
+
+{{/section}}
+- [`master-key.{{command}}`](/commands/{{command}}.md)
+{{/items}}
+"""
+
+[[template.foreach]]
+tags = ["command"]
+file = "commands/{{command}}.md"
+output = """
+# `master-key.{{command}}`
+
+{{{__body__}}}
+"""
+
+[[template.foreach]]
+tags = ["bindingField", "description"]
+file = "bindings/{{bindingField}}.md"
+output = """
+
+# Binding Field `{{bindingField}}`
+
+{{{__body__}}}
+"""
+
+[[template.foreach]]
+tags = ["forBindingField"]
+file = "bindings/{{forBindingField}}.md"
+output = "{{{__body__}}}"

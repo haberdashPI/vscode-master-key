@@ -1,24 +1,13 @@
-## Getting Started
+<!-- START_DOCS -->
+<!-- @file guide.md -->
+<!-- @order 2 -->
 
-<!-- TODO: inject text from readme here rather than copy/pasting -->
-The easiest way to get started is to activate the built-in keybindings that come with Master Key.
-
-1. [Install the extension](https://marketplace.visualstudio.com/items?itemName=haberdashPI.master-key)
-2. On windows only: restart VSCode — there is an [active investigation to avoid this workaround](https://github.com/haberdashPI/vscode-master-key/issues/51).
-3. Run the command `Master Key: Activate Keybindings`
-4. Select the built-in binding set "Larkin"
-
-You can revert these changes later using `Master Key: Deactivate Keybindings`.
-
-This will automatically open documentation for the Larkin keybindings. This is where you should go to learn how to use this specific keybinding set.
-
-## Customizing Bindings
+## Keybinding Customization
 
 There are two ways to start customizing bindings:
 
 - Review the built-in `Larkin` presets: run the command `Master Key: New Keybinding Copy` to start editing a copy of this preset. This is a toml file which has comments throughout.
 - Review the [binding file format](/bindings/index) and [command documentation](/commands/index)
-<!-- TODO: Insert link here -->
 
 Once you've identified the bindings you'd like to create you can add these bindings in one of two ways:
 
@@ -26,7 +15,10 @@ Once you've identified the bindings you'd like to create you can add these bindi
 2. Create your own binding set
 
 > [!WARNING]
-> Because the error reporting for master keybinding files is not yet very precise, it is recommended that you edit bindings incrementally (e.g. by slowly creating new bindings or by slowly uncommenting an entire binding set you have imported). In this way you can ensure that the changes you've made can be properly activated by Mater Key. Improved error reporting for these binding files will be available in a future release of Master Key.
+> Because the error reporting for master keybinding files is not yet very precise, it is recommended that you edit bindings incrementally, testing them out as you go (e.g. by slowly creating new bindings or by slowly uncommenting an entire binding set you have imported). This will ensure that the changes you've made can be properly activated by Master Key. Improved error reporting is on the [roadmap](#roadmap)
+
+> [!NOTE]
+> The documentation covers version 2.0 of the master key binding format, created for version 0.4 of master key. A legacy definition of the bindings, created for version 0.3.0 (version 1.0) of the keybindings, is still supported, but might not benefit from future enhancements to master key. You can learn how to upgrade the keybinding format by reviewing https://github.com/haberdashPI/vscode-master-key/pull/70
 
 ### Add User Bindings
 
@@ -53,9 +45,7 @@ You can define your own preset. The steps are:
 
 Master Key is quite stable for everyday use, but it remains a work in progress.
 
-- Initial publish to VSCode here: 0.3.0
-- 0.3.x: improved code coverage, stability improvements
-- Release 0.4.x: documentation of all keybinding commands. May introduce breaking changes to improve API clarity for these bindings.
+- Release 0.4.x (you are here): documentation of all keybinding commands complete.
 - Release 0.4.y: more precise binding error report: use VSCode language server features to
   get detailed line and character error indicators for binding-file problems
 - Release 0.4.z: source code documentation — may involve substantial refactor to improve legibility / clarity of code
@@ -88,3 +78,5 @@ And of course, there are many existing editors that Master Key draws inspiration
 - [emacs](https://www.gnu.org/software/emacs/)
 - [kakoune](https://github.com/mawww/kakoune)
 - [helix](https://helix-editor.com/)
+
+<!-- STOP_DOCS -->

@@ -635,11 +635,6 @@ async function selectUserBindings(file?: vscode.Uri) {
     }
 }
 
-// TODO: we also evenutally want to have a way to customize presets
-// replacementout having to modify it (for small tweaks)
-// TODO: we want to be able to export a preset to a file
-// TODO: we should be able to delete user defined presets
-
 interface Preset {
     uri: vscode.Uri;
     data: string;
@@ -698,36 +693,85 @@ export async function activate(context: vscode.ExtensionContext) {
     updateConfig(undefined, false);
     vscode.workspace.onDidChangeConfiguration(updateConfig);
 
+    // TODO: add all user bindings
+    /**
+     * @userCommand activateBindings
+     * @name Activate Keybindings
+     *
+     * Insert your master key bindings into VSCode, making them active
+     */
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.activateBindings', activateBindings)
     );
+    /**
+     * @userCommand deactivateBindings
+     * @name Deactivate Keybindings
+     *
+     * Remove your master key bindings from VSCode
+     */
+    context.subscriptions.push(
+        vscode.commands.registerCommand('master-key.deactivateBindings', removeKeybindings)
+    );
+    /**
+     * @userCommand selectUserBindings
+     * @name Activate User Keybindings
+     *
+     * Select a set of user specified bindings, to append to your master key bindings
+     */
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.selectUserBindings', selectUserBindings)
     );
+    /**
+     * @userCommand removeUserBindings
+     * @name Deactivate User Keybindings
+     *
+     * Remove user specified bindings from your master key bindings
+     */
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.removeUserBindings', deleteUserBindings)
     );
+    /**
+     * @userCommand editPreset
+     * @name New Keybinding Copy
+     *
+     * Edit a new copy of a given master keybinding preset.
+     */
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.editPreset', copyBindingsToNewFile)
     );
+    /**
+     * @userCommand importUserBindings
+     * @name Import User Bindings
+     *
+     * Import user bindings from VSCode's global keybindings file (`keybindings.json`)
+     */
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.importUserBindings', () =>
             copyCommandResultIntoBindingFile('workbench.action.openGlobalKeybindingsFile')
         )
     );
+    /**
+     * @userCommand importDefaultBindings
+     * @name Import Default Bindings
+     *
+     * Import default bindings from VSCode's default keybindings file
+     */
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.importDefaultBindings', () =>
             copyCommandResultIntoBindingFile('workbench.action.openDefaultKeybindingsFile')
         )
     );
+    /**
+     * @userCommand installRequiredExtensions
+     * @name Install Extensions Required by Keybindings
+     *
+     * Install extensions required by your keybindings, as defined in the `requiredExtensions` field.
+     */
     context.subscriptions.push(
         vscode.commands.registerCommand(
             'master-key.installRequiredExtensions',
             handleRequireExtensions
         )
-    );
-    context.subscriptions.push(
-        vscode.commands.registerCommand('master-key.deactivateBindings', removeKeybindings)
     );
 
     console.log('presetdir: ' + Utils.joinPath(context.extensionUri, 'presets').toString());

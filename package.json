@@ -33,6 +33,11 @@
         "title": "Activate User Keybindings"
       },
       {
+        "command": "master-key.removeUserBindings",
+        "category": "Master Key",
+        "title": "Deactivate User Keybindings"
+      },
+      {
         "command": "master-key.commandSuggestions",
         "category": "Master Key",
         "title": "Key Suggestions..."
@@ -70,7 +75,7 @@
       {
         "command": "master-key.deactivateBindings",
         "category": "Master Key",
-        "title": "Deactivate Master Keybindings"
+        "title": "Deactivate Keybindings"
       },
       {
         "command": "master-key.installKeybindingExtensions",
@@ -228,8 +233,11 @@
     "ci": "npm run coverage",
     "clean": "gts clean",
     "fix": "gts fix",
+    "predocs:dev": "simple-src-docs -d docs src docs/templates README.md",
     "docs:dev": "vitepress dev docs",
+    "predocs:build": "simple-src-docs -d docs src",
     "docs:build": "vitepress build docs",
+    "predocs:preview": "simple-src-docs -d docs src",
     "docs:preview": "vitepress preview docs"
   },
   "devDependencies": {
