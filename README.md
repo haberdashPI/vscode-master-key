@@ -12,12 +12,14 @@ Master key helps you to learn, create and use powerful keybindings in [VSCode](h
 If you want to improve your text editing super powers in VSCode, Master Key might just be the tool for you.
 
 > [!NOTE]
-> To power users: Master Key was envisioned as a set of tools to make it easy to create powerful keybinding specifications that match your editor style of choice (modal, chorded, etc...). This goal remains a work in progress, and you are encouraged to review the limitations noted in [Keybinding Features](#keybinding-features) and [Customized Bindings](haberdashpi.github.io/vscode-master-key/guide.html#customizing-bindings).
+> To power users: Master Key was envisioned as a set of tools to make it easy to create powerful keybinding specifications that match your editor style of choice (modal, chorded, etc...). There are a few limitations, noted in [Keybinding Features](#keybinding-features) and [Customized Bindings](haberdashpi.github.io/vscode-master-key/guide.html#customizing-bindings).
+
+<!-- text between START_/STOP_ comments is extracted and inserted into the docs -->
+<!-- START_DOCS -->
+<!-- @file guide.md -->
+<!-- @order 1 -->
 
 ## Getting Started
-
-<!-- text between _BEGIN/_END comments is extracted and inserted into the docs -->
-<!-- GETTING_STARTED_BEGIN -->
 
 The easiest way to get started is to activate the built-in keybindings that come with Master Key.
 
@@ -26,11 +28,11 @@ The easiest way to get started is to activate the built-in keybindings that come
 3. Run the command `Master Key: Activate Keybindings`
 4. Select the built-in binding set "Larkin"
 
-<!-- GETTING_STARTED_END -->
+<!-- STOP_DOCS -->
 
 You can revert these changes later using `Master Key: Deactivate Keybindings`.
 
-To modify or create your own bindings [read the documentation](haberdashpi.github.io/vscode-master-key).
+To learn more about how to use Master Key [read the documentation](haberdashpi.github.io/vscode-master-key).
 
 ## Feature Highlights
 
@@ -38,7 +40,7 @@ Master key has quite of a few features, including:
 
 - **Keybinding Discoverability**: Bindings show up on a keyboard visualization. Binding files are literate TOML that is converted into markdown documentation. Multi-key sequences reveal a popup list of suggested keybinding completions (ala Kakaune / Helix / LazyVim).
 - **Record and repeat commands**: Record sequences of commands and parametrically select which ones to replay.
-- **Rich, parametric keybinding specification**: Modal bindings, simple `foreach` expressions, parametric type-event interception, expression evaluation in command arguments, simple state management.
+- **Rich, parametric keybinding specification**: Modal bindings, simple `foreach` expressions, per-mode onType events, expression evaluation, cross-command state management
 
 ## Feature Tour
 
@@ -153,11 +155,11 @@ Express an entire series of bindings using the `foreach` field.
 ```toml
 [[bind]]
 path = "edit.count"
-foreach.num = ['{key: [0-9]}']
-name = "count {num}"
-key = "{num}"
+foreach.num = ['{{key: [0-9]}}']
+name = "count {{num}}"
+key = "{{num}}"
 command = "master-key.updateCount"
-args.value = "{num}"
+args.value = "{{num}}"
 ```
 
 ### Stateful Bindings

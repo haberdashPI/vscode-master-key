@@ -27,9 +27,9 @@ features:
         Record sequences of commands and parametrically select which ones to replay.
     - title: Rich, parametric keybinding specification
       details: >
-        Modal bindings, simple `foreach` expressions, parametric type-event interception, expression evaluation in command arguments, simple state management.
+        Modal bindings, simple `foreach` expressions, per-mode onType events, expression evaluation, cross-command state management
 ---
 
 <!-- TODO: image? -->
 
-Master Key was envisioned as a set of tools to make it easy to create powerful keybinding specifications that match your editor style of choice (modal, chorded, etc...). This goal remains a work in progress, and you are encouraged to review the limitations noted in [Customized Bindings](guide#customizing-bindings).
+Master Key was envisioned as a set of tools to make it easy to create powerful keybinding specifications that match your editor style of choice (modal, chorded, etc...). There are extensive options for [customizing your bindings](guide#customizing-bindings).

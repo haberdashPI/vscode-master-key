@@ -1,10 +1,14 @@
 import { defineConfig } from 'vitepress'
+import { commandItems, userCommandItems } from './commands.mjs' // auto generated file (see .simple-src-docs.config.toml)
+import { bindingItems } from './bindings.mjs' // auto generated file (see .simple-src-docs.config.toml)
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
     title: "Master Key",
     description: "Powerful VSCode Keybinding Customization",
     themeConfig: {
+        search: { provider: 'local' },
+        logo: '../../logo.png',
         // https://vitepress.dev/reference/default-theme-config
         nav: [
             { text: 'User Guide', link: '/guide' },
@@ -19,18 +23,43 @@ export default defineConfig({
                 text: 'Keybindings',
                 items: [
                     { text: 'Overview', link: '/bindings' },
-                    { text: 'Header`', link: '/bindings/header' },
-                    { text: 'Bind', link: '/bindings/bind' },
-                    { text: 'Mode', link: '/bindings/mode' },
-                    { text: 'Default', link: '/bindings/default' },
-                    { text: 'Kind', link: '/bindings/kind' },
+                    ...bindingItems
                 ]
             },
-            { text: 'Commands', link: '/commands' }
+            {
+                text: 'Commands' ,
+                items: [
+                    { text: 'Overview', link: '/commands' },
+                    {
+                        text: 'User Commands',
+                        items: userCommandItems.sort((a, b) => {
+                            if(a.text < b.text) {
+                                return -1;
+                            } else if(a.text == b.text) {
+                                return 0;
+                            } else {
+                                return 1;
+                            }
+                        })
+                    },
+                    {
+                        text: 'Keybinding Commands',
+                        items: commandItems.sort((a, b) => {
+                            if(a.text < b.text) {
+                                return -1;
+                            } else if(a.text == b.text) {
+                                return 0;
+                            } else {
+                                return 1;
+                            }
+                        })
+                    }
+                ]
+            }
         ],
 
         socialLinks: [
-            { icon: 'github', link: 'https://github.com/vuejs/vitepress' }
+            { icon: 'github', link: 'https://github.com/haberdashPI/vscode-master-key' }
         ]
     }
 })
