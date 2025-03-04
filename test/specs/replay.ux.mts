@@ -93,7 +93,7 @@ describe('Replay', () => {
             name = "count {num}"
             command = "master-key.updateCount"
             args.value = "{num}"
-            resetTransient = false
+            finalKey = false
 
             [[bind]]
             name = "insert"
@@ -233,7 +233,7 @@ describe('Replay', () => {
             name = "count 2"
             command = "master-key.updateCount"
             args.value = "2"
-            resetTransient = false
+            finalKey = false
         `);
         editor = await setupEditor(`a b c d
 e f g h

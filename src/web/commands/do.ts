@@ -77,7 +77,7 @@ export const runCommandsArgs = z
     .object({
         do: doArgs,
         key: z.string().optional(),
-        resetTransient: z.boolean().optional().default(true),
+        finalKey: z.boolean().optional().default(true),
         repeat: z.number().min(0).or(z.string()).optional(),
         hideInPalette: z.boolean().default(false).optional(),
         hideInDocs: z.boolean().default(false).optional(),
@@ -159,7 +159,7 @@ export async function doCommands(args: RunCommandsArgs): Promise<CommandResult> 
                 }
             }
         }
-        if (!args.resetTransient && paletteDelay > 0) {
+        if (!args.finalKey && paletteDelay > 0) {
             const currentPaletteUpdate = paletteUpdate;
             setTimeout(async () => {
                 if (currentPaletteUpdate === paletteUpdate) {
@@ -169,7 +169,7 @@ export async function doCommands(args: RunCommandsArgs): Promise<CommandResult> 
             }, paletteDelay);
         }
     } finally {
-        if (args.resetTransient) {
+        if (args.finalKey) {
             // this will be immediately cleared by `reset` but
             // its display will persist in the status bar for a little bit
             // (see `status/keyseq.ts`)

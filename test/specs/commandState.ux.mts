@@ -73,7 +73,7 @@ describe('Command State', () => {
             mode = ["left", "default"]
             command = "master-key.prefix"
             args.flag = "select_on"
-            resetTransient = false
+            finalKey = false
 
             [[path]]
             id = "word"

@@ -252,7 +252,7 @@ export const rawBindingItem = z
                 bindingKey.or(z.string().length(0)).array()
             )
             .optional(),
-        resetTransient: z.boolean().optional(),
+        finalKey: z.boolean().optional(),
         repeat: z.number().min(0).or(z.string()).default(0).optional(),
     })
     .merge(rawBindingCommand)
@@ -303,7 +303,7 @@ export const bindingItem = z
                 combinedName: z.string().optional().default(''),
                 combinedKey: z.string().optional().default(''),
                 combinedDescription: z.string().optional().default(''),
-                resetTransient: rawBindingItem.shape.resetTransient,
+                finalKey: rawBindingItem.shape.finalKey,
                 kind: z.string().optional().default(''),
                 repeat: z.number().min(0).or(z.string()).default(0),
             })
@@ -448,7 +448,7 @@ export interface IConfigKeyBinding {
         key: string; // repeated here so that commands can display the key pressed
         name?: string;
         description?: string;
-        resetTransient?: boolean;
+        finalKey?: boolean;
         hideInPalette?: boolean;
         hideInDocs?: boolean;
         priority: number;

@@ -81,7 +81,7 @@ describe('Palette', () => {
             [[bind]]
             name = "show palette"
             key = "shift+;"
-            resetTransient = false
+            finalKey = false
             hideInPalette = true
             prefixes = []
             when = "editorTextFocus"
@@ -211,7 +211,7 @@ describe('Palette', () => {
             [[bind]]
             name = "show palette"
             key = "shift+;"
-            resetTransient = false
+            finalKey = false
             hideInPalette = true
             prefixes = []
             mode = "normal"
