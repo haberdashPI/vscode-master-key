@@ -113,7 +113,7 @@ describe('Simple Motions', () => {
             #- uses the new layout independent keys in the '{key: regex}'
             #- field
             args.value = "{num.slice(6,7)}"
-            resetTransient = false
+            finalKey = false
         `);
         editor =
             await setupEditor(`Anim reprehenderit voluptate magna excepteur dolore aliqua minim labore est

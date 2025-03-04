@@ -220,7 +220,7 @@ function expandDefaultsDefinedAndForeach(
                             combinedKey: item.combinedKey,
                             combinedDescription: item.combinedDescription,
                             kind: item.kind,
-                            resetTransient: item.resetTransient,
+                            finalKey: item.finalKey,
                             repeat: item.repeat,
                         },
                     });
@@ -289,17 +289,17 @@ function resolveDocItems(
 
 function requireTransientSequence(item: BindingItem, i: number, problems: string[]) {
     if (item.args.do.some(c => c.command === 'master-key.prefix')) {
-        if (item.args.resetTransient === undefined) {
-            item.args.resetTransient = false;
-        } else if (item.args.resetTransient === true) {
+        if (item.args.finalKey === undefined) {
+            item.args.finalKey = false;
+        } else if (item.args.finalKey === true) {
             problems.push(
-                `Item ${i} with name ${item.args.name}: 'resetTransient' must be ` +
+                `Item ${i} with name ${item.args.name}: 'finalKey' must be ` +
                     "false for a command that calls 'master-key.prefix'"
             );
         }
     } else {
-        if (item.args.resetTransient === undefined) {
-            item.args.resetTransient = true;
+        if (item.args.finalKey === undefined) {
+            item.args.finalKey = true;
         }
     }
 
@@ -626,7 +626,7 @@ function updatePrefixItemAndPrefix(
                 combinedName: '',
                 combinedKey: '',
                 combinedDescription: '',
-                resetTransient: false,
+                finalKey: false,
                 repeat: 0,
             },
             when: item.when,
@@ -660,7 +660,7 @@ function updatePrefixItemAndPrefix(
                 combinedName: item.args.combinedName,
                 combinedKey: item.args.combinedKey,
                 combinedDescription: item.args.combinedDescription,
-                resetTransient: item.args.resetTransient,
+                finalKey: item.args.finalKey,
                 repeat: 0,
             },
             when: item.when,

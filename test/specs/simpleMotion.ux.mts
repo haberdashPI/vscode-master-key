@@ -106,7 +106,7 @@ describe('Simple Motions', () => {
             name = "count {num}"
             command = "master-key.updateCount"
             args.value = "{num}"
-            resetTransient = false
+            finalKey = false
         `);
         editor =
             await setupEditor(`Anim reprehenderit voluptate magna excepteur dolore aliqua minim labore est

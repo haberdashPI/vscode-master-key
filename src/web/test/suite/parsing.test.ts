@@ -322,9 +322,9 @@ suite('Keybinding Test Suite', async () => {
         key = "k"
         kind = "all"
         command = "master-key.prefix"
-        resetTransient = true
+        finalKey = true
         `),
-            {message: /'resetTransient' must be false/}
+            {message: /'finalKey' must be false/}
         );
 
         const spec = await specForBindings(`
@@ -350,8 +350,8 @@ suite('Keybinding Test Suite', async () => {
         command = "bob"
         `);
         assert.equal(spec.length, 2);
-        assert(!spec[0].args.resetTransient);
-        assert(spec[1].args.resetTransient);
+        assert(!spec[0].args.finalKey);
+        assert(spec[1].args.finalKey);
     });
 
     test('Checks for duplicate bindings', async () => {
