@@ -119,7 +119,7 @@ key = "shift+;"
 name = "suggest"
 finalKey = false
 hideInPalette = true
-prefixes = []
+prefixes = "<all-prefixes>"
 mode = ["!capture", "!insert"]
 description = """
 show command suggestions within the context of the current mode and keybinding prefix (if any). E.g. `TAB, ⇧;` in `normal` mode will show all `normal` command suggestions that start with `TAB`.
@@ -2409,7 +2409,7 @@ Nth most recent item on this stack.
 key = "q s"
 command = "master-key.storeNamed"
 args.description = "Save Macro"
-args.name = "macro"
+args.register = "macro"
 args.contents = "macro[macro.length-(count || 0)-1]"
 
 [[bind]]
@@ -2425,7 +2425,7 @@ command = "runCommands"
 [[bind.args.commands]]
 command = "master-key.restoreNamed"
 args.description = "Macro"
-args.name = "macro"
+args.register = "macro"
 
 [[bind.args.commands]]
 command = "master-key.pushHistoryToStack"
