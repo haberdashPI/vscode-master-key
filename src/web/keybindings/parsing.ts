@@ -195,7 +195,7 @@ const bindingKey = z
 
 // function prefixError(arg: string) {
 //     return {
-//         message: `Expected either an array of kebydinings or the string '<all-prefixes>',
+//         message: `Expected either an array of kebydinings or the string '{{all_prefixes}}',
 //         but got '${arg}' instead`,
 //     };
 // }
@@ -248,7 +248,7 @@ export const rawBindingItem = z
         mode: z.union([z.string(), z.string().array()]).optional(),
         prefixes: z
             .preprocess(
-                x => (x === '<all-prefixes>' ? [] : x),
+                x => (x === '{{all_prefixes}}' ? [] : x),
                 bindingKey.or(z.string().length(0)).array()
             )
             .optional(),

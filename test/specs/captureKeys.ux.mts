@@ -25,7 +25,7 @@ describe('Search motion command', () => {
             key = "escape"
             mode = []
             command = "master-key.enterNormal"
-            prefixes = "<all-prefixes>"
+            prefixes = "{{all_prefixes}}"
 
             [[path]]
             name = "capture"

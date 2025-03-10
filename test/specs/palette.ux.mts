@@ -32,7 +32,7 @@ describe('Palette', () => {
             name = "normal mode"
             key = "escape"
             command = "master-key.enterNormal"
-            prefixes = "<all-prefixes>"
+            prefixes = "{{all_prefixes}}"
             hideInPalette = true
 
             [[path]]
@@ -179,7 +179,7 @@ describe('Palette', () => {
             name = "normal mode"
             key = "escape"
             command = "master-key.enterNormal"
-            prefixes = "<all-prefixes>"
+            prefixes = "{{all_prefixes}}"
             hideInPalette = true
 
             [[path]]
