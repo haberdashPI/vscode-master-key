@@ -562,7 +562,7 @@ suite('Keybinding Test Suite', async () => {
         [[bind]]
         name = "1"
         key = "escape"
-        prefixes = "<all-prefixes>"
+        prefixes = "{{all_prefixes}}"
         command = "enterNormal"
         `);
         assert.equal(spec.length, 1);

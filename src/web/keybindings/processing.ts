@@ -679,7 +679,7 @@ function requireConcretePrefixes(item: BindingItem, problems: string[]) {
               ? item.mode
               : item.mode.join(', ');
         problems.push(`Key binding '${item.key}' for mode
-            '${modes}' is a prefix command; it cannot use '<all-prefixes>'.`);
+            '${modes}' is a prefix command; it cannot use '{{all_prefixes}}'.`);
     }
 }
 

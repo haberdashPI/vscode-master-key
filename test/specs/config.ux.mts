@@ -39,7 +39,7 @@ describe('Configuration', () => {
             key = "escape"
             mode = []
             command = "master-key.enterNormal"
-            prefixes = "<all-prefixes>"
+            prefixes = "{{all_prefixes}}"
 
             [[path]]
             id = "motion"

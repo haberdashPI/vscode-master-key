@@ -33,7 +33,7 @@ describe('Simple Motions', () => {
             name = "normal mode"
             key = "escape"
             command = "master-key.enterNormal"
-            prefixes = "<all-prefixes>"
+            prefixes = "{{all_prefixes}}"
 
             [[path]]
             id = "motion"

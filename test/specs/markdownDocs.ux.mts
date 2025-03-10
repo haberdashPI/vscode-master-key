@@ -38,7 +38,7 @@ describe('Binding Docs', () => {
             name = "normal mode"
             key = "escape"
             command = "master-key.enterNormal"
-            prefixes = "<all-prefixes>"
+            prefixes = "{{all_prefixes}}"
             hideInPalette = true
 
             [[path]]
