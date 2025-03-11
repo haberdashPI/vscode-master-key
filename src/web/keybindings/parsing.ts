@@ -315,9 +315,16 @@ export type BindingItem = z.output<typeof bindingItem>;
 
 export const bindingDefault = z.object({
     // TODO: change from an empty `id` defaults, to fields at the top level in the header
+    /**
+     * @forBindingField default
+     * - `id` is a period-delimited set of identifiers that describe this default; each
+     *   identifier can include letters, numbers as well as `_` and `-`.
+     */
     id: z.string().regex(/(^$|[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)*)/),
-    name: z.string(),
-    description: z.string().optional(),
+    /**
+     * @forBindingField default
+     * - `name
+     */
     default: rawBindingItem.partial().optional(),
     appendWhen: z
         .string()

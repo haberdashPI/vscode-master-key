@@ -75,20 +75,20 @@ describe('Command State', () => {
             args.flag = "select_on"
             finalKey = false
 
-            [[path]]
+            [[default]]
             id = "word"
             name = "word"
             default.prefixes = ["", "ctrl+l"]
 
             [[bind]]
-            path = "word"
+            defaults = "word"
             name = "word motion"
             key = "ctrl+shift+w"
             when = "!master-key.select_on"
             command = "cursorWordEndRight"
 
             [[bind]]
-            path = "word"
+            defaults = "word"
             name = "word motion"
             key = "ctrl+shift+w"
             when = "!master-key.select_on"
@@ -96,7 +96,7 @@ describe('Command State', () => {
             command = "cursorWordLeft"
 
             [[bind]]
-            path = "word"
+            defaults = "word"
             key = "ctrl+shift+w"
             when = "master-key.select_on"
             command = "cursorWordEndRightSelect"
@@ -129,12 +129,12 @@ describe('Command State', () => {
             args.register = "operation"
 
             [[bind]]
-            path = "word"
+            defaults = "word"
             key = "ctrl+h ctrl+shift+w"
             command = "notACommand"
 
             [[bind]]
-            path = "word"
+            defaults = "word"
             key = "ctrl+shift+w"
             mode = "left"
             when = "master-key.select_on"

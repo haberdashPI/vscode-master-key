@@ -40,7 +40,7 @@ describe('Search motion command', () => {
             mode = "normal"
             command = "master-key.enterInsert"
 
-            [[path]]
+            [[default]]
             name = "search"
             id = "search"
             default.mode = "normal"
@@ -49,12 +49,12 @@ describe('Search motion command', () => {
             [[bind]]
             name = "search"
             key = "/"
-            path = "search"
+            defaults = "search"
 
             [[bind]]
             name = "search backwards"
             key = "shift+/"
-            path = "search"
+            defaults = "search"
             args.backwards = true
 
             [[bind]]
@@ -72,80 +72,80 @@ describe('Search motion command', () => {
             [[bind]]
             name = "search (case sensitive)"
             key = "ctrl+/"
-            path = "search"
+            defaults = "search"
             args.caseSensitive = true
 
             [[bind]]
             name = "search (case sensitive)"
             key = "w /"
-            path = "search"
+            defaults = "search"
             args.wrapAround = true
 
             [[bind]]
             name = "to letter"
             key = "t"
-            path = "search"
+            defaults = "search"
             args.acceptAfter = 1
 
             [[bind]]
             name = "to letter"
             key = "shift+t"
-            path = "search"
+            defaults = "search"
             args.acceptAfter = 2
 
             [[bind]]
             name = "select search"
             key = "s /"
-            path = "search"
+            defaults = "search"
             args.selectTillMatch = true
 
             [[bind]]
             name = "inclusive search"
             key = "i /"
-            path = "search"
+            defaults = "search"
             args.offset = "inclusive"
 
             [[bind]]
             name = "inclusive search"
             key = "a /"
-            path = "search"
+            defaults = "search"
             args.offset = "start"
 
             [[bind]]
             name = "inclusive search"
             key = "b /"
-            path = "search"
+            defaults = "search"
             args.offset = "end"
 
             [[bind]]
             name = "preset search"
             key = "p /"
-            path = "search"
+            defaults = "search"
             args.text = "point_"
 
             [[bind]]
             name = "regex search"
             key = "r /"
-            path = "search"
+            defaults = "search"
             args.regex = true
 
             [[bind]]
             name = "register search"
             key = "shift+r /"
-            path = "search"
+            defaults = "search"
             args.register = "other"
 
             [[bind]]
             name = "select word search"
             key = "e /"
-            path = "search"
+            defaults = "search"
             command = "runCommands"
             args.commands = ["master-key.search", "cursorWordEndRightSelect"]
 
             [[bind]]
             name = "skip search"
             key = "shift+2 /"
-            path = "search"
+            defaults = "search"
             args.skip = 1
         `);
         editor =

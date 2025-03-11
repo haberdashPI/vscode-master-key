@@ -27,7 +27,7 @@ describe('Search motion command', () => {
             command = "master-key.enterNormal"
             prefixes = "{{all_prefixes}}"
 
-            [[path]]
+            [[default]]
             name = "capture"
             id = "capture"
             default.mode = "normal"
@@ -35,7 +35,7 @@ describe('Search motion command', () => {
             [[bind]]
             name = "1"
             key = "t"
-            path = "capture"
+            defaults = "capture"
             command = "runCommands"
 
             [[bind.args.commands]]
@@ -49,7 +49,7 @@ describe('Search motion command', () => {
             [[bind]]
             name = "1"
             key = "f"
-            path = "capture"
+            defaults = "capture"
             command = "runCommands"
 
             [[bind.args.commands]]
@@ -64,13 +64,13 @@ describe('Search motion command', () => {
             [[bind]]
             name = "replace"
             key = "r"
-            path = "capture"
+            defaults = "capture"
             command = "master-key.replaceChar"
 
             [[bind]]
             name = "replace"
             key = "i"
-            path = "capture"
+            defaults = "capture"
             command = "master-key.insertChar"
         `);
         editor = await setupEditor('foobar bum POINT_A');

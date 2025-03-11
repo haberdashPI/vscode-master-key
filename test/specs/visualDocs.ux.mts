@@ -44,7 +44,7 @@ describe('Visual Docs', () => {
             prefixes = "{{all_prefixes}}"
             hideInPalette = true
 
-            [[path]]
+            [[default]]
             id = "motion"
             name = "basic motions"
             default.command = "cursorMove"
@@ -53,21 +53,21 @@ describe('Visual Docs', () => {
             default.computedArgs.value = "count"
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             name = "left"
             key = "h"
             args.to = "left"
             kind = "left"
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             name = "right"
             key = "l"
             args.to = "right"
             kind = "right"
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             name = "down"
             key = "j"
             args.to = "down"
@@ -78,14 +78,14 @@ describe('Visual Docs', () => {
             # Aliquip ipsum enim cupidatat aute occaecat magna nostrud qui labore.
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             name = "up"
             key = "k"
             args.to = "up"
             kind = "right"
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             name = "funny right"
             key = "w w"
             mode = "normal"
@@ -100,7 +100,7 @@ describe('Visual Docs', () => {
             kind = "right"
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             key = "ctrl+i"
             name = "magic insert"
             command = "foobar"
@@ -108,7 +108,7 @@ describe('Visual Docs', () => {
             kind = "right"
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             key = "ctrl+o"
             name = "magic outsert"
             command = "foobiz"
@@ -116,7 +116,7 @@ describe('Visual Docs', () => {
             kind = "right"
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             key = "alt+i"
             name = "evil insert"
             command = "die"

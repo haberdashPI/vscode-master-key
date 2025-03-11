@@ -35,7 +35,7 @@ describe('Simple Motions', () => {
             command = "master-key.enterNormal"
             prefixes = "{{all_prefixes}}"
 
-            [[path]]
+            [[default]]
             id = "motion"
             name = "basic motions"
             default.command = "cursorMove"
@@ -44,25 +44,25 @@ describe('Simple Motions', () => {
             default.computedArgs.value = "count"
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             name = "left"
             key = "[KeyH]"
             args.to = "left"
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             name = "right"
             key = "[KeyL]"
             args.to = "right"
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             name = "down"
             key = "[KeyJ]"
             args.to = "down"
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             name = "up"
             key = "[KeyK]"
             args.to = "up"
