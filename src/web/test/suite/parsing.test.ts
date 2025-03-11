@@ -88,7 +88,7 @@ suite('Keybinding Test Suite', async () => {
         name = "Foo"
         default.kind = "fookind"
         default.computedArgs.value = "count"
-        when = "baz > 0"
+        appendWhen = "baz > 0"
 
         [[default]]
         id = "foo.bar"

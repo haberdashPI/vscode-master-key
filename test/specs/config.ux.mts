@@ -41,7 +41,7 @@ describe('Configuration', () => {
             command = "master-key.enterNormal"
             prefixes = "{{all_prefixes}}"
 
-            [[path]]
+            [[default]]
             id = "motion"
             name = "basic motions"
             default.command = "cursorMove"
@@ -50,13 +50,13 @@ describe('Configuration', () => {
             default.computedArgs.value = "count"
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             name = "right"
             key = "ctrl+l"
             args.to = "right"
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             name = "double right"
             key = "ctrl+shift+l"
             args.to = "right"
@@ -79,7 +79,7 @@ describe('Configuration', () => {
             fallbackBindings = "normal"
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             key = "ctrl+h"
             mode = "normal-left"
             name = "left"
@@ -88,7 +88,7 @@ describe('Configuration', () => {
             args.to = "left"
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             name = "double left"
             mode = "normal-left"
             key = "ctrl+shift+l"
@@ -377,7 +377,7 @@ describe('Configuration', () => {
             command = "master-key.setMode"
             args.value = "b"
 
-            [[path]]
+            [[default]]
             id = "actions"
             name = "Actions"
             default.mode = ["a", "b"]
@@ -385,7 +385,7 @@ describe('Configuration', () => {
             default.args.select = false
 
             [[bind]]
-            path = "actions"
+            defaults = "actions"
             key = "ctrl+h"
             name = "x"
             command = "cursorMove"
@@ -393,7 +393,7 @@ describe('Configuration', () => {
             mode = ["a"]
 
             [[bind]]
-            path = "actions"
+            defaults = "actions"
             key = "ctrl+h"
             name = "x"
             command = "cursorMove"
