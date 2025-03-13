@@ -23,7 +23,7 @@ describe('Configuration', () => {
     before(async () => {
         await setBindings(`
             [header]
-            version = "1.0"
+            version = "0.4"
 
             [[mode]]
             name = "insert"
@@ -100,7 +100,7 @@ describe('Configuration', () => {
 
         const a_text = `
         [header]
-        version = "1.0"
+        version = "0.4"
         name = "A bindings"
 
         [[mode]]
@@ -116,7 +116,7 @@ describe('Configuration', () => {
 
         const b_text = `
         [header]
-        version = "1.0"
+        version = "0.4"
         name = "B bindings"
 
         [[bind]]
@@ -128,7 +128,7 @@ describe('Configuration', () => {
 
         const c_text = `
         [header]
-        version = "1.0"
+        version = "0.4"
         name = "A bindings"
 
         [[mode]]
@@ -356,7 +356,7 @@ describe('Configuration', () => {
         await setBindings(`
             [header]
             name = "Debug Key Bindings"
-            version = "1.0"
+            version = "0.4"
 
             [[mode]]
             name = "a"
@@ -425,7 +425,7 @@ describe('Configuration', () => {
         // ensure the coverage command is available
         await setBindings(`
             [header]
-            version = "1.0"
+            version = "0.4"
 
         `);
 

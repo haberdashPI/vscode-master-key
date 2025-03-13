@@ -16,7 +16,7 @@ describe('Visual Docs', () => {
             # # Test Documentation
             #- IGNORED COMMENT
             [header]
-            version = "1.0"
+            version = "0.4"
 
             [[mode]]
             name = "insert"

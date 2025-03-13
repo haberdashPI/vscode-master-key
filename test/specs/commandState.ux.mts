@@ -19,7 +19,7 @@ describe('Command State', () => {
     before(async () => {
         await setBindings(`
             [header]
-            version = "1.0"
+            version = "0.4"
 
             [define]
             select_on = false
