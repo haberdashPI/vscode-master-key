@@ -25,7 +25,7 @@
 
 [header]
 name = "Larkin"
-version = "1.0"
+version = "0.4"
 
 requiredExtensions = [
       "dbankier.vscode-quick-select",
