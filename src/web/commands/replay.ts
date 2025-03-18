@@ -9,13 +9,13 @@ import {List} from 'immutable';
 
 const selectHistoryArgs = z
     .object({
-        range: z.object({from: z.string(), to: z.string()}).optional(),
-        at: z.string().optional(),
+        whereComputedRangeIs: z.object({from: z.string(), to: z.string()}).optional(),
+        whereComputedIndexIs: z.string().optional(),
         value: z.object({}).passthrough().array().optional(),
         register: z.string().optional(),
     })
     .strict()
-    .refine(x => x.at || x.range || x.value, {
+    .refine(x => x.whereComputedIndexIs || x.whereComputedRangeIs || x.value, {
         message: 'Either `at`, `range` or `value` is required.',
     });
 
@@ -24,7 +24,7 @@ const evalContext = new EvalContext();
 async function evalMatcher(matcher: string, i: number) {
     let result_;
     await withState(async state => {
-        result_ = evalContext.evalStr(matcher, {...state.values, i});
+        result_ = evalContext.evalStr(matcher, {...state.values, index: i});
         return state;
     });
     if (typeof result_ !== 'number') {
@@ -54,8 +54,8 @@ async function selectHistoryCommand(cmd: string, args_: unknown) {
             const history = history_.toArray();
             let from = -1;
             let to = -1;
-            const toMatcher = args.range?.to || args.at;
-            const fromMatcher = args.range?.from;
+            const toMatcher = args.whereComputedRangeIs?.to || args.whereComputedIndexIs;
+            const fromMatcher = args.whereComputedRangeIs?.from;
             // TODO: the problem here is that we're treating history as an array but its a
             // `immutablejs.List`. Don't really want to expose that to the user... also
             // sounds expensive to convert to javascript array every time a repeat is
@@ -66,7 +66,7 @@ async function selectHistoryCommand(cmd: string, args_: unknown) {
                 // undefined
                 if (to < 0 && toMatcher) {
                     to = await evalMatcher(toMatcher, i);
-                    if (args.at) {
+                    if (args.whereComputedIndexIs) {
                         from = to;
                     }
                 }

@@ -221,7 +221,7 @@ function expandDefaultsDefinedAndForeach(
                             combinedDescription: item.combinedDescription,
                             kind: item.kind,
                             finalKey: item.finalKey,
-                            repeat: item.repeat,
+                            computedRepeat: item.computedRepeat,
                         },
                     });
                     if (!result.success) {
@@ -627,7 +627,7 @@ function updatePrefixItemAndPrefix(
                 combinedKey: '',
                 combinedDescription: '',
                 finalKey: false,
-                repeat: 0,
+                computedRepeat: 0,
             },
             when: item.when,
             prefixes: [oldPrefix],
@@ -661,7 +661,7 @@ function updatePrefixItemAndPrefix(
                 combinedKey: item.args.combinedKey,
                 combinedDescription: item.args.combinedDescription,
                 finalKey: item.args.finalKey,
-                repeat: 0,
+                computedRepeat: 0,
             },
             when: item.when,
             prefixes: [oldPrefix],

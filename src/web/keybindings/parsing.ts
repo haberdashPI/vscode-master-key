@@ -37,7 +37,7 @@ const rawBindingCommand = z
         command: z.string().optional(), // only optional before default expansion
         args: z.any(),
         computedArgs: z.object({}).passthrough().optional(),
-        if: z.string().or(z.boolean()).default(true).optional(),
+        whenComputed: z.string().or(z.boolean()).default(true).optional(),
     })
     .strict();
 export type RawBindingCommand = z.infer<typeof rawBindingCommand>;
@@ -253,7 +253,7 @@ export const rawBindingItem = z
             )
             .optional(),
         finalKey: z.boolean().optional(),
-        repeat: z.number().min(0).or(z.string()).default(0).optional(),
+        computedRepeat: z.number().min(0).or(z.string()).default(0).optional(),
     })
     .merge(rawBindingCommand)
     .strict();
@@ -305,7 +305,7 @@ export const bindingItem = z
                 combinedDescription: z.string().optional().default(''),
                 finalKey: rawBindingItem.shape.finalKey,
                 kind: z.string().optional().default(''),
-                repeat: z.number().min(0).or(z.string()).default(0),
+                computedRepeat: z.number().min(0).or(z.string()).default(0),
             })
             .merge(rawBindingItem.pick({name: true, description: true})),
     })

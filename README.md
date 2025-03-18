@@ -179,7 +179,7 @@ Master key records recent key presses, allowing you to create commands that quic
 [[bind]]
 key = ";"
 name = "repeat motion"
-repeat = "count"
+computedRepeat = "count"
 command = "master-key.replayFromHistory"
 args.at = "commandHistory[i].path.startsWith('edit.motion') && commandHistory[i].name != 'repeat motion'"
 ```
