@@ -79,7 +79,7 @@ describe('Replay', () => {
             [[bind.args.commands]]
             command = "cursorMove"
             args.to = "down"
-            if = "count > 1"
+            whenComputed = "count > 1"
 
             [[default]]
             name = "action"
@@ -190,7 +190,7 @@ describe('Replay', () => {
             name = "replay repeat"
             key = "q c"
             command = "master-key.replayFromStack"
-            repeat = "count"
+            computedRepeat = "count"
 
             [[bind]]
             defaults = "replay"

@@ -80,7 +80,7 @@ Assorted other commands that aren't motions or actions
 command = "selection-utilities.shrinkToActive"
 
 [[define.selectLinesDown]]
-if = "count"
+whenComputed = "count"
 command = "cursorMove"
 args = { to = "down", by = "wrappedLine", select = true }
 computedArgs = { value = "count" }
@@ -92,7 +92,7 @@ command = "expandLineSelection"
 command = "selection-utilities.shrinkToActive"
 
 [[define.selectLinesUp]]
-if = "count"
+whenComputed = "count"
 command = "cursorMove"
 args = { to = "up", by = "wrappedLine", select = true }
 computedArgs = { value = "count" }
@@ -358,7 +358,7 @@ key = "shift+x"
 name = "exapand"
 description = "expand selections to full lines"
 command = "expandLineSelection"
-repeat = "count"
+computedRepeat = "count"
 
 [[default]]
 id = "edit.motion.obj"
@@ -661,12 +661,12 @@ name = "repeat motion"
 description = """
 Repeat the last motion command. Motions usually move the cursor or change the selection.
 """
-repeat = "count"
+computedRepeat = "count"
 command = "master-key.replayFromHistory"
-args.at = """
-commandHistory[i].default.startsWith('edit.motion') &&
-commandHistory[i].name != 'repeat motion' &&
-commandHistory[i].name != 'shrink selection'
+args.whereComputedIndexIs = """
+commandHistory[index].default.startsWith('edit.motion') &&
+commandHistory[index].name != 'repeat motion' &&
+commandHistory[index].name != 'shrink selection'
 """
 
 [[bind]]
@@ -679,11 +679,11 @@ last subject until some new action is run after `d`. See also `.` which repeats 
 """
 key = ","
 command = "master-key.replayFromHistory"
-args.at = """
-commandHistory[i].path.startsWith("edit.motion") &&
-commandHistory[i+1].path.startsWith("edit.action") &&
-!(commandHistory[i+1].name.startsWith("repeat ") &&
-  commandHistory[i+1].path.startsWith("edit.action.history"))
+args.whereComputedIndexIs = """
+commandHistory[index].path.startsWith("edit.motion") &&
+commandHistory[index+1].path.startsWith("edit.action") &&
+!(commandHistory[index+1].name.startsWith("repeat ") &&
+  commandHistory[index+1].path.startsWith("edit.action.history"))
 """
 
 [[bind]]
@@ -779,7 +779,7 @@ name = "→ search"
 description = "Go to the next match of the search query"
 command = "master-key.nextMatch"
 args.register = "search"
-computedArgs.repeat = "(count || 1)-1"
+computedArgs.computedRepeat = "(count || 1)-1"
 
 [[bind]]
 defaults = "edit.motion.search"
@@ -788,7 +788,7 @@ name = "← search"
 description = "Go to the previous match of the search query"
 command = "master-key.previousMatch"
 args.register = "search"
-computedArgs.repeat = "(count || 1)-1"
+computedArgs.computedRepeat = "(count || 1)-1"
 
 [[bind]]
 defaults = "edit.motion.search"
@@ -1732,7 +1732,7 @@ See also `,` which repeats the last subject.
 """
 key = "."
 command = "runCommands"
-repeat = "count"
+computedRepeat = "count"
 
 [[bind.args.commands]]
 command = "master-key.replayFromHistory"
@@ -2382,8 +2382,8 @@ args.on = false
 
 [[bind.args.commands]]
 command = "master-key.pushHistoryToStack"
-args.range.from = 'commandHistory[i-1].name === "record"'
-args.range.to = "i"
+args.whereComputedRangeIs.from = 'commandHistory[index-1].name === "record"'
+args.whereComputedRangeIs.to = "index"
 
 [[bind]]
 defaults = "edit.action.history"
@@ -2440,8 +2440,8 @@ Store the N most recently run commands as a macro, where N is the count (default
 """
 key = "q l"
 command = "master-key.pushHistoryToStack"
-args.range.from = "i-(count || 0)"
-args.range.to = "i"
+args.whereComputedRangeIs.from = "index-(count || 0)"
+args.whereComputedRangeIs.to = "index"
 
 # ## Utility Commands
 
@@ -3002,7 +3002,7 @@ description = "add cursor at the next match to the primary cursor's text"
 combinedDescription = "add cursor at the next/previous match to the primary cursor's text"
 key = "l"
 combinedKey = "l/h"
-repeat = "count"
+computedRepeat = "count"
 command = "selection-utilities.addNext"
 
 [[bind]]
@@ -3012,7 +3012,7 @@ combinedName = "add →/←"
 description = "add cursor at the previous match to the primary cursor's text"
 key = "h"
 command = "selection-utilities.addPrev"
-repeat = 'count'
+computedRepeat = 'count'
 
 [[bind]]
 defaults = "edit.select_edit"
@@ -3023,7 +3023,7 @@ combinedDescription = "move primary cursor to the next/previous match of the pri
 key = "shift+l"
 combinedKey = "shift+l/h"
 command = "selection-utilities.skipNext"
-repeat = "count"
+computedRepeat = "count"
 
 [[bind]]
 defaults = "edit.select_edit"
@@ -3032,7 +3032,7 @@ combinedName = "skip →/←"
 description = "move primary cursor to the previous match of the primary cursor's text"
 key = "shift+h"
 command = "selection-utilities.skipPrev"
-repeat = 'count'
+computedRepeat = 'count'
 
 [[bind]]
 defaults = "edit.select_edit"
@@ -3063,7 +3063,7 @@ what cursor you delete, and where the cursor goes when you clear or save selecti
 key = "j"
 combinedKey = "j/l"
 command = "selection-utilities.movePrimaryRight"
-repeat = 'count'
+computedRepeat = 'count'
 
 [[bind]]
 defaults = "edit.select_edit"
@@ -3072,7 +3072,7 @@ combinedName = "→/← sel"
 description = "make the previous selection primary; primary selections determine from where you add cursors, what cursor you delete, and where the cursor goes when you clear or save selections"
 key = "k"
 command = "selection-utilities.movePrimaryLeft"
-repeat = 'count'
+computedRepeat = 'count'
 
 [[bind]]
 defaults = "edit.select_edit"
@@ -3085,7 +3085,7 @@ combinedDescription = "insert cursor on line above/below"
 key = "shift+k"
 combinedKey = "shift+k/j"
 command = "editor.action.insertCursorAbove"
-repeat = "count"
+computedRepeat = "count"
 
 [[bind]]
 defaults = "edit.select_edit"
@@ -3096,7 +3096,7 @@ insert cursor on line below
 """
 key = "shift+j"
 command = "editor.action.insertCursorBelow"
-repeat = "count-1"
+computedRepeat = "count-1"
 
 [[bind]]
 defaults = "edit.select_edit"
@@ -3109,7 +3109,7 @@ mode if all selections are deleted.
 """
 key = "d"
 command = "selection-utilities.deletePrimary"
-repeat = "count-1"
+computedRepeat = "count-1"
 
 [[bind]]
 defaults = "edit.select_edit"
