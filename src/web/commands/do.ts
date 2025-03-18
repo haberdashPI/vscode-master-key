@@ -21,21 +21,21 @@ export async function doCommand(
     command: BindingCommand
 ): Promise<BindingCommand | undefined> {
     const reifiedCommand = cloneDeep(command);
-    if (command.if !== undefined) {
+    if (command.whenComputed !== undefined) {
         let doRun: unknown = undefined;
-        if (typeof command.if === 'boolean') {
-            doRun = command.if;
+        if (typeof command.whenComputed === 'boolean') {
+            doRun = command.whenComputed;
         } else {
-            const cif = command.if;
+            const whenComputedResult = command.whenComputed;
             await withState(async state => {
                 // TODO: ideally we would move string compilation outside
                 // of this function, and only have evaluation of the compiled result
                 // inside this call to `withState`
-                doRun = evalContext.evalStr(cif, state.values);
+                doRun = evalContext.evalStr(whenComputedResult, state.values);
                 return state;
             });
         }
-        reifiedCommand.if = !!doRun;
+        reifiedCommand.whenComputed = !!doRun;
         if (!doRun) {
             reifiedCommand.computedArgs = undefined;
             return reifiedCommand; // if the if check fails, don't run the command
@@ -78,7 +78,7 @@ export const runCommandsArgs = z
         do: doArgs,
         key: z.string().optional(),
         finalKey: z.boolean().optional().default(true),
-        repeat: z.number().min(0).or(z.string()).optional(),
+        computedRepeat: z.number().min(0).or(z.string()).optional(),
         hideInPalette: z.boolean().default(false).optional(),
         hideInDocs: z.boolean().default(false).optional(),
         priority: z.number().optional(),
@@ -101,9 +101,9 @@ export type RecordedCommandArgs = RunCommandsArgs & {
 };
 
 async function resolveRepeat(args: RunCommandsArgs): Promise<number> {
-    if (typeof args.repeat === 'string') {
+    if (typeof args.computedRepeat === 'string') {
         let repeatEval;
-        const repeatStr = args.repeat;
+        const repeatStr = args.computedRepeat;
         await withState(async state => {
             repeatEval = evalContext.evalStr(repeatStr, state.values);
             return state;
@@ -112,12 +112,12 @@ async function resolveRepeat(args: RunCommandsArgs): Promise<number> {
         if (repeatNum.success) {
             return repeatNum.data;
         } else {
-            vscode.window.showErrorMessage(`The expression '${args.repeat}' did not
+            vscode.window.showErrorMessage(`The expression '${args.computedRepeat}' did not
                 evaluate to a number`);
             return 0;
         }
     } else {
-        return args.repeat || 0;
+        return args.computedRepeat || 0;
     }
 }
 
@@ -137,13 +137,13 @@ export async function doCommands(args: RunCommandsArgs): Promise<CommandResult> 
 
     // run the commands
     let reifiedCommands: BindingCommand[] | undefined = undefined;
-    let repeat = 0;
+    let computedRepeat = 0;
     try {
         // `doCommand` can call a command that calls `doCommandsCmd` and will therefore
         // clear transient values; thus we have to compute the value of `repeat` *before*
         // running `doCommand` or the value of any transient variables (e.g. `count`) will
         // be cleared
-        repeat = await resolveRepeat(args);
+        computedRepeat = await resolveRepeat(args);
 
         reifiedCommands = [];
         for (const cmd of args.do) {
@@ -152,8 +152,8 @@ export async function doCommands(args: RunCommandsArgs): Promise<CommandResult> 
                 reifiedCommands.push(command);
             }
         }
-        if (repeat > 0) {
-            for (let i = 0; i < repeat; i++) {
+        if (computedRepeat > 0) {
+            for (let i = 0; i < computedRepeat; i++) {
                 for (const cmd of reifiedCommands) {
                     await doCommand(cmd);
                 }
@@ -184,7 +184,7 @@ export async function doCommands(args: RunCommandsArgs): Promise<CommandResult> 
         }
     }
     evalContext.reportErrors();
-    return {...args, do: reifiedCommands, repeat};
+    return {...args, do: reifiedCommands, computedRepeat};
 }
 
 export const COMMAND_HISTORY = 'commandHistory';

@@ -71,7 +71,7 @@ describe('Simple Motions', () => {
             mode = "normal"
             command = "cursorMove"
             args.to = "right"
-            repeat = 1
+            computedRepeat = 1
 
             # TODO: write a test for these
             [[bind]]
@@ -80,7 +80,7 @@ describe('Simple Motions', () => {
             key = "shift+j"
             command = "cursorMove"
             args.to = "down"
-            repeat = "1+2"
+            computedRepeat = "1+2"
 
             [[bind]]
             mode = "normal"
@@ -88,7 +88,7 @@ describe('Simple Motions', () => {
             key = "ctrl+j"
             command = "cursorMove"
             args.to = "down"
-            repeat = "'a'+'b'"
+            computedRepeat = "'a'+'b'"
 
             [[bind]]
             name = "insert mode"
