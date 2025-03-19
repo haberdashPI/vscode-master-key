@@ -14,6 +14,17 @@ async function updateModeKeyCapture(mode: string, modeSpec: Record<string, ModeS
     runCommandOnKeys(modeSpec[mode]?.onType, mode);
 }
 
+/**
+ * @command setMode
+ * @section Set Mode
+ * @order 140
+ *
+ * Sets the key mode. This shows up in the lower left corner, and determines which
+ * keybindings are active (see also [`bind`](/bindings/bind) and [`mode`](/bindings/mode)).
+ *
+ * **Arguments**
+ * - `value`: The mode to set, a string
+ */
 const setModeArgs = z.object({value: z.string()}).strict();
 async function setMode(args_: unknown): Promise<CommandResult> {
     const args = validateInput('master-key.setMode', args_, setModeArgs);
@@ -48,12 +59,26 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.setMode', recordedCommand(setMode))
     );
+    /**
+     * @command enterInsert
+     * @order 140
+     *
+     * Short-hand command for [`master-key.setMode`](/commands/setMode) with `value`
+     * set to 'insert'.
+     */
     context.subscriptions.push(
         vscode.commands.registerCommand(
             'master-key.enterInsert',
             recordedCommand(() => setMode({value: 'insert'}))
         )
     );
+    /**
+     * @command enterNormal
+     * @order 140
+     *
+     * Short-hand command for [`master-key.setMode`](/commands/setMode) with `value`
+     * set to `'normal'`.
+     */
     context.subscriptions.push(
         vscode.commands.registerCommand(
             'master-key.enterNormal',

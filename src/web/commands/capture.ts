@@ -116,6 +116,25 @@ const captureKeysArgs = z.object({
     acceptAfter: z.number().min(1),
 });
 
+/**
+ * @command captureKeys
+ * @section Inputting Strings
+ * @order 110
+ *
+ * Awaits user input for a fixed number of key presses, and then stores the resulting
+ * characters as a string in the variable `captured`, accessible in any subsequent
+ * [expression](/expressions/index).
+ *
+ * **Arguments**
+ * - `acceptAfter`: The number of keys to capture
+ *
+ * > [!NOTE] The command also accepts a second, optional argument called `text`, which can
+ * > directly express what keys to store in `captured` instead of requesting input from the
+ * > user. This is not really useful when writing a `[[bind]]` entry, but is defined to make
+ * > it easy to replay previously executed versions of this command (e.g. in a keyboard
+ * > macro).
+ */
+
 async function captureKeysCmd(args_: unknown): Promise<CommandResult> {
     let args = validateInput('master-key.captureKeys', args_, captureKeysArgs);
     if (args) {
@@ -155,6 +174,16 @@ const charArgs = z
     })
     .strict();
 
+/**
+ * @command replaceChar
+ * @order 110
+ *
+ * Replace character under the cursor with the given character: if `char` is left blank,
+ * user is prompted for the character.
+ *
+ * **Arguments**
+ * - `char` (optional): character to replace with
+ */
 async function replaceChar(args_: unknown): Promise<CommandResult> {
     const editor_ = vscode.window.activeTextEditor;
     if (!editor_) {
@@ -175,6 +204,16 @@ async function replaceChar(args_: unknown): Promise<CommandResult> {
     return args;
 }
 
+/**
+ * @command insertChar
+ * @order 110
+ *
+ * Insert given character at the cursor location: if `char` is left blank,
+ * user is prompted for the character.
+ *
+ * **Arguments**
+ * - `char` (optional): character to insert with
+ */
 async function insertChar(args_: unknown): Promise<CommandResult> {
     const editor_ = vscode.window.activeTextEditor;
     if (!editor_) {

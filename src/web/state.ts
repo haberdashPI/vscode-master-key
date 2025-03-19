@@ -297,6 +297,22 @@ const setFlagArgs = z
     })
     .strict();
 
+/**
+ * @command setFlag
+ * @order 101
+ * @section State Management
+ *
+ * Sets a boolean flag named `name` that can be accessed in when clauses using
+ * `master-key.[name]` and in [expressions](/expressions/index) using
+ * `[name]`.
+ *
+ * **Arguments**:
+ * - `name`: String denoting the name of this flag, must end with the suffix `_on`.
+ * - `value`: true or false
+ * - `transient`: (default = `false`) whether the variable will reset to false
+ *    when a key sequence is complete. See [`master-key.prefix`](/commands/prefix)
+ *    for more details.
+ */
 async function setFlag(args_: unknown): Promise<CommandResult> {
     const args = validateInput('master-key.setFlag', args_, setFlagArgs);
     if (args) {

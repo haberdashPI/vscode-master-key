@@ -8,6 +8,26 @@ import {cloneDeep} from 'lodash';
 import {IIndexed} from '../utils';
 import {normalizeLayoutIndependentString} from './layout';
 
+/**
+ * @file bindings/index.md
+ * @order 30
+ *
+ * > [!NOTE] Note
+ * > The Master Keybinding TOML file is a literate document. If you'd
+ * > like to share your bindings with others, keep the following in mind: any comments on
+ * > their own line that do not start with `#-` are interpreted as markdown when generating
+ * > the textual documentation. All keybindings falling between two given sections of
+ * > documentation text are converted into a single table. If you want the documentation to
+ * > be clear, write up good comments in this binding file and group your bindings into
+ * > logical sections between these comments.
+ *
+ * > [!WARNING] Limitation
+ * > A current limitation of Master Key is that `#` comments on their
+ * > own line cause the fields before and after the comment to be parsed separately. Use
+ * > `#-` to avoid splitting a single object in two. There are plans to eliminate this
+ * > limitation in the future
+ */
+
 const TOML = require('smol-toml');
 
 function filterBinding(binding: BindingItem) {

@@ -2,6 +2,13 @@ import * as vscode from 'vscode';
 import {onChangeBindings} from '../keybindings/config';
 import {Utils} from 'vscode-uri';
 
+/**
+ * @userCommand showTextDoc
+ * @name Show Text Documentation
+ * @order 10
+ *
+ * Show documentation for the current master keybindings in a rendered markdown file.
+ */
 async function showTextDoc() {
     const file = docFile();
     if (file) {

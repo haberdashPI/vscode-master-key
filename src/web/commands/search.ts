@@ -6,6 +6,43 @@ import {MODE, defaultMode} from './mode';
 import {captureKeys} from './capture';
 import {COMMAND_HISTORY} from './do';
 
+/**
+ * @command search
+ * @section Searching for Strings
+ * @order 120
+ *
+ * Moves cursor (and possibly the selection) to matching string (or regex).
+ *
+ * **Arguments**
+ * - `text`: The text to search for; if left blank, search string is requested from user
+ * - `acceptAfter` (optional): If specified, limits the number of characters required from
+ *   the user to the given number.
+ * - `backwards` (default=false): Whether to search forward (default) or backwards from
+ *   cursor position
+ * - `caseSensitive` (default=false): Whether the search-string matching is sensitive to the
+ *   case of letters.
+ * - `regex` (default=false): If true the provided search text will be interpreted as a
+ *   regular expression
+ * - `wrapAround`: (default=false): If true search will wrap back to the top of the file
+ *    when hitting the end of the file, and back to the bottom when hitting the top.
+ * - `selectTillMatch` (default=false): If true, all text from the current cursor position
+ *   up until the searched-to position will be highlighted.
+ * - `highlightMatches` (default=true): If true search-string matches visible in the editor
+ *   will be highlighted.
+ * - `offset` (default='exclusive'): determines where the cursor will land with respect to
+ *   the search match. The possible values are:
+ *   - `inclusive`: when search is moving forward the cursor will land right before the
+ *      first character and otherwise it will land right after the last character
+ *   - `exclusive`: like inclusive` except the cursor lands directly on the target character
+ *      rather than to one side or the other
+ *   - `start`: cursor will land on the first character of the match
+ *   - `end`: cursor will land on the last character of the match
+ * - `register` (default="default"): Determine what storage register repeated search commands
+ *    (`nextMatch`/`previousMatch`) use. If you have multiple search commands you can
+ *    use registers to avoid the two commands using the same search state.
+ * - `skip` (default=0): the number of matches to skip before stopping.
+ */
+
 export const searchArgs = z
     .object({
         text: z.string().min(1).optional(),
@@ -202,18 +239,6 @@ function getOldSearchState(
     statesForEditor = statesForEditor ? statesForEditor : {};
     return statesForEditor[register];
 }
-/**
- * The actual search functionality is located in this helper function. It is
- * used by the actual search command plus the commands that jump to next and
- * previous match.
- *
- * The search starts from positions specified by the `selections` argument. If
- * there are multilple selections (cursors) active, multiple searches are
- * performed. Each cursor location is considered separately, and the next match
- * from that position is selected. The function does *not* make sure that found
- * matches are unique. In case the matches overlap, the number of selections
- * will decrease.
- */
 function navigateTo(
     state: SearchState,
     editor: vscode.TextEditor,
@@ -319,13 +344,6 @@ function navigateTo(
     }
 }
 
-/**
- * ### Search Decorations
- *
- * We determine how searches are highlighted whenever the configuration changes by callin
- * this function; searches are highlighted by default using the same colors as used for
- * built-in search commands.
- */
 function updateSearchHighlights(event?: vscode.ConfigurationChangeEvent) {
     if (!event || event.affectsConfiguration('master-key')) {
         const config = vscode.workspace.getConfiguration('master-key');
@@ -533,6 +551,20 @@ const matchStepArgs = z.object({
     register: z.string().default('default'),
     repeat: z.number().min(0).optional(),
 });
+
+/**
+ * @command nextMatch
+ * @order 120
+ *
+ * Find the next match of the most recently executed run of `master-key.search`
+ *
+ * **Arguments**
+ * - `register` (default="default"): Determine what storage register repeated search
+ *    commands use. If you have multiple search commands you can use registers to avoid the
+ *    two commands using the same search state.
+ * - `repeat`: how many matches to skip before stopping
+ */
+
 async function nextMatch(
     editor: vscode.TextEditor,
     _edit: vscode.TextEditorEdit,
@@ -556,6 +588,19 @@ async function nextMatch(
     }
     return;
 }
+
+/**
+ * @command previousMatch
+ * @order 120
+ *
+ * Find the previous match of the most recently executed run of `master-key.search`
+ *
+ * **Arguments**
+ * - `register` (default="default"): Determine what storage register repeated search
+ *    commands use. If you have multiple search commands you can use registers to avoid the
+ *    two commands using the same search state.
+ * - `repeat`: how many matches to skip before stopping
+ */
 
 async function previousMatch(
     editor: vscode.TextEditor,
