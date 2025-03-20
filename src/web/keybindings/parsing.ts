@@ -7,6 +7,7 @@ import {expressionId} from '../expressions';
 import {uniqBy} from 'lodash';
 import replaceAll from 'string.prototype.replaceall';
 import {IParsedBindingDoc, parseBindingDocs} from './docParsing';
+import {legacyParse} from './legacyParsing';
 export const INPUT_CAPTURE_COMMANDS = [
     'captureKeys',
     'replaceChar',
@@ -21,9 +22,9 @@ const bindingHeader = z
             .refine(x => semver.coerce(x), {
                 message: 'header.version is not a valid version number',
             })
-            .refine(x => semver.satisfies(semver.coerce(x)!, '1'), {
+            .refine(x => semver.satisfies(semver.coerce(x)!, '2.0'), {
                 message:
-                    'header.version is not a supported version number (must a compatible with 1.0)',
+                    'header.version is not a supported version number (must a compatible with 2.0)',
             }),
         requiredExtensions: z.string().array().optional(),
         name: z.string().optional(),
@@ -424,19 +425,50 @@ export interface ErrorResult {
 }
 export type ParsedResult<T> = SuccessResult<T> | ErrorResult;
 
-export async function parseBindings(text: string): Promise<ParsedResult<FullBindingSpec>> {
-    const data = bindingSpec.safeParse((await TOML).parse(text));
-    if (data.success) {
-        const doc = parseBindingDocs(text);
-
-        if (doc.success) {
-            return {success: true, data: {...data.data, doc: doc.data?.doc}};
-        } else {
-            return <ParsedResult<FullBindingSpec>>doc;
-        }
+function parseBindingsHelper(
+    text: string,
+    data: BindingSpec
+): ParsedResult<FullBindingSpec> {
+    const doc = parseBindingDocs(text);
+    if (doc.success) {
+        return {success: true, data: {...data, doc: doc.data?.doc}};
     } else {
-        return <ParsedResult<FullBindingSpec>>data;
+        return <ParsedResult<FullBindingSpec>>doc;
     }
+}
+
+export async function parseBindings(text: string): Promise<ParsedResult<FullBindingSpec>> {
+    const toml = (await TOML).parse(text);
+    const data = bindingSpec.safeParse(toml);
+    if (data.success) {
+        return parseBindingsHelper(text, data.data);
+    } else {
+        const legacyParsing = legacyParse(toml);
+        if (legacyParsing.success) {
+            const legacyData = bindingSpec.safeParse(legacyParsing.data);
+            if (legacyData.success) {
+                vscode.window
+                    .showWarningMessage(
+                        'Your Master Key bindings use a legacy keybinding format. Consider ' +
+                            're-activating your desired preset and any user bindings. ' +
+                            'You will need to update your user bindings according ' +
+                            'to the documentation.',
+                        'Open Docs'
+                    )
+                    .then(async request => {
+                        if (request === 'Open Docs') {
+                            await vscode.env.openExternal(
+                                vscode.Uri.parse(
+                                    'https://haberdashpi.github.io/vscode-master-key/'
+                                )
+                            );
+                        }
+                    });
+                return parseBindingsHelper(text, legacyData.data);
+            }
+        }
+    }
+    return <ParsedResult<FullBindingSpec>>data;
 }
 
 export async function parseBindingFile(file: vscode.Uri) {

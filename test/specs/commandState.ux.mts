@@ -9,7 +9,6 @@ import {
     enterModalKeys,
     storeCoverageStats,
     waitForClearedKeyStatus,
-    waitForKeysTyped,
 } from './utils.mts';
 import 'wdio-vscode-service';
 import {sleep, TextEditor} from 'wdio-vscode-service';
@@ -19,7 +18,7 @@ describe('Command State', () => {
     before(async () => {
         await setBindings(`
             [header]
-            version = "0.4"
+            ersion = "2.0"
 
             [define]
             select_on = false

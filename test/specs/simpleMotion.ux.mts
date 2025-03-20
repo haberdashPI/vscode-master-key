@@ -18,7 +18,7 @@ describe('Simple Motions', () => {
     before(async () => {
         await setBindings(`
             [header]
-            version = "0.4"
+            version = "2.0"
 
             [[mode]]
             name = "insert"
@@ -100,12 +100,12 @@ describe('Simple Motions', () => {
             # NOTE: because of how vscode-extension-tester is implemented
             # numeric values get typed, so we use other keybindings here
             # to avoid picking up these typed keys
-            foreach.num = ["{key: [0-3]}"]
-            key = "shift+{num}"
+            foreach.num = ["{{key: [0-3]}}"]
+            key = "shift+{{num}}"
             mode = "normal"
-            name = "count {num}"
+            name = "count {{num}}"
             command = "master-key.updateCount"
-            args.value = "{num}"
+            args.value = "{{num}}"
             finalKey = false
         `);
         editor =

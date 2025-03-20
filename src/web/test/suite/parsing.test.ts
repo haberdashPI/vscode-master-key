@@ -28,7 +28,7 @@ async function specForBindings(text: string) {
 suite('Keybinding Test Suite', async () => {
     const simpleFile = `
         [header]
-        version = "1.0"
+        version = "2.0"
         name = "test"
         description = "A simple test file"
 
@@ -77,7 +77,7 @@ suite('Keybinding Test Suite', async () => {
 
     let defItems = await specForBindings(`
         [header]
-        version = "1.0"
+        version = "2.0"
 
         [[default]]
         id = ""
@@ -148,7 +148,7 @@ suite('Keybinding Test Suite', async () => {
             () =>
                 specForBindings(`
             [header]
-            version = "1.0"
+            version = "2.0"
 
             [[default]]
             id = "foo"
@@ -172,7 +172,7 @@ suite('Keybinding Test Suite', async () => {
     test('Multi-key bindings expand to individual bindings', async () => {
         const spec = await specForBindings(`
         [header]
-        version = "1.0"
+        version = "2.0"
 
         [[default]]
         id = "bind"
@@ -206,7 +206,7 @@ suite('Keybinding Test Suite', async () => {
     test('`key` value is validated', async () => {
         const spec = await specForBindings(`
         [header]
-        version = "1.0"
+        version = "2.0"
 
         [[default]]
         id = "bind"
@@ -225,7 +225,7 @@ suite('Keybinding Test Suite', async () => {
             () =>
                 specForBindings(`
         [header]
-        version = "1.0"
+        version = "2.0"
 
         [[default]]
         id = "bind"
@@ -245,7 +245,7 @@ suite('Keybinding Test Suite', async () => {
             () =>
                 specForBindings(`
         [header]
-        version = "1.0"
+        version = "2.0"
 
         [[default]]
         id = "bind"
@@ -265,7 +265,7 @@ suite('Keybinding Test Suite', async () => {
             () =>
                 specForBindings(`
         [header]
-        version = "1.0"
+        version = "2.0"
 
         [[default]]
         id = "bind"
@@ -287,7 +287,7 @@ suite('Keybinding Test Suite', async () => {
             () =>
                 specForBindings(`
         [header]
-        version = "1.0"
+        version = "2.0"
 
         [[default]]
         id = "bind"
@@ -310,7 +310,7 @@ suite('Keybinding Test Suite', async () => {
             () =>
                 specForBindings(`
         [header]
-        version = "1.0"
+        version = "2.0"
 
         [[default]]
         id = "bind"
@@ -329,7 +329,7 @@ suite('Keybinding Test Suite', async () => {
 
         const spec = await specForBindings(`
         [header]
-        version = "1.0"
+        version = "2.0"
 
         [[default]]
         id = "bind"
@@ -359,7 +359,7 @@ suite('Keybinding Test Suite', async () => {
             () =>
                 specForBindings(`
         [header]
-        version = "1.0"
+        version = "2.0"
 
         [[default]]
         id = "bind"
@@ -386,7 +386,7 @@ suite('Keybinding Test Suite', async () => {
             () =>
                 specForBindings(`
         [header]
-        version = "1.0"
+        version = "2.0"
 
         [[mode]]
         name = "default"
@@ -420,7 +420,7 @@ suite('Keybinding Test Suite', async () => {
 
         const bindings = await specForBindings(`
         [header]
-        version = "1.0"
+        version = "2.0"
 
         [[mode]]
         name = "insert"
@@ -448,7 +448,7 @@ suite('Keybinding Test Suite', async () => {
     test('Keybindings with multiple presses are expanded into prefix bindings', async () => {
         const spec = await specForBindings(`
         [header]
-        version = "1.0"
+        version = "2.0"
 
         [[bind]]
         name = "1"
@@ -463,7 +463,7 @@ suite('Keybinding Test Suite', async () => {
     test('Multiple foreach create a product', async () => {
         const spec = await specForBindings(`
         [header]
-        version = "1.0"
+        version = "2.0"
 
         [[bind]]
         name = "1"
@@ -478,7 +478,7 @@ suite('Keybinding Test Suite', async () => {
     test('Automated prefixes are properly ordered', async () => {
         const spec = await specForBindings(`
         [header]
-        version = "1.0"
+        version = "2.0"
 
         [[bind]]
         name = "before"
@@ -515,7 +515,7 @@ suite('Keybinding Test Suite', async () => {
     test('Documentation expands across key variants', async () => {
         const spec = await specForBindings(`
         [header]
-        version = "1.0"
+        version = "2.0"
 
         [[bind]]
         defaults = ""
@@ -557,7 +557,7 @@ suite('Keybinding Test Suite', async () => {
     test('Keybindings properly resolve `<all-pefixes>` cases', async () => {
         const spec = await specForBindings(`
         [header]
-        version = "1.0"
+        version = "2.0"
 
         [[bind]]
         name = "1"
