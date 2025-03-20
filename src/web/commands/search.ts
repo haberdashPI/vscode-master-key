@@ -8,15 +8,15 @@ import {COMMAND_HISTORY} from './do';
 
 export const searchArgs = z
     .object({
+        text: z.string().min(1).optional(),
+        acceptAfter: z.number().min(1).optional(),
         backwards: z.boolean().optional(),
         caseSensitive: z.boolean().optional(),
+        regex: z.boolean().optional(),
         wrapAround: z.boolean().optional(),
-        acceptAfter: z.number().min(1).optional(),
         selectTillMatch: z.boolean().optional(),
         highlightMatches: z.boolean().default(true).optional(),
         offset: z.enum(['inclusive', 'exclusive', 'start', 'end']).default('exclusive'),
-        text: z.string().min(1).optional(),
-        regex: z.boolean().optional(),
         register: z.string().default('default'),
         skip: z.number().optional().default(0),
     })

@@ -23,7 +23,7 @@ describe('Configuration', () => {
     before(async () => {
         await setBindings(`
             [header]
-            version = "1.0"
+            version = "0.4"
 
             [[mode]]
             name = "insert"
@@ -39,9 +39,9 @@ describe('Configuration', () => {
             key = "escape"
             mode = []
             command = "master-key.enterNormal"
-            prefixes = "<all-prefixes>"
+            prefixes = "{{all_prefixes}}"
 
-            [[path]]
+            [[default]]
             id = "motion"
             name = "basic motions"
             default.command = "cursorMove"
@@ -50,13 +50,13 @@ describe('Configuration', () => {
             default.computedArgs.value = "count"
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             name = "right"
             key = "ctrl+l"
             args.to = "right"
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             name = "double right"
             key = "ctrl+shift+l"
             args.to = "right"
@@ -79,7 +79,7 @@ describe('Configuration', () => {
             fallbackBindings = "normal"
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             key = "ctrl+h"
             mode = "normal-left"
             name = "left"
@@ -88,7 +88,7 @@ describe('Configuration', () => {
             args.to = "left"
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             name = "double left"
             mode = "normal-left"
             key = "ctrl+shift+l"
@@ -100,7 +100,7 @@ describe('Configuration', () => {
 
         const a_text = `
         [header]
-        version = "1.0"
+        version = "0.4"
         name = "A bindings"
 
         [[mode]]
@@ -116,7 +116,7 @@ describe('Configuration', () => {
 
         const b_text = `
         [header]
-        version = "1.0"
+        version = "0.4"
         name = "B bindings"
 
         [[bind]]
@@ -128,7 +128,7 @@ describe('Configuration', () => {
 
         const c_text = `
         [header]
-        version = "1.0"
+        version = "0.4"
         name = "A bindings"
 
         [[mode]]
@@ -356,7 +356,7 @@ describe('Configuration', () => {
         await setBindings(`
             [header]
             name = "Debug Key Bindings"
-            version = "1.0"
+            version = "0.4"
 
             [[mode]]
             name = "a"
@@ -377,7 +377,7 @@ describe('Configuration', () => {
             command = "master-key.setMode"
             args.value = "b"
 
-            [[path]]
+            [[default]]
             id = "actions"
             name = "Actions"
             default.mode = ["a", "b"]
@@ -385,7 +385,7 @@ describe('Configuration', () => {
             default.args.select = false
 
             [[bind]]
-            path = "actions"
+            defaults = "actions"
             key = "ctrl+h"
             name = "x"
             command = "cursorMove"
@@ -393,7 +393,7 @@ describe('Configuration', () => {
             mode = ["a"]
 
             [[bind]]
-            path = "actions"
+            defaults = "actions"
             key = "ctrl+h"
             name = "x"
             command = "cursorMove"
@@ -425,7 +425,7 @@ describe('Configuration', () => {
         // ensure the coverage command is available
         await setBindings(`
             [header]
-            version = "1.0"
+            version = "0.4"
 
         `);
 

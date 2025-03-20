@@ -18,7 +18,7 @@ describe('Simple Motions', () => {
     before(async () => {
         await setBindings(`
             [header]
-            version = "1.0"
+            version = "0.4"
 
             [[mode]]
             name = "insert"
@@ -31,9 +31,9 @@ describe('Simple Motions', () => {
             name = "normal mode"
             key = "escape"
             command = "master-key.enterNormal"
-            prefixes = "<all-prefixes>"
+            prefixes = "{{all_prefixes}}"
 
-            [[path]]
+            [[default]]
             id = "motion"
             name = "basic motions"
             default.command = "cursorMove"
@@ -42,25 +42,25 @@ describe('Simple Motions', () => {
             default.computedArgs.value = "count"
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             name = "left"
             key = "h"
             args.to = "left"
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             name = "right"
             key = "l"
             args.to = "right"
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             name = "down"
             key = "j"
             args.to = "down"
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             name = "up"
             key = "k"
             args.to = "up"
@@ -71,7 +71,7 @@ describe('Simple Motions', () => {
             mode = "normal"
             command = "cursorMove"
             args.to = "right"
-            repeat = 1
+            computedRepeat = 1
 
             # TODO: write a test for these
             [[bind]]
@@ -80,7 +80,7 @@ describe('Simple Motions', () => {
             key = "shift+j"
             command = "cursorMove"
             args.to = "down"
-            repeat = "1+2"
+            computedRepeat = "1+2"
 
             [[bind]]
             mode = "normal"
@@ -88,7 +88,7 @@ describe('Simple Motions', () => {
             key = "ctrl+j"
             command = "cursorMove"
             args.to = "down"
-            repeat = "'a'+'b'"
+            computedRepeat = "'a'+'b'"
 
             [[bind]]
             name = "insert mode"
@@ -106,7 +106,7 @@ describe('Simple Motions', () => {
             name = "count {num}"
             command = "master-key.updateCount"
             args.value = "{num}"
-            resetTransient = false
+            finalKey = false
         `);
         editor =
             await setupEditor(`Anim reprehenderit voluptate magna excepteur dolore aliqua minim labore est
