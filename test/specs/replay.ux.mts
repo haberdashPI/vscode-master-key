@@ -17,7 +17,7 @@ describe('Replay', () => {
     before(async () => {
         await setBindings(`
             [header]
-            version = "0.4"
+            ersion = "2.0"
 
             [[mode]]
             name = "insert"

@@ -18,7 +18,7 @@ describe('Search motion command', () => {
     before(async () => {
         await setBindings(`
             [header]
-            version = "0.4"
+            ersion = "2.0"
 
             [[bind]]
             description = "Enter normal mode"
