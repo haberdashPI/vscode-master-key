@@ -1041,7 +1041,7 @@ next/prev WORD;  e.g. contiguous non-whitespace region
 """
 combinedKey = "w/b"
 description = "next WORD; e.g. contiguous non-whitespace region"
-args.unit = "WORD"
+args.unit = "BigWord"
 computedArgs.value = "count || 1"
 
 [[bind]]
@@ -1051,7 +1051,7 @@ priority = 1
 name = "WORD ←"
 combinedName = "WORD →/←"
 description = "previous WORD; e.g. contiguous non-whitespace region"
-args.unit = "WORD"
+args.unit = "BigWord"
 computedArgs.value = "-count || -1"
 
 [[bind]]
@@ -1060,7 +1060,7 @@ key = "g e"
 priority = 1
 name = "WORD end →"
 description = "next WORD end; e.g. contiguous non-whitespace region"
-args.unit = "WORD"
+args.unit = "BigWord"
 computedArgs.boundary = "around_on ? 'both' : 'end'"
 computedArgs.value = "count || 1"
 
@@ -1347,7 +1347,7 @@ key = "m g w"
 name = "around WORD →"
 combinedName = "around WORD →/←"
 combinedKey = "w/b"
-args.unit = "WORD"
+args.unit = "BigWord"
 computedArgs.value = "count || 1"
 
 [[bind]]
@@ -1355,14 +1355,14 @@ path = "edit.motion.match.obj"
 key = "m g b"
 name = "around WORD ←"
 combinedName = "around WORD →/←"
-args.unit = "WORD"
+args.unit = "BigWord"
 computedArgs.value = "-(count || 1)"
 
 [[bind]]
 path = "edit.motion.match.obj"
 key = "m g e"
 name = "in WORD"
-args.unit = "WORD"
+args.unit = "BigWord"
 args.boundary = "both"
 computedArgs.value = "count || 1"
 
