@@ -137,33 +137,37 @@ function expandDefaultsDefinedAndForeach(
     problems: string[]
 ): (BindingItem & IIndexed)[] {
     // eslint-disable-next-line @typescript-eslint/naming-convention
-    const pathDefaults: Record<string, PartialRawBindingItem> = {'': {}};
-    const pathWhens: Record<string, ParsedWhen[]> = {};
-    for (const path of spec.path) {
-        const parts = path.id.split('.');
+    const defaultFields: Record<string, PartialRawBindingItem> = {'': {}};
+    const appendWhen: Record<string, ParsedWhen[]> = {};
+    for (const itemDefault of spec.default) {
+        const parts = itemDefault.id.split('.');
         let defaults: PartialRawBindingItem = partialRawBindingItem.parse({});
         let whens: ParsedWhen[] = [];
         if (parts.length > 1) {
             const prefix = parts.slice(0, -1).join('.');
-            if (pathDefaults[prefix] === undefined) {
-                problems.push(`The path '${path.id}' was defined before
+            if (defaultFields[prefix] === undefined) {
+                problems.push(`The default '${itemDefault.id}' was defined before
                     '${prefix}'.`);
             } else {
-                defaults = cloneDeep(pathDefaults[prefix]);
-                whens = cloneDeep(pathWhens[prefix]);
+                defaults = cloneDeep(defaultFields[prefix]);
+                whens = cloneDeep(appendWhen[prefix]);
             }
         }
-        pathDefaults[path.id] = assignWith(defaults, path.default, mergeArgs);
-        if (path.when) {
-            pathWhens[path.id] = whens.concat(path.when);
+        defaultFields[itemDefault.id] = assignWith(
+            defaults,
+            itemDefault.default,
+            mergeArgs
+        );
+        if (itemDefault.appendWhen) {
+            appendWhen[itemDefault.id] = whens.concat(itemDefault.appendWhen);
         }
     }
 
     let items = spec.bind.flatMap((item, i) => {
-        const itemDefault = pathDefaults[item.path || ''];
-        const itemConcatWhen = pathWhens[item.path || ''];
+        const itemDefault = defaultFields[item.defaults || ''];
+        const itemConcatWhen = appendWhen[item.defaults || ''];
         if (!itemDefault) {
-            problems.push(`The path '${item.path}' is undefined.`);
+            problems.push(`The default '${item.defaults}' is undefined.`);
             return undefined;
         } else {
             item = assignWith(cloneDeep(itemDefault), item, mergeArgs);
@@ -184,7 +188,7 @@ function expandDefaultsDefinedAndForeach(
                         missing.push('command');
                     }
                     if (missing.length > 0) {
-                        problems.push(`Problem with binding ${i} ${item.path}:
+                        problems.push(`Problem with binding ${i} ${item.defaults}:
                             missing field '${missing[0]}'`);
                         return undefined;
                     }
@@ -206,7 +210,7 @@ function expandDefaultsDefinedAndForeach(
                                               'if',
                                           ]),
                                       ],
-                            path: item.path,
+                            defaults: item.defaults,
                             name: item.name,
                             description: item.description,
                             priority: item.priority,
@@ -216,8 +220,8 @@ function expandDefaultsDefinedAndForeach(
                             combinedKey: item.combinedKey,
                             combinedDescription: item.combinedDescription,
                             kind: item.kind,
-                            resetTransient: item.resetTransient,
-                            repeat: item.repeat,
+                            finalKey: item.finalKey,
+                            computedRepeat: item.computedRepeat,
                         },
                     });
                     if (!result.success) {
@@ -285,17 +289,17 @@ function resolveDocItems(
 
 function requireTransientSequence(item: BindingItem, i: number, problems: string[]) {
     if (item.args.do.some(c => c.command === 'master-key.prefix')) {
-        if (item.args.resetTransient === undefined) {
-            item.args.resetTransient = false;
-        } else if (item.args.resetTransient === true) {
+        if (item.args.finalKey === undefined) {
+            item.args.finalKey = false;
+        } else if (item.args.finalKey === true) {
             problems.push(
-                `Item ${i} with name ${item.args.name}: 'resetTransient' must be ` +
+                `Item ${i} with name ${item.args.name}: 'finalKey' must be ` +
                     "false for a command that calls 'master-key.prefix'"
             );
         }
     } else {
-        if (item.args.resetTransient === undefined) {
-            item.args.resetTransient = true;
+        if (item.args.finalKey === undefined) {
+            item.args.finalKey = true;
         }
     }
 
@@ -363,7 +367,7 @@ const ALL_KEYS = [
 ];
 /* eslint-enable */
 
-const REGEX_KEY_REGEX = /\{key(:\s*(.*))?\}/;
+const REGEX_KEY_REGEX = /\{\{key(:\s*(.*))?\}\}/;
 
 function expandPattern(pattern: string): string[] {
     const regkey = pattern.match(REGEX_KEY_REGEX);
@@ -613,7 +617,7 @@ function updatePrefixItemAndPrefix(
                         },
                     },
                 ],
-                path: item.args.path,
+                defaults: item.args.defaults,
                 name: 'prefix',
                 kind: 'prefix',
                 priority: 0,
@@ -622,8 +626,8 @@ function updatePrefixItemAndPrefix(
                 combinedName: '',
                 combinedKey: '',
                 combinedDescription: '',
-                resetTransient: false,
-                repeat: 0,
+                finalKey: false,
+                computedRepeat: 0,
             },
             when: item.when,
             prefixes: [oldPrefix],
@@ -647,7 +651,7 @@ function updatePrefixItemAndPrefix(
                         return command;
                     }
                 }),
-                path: item.args.path,
+                defaults: item.args.defaults,
                 name: item.args.name,
                 kind: item.args.kind || 'prefix',
                 priority: item.args.priority,
@@ -656,8 +660,8 @@ function updatePrefixItemAndPrefix(
                 combinedName: item.args.combinedName,
                 combinedKey: item.args.combinedKey,
                 combinedDescription: item.args.combinedDescription,
-                resetTransient: item.args.resetTransient,
-                repeat: 0,
+                finalKey: item.args.finalKey,
+                computedRepeat: 0,
             },
             when: item.when,
             prefixes: [oldPrefix],
@@ -675,7 +679,7 @@ function requireConcretePrefixes(item: BindingItem, problems: string[]) {
               ? item.mode
               : item.mode.join(', ');
         problems.push(`Key binding '${item.key}' for mode
-            '${modes}' is a prefix command; it cannot use '<all-prefixes>'.`);
+            '${modes}' is a prefix command; it cannot use '{{all_prefixes}}'.`);
     }
 }
 

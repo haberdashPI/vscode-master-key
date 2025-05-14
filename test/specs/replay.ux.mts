@@ -17,7 +17,7 @@ describe('Replay', () => {
     before(async () => {
         await setBindings(`
             [header]
-            version = "1.0"
+            ersion = "2.0"
 
             [[mode]]
             name = "insert"
@@ -31,9 +31,9 @@ describe('Replay', () => {
             key = "escape"
             mode = []
             command = "master-key.enterNormal"
-            prefixes = "<all-prefixes>"
+            prefixes = "{{all_prefixes}}"
 
-            [[path]]
+            [[default]]
             id = "motion"
             name = "basic motions"
             default.command = "cursorMove"
@@ -42,25 +42,25 @@ describe('Replay', () => {
             default.computedArgs.value = "count || 1"
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             name = "left"
             key = "h"
             args.to = "left"
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             name = "right"
             key = "l"
             args.to = "right"
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             name = "down"
             key = "j"
             args.to = "down"
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             name = "up"
             key = "k"
             args.to = "up"
@@ -79,9 +79,9 @@ describe('Replay', () => {
             [[bind.args.commands]]
             command = "cursorMove"
             args.to = "down"
-            if = "count > 1"
+            whenComputed = "count > 1"
 
-            [[path]]
+            [[default]]
             name = "action"
             id = "action"
             default.mode = "normal"
@@ -93,7 +93,7 @@ describe('Replay', () => {
             name = "count {num}"
             command = "master-key.updateCount"
             args.value = "{num}"
-            resetTransient = false
+            finalKey = false
 
             [[bind]]
             name = "insert"
@@ -101,7 +101,7 @@ describe('Replay', () => {
             mode = "normal"
             command = "master-key.enterInsert"
 
-            [[path]]
+            [[default]]
             name = "capture"
             id = "capture"
             default.mode = "normal"
@@ -109,7 +109,7 @@ describe('Replay', () => {
             [[bind]]
             name = "1"
             key = "s"
-            path = "capture"
+            defaults = "capture"
             command = "runCommands"
 
             [[bind.args.commands]]
@@ -123,16 +123,16 @@ describe('Replay', () => {
             [[bind]]
             name = "replace"
             key = "r"
-            path = "capture"
+            defaults = "capture"
             command = "master-key.replaceChar"
 
             [[bind]]
             name = "insert"
             key = "ctrl+i"
-            path = "capture"
+            defaults = "capture"
             command = "master-key.insertChar"
 
-            [[path]]
+            [[default]]
             name = "search"
             id = "search"
             default.mode = "normal"
@@ -141,21 +141,21 @@ describe('Replay', () => {
             [[bind]]
             name = "search"
             key = "/"
-            path = "search"
+            defaults = "search"
 
             [[bind]]
             name = "to letter"
             key = "t"
-            path = "search"
+            defaults = "search"
             args.acceptAfter = 1
 
-            [[path]]
+            [[default]]
             name = "replay"
             id = "replay"
             default.mode = "normal"
 
             [[bind]]
-            path = "replay"
+            defaults = "replay"
             name = "record"
             key = "shift+q"
             when = "!master-key.record"
@@ -163,7 +163,7 @@ describe('Replay', () => {
             args.on = true
 
             [[bind]]
-            path = "replay"
+            defaults = "replay"
             name = "record"
             key = "shift+q"
             when = "master-key.record"
@@ -179,28 +179,28 @@ describe('Replay', () => {
             args.range.to = "i"
 
             [[bind]]
-            path = "replay"
+            defaults = "replay"
             name = "replay"
             key = "q q"
             command = "master-key.replayFromStack"
             computedArgs.index = "count"
 
             [[bind]]
-            path = "replay"
+            defaults = "replay"
             name = "replay repeat"
             key = "q c"
             command = "master-key.replayFromStack"
-            repeat = "count"
+            computedRepeat = "count"
 
             [[bind]]
-            path = "replay"
+            defaults = "replay"
             name = "replay last"
             key = "q l"
             command = "master-key.replayFromHistory"
             args.at = "i"
 
             [[bind]]
-            path = "replay"
+            defaults = "replay"
             name = "store macro"
             key = "q s"
             command = "master-key.storeNamed"
@@ -209,7 +209,7 @@ describe('Replay', () => {
             args.contents = "macro[macro.length-(count || 0)-1]"
 
             [[bind]]
-            path = "replay"
+            defaults = "replay"
             name = "replay stored"
             key = "q r"
             command = "runCommands"
@@ -233,7 +233,7 @@ describe('Replay', () => {
             name = "count 2"
             command = "master-key.updateCount"
             args.value = "2"
-            resetTransient = false
+            finalKey = false
         `);
         editor = await setupEditor(`a b c d
 e f g h

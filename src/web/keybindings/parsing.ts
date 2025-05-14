@@ -7,6 +7,7 @@ import {expressionId} from '../expressions';
 import {uniqBy} from 'lodash';
 import replaceAll from 'string.prototype.replaceall';
 import {IParsedBindingDoc, parseBindingDocs} from './docParsing';
+import {legacyParse} from './legacyParsing';
 export const INPUT_CAPTURE_COMMANDS = [
     'captureKeys',
     'replaceChar',
@@ -21,9 +22,9 @@ const bindingHeader = z
             .refine(x => semver.coerce(x), {
                 message: 'header.version is not a valid version number',
             })
-            .refine(x => semver.satisfies(semver.coerce(x)!, '1'), {
+            .refine(x => semver.satisfies(semver.coerce(x)!, '2.0'), {
                 message:
-                    'header.version is not a supported version number (must a compatible with 1.0)',
+                    'header.version is not a supported version number (must a compatible with 2.0)',
             }),
         requiredExtensions: z.string().array().optional(),
         name: z.string().optional(),
@@ -37,7 +38,7 @@ const rawBindingCommand = z
         command: z.string().optional(), // only optional before default expansion
         args: z.any(),
         computedArgs: z.object({}).passthrough().optional(),
-        if: z.string().or(z.boolean()).default(true).optional(),
+        whenComputed: z.string().or(z.boolean()).default(true).optional(),
     })
     .strict();
 export type RawBindingCommand = z.infer<typeof rawBindingCommand>;
@@ -195,7 +196,7 @@ const bindingKey = z
 
 // function prefixError(arg: string) {
 //     return {
-//         message: `Expected either an array of kebydinings or the string '<all-prefixes>',
+//         message: `Expected either an array of kebydinings or the string '{{all_prefixes}}',
 //         but got '${arg}' instead`,
 //     };
 // }
@@ -235,7 +236,7 @@ export const rawBindingItem = z
         combinedName: z.string().optional().default(''),
         combinedKey: z.string().optional().default(''),
         combinedDescription: z.string().optional().default(''),
-        path: z.string().optional(),
+        defaults: z.string().optional(),
         priority: z.number().default(0).optional(),
         kind: z.string().optional(),
         key: z.string().optional(),
@@ -248,12 +249,12 @@ export const rawBindingItem = z
         mode: z.union([z.string(), z.string().array()]).optional(),
         prefixes: z
             .preprocess(
-                x => (x === '<all-prefixes>' ? [] : x),
+                x => (x === '{{all_prefixes}}' ? [] : x),
                 bindingKey.or(z.string().length(0)).array()
             )
             .optional(),
-        resetTransient: z.boolean().optional(),
-        repeat: z.number().min(0).or(z.string()).default(0).optional(),
+        finalKey: z.boolean().optional(),
+        computedRepeat: z.number().min(0).or(z.string()).default(0).optional(),
     })
     .merge(rawBindingCommand)
     .strict();
@@ -296,16 +297,16 @@ export const bindingItem = z
         args: z
             .object({
                 do: doArgs,
-                path: z.string().optional().default(''),
+                defaults: z.string().optional().default(''),
                 hideInPalette: z.boolean().default(false).optional(),
                 hideInDocs: z.boolean().default(false).optional(),
                 priority: z.number().optional().default(0),
                 combinedName: z.string().optional().default(''),
                 combinedKey: z.string().optional().default(''),
                 combinedDescription: z.string().optional().default(''),
-                resetTransient: rawBindingItem.shape.resetTransient,
+                finalKey: rawBindingItem.shape.finalKey,
                 kind: z.string().optional().default(''),
-                repeat: z.number().min(0).or(z.string()).default(0),
+                computedRepeat: z.number().min(0).or(z.string()).default(0),
             })
             .merge(rawBindingItem.pick({name: true, description: true})),
     })
@@ -313,13 +314,24 @@ export const bindingItem = z
     .strict();
 export type BindingItem = z.output<typeof bindingItem>;
 
-export const bindingPath = z.object({
-    // TODO: change from an empty `id` path, to fields at the top level in the header
+export const bindingDefault = z.object({
+    // TODO: change from an empty `id` defaults, to fields at the top level in the header
+    /**
+     * @forBindingField default
+     * - `id` is a period-delimited set of identifiers that describe this default; each
+     *   identifier can include letters, numbers as well as `_` and `-`.
+     */
     id: z.string().regex(/(^$|[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)*)/),
-    name: z.string(),
-    description: z.string().optional(),
+    /**
+     * @forBindingField default
+     * - `name
+     */
     default: rawBindingItem.partial().optional(),
-    when: z.string().optional().transform(parseWhen).pipe(parsedWhen.array().optional()),
+    appendWhen: z
+        .string()
+        .optional()
+        .transform(parseWhen)
+        .pipe(parsedWhen.array().optional()),
 });
 
 const modeSpec = z.object({
@@ -348,10 +360,10 @@ export const bindingSpec = z
         header: bindingHeader,
         bind: rawBindingItem.array(),
         kind: kindItem.array().optional(),
-        path: bindingPath
+        default: bindingDefault
             .array()
             .refine(xs => uniqBy(xs, x => x.id).length === xs.length, {
-                message: "Defined [[path]] entries must all have unique 'id' fields.",
+                message: "Defined [[defaults]] entries must all have unique 'id' fields.",
             })
             .optional()
             .default([]),
@@ -413,19 +425,50 @@ export interface ErrorResult {
 }
 export type ParsedResult<T> = SuccessResult<T> | ErrorResult;
 
-export async function parseBindings(text: string): Promise<ParsedResult<FullBindingSpec>> {
-    const data = bindingSpec.safeParse((await TOML).parse(text));
-    if (data.success) {
-        const doc = parseBindingDocs(text);
-
-        if (doc.success) {
-            return {success: true, data: {...data.data, doc: doc.data?.doc}};
-        } else {
-            return <ParsedResult<FullBindingSpec>>doc;
-        }
+function parseBindingsHelper(
+    text: string,
+    data: BindingSpec
+): ParsedResult<FullBindingSpec> {
+    const doc = parseBindingDocs(text);
+    if (doc.success) {
+        return {success: true, data: {...data, doc: doc.data?.doc}};
     } else {
-        return <ParsedResult<FullBindingSpec>>data;
+        return <ParsedResult<FullBindingSpec>>doc;
     }
+}
+
+export async function parseBindings(text: string): Promise<ParsedResult<FullBindingSpec>> {
+    const toml = (await TOML).parse(text);
+    const data = bindingSpec.safeParse(toml);
+    if (data.success) {
+        return parseBindingsHelper(text, data.data);
+    } else {
+        const legacyParsing = legacyParse(toml);
+        if (legacyParsing.success) {
+            const legacyData = bindingSpec.safeParse(legacyParsing.data);
+            if (legacyData.success) {
+                vscode.window
+                    .showWarningMessage(
+                        'Your Master Key bindings use a legacy keybinding format. Consider ' +
+                            're-activating your desired preset and any user bindings. ' +
+                            'You will need to update your user bindings according ' +
+                            'to the documentation.',
+                        'Open Docs'
+                    )
+                    .then(async request => {
+                        if (request === 'Open Docs') {
+                            await vscode.env.openExternal(
+                                vscode.Uri.parse(
+                                    'https://haberdashpi.github.io/vscode-master-key/'
+                                )
+                            );
+                        }
+                    });
+                return parseBindingsHelper(text, legacyData.data);
+            }
+        }
+    }
+    return <ParsedResult<FullBindingSpec>>data;
 }
 
 export async function parseBindingFile(file: vscode.Uri) {
@@ -444,7 +487,7 @@ export interface IConfigKeyBinding {
         key: string; // repeated here so that commands can display the key pressed
         name?: string;
         description?: string;
-        resetTransient?: boolean;
+        finalKey?: boolean;
         hideInPalette?: boolean;
         hideInDocs?: boolean;
         priority: number;
@@ -452,7 +495,7 @@ export interface IConfigKeyBinding {
         combinedKey: string;
         combinedDescription: string;
         kind: string;
-        path: string;
+        defaults: string;
         mode: string | undefined;
         prefixCode: number | undefined;
     };
