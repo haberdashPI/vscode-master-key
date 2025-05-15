@@ -47,7 +47,7 @@ describe('Configuration Editing', () => {
             console.log('[DEBUG]: setting bindings');
             await setBindings(`
                 [header]
-                ersion = "2.0"
+                version = "2.0"
                 name = "Some Bindings"
 
                 [[bind]]
@@ -60,7 +60,7 @@ describe('Configuration Editing', () => {
             console.log('[DEBUG]: creating new binding setup');
             const bindingEditor = await setupEditor(`
                 [header]
-                ersion = "2.0"
+                version = "2.0"
                 name = "Some New Bindings"
 
                 [[bind]]
@@ -94,7 +94,7 @@ describe('Configuration Editing', () => {
         // ensure the coverage command is available
         await setBindings(`
             [header]
-            ersion = "2.0"
+            version = "2.0"
 
         `);
 

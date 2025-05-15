@@ -13,7 +13,7 @@ describe('Binding Docs', () => {
             # # Test Documentation
             #- IGNORED COMMENT
             [header]
-            ersion = "2.0"
+            version = "2.0"
 
             [[mode]]
             name = "insert"
