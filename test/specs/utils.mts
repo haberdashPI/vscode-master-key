@@ -300,11 +300,11 @@ export async function enterModalKeys(...keySeq: ModalKey[]) {
         const currentKeySeqString = (count ? count + '× ' : '') + keySeqString;
 
         // we do *NOT* await here, so that we can catch display events that are fast
-        await sleep(50);
         if (modalKeyUpdateStatus(keys_)) {
             await waitForKeysTyped(keyCodes, currentKeySeqString, workbench, statusBar);
         } else {
             browser.keys(keyCodes);
+            await sleep(50);
             checkCleared = false;
         }
     }

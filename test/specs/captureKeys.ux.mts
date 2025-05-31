@@ -79,7 +79,7 @@ describe('Search motion command', () => {
 
     it('Captures keys', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys('escape');
+        await enterModalKeys({key: 'escape', updatesStatus: false});;
 
         await movesCursorInEditor(
             async () => {
@@ -95,7 +95,7 @@ describe('Search motion command', () => {
 
     it('Captures saved keys', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys('escape');
+        await enterModalKeys({key: 'escape', updatesStatus: false});;
 
         await movesCursorInEditor(
             async () => {
@@ -108,7 +108,7 @@ describe('Search motion command', () => {
 
     it('Handles escape during capture', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys('escape');
+        await enterModalKeys({key: 'escape', updatesStatus: false});;
 
         await movesCursorInEditor(
             async () => {
@@ -134,7 +134,7 @@ describe('Search motion command', () => {
 
     it('Replaces chars', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys('escape');
+        await enterModalKeys({key: 'escape', updatesStatus: false});;
 
         await enterModalKeys({key: 'r', updatesStatus: false});
         await waitForMode('capture');
@@ -147,7 +147,7 @@ describe('Search motion command', () => {
 
     it('Inserts chars', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys('escape');
+        await enterModalKeys({key: 'escape', updatesStatus: false});;
 
         await enterModalKeys({key: 'i', updatesStatus: false});
         await waitForMode('capture');

@@ -226,7 +226,7 @@ describe('Command State', () => {
         await editor.moveCursor(1, 5);
         await enterModalKeys(['ctrl', 'l'], ['ctrl', 'shift', 'w']);
         expect(await editor.getSelectedText()).toEqual('This');
-        await enterModalKeys('escape');
+        await enterModalKeys({key: 'escape', updatesStatus: false});;
     });
 
     it('Can run stored commands', async () => {

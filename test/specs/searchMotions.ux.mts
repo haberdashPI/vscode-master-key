@@ -157,7 +157,7 @@ labore elit occaecat cupidatat non POINT_B.`);
 
     it('jumps to search location', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys('escape');
+        await enterModalKeys({key: 'escape', updatesStatus: false});;
 
         await movesCursorInEditor(
             async () => {
@@ -173,7 +173,7 @@ labore elit occaecat cupidatat non POINT_B.`);
 
     it('can jump backwards', async () => {
         await editor.moveCursor(2, 1);
-        await enterModalKeys('escape');
+        await enterModalKeys({key: 'escape', updatesStatus: false});;
 
         await movesCursorInEditor(
             async () => {
@@ -189,7 +189,7 @@ labore elit occaecat cupidatat non POINT_B.`);
 
     it('follows `skip` argument', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys('escape');
+        await enterModalKeys({key: 'escape', updatesStatus: false});;
 
         await movesCursorInEditor(
             async () => {
@@ -206,7 +206,7 @@ labore elit occaecat cupidatat non POINT_B.`);
 
     it('handles case sensitive search', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys('escape');
+        await enterModalKeys({key: 'escape', updatesStatus: false});;
 
         await movesCursorInEditor(
             async () => {
@@ -238,7 +238,7 @@ labore elit occaecat cupidatat non POINT_B.`);
 
     it('Can do a wrap-around search', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys('escape');
+        await enterModalKeys({key: 'escape', updatesStatus: false});;
 
         await movesCursorInEditor(
             async () => {
@@ -273,7 +273,7 @@ labore elit occaecat cupidatat non POINT_B.`);
 
     it('Can handle accept after', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys('escape');
+        await enterModalKeys({key: 'escape', updatesStatus: false});
 
         await movesCursorInEditor(
             async () => {
@@ -312,7 +312,7 @@ labore elit occaecat cupidatat non POINT_B.`);
     // broken test
     it.skip('Can handle delete char for acceptAfter', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys('escape');
+        await enterModalKeys({key: 'escape', updatesStatus: false});;
 
         await movesCursorInEditor(
             async () => {
@@ -345,7 +345,7 @@ labore elit occaecat cupidatat non POINT_B.`);
 
     it('can select till match', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys('escape');
+        await enterModalKeys({key: 'escape', updatesStatus: false});;
 
         await movesCursorInEditor(
             async () => {
@@ -363,7 +363,7 @@ labore elit occaecat cupidatat non POINT_B.`);
 
     it('Handles inclusive offset', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys('escape');
+        await enterModalKeys({key: 'escape', updatesStatus: false});;
 
         await movesCursorInEditor(
             async () => {
@@ -388,7 +388,7 @@ labore elit occaecat cupidatat non POINT_B.`);
 
     it('Handles start offset', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys('escape');
+        await enterModalKeys({key: 'escape', updatesStatus: false});;
 
         await movesCursorInEditor(
             async () => {
@@ -413,7 +413,7 @@ labore elit occaecat cupidatat non POINT_B.`);
 
     it('Handles end offset', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys('escape');
+        await enterModalKeys({key: 'escape', updatesStatus: false});;
 
         await movesCursorInEditor(
             async () => {
@@ -438,7 +438,7 @@ labore elit occaecat cupidatat non POINT_B.`);
 
     it('Accepts `text` argument.', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys('escape');
+        await enterModalKeys({key: 'escape', updatesStatus: false});;
 
         await movesCursorInEditor(
             async () => {
@@ -451,7 +451,7 @@ labore elit occaecat cupidatat non POINT_B.`);
 
     it('Handles `regex` option.', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys('escape');
+        await enterModalKeys({key: 'escape', updatesStatus: false});;
 
         await movesCursorInEditor(
             async () => {
@@ -483,7 +483,7 @@ labore elit occaecat cupidatat non POINT_B.`);
 
     it('Handles multiple registers', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys('escape');
+        await enterModalKeys({key: 'escape', updatesStatus: false});;
 
         await movesCursorInEditor(
             async () => {
@@ -507,7 +507,7 @@ labore elit occaecat cupidatat non POINT_B.`);
 
     it('Handles post-search commands', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys('escape');
+        await enterModalKeys({key: 'escape', updatesStatus: false});;
 
         await movesCursorInEditor(
             async () => {
