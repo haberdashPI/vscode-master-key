@@ -34,6 +34,10 @@ You can revert these changes later using `Master Key: Deactivate Keybindings`.
 
 To learn more about how to use Master Key [read the documentation](haberdashpi.github.io/vscode-master-key).
 
+### Release Plans
+
+The most recent version of Master Key on VSCode's marketplace is 0.3.x, while the documentation and README are currently for the soon-to-be-released 0.4.0. Because this newest version is somewhat disruptive (the keybinding file format has changed), the plan is to complete some important code refactoring work, which may necessitate a few additional changes to the file format, before the release of 0.4.0.
+
 ## Feature Highlights
 
 Master key has quite of a few features, including:
