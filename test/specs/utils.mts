@@ -19,6 +19,7 @@ hideInDocs = true
 `;
 
 export async function setBindings(str: string) {
+    await sleep(2000); // wait for vscode to finish loading
     const editor = await setupEditor(str + COVERAGE_KEY_COMMAND);
     await editor.moveCursor(1, 1);
 
