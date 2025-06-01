@@ -130,7 +130,7 @@ describe('Visual Docs', () => {
         await sleep(500);
 
         await workbench.executeCommand('Master Key: Show Visual Documentation');
-        await enterModalKeys({key: 'escape', updatesStatus: false});;
+        await enterModalKeys({key: 'escape', updatesStatus: false});
 
         await browser.waitUntil(async () => (await workbench.getAllWebviews()).length > 0);
         const webviews = await workbench.getAllWebviews();

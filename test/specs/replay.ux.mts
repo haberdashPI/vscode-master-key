@@ -243,7 +243,7 @@ i j k l`);
 
     it('Handles basic recording', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys({key: 'escape', updatesStatus: false});;
+        await enterModalKeys({key: 'escape', updatesStatus: false});
 
         await enterModalKeys(['shift', 'q']);
         await waitForMode('rec: normal');
@@ -269,7 +269,7 @@ i j k l`);
 
     it('Replays from history', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys({key: 'escape', updatesStatus: false});;
+        await enterModalKeys({key: 'escape', updatesStatus: false});
 
         await movesCursorInEditor(
             async () => {
@@ -291,7 +291,7 @@ i j k l`);
 
     it('Replays counts', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys({key: 'escape', updatesStatus: false});;
+        await enterModalKeys({key: 'escape', updatesStatus: false});
 
         await enterModalKeys(['shift', 'q']);
         await movesCursorInEditor(
@@ -314,7 +314,7 @@ i j k l`);
 
     it('Replays `if` commands', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys({key: 'escape', updatesStatus: false});;
+        await enterModalKeys({key: 'escape', updatesStatus: false});
 
         await enterModalKeys(['shift', 'q']);
         await movesCursorInEditor(
@@ -355,7 +355,7 @@ i j k l`);
 
     it('Replays search', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys({key: 'escape', updatesStatus: false});;
+        await enterModalKeys({key: 'escape', updatesStatus: false});
 
         await enterModalKeys(['shift', 'q']);
         await movesCursorInEditor(
@@ -383,7 +383,7 @@ i j k l`);
 
     it('Replays search with `acceptAfter`', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys({key: 'escape', updatesStatus: false});;
+        await enterModalKeys({key: 'escape', updatesStatus: false});
 
         await enterModalKeys(['shift', 'q']);
         await movesCursorInEditor(
@@ -410,7 +410,7 @@ i j k l`);
 
     it('Replays search with canceled entry', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys({key: 'escape', updatesStatus: false});;
+        await enterModalKeys({key: 'escape', updatesStatus: false});
 
         await enterModalKeys(['shift', 'q']);
         await movesCursorInEditor(
@@ -441,7 +441,7 @@ i j k l`);
 
     it('Replays captured keys', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys({key: 'escape', updatesStatus: false});;
+        await enterModalKeys({key: 'escape', updatesStatus: false});
 
         await enterModalKeys(['shift', 'q']);
         await movesCursorInEditor(
@@ -471,7 +471,7 @@ i j k l`);
 
     it('Replays canceled capture keys', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys({key: 'escape', updatesStatus: false});;
+        await enterModalKeys({key: 'escape', updatesStatus: false});
 
         await enterModalKeys(['shift', 'q']);
         await movesCursorInEditor(
@@ -509,7 +509,7 @@ i j k l`);
 
     it('Replaces chars', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys({key: 'escape', updatesStatus: false});;
+        await enterModalKeys({key: 'escape', updatesStatus: false});
 
         await enterModalKeys(['shift', 'q']);
         await enterModalKeys({key: 'r', updatesStatus: false});
@@ -536,7 +536,7 @@ i j k l`);
 
     it('Insert chars', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys({key: 'escape', updatesStatus: false});;
+        await enterModalKeys({key: 'escape', updatesStatus: false});
 
         await enterModalKeys(['shift', 'q']);
         await enterModalKeys({key: ['ctrl', 'i'], updatesStatus: false});
@@ -561,7 +561,7 @@ i j k l`);
 
     it('Repeats replay using count', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys({key: 'escape', updatesStatus: false});;
+        await enterModalKeys({key: 'escape', updatesStatus: false});
 
         await enterModalKeys(['shift', 'q']);
         await waitForMode('rec: normal');
@@ -589,7 +589,7 @@ i j k l`);
 
     it('Can be stored/restored', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys({key: 'escape', updatesStatus: false});;
+        await enterModalKeys({key: 'escape', updatesStatus: false});
 
         // record move A
         await enterModalKeys(['shift', 'q']);
@@ -644,7 +644,7 @@ i j k l`);
 
     it('Handles nested replay', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys({key: 'escape', updatesStatus: false});;
+        await enterModalKeys({key: 'escape', updatesStatus: false});
 
         await enterModalKeys(['shift', 'q']);
         await waitForMode('rec: normal');

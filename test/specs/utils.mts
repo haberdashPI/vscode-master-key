@@ -38,6 +38,7 @@ export async function setBindings(str: string) {
     });
     await sleep(200);
     input = await new InputBox(workbench.locatorMap).wait();
+    await sleep(500);
     await input.setText('Current File');
     await input.confirm();
 
@@ -89,8 +90,9 @@ export async function cursorToTop(editor: TextEditor) {
     // slowly
     (await editor.elem).click();
     await sleep(500);
-    const workbench = await browser.getWorkbench();
-    await workbench.executeCommand('Select All');
+    await browser.executeWorkbench(async vscode => {
+        await vscode.commands.executeCommand('editor.action.selectAll');
+    });
     await sleep(100);
     await browser.keys(Key.ArrowLeft);
     await sleep(100);
