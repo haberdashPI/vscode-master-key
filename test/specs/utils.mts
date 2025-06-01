@@ -19,7 +19,7 @@ hideInDocs = true
 `;
 
 export async function setBindings(str: string) {
-    await sleep(2000); // wait for vscode to finish loading
+    await sleep(5000); // wait for vscode to finish loading
     const editor = await setupEditor(str + COVERAGE_KEY_COMMAND);
     await editor.moveCursor(1, 1);
 
@@ -45,20 +45,23 @@ export async function setBindings(str: string) {
 
     console.log('[DEBUG]: await notification');
     const messagePattern = /Master keybindings were added to /;
-    const message = await browser.waitUntil(async () => {
-        const notifs = await workbench.getNotifications();
-        if (notifs.length > 0) {
-            for (const not of notifs) {
-                const m = await not.getMessage();
-                console.log('[UTIL]: notification message — ' + m);
-                if (messagePattern.test(m)) {
-                    return m;
+    const message = await browser.waitUntil(
+        async () => {
+            const notifs = await workbench.getNotifications();
+            if (notifs.length > 0) {
+                for (const not of notifs) {
+                    const m = await not.getMessage();
+                    console.log('[UTIL]: notification message — ' + m);
+                    if (messagePattern.test(m)) {
+                        return m;
+                    }
                 }
+            } else {
+                return false;
             }
-        } else {
-            return false;
-        }
-    });
+        },
+        {timeout: 50_000}
+    );
     expect(message).toBeTruthy();
     // downstream tests appear to sometimes be flaky by failing to respond
     // to bindings appropriately, given vscode some time to actually load/
