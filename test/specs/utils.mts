@@ -299,12 +299,12 @@ export async function enterModalKeys(...keySeq: ModalKey[]) {
         }
         const currentKeySeqString = (count ? count + '× ' : '') + keySeqString;
 
-        await sleep(30);
+        await sleep(50);
         if (modalKeyUpdateStatus(keys_)) {
             await waitForKeysTyped(keyCodes, currentKeySeqString, workbench, statusBar);
         } else {
             browser.keys(keyCodes);
-            await sleep(25);
+            await sleep(100);
             checkCleared = false;
         }
     }
