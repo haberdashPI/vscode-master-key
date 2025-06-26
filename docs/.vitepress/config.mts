@@ -5,6 +5,7 @@ import { bindingItems } from './bindings.mjs' // auto generated file (see .simpl
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
     title: "Master Key",
+    srcExclude: ['templates/**/*.md'],
     description: "Powerful VSCode Keybinding Customization",
     themeConfig: {
         search: { provider: 'local' },
