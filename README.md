@@ -36,7 +36,7 @@ To learn more about how to use Master Key [read the documentation](haberdashpi.g
 
 ### Release Plans
 
-The most recent version of Master Key on VSCode's marketplace is 0.3.x, while the documentation and README are currently for the soon-to-be-released 0.4.0. Because this newest version is somewhat disruptive (the keybinding file format has changed), the plan is to complete some important code refactoring work, which may necessitate a few additional changes to the file format, before the release of 0.4.0.
+The most recent version of Master Key on VSCode's marketplace is 0.3.x, while the documentation and README are currently for the soon-to-be-released 0.4.0. (Refer to the tagged releases to see the older README). Because this newest version is somewhat disruptive (the keybinding file format has changed), the plan is to complete some important code refactoring work, which may necessitate a few additional changes to the file format, before the release of 0.4.0.
 
 ## Feature Highlights
 
