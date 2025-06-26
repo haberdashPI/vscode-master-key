@@ -18,7 +18,7 @@ describe('Search motion command', () => {
     before(async () => {
         await setBindings(`
             [header]
-            version = "1.0"
+            version = "2.0"
 
             [[mode]]
             name = "insert"
@@ -32,7 +32,7 @@ describe('Search motion command', () => {
             key = "escape"
             mode = []
             command = "master-key.enterNormal"
-            prefixes = "<all-prefixes>"
+            prefixes = "{{all_prefixes}}"
 
             [[bind]]
             key = "shift+i"
@@ -40,7 +40,7 @@ describe('Search motion command', () => {
             mode = "normal"
             command = "master-key.enterInsert"
 
-            [[path]]
+            [[default]]
             name = "search"
             id = "search"
             default.mode = "normal"
@@ -49,12 +49,12 @@ describe('Search motion command', () => {
             [[bind]]
             name = "search"
             key = "/"
-            path = "search"
+            defaults = "search"
 
             [[bind]]
             name = "search backwards"
             key = "shift+/"
-            path = "search"
+            defaults = "search"
             args.backwards = true
 
             [[bind]]
@@ -72,80 +72,80 @@ describe('Search motion command', () => {
             [[bind]]
             name = "search (case sensitive)"
             key = "ctrl+/"
-            path = "search"
+            defaults = "search"
             args.caseSensitive = true
 
             [[bind]]
             name = "search (case sensitive)"
             key = "w /"
-            path = "search"
+            defaults = "search"
             args.wrapAround = true
 
             [[bind]]
             name = "to letter"
             key = "t"
-            path = "search"
+            defaults = "search"
             args.acceptAfter = 1
 
             [[bind]]
             name = "to letter"
             key = "shift+t"
-            path = "search"
+            defaults = "search"
             args.acceptAfter = 2
 
             [[bind]]
             name = "select search"
             key = "s /"
-            path = "search"
+            defaults = "search"
             args.selectTillMatch = true
 
             [[bind]]
             name = "inclusive search"
             key = "i /"
-            path = "search"
+            defaults = "search"
             args.offset = "inclusive"
 
             [[bind]]
             name = "inclusive search"
             key = "a /"
-            path = "search"
+            defaults = "search"
             args.offset = "start"
 
             [[bind]]
             name = "inclusive search"
             key = "b /"
-            path = "search"
+            defaults = "search"
             args.offset = "end"
 
             [[bind]]
             name = "preset search"
             key = "p /"
-            path = "search"
+            defaults = "search"
             args.text = "point_"
 
             [[bind]]
             name = "regex search"
             key = "r /"
-            path = "search"
+            defaults = "search"
             args.regex = true
 
             [[bind]]
             name = "register search"
             key = "shift+r /"
-            path = "search"
+            defaults = "search"
             args.register = "other"
 
             [[bind]]
             name = "select word search"
             key = "e /"
-            path = "search"
+            defaults = "search"
             command = "runCommands"
             args.commands = ["master-key.search", "cursorWordEndRightSelect"]
 
             [[bind]]
             name = "skip search"
             key = "shift+2 /"
-            path = "search"
+            defaults = "search"
             args.skip = 1
         `);
         editor =
@@ -157,7 +157,7 @@ labore elit occaecat cupidatat non POINT_B.`);
 
     it('jumps to search location', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys('escape');
+        await enterModalKeys({key: 'escape', updatesStatus: false});
 
         await movesCursorInEditor(
             async () => {
@@ -173,7 +173,7 @@ labore elit occaecat cupidatat non POINT_B.`);
 
     it('can jump backwards', async () => {
         await editor.moveCursor(2, 1);
-        await enterModalKeys('escape');
+        await enterModalKeys({key: 'escape', updatesStatus: false});
 
         await movesCursorInEditor(
             async () => {
@@ -189,7 +189,7 @@ labore elit occaecat cupidatat non POINT_B.`);
 
     it('follows `skip` argument', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys('escape');
+        await enterModalKeys({key: 'escape', updatesStatus: false});
 
         await movesCursorInEditor(
             async () => {
@@ -206,7 +206,7 @@ labore elit occaecat cupidatat non POINT_B.`);
 
     it('handles case sensitive search', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys('escape');
+        await enterModalKeys({key: 'escape', updatesStatus: false});
 
         await movesCursorInEditor(
             async () => {
@@ -238,7 +238,7 @@ labore elit occaecat cupidatat non POINT_B.`);
 
     it('Can do a wrap-around search', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys('escape');
+        await enterModalKeys({key: 'escape', updatesStatus: false});
 
         await movesCursorInEditor(
             async () => {
@@ -273,7 +273,7 @@ labore elit occaecat cupidatat non POINT_B.`);
 
     it('Can handle accept after', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys('escape');
+        await enterModalKeys({key: 'escape', updatesStatus: false});
 
         await movesCursorInEditor(
             async () => {
@@ -312,7 +312,7 @@ labore elit occaecat cupidatat non POINT_B.`);
     // broken test
     it.skip('Can handle delete char for acceptAfter', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys('escape');
+        await enterModalKeys({key: 'escape', updatesStatus: false});
 
         await movesCursorInEditor(
             async () => {
@@ -345,7 +345,7 @@ labore elit occaecat cupidatat non POINT_B.`);
 
     it('can select till match', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys('escape');
+        await enterModalKeys({key: 'escape', updatesStatus: false});
 
         await movesCursorInEditor(
             async () => {
@@ -363,7 +363,7 @@ labore elit occaecat cupidatat non POINT_B.`);
 
     it('Handles inclusive offset', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys('escape');
+        await enterModalKeys({key: 'escape', updatesStatus: false});
 
         await movesCursorInEditor(
             async () => {
@@ -388,7 +388,7 @@ labore elit occaecat cupidatat non POINT_B.`);
 
     it('Handles start offset', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys('escape');
+        await enterModalKeys({key: 'escape', updatesStatus: false});
 
         await movesCursorInEditor(
             async () => {
@@ -413,7 +413,7 @@ labore elit occaecat cupidatat non POINT_B.`);
 
     it('Handles end offset', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys('escape');
+        await enterModalKeys({key: 'escape', updatesStatus: false});
 
         await movesCursorInEditor(
             async () => {
@@ -438,7 +438,7 @@ labore elit occaecat cupidatat non POINT_B.`);
 
     it('Accepts `text` argument.', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys('escape');
+        await enterModalKeys({key: 'escape', updatesStatus: false});
 
         await movesCursorInEditor(
             async () => {
@@ -451,7 +451,7 @@ labore elit occaecat cupidatat non POINT_B.`);
 
     it('Handles `regex` option.', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys('escape');
+        await enterModalKeys({key: 'escape', updatesStatus: false});
 
         await movesCursorInEditor(
             async () => {
@@ -483,7 +483,7 @@ labore elit occaecat cupidatat non POINT_B.`);
 
     it('Handles multiple registers', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys('escape');
+        await enterModalKeys({key: 'escape', updatesStatus: false});
 
         await movesCursorInEditor(
             async () => {
@@ -507,7 +507,7 @@ labore elit occaecat cupidatat non POINT_B.`);
 
     it('Handles post-search commands', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys('escape');
+        await enterModalKeys({key: 'escape', updatesStatus: false});
 
         await movesCursorInEditor(
             async () => {

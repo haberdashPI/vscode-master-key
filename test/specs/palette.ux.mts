@@ -19,7 +19,7 @@ describe('Palette', () => {
     before(async () => {
         await setBindings(`
             [header]
-            version = "1.0"
+            version = "2.0"
 
             [[mode]]
             name = "insert"
@@ -32,20 +32,20 @@ describe('Palette', () => {
             name = "normal mode"
             key = "escape"
             command = "master-key.enterNormal"
-            prefixes = "<all-prefixes>"
+            prefixes = "{{all_prefixes}}"
             hideInPalette = true
 
-            [[path]]
+            [[default]]
             id = "motion"
             name = "basic motions"
-            when = "editorTextFocus"
+            appendWhen = "editorTextFocus"
             default.command = "cursorMove"
             default.mode = "normal"
             default.when = "editorTextFocus"
             default.computedArgs.value = "count"
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             name = "left"
             combinedName = "left/right"
             combinedKey = "h/l"
@@ -53,20 +53,20 @@ describe('Palette', () => {
             args.to = "left"
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             name = "right"
             combinedName = "left/right"
             key = "l"
             args.to = "right"
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             name = "down"
             key = "j"
             args.to = "down"
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             name = "up"
             key = "k"
             args.to = "up"
@@ -81,7 +81,7 @@ describe('Palette', () => {
             [[bind]]
             name = "show palette"
             key = "shift+;"
-            resetTransient = false
+            finalKey = false
             hideInPalette = true
             prefixes = []
             when = "editorTextFocus"
@@ -89,7 +89,7 @@ describe('Palette', () => {
             command = "master-key.commandSuggestions"
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             name = "funny right"
             key = "w w"
             when = "editorTextFocus"
@@ -166,7 +166,7 @@ describe('Palette', () => {
         await sleep(1000);
         await setBindings(`
             [header]
-            version = "1.0"
+            version = "2.0"
 
             [[mode]]
             name = "insert"
@@ -179,10 +179,10 @@ describe('Palette', () => {
             name = "normal mode"
             key = "escape"
             command = "master-key.enterNormal"
-            prefixes = "<all-prefixes>"
+            prefixes = "{{all_prefixes}}"
             hideInPalette = true
 
-            [[path]]
+            [[default]]
             id = "motion"
             name = "basic motions"
             default.command = "cursorMove"
@@ -191,13 +191,13 @@ describe('Palette', () => {
             default.computedArgs.value = "count"
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             name = "down"
             key = "j"
             args.to = "down"
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             name = "up"
             key = "k"
             args.to = "up"
@@ -211,7 +211,7 @@ describe('Palette', () => {
             [[bind]]
             name = "show palette"
             key = "shift+;"
-            resetTransient = false
+            finalKey = false
             hideInPalette = true
             prefixes = []
             mode = "normal"

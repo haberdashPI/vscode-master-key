@@ -13,7 +13,7 @@ describe('Binding Docs', () => {
             # # Test Documentation
             #- IGNORED COMMENT
             [header]
-            version = "1.0"
+            version = "2.0"
 
             [[mode]]
             name = "insert"
@@ -38,10 +38,10 @@ describe('Binding Docs', () => {
             name = "normal mode"
             key = "escape"
             command = "master-key.enterNormal"
-            prefixes = "<all-prefixes>"
+            prefixes = "{{all_prefixes}}"
             hideInPalette = true
 
-            [[path]]
+            [[default]]
             id = "motion"
             name = "basic motions"
             default.command = "cursorMove"
@@ -50,21 +50,21 @@ describe('Binding Docs', () => {
             default.computedArgs.value = "count"
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             name = "left"
             key = "h"
             args.to = "left"
             kind = "left"
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             name = "right"
             key = "l"
             args.to = "right"
             kind = "right"
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             name = "down"
             key = "j"
             args.to = "down"
@@ -87,14 +87,14 @@ describe('Binding Docs', () => {
             # Aliquip ipsum enim cupidatat aute occaecat magna nostrud qui labore.
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             name = "up"
             key = "k"
             args.to = "up"
             kind = "right"
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             name = "funny right"
             key = "w w"
             mode = "normal"

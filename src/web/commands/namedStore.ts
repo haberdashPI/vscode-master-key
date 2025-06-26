@@ -8,37 +8,9 @@ import {doCommand} from './do';
 import {merge, omit} from 'lodash';
 import {bindingCommand} from '../keybindings/parsing';
 
-const restoreNamedArgs = z.object({
-    description: z.string().optional(),
-    name: z.string(),
-});
-
-const stored: Record<string, Record<string, unknown>> = {};
-
-const CAPTURED = 'captured';
-
-async function restoreNamed(args_: unknown): Promise<CommandResult> {
-    const args = validateInput('master-key.restoreNamed', args_, restoreNamedArgs);
-    if (args) {
-        if (!stored[args.name]) {
-            vscode.window.showErrorMessage(`No values are stored under '${args.name}'.`);
-        }
-        const items = Object.keys(stored[args.name]).map(x => ({label: x}));
-        const selected = await vscode.window.showQuickPick(items);
-        if (selected !== undefined) {
-            const a = args;
-            const s = selected;
-            await withState(async state => {
-                return state.set(CAPTURED, {public: true}, stored[a.name][s.label]);
-            });
-        }
-    }
-    return;
-}
-
 const storeNamedArgs = z.object({
     description: z.string().optional(),
-    name: z.string(),
+    register: z.string(),
     contents: z.string(),
 });
 
@@ -55,10 +27,10 @@ async function storeNamed(args_: unknown): Promise<CommandResult> {
             return new Promise<CommandResult>((resolve, reject) => {
                 try {
                     const picker = vscode.window.createQuickPick();
-                    picker.title = args.description || args.name;
+                    picker.title = args.description || args.register;
                     picker.placeholder = 'Enter a new or existing name';
                     const options: vscode.QuickPickItem[] = Object.keys(
-                        stored[args.name] || {}
+                        stored[args.register] || {}
                     ).map(k => ({label: k}));
                     options.unshift(
                         {label: 'New Name...', alwaysShow: true},
@@ -76,10 +48,10 @@ async function storeNamed(args_: unknown): Promise<CommandResult> {
                         } else {
                             name = item.label;
                         }
-                        if (stored[args.name] === undefined) {
-                            stored[args.name] = {};
+                        if (stored[args.register] === undefined) {
+                            stored[args.register] = {};
                         }
-                        stored[args.name][name] = value;
+                        stored[args.register][name] = value;
                         picker.hide();
                     });
                     picker.onDidHide(_ => {
@@ -93,6 +65,36 @@ async function storeNamed(args_: unknown): Promise<CommandResult> {
         }
     }
     return Promise.resolve(undefined);
+}
+
+const restoreNamedArgs = z.object({
+    description: z.string().optional(),
+    register: z.string(),
+});
+
+const stored: Record<string, Record<string, unknown>> = {};
+
+const CAPTURED = 'captured';
+
+async function restoreNamed(args_: unknown): Promise<CommandResult> {
+    const args = validateInput('master-key.restoreNamed', args_, restoreNamedArgs);
+    if (args) {
+        if (!stored[args.register]) {
+            vscode.window.showErrorMessage(
+                `No values are stored under '${args.register}'.`
+            );
+        }
+        const items = Object.keys(stored[args.register]).map(x => ({label: x}));
+        const selected = await vscode.window.showQuickPick(items);
+        if (selected !== undefined) {
+            const a = args;
+            const s = selected;
+            await withState(async state => {
+                return state.set(CAPTURED, {public: true}, stored[a.register][s.label]);
+            });
+        }
+    }
+    return;
 }
 
 const storeCommandArgs = z.object({

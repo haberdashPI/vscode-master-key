@@ -20,7 +20,7 @@ describe('Simple Motions', () => {
     before(async () => {
         await setBindings(`
             [header]
-            version = "1.0"
+            version = "2.0"
 
             [[mode]]
             name = "insert"
@@ -33,9 +33,9 @@ describe('Simple Motions', () => {
             name = "normal mode"
             key = "escape"
             command = "master-key.enterNormal"
-            prefixes = "<all-prefixes>"
+            prefixes = "{{all_prefixes}}"
 
-            [[path]]
+            [[default]]
             id = "motion"
             name = "basic motions"
             default.command = "cursorMove"
@@ -44,25 +44,25 @@ describe('Simple Motions', () => {
             default.computedArgs.value = "count"
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             name = "left"
             key = "[KeyH]"
             args.to = "left"
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             name = "right"
             key = "[KeyL]"
             args.to = "right"
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             name = "down"
             key = "[KeyJ]"
             args.to = "down"
 
             [[bind]]
-            path = "motion"
+            defaults = "motion"
             name = "up"
             key = "[KeyK]"
             args.to = "up"
@@ -73,7 +73,7 @@ describe('Simple Motions', () => {
             mode = "normal"
             command = "cursorMove"
             args.to = "right"
-            repeat = 1
+            computedRepeat = 1
 
             # TODO: write a test for these
             [[bind]]
@@ -82,7 +82,7 @@ describe('Simple Motions', () => {
             key = "shift+[KeyJ]"
             command = "cursorMove"
             args.to = "down"
-            repeat = "1+2"
+            computedRepeat = "1+2"
 
             [[bind]]
             mode = "normal"
@@ -90,7 +90,7 @@ describe('Simple Motions', () => {
             key = "ctrl+[KeyJ]"
             command = "cursorMove"
             args.to = "down"
-            repeat = "'a'+'b'"
+            computedRepeat = "'a'+'b'"
 
             [[bind]]
             name = "insert mode"
@@ -113,7 +113,7 @@ describe('Simple Motions', () => {
             #- uses the new layout independent keys in the '{key: regex}'
             #- field
             args.value = "{num.slice(6,7)}"
-            resetTransient = false
+            finalKey = false
         `);
         editor =
             await setupEditor(`Anim reprehenderit voluptate magna excepteur dolore aliqua minim labore est

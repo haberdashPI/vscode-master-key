@@ -9,7 +9,6 @@ import {
     enterModalKeys,
     storeCoverageStats,
     waitForClearedKeyStatus,
-    waitForKeysTyped,
 } from './utils.mts';
 import 'wdio-vscode-service';
 import {sleep, TextEditor} from 'wdio-vscode-service';
@@ -19,7 +18,7 @@ describe('Command State', () => {
     before(async () => {
         await setBindings(`
             [header]
-            version = "1.0"
+            version = "2.0"
 
             [define]
             select_on = false
@@ -73,22 +72,22 @@ describe('Command State', () => {
             mode = ["left", "default"]
             command = "master-key.prefix"
             args.flag = "select_on"
-            resetTransient = false
+            finalKey = false
 
-            [[path]]
+            [[default]]
             id = "word"
             name = "word"
             default.prefixes = ["", "ctrl+l"]
 
             [[bind]]
-            path = "word"
+            defaults = "word"
             name = "word motion"
             key = "ctrl+shift+w"
             when = "!master-key.select_on"
             command = "cursorWordEndRight"
 
             [[bind]]
-            path = "word"
+            defaults = "word"
             name = "word motion"
             key = "ctrl+shift+w"
             when = "!master-key.select_on"
@@ -96,7 +95,7 @@ describe('Command State', () => {
             command = "cursorWordLeft"
 
             [[bind]]
-            path = "word"
+            defaults = "word"
             key = "ctrl+shift+w"
             when = "master-key.select_on"
             command = "cursorWordEndRightSelect"
@@ -129,12 +128,12 @@ describe('Command State', () => {
             args.register = "operation"
 
             [[bind]]
-            path = "word"
+            defaults = "word"
             key = "ctrl+h ctrl+shift+w"
             command = "notACommand"
 
             [[bind]]
-            path = "word"
+            defaults = "word"
             key = "ctrl+shift+w"
             mode = "left"
             when = "master-key.select_on"
@@ -227,7 +226,7 @@ describe('Command State', () => {
         await editor.moveCursor(1, 5);
         await enterModalKeys(['ctrl', 'l'], ['ctrl', 'shift', 'w']);
         expect(await editor.getSelectedText()).toEqual('This');
-        await enterModalKeys('escape');
+        await enterModalKeys({key: 'escape', updatesStatus: false});
     });
 
     it('Can run stored commands', async () => {

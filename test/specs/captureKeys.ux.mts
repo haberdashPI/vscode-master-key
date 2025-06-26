@@ -18,16 +18,16 @@ describe('Search motion command', () => {
     before(async () => {
         await setBindings(`
             [header]
-            version = "1.0"
+            version = "2.0"
 
             [[bind]]
             description = "Enter normal mode"
             key = "escape"
             mode = []
             command = "master-key.enterNormal"
-            prefixes = "<all-prefixes>"
+            prefixes = "{{all_prefixes}}"
 
-            [[path]]
+            [[default]]
             name = "capture"
             id = "capture"
             default.mode = "normal"
@@ -35,7 +35,7 @@ describe('Search motion command', () => {
             [[bind]]
             name = "1"
             key = "t"
-            path = "capture"
+            defaults = "capture"
             command = "runCommands"
 
             [[bind.args.commands]]
@@ -49,7 +49,7 @@ describe('Search motion command', () => {
             [[bind]]
             name = "1"
             key = "f"
-            path = "capture"
+            defaults = "capture"
             command = "runCommands"
 
             [[bind.args.commands]]
@@ -64,13 +64,13 @@ describe('Search motion command', () => {
             [[bind]]
             name = "replace"
             key = "r"
-            path = "capture"
+            defaults = "capture"
             command = "master-key.replaceChar"
 
             [[bind]]
             name = "replace"
             key = "i"
-            path = "capture"
+            defaults = "capture"
             command = "master-key.insertChar"
         `);
         editor = await setupEditor('foobar bum POINT_A');
@@ -79,7 +79,7 @@ describe('Search motion command', () => {
 
     it('Captures keys', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys('escape');
+        await enterModalKeys({key: 'escape', updatesStatus: false});
 
         await movesCursorInEditor(
             async () => {
@@ -95,7 +95,7 @@ describe('Search motion command', () => {
 
     it('Captures saved keys', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys('escape');
+        await enterModalKeys({key: 'escape', updatesStatus: false});
 
         await movesCursorInEditor(
             async () => {
@@ -108,7 +108,7 @@ describe('Search motion command', () => {
 
     it('Handles escape during capture', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys('escape');
+        await enterModalKeys({key: 'escape', updatesStatus: false});
 
         await movesCursorInEditor(
             async () => {
@@ -134,7 +134,7 @@ describe('Search motion command', () => {
 
     it('Replaces chars', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys('escape');
+        await enterModalKeys({key: 'escape', updatesStatus: false});
 
         await enterModalKeys({key: 'r', updatesStatus: false});
         await waitForMode('capture');
@@ -147,7 +147,7 @@ describe('Search motion command', () => {
 
     it('Inserts chars', async () => {
         await editor.moveCursor(1, 1);
-        await enterModalKeys('escape');
+        await enterModalKeys({key: 'escape', updatesStatus: false});
 
         await enterModalKeys({key: 'i', updatesStatus: false});
         await waitForMode('capture');

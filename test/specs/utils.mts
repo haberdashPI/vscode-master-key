@@ -12,13 +12,14 @@ const COVERAGE_KEY_COMMAND = `
 name = "show coverage"
 key = "ctrl+shift+alt+c"
 mode = []
-prefixes = "<all-prefixes>"
+prefixes = "{{all_prefixes}}"
 command = "master-key.writeCoverageToEditor"
 hideInPalette = true
 hideInDocs = true
 `;
 
 export async function setBindings(str: string) {
+    await sleep(5000); // wait for vscode to finish loading
     const editor = await setupEditor(str + COVERAGE_KEY_COMMAND);
     await editor.moveCursor(1, 1);
 
@@ -38,25 +39,29 @@ export async function setBindings(str: string) {
     });
     await sleep(200);
     input = await new InputBox(workbench.locatorMap).wait();
+    await sleep(500);
     await input.setText('Current File');
     await input.confirm();
 
     console.log('[DEBUG]: await notification');
     const messagePattern = /Master keybindings were added to /;
-    const message = await browser.waitUntil(async () => {
-        const notifs = await workbench.getNotifications();
-        if (notifs.length > 0) {
-            for (const not of notifs) {
-                const m = await not.getMessage();
-                console.log('[UTIL]: notification message — ' + m);
-                if (messagePattern.test(m)) {
-                    return m;
+    const message = await browser.waitUntil(
+        async () => {
+            const notifs = await workbench.getNotifications();
+            if (notifs.length > 0) {
+                for (const not of notifs) {
+                    const m = await not.getMessage();
+                    console.log('[UTIL]: notification message — ' + m);
+                    if (messagePattern.test(m)) {
+                        return m;
+                    }
                 }
+            } else {
+                return false;
             }
-        } else {
-            return false;
-        }
-    });
+        },
+        {timeout: 50_000}
+    );
     expect(message).toBeTruthy();
     // downstream tests appear to sometimes be flaky by failing to respond
     // to bindings appropriately, given vscode some time to actually load/
@@ -89,8 +94,9 @@ export async function cursorToTop(editor: TextEditor) {
     // slowly
     (await editor.elem).click();
     await sleep(500);
-    const workbench = await browser.getWorkbench();
-    await workbench.executeCommand('Select All');
+    await browser.executeWorkbench(async vscode => {
+        await vscode.commands.executeCommand('editor.action.selectAll');
+    });
     await sleep(100);
     await browser.keys(Key.ArrowLeft);
     await sleep(100);
@@ -299,12 +305,12 @@ export async function enterModalKeys(...keySeq: ModalKey[]) {
         }
         const currentKeySeqString = (count ? count + '× ' : '') + keySeqString;
 
-        // we do *NOT* await here, so that we can catch display events that are fast
         await sleep(50);
         if (modalKeyUpdateStatus(keys_)) {
             await waitForKeysTyped(keyCodes, currentKeySeqString, workbench, statusBar);
         } else {
             browser.keys(keyCodes);
+            await sleep(100);
             checkCleared = false;
         }
     }
