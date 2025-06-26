@@ -87,12 +87,12 @@ describe('Replay', () => {
             default.mode = "normal"
 
             [[bind]]
-            foreach.num = ["{key: [0-3]}"]
-            key = "shift+{num}"
+            foreach.num = ["{{key: [0-3]}}"]
+            key = "shift+{{num}}"
             mode = "normal"
-            name = "count {num}"
+            name = "count {{num}}"
             command = "master-key.updateCount"
-            args.value = "{num}"
+            args.value = "{{num}}"
             finalKey = false
 
             [[bind]]

@@ -21,7 +21,7 @@ export const INPUT_CAPTURE_COMMANDS = [
  *
  * # Master Keybindings
  *
- * This defines version 0.4 of the master keybinding file format.
+ * This defines version 2.0 of the master keybinding file format.
  *
  * Master keybindings are [TOML](https://toml.io/en/) files composed of the following
  * top-level fields:
@@ -36,7 +36,7 @@ export const INPUT_CAPTURE_COMMANDS = [
  *
  * ```toml
  * [header]
- * version = "0.4" # this denotes the file-format version, it must be semver compatible with 0.4
+ * version = "2.0" # this denotes the file-format version, it must be semver compatible with 2.0
  * name = "My Bindings"
  *
  * [[mode]]
@@ -107,14 +107,14 @@ export const INPUT_CAPTURE_COMMANDS = [
  *
  * ```toml
  * [header]
- * version = 0.4
+ * version = 2.0
  * name = "My Bindings"
  * requiredExtensions = ["Vue.volar"]
  * ```
  *
  * ## Required Fields
  *
- * - `version`: Must be version 0.4.x (typically 0.4); only version 0.4 currently exists.
+ * - `version`: Must be version 2.0.x (typically 2.0); only version 2.0 currently exists.
  *    Follows [semantic versioning](https://semver.org/).
  * - `name`: The name of this keybinding set; shows up in menus to select keybinding presets
  * - `requiredExtensions`: An array of string identifiers for all extensions used by this
