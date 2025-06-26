@@ -16,7 +16,8 @@ const selectHistoryArgs = z
     })
     .strict()
     .refine(x => x.whereComputedIndexIs || x.whereComputedRangeIs || x.value, {
-        message: 'Either `at`, `range` or `value` is required.',
+        message:
+            'Either `whereComputedIndexIs`, `whereComputedRangeIs` or `value` is required.',
     });
 
 const evalContext = new EvalContext();
