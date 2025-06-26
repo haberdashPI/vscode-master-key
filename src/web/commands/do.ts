@@ -191,6 +191,23 @@ export const COMMAND_HISTORY = 'commandHistory';
 
 let maxHistory = 0;
 
+/**
+ * @command do
+ * @section Performing Actions
+ * @order 130
+ *
+ * This command is an implementation detail of master key and its specific arguments may be
+ * changed, without notice, in a minor or patch release of the project. They are not
+ * documented here.
+ *
+ * The command is listed here for completeness, but users should not make use of `do` inside
+ * of a master keybinding file. Every binding stored in a master keybinding file is
+ * ultimately implemented as a keybinding in VSCode's base `keybindings.json` file as a call
+ * to `master-key.do`. This command ensures that all master-key triggered bindings get
+ * recorded (so they can be replayed at a future date). It is also is the mechanism by which
+ * the additional keybinding behaviors are possible in master key (e.g. `computedArgs`).
+ */
+
 export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
     const args = validateInput('master-key.do', args_, runCommandsArgs);
     if (args) {

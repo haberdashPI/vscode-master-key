@@ -1,4 +1,7 @@
 images/**
+tools/**
+docs/**
+logo/**
 .vscode/**
 .vscode-test-web/**
 src/**
@@ -30,9 +33,8 @@ npm-run.sh
 .nvmrc
 .prettierignore
 environments.json
+mise.toml
 wdio.conf.mts
 .github/**
-docs/**
-logo/**
 dist/desktop/**
 .jj/**

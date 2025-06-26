@@ -1,3 +1,4 @@
 [tools]
 node = "20"
 "npm:vsce" = "latest"
+"ubi:haberdashpi/simple-src-docs" = "0.6.0"

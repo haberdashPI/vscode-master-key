@@ -425,6 +425,13 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
     }
 }
 
+/**
+ * @userCommand showVisualDoc
+ * @name Show Visual Documentation
+ * @order 10
+ *
+ * Documents keybindings on a keyboard layout shown in the bottom panel of your editor.
+ */
 async function showVisualDoc() {
     const editor = vscode.window.activeTextEditor;
     await vscode.commands.executeCommand('workbench.view.extension.masterKeyVisualDoc');
@@ -444,6 +451,13 @@ export async function activate(context: vscode.ExtensionContext) {
     // TODO: only show command in os x
     // TODO: make a meta key for linux (and windows for windows)
     // TODO: the modifiers need to be able to be combined...
+    /**
+     * @userCommand toggleVisualDocModifiers
+     * @name Toggle Visual Doc Modifier by frequency
+     *
+     * Cycle through the possible keybinding modifiers based on how frequently they are used
+     * in the current set of keybindings.
+     */
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.toggleVisualDocModifiers', _args =>
             docProvider.toggleModifier()

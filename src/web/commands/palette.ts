@@ -195,9 +195,23 @@ export function activate(context: vscode.ExtensionContext) {
         'master-key.keybindingPaletteBindingMode',
         false
     );
+    /**
+     * @userCommand togglePaletteMode
+     * @name Toggle palette input mode
+     *
+     * Toggle between accepting command keybindings and searching for commands in the
+     * `Key Suggestions...` palette.
+     */
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.togglePaletteMode', togglePaletteMode)
     );
+    /**
+     * @userCommand commandSuggestions
+     * @name Key Suggestions...
+     *
+     * Display a list of possible key presses that follow after the current prefix of
+     * keys that have been pressed so far.
+     */
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.commandSuggestions', x =>
             commandPalette(x, {useKey: true})

@@ -104,9 +104,9 @@ describe('Simple Motions', () => {
             #- to avoid picking up these typed keys
             #- TODO: how do we deal with the stupid number of escapes required?
             foreach.num = ["{key: \\\\[Digit[0-3]\\\\]}"]
-            key = "shift+{num}"
+            key = "shift+{{num}}"
             mode = "normal"
-            name = "count {num}"
+            name = "count {{num}}"
             command = "master-key.updateCount"
             #- NOTE: it would be better to just use a digit in 'foreach'
             #- in practice, but here we're trying to test a code path that

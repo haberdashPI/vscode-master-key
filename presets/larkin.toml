@@ -142,7 +142,7 @@ mode = "normal"
 description = "Show visual documentation for keybindings"
 command = "master-key.showVisualDoc"
 
-# The visual keybinding documentation is modified by three additional commands that can be used to determine which modifiers are shown.
+# The visual keybinding documentation is modified by the following command:
 
 # - `Master Key: Toggle Visual Doc Modifier by frequency`: changes keybinding modifiers from most to least common modifiers across all modifiers defined by the current keybindings.
 

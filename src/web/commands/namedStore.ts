@@ -8,6 +8,23 @@ import {doCommand} from './do';
 import {merge, omit} from 'lodash';
 import {bindingCommand} from '../keybindings/parsing';
 
+/**
+ * @command storeNamed
+ * @order 105
+ *
+ * Allow the user to specify a name where an [expression's](/bindings/bind#expression)
+ * result can be stored. Can be retrieved later using
+ * [`restoreNamed`](/commands/restoreNamed).
+ *
+ * **Arguments**
+ * - `description`: Message to show the user to explain why they are providing a name
+ * - `register`: This labels the store where user specified key-value pairs will be stored;
+ *   this allows calls to store and restore values to be specific to the relevant context
+ *   (e.g. only stored macros show up in commands related to macros, and only stored
+ *   bookmarks show up in commands related to bookmarks).
+ * - `content`: A string to be evaluated as an [expression](/expressions/index)
+ */
+
 const storeNamedArgs = z.object({
     description: z.string().optional(),
     register: z.string(),
@@ -67,6 +84,17 @@ async function storeNamed(args_: unknown): Promise<CommandResult> {
     return Promise.resolve(undefined);
 }
 
+/**
+ * @command restoreNamed
+ * @order 105
+ *
+ * Restore a previously stored value (via [`storeNamed`](/commands/storeNamed)), storing
+ * it in `captured`, to be used in a subsequent [`expression`](/bindings/bind#expression).
+ *
+ * **Arguments**
+ * - `description`
+ */
+
 const restoreNamedArgs = z.object({
     description: z.string().optional(),
     register: z.string(),
@@ -97,9 +125,24 @@ async function restoreNamed(args_: unknown): Promise<CommandResult> {
     return;
 }
 
+/**
+ * @command storeCommand
+ * @order 105
+ *
+ * Stores a command (or part of one) to run later using
+ * [`executeStoredCommand`](/commands/executeStoredCommand).
+ *
+ * **Arguments**
+ * - `command`: (optional) the name of the command to store
+ * - `args`: (optional) The arguments to directly pass to the `command`, these are static
+ *   values.
+ * - `computedArgs`: (optional) Like `args` except that each value is a string that is
+ *   evaluated as an [expression](/expressions/index).
+ * - `register`: a unique name where the command and its arguments will be stored
+ */
 const storeCommandArgs = z.object({
     register: z.string(),
-    command: z.string(),
+    command: z.string().optional(),
     args: z.any().optional(),
     computedArgs: z.object({}).passthrough().optional(),
 });
@@ -114,6 +157,23 @@ async function storeCommand(args_: unknown): Promise<CommandResult> {
     }
     return undefined;
 }
+
+/**
+ * @command executeStoredCommand
+ * @order 105
+ *
+ * Runs a command previously stored with [`storeCommand`](/commands/storeCommand).
+ * The arguments passed to `storeCommand` are merged with those passed here before
+ * running the command.
+ *
+ * **Arguments**
+ * - `command`: (optional) the name of the command to run
+ * - `args`: (optional) The arguments to directly pass to the `command`, these are static
+ *   values.
+ * - `computedArgs`: (optional) Like `args` except that each value is a string that is
+ *   evaluated as an [expression](/expressions/index).
+ * - `register`: a unique name where the command and its arguments will be stored
+ */
 
 const executeStoredCommandArgs = z.object({
     register: z.string(),

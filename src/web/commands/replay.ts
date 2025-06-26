@@ -130,6 +130,94 @@ async function runCommandHistory(
     return;
 }
 
+/**
+ * @command replayFromHistory
+ * @section Recording and Replaying Commands
+ * @order 150
+ *
+ * Replay previously typed master keybindings.
+ *
+ * > [!NOTE]
+ * > Master key has no knowledge of commands or keybindings that were not
+ * > run from a keybinding defined in a master keybinding file. This is because the command
+ * > history is implemented by pushing each command called with
+ * > [`master-key.do`](/commands/do) to an array. Commands that *only* call `master-key.prefix`
+ * > are not recorded, since they do not need to be replayed to reproduce the ultimate effect
+ * > of a keybinding.
+ *
+ * All commands are recorded, up until the the history limit (defined by the `Command
+ * History Maximum`). When selecting command history to replay, you use one or more
+ * [`expressions`](/bind/bindings#expressions) An expression is evaluated at each
+ * valid `index` of `commandHistory`. Evaluation occurs from most recent command (largest
+ * index) to least recent command (smallest indx), selecting the first index where the
+ * expression evaluates to a truthy value. The structure of each command in `commandHistory`
+ * is exactly the format used to represent the commands in a master keybinding file.
+ *
+ * **Arguments**
+ *
+ * There are two ways the history can be selected:
+ *
+ * - `whereComputedRangeIs.from`: an expression specifying the first command to push to the
+ *   stack
+ * - `whereComputedRangeIs.to`: an expression specifying the last command to push to the
+ *   stack
+ *
+ * OR
+ *
+ * - `whereComputedIndexIs`: an expression specifying the single command to push to the
+ *   stack
+ *
+ * ## Example
+ *
+ * As an example, here's how Larkin runs the most recently run action.
+ *
+ * ```toml
+ * [[bind]]
+ * defaults = "edit.action.history"
+ * name = "repeat action"
+ * key = "."
+ * command = "runCommands"
+ * computedRepeat = "count"
+ *
+ * [[bind.args.commands]]
+ * command = "master-key.replayFromHistory"
+ * args.whereComputedIndexIs = """
+ * commandHistory[index].defaults.startsWith('edit.action') &&
+ * (!commandHistory[index].defaults.startsWith('edit.action.history') ||
+ *  commandHistory[index].name == 'replay')
+ * """
+ *
+ * [[bind.args.commands]]
+ * command = "master-key.enterNormal"
+ * ```
+ *
+ * The key argument of relevance here is the expression defined in
+ * `args.whereComputedIndexIs` where we select the most recent command that is an
+ * `edit.action`, excluding those actions that are used to replay actions themselves.
+ */
+async function replayFromHistory(args: unknown): Promise<CommandResult> {
+    const commands = await selectHistoryCommand('master-key.replayFromHistory', args);
+    if (commands) {
+        await runCommandHistory(commands);
+        return {...(<object>args), value: commands};
+    }
+    return;
+}
+
+/**
+ * @command pushHistoryToStack
+ * @order 150
+ *
+ * Store a set of previously typed keybindings defined by master key to a stack.
+ * Refer to [`replayFromHistory`](/commands/replayFromHistory) for details on
+ * how to use the `whenComputedRange` and `whenComputedIndex` arguments.
+ *
+ * **Arguments**
+ * - `whenComputedRange.from`: an expression specifying the first command to push to the stack
+ * - `whenComputedRange.to`: an expression specifying the last command to push to the stack
+ * - `whenComputedIndex`: an expression specifying the single command to push to the stack
+ * - `register`: (defaults to "") the specific, named stack where commands will be stored.
+ */
 async function pushHistoryToStack(args: unknown): Promise<CommandResult> {
     const commands = await selectHistoryCommand('master-key.pushHistoryToStack', args);
     if (commands) {
@@ -145,15 +233,20 @@ async function pushHistoryToStack(args: unknown): Promise<CommandResult> {
     return;
 }
 
-async function replayFromHistory(args: unknown): Promise<CommandResult> {
-    const commands = await selectHistoryCommand('master-key.replayFromHistory', args);
-    if (commands) {
-        await runCommandHistory(commands);
-        return {...(<object>args), value: commands};
-    }
-    return;
-}
-
+/**
+ * @command replayFromStack
+ * @order 150
+ *
+ * Reply a command stored on the given stack.
+ *
+ * **Arguments**
+ * - `register`: (defaults "") the named stack to replay from
+ * - `index`: (defaults to 0) the position on the stack to replay from, with 0 being the
+ *   most recently added item to the stack.
+ *
+ * You can add commands to this stack using
+ * [`pushHistoryToStack`](/commands/pushHistoryToStack).
+ */
 const replayFromStackArgs = z
     .object({
         index: z.number().min(0).optional().default(0),
@@ -184,6 +277,55 @@ const recordArgs = z
     })
     .strict();
 
+/**
+ * @command record
+ * @order 150
+ *
+ * Turns a recording marker on or off. Note that all commands are always recorded,
+ * regardless of this value. This flag is to make it easy to select past history, by looking
+ * for `master-key.record` entries in the command history.
+ *
+ * Furthermore, when record is on, Master Key will change the status bar `mode` to signal
+ * that keys are being recorded.
+ *
+ * **Arguments**
+ * - `on`: boolean indicating if the recording flag should be set on (true) or off (false).
+ *
+ * ## Example
+ *
+ * Larkin uses the record flag to store command sequences for future replay.
+ *
+ * ```toml
+ * [[bind]]
+ * defaults = "edit.action.history"
+ * name = "record"
+ * description = "Start/stop recording Master Key commands"
+ * key = "shift+q"
+ * when = "!master-key.record"
+ * command = "master-key.record"
+ * args.on = true
+ *
+ * [[bind]]
+ * defaults = "edit.action.history"
+ * name = "record"
+ * description = """
+ * Start/stop recording key presses defined by Master Key pushing it to the
+ * top of the `history` stack once recording finishes."
+ * """
+ * key = "shift+q"
+ * when = "master-key.record"
+ * command = "runCommands"
+ *
+ * [[bind.args.commands]]
+ * command = "master-key.record"
+ * args.on = false
+ *
+ * [[bind.args.commands]]
+ * command = "master-key.pushHistoryToStack"
+ * args.whereComputedRangeIs.from = 'commandHistory[index-1].name === "record"'
+ * args.whereComputedRangeIs.to = "index"
+ * ```
+ */
 async function record(args_: unknown): Promise<CommandResult> {
     const args = validateInput('master-key.record', args_, recordArgs);
     if (args) {
