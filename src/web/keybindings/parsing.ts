@@ -1,13 +1,13 @@
 import * as vscode from 'vscode';
 const TOML = require('smol-toml');
 import * as semver from 'semver';
-import z, { ZodIssue } from 'zod';
-import { ZodError, fromZodError, fromZodIssue } from 'zod-validation-error';
-import { expressionId } from '../expressions';
-import { uniqBy } from 'lodash';
+import z, {ZodIssue} from 'zod';
+import {ZodError, fromZodError, fromZodIssue} from 'zod-validation-error';
+import {expressionId} from '../expressions';
+import {uniqBy} from 'lodash';
 import replaceAll from 'string.prototype.replaceall';
-import { IParsedBindingDoc, parseBindingDocs } from './docParsing';
-import { legacyParse } from './legacyParsing';
+import {IParsedBindingDoc, parseBindingDocs} from './docParsing';
+import {legacyParse} from './legacyParsing';
 export const INPUT_CAPTURE_COMMANDS = [
     'captureKeys',
     'replaceChar',
@@ -215,7 +215,7 @@ const rawBindingCommand = z
     .strict();
 export type RawBindingCommand = z.infer<typeof rawBindingCommand>;
 
-const definedCommand = z.object({ defined: z.string() }).strict();
+const definedCommand = z.object({defined: z.string()}).strict();
 export type DefinedCommand = z.infer<typeof definedCommand>;
 
 const ALLOWED_MODIFIERS = /Ctrl|Shift|Alt|Cmd|Win|Meta/i;
@@ -388,7 +388,7 @@ export function parseWhen(when_: string | string[] | undefined): ParsedWhen[] {
             '(editorTextFocus || master-key.keybindingPaletteOpen && master-key.keybindingPaletteBindingMode)'
         );
         // let p = jsep(w);
-        return { str: w, id: expressionId(w) };
+        return {str: w, id: expressionId(w)};
     });
 }
 
@@ -548,7 +548,7 @@ export const rawBindingItem = z
 export type RawBindingItem = z.output<typeof rawBindingItem>;
 
 // a strictBindingItem is satisfied after expanding all default fields
-export const bindingCommand = rawBindingCommand.required({ command: true });
+export const bindingCommand = rawBindingCommand.required({command: true});
 export type BindingCommand = z.infer<typeof bindingCommand>;
 
 export const doArgs = bindingCommand.array().refine(
@@ -660,7 +660,7 @@ export const bindingItem = z
         command: z.literal('master-key.do'),
         mode: z
             .string()
-            .or(z.object({ implicit: z.string() }))
+            .or(z.object({implicit: z.string()}))
             .array()
             .optional(),
         prefixes: z.string().array().optional().default(['']),
@@ -678,9 +678,9 @@ export const bindingItem = z
                 kind: z.string().optional().default(''),
                 computedRepeat: z.number().min(0).or(z.string()).default(0),
             })
-            .merge(rawBindingItem.pick({ name: true, description: true })),
+            .merge(rawBindingItem.pick({name: true, description: true})),
     })
-    .required({ key: true, when: true, args: true })
+    .required({key: true, when: true, args: true})
     .strict();
 export type BindingItem = z.output<typeof bindingItem>;
 
@@ -957,14 +957,14 @@ export const bindingSpec = z
                 xs => {
                     return uniqBy(xs, x => x.name).length === xs.length;
                 },
-                { message: 'All mode names must be unique!' }
+                {message: 'All mode names must be unique!'}
             )
             .refine(
                 xs => {
                     const defaults = xs.filter(x => x.default);
                     return defaults.length === 1;
                 },
-                { message: 'There must be one and only one default mode' }
+                {message: 'There must be one and only one default mode'}
             )
             .transform(xs => {
                 const captureMode = xs.filter(x => x.name === 'capture');
@@ -1092,7 +1092,7 @@ function parseBindingsHelper(
 ): ParsedResult<FullBindingSpec> {
     const doc = parseBindingDocs(text);
     if (doc.success) {
-        return { success: true, data: { ...data, doc: doc.data?.doc } };
+        return {success: true, data: {...data, doc: doc.data?.doc}};
     } else {
         return <ParsedResult<FullBindingSpec>>doc;
     }
@@ -1111,9 +1111,9 @@ export async function parseBindings(text: string): Promise<ParsedResult<FullBind
                 vscode.window
                     .showWarningMessage(
                         'Your Master Key bindings use a legacy keybinding format. Consider ' +
-                        're-activating your desired preset and any user bindings. ' +
-                        'You will need to update your user bindings according ' +
-                        'to the documentation.',
+                            're-activating your desired preset and any user bindings. ' +
+                            'You will need to update your user bindings according ' +
+                            'to the documentation.',
                         'Open Docs'
                     )
                     .then(async request => {

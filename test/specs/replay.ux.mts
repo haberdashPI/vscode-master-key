@@ -175,8 +175,8 @@ describe('Replay', () => {
 
             [[bind.args.commands]]
             command = "master-key.pushHistoryToStack"
-            args.range.from = 'commandHistory[i-1].name === "record"'
-            args.range.to = "i"
+            args.whereComputedRangeIs.from = 'commandHistory[index-1].name === "record"'
+            args.whereComputedRangeIs.to = "index"
 
             [[bind]]
             defaults = "replay"
@@ -197,7 +197,7 @@ describe('Replay', () => {
             name = "replay last"
             key = "q l"
             command = "master-key.replayFromHistory"
-            args.at = "i"
+            args.whereComputedIndexIs = "index"
 
             [[bind]]
             defaults = "replay"
@@ -226,14 +226,6 @@ describe('Replay', () => {
             [[bind.args.commands]]
             command = "master-key.replayFromStack"
             args.index = 0
-
-            [[bind]]
-            key = "shift+2"
-            mode = "normal"
-            name = "count 2"
-            command = "master-key.updateCount"
-            args.value = "2"
-            finalKey = false
         `);
         editor = await setupEditor(`a b c d
 e f g h
