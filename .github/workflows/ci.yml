@@ -14,7 +14,7 @@ jobs:
         timeout-minutes: 60
         if: '! github.event.pull_request.draft'
         strategy:
-            matrix: { environment: [web, desktop] }
+            matrix: { environment: ['-web', 'desktop'] }
         runs-on: ubuntu-latest
         steps:
         - name: Checkout
@@ -31,11 +31,9 @@ jobs:
         - name: Cache Browsers
           uses: actions/cache@v4
           with:
-            key: mise-${{ matrix.environment }}-${{ hashFiles('{0}/vscode-master-key/mise.toml {0}/vscode-master-key/pnpm-lock.yaml', github.workspace) }}
+            key: mise${{ matrix.environment }}-${{ hashFiles('{0}/vscode-master-key/mise.toml {0}/vscode-master-key/pnpm-lock.yaml', github.workspace) }}
             path: >-
-                ${{ github.workspace }}.vscode-test
-                ${{ github.workspace }}.vscode-test-web
-                ~/.cache
+                ${{ github.workspace }}.vscode-test$${{ matrix.environment }}
         - name: Install Dev Environment
           uses: jdx/mise-action@v2
           with:
@@ -43,23 +41,17 @@ jobs:
             install: true
             cache: true
             experimental: true
-        - name: Desktop Unit Tests
-          if: matrix.environment == 'desktop'
+        - name: Unit Tests
           uses: coactions/setup-xvfb@v1
           with:
-            run: mise test
-        - name: Web Unit Tests
-          if: matrix.environment == 'web'
-          uses: coactions/setup-xvfb@v1
-          with:
-            run: mise test-web
+            run: mise test${{ matrix.environment }}
         - name: Integration Tests
-          if: matrix.environment == 'desktop'
+          if: matrix.environment == ''
           uses: coactions/setup-xvfb@v1
           with:
             run: mise run test-integration
         - uses: actions/upload-artifact@v4
-          if: ${{ !cancelled() }} && matrix.environment == 'desktop'
+          if: ${{ !cancelled() }} && matrix.environment == ''
           with:
               name: playwright-report
               path: playwright-report/
