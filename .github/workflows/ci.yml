@@ -14,7 +14,7 @@ jobs:
         timeout-minutes: 60
         if: '! github.event.pull_request.draft'
         strategy:
-            matrix: { environment: ['-web', 'desktop'] }
+            matrix: { environment: ['-web', ''] }
         runs-on: ubuntu-latest
         steps:
         - name: Checkout
@@ -33,7 +33,7 @@ jobs:
           with:
             key: mise${{ matrix.environment }}-${{ hashFiles('{0}/vscode-master-key/mise.toml {0}/vscode-master-key/pnpm-lock.yaml', github.workspace) }}
             path: >-
-                ${{ github.workspace }}.vscode-test$${{ matrix.environment }}
+                ${{ github.workspace }}.vscode-test${{ matrix.environment }}
         - name: Install Dev Environment
           uses: jdx/mise-action@v2
           with:
