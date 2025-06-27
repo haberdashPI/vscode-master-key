@@ -1,15 +1,14 @@
 Next steps:
 
-Integration test debuggin:
-- [ ] github action caching
-    - [~] use granual save/restore commands for caching pnpm install
-- [ ] litter steps with console.log until we find the point of failure
-    - [ ] is it that we can't show an open file dialog? maybe we need a workaround
-          in the code to load a file: this would also probably just generally speed
-          up the integration tests (we wouldn't have to go through the UX to load stuff
-          for every tests unit)
-          - [ ] as a compromise we could enable these tests when not in CI so there
-            is still some coverage of these code paths when running tests locally
+Integration test debugging:
+- [ ] github action caching works
+    - close, still working on exact naming of directories to actually cache
+- [ ] get code coverage working
+    - [x] unit test coverage just works 🚀
+    - [x] took some time, but now, by passing the right arguments and env vars to electron
+      I'm getting coverage for integration tests as well
+    - [ ] get coverage to be optional during integration tests
+    - [ ] generate coverage output during CI
 
 1. Start translating each of the tests into unit/integration tests as appropriate
     - [x] simpleMotion.ux.mts translated into unit test

@@ -223,7 +223,6 @@
         "@vscode/test-web": "^0.0.70",
         "assert": "^2.1.0",
         "esbuild": "^0.25.5",
-        "esbuild-plugin-istanbul": "^0.3.0",
         "eslint": "^9.29.0",
         "fastestsmallesttextencoderdecoder": "^1.0.22",
         "glob": "^11.0.3",

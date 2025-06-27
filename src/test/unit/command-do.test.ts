@@ -6,7 +6,7 @@ import { assertCursorMovesBy, cursorToStart, editorWithText } from './utils';
 
 suite('Do command', () => {
     let editor: vscode.TextEditor;
-    setup(async () => {
+    suiteSetup(async () => {
         // eslint-disable-next-line @stylistic/max-len
         editor = await editorWithText(`Anim reprehenderit voluptate magna excepteur dolore aliqua minim labore est
 consectetur ullamco ullamco aliqua ex. Pariatur officia nostrud pariatur ex
@@ -185,7 +185,7 @@ cillum eiusmod culpa minim duis`);
             const _ = await shouldFail();
             assert.fail('Expected command to error');
         } catch (e) {
-            console.log('Found expected error ' + e);
+            console.log('Found expected error: ' + e);
         }
 
         await assertCursorMovesBy(editor, new vscode.Position(0, 2), async () => {
