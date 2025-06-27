@@ -6,50 +6,29 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Run Web Extension ",
+            "name": "Run Extension",
             "type": "extensionHost",
-            "debugWebWorkerHost": true,
             "request": "launch",
             "args": [
-                "--profile=debug-profile",
-                "--extensionDevelopmentPath=${workspaceFolder}",
-                "--extensionDevelopmentKind=web"
+                "--extensionDevelopmentPath=${workspaceFolder}"
             ],
             "outFiles": [
-                "${workspaceFolder}/dist/web/**/*.js"
+                "${workspaceFolder}/out/node/**/*.js"
             ],
-            "preLaunchTask": "npm: watch-web"
+            "preLaunchTask": "${defaultBuildTask}"
         },
         {
-            "name": "Extension Tests",
+            "name": "Run Extension (Web)",
             "type": "extensionHost",
-            "debugWebWorkerHost": true,
             "request": "launch",
             "args": [
-                "--profile=debug-profile",
                 "--extensionDevelopmentPath=${workspaceFolder}",
                 "--extensionDevelopmentKind=web",
-                "--extensionTestsPath=${workspaceFolder}/dist/web/test/suite/index"
             ],
             "outFiles": [
-                "${workspaceFolder}/dist/web/**/*.js"
+                "${workspaceFolder}/out/browser/**/*.js"
             ],
             "preLaunchTask": "npm: watch-web"
-        },
-        {
-            "name": "Debug UI Tests",
-            "type": "node",
-            "request": "launch",
-            "program": "${workspaceFolder}/node_modules/.bin/extest",
-            "args": [
-                "setup-and-run", "${workspaceFolder}/uxtest/out/*.uxtest.js",
-                "-s", "${workspaceFolder}/uxtest/storage",
-                "-e", "${workspaceFolder}/uxtest/extensions",
-                "-t", "${workspaceFolder}/insiders",
-                "--code_settings", "${workspaceFolder}/uxtest/settings.json",
-            ],
-            "console": "integratedTerminal",
-            "internalConsoleOptions": "neverOpen"
         }
     ]
 }

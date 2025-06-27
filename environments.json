@@ -1,5 +1,0 @@
-{
-    "wdio": {
-        "main": "./dist/desktop/extension.js"
-    }
-}

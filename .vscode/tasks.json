@@ -1,31 +1,76 @@
 // See https://go.microsoft.com/fwlink/?LinkId=733558
 // for the documentation about the tasks.json format
 {
-	"version": "2.0.0",
-	"tasks": [
-		{
-			"label": "npm: compile-web",
-			"type": "shell",
-			"command": "bash ./npm-run.sh compile-web",
-			"group": {
-				"kind": "build",
-				"isDefault": true
-			},
-			"problemMatcher": [
-				"$ts-webpack",
-				"$tslint-webpack"
-			]
-		},
-		{
-			"label": "npm: watch-web",
-			"type": "shell",
-			"command": "bash ./npm-run.sh watch-web",
-			"group": "build",
-			"isBackground": true,
-			"problemMatcher": [
-				"$ts-webpack-watch",
-				"$tslint-webpack-watch"
-			]
-		}
-	]
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "shell",
+            "command": "mise watch build",
+            "problemMatcher": [
+                {
+                    "severity": "error",
+                    "applyTo": "closedDocuments",
+                    "source": "esbuild",
+                    "fileLocation": "relative",
+                    "pattern": [
+                        {
+                            "regexp": "^\\[build\\] [✘▲] \\[([A-Z]+)\\] (.+)",
+                            "severity": 1,
+                            "message": 2
+                        },
+                        {
+                            "regexp": "^\\[build\\] (?:\\t| {4})(?!\\s)([^:]+)(?::([0-9]+))?(?::([0-9]+))?:$",
+                            "file": 1,
+                            "line": 2,
+                            "column": 3
+                        }
+                    ]
+                },
+                {
+                    "base": "$esbuild",
+                    "severity": "error",
+                    "applyTo": "closedDocuments",
+                    "source": "esbuild",
+                    "fileLocation": "relative",
+                    "background": {
+                        "activeOnStart": true,
+                        "beginsPattern": {
+                            "regexp": "\\[build\\] \\[watch\\] build started"
+                        },
+                        "endsPattern": {
+                            "regexp": "\\[build\\] \\[watch\\] build finished"
+                        }
+                    }
+                },
+                {
+                    "applyTo": "closedDocuments",
+                    "source": "eslint",
+                    "fileLocation": "relative",
+                    "pattern": [
+                        {
+                            "regexp": "^\\[lint\\]\\s(.*\\.ts)$",
+                            "file": 1,
+                        },
+                        {
+                            "regexp": "^\\[lint\\]\\s+([0-9]+):([0-9]+)\\s+([a-z]+)\\s+(.*)$",
+                            "line": 1,
+                            "code": 2,
+                            "severity": 3,
+                            "message": 4
+                        }
+                    ]
+                },
+            ],
+            "isBackground": true,
+            "label": "npm: watch:esbuild",
+            "presentation": {
+                "group": "watch",
+                "reveal": "never"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+    ]
 }
