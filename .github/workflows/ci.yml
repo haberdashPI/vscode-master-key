@@ -1,4 +1,4 @@
-name: Unit Tests
+name: CI
 on:
     push:
         branches:
@@ -9,7 +9,9 @@ on:
         types: ['opened', 'edited', 'reopened', 'synchronize', 'ready_for_review']
 
 jobs:
-    test:
+    tests:
+        name: Tests
+        timeout-minutes: 60
         if: '! github.event.pull_request.draft'
         strategy:
             matrix: { environment: [web, desktop] }
@@ -18,23 +20,23 @@ jobs:
         - name: Checkout
           uses: actions/checkout@v4
         - name: Debug Directory Info
-          run: ls -la ${{github.workspace}} && ls -la ${{github.workspace}}/vscode-master-key
+          run: ls -la ${{github.workspace}}
         - name: Install pnpm
           uses: pnpm/action-setup@v4
           with:
             version: 10
-        - name: Cache/setup pnpm ${{ matrix.node-version }}
+        - name: Cache pnpm ${{ matrix.node-version }}
           uses: actions/setup-node@v4
           with:
             node-version: ${{ matrix.node-version }}
             cache: 'pnpm'
-        - name: Cache Browser Builds
+        - name: Cache Browsers
           uses: actions/cache@v4
           with:
-            key: mise-unit-${{ hashFiles('{0}/vscode-master-key/mise.toml {0}/vscode-master-key/pnpm-lock.yaml', github.workspace) }}
+            key: mise-${{ matrix.environment }}-unit-${{ hashFiles('{0}/vscode-master-key/mise.toml {0}/vscode-master-key/pnpm-lock.yaml', github.workspace) }}
             path: >-
-                ${{ github.workspace }}/vscode-master-key/.vscode-test
-                ${{ github.workspace }}/vscode-master-key/.vscode-test-web
+                ${{ github.workspace }}.vscode-test
+                ${{ github.workspace }}.vscode-test-web
                 ~/.cache
         - name: Install Dev Environment
           uses: jdx/mise-action@v2
@@ -43,15 +45,26 @@ jobs:
             install: true
             cache: true
             experimental: true
-        - name: Run Desktop Unit Tests
+        - name: Desktop Unit Tests
           if: matrix.environment == 'desktop'
           uses: coactions/setup-xvfb@v1
           with:
             run: mise test
-        - name: Run Web Unit Tests
+        - name: Web Unit Tests
           if: matrix.environment == 'web'
           uses: coactions/setup-xvfb@v1
           with:
             run: mise test-web
         - name: Verify working directory info
-          run: echo "${{github.workspace}}"
+          run: echo "${{github.workspace}}
+        - name: Integration Tests
+          if: matrix.environment == 'desktop'
+          uses: coactions/setup-xvfb@v1
+          with:
+            run: mise run test-integration
+        - uses: actions/upload-artifact@v4
+          if: ${{ !cancelled() }}
+          with:
+              name: playwright-report
+              path: playwright-report/
+              retention-days: 7
