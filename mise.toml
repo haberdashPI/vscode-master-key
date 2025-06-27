@@ -1,4 +1,64 @@
 [tools]
+"cargo:wasm-pack" = "0.13.1"
 node = "20"
-"npm:vsce" = "latest"
-"ubi:haberdashpi/simple-src-docs" = "0.6.0"
+"npm:pnpm" = "10.12.1"
+"npm:typescript" = "5.8.3"
+"npm:vsce" = "2.15"
+rust = { version = "1.87", targets = "wasm32-unknown-unknown" }
+watchexec = "2.3.2"
+
+[hooks]
+postinstall = 'pnpm install --frozen-lockfile'
+
+[tasks.lint]
+run = 'pnpm exec eslint src'
+
+[tasks.check-types]
+run = 'tsc --noEmit --project tsconfig.json'
+
+# [tasks.build-rust]
+# sources = ['src/rust/parsing/src/**/*.rs', 'src/rust/parsing/Cargo.toml']
+# outputs = ['out/**/*.wasm', 'src/rust/parsing/lib/*']
+# dir = 'src/rust/parsing'
+# run = [
+#     'wasm-pack build --target web --out-dir lib',
+#     'cp lib/parsing_bg.wasm ../../../out/parsing_bg.wasm',
+# ]
+
+[tasks.build]
+depends = ['check-types', 'lint'] #, 'build-rust']
+sources = ['src/**/*.ts']
+run = 'node esbuild.mjs'
+
+[tasks.package]
+depends = ['check-types', 'lint'] #, 'build-rust']
+sources = ['src/**/*.ts']
+run = [
+    'node esbuild.mjs --release',
+    'node esbuild.mjs --web --release',
+    'vsce package --no-dependencies',
+]
+
+[tasks.build-tests]
+depends = ['check-types', 'lint', 'build']
+sources = ['src/test/**/*.ts']
+outputs = ['out/test/**/*.js']
+run = 'tsc -p src/test --outDir out/test'
+
+[tasks.test]
+depends = ['build-tests']
+run = 'pnpm exec vscode-test'
+
+[tasks.test-web]
+depends = ['build --web']
+run = '''
+pnpm exec vscode-test-web --extensionDevelopmentPath=.
+    --extensionTestsPath=./out/browser/test/unit/webExtensionTests.js
+'''
+
+[tasks.run-web]
+depends = ['build --web']
+run = 'pnpm exec vscode-test-web --extensionDevelopmentPath=.'
+
+[tasks.test-integration]
+run = 'pnpm exec playwright test'
