@@ -17,6 +17,8 @@ jobs:
         steps:
         - name: Checkout
           uses: actions/checkout@v4
+        - name: Debug Directory Info
+          run: ls -la ${{github.workspace}} && ls -la ${{github.workspace}}/vscode-master-key
         - name: Install pnpm
           uses: pnpm/action-setup@v4
           with:
@@ -26,13 +28,14 @@ jobs:
           with:
             node-version: ${{ matrix.node-version }}
             cache: 'pnpm'
-        - name: Cache Playwright Builds
+        - name: Cache Browser Builds
           uses: actions/cache@v4
           with:
-            key: mise-unit-${{ hashFiles(format('{0}/vscode-master-key/mise.toml {0}/vscode-master-key/pnpm-lock.yaml', github.workspace)) }}
+            key: mise-unit-${{ hashFiles('{0}/vscode-master-key/mise.toml {0}/vscode-master-key/pnpm-lock.yaml', github.workspace) }}
             path: >-
-                ${{ github.workspace }}/vscode-master-key/.vscode-test/**/*
-                ${{ github.workspace }}/vscode-master-key/.vscode-test-web/**/*
+                ${{ github.workspace }}/vscode-master-key/.vscode-test
+                ${{ github.workspace }}/vscode-master-key/.vscode-test-web
+                ~/.cache
         - name: Install Dev Environment
           uses: jdx/mise-action@v2
           with:
@@ -50,3 +53,5 @@ jobs:
           uses: coactions/setup-xvfb@v1
           with:
             run: mise test-web
+        - name: Verify working directory info
+          run: echo "${{github.workspace}}"

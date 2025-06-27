@@ -8,8 +8,9 @@ export async function openFile(page: Page, file: string) {
         { name: 'Search files by name (append' },
     );
     await openInput.pressSequentially(file);
-    await openInput.press('Enter', { delay: 100 });
-    await expect(openInput).not.toBeVisible();
+    while (await openInput.isVisible()) {
+        await openInput.press('Enter', { delay: 100 });
+    }
     return;
 }
 
@@ -17,8 +18,9 @@ export async function runCommand(page: Page, command: string) {
     await page.getByRole('main').press('ControlOrMeta+Shift+P');
     const palette = await page.getByPlaceholder('Type the name of a command to run.');
     await palette.pressSequentially(command);
-    await palette.press('Enter', { delay: 100 });
-    await expect(palette).not.toBeVisible();
+    while (await palette.isVisible()) {
+        await palette.press('Enter', { delay: 100 });
+    }
     return;
 }
 
