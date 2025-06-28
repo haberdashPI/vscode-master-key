@@ -146,7 +146,7 @@ async function runCommandHistory(
  *
  * All commands are recorded, up until the the history limit (defined by the `Command
  * History Maximum`). When selecting command history to replay, you use one or more
- * [`expressions`](/bind/bindings#expressions) An expression is evaluated at each valid
+ * [`expressions`](/expressions/index) An expression is evaluated at each valid
  * `index` of `commandHistory`. Evaluation occurs from most recent command (largest index)
  * to least recent command (smallest indx), selecting the first index where the expression
  * evaluates to a truthy value. The structure of each command in `commandHistory` is exactly
