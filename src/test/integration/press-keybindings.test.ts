@@ -1,7 +1,5 @@
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { test, expect } from './config';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { activateKeybinings, openFile, runCommand } from './utils';
+import { activateKeybinings, openFile } from './utils';
 
 test.describe('Basic keypresses', () => {
     test('Commands respond appropriately to keypresses', async ({ workbox }) => {
