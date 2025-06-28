@@ -6,6 +6,10 @@ Next steps:
         - check that we can press keys
         - check that we can press keys by mode
         - check that keys get properly ignored (not in original test, but a good one and topical)
+    - [ ] get CI setup
+        - [ ] desktop unit tests
+        - [ ] web unit tests
+        - [ ] desktop integration tests
     - [ ] commandState.ux.mts unit tests
     - [ ] searchMotions.ux.mts unit tests
     - [ ] replay.ux.mts unit tests
@@ -29,10 +33,6 @@ Next steps:
         - default mode overwrite
         - can create editable copy
         - can copy user config
-2. Get CI working for all of:
-    desktop unit tests
-    web unit tests
-    integration tests (only desktop is feasible)
 3. Refactor parsing to rust
     a. in this early phase, we don't worry too much about providing detailed error messages
        (if there are easy things to do here we can do them, but no UX work, etc...)
