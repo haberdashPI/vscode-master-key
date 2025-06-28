@@ -2,10 +2,33 @@ Next steps:
 
 1. Start translating each of the tests into unit/integration tests as appropriate
     - [x] simpleMotion.ux.mts translated into unit test
-    - [ ] simpleMotion.ux.mts integration tests:
+    - [x] simpleMotion.ux.mts integration tests:
         - check that we can press keys
         - check that we can press keys by mode
         - check that keys get properly ignored (not in original test, but a good one and topical)
+    - [ ] commandState.ux.mts unit tests
+    - [ ] searchMotions.ux.mts unit tests
+    - [ ] replay.ux.mts unit tests
+    - [ ] config.ux.mts unit tests
+        - fallback bindings
+    - [ ] markdown docs integration tests
+    - [ ] visual docs integration tests
+    - [ ] palette integration tests
+    - [ ] simpleMotionLayout.ux.mts integration tests:
+        - check that the same tests from simpleMotion work with the layout
+          settings
+    - [ ] config(Edit).ux.mts integration tests
+        - setting defaults
+        - mode appearance
+        - loading from a directory
+        - duplicate entry labels
+        - loading from a file
+        - add and remove user bindings
+        - can be removed
+        - prevent user binding updates absent preset
+        - default mode overwrite
+        - can create editable copy
+        - can copy user config
 2. Get CI working for all of:
     desktop unit tests
     web unit tests
