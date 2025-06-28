@@ -6,6 +6,7 @@ node = "20"
 "npm:vsce" = "2.15"
 rust = { version = "1.87", targets = "wasm32-unknown-unknown" }
 watchexec = "2.3.2"
+"ubi:haberdashpi/simple-src-docs" = "0.6.0"
 
 [hooks]
 postinstall = 'pnpm install --frozen-lockfile'
@@ -62,3 +63,12 @@ run = 'pnpm exec vscode-test-web --extensionDevelopmentPath=.'
 
 [tasks.test-integration]
 run = 'pnpm exec playwright test'
+
+[tasks.extract-docs]
+sources = ['README.md', 'src/extension/**/*.ts']
+outputs = { auto = true }
+run = 'simple-src-docs -d docs src README.md'
+
+[tasks.build-docs]
+depends = ['extract-docs']
+run = 'pnpm exec vitepress build'
