@@ -1,2 +1,0 @@
-mise activate
-npm run $@

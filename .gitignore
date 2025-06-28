@@ -1,16 +1,23 @@
+# build output
 out
-dist
-node_modules
-.vscode-test-web/
 *.vsix
-uxtest/extensions/**
-uxtest/storage/**
-utest/out/**
-uxtest/temp/**
-.wdio-vscode-service
-test/temp/**
+src/rust/parsing/target/**
+
+# dependencies
+node_modules
+
+# code coverage
 .nyc_output/**
 coverage/**
 coverage.json
-wdio.log
-.package.json
+
+# unit testing
+test/temp/**
+.vscode-test/**
+.vscode-test-web/**
+
+# integration testing
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
