@@ -1,6 +1,11 @@
 Next steps:
 
 1. Start translating each of the tests into unit/integration tests as appropriate
+    - [x] simpleMotion.ux.mts translated into unit test
+    - [ ] simpleMotion.ux.mts integration tests:
+        - check that we can press keys
+        - check that we can press keys by mode
+        - check that keys get properly ignored (not in original test, but a good one and topical)
 2. Get CI working for all of:
     desktop unit tests
     web unit tests

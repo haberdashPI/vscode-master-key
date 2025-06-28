@@ -1,0 +1,68 @@
+[header]
+version = "2.0"
+
+[[mode]]
+name = "insert"
+default = true
+
+[[mode]]
+name = "normal"
+
+[[bind]]
+name = "normal mode"
+key = "escape"
+command = "master-key.enterNormal"
+prefixes = "{{all_prefixes}}"
+
+[[default]]
+id = "motion"
+name = "basic motions"
+default.command = "cursorMove"
+default.mode = "normal"
+default.when = "editorTextFocus"
+default.computedArgs.value = "count"
+
+[[bind]]
+defaults = "motion"
+name = "left"
+key = "h"
+args.to = "left"
+
+[[bind]]
+defaults = "motion"
+name = "right"
+key = "l"
+args.to = "right"
+
+[[bind]]
+defaults = "motion"
+name = "down"
+key = "j"
+args.to = "down"
+
+[[bind]]
+defaults = "motion"
+name = "up"
+key = "k"
+args.to = "up"
+
+[[bind]]
+name = "insert mode"
+key = "i"
+command = "master-key.enterInsert"
+mode = "normal"
+
+[[bind]]
+name = "ignore"
+key = "u"
+command = "master-key.ignore"
+mode = "normal"
+
+[[bind]]
+foreach.num = ["{{key: [0-3]}}"]
+key = "{{num}}"
+mode = "normal"
+name = "count {{num}}"
+command = "master-key.updateCount"
+args.value = "{{num}}"
+finalKey = false

@@ -596,8 +596,10 @@ async function activateBindings(preset?: Preset) {
         if (bindings) {
             await handleRequireExtensions(bindings);
             await insertKeybindingsIntoConfig(bindings);
-            await vscode.commands.executeCommand('master-key.showVisualDoc');
-            await vscode.commands.executeCommand('master-key.showTextDoc');
+            // TODO: this can be annoying maybe make an info dialog with links to look
+            // at these
+            // await vscode.commands.executeCommand('master-key.showVisualDoc');
+            // await vscode.commands.executeCommand('master-key.showTextDoc');
         }
     }
 }

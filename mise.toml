@@ -61,4 +61,5 @@ depends = ['build --web']
 run = 'pnpm exec vscode-test-web --extensionDevelopmentPath=.'
 
 [tasks.test-integration]
+depends = ['build']
 run = 'pnpm exec playwright test'
