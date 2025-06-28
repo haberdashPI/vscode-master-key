@@ -72,4 +72,4 @@ run = 'simple-src-docs -d docs src README.md'
 
 [tasks.build-docs]
 depends = ['extract-docs']
-run = 'pnpm exec vitepress build'
+run = 'pnpm exec vitepress build docs'

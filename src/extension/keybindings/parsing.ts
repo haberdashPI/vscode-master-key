@@ -209,7 +209,7 @@ const rawBindingCommand = z.
          *   scope of expressions rather than when clause statements. Furthermore, even if
          *   the `whenComputed` is false, the binding is still considered to have triggered,
          *   and now downstream keybindings will be triggered. It is most useful in
-         *   conjunction with `runCommands` or [`storeCommand`](/command/storeCommand).
+         *   conjunction with `runCommands` or [`storeCommand`](/commands/storeCommand).
          */
         whenComputed: z.string().or(z.boolean()).default(true).optional(),
     }).
@@ -574,15 +574,15 @@ export type DoArgs = z.infer<typeof doArgs>;
  *
  * - Find command you want to use from the command palette, and click on the gear (`⚙︎`)
  *   symbol to copy the command string to your clipboard
- * - Review the  [list of built-in
- *   commands](https://code.visualstudio.com/api/references/commands)
+ * - Review the
+ *  [list of built-in commands](https://code.visualstudio.com/api/references/commands/index)
  * - Run the command `Preferences: Open Default Keyboard Shortcuts (JSON)` to get a list of
  *   built-in commands and extension commands already associated with a keybinding
  *
  * Furthermore, you can also use:
  *
- * - [Master Key Commands](/commands)
- * - [Commands from Selection Utilities](TODO)
+ * - [Master Key Commands](/commands/index)
+ * - [Selection Utility Commands](https://haberdashpi.github.io/vscode-selection-utilities/)
  *
  * Selection Utilities is a complimentary extension used extensively by the `Larkin` preset.
  *

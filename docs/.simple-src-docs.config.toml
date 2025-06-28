@@ -4,7 +4,7 @@ version = "0.2.0"
 [[comment]]
 extension = "*.md"
 start = '<!--\s*START_DOCS\s*-->'
-each_line = '<!--(.*)-->' # some lines will, and some lines wont' have this
+each_line = '<!--(.*)-->'         # some lines will, and some lines wont' have this
 stop = '<!--\s*STOP_DOCS\s*-->'
 
 [[template.all]]
@@ -70,7 +70,7 @@ output = """
 ## Keybinding Commands
 
 Keybinding commands usually have at least one argument and are expected to primarily be
-used when defining keybindings in a [master keybinding TOML file](/bindings).
+used when defining keybindings in a [master keybinding TOML file](/bindings/index).
 
 {{#items}}
 {{#section}}
