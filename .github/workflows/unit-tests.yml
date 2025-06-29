@@ -24,6 +24,7 @@ jobs:
               uses: jdx/mise-action@v2
             - name: Install dependencies
               run: mise install
+            - run: pnpm install --frozen-lockfile
             - name: Run headless test
               uses: coactions/setup-xvfb@v1
               with:

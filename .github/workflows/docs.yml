@@ -36,6 +36,7 @@ jobs:
         uses: actions/configure-pages@v4
       - name: Install dependencies
         run: mise install
+      - run: pnpm install --frozen-lockfile
       - name: Build with VitePress
         run: mise build-docs
       - name: Upload artifact
