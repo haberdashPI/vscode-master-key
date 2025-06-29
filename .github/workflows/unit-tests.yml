@@ -1,0 +1,31 @@
+name: Unit Tests
+on:
+    push:
+        branches:
+            - main
+        tags:
+            - v[0-9]+.[0-9]+.[0-9]+*
+    pull_request:
+        types: ['opened', 'edited', 'reopened', 'synchronize', 'ready_for_review']
+
+jobs:
+    build:
+        if: '! github.event.pull_request.draft'
+        strategy:
+            fail-fast: false
+            matrix:
+                os: [ubuntu-latest]
+        runs-on: ${{ matrix.os }}
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+            - name: Install Dev Environment
+              uses: jdx/mise-action@v2
+            - name: Install dependencies
+              run: mise install
+            - name: Run headless test
+              uses: coactions/setup-xvfb@v1
+              with:
+                run: mise test
+            # TODO: code coverage
