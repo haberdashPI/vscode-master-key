@@ -23,7 +23,9 @@ jobs:
             cache: true
             experimental: true
         - name: Run Playwright tests
-          run: mise test-integration
+          uses: coactions/setup-xvfb@v1
+          with:
+            run: mise test-playwright
         - uses: actions/upload-artifact@v4
           if: ${{ !cancelled() }}
           with:

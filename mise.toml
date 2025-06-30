@@ -53,8 +53,7 @@ run = 'pnpm exec vscode-test --config .vscode-test.mjs --extensionDevelopmentPat
 [tasks.test-web]
 depends = ['build --web']
 run = '''
-pnpm exec vscode-test-web --extensionDevelopmentPath=. \
-    --extensionTestsPath=./out/browser/webExtensionTests.js
+pnpm exec vscode-test-web --extensionDevelopmentPath=. --extensionTestsPath=./out/browser/webExtensionTests.js
 '''
 
 [tasks.run-web]
