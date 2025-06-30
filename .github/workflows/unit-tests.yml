@@ -12,21 +12,26 @@ jobs:
     build:
         if: '! github.event.pull_request.draft'
         strategy:
-            fail-fast: false
-            matrix:
-                os: [ubuntu-latest]
-        runs-on: ${{ matrix.os }}
+            matrix: { environment: [web, desktop] }
+        runs-on: ubuntu-latest
 
         steps:
             - name: Checkout
               uses: actions/checkout@v4
             - name: Install Dev Environment
               uses: jdx/mise-action@v2
-            - name: Install dependencies
-              run: mise install
-            - run: pnpm install --frozen-lockfile
-            - name: Run headless test
+              with:
+                version: 2025.6.4
+                install: true
+                cache: true
+                experimental: true
+            - name: Run Desktop Unit Tests
+              if: matrix.environment == 'desktop'
               uses: coactions/setup-xvfb@v1
               with:
                 run: mise test
-            # TODO: code coverage
+            - name: Run Web Unit Tests
+              if: matrix.environment == 'web'
+              uses: coactions/setup-xvfb@v1
+              with:
+                run: mise test-web

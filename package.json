@@ -225,6 +225,7 @@
         "esbuild": "^0.25.5",
         "esbuild-plugin-istanbul": "^0.3.0",
         "eslint": "^9.29.0",
+        "eslint-plugin-yaml": "^1.1.2",
         "fastestsmallesttextencoderdecoder": "^1.0.22",
         "glob": "^11.0.3",
         "globals": "^16.2.0",

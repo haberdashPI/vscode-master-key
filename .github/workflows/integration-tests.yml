@@ -1,0 +1,32 @@
+name: Integration Tests
+on:
+    push:
+        branches:
+            - main
+        tags:
+            - v[0-9]+.[0-9]+.[0-9]+*
+    pull_request:
+        types: ['opened', 'edited', 'reopened', 'synchronize', 'ready_for_review']
+jobs:
+    test:
+        if: '! github.event.pull_request.draft'
+        timeout-minutes: 60
+        runs-on: ubuntu-latest
+        steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+        - name: Install Dev Environment
+          uses: jdx/mise-action@v2
+          with:
+            version: 2025.6.4
+            install: true
+            cache: true
+            experimental: true
+        - name: Run Playwright tests
+          run: mise test-integration
+        - uses: actions/upload-artifact@v4
+          if: ${{ !cancelled() }}
+          with:
+              name: playwright-report
+              path: playwright-report/
+              retention-days: 30
