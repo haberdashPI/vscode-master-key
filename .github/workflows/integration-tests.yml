@@ -25,7 +25,7 @@ jobs:
         - name: Run Playwright tests
           uses: coactions/setup-xvfb@v1
           with:
-            run: mise test-playwright
+            run: mise run test-integration
         - uses: actions/upload-artifact@v4
           if: ${{ !cancelled() }}
           with:

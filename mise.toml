@@ -9,7 +9,7 @@ watchexec = "2.3.2"
 "ubi:haberdashpi/simple-src-docs" = "0.6.0"
 
 [hooks]
-postinstall = 'pnpm install --frozen-lockfile'
+postinstall = ['pnpm install --frozen-lockfile', 'pnpm exec playwright install']
 
 [tasks.lint]
 run = 'pnpm exec eslint src'
