@@ -4,7 +4,7 @@ import * as vscode from 'vscode';
 import * as assert from 'assert';
 import { assertCursorMovesBy, cursorToStart, editorWithText } from './utils';
 
-suite('Basic Motions', () => {
+suite('Do command', () => {
     let editor: vscode.TextEditor;
     setup(async () => {
         editor = await editorWithText(`
@@ -18,7 +18,7 @@ cillum eiusmod culpa minim duis
             `);
     });
 
-    test('Can run do', async () => {
+    test('Can run', async () => {
         cursorToStart(editor);
         await assertCursorMovesBy(editor, new vscode.Position(0, 1), async () => {
             await vscode.commands.executeCommand('master-key.do', {
@@ -36,7 +36,7 @@ cillum eiusmod culpa minim duis
         });
     });
 
-    test('Can run do with repeat', async () => {
+    test('Can run with repeat', async () => {
         cursorToStart(editor);
 
         await assertCursorMovesBy(editor, new vscode.Position(0, 2), async () => {
@@ -56,7 +56,7 @@ cillum eiusmod culpa minim duis
         });
     });
 
-    test('Can run do with computed repeat', async () => {
+    test('Can run with computed repeat', async () => {
         cursorToStart(editor);
 
         await assertCursorMovesBy(editor, new vscode.Position(0, 4), async () => {
@@ -76,7 +76,7 @@ cillum eiusmod culpa minim duis
         });
     });
 
-    test('Fail on invalid computed repeat', async () => {
+    test('Fails on invalid computed repeat', async () => {
         cursorToStart(editor);
         await assertCursorMovesBy(editor, new vscode.Position(0, 0), async () => {
             await vscode.commands.executeCommand('master-key.do', {
@@ -215,6 +215,71 @@ cillum eiusmod culpa minim duis
                         },
                     }
                 ],
+            });
+        });
+    });
+
+    test('Can read mode to change state', async () => {
+        cursorToStart(editor);
+        await assertCursorMovesBy(editor, new vscode.Position(0, 2), async () => {
+
+            await vscode.commands.executeCommand('master-key.do', {
+                do: [
+                    {
+                        command: 'master-key.setMode',
+                        args: {
+                            value: 'normal'
+                        },
+                    }
+                ],
+                finalKey: false,
+            });
+
+            await vscode.commands.executeCommand('master-key.do', {
+                do: [
+                    {
+                        command: 'cursorMove',
+                        args: {
+                            to: 'right',
+                        },
+                        computedArgs: {
+                            value: 'mode == "normal" ? 2 : 1',
+                        },
+                    }
+                ],
+            });
+
+        });
+    });
+
+    test('Can run stored commands', async () => {
+        // 8 characters is the size of the first word in `text.md`
+        cursorToStart(editor);
+        assertCursorMovesBy(editor, new vscode.Position(0, 8), async () => {
+            await vscode.commands.executeCommand('master-key.do', {
+                do: [
+                    {
+                        command: 'master-key.prefix',
+                        args: { code: 2 }
+                    },
+                    {
+                        command: 'master-key.storeCommand',
+                        args: {
+                            command: 'cursorWordLeft',
+                            register: 'operation',
+                        }
+                    }
+                ],
+                finalKey: false
+            });
+
+            await vscode.commands.executeCommand('master-key.do', {
+                do: [
+                    {
+                        command: 'master-key.executeStoredCommand',
+                        args: { register: 'operation' }
+                    }
+                ]
             });
         });
     });

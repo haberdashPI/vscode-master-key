@@ -10,9 +10,10 @@ Next steps:
         - [x] desktop unit tests
         - [x] web unit tests
         - [x] desktop integration tests
-    - [ ] commandState.ux.mts unit tests
-    - [ ] commandState.ux.mts integration tests
-        - [ ] can respond to multi-key sequences
+    - [x] commandState.ux.mts unit tests
+    - [x] commandState.ux.mts integration tests
+        - [x] can respond to mode changes
+        - [x] can respond to multi-key sequences
     - [ ] searchMotions.ux.mts unit tests
     - [ ] replay.ux.mts unit tests
     - [ ] config.ux.mts unit tests

@@ -434,12 +434,14 @@ async function makeQuickPicksFromPresets(
 
 export async function queryPreset(): Promise<Preset | undefined> {
     const options = await makeQuickPicksFromPresets(await keybindingPresets);
+    console.log('DEBUG: quick pick options defined');
     options.push(
         { label: 'add new presets...', kind: vscode.QuickPickItemKind.Separator },
         { label: 'Current File', command: 'current' },
         { label: 'File...', command: 'file' },
         { label: 'Directory...', command: 'dir' },
     );
+    console.log('DEBUG: showing quick pick');
     const picked = await vscode.window.showQuickPick(options);
     if (picked?.command === 'current') {
         const editor = vscode.window.activeTextEditor;
@@ -588,8 +590,10 @@ async function handleRequireExtensions(bindings_?: Bindings) {
 }
 
 async function activateBindings(preset?: Preset) {
+    console.log('DEBUG: activateBindings');
     if (!preset) {
         preset = await queryPreset();
+        console.log('DEBUG: present queried');
     }
     if (preset) {
         const bindings = await createBindings(preset.data);
