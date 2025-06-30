@@ -1,6 +1,7 @@
 // You can import and use all API from the 'vscode' module
 // as well as import your extension to test it
 import * as vscode from 'vscode';
+import * as assert from 'assert';
 import { assertCursorMovesBy, cursorToStart, editorWithText } from './utils';
 
 suite('Basic Motions', () => {
@@ -112,9 +113,109 @@ cillum eiusmod culpa minim duis
                             computedArgs: {
                                 value: 'count',
                             },
-                        }],
+                        }
+                    ],
                 });
             });
         }
+    });
+
+    test('Can use flags', async () => {
+        cursorToStart(editor);
+        await assertCursorMovesBy(editor, new vscode.Position(0, 2), async () => {
+            await vscode.commands.executeCommand('master-key.do', {
+                do: [
+                    {
+                        command: 'master-key.prefix',
+                        args: {
+                            flag: 'my_flag_on',
+                            code: 1,
+                        },
+                    }
+                ],
+                finalKey: false,
+            });
+
+            await vscode.commands.executeCommand('master-key.do', {
+                do: [
+                    {
+                        command: 'cursorMove',
+                        args: {
+                            to: 'right',
+                        },
+                        computedArgs: {
+                            value: 'my_flag_on ? 2 : 1',
+                        },
+                    }
+                ],
+            });
+        });
+    });
+
+    test('Properly resets state after an error', async () => {
+        cursorToStart(editor);
+        let shouldFail = async () => {
+            await vscode.commands.executeCommand('master-key.do', {
+                do: [
+                    {
+                        command: 'master-key.prefix',
+                        args: {
+                            flag: 'my_flag_on',
+                            code: 1,
+                        },
+                    }
+                ],
+                finalKey: false,
+            });
+
+            await vscode.commands.executeCommand('master-key.do', {
+                do: [
+                    {
+                        command: 'cursorMoveBob',
+                        args: {
+                            to: 'right',
+                        },
+                        computedArgs: {
+                            value: 'my_flag_on ? 2 : 1',
+                        },
+                    }
+                ],
+            });
+        };
+        try {
+            let _ = await shouldFail();
+            assert.fail('Expected command to error');
+        } catch (e) {
+            console.log('Found expected error '+e)
+        }
+
+        await assertCursorMovesBy(editor, new vscode.Position(0, 2), async () => {
+            await vscode.commands.executeCommand('master-key.do', {
+                do: [
+                    {
+                        command: 'master-key.prefix',
+                        args: {
+                            flag: 'my_flag_on',
+                            code: 1,
+                        },
+                    }
+                ],
+                finalKey: false,
+            });
+
+            await vscode.commands.executeCommand('master-key.do', {
+                do: [
+                    {
+                        command: 'cursorMove',
+                        args: {
+                            to: 'right',
+                        },
+                        computedArgs: {
+                            value: 'my_flag_on ? 2 : 1',
+                        },
+                    }
+                ],
+            });
+        });
     });
 });
