@@ -32,14 +32,17 @@ jobs:
           fetch-depth: 0 # Not needed if lastUpdated is not enabled
       - name: Install Dev Environment
         uses: jdx/mise-action@v2
+        with:
+          version: '2025.06.13'
+          install: true
+          cache: true
+          experimental: true
       - name: Setup Pages
         uses: actions/configure-pages@v4
-      - name: Install dependencies
-        run: mise install
       - name: Build with VitePress
         run: mise build-docs
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: docs/.vitepress/dist
 
