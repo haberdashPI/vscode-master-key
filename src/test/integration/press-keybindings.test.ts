@@ -17,8 +17,6 @@ test.describe('Basic keypresses', () => {
     });
 
     test('Move the cursor', async ({ workbox }) => {
-        await editor.press('Escape');
-
         await editor.press('l');
         await expect(pos).toHaveText('Ln 1, Col 2');
 
@@ -33,8 +31,6 @@ test.describe('Basic keypresses', () => {
     });
 
     test('Can change the key mode', async ({ workbox }) => {
-        await editor.press('Escape');
-
         let cursor = workbox.locator('div[role="presentation"].cursors-layer');
         expect(cursor).toHaveClass(/cursor-block-style/);
         let statusBarMode = workbox.locator('div[aria-label="Keybinding Mode: normal"]');
