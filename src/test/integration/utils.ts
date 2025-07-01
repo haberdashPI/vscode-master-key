@@ -7,9 +7,9 @@ export async function openFile(page: Page, file: string) {
         'textbox',
         { name: 'Search files by name (append' },
     );
-    await openInput.fill(file);
+    await openInput.pressSequentially(file);
     await openInput.press('Enter');
-    await expect(openInput).toBeHidden();
+    await openInput.waitFor({ state: 'hidden' });
     return;
 }
 
@@ -23,25 +23,18 @@ export async function runCommand(page: Page, command: string) {
 }
 
 export async function activateKeybinings(page: Page, file: string) {
-    await runCommand(page, 'Master Key: Activate Keybindings');
+    // open binding file
+    await openFile(page, file);
 
-    // ask to enter a filename
+    // load current file as a keybinding
+    await runCommand(page, 'Master Key: Activate Keybindings');
     const selectMethod = page.getByRole(
         'textbox',
         { name: 'Type to narrow down results' },
     );
     await expect(selectMethod).toBeFocused();
-    await selectMethod.pressSequentially('File...');
+    await selectMethod.pressSequentially('Current File');
     await selectMethod.press('Enter');
-
-    // enter the filename
-    const selectFile = page.getByRole(
-        'textbox',
-        { name: 'Type to narrow down results' },
-    );
-    await expect(selectFile).toBeFocused();
-    await selectFile.pressSequentially(file);
-    await selectFile.press('Enter');
 
     await expect(page.getByText('// AUTOMATED BINDINGS START').first()).toBeVisible();
     return;

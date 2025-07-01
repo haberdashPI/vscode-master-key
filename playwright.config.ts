@@ -10,8 +10,8 @@ export default defineConfig<void, TestOptions>({
     reporter: 'html',
     use: { trace: 'on-first-retry' },
     globalSetup: './src/test/integration/setup',
-    timeout: 30_000,
-    expect: { timeout: 10_000 },
+    // timeout: 30_000,
+    // expect: { timeout: 10_000 },
     projects: [
         {
             name: 'VSCode insiders',

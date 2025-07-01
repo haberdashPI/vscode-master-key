@@ -16,7 +16,12 @@ test.describe('Basic keypresses', () => {
             filter({ hasText: /Ln [0-9]+, Col [0-9]+/ });
     });
 
-    test('Move the cursor', async () => {
+    test('Move the cursor', async ({ workbox }) => {
+        // await editor.press('Escape');
+        // TODO: debug even though the editor reports that we're in normal mode
+        // the keys aren't responding as such without pressing 'Escape' above
+
+        await workbox.pause();
         await editor.press('l');
         await expect(pos).toHaveText('Ln 1, Col 2');
 

@@ -18,13 +18,17 @@ jobs:
         steps:
             - name: Checkout
               uses: actions/checkout@v4
+            - name: Cache Build
+              uses: actions/cache@v4
+              with:
+                path: ~/.cache/** node_modules/**
+                key: mise-unit-${{ hashFiles('mise.toml pnpm-lock.yaml') }}
             - name: Install Dev Environment
               uses: jdx/mise-action@v2
               with:
                 version: 2025.6.4
                 install: true
                 cache: true
-                experimental: true
             - name: Run Desktop Unit Tests
               if: matrix.environment == 'desktop'
               uses: coactions/setup-xvfb@v1

@@ -1,6 +1,8 @@
 Next steps:
 
 Integration test debuggin:
+- [ ] github action caching
+    - [~] use granual save/restore commands for caching pnpm install
 - [ ] litter steps with console.log until we find the point of failure
     - [ ] is it that we can't show an open file dialog? maybe we need a workaround
           in the code to load a file: this would also probably just generally speed

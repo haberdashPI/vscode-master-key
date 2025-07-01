@@ -15,6 +15,11 @@ jobs:
         steps:
         - name: Checkout
           uses: actions/checkout@v4
+        - name: Cache Build
+          uses: actions/cache@v4
+          with:
+            path: ~/.cache/** node_modules/**
+            key: mise-integration-${{ hashFiles('mise.toml pnpm-lock.yaml') }}
         - name: Install Dev Environment
           uses: jdx/mise-action@v2
           with:
