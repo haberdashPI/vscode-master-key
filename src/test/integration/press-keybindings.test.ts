@@ -16,6 +16,8 @@ test.describe('Basic keypresses', () => {
             filter({ hasText: /Ln [0-9]+, Col [0-9]+/ });
     });
 
+    // we leave `workbox` in because we often want to use it to debug this test
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     test('Move the cursor', async ({ workbox }) => {
         await editor.press('Escape');
         // TODO: debug even though the editor reports that we're in normal mode
