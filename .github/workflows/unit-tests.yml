@@ -14,29 +14,31 @@ jobs:
         strategy:
             matrix: { environment: [web, desktop] }
         runs-on: ubuntu-latest
-
         steps:
-            - name: Checkout
-              uses: actions/checkout@v4
-            - name: Cache Node and Playwright Builds
-              uses: actions/cache@v4
-              with:
-                key: mise-unit-${{ hashFiles(format('{0}/mise.toml {0}/pnpm-lock.yaml', github.workspace)) }}
-                path: ~/.cache/** ${{ github.workspace }}/node_modules/**
-            - name: Install Dev Environment
-              uses: jdx/mise-action@v2
-              with:
-                version: 2025.6.4
-                install: true
-                cache: true
-                experimental: true
-            - name: Run Desktop Unit Tests
-              if: matrix.environment == 'desktop'
-              uses: coactions/setup-xvfb@v1
-              with:
-                run: mise test
-            - name: Run Web Unit Tests
-              if: matrix.environment == 'web'
-              uses: coactions/setup-xvfb@v1
-              with:
-                run: mise test-web
+        - name: Checkout
+          uses: actions/checkout@v4
+        - name: Cache Node and Playwright Builds
+          uses: actions/cache@v4
+          with:
+            key: mise-unit-${{ hashFiles(format('{0}/mise.toml {0}/pnpm-lock.yaml', github.workspace)) }}
+            path: >-
+                ${{ github.workspace }}.vscode-test/**/*
+                ${{ github.workspace }}.vscode-test-web/**/*
+                ${{ github.workspace }}/node_modules/**/*
+        - name: Install Dev Environment
+          uses: jdx/mise-action@v2
+          with:
+            version: 2025.6.4
+            install: true
+            cache: true
+            experimental: true
+        - name: Run Desktop Unit Tests
+          if: matrix.environment == 'desktop'
+          uses: coactions/setup-xvfb@v1
+          with:
+            run: mise test
+        - name: Run Web Unit Tests
+          if: matrix.environment == 'web'
+          uses: coactions/setup-xvfb@v1
+          with:
+            run: mise test-web

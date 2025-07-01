@@ -9,7 +9,7 @@ export async function openFile(page: Page, file: string) {
     );
     await openInput.pressSequentially(file);
     await openInput.press('Enter', { delay: 100 });
-    await openInput.waitFor({ state: 'detached' });
+    expect(openInput).not.toBeVisible();
     return;
 }
 
@@ -18,7 +18,7 @@ export async function runCommand(page: Page, command: string) {
     const palette = await page.getByPlaceholder('Type the name of a command to run.');
     await palette.pressSequentially(command);
     await palette.press('Enter', { delay: 100 });
-    await palette.waitFor({ state: 'detached' });
+    expect(palette).not.toBeVisible();
     return;
 }
 

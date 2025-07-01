@@ -37,6 +37,10 @@ test.describe('Basic keypresses', () => {
     });
 
     test('Can change the key mode', async ({ workbox }) => {
+        await editor.press('Escape');
+        // TODO: debug even though the editor reports that we're in normal mode
+        // the keys aren't responding as such without pressing 'Escape' above
+
         const cursor = workbox.locator('div[role="presentation"].cursors-layer');
         expect(cursor).toHaveClass(/cursor-block-style/);
         let statusBarMode = workbox.locator('div[aria-label="Keybinding Mode: normal"]');
