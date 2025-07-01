@@ -16,7 +16,7 @@ export function cursorToStart(editor: vscode.TextEditor) {
     cursorToPos(editor, 0, 0);
 }
 
-export function cursorToPos(editor: vscode.TextEditor, line: number, character:number) {
+export function cursorToPos(editor: vscode.TextEditor, line: number, character: number) {
     editor.selection = new vscode.Selection(
         new vscode.Position(line, character),
         new vscode.Position(line, character),

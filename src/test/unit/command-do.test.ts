@@ -7,6 +7,7 @@ import { assertCursorMovesBy, cursorToStart, editorWithText } from './utils';
 suite('Do command', () => {
     let editor: vscode.TextEditor;
     setup(async () => {
+        // eslint-disable-next-line @stylistic/max-len
         editor = await editorWithText(`Anim reprehenderit voluptate magna excepteur dolore aliqua minim labore est
 consectetur ullamco ullamco aliqua ex. Pariatur officia nostrud pariatur ex
 dolor magna. Consequat cupidatat amet nostrud proident occaecat ex.
@@ -111,7 +112,7 @@ cillum eiusmod culpa minim duis`);
                             computedArgs: {
                                 value: 'count',
                             },
-                        }
+                        },
                     ],
                 });
             });
@@ -129,7 +130,7 @@ cillum eiusmod culpa minim duis`);
                             flag: 'my_flag_on',
                             code: 1,
                         },
-                    }
+                    },
                 ],
                 finalKey: false,
             });
@@ -144,7 +145,7 @@ cillum eiusmod culpa minim duis`);
                         computedArgs: {
                             value: 'my_flag_on ? 2 : 1',
                         },
-                    }
+                    },
                 ],
             });
         });
@@ -152,7 +153,7 @@ cillum eiusmod culpa minim duis`);
 
     test('Properly resets state after an error', async () => {
         cursorToStart(editor);
-        let shouldFail = async () => {
+        const shouldFail = async () => {
             await vscode.commands.executeCommand('master-key.do', {
                 do: [
                     {
@@ -161,7 +162,7 @@ cillum eiusmod culpa minim duis`);
                             flag: 'my_flag_on',
                             code: 1,
                         },
-                    }
+                    },
                 ],
                 finalKey: false,
             });
@@ -176,15 +177,15 @@ cillum eiusmod culpa minim duis`);
                         computedArgs: {
                             value: 'my_flag_on ? 2 : 1',
                         },
-                    }
+                    },
                 ],
             });
         };
         try {
-            let _ = await shouldFail();
+            const _ = await shouldFail();
             assert.fail('Expected command to error');
         } catch (e) {
-            console.log('Found expected error '+e)
+            console.log('Found expected error ' + e);
         }
 
         await assertCursorMovesBy(editor, new vscode.Position(0, 2), async () => {
@@ -196,7 +197,7 @@ cillum eiusmod culpa minim duis`);
                             flag: 'my_flag_on',
                             code: 1,
                         },
-                    }
+                    },
                 ],
                 finalKey: false,
             });
@@ -211,7 +212,7 @@ cillum eiusmod culpa minim duis`);
                         computedArgs: {
                             value: 'my_flag_on ? 2 : 1',
                         },
-                    }
+                    },
                 ],
             });
         });
@@ -220,15 +221,14 @@ cillum eiusmod culpa minim duis`);
     test('Can read mode to change state', async () => {
         cursorToStart(editor);
         await assertCursorMovesBy(editor, new vscode.Position(0, 2), async () => {
-
             await vscode.commands.executeCommand('master-key.do', {
                 do: [
                     {
                         command: 'master-key.setMode',
                         args: {
-                            value: 'normal'
+                            value: 'normal',
                         },
-                    }
+                    },
                 ],
                 finalKey: false,
             });
@@ -243,10 +243,9 @@ cillum eiusmod culpa minim duis`);
                         computedArgs: {
                             value: 'mode == "normal" ? 2 : 1',
                         },
-                    }
+                    },
                 ],
             });
-
         });
     });
 
@@ -258,26 +257,26 @@ cillum eiusmod culpa minim duis`);
                 do: [
                     {
                         command: 'master-key.prefix',
-                        args: { code: 2 }
+                        args: { code: 2 },
                     },
                     {
                         command: 'master-key.storeCommand',
                         args: {
                             command: 'cursorWordLeft',
                             register: 'operation',
-                        }
-                    }
+                        },
+                    },
                 ],
-                finalKey: false
+                finalKey: false,
             });
 
             await vscode.commands.executeCommand('master-key.do', {
                 do: [
                     {
                         command: 'master-key.executeStoredCommand',
-                        args: { register: 'operation' }
-                    }
-                ]
+                        args: { register: 'operation' },
+                    },
+                ],
             });
         });
     });

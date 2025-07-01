@@ -2,7 +2,6 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 import { defineConfig, globalIgnores } from 'eslint/config';
 import stylistic from '@stylistic/eslint-plugin';
-import eslintPluginYml from 'eslint-plugin-yaml';
 
 export default defineConfig([
     stylistic.configs.customize({
@@ -17,7 +16,6 @@ export default defineConfig([
         'src/oldtest/**',
         'docs/.vitepress/theme/**/*.{js,ts,t.ds}',
     ]),
-    eslintPluginYml.configs.recommended,
     {
         rules: {
             '@stylistic/max-len': ['error', { code: 92 }],

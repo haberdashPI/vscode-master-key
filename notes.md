@@ -16,7 +16,9 @@ Next steps:
         - [x] can respond to multi-key sequences
     - [~] searchMotions.ux.mts unit tests
     - [ ] searchMotions.ux.mts integration tests
-        - [ ] ??
+        - [ ] `acceptAfter`
+        - [ ] `acceptAfter` with delete char
+        - [ ] post search commands
     - [ ] replay.ux.mts unit tests
     - [ ] config.ux.mts unit tests
         - fallback bindings

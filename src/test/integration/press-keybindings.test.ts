@@ -16,7 +16,7 @@ test.describe('Basic keypresses', () => {
             filter({ hasText: /Ln [0-9]+, Col [0-9]+/ });
     });
 
-    test('Move the cursor', async ({ workbox }) => {
+    test('Move the cursor', async () => {
         await editor.press('l');
         await expect(pos).toHaveText('Ln 1, Col 2');
 
@@ -31,7 +31,7 @@ test.describe('Basic keypresses', () => {
     });
 
     test('Can change the key mode', async ({ workbox }) => {
-        let cursor = workbox.locator('div[role="presentation"].cursors-layer');
+        const cursor = workbox.locator('div[role="presentation"].cursors-layer');
         expect(cursor).toHaveClass(/cursor-block-style/);
         let statusBarMode = workbox.locator('div[aria-label="Keybinding Mode: normal"]');
         expect(statusBarMode).toHaveClass(/warning-kind/);
@@ -59,13 +59,13 @@ test.describe('Basic keypresses', () => {
 
     test('Can change cursor shape when using a delayed action', async ({ workbox }) => {
         await editor.press('Escape');
-        await editor.press('d')
+        await editor.press('d');
         // assert cursor state
         const cursor = workbox.locator('div[role="presentation"].cursors-layer');
         expect(cursor).toHaveClass(/cursor-underline-style/);
 
         // execute the action
-        await editor.press('w')
+        await editor.press('w');
         expect(cursor).toHaveClass(/cursor-block-style/);
     });
 });
