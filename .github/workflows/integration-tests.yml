@@ -15,11 +15,11 @@ jobs:
         steps:
         - name: Checkout
           uses: actions/checkout@v4
-        - name: Cache Build
+        - name: Cache Node and Playwright Builds
           uses: actions/cache@v4
           with:
-            path: ~/.cache/** node_modules/**
-            key: mise-integration-${{ hashFiles('mise.toml pnpm-lock.yaml') }}
+            key: mise-unit-${{ hashFiles(format('{0}/mise.toml {0}/pnpm-lock.yaml', github.workspace)) }}
+            path: ~/.cache/** ${{ github.workspace }}/node_modules/**
         - name: Install Dev Environment
           uses: jdx/mise-action@v2
           with:

@@ -29,7 +29,7 @@ run = 'tsc --noEmit --project tsconfig.json'
 [tasks.build]
 depends = ['check-types', 'lint'] #, 'build-rust']
 sources = ['src/**/*.ts']
-run = ['node esbuild.mjs', 'pwd']
+run = ['pwd', 'node esbuild.mjs']
 
 [tasks.package]
 depends = ['check-types', 'lint'] #, 'build-rust']
