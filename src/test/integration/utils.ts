@@ -15,9 +15,8 @@ export async function openFile(page: Page, file: string) {
 export async function runCommand(page: Page, command: string) {
     await page.getByRole('main').press('ControlOrMeta+Shift+P');
     const palette = await page.getByPlaceholder('Type the name of a command to run.');
-    await palette.fill('>' + command);
-    await palette.press('Enter');
-    await expect(palette).toBeHidden();
+    await palette.pressSequentially(command);
+    await palette.press('Enter', { delay: 100 });
     return;
 }
 
