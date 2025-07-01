@@ -443,6 +443,7 @@ export async function queryPreset(): Promise<Preset | undefined> {
     );
     console.log('DEBUG: showing quick pick');
     const picked = await vscode.window.showQuickPick(options);
+    console.log('DEBUG: quick pick resolved to' + picked?.command || 'null');
     if (picked?.command === 'current') {
         const editor = vscode.window.activeTextEditor;
         if (!editor) {
@@ -461,15 +462,16 @@ export async function queryPreset(): Promise<Preset | undefined> {
             };
         }
     } else if (picked?.command === 'file') {
+        console.log('DEBUG: showing open dialog');
         const file = await vscode.window.showOpenDialog({
             openLabel: 'Import Master-Key-Binding Spec',
-
             filters: { Preset: ['toml'] },
             canSelectFiles: true,
             canSelectFolders: false,
             canSelectMany: false,
         });
         if (file && file.length === 1) {
+            console.log('DEBUG: reading file...');
             const fileData = await vscode.workspace.fs.readFile(file[0]);
             const data = new TextDecoder().decode(fileData);
             return {
