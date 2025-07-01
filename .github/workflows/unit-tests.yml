@@ -34,9 +34,7 @@ jobs:
               if: matrix.environment == 'desktop'
               uses: coactions/setup-xvfb@v1
               with:
-                run:
-                    pwd
-                    mise test
+                run: mise test && pwd
             - name: Run Web Unit Tests
               if: matrix.environment == 'web'
               uses: coactions/setup-xvfb@v1
