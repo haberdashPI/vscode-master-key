@@ -17,14 +17,22 @@ jobs:
         steps:
         - name: Checkout
           uses: actions/checkout@v4
-        - name: Cache Node and Playwright Builds
+        - name: Install pnpm
+          uses: pnpm/action-setup@v4
+          with:
+            version: 10
+        - name: Use Node.js ${{ matrix.node-version }}
+          uses: actions/setup-node@v4
+          with:
+            node-version: ${{ matrix.node-version }}
+            cache: 'pnpm'
+        - name: Cache Playwright Builds
           uses: actions/cache@v4
           with:
             key: mise-unit-${{ hashFiles(format('{0}/mise.toml {0}/pnpm-lock.yaml', github.workspace)) }}
             path: >-
-                ${{ github.workspace }}.vscode-test/**/*
-                ${{ github.workspace }}.vscode-test-web/**/*
-                ${{ github.workspace }}/node_modules/**/*
+                ${{ github.workspace }}/.vscode-test/**/*
+                ${{ github.workspace }}/.vscode-test-web/**/*
         - name: Install Dev Environment
           uses: jdx/mise-action@v2
           with:
