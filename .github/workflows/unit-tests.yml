@@ -29,11 +29,14 @@ jobs:
                 version: 2025.6.4
                 install: true
                 cache: true
+                experimental: true
             - name: Run Desktop Unit Tests
               if: matrix.environment == 'desktop'
               uses: coactions/setup-xvfb@v1
               with:
-                run: mise test
+                run:
+                    pwd
+                    mise test
             - name: Run Web Unit Tests
               if: matrix.environment == 'web'
               uses: coactions/setup-xvfb@v1

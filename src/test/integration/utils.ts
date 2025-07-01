@@ -8,8 +8,7 @@ export async function openFile(page: Page, file: string) {
         { name: 'Search files by name (append' },
     );
     await openInput.pressSequentially(file);
-    await openInput.press('Enter');
-    await openInput.waitFor({ state: 'hidden' });
+    await openInput.press('Enter', { delay: 100 });
     return;
 }
 
