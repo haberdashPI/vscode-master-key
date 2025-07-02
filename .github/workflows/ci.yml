@@ -19,21 +19,15 @@ jobs:
         steps:
         - name: Checkout
           uses: actions/checkout@v4
-        - name: Install pnpm
-          uses: pnpm/action-setup@v4
-          with:
-            version: 10
-        - name: Cache pnpm
-          uses: actions/setup-node@v4
-          with:
-            node-version: 20
-            cache: 'pnpm'
-        - name: Cache Browsers
+        - name: Find Cache Directories
+          run: echo "PNPM_STORE_PATH=$(pnpm store path)" >> $GITHUB_ENV
+        - name: Cache
           uses: actions/cache@v4
           with:
             key: mise${{ matrix.environment }}-${{ hashFiles('{0}/vscode-master-key/mise.toml {0}/vscode-master-key/pnpm-lock.yaml', github.workspace) }}
             path: >-
                 ${{ github.workspace }}/.vscode-test${{ matrix.environment }}
+                ${{ env.PNPM_STORE_PATH }}
         - name: Install Dev Environment
           uses: jdx/mise-action@v2
           with:
@@ -51,7 +45,15 @@ jobs:
           with:
             run: mise run test-integration
         - uses: actions/upload-artifact@v4
-          if: ${{ !cancelled() }} && matrix.environment == ''
+          name: Upload Integration Logs
+          if: ${{ !cancelled() && matrix.environment == ''}}
+          with:
+              name: test-results
+              path: test-results/
+              retention-days: 7
+        - uses: actions/upload-artifact@v4
+          name: Upload Integration Report
+          if: ${{ !cancelled() && matrix.environment == ''}}
           with:
               name: playwright-report
               path: playwright-report/
