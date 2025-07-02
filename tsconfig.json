@@ -21,6 +21,7 @@
         "src/test/unit/extension.test.ts"
     ],
     "exclude": [
+        "node_modules/**/*.{ts,mts,d.ts}",
         "src/test/**/*.ts",
         "src/oldtest/**/*.mts",
         "out/**/*.js",

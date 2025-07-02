@@ -11,7 +11,7 @@ watchexec = "2.3.2"
 "npm:http-server" = "14.1.1"
 
 [hooks]
-postinstall = ['pnpm install --frozen-lockfile', 'pnpm exec playwright install']
+postinstall = ['pnpm install --frozen-lockfile', 'pnpm exec playwright install chromium']
 
 [tasks.lint]
 run = 'pnpm exec eslint src'
