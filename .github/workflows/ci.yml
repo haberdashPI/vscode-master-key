@@ -28,6 +28,7 @@ jobs:
             path: >-
                 ${{ github.workspace }}/.vscode-test${{ matrix.environment }}
                 ${{ env.PNPM_STORE_PATH }}
+                ${{ env.HOME }}/.cache
         - name: Install Dev Environment
           uses: jdx/mise-action@v2
           with:

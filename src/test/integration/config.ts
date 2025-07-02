@@ -41,9 +41,9 @@ export const test = base.extend<TestFixtures>({
         );
         const electronApp = await _electron.launch({
             executablePath: vscodePath,
-            env: {
-                NODE_V8_COVERAGE: './coverage/tmp/',
-            },
+            // env: {
+            //     NODE_V8_COVERAGE: './coverage/tmp/',
+            // },
             args: [
                 '--experimental-test-coverage',
                 // eslint-disable-next-line @stylistic/max-len
