@@ -35,14 +35,14 @@ export const test = base.extend<TestFixtures>({
     workbox: async ({ vscodeVersion, createProject, createTempDir }, use) => {
         const defaultCachePath = await createTempDir();
         const vscodePath = await downloadAndUnzipVSCode(vscodeVersion);
-        const coverageDir = await fs.promises.mkdir(
-            path.join(__dirname, '../../../coverage/v8/'),
+        await fs.promises.mkdir(
+            path.join(__dirname, '../../../coverage/tmp/'),
             { recursive: true },
         );
         const electronApp = await _electron.launch({
             executablePath: vscodePath,
             env: {
-                NODE_V8_COVERAGE: coverageDir || './v8coverage',
+                NODE_V8_COVERAGE: './coverage/tmp/',
             },
             args: [
                 '--experimental-test-coverage',
