@@ -31,7 +31,7 @@ jobs:
             mkdir -p $HOME/Library/Caches
             mkdir -p ${{ github.workspace }}/.vscode-test${{ matrix.environment }}
             echo "PNPM_STORE_PATH=$(pnpm store path)" >> $GITHUB_ENV
-            echo "Created cachedir $HOME/Library/Caches
+            echo "Created cachedir $HOME/Library/Caches"
         - name: Cache
           uses: actions/cache@v4
           with:
