@@ -43,9 +43,11 @@ jobs:
         - name: Install Dependencies
           run: pnpm install --frozen-lockfile && pnpm exec playwright install chromium
         - name: Unit Tests
-          run: mise test${{ matrix.environment }} --coverage --coverage-output=coverage/unit --coverage-reporter=json
+          env: { COVERAGE: 'true' }
+          run: mise test${{ matrix.environment }}
         - name: Integration Tests
           if: matrix.environment == ''
+          env: { COVERAGE: 'true' }
           run: mise run test-integration
         - uses: actions/upload-artifact@v4
           name: Upload Integration Logs
