@@ -63,7 +63,7 @@ export const test = base.extend<TestFixtures>({
             electronApp = await _electron.launch({
                 executablePath: xvfbPath,
                 env: { NODE_V8_COVERAGE: './coverage/tmp/' },
-                args: [vscodePath, ...args],
+                args: ['-a', vscodePath, ...args],
             });
         } else {
             electronApp = await _electron.launch({
