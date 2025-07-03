@@ -5,19 +5,22 @@ Integration test debugging:
     - close, still working on exact naming and handling of directories so things actually cache
 - [ ] get code coverage working
     - [x] unit test coverage just works 🚀
+        - [ ] how do I filter out node_modules ??
     - [ ] coverage for integration tests
         - [x] took some time, but now, by passing the right arguments and env vars to electron I'm getting coverage for integration tests as well
         - [ ] cleanup coverage file generation in integration tests
         - [ ] get coverage to be optional during integration tests
+        - [ ] how do I filter out node modules ??
     - [ ] generate coverage output during CI
-        - [ ] running electron with `NODE_V8_COVERAGE` fails, but I can't
+        - [x] running electron with `NODE_V8_COVERAGE` fails, but I can't
               see the output because of the way xvfb is getting run,
               plan is to use https://github.com/marketplace/actions/cache-apt-packages
               to install and cache xvfb and hopefully by running this
               directly within the call to `mise` I should be able to
               see the output from the application
-        - [ ] I think I've figured out that I can use a macos runner to circumvent a bug in
+        - [x] I think I've figured out that I can use a macos runner to circumvent a bug in
               in using NODE_V8_COVERAGE. (I can test other platforms by not doing coverage on these systems)
+        - [ ] next I need to figure out how to assemble and send coverage of to codecov.io
 
 1. Start translating each of the tests into unit/integration tests as appropriate
     - [x] simpleMotion.ux.mts translated into unit test
