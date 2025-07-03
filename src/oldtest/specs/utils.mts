@@ -23,7 +23,6 @@ export async function setBindings(str: string) {
     const editor = await setupEditor(str + COVERAGE_KEY_COMMAND);
     await editor.moveCursor(1, 1);
 
-    console.log('[DEBUG]: select language');
     const workbench = await browser.getWorkbench();
     await workbench.executeCommand('Clear Command History');
     await sleep(200);
@@ -32,7 +31,6 @@ export async function setBindings(str: string) {
     await input.setText('Markdown');
     await input.confirm();
 
-    console.log('[DEBUG]: activate bindings');
     await sleep(200);
     await browser.executeWorkbench(async (vscode) => {
         vscode.commands.executeCommand('master-key.activateBindings');
@@ -43,7 +41,6 @@ export async function setBindings(str: string) {
     await input.setText('Current File');
     await input.confirm();
 
-    console.log('[DEBUG]: await notification');
     const messagePattern = /Master keybindings were added to /;
     const message = await browser.waitUntil(
         async () => {

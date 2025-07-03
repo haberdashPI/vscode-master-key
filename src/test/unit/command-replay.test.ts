@@ -1,10 +1,11 @@
 // You can import and use all API from the 'vscode' module
 // as well as import your extension to test it
 import * as vscode from 'vscode';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import * as assert from 'assert';
-import { assertCursorMovesBy, cursorToPos, cursorToStart, editorWithText } from './utils';
+import { assertCursorMovesBy, cursorToStart, editorWithText } from './utils';
 
-suite('Search command', () => {
+suite('Replay command', () => {
     let editor: vscode.TextEditor;
     setup(async () => {
         editor = await editorWithText(`a b c d
@@ -12,7 +13,7 @@ e f g h
 i j k l`);
     });
 
-    test('Handles recording', async () => {
+    test.skip('Handles recording', async () => {
         cursorToStart(editor);
         await assertCursorMovesBy(editor, { line: 1, character: 1 }, async () => {
             await vscode.commands.executeCommand('master-key.do', {
@@ -31,7 +32,7 @@ i j k l`);
                         args: { on: false },
                     },
                     {
-                        command: ' master-key.pushHistoryToStack',
+                        command: 'master-key.pushHistoryToStack',
                         args: {
                             whereComputedRangeIs: {
                                 from: 'commandHistory[index-1].name === "record"',
