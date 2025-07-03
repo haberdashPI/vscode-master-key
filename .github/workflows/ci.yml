@@ -19,7 +19,13 @@ jobs:
         steps:
         - name: Checkout
           uses: actions/checkout@v4
-        - name: Prepare Cache Directories
+        - name: Install Dev Environment
+          uses: jdx/mise-action@v2
+          with:
+            version: 2025.6.4
+            install: true
+            cache: true
+        - name: Prepare Cache
           run: >-
             echo "PNPM_STORE_PATH=$(pnpm store path)" >> $GITHUB_ENV &&
             mkdir $HOME/.cache &&
@@ -32,13 +38,8 @@ jobs:
                 ${{ github.workspace }}/.vscode-test${{ matrix.environment }}
                 ${{ env.PNPM_STORE_PATH }}
                 ${{ env.HOME }}/.cache
-        - name: Install Dev Environment
-          uses: jdx/mise-action@v2
-          with:
-            version: 2025.6.4
-            install: true
-            cache: true
-            experimental: true
+        - name: Install Dependencies
+          run: pnpm install --frozen-lockfile && pnpm exec playwright install chromium
         - name: Unit Tests
           run: mise test${{ matrix.environment }}
         - name: Integration Tests
