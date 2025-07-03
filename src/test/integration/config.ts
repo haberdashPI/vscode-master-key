@@ -41,9 +41,10 @@ export const test = base.extend<TestFixtures>({
         );
         const electronApp = await _electron.launch({
             executablePath: vscodePath,
-            // env: { NODE_V8_COVERAGE: './coverage/tmp/' },
+            env: { NODE_V8_COVERAGE: './coverage/tmp/' },
             args: [
-                // '--experimental-test-coverage',
+                '--experimental-test-coverage',
+                '--test-coverage-exclude=**/node_modules/**',
                 // eslint-disable-next-line @stylistic/max-len
                 // Stolen from https://github.com/microsoft/vscode-test/blob/0ec222ef170e102244569064a12898fb203e5bb7/lib/runTest.ts#L126-L160
                 // https://github.com/microsoft/vscode/issues/84238

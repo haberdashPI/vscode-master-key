@@ -7,13 +7,11 @@ import * as config from './keybindings/config';
 
 declare let __coverage__: object;
 export async function activate(context: vscode.ExtensionContext) {
-    console.log('[DEBUG]: activate...');
     await keybindings.activate(context);
     await state.activate(context);
     await commands.activate(context);
     await status.activate(context);
     await config.activate(context);
-    console.log('[DEBUG]: activating...');
 }
 
 // This method is called when your extension is deactivated

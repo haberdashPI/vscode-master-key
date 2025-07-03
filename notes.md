@@ -16,6 +16,8 @@ Integration test debugging:
               to install and cache xvfb and hopefully by running this
               directly within the call to `mise` I should be able to
               see the output from the application
+        - [ ] I think I've figured out that I can use a macos runner to circumvent a bug in
+              in using NODE_V8_COVERAGE. (I can test other platforms by not doing coverage on these systems)
 
 1. Start translating each of the tests into unit/integration tests as appropriate
     - [x] simpleMotion.ux.mts translated into unit test
