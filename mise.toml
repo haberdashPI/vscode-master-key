@@ -50,6 +50,7 @@ run = 'tsc -p src/test --outDir out/test'
 
 [tasks.test]
 depends = ['build-tests']
+shell = 'bash -c'
 run = '''
 if $COVERAGE; then
     pnpm exec vscode-test --config .vscode-test.mjs --extensionDevelopmentPath=. \
