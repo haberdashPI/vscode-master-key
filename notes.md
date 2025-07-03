@@ -32,13 +32,13 @@ Integration test debugging:
         - [x] can respond to mode changes
         - [x] can respond to multi-key sequences
     - [x] searchMotions.ux.mts unit tests
+    - [ ] replay.ux.mts unit tests
+    - [ ] config.ux.mts unit tests
+        - fallback bindings
     - [ ] searchMotions.ux.mts integration tests
         - [ ] `acceptAfter`
         - [ ] `acceptAfter` with delete char
         - [ ] post search commands
-    - [ ] replay.ux.mts unit tests
-    - [ ] config.ux.mts unit tests
-        - fallback bindings
     - [ ] markdown docs integration tests
     - [ ] visual docs integration tests
     - [ ] palette integration tests
@@ -57,6 +57,10 @@ Integration test debugging:
         - default mode overwrite
         - can create editable copy
         - can copy user config
+2. eliminate/cleanup functionality I don't have good coverage for
+    (e.g. binding loading/activation need not be quite so elaborate,
+    I don't need to auto load the install extension or documentation, I can just make
+    buttons for these options in the notification about activating keybindings)
 3. Refactor parsing to rust
     a. in this early phase, we don't worry too much about providing detailed error messages
        (if there are easy things to do here we can do them, but no UX work, etc...)
