@@ -7,7 +7,7 @@ node = "20"
 rust = { version = "1.87", targets = "wasm32-unknown-unknown" }
 watchexec = "2.3.2"
 "ubi:haberdashpi/simple-src-docs" = "0.6.0"
-"npm:c8" = "10.1.3"
+"npm:c8" = "latest"
 "npm:http-server" = "14.1.1"
 
 [hooks]
@@ -50,7 +50,15 @@ run = 'tsc -p src/test --outDir out/test'
 
 [tasks.test]
 depends = ['build-tests']
-run = 'pnpm exec vscode-test --config .vscode-test.mjs --extensionDevelopmentPath=. --version=insiders'
+run = '''
+if $COVERAGE; then
+    pnpm exec vscode-test --config .vscode-test.mjs --extensionDevelopmentPath=. \
+        --version=insiders --coverage --coverage-output=coverage/unit \
+        --coverage-reporter=json
+else
+    pnpm exec vscode-test --config .vscode-test.mjs --extensionDevelopmentPath=. --version=insiders
+fi
+'''
 
 [tasks.test-web]
 depends = ['build --web']
@@ -62,8 +70,22 @@ pnpm exec vscode-test-web --extensionDevelopmentPath=. --extensionTestsPath=./ou
 depends = ['build --web']
 run = 'pnpm exec vscode-test-web --extensionDevelopmentPath=.'
 
+[tasks.assemble-coverage]
+run = [
+    'c8 --temp-directory coverage/integration/tmp/ report -r json -o coverage/integration/',
+    '''
+pnpm exec istanbul-merge --out coverage/merged/coverage-final.json \
+    coverage/integration/coverage-final.json coverage/unit/coverage-final.json
+''',
+    '''
+    pnpm exec nyc report -t coverage/merged --report-dir coverage -r lcov -r text \
+        --exclude node_modules --exclude out --exclude .vscode-test \
+        --exclude src/test
+    ''',
+]
+
 [tasks.test-integration]
-depends = ['build']
+depends = ['build', 'build-tests']
 run = 'pnpm exec playwright test'
 
 [tasks.extract-docs]

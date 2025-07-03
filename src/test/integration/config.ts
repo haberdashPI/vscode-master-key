@@ -35,16 +35,18 @@ export const test = base.extend<TestFixtures>({
     workbox: async ({ vscodeVersion, createProject, createTempDir }, use) => {
         const defaultCachePath = await createTempDir();
         const vscodePath = await downloadAndUnzipVSCode(vscodeVersion);
-        await fs.promises.mkdir(
-            path.join(__dirname, '../../../coverage/tmp/'),
-            { recursive: true },
-        );
+        const coverage = process.env.COVERAGE == 'true';
+        if (coverage) {
+            await fs.promises.mkdir(
+                path.join(__dirname, '../../../coverage/integration/tmp/'),
+                { recursive: true },
+            );
+        }
         const electronApp = await _electron.launch({
             executablePath: vscodePath,
-            env: { NODE_V8_COVERAGE: './coverage/tmp/' },
+            env: coverage ? { NODE_V8_COVERAGE: './coverage/integration/tmp/' } : {},
             args: [
-                '--experimental-test-coverage',
-                '--test-coverage-exclude=**/node_modules/**',
+                ...(coverage ? ['--experimental-test-coverage'] : []),
                 // eslint-disable-next-line @stylistic/max-len
                 // Stolen from https://github.com/microsoft/vscode-test/blob/0ec222ef170e102244569064a12898fb203e5bb7/lib/runTest.ts#L126-L160
                 // https://github.com/microsoft/vscode/issues/84238

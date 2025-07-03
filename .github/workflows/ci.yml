@@ -43,7 +43,7 @@ jobs:
         - name: Install Dependencies
           run: pnpm install --frozen-lockfile && pnpm exec playwright install chromium
         - name: Unit Tests
-          run: mise test${{ matrix.environment }} --coverage
+          run: mise test${{ matrix.environment }} --coverage --coverage-output=coverage/unit --coverage-reporter=json
         - name: Integration Tests
           if: matrix.environment == ''
           run: mise run test-integration
@@ -61,3 +61,9 @@ jobs:
               name: playwright-report
               path: playwright-report/
               retention-days: 7
+        - name: Aseemble Coverage Results
+          run: mise assemble-coverage
+        - name: Upload coverage to Codecov
+          uses: codecov/codecov-action@v4
+          with:
+            token: ${{ secrets.CODECOV_TOKEN }}
