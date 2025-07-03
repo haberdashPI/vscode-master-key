@@ -40,14 +40,19 @@ jobs:
             cache: true
             experimental: true
         - uses: awalsh128/cache-apt-pkgs-action@v1
+          name: Install XVFB
           with:
             packages: xvfb x11-xserver-utils
             version: 1.0
+        - name: Store XVFB Path
+          run: echo "XVFB_PATH=$(which xvfb-run)" >> $GITHUB_ENV
         - name: Unit Tests
           run: xvfb-run -a mise test${{ matrix.environment }}
         - name: Integration Tests
           if: matrix.environment == ''
-          run: xvfb-run -a mise run test-integration
+          # this calls xvfb-run internally to ensure the child process is properly captured
+          # by the x-server
+          run: mise run test-integration
         - uses: actions/upload-artifact@v4
           name: Upload Integration Logs
           if: ${{ !cancelled() && matrix.environment == ''}}

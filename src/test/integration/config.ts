@@ -39,30 +39,39 @@ export const test = base.extend<TestFixtures>({
             path.join(__dirname, '../../../coverage/tmp/'),
             { recursive: true },
         );
-        const electronApp = await _electron.launch({
-            executablePath: vscodePath,
-            env: {
-                NODE_V8_COVERAGE: './coverage/tmp/',
-            },
-            args: [
-                '--experimental-test-coverage',
-                // eslint-disable-next-line @stylistic/max-len
-                // Stolen from https://github.com/microsoft/vscode-test/blob/0ec222ef170e102244569064a12898fb203e5bb7/lib/runTest.ts#L126-L160
-                // https://github.com/microsoft/vscode/issues/84238
-                '--no-sandbox',
-                // https://github.com/microsoft/vscode-test/issues/221
-                '--disable-gpu-sandbox',
-                // https://github.com/microsoft/vscode-test/issues/120
-                '--disable-updates',
-                '--skip-welcome',
-                '--skip-release-notes',
-                '--disable-workspace-trust',
-                `--extensionDevelopmentPath=${path.join(__dirname, '..', '..', '..')}`,
-                `--extensions-dir=${path.join(defaultCachePath, 'extensions')}`,
-                `--user-data-dir=${path.join(defaultCachePath, 'user-data')}`,
-                await createProject(),
-            ],
-        });
+        const args = [
+            '--experimental-test-coverage',
+            // eslint-disable-next-line @stylistic/max-len
+            // Stolen from https://github.com/microsoft/vscode-test/blob/0ec222ef170e102244569064a12898fb203e5bb7/lib/runTest.ts#L126-L160
+            // https://github.com/microsoft/vscode/issues/84238
+            '--no-sandbox',
+            // https://github.com/microsoft/vscode-test/issues/221
+            '--disable-gpu-sandbox',
+            // https://github.com/microsoft/vscode-test/issues/120
+            '--disable-updates',
+            '--skip-welcome',
+            '--skip-release-notes',
+            '--disable-workspace-trust',
+            `--extensionDevelopmentPath=${path.join(__dirname, '..', '..', '..')}`,
+            `--extensions-dir=${path.join(defaultCachePath, 'extensions')}`,
+            `--user-data-dir=${path.join(defaultCachePath, 'user-data')}`,
+            await createProject(),
+        ];
+        let electronApp;
+        if (process.env.CI == 'true') {
+            const xvfbPath = process.env.XVFB_PATH;
+            electronApp = await _electron.launch({
+                executablePath: xvfbPath,
+                env: { NODE_V8_COVERAGE: './coverage/tmp/' },
+                args: [vscodePath, ...args],
+            });
+        } else {
+            electronApp = await _electron.launch({
+                executablePath: vscodePath,
+                env: { NODE_V8_COVERAGE: './coverage/tmp/' },
+                args: args,
+            });
+        }
         const workbox = await electronApp.firstWindow();
         await workbox.context().tracing.start({
             screenshots: true,
