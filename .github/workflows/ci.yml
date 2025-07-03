@@ -64,6 +64,7 @@ jobs:
               path: playwright-report/
               retention-days: 7
         - name: Aseemble Coverage Results
+          if: matrix.environment == ''
           run: mise assemble-coverage
         - name: Upload coverage to Codecov
           uses: codecov/codecov-action@v4
