@@ -19,8 +19,11 @@ jobs:
         steps:
         - name: Checkout
           uses: actions/checkout@v4
-        - name: Find Cache Directories
-          run: echo "PNPM_STORE_PATH=$(pnpm store path)" >> $GITHUB_ENV
+        - name: Prepare Cache Directories
+          run: >-
+            echo "PNPM_STORE_PATH=$(pnpm store path)" >> $GITHUB_ENV &&
+            mkdir $HOME/.cache &&
+            echo "Created cachedir $HOME/.cache"
         - name: Cache
           uses: actions/cache@v4
           with:
@@ -36,15 +39,15 @@ jobs:
             install: true
             cache: true
             experimental: true
-        - name: Unit Tests
-          uses: coactions/setup-xvfb@v1
+        - uses: awalsh128/cache-apt-pkgs-action@v1
           with:
-            run: mise test${{ matrix.environment }}
+            packages: xvfb x11-xserver-utils
+            version: 1.0
+        - name: Unit Tests
+          run: xvfb-run -a mise test${{ matrix.environment }}
         - name: Integration Tests
           if: matrix.environment == ''
-          uses: coactions/setup-xvfb@v1
-          with:
-            run: mise run test-integration
+          run: xvfb-run -a mise run test-integration
         - uses: actions/upload-artifact@v4
           name: Upload Integration Logs
           if: ${{ !cancelled() && matrix.environment == ''}}

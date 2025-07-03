@@ -2,7 +2,7 @@ Next steps:
 
 Integration test debugging:
 - [ ] github action caching works
-    - close, still working on exact naming of directories to actually cache
+    - close, still working on exact naming and handling of directories so things actually cache
 - [ ] get code coverage working
     - [x] unit test coverage just works 🚀
     - [ ] coverage for integration tests
@@ -10,6 +10,12 @@ Integration test debugging:
         - [ ] cleanup coverage file generation in integration tests
         - [ ] get coverage to be optional during integration tests
     - [ ] generate coverage output during CI
+        - [ ] running electron with `NODE_V8_COVERAGE` fails, but I can't
+              see the output because of the way xvfb is getting run,
+              plan is to use https://github.com/marketplace/actions/cache-apt-packages
+              to install and cache xvfb and hopefully by running this
+              directly within the call to `mise` I should be able to
+              see the output from the application
 
 1. Start translating each of the tests into unit/integration tests as appropriate
     - [x] simpleMotion.ux.mts translated into unit test
@@ -25,7 +31,7 @@ Integration test debugging:
     - [x] commandState.ux.mts integration tests
         - [x] can respond to mode changes
         - [x] can respond to multi-key sequences
-    - [~] searchMotions.ux.mts unit tests
+    - [x] searchMotions.ux.mts unit tests
     - [ ] searchMotions.ux.mts integration tests
         - [ ] `acceptAfter`
         - [ ] `acceptAfter` with delete char
@@ -62,3 +68,5 @@ Integration test debugging:
 8. Translate selection utility tests to new build setup
 9. Get CI working for all tests in selection utilities
 10. continue the quest for better test coverage
+
+\u001b[32m✔\u001b[39m Found existing install in /home/runner/work/vscode-master-key/vscode-master-key/.vscode-test/vscode-linux-x64-insiders\n

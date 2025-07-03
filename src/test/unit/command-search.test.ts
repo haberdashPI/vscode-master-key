@@ -85,4 +85,89 @@ labore elit occaecat cupidatat non POINT_B.`);
             assert.equal(editor.selection.anchor.line, 0);
         });
     });
+
+    test('Can adjust position using `offset: "inclusive"`', async () => {
+        cursorToStart(editor);
+        await assertCursorMovesBy(editor, { line: 0, character: 17 }, async () => {
+            await vscode.commands.executeCommand('master-key.search', {
+                text: 'POINT_A',
+                offset: 'inclusive',
+            });
+        });
+
+        await assertCursorMovesBy(editor, { line: 0, character: -6 }, async () => {
+            await vscode.commands.executeCommand('master-key.nextMatch');
+            await vscode.commands.executeCommand('master-key.previousMatch');
+        });
+    });
+
+    test('Can adjust position using `offset: "start"`', async () => {
+        cursorToStart(editor);
+        await assertCursorMovesBy(editor, { line: 0, character: 11 }, async () => {
+            await vscode.commands.executeCommand('master-key.search', {
+                text: 'POINT_A',
+                offset: 'start',
+            });
+        });
+
+        await assertCursorMovesBy(editor, { line: 0, character: 0 }, async () => {
+            await vscode.commands.executeCommand('master-key.nextMatch');
+            await vscode.commands.executeCommand('master-key.previousMatch');
+        });
+    });
+
+    test('Can adjust position using `offset: "end"`', async () => {
+        cursorToStart(editor);
+        await assertCursorMovesBy(editor, { line: 0, character: 18 }, async () => {
+            await vscode.commands.executeCommand('master-key.search', {
+                text: 'POINT_A',
+                offset: 'end',
+            });
+        });
+
+        await assertCursorMovesBy(editor, { line: 0, character: 0 }, async () => {
+            await vscode.commands.executeCommand('master-key.nextMatch');
+            await vscode.commands.executeCommand('master-key.previousMatch');
+        });
+    });
+
+    test('Can use `regex` option.', async () => {
+        cursorToStart(editor);
+
+        await assertCursorMovesBy(editor, { line: 0, character: 10 }, async () => {
+            await vscode.commands.executeCommand('master-key.search', {
+                text: 'POINT_(A|B)',
+                regex: true,
+            });
+        });
+
+        await assertCursorMovesBy(editor, { line: 0, character: 29 }, async () => {
+            await vscode.commands.executeCommand('master-key.nextMatch');
+        });
+
+        await assertCursorMovesBy(editor, { line: 2, character: -5 }, async () => {
+            await vscode.commands.executeCommand('master-key.nextMatch');
+        });
+    });
+
+    test('Can use `register` option.', async () => {
+        cursorToStart(editor);
+        await assertCursorMovesBy(editor, { line: 0, character: 10 }, async () => {
+            await vscode.commands.executeCommand('master-key.search', {
+                text: 'point_a',
+                register: 'a',
+                wrapAround: true,
+            });
+
+            await vscode.commands.executeCommand('master-key.search', {
+                text: 'point_b',
+                register: 'b',
+                wrapAround: true,
+            });
+            await vscode.commands.executeCommand('master-key.nextMatch', {
+                wrapAround: true,
+                register: 'a',
+            });
+        });
+    });
 });
