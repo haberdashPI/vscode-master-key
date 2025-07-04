@@ -143,4 +143,45 @@ i j k l`);
             await vscode.commands.executeCommand('master-key.replayFromStack');
         });
     });
+
+    test('Replays search', async () => {
+        cursorToStart(editor);
+        await assertCursorMovesBy(editor, { line: 0, character: 3 }, async () => {
+            await startRecording();
+            await vscode.commands.executeCommand('master-key.do', {
+                do: [
+                    {
+                        command: 'master-key.search',
+                        args: {
+                            text: 'c d',
+                        },
+                    },
+                ],
+            });
+            await stopRecording();
+        });
+    });
+
+    test('Can be nested', async () => {
+        cursorToStart(editor);
+        await assertCursorMovesBy(editor, { line: 0, character: 2 }, async () => {
+            await startRecording();
+            await vscode.commands.executeCommand('master-key.do', {
+                do: [{ command: 'cursorMove', args: { to: 'right' } }],
+            });
+
+            await vscode.commands.executeCommand('master-key.do', {
+                do: [{
+                    command: 'master-key.replayFromHistory',
+                    args: { whereComputedIndexIs: 'index' },
+                }],
+            });
+            await stopRecording();
+        });
+
+        cursorToStart(editor);
+        await assertCursorMovesBy(editor, { line: 0, character: 2 }, async () => {
+            await vscode.commands.executeCommand('master-key.replayFromStack');
+        });
+    });
 });

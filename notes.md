@@ -3,7 +3,8 @@ Next steps:
 Integration test debugging:
 - [ ] github action caching works
     - [x] close, still working on exact naming and handling of directories so things actually cache
-- [ ] get code coverage working
+    - [ ] check that things are actually getting cached across CI runs
+- [x] get code coverage working
     - [x] unit test coverage just works 🚀
         - [x] how do I filter out node_modules ??
     - [x] coverage for integration tests
@@ -20,7 +21,7 @@ Integration test debugging:
               see the output from the application
         - [x] I think I've figured out that I can use a macos runner to circumvent a bug in
               in using NODE_V8_COVERAGE. (I can test other platforms by not doing coverage on these systems)
-        - [ ] next I need to figure out how to assemble and send coverage of to codecov.io
+        - [x] next I need to figure out how to assemble and send coverage of to codecov.io
             - [x] get c8 or variant thereof to assemble raw outputs into various formats
             - [x] encode my findings in `mise.toml` tasks
                 - [x] for local review of coverage in html or text
@@ -41,20 +42,25 @@ Integration test debugging:
         - [x] can respond to mode changes
         - [x] can respond to multi-key sequences
     - [x] searchMotions.ux.mts unit tests
-    - [ ] replay.ux.mts unit tests
-    - [ ] config.ux.mts unit tests
-        - fallback bindings
-    - [ ] searchMotions.ux.mts integration tests
-        - [ ] `acceptAfter`
-        - [ ] `acceptAfter` with delete char
-        - [ ] post search commands
-    - [ ] markdown docs integration tests
+    - [x] replay.ux.mts unit tests
+    - [x] markdown docs integration tests
     - [ ] visual docs integration tests
     - [ ] palette integration tests
     - [ ] simpleMotionLayout.ux.mts integration tests:
         - check that the same tests from simpleMotion work with the layout
           settings
+    - [ ] searchMotions.ux.mts integration tests
+        - [ ] `acceptAfter`
+        - [ ] `acceptAfter` with delete char
+        - [ ] post search commands
+    - [ ] replay.ux.mts integration tests
+        - [ ] replay canceled entry
+        - [ ] replay captured keys
+        - [ ] replay canceled captured keys
+        - [ ] replay insert/replace
+        - [ ] allow store and restore
     - [ ] config(Edit).ux.mts integration tests
+        - fallback bindings
         - setting defaults
         - mode appearance
         - loading from a directory
@@ -75,7 +81,7 @@ Integration test debugging:
        (if there are easy things to do here we can do them, but no UX work, etc...)
 4. Review documentation
 5. Release version 0.4
-6. Migration selection utilities to the same build setup
+6. Migration of selection utilities to the same build and test setup
 7. Generate detailed error reports for keybinding files and get them to show
    up in VSCode's problem window / linting underlines
 8. Translate selection utility tests to new build setup
