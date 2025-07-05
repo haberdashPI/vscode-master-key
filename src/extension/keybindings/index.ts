@@ -592,10 +592,8 @@ async function handleRequireExtensions(bindings_?: Bindings) {
 }
 
 async function activateBindings(preset?: Preset) {
-    console.log('DEBUG: activateBindings');
     if (!preset) {
         preset = await queryPreset();
-        console.log('DEBUG: present queried');
     }
     if (preset) {
         const bindings = await createBindings(preset.data);

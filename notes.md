@@ -1,5 +1,7 @@
 Next steps:
 
+**TODO**: set up start and stop for tasks.json
+
 Integration test debugging:
 - [ ] github action caching works
     - [x] close, still working on exact naming and handling of directories so things actually cache
@@ -45,23 +47,26 @@ Integration test debugging:
     - [x] replay.ux.mts unit tests
     - [x] markdown docs integration tests
     - [x] visual docs integration tests
-    - [ ] palette integration tests
     - [ ] simpleMotionLayout.ux.mts integration tests:
         - check that the same tests from simpleMotion work with the layout
-          settings
+          based settings
     - [ ] config(Edit).ux.mts integration tests
         - fallback bindings
         - setting defaults
-        - mode appearance
-        - loading from a directory
-        - duplicate entry labels
-        - loading from a file
+            - when you first open the editor modes work as expected
+        - loading from a directory (remove this feature!)
+        - duplicate entry labels (if we remove above we can skip this)
+        - loading from a file (remove this feature!)
         - add and remove user bindings
-        - can be removed
+        - bindings can be removed
         - prevent user binding updates absent preset
         - default mode overwrite
         - can create editable copy
         - can copy user config
+    - [ ] palette integration tests
+        - [ ] NOTE: because we are planning to replace this with a tree view
+              instead of a quick pick UI element it is probably not worth
+              working out the UI testing for this right now
     - [ ] low impact on stability and coverage, but high effort changes
         - save these for after the PR migrating to new test/coverage setup
         - [ ] searchMotions.ux.mts integration tests

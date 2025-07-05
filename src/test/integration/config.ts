@@ -17,7 +17,7 @@ import { test as base, type Page, _electron } from '@playwright/test';
 import { downloadAndUnzipVSCode } from '@vscode/test-electron/out/download';
 export { expect } from '@playwright/test';
 import path from 'path';
-import os from 'os';
+// import os from 'os';
 import fs from 'fs';
 
 export type TestOptions = {
@@ -95,8 +95,10 @@ export const test = base.extend<TestFixtures>({
                 await fs.promises.rm(projectPath, { recursive: true });
             console.log(`Creating project in ${projectPath}`);
             await fs.promises.mkdir(projectPath);
+            const testProject = path.join(__dirname, 'test-workspace');
+            console.log('Copying files from ' + testProject);
             await fs.promises.cp(
-                path.join(__dirname, 'test-workspace'),
+                testProject,
                 projectPath,
                 { recursive: true },
             );
@@ -107,7 +109,9 @@ export const test = base.extend<TestFixtures>({
         const tempDirs: string[] = [];
         await use(async () => {
             const tempDir = await fs.promises.realpath(
-                await fs.promises.mkdtemp(path.join(os.tmpdir(), 'pwtest-')),
+                await fs.promises.mkdtemp(
+                    path.join(__dirname, '../../../playwright-temp', 'pwtest-'),
+                ),
             );
             tempDirs.push(tempDir);
             return tempDir;

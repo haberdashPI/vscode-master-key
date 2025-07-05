@@ -31,7 +31,6 @@ hideInPalette = true
 
 [[default]]
 id = "motion"
-name = "basic motions"
 default.command = "cursorMove"
 default.mode = "normal"
 default.when = "editorTextFocus"
@@ -61,8 +60,8 @@ kind = "left"
 #- verify that including lots of ignored keys doesn't mess up display
 [[bind]]
 name = "ignore"
-foreach.key = ['{key: .}']
-key = "{key}"
+foreach.key = ['{{key: .}}']
+key = "{{key}}"
 command = "master-key.ignore"
 hideInDocs = true
 hideInPalette = true

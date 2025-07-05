@@ -3,7 +3,6 @@ import { activateKeybinings, runCommand } from './utils';
 import { Locator } from '@playwright/test';
 
 test.describe('Text Documentation', () => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     let docs: Locator;
     test.beforeEach(async ({ workbox }) => {
         await activateKeybinings(workbox, 'textDocExample.toml');
@@ -41,7 +40,7 @@ test.describe('Text Documentation', () => {
     });
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    test('Has final paragarph', async ({ workbox }) => {
+    test('Has final paragraph', async ({ workbox }) => {
         const paragraph = docs.contentFrame().locator('div.markdown-body p').nth(2);
         const text = await paragraph.textContent();
         expect(text).toMatch('Final paragraph shows up.');

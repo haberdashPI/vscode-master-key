@@ -48,7 +48,6 @@ test.describe('Visual Documentation', () => {
         checkKey('L', 'right', '1', getKey(3, 9));
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     test('Updates on prefix', async ({ workbox }) => {
         await openFile(workbox, 'text.md');
         await workbox.keyboard.press('w');
@@ -69,7 +68,6 @@ test.describe('Visual Documentation', () => {
         checkKey('W', 'funny right', '1', key);
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     test('Layout toggles by command', async ({ workbox }) => {
         checkKey('I', 'insert mode', '1', getKey(2, 8));
         checkKey('^I', 'magic insert', '1', getKey(2, 8, 'top'));

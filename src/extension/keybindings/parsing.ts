@@ -395,152 +395,149 @@ export const vscodeBinding = z.object({
     when: z.string().optional(),
 });
 
-export const rawBindingItem = z.
-    object({
-        /**
-         * @forBindingField bind
-         *
-         * - `key`*: the
-         *   [keybinding](https://code.visualstudio.com/docs/getstarted/keybindings) that
-         *   triggers `command`.
-         */
-        key: z.string().optional(),
-        /**
-         * @forBindingField bind
-         *
-         * - `when`: A [when
-         *   clause](https://code.visualstudio.com/api/references/when-clause-contexts)
-         *   context under which the binding will be active. Also see Master Key's
-         *   [available contexts](#available-contexts)
-         */
-        when: z.
-            union([z.string(), z.string().array()]).
-            optional().
-            transform(parseWhen).
-            pipe(parsedWhen.array()),
-        /**
-         * @forBindingField bind
-         *
-         * - `mode`: The mode during which the binding will be active. The default mode is
-         *   used when this field is not specified (either directly or via the `defaults`
-         *   field)
-         */
-        mode: z.union([z.string(), z.string().array()]).optional(),
-        /**
-         * @forBindingField bind
-         *
-         * - `priority`: The ordering of the keybinding relative to others; determines which
-         *   bindings take precedence. Defaults to 0.
-         */
-        priority: z.number().default(0).optional(),
-        /**
-         * @forBindingField bind
-         *
-         * - `defaults`: the hierarchy of defaults applied to this binding, see
-         *   [`default`](/bindings/default) for more details.
-         */
-        defaults: z.string().optional(),
-        /**
-         * @forBindingField bind
-         *
-         * - `foreach`: Allows parametric definition of multiple keybindings, see
-         *   [`foreach` clauses](#foreach-clauses).
-         */
-        foreach: z.record(z.string(), z.array(z.string())).optional(),
-        /**
-         * @forBindingField bind
-         *
-         * - `prefixes`: (array of strings or the string
-         *   <code v-pre>{{all_prefixes}}</code>). Determines one or more *unresolved* key
-         *   sequences that can have occurred before typing this key. See
-         *   [`master-key.prefix`](/commands/prefix) for details. Defaults to `""` (a.k.a.
-         *   no prefix is allowed). This can be set to <code v-pre>{{all_prefixes}}</code>,
-         *   if you wish to allow the key binding to work regardless of any unresolved key
-         *   sequence that has been pressed (e.g. this is used for the "escape" key binding
-         *   in Larkin).
-         */
-        prefixes: z.
-            preprocess(
-                x => (x === '{{all_prefixes}}' ? [] : x),
-                bindingKey.or(z.string().length(0)).array(),
-            ).
-            optional(),
-        /**
-         * @forBindingField bind
-         *
-         * - `finalKey`: (boolean, default=true) Whether this key should clear any transient
-         *   state associated with the pending keybinding prefix. See
-         *   [`master-key.prefix`](/commands/prefix) for details.
-         */
-        finalKey: z.boolean().optional(),
-        /**
-         * @forBindingField bind
-         *
-         * - `computedRepeat`: This is an [expression](/expressions/index). It is expected
-         *   to evaluate to the number of times to repeat the command. Defaults to zero: one
-         *   repeat means the command is run twice.
-         * - `command` will be repeated the given
-         *   number of times.
-         */
-        computedRepeat: z.number().min(0).or(z.string()).default(0).optional(),
-        /**
-         * @forBindingField bind
-         * @order 10
-         *
-         * ## Documenting Fields
-         *
-         * The documenting fields determine how the keybinding is documented. They are all
-         * optional.
-         *
-         * - `name`: A very description for the command; this must fit in the visual
-         *   documentation so it shouldn't be much longer than five characters for most
-         *   keys. Favor unicode symbols such as → and ← over text.
-         */
-        name: z.string().optional(),
-        /**
-         * @forBindingField bind
-         * @order 10
-         *
-         * - `description`: A longer description of what the command does. Shouldn't be much
-         *   longer than a single sentence for most keys. Save more detailed descriptions
-         *   for the literate comments.
-         */
-        description: z.string().optional(),
-        /**
-         * @forBindingField bind
-         * @order 10
-         *
-         * - `hideInPalette/hideInDocs`: whether to show the keys in the popup suggestions
-         *   and the documentation. These both default to false.
-         */
-        hideInPalette: z.boolean().default(false).optional(),
-        hideInDocs: z.boolean().default(false).optional(),
-        /**
-         * @forBindingField bind
-         * @order 10
-         *
-         * - `combinedName/combinedKey/combinedDescription`: in the suggestion palette and
-         *   textual documentation, keys that have the same `combinedName` will be
-         *   represented as single entry, using the `combinedKey` and `combinedDescription`
-         *   instead of `key` and `description`. The `combinedKey` for a multi-key sequence
-         *   should only include the suffix key. All but the first key's `combinedKey` and
-         *   `combinedDescription` are ignored.
-         */
-        combinedName: z.string().optional().default(''),
-        combinedKey: z.string().optional().default(''),
-        combinedDescription: z.string().optional().default(''),
-        /**
-         * @forBindingField bind
-         * @order 10
-         *
-         * - `kind`: The broad cagegory of commands this binding falls under. There should
-         *   be no more than 4-5 of these. Each `kind` here should have a corresponding
-         *   entry in the top-level `kind` array.
-         */
-        kind: z.string().optional(),
-    }).
-    merge(rawBindingCommand).
-    strict();
+export const rawBindingItem = z.object({
+    /**
+     * @forBindingField bind
+     *
+     * - `key`*: the
+     *   [keybinding](https://code.visualstudio.com/docs/getstarted/keybindings) that
+     *   triggers `command`.
+     */
+    key: z.string().optional(),
+    /**
+     * @forBindingField bind
+     *
+     * - `when`: A [when
+     *   clause](https://code.visualstudio.com/api/references/when-clause-contexts)
+     *   context under which the binding will be active. Also see Master Key's
+     *   [available contexts](#available-contexts)
+     */
+    when: z.
+        union([z.string(), z.string().array()]).
+        optional().
+        transform(parseWhen).
+        pipe(parsedWhen.array()),
+    /**
+     * @forBindingField bind
+     *
+     * - `mode`: The mode during which the binding will be active. The default mode is
+     *   used when this field is not specified (either directly or via the `defaults`
+     *   field)
+     */
+    mode: z.union([z.string(), z.string().array()]).optional(),
+    /**
+     * @forBindingField bind
+     *
+     * - `priority`: The ordering of the keybinding relative to others; determines which
+     *   bindings take precedence. Defaults to 0.
+     */
+    priority: z.number().default(0).optional(),
+    /**
+     * @forBindingField bind
+     *
+     * - `defaults`: the hierarchy of defaults applied to this binding, see
+     *   [`default`](/bindings/default) for more details.
+     */
+    defaults: z.string().optional(),
+    /**
+     * @forBindingField bind
+     *
+     * - `foreach`: Allows parametric definition of multiple keybindings, see
+     *   [`foreach` clauses](#foreach-clauses).
+     */
+    foreach: z.record(z.string(), z.array(z.string())).optional(),
+    /**
+     * @forBindingField bind
+     *
+     * - `prefixes`: (array of strings or the string
+     *   <code v-pre>{{all_prefixes}}</code>). Determines one or more *unresolved* key
+     *   sequences that can have occurred before typing this key. See
+     *   [`master-key.prefix`](/commands/prefix) for details. Defaults to `""` (a.k.a.
+     *   no prefix is allowed). This can be set to <code v-pre>{{all_prefixes}}</code>,
+     *   if you wish to allow the key binding to work regardless of any unresolved key
+     *   sequence that has been pressed (e.g. this is used for the "escape" key binding
+     *   in Larkin).
+     */
+    prefixes: z.
+        preprocess(
+            x => (x === '{{all_prefixes}}' ? [] : x),
+            bindingKey.or(z.string().length(0)).array(),
+        ).
+        optional(),
+    /**
+     * @forBindingField bind
+     *
+     * - `finalKey`: (boolean, default=true) Whether this key should clear any transient
+     *   state associated with the pending keybinding prefix. See
+     *   [`master-key.prefix`](/commands/prefix) for details.
+     */
+    finalKey: z.boolean().optional(),
+    /**
+     * @forBindingField bind
+     *
+     * - `computedRepeat`: This is an [expression](/expressions/index). It is expected
+     *   to evaluate to the number of times to repeat the command. Defaults to zero: one
+     *   repeat means the command is run twice.
+     * - `command` will be repeated the given
+     *   number of times.
+     */
+    computedRepeat: z.number().min(0).or(z.string()).default(0).optional(),
+    /**
+     * @forBindingField bind
+     * @order 10
+     *
+     * ## Documenting Fields
+     *
+     * The documenting fields determine how the keybinding is documented. They are all
+     * optional.
+     *
+     * - `name`: A very description for the command; this must fit in the visual
+     *   documentation so it shouldn't be much longer than five characters for most
+     *   keys. Favor unicode symbols such as → and ← over text.
+     */
+    name: z.string().optional(),
+    /**
+     * @forBindingField bind
+     * @order 10
+     *
+     * - `description`: A longer description of what the command does. Shouldn't be much
+     *   longer than a single sentence for most keys. Save more detailed descriptions
+     *   for the literate comments.
+     */
+    description: z.string().optional(),
+    /**
+     * @forBindingField bind
+     * @order 10
+     *
+     * - `hideInPalette/hideInDocs`: whether to show the keys in the popup suggestions
+     *   and the documentation. These both default to false.
+     */
+    hideInPalette: z.boolean().default(false).optional(),
+    hideInDocs: z.boolean().default(false).optional(),
+    /**
+     * @forBindingField bind
+     * @order 10
+     *
+     * - `combinedName/combinedKey/combinedDescription`: in the suggestion palette and
+     *   textual documentation, keys that have the same `combinedName` will be
+     *   represented as single entry, using the `combinedKey` and `combinedDescription`
+     *   instead of `key` and `description`. The `combinedKey` for a multi-key sequence
+     *   should only include the suffix key. All but the first key's `combinedKey` and
+     *   `combinedDescription` are ignored.
+     */
+    combinedName: z.string().optional().default(''),
+    combinedKey: z.string().optional().default(''),
+    combinedDescription: z.string().optional().default(''),
+    /**
+     * @forBindingField bind
+     * @order 10
+     *
+     * - `kind`: The broad cagegory of commands this binding falls under. There should
+     *   be no more than 4-5 of these. Each `kind` here should have a corresponding
+     *   entry in the top-level `kind` array.
+     */
+    kind: z.string().optional(),
+}).merge(rawBindingCommand).strict();
 export type RawBindingItem = z.output<typeof rawBindingItem>;
 
 // a strictBindingItem is satisfied after expanding all default fields
