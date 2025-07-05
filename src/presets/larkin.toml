@@ -204,7 +204,7 @@ priority = -10
 
 [[default]]
 id = "edit"
-when = "editorTextFocus && !findWidgetVisible"
+appendWhen = "editorTextFocus && !findWidgetVisible"
 default.mode = "normal"
 
 [[default]]

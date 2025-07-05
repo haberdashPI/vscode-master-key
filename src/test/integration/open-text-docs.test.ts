@@ -11,10 +11,6 @@ test.describe('Text Documentation', () => {
         docs = workbox.
             locator('iframe.webview.ready').contentFrame().
             locator('iframe[title="Preview Keybinding Documentation.md"]');
-        // docs = workbox.locator('iframe[name="2b37a2f5-da6a-4b6b-a1be-b3bd6a7d26d7"]').
-        // eslint-disable-next-line @stylistic/max-len
-        //     contentFrame().locator('iframe[title="Preview Keybinding Documentation.md"]').
-        //     contentFrame();
     });
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars

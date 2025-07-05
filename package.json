@@ -49,16 +49,6 @@
                 "title": "Install Extensions Required by Keybindings"
             },
             {
-                "command": "master-key.setVisualDocTopModifiers",
-                "category": "Master Key",
-                "title": "Toggle Visual Doc Modifier for Top of Key"
-            },
-            {
-                "command": "master-key.setVisualDocBottomModifiers",
-                "category": "Master Key",
-                "title": "Toggle Visual Doc Modifier for Bottom of Key"
-            },
-            {
                 "command": "master-key.toggleVisualDocModifiers",
                 "category": "Master Key",
                 "title": "Toggle Visual Doc Modifier by frequency"

@@ -1,0 +1,114 @@
+# # Test Documentation
+#- IGNORED COMMENT
+[header]
+version = "2.0"
+
+[[mode]]
+name = "insert"
+default = true
+
+[[mode]]
+name = "normal"
+
+[[kind]]
+name = "left"
+description = "more leftward keys"
+
+[[kind]]
+name = "right"
+description = "more rightward keys"
+
+# ## First Section
+
+# Cillum adipisicing consequat aliquip Lorem adipisicing minim culpa officia aliquip reprehenderit.
+
+[[bind]]
+name = "normal mode"
+key = "escape"
+command = "master-key.enterNormal"
+prefixes = "{{all_prefixes}}"
+hideInPalette = true
+
+[[default]]
+id = "edit"
+appendWhen = "editorTextFocus && !findWidgetVisible"
+
+[[default]]
+id = "edit.motion"
+default.command = "cursorMove"
+default.mode = "normal"
+default.computedArgs.value = "count"
+
+[[bind]]
+defaults = "edit.motion"
+name = "left"
+key = "h"
+args.to = "left"
+kind = "left"
+
+[[bind]]
+defaults = "edit.motion"
+name = "right"
+key = "l"
+args.to = "right"
+kind = "right"
+
+[[bind]]
+defaults = "edit.motion"
+name = "down"
+key = "j"
+args.to = "down"
+kind = "left"
+
+# ## Second Section
+
+# Aliquip ipsum enim cupidatat aute occaecat magna nostrud qui labore.
+
+[[bind]]
+defaults = "edit.motion"
+name = "up"
+key = "k"
+args.to = "up"
+kind = "right"
+
+[[bind]]
+defaults = "edit.motion"
+name = "funny right"
+key = "w w"
+mode = "normal"
+args.to = "right"
+kind = "right"
+
+[[bind]]
+defaults = "edit"
+name = "insert mode"
+key = "i"
+command = "master-key.enterInsert"
+mode = "normal"
+kind = "right"
+
+[[bind]]
+defaults = "edit.motion"
+key = "ctrl+i"
+name = "magic insert"
+command = "foobar"
+mode = "normal"
+kind = "right"
+
+[[bind]]
+defaults = "edit.motion"
+key = "ctrl+o"
+name = "magic outsert"
+command = "foobiz"
+mode = "normal"
+kind = "right"
+
+[[bind]]
+defaults = "edit.motion"
+key = "alt+i"
+name = "evil insert"
+command = "die"
+mode = "normal"
+kind = "right"
+
+# Final paragraph shows up.

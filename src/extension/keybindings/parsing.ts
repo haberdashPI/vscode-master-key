@@ -755,7 +755,7 @@ export const bindingDefault = z.object({
         optional().
         transform(parseWhen).
         pipe(parsedWhen.array().optional()),
-});
+}).strict();
 
 /**
  * @bindingField mode

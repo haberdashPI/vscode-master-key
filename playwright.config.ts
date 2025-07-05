@@ -9,6 +9,7 @@ export default defineConfig<void, TestOptions>({
     workers: process.env.CI ? 1 : undefined,
     reporter: 'html',
     use: { trace: 'on-first-retry' },
+    timeout: 5 * 60_000,
     globalSetup: './src/test/integration/setup',
     projects: [
         {

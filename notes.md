@@ -12,7 +12,7 @@ Integration test debugging:
         - [x] cleanup coverage file generation in integration tests
         - [x] get coverage to be optional during integration tests
         - [x] how do I filter out node modules ??
-    - [ ] generate coverage output during CI
+    - [x] generate coverage output during CI
         - [x] running electron with `NODE_V8_COVERAGE` fails, but I can't
               see the output because of the way xvfb is getting run,
               plan is to use https://github.com/marketplace/actions/cache-apt-packages
@@ -44,21 +44,11 @@ Integration test debugging:
     - [x] searchMotions.ux.mts unit tests
     - [x] replay.ux.mts unit tests
     - [x] markdown docs integration tests
-    - [ ] visual docs integration tests
+    - [x] visual docs integration tests
     - [ ] palette integration tests
     - [ ] simpleMotionLayout.ux.mts integration tests:
         - check that the same tests from simpleMotion work with the layout
           settings
-    - [ ] searchMotions.ux.mts integration tests
-        - [ ] `acceptAfter`
-        - [ ] `acceptAfter` with delete char
-        - [ ] post search commands
-    - [ ] replay.ux.mts integration tests
-        - [ ] replay canceled entry
-        - [ ] replay captured keys
-        - [ ] replay canceled captured keys
-        - [ ] replay insert/replace
-        - [ ] allow store and restore
     - [ ] config(Edit).ux.mts integration tests
         - fallback bindings
         - setting defaults
@@ -72,6 +62,19 @@ Integration test debugging:
         - default mode overwrite
         - can create editable copy
         - can copy user config
+    - [ ] low impact on stability and coverage, but high effort changes
+        - save these for after the PR migrating to new test/coverage setup
+        - [ ] searchMotions.ux.mts integration tests
+            - [ ] `acceptAfter`
+            - [ ] `acceptAfter` with delete char
+            - [ ] post search commands
+        - [ ] replay.ux.mts integration tests
+            - [ ] replay canceled entry
+            - [ ] replay captured keys
+            - [ ] replay canceled captured keys
+            - [ ] replay insert/replace
+            - [ ] allow store and restore
+
 2. eliminate/cleanup functionality I don't have good coverage for
     (e.g. binding loading/activation need not be quite so elaborate,
     I don't need to auto load the install extension or documentation, I can just make

@@ -80,6 +80,7 @@ async function main() {
         external: ['vscode'],
         logLevel: 'silent',
         define: {
+            'process.env.NODE_ENV': release ? '"production"' : '"development"',
             ...(web && !release ? { global: 'globalThis' } : {}),
         },
         plugins: [
