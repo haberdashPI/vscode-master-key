@@ -96,7 +96,6 @@ export const test = base.extend<TestFixtures>({
             console.log(`Creating project in ${projectPath}`);
             await fs.promises.mkdir(projectPath);
             const testProject = path.join(__dirname, 'test-workspace');
-            console.log('Copying files from ' + testProject);
             await fs.promises.cp(
                 testProject,
                 projectPath,
@@ -108,10 +107,10 @@ export const test = base.extend<TestFixtures>({
     createTempDir: async ({ }, use) => {
         const tempDirs: string[] = [];
         await use(async () => {
+            const tempDirPrefix = path.join(__dirname, '../../../playwright-temp');
+            await fs.promises.mkdir(tempDirPrefix, { recursive: true });
             const tempDir = await fs.promises.realpath(
-                await fs.promises.mkdtemp(
-                    path.join(__dirname, '../../../playwright-temp', 'pwtest-'),
-                ),
+                await fs.promises.mkdtemp(path.join(tempDirPrefix, 'pwtest-')),
             );
             tempDirs.push(tempDir);
             return tempDir;
