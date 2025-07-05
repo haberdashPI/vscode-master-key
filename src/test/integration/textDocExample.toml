@@ -31,7 +31,6 @@ hideInPalette = true
 
 [[default]]
 id = "motion"
-name = "basic motions"
 default.command = "cursorMove"
 default.mode = "normal"
 default.when = "editorTextFocus"
