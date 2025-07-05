@@ -20,4 +20,5 @@ test/temp/**
 test-results/
 playwright-report/
 blob-report/
+playwright-temp/
 playwright/.cache/

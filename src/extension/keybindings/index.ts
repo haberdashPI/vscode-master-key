@@ -434,13 +434,16 @@ async function makeQuickPicksFromPresets(
 
 export async function queryPreset(): Promise<Preset | undefined> {
     const options = await makeQuickPicksFromPresets(await keybindingPresets);
+    console.log('DEBUG: quick pick options defined');
     options.push(
         { label: 'add new presets...', kind: vscode.QuickPickItemKind.Separator },
         { label: 'Current File', command: 'current' },
         { label: 'File...', command: 'file' },
         { label: 'Directory...', command: 'dir' },
     );
+    console.log('DEBUG: showing quick pick');
     const picked = await vscode.window.showQuickPick(options);
+    console.log('DEBUG: quick pick resolved to' + picked?.command || 'null');
     if (picked?.command === 'current') {
         const editor = vscode.window.activeTextEditor;
         if (!editor) {
@@ -459,15 +462,16 @@ export async function queryPreset(): Promise<Preset | undefined> {
             };
         }
     } else if (picked?.command === 'file') {
+        console.log('DEBUG: showing open dialog');
         const file = await vscode.window.showOpenDialog({
             openLabel: 'Import Master-Key-Binding Spec',
-
             filters: { Preset: ['toml'] },
             canSelectFiles: true,
             canSelectFolders: false,
             canSelectMany: false,
         });
         if (file && file.length === 1) {
+            console.log('DEBUG: reading file...');
             const fileData = await vscode.workspace.fs.readFile(file[0]);
             const data = new TextDecoder().decode(fileData);
             return {
@@ -596,8 +600,10 @@ async function activateBindings(preset?: Preset) {
         if (bindings) {
             await handleRequireExtensions(bindings);
             await insertKeybindingsIntoConfig(bindings);
-            await vscode.commands.executeCommand('master-key.showVisualDoc');
-            await vscode.commands.executeCommand('master-key.showTextDoc');
+            // TODO: this can be annoying maybe make an info dialog with links to look
+            // at these
+            // await vscode.commands.executeCommand('master-key.showVisualDoc');
+            // await vscode.commands.executeCommand('master-key.showTextDoc');
         }
     }
 }

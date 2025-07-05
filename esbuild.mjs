@@ -2,11 +2,9 @@ import { context } from 'esbuild';
 import * as path from 'path';
 import * as glob from 'glob';
 import * as polyfill from '@esbuild-plugins/node-globals-polyfill';
-import esbuildPluginIstanbul from 'esbuild-plugin-istanbul';
 
 const release = process.argv.includes('--release');
 const watch = process.argv.includes('--watch');
-const coverage = process.argv.includes('--coverage');
 
 /**
  * Format esbuild output so that it can be parsed by the esbuild problem matcher
@@ -82,7 +80,7 @@ async function main() {
         external: ['vscode'],
         logLevel: 'silent',
         define: {
-            'process.env.COVERAGE': coverage ? 'true' : 'false',
+            'process.env.NODE_ENV': release ? '"production"' : '"development"',
             ...(web && !release ? { global: 'globalThis' } : {}),
         },
         plugins: [
@@ -94,13 +92,6 @@ async function main() {
                         }),
                         webTestBundlePlugin,
                     ] :
-                    []),
-            ...(coverage ?
-                    esbuildPluginIstanbul({
-                        filter: /\.[cm]?ts$/,
-                        loader: 'ts',
-                        name: 'istanbul-loader-ts',
-                    }) :
                     []),
             esbuildProblemMatcherPlugin,
         ],

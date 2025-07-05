@@ -375,8 +375,7 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
         <div id="master-key-visual-doc" class="container">
             <div class="keyboard">
                 ${keyRows(['⇧'], ['']).
-                    map(
-                        row => `
+                    map(row => `
                     <div class="keyboard-row">
                         ${row.
                             map((key: IKeyRow) => {

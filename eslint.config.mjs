@@ -35,7 +35,7 @@ export default defineConfig([
                 },
             ],
         },
-        files: ['**/*.{js,mjs,cjs,ts,mts,cts}'],
+        files: ['**/*.{js,mjs,cjs,ts,mts,cts,yml}'],
         languageOptions: {
             globals: { ...globals.browser, ...globals.node },
             sourceType: 'commonjs',
