@@ -5,6 +5,7 @@ Next steps:
 Integration test debugging:
 - [ ] github action caching works
     - [x] close, still working on exact naming and handling of directories so things actually cache
+    - [ ] https://github.com/haberdashPI/vscode-master-key/pull/74/commits/d8eac66226fa1b8316156404c6f5f16d08a65cd6 should have been a cache hit
     - [ ] check that things are actually getting cached across CI runs
 - [x] get code coverage working
     - [x] unit test coverage just works 🚀
