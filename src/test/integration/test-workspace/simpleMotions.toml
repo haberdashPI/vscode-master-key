@@ -97,3 +97,31 @@ name = "count {{num}}"
 command = "master-key.updateCount"
 args.value = "{{num}}"
 finalKey = false
+
+[[bind]]
+key = "shift+g"
+mode = "normal"
+name = "normal-left mode"
+command = "master-key.setMode"
+args.value = "normal-left"
+
+[[mode]]
+name = "normal-left"
+fallbackBindings = "normal"
+
+[[bind]]
+defaults = "motion"
+key = "shift+h"
+mode = "normal-left"
+name = "left"
+when = "editorTextFocus"
+command = "cursorMove"
+args.to = "left"
+
+[[bind]]
+defaults = "motion"
+name = "double left"
+mode = "normal-left"
+key = "shift+l"
+args.to = "left"
+computedArgs.value = 2

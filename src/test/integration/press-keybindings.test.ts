@@ -11,6 +11,10 @@ test.describe('Basic keypresses', () => {
             filter({ has: workbox.getByRole('code') });
         const pos = await workbox.getByRole('button').
             filter({ hasText: /Ln [0-9]+, Col [0-9]+/ });
+        // TODO: debug even though the editor reports that we're in normal mode
+        // the keys aren't responding as such without pressing 'Escape' above
+        // (oddly this doesn't happen when I debug the program)
+        await editor.press('Escape');
         return { editor, pos };
     };
 
@@ -22,10 +26,7 @@ test.describe('Basic keypresses', () => {
         // we leave `workbox` in because we often want to use it to debug this test
         test('Move the cursor' + label, async ({ workbox }) => {
             const { editor, pos } = await setup(workbox, file);
-            await editor.press('Escape');
-            // TODO: debug even though the editor reports that we're in normal mode
-            // the keys aren't responding as such without pressing 'Escape' above
-
+            await workbox.pause();
             await editor.press('l');
             await expect(pos).toHaveText('Ln 1, Col 2');
 
@@ -89,5 +90,40 @@ test.describe('Basic keypresses', () => {
                 expect(cursor).toHaveClass(/cursor-block-style/);
             },
         );
+
+        test('Can use number prefixes' + label, async ({ workbox }) => {
+            const { editor, pos } = await setup(workbox, file);
+            await editor.press('3');
+            await editor.press('l');
+            await expect(pos).toHaveText('Ln 1, Col 4');
+        });
     }
+
+    test('Can leverage fallback bindings', async ({ workbox }) => {
+        const { editor, pos } = await setup(workbox, 'simpleMotions.toml');
+        await editor.press('Shift+g');
+        const statusBarMode = workbox.locator(
+            'div[aria-label="Keybinding Mode: normal-left"]',
+        );
+        expect(statusBarMode).toBeAttached();
+
+        await editor.press('3');
+        await editor.press('l');
+        await expect(pos).toHaveText('Ln 1, Col 4');
+
+        await editor.press('Shift+h');
+        await expect(pos).toHaveText('Ln 1, Col 3');
+
+        await editor.press('Shift+l');
+        await expect(pos).toHaveText('Ln 1, Col 1');
+
+        await editor.press('h');
+        await expect(pos).toHaveText('Ln 1, Col 1');
+
+        await editor.press('j');
+        await expect(pos).toHaveText('Ln 2, Col 1');
+
+        await editor.press('k');
+        await expect(pos).toHaveText('Ln 1, Col 1');
+    });
 });

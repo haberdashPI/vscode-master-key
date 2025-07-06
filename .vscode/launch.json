@@ -10,25 +10,14 @@
             "type": "extensionHost",
             "request": "launch",
             "args": [
-                "--extensionDevelopmentPath=${workspaceFolder}"
+                "--extensionDevelopmentPath=${workspaceFolder}",
+                "--profile",
+                "debug",
             ],
             "outFiles": [
                 "${workspaceFolder}/out/node/**/*.js"
             ],
             "preLaunchTask": "${defaultBuildTask}"
         },
-        {
-            "name": "Run Extension (Web)",
-            "type": "extensionHost",
-            "request": "launch",
-            "args": [
-                "--extensionDevelopmentPath=${workspaceFolder}",
-                "--extensionDevelopmentKind=web",
-            ],
-            "outFiles": [
-                "${workspaceFolder}/out/browser/**/*.js"
-            ],
-            "preLaunchTask": "npm: watch-web"
-        }
     ]
 }

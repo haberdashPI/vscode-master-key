@@ -50,18 +50,18 @@ Integration test debugging:
     - [x] visual docs integration tests
     - [x] simpleMotionLayout.ux.mts integration tests:
     - [ ] config(Edit).ux.mts integration tests
-        - fallback bindings
-        - setting defaults
+        - [X] fallback bindings
+        - [ ] setting defaults
             - when you first open the editor modes work as expected
-        - loading from a directory (remove this feature!)
-        - duplicate entry labels (if we remove above we can skip this)
-        - loading from a file (remove this feature!)
-        - add and remove user bindings
-        - bindings can be removed
-        - prevent user binding updates absent preset
-        - default mode overwrite
-        - can create editable copy
-        - can copy user config
+        - [X] loading from a directory (remove this feature!)
+        - [X] duplicate entry labels (if we remove above we can skip this)
+        - [X] loading from a file (remove this feature!)
+        - [ ] bindings can be removed
+        - [ ] add and remove user bindings
+        - [ ] prevent user binding updates absent preset
+        - [ ] default mode overwrite
+        - [ ] can create editable copy
+        - [ ] can copy user config
     - [ ] palette integration tests
         - [ ] NOTE: because we are planning to replace this with a tree view
               instead of a quick pick UI element it is probably not worth
