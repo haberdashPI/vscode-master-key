@@ -48,9 +48,7 @@ Integration test debugging:
     - [x] replay.ux.mts unit tests
     - [x] markdown docs integration tests
     - [x] visual docs integration tests
-    - [ ] simpleMotionLayout.ux.mts integration tests:
-        - check that the same tests from simpleMotion work with the layout
-          based settings
+    - [x] simpleMotionLayout.ux.mts integration tests:
     - [ ] config(Edit).ux.mts integration tests
         - fallback bindings
         - setting defaults

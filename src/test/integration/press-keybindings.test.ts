@@ -77,9 +77,11 @@ test.describe('Basic keypresses', () => {
             async ({ workbox }) => {
                 const { editor } = await setup(workbox, file);
                 await editor.press('Escape');
+                const cursor = workbox.locator('div[role="presentation"].cursors-layer');
+                expect(cursor).toHaveClass(/cursor-block-style/);
+
                 await editor.press('d');
                 // assert cursor state
-                const cursor = workbox.locator('div[role="presentation"].cursors-layer');
                 expect(cursor).toHaveClass(/cursor-underline-style/);
 
                 // execute the action
