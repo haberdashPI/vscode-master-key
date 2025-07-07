@@ -38,7 +38,7 @@ You can define your own preset. The steps are:
 1. Create a new a toml file
 2. Optional: copy a present into the file using `Master Key: Edit Preset Copy`
 3. Optional: import include any existing user bindings, from `keyindings.json`, by calling `Master Key: Import User Keybindings` in this new toml file
-4. Add bindings, as per the [binding format](TODO) and [command documentation](TODO).
+4. Add bindings, as per the [binding format](./bindings/) and [command documentation](./commands/).
 5. Activate the bindings with `Master Key: Activate Keybindings` at any time (do this *often* while your are writing your bindings).
 
 ## Roadmap
