@@ -1,0 +1,34 @@
+{
+    "eslint.validate": [
+        "javascript",
+        "javascriptreact",
+        "yaml",
+        "github-actions-workflow" // for GitHub Actions workflow files
+    ],
+    "rust-analyzer.linkedProjects": [
+        "src/rust/parsing/Cargo.toml"
+    ],
+    "window.title": "vscode-master-key",
+    // NOTE: if we update the version of rust used in `mise.toml.` these
+    // paths also need to be updated
+    "rust-analyzer.cargo.sysroot": "${userHome}/.rustup/toolchains/1.90.0-aarch64-apple-darwin",
+    "rust-analyzer.cargo.sysrootSrc": "${userHome}/.rustup/toolchains/1.90.0-aarch64-apple-darwin/lib/rustlib/src/rust",
+    "rust-analyzer.checkOnSave": true,
+    "rust-analyzer.cargo.allTargets": false,
+    "rust-analyzer.cargo.buildScripts.rebuildOnSave": true,
+    "workbench.colorCustomizations": {
+        "iLoveWorkSpaceColors": false,
+        "iLoveWorkSpaceRandom": false,
+        "useWorkspaceLite": false
+    },
+    "debug.javascript.defaultRuntimeExecutable": {
+        "pwa-node": "/Users/davidlittle/.local/share/mise/shims/node"
+    },
+    "files.watcherExclude": {
+        "**/.git/**": true,
+        "**/.jj/**": true,
+        "**/target/**": true,
+        "out/**": true,
+    },
+    "python.defaultInterpreterPath": "${userHome}/.local/share/mise/installs/python/3.10.4/bin/python",
+}

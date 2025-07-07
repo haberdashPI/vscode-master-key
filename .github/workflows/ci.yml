@@ -5,6 +5,9 @@ on:
             - main
         tags:
             - v[0-9]+.[0-9]+.[0-9]+*
+        paths:
+            - src/**
+
     pull_request:
         types: ['opened', 'edited', 'reopened', 'synchronize', 'ready_for_review']
 
@@ -44,7 +47,9 @@ jobs:
           run: pnpm install --frozen-lockfile && pnpm exec playwright install chromium
         - name: Unit Tests
           env: { COVERAGE: 'true' }
-          run: mise test${{ matrix.environment }}
+          run: |
+            mise test${{ matrix.environment }}
+            mise test-rust
         - name: Integration Tests
           if: matrix.environment == ''
           env: { COVERAGE: 'true' }

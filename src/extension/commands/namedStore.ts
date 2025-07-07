@@ -12,7 +12,7 @@ import { bindingCommand } from '../keybindings/parsing';
  * @command storeNamed
  * @order 105
  *
- * Allow the user to specify a name where an [expression's](/bindings/bind#expression)
+ * Allow the user to specify a name where an [expression's](/expression/index)
  * result can be stored. Can be retrieved later using
  * [`restoreNamed`](/commands/restoreNamed).
  *
@@ -22,7 +22,7 @@ import { bindingCommand } from '../keybindings/parsing';
  *   this allows calls to store and restore values to be specific to the relevant context
  *   (e.g. only stored macros show up in commands related to macros, and only stored
  *   bookmarks show up in commands related to bookmarks).
- * - `content`: A string to be evaluated as an [expression](/expressions/index)
+ * - `content`: the value to store, usually passed as an [expression](/expression/index).
  */
 
 const storeNamedArgs = z.object({
