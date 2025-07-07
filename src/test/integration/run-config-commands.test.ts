@@ -35,6 +35,7 @@ test.describe('Visual Documentation', () => {
         const pos = workbox.getByRole('button').
             filter({ hasText: /Ln [0-9]+, Col [0-9]+/ });
 
+        await workbox.waitForTimeout(1000);
         await workbox.keyboard.press('r');
         await expect(pos).toHaveText('Ln 2, Col 1');
 
