@@ -90,11 +90,18 @@ depends = ['build', 'build-tests']
 run = 'pnpm exec playwright test'
 
 [tasks.extract-docs]
-sources = ['README.md', 'src/extension/**/*.ts']
+sources = ['README.md', 'src/extension/**/*.ts', 'docs/templates/**/*.md']
 outputs = { auto = true }
-run = 'simple-src-docs -d docs src README.md'
+run = 'simple-src-docs -d docs src README.md docs/templates'
 
 [tasks.build-docs]
+sources = [
+    'docs/index.md',
+    'docs/guide.md',
+    'docs/bindings/**/*.md',
+    'docs/commands/**/*.md',
+]
+outputs = ['docs/.vitepress/dist/**/*']
 depends = ['extract-docs']
 run = 'pnpm exec vitepress build docs'
 
