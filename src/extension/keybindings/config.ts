@@ -76,7 +76,7 @@ export async function createUserBindings(
         } else {
             vscode.window.showErrorMessage(
                 'User bindings have not been activated ' +
-                ' because you have no preset keybindings. Call `Master Key: `' +
+                ' because you have no Master Key preset keybindings. Call `Master Key: `' +
                 'Activate Keybindings` to add a preset.',
             );
         }

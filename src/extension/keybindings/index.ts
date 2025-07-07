@@ -320,27 +320,27 @@ async function insertKeybindingsIntoConfig(bindings: Bindings) {
             }
 
             if (installed) {
-                if ((bindings.requiredExtensions || []).length === 0) {
-                    vscode.window.showInformationMessage(
-                        'Master keybindings were added to `keybindings.json`',
-                    );
-                    return;
-                }
                 vscode.window.
                     showInformationMessage(
                         replaceAll(
-                            `Master keybindings were added to \`keybindings.json\`.
-                            Install associated extensions with the \`Master Key: Install
-                            Active Keybinding Extensions\` command`,
+                            'Master keybindings were added to \`keybindings.json\`.',
                             /\s+/g,
                             ' ',
                         ),
                         {},
-                        'Install Extensions',
+                        ...(((bindings.requiredExtensions || []).length === 0) ?
+                                [] :
+                                ['Install Extensions']),
+                        'Show Documentation',
                     ).
                     then(async (request) => {
                         if (request === 'Install Extensions') {
                             return await handleRequireExtensions();
+                        } else if (request === 'Show Documentation') {
+                            await vscode.commands.executeCommand(
+                                'master-key.showVisualDoc',
+                            );
+                            await vscode.commands.executeCommand('master-key.showTextDoc');
                         }
                         return undefined;
                     });
@@ -557,10 +557,6 @@ async function activateBindings(preset?: Preset) {
         if (bindings) {
             await handleRequireExtensions(bindings);
             await insertKeybindingsIntoConfig(bindings);
-            // TODO: this can be annoying maybe make an info dialog with links to look
-            // at these
-            // await vscode.commands.executeCommand('master-key.showVisualDoc');
-            // await vscode.commands.executeCommand('master-key.showTextDoc');
         }
     }
 }
