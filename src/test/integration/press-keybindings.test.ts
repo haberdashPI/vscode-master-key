@@ -1,10 +1,10 @@
 import { test, expect } from './config';
-import { activateKeybinings, openFile } from './utils';
+import { activateKeybindings, openFile } from './utils';
 import { Page } from '@playwright/test';
 
 test.describe('Basic keypresses', () => {
     async function setup(workbox: Page, file: string) {
-        await activateKeybinings(workbox, file);
+        await activateKeybindings(workbox, file);
         await openFile(workbox, 'text.md');
         const editor = workbox.getByLabel('text.md').
             filter({ has: workbox.getByText('Commodo fugiat magna ') }).

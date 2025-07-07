@@ -1,11 +1,11 @@
 import { test, expect } from './config';
-import { activateKeybinings, runCommand } from './utils';
+import { activateKeybindings, runCommand } from './utils';
 import { Locator } from '@playwright/test';
 
 test.describe('Text Documentation', () => {
     let docs: Locator;
     test.beforeEach(async ({ workbox }) => {
-        await activateKeybinings(workbox, 'textDocExample.toml');
+        await activateKeybindings(workbox, 'textDocExample.toml');
         await runCommand(workbox, 'Master Key: Show Text Documentation');
         docs = workbox.
             locator('iframe.webview.ready').contentFrame().

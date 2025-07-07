@@ -1,11 +1,11 @@
 import { test, expect } from './config';
-import { activateKeybinings, openFile, runCommand } from './utils';
+import { activateKeybindings, openFile, runCommand } from './utils';
 import { Locator } from '@playwright/test';
 
 test.describe('Visual Documentation', () => {
     let docs: Locator;
     test.beforeEach(async ({ workbox }) => {
-        await activateKeybinings(workbox, 'visualDocExample.toml');
+        await activateKeybindings(workbox, 'visualDocExample.toml');
         await runCommand(workbox, 'Master Key: Show Visual Documentation');
         // TODO: I haven't figured out how to remove this fragile step yet
         workbox.waitForTimeout(500);

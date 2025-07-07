@@ -11,7 +11,7 @@ import {
 } from './parsing';
 import { processBindings, Bindings } from './processing';
 import { isSingleCommand } from '../utils';
-import { uniq, pick } from 'lodash';
+import { pick } from 'lodash';
 import replaceAll from 'string.prototype.replaceall';
 import { Utils } from 'vscode-uri';
 import {

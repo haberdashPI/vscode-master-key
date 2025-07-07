@@ -24,7 +24,7 @@ export async function runCommand(page: Page, command: string) {
     return;
 }
 
-export async function activateKeybinings(page: Page, file: string) {
+export async function activateKeybindings(page: Page, file: string) {
     // open binding file
     await openFile(page, file);
 
