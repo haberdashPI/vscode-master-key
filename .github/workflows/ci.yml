@@ -63,10 +63,11 @@ jobs:
               name: playwright-report
               path: playwright-report/
               retention-days: 7
-        - name: Aseemble Coverage Results
+        - name: Assemble Coverage Results
           if: matrix.environment == ''
           run: mise assemble-coverage
         - name: Upload coverage to Codecov
+          if: matrix.environment == ''
           uses: codecov/codecov-action@v4
           with:
             token: ${{ secrets.CODECOV_TOKEN }}
