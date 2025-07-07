@@ -12,6 +12,7 @@ export default defineConfig({
     title: 'Master Key',
     srcExclude: ['templates/**/*.md'],
     description: 'Powerful VSCode Keybinding Customization',
+    base: '/vscode-master-key/',
     themeConfig: {
         search: { provider: 'local' },
         logo: '../../logo.png',
