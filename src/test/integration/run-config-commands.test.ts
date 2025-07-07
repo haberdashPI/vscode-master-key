@@ -18,6 +18,15 @@ test.describe('Visual Documentation', () => {
             'div[aria-label="Keybinding Mode: default"]',
         );
         await expect(statusBarMode).toBeAttached();
+
+        // once keybindings are deactivated, we can't insert user bindings
+        await openFile(workbox, 'userBindings.toml');
+        await runCommand(workbox, 'Master Key: Activate User Keybindings');
+        const errorMessage = workbox.getByLabel(
+            'Error: User bindings have not been activated because you ' +
+            'have no preset keybindings.',
+        ).first();
+        await expect(errorMessage).toBeAttached();
     });
 
     test('Can add/remove user bindings', async ({ workbox }) => {
