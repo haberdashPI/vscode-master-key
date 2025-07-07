@@ -51,17 +51,14 @@ Integration test debugging:
     - [x] simpleMotionLayout.ux.mts integration tests:
     - [ ] config(Edit).ux.mts integration tests
         - [X] fallback bindings
-        - [ ] setting defaults
+        - [X] setting defaults
             - when you first open the editor modes work as expected
         - [X] loading from a directory (remove this feature!)
         - [X] duplicate entry labels (if we remove above we can skip this)
         - [X] loading from a file (remove this feature!)
-        - [ ] bindings can be removed
-        - [ ] add and remove user bindings
+        - [X] bindings can be removed
+        - [X] add and remove user bindings
         - [ ] prevent user binding updates absent preset
-        - [ ] default mode overwrite
-        - [ ] can create editable copy
-        - [ ] can copy user config
     - [ ] palette integration tests
         - [ ] NOTE: because we are planning to replace this with a tree view
               instead of a quick pick UI element it is probably not worth
@@ -78,6 +75,9 @@ Integration test debugging:
             - [ ] replay canceled captured keys
             - [ ] replay insert/replace
             - [ ] allow store and restore
+        - [ ] configEdit.ux.mts
+            - [ ] can create editable copy
+            - [ ] can copy user config
 
 2. eliminate/cleanup functionality I don't have good coverage for
     (e.g. binding loading/activation need not be quite so elaborate,

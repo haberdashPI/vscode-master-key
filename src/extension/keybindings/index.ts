@@ -565,33 +565,17 @@ async function activateBindings(preset?: Preset) {
     }
 }
 
-async function deleteUserBindings() {
+async function deactivateUserBindings() {
     const bindings = await clearUserBindings();
     if (bindings) {
         insertKeybindingsIntoConfig(bindings);
     }
 }
 
-async function selectUserBindings(file?: vscode.Uri) {
+async function activateUserBindings(file?: vscode.Uri) {
     if (!file) {
         const currentUri = vscode.window.activeTextEditor?.document.fileName;
-        let currentFile;
-        if (currentUri) {
-            currentFile = vscode.Uri.from({ scheme: 'file', path: currentUri });
-        }
-
-        const files = await vscode.window.showOpenDialog({
-            openLabel: 'Import User Bindings',
-
-            filters: { Binding: ['toml'] },
-            canSelectFiles: true,
-            canSelectFolders: false,
-            canSelectMany: false,
-            defaultUri: currentFile,
-        });
-        if (files && files.length === 1) {
-            file = files[0];
-        }
+        file = vscode.Uri.from({ scheme: 'file', path: currentUri });
     }
     if (file) {
         const fileData = await vscode.workspace.fs.readFile(file);
@@ -600,6 +584,8 @@ async function selectUserBindings(file?: vscode.Uri) {
         if (bindings) {
             await insertKeybindingsIntoConfig(bindings);
         }
+    } else {
+        vscode.window.showErrorMessage('Open document must be saved to a file first.');
     }
 }
 
@@ -681,15 +667,15 @@ export async function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand('master-key.deactivateBindings', removeKeybindings),
     );
     /**
-     * @userCommand selectUserBindings
+     * @userCommand activateUserBindings
      * @name Activate User Keybindings
      *
      * Select a set of user specified bindings, to append to your master key bindings
      */
     context.subscriptions.push(
         vscode.commands.registerCommand(
-            'master-key.selectUserBindings',
-            selectUserBindings),
+            'master-key.activateUserBindings',
+            activateUserBindings),
     );
     /**
      * @userCommand removeUserBindings
@@ -699,8 +685,8 @@ export async function activate(context: vscode.ExtensionContext) {
      */
     context.subscriptions.push(
         vscode.commands.registerCommand(
-            'master-key.removeUserBindings',
-            deleteUserBindings),
+            'master-key.deactivateUserBindings',
+            deactivateUserBindings),
     );
     /**
      * @userCommand editPreset

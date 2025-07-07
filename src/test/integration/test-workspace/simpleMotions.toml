@@ -18,9 +18,9 @@ prefixes = "{{all_prefixes}}"
 
 [[default]]
 id = "motion"
+appendWhen = "editorTextFocus"
 default.command = "cursorMove"
 default.mode = "normal"
-default.when = "editorTextFocus"
 default.computedArgs.value = "count"
 
 [[bind]]
@@ -52,18 +52,21 @@ name = "insert mode"
 key = "i"
 command = "master-key.enterInsert"
 mode = "normal"
+when = "editorTextFocus"
 
 [[bind]]
 name = "ignore"
 key = "u"
 command = "master-key.ignore"
 mode = "normal"
+when = "editorTextFocus"
 
 [[bind]]
 name = "delete"
 key = "d"
 mode = "normal"
 command = "runCommands"
+when = "editorTextFocus"
 
 [[bind.args.commands]]
 command = "master-key.prefix"
@@ -81,6 +84,7 @@ mode = "normal"
 #- to qualify from word *motion*
 prefixes = ["d"]
 command = "runCommands"
+when = "editorTextFocus"
 
 [[bind.args.commands]]
 command = "cursorWordEndRightSelect"
@@ -97,6 +101,7 @@ name = "count {{num}}"
 command = "master-key.updateCount"
 args.value = "{{num}}"
 finalKey = false
+when = "editorTextFocus"
 
 [[bind]]
 key = "shift+g"
@@ -104,6 +109,7 @@ mode = "normal"
 name = "normal-left mode"
 command = "master-key.setMode"
 args.value = "normal-left"
+when = "editorTextFocus"
 
 [[mode]]
 name = "normal-left"

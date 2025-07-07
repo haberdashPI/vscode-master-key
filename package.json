@@ -29,9 +29,14 @@
                 "title": "Activate Keybindings"
             },
             {
-                "command": "master-key.selectUserBindings",
+                "command": "master-key.activateUserBindings",
                 "category": "Master Key",
                 "title": "Activate User Keybindings"
+            },
+            {
+                "command": "master-key.deactivateUserBindings",
+                "category": "Master Key",
+                "title": "Deactivate User Keybindings"
             },
             {
                 "command": "master-key.commandSuggestions",

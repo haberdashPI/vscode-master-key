@@ -15,7 +15,7 @@ test.describe('Text Documentation', () => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     test('Has first section', async ({ workbox }) => {
         const section = docs.contentFrame().getByRole('heading', { name: 'First Section' });
-        expect(section).toBeTruthy();
+        await expect(section).toBeTruthy();
 
         const rows = docs.contentFrame().locator('table').first().locator('tr');
         await expect(rows).toHaveCount(5);
@@ -25,7 +25,7 @@ test.describe('Text Documentation', () => {
     test('Has second section', async ({ workbox }) => {
         const section = docs.contentFrame().
             getByRole('heading', { name: 'Second Section' });
-        expect(section).toBeTruthy();
+        await expect(section).toBeTruthy();
 
         const rows = docs.contentFrame().locator('table').nth(1).locator('tr');
         await expect(rows).toHaveCount(4);
@@ -34,15 +34,15 @@ test.describe('Text Documentation', () => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     test('Hides `#-` comments', async ({ workbox }) => {
         const paragraph = docs.contentFrame().locator('div.markdown-body p').first();
-        expect(paragraph).toBeVisible();
+        await expect(paragraph).toBeVisible();
         const text = await paragraph.textContent();
-        expect(text).not.toMatch(/IGNORED/);
+        await expect(text).not.toMatch(/IGNORED/);
     });
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     test('Has final paragraph', async ({ workbox }) => {
         const paragraph = docs.contentFrame().locator('div.markdown-body p').nth(2);
         const text = await paragraph.textContent();
-        expect(text).toMatch('Final paragraph shows up.');
+        await expect(text).toMatch('Final paragraph shows up.');
     });
 });

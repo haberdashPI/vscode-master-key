@@ -26,7 +26,6 @@ test.describe('Basic keypresses', () => {
         // we leave `workbox` in because we often want to use it to debug this test
         test('Move the cursor' + label, async ({ workbox }) => {
             const { editor, pos } = await setup(workbox, file);
-            await workbox.pause();
             await editor.press('l');
             await expect(pos).toHaveText('Ln 1, Col 2');
 
@@ -47,11 +46,11 @@ test.describe('Basic keypresses', () => {
             // the keys aren't responding as such without pressing 'Escape' above
 
             const cursor = workbox.locator('div[role="presentation"].cursors-layer');
-            expect(cursor).toHaveClass(/cursor-block-style/);
+            await expect(cursor).toHaveClass(/cursor-block-style/);
             let statusBarMode = workbox.locator(
                 'div[aria-label="Keybinding Mode: normal"]',
             );
-            expect(statusBarMode).toHaveClass(/warning-kind/);
+            await expect(statusBarMode).toHaveClass(/warning-kind/);
 
             await editor.press('u');
             // wait for UX to no longer show U key being pressed
@@ -66,9 +65,9 @@ test.describe('Basic keypresses', () => {
 
             // changing mode changes the effect of key presses
             await editor.press('i');
-            expect(cursor).not.toHaveClass(/cursor-block-style/);
+            await expect(cursor).not.toHaveClass(/cursor-block-style/);
             statusBarMode = workbox.locator('div[aria-label="Keybinding Mode: insert"]');
-            expect(statusBarMode).not.toHaveClass(/warning-kind/);
+            await expect(statusBarMode).not.toHaveClass(/warning-kind/);
 
             await editor.press('j');
             await expect(pos).toHaveText('Ln 1, Col 3');
@@ -79,15 +78,15 @@ test.describe('Basic keypresses', () => {
                 const { editor } = await setup(workbox, file);
                 await editor.press('Escape');
                 const cursor = workbox.locator('div[role="presentation"].cursors-layer');
-                expect(cursor).toHaveClass(/cursor-block-style/);
+                await expect(cursor).toHaveClass(/cursor-block-style/);
 
                 await editor.press('d');
                 // assert cursor state
-                expect(cursor).toHaveClass(/cursor-underline-style/);
+                await expect(cursor).toHaveClass(/cursor-underline-style/);
 
                 // execute the action
                 await editor.press('w');
-                expect(cursor).toHaveClass(/cursor-block-style/);
+                await expect(cursor).toHaveClass(/cursor-block-style/);
             },
         );
 
@@ -105,7 +104,7 @@ test.describe('Basic keypresses', () => {
         const statusBarMode = workbox.locator(
             'div[aria-label="Keybinding Mode: normal-left"]',
         );
-        expect(statusBarMode).toBeAttached();
+        await expect(statusBarMode).toBeAttached();
 
         await editor.press('3');
         await editor.press('l');
