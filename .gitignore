@@ -10,6 +10,8 @@ node_modules
 .nyc_output/**
 coverage/**
 coverage.json
+*.profraw
+*.lcov
 
 # unit testing
 test/temp/**
