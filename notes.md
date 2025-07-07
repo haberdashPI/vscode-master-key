@@ -49,7 +49,7 @@ Integration test debugging:
     - [x] markdown docs integration tests
     - [x] visual docs integration tests
     - [x] simpleMotionLayout.ux.mts integration tests:
-    - [ ] config(Edit).ux.mts integration tests
+    - [X] config(Edit).ux.mts integration tests
         - [X] fallback bindings
         - [X] setting defaults
             - when you first open the editor modes work as expected
@@ -58,11 +58,22 @@ Integration test debugging:
         - [X] loading from a file (remove this feature!)
         - [X] bindings can be removed
         - [X] add and remove user bindings
-        - [ ] prevent user binding updates absent preset
-    - [ ] palette integration tests
-        - [ ] NOTE: because we are planning to replace this with a tree view
-              instead of a quick pick UI element it is probably not worth
-              working out the UI testing for this right now
+        - [X] prevent user binding updates absent preset
+2. eliminate/cleanup functionality I don't have good coverage for
+    - [X] eliminate elaborate loading UI
+    - [X] don't auto load documentation
+    - [ ] don't automatically offer to install extensions
+    - [ ] add buttons to info message to show documentation
+3. Refactor parsing to rust
+    a. in this early phase, we don't worry too much about providing detailed error messages
+       (if there are easy things to do here we can do them, but no UX work, etc...)
+4. Move palette from quick pick to tree view
+    - [ ] get a simple tree view working (just show one item)
+    - [ ] get tree view to show palette items
+    - [ ] sections of literate documentation should determine tree structure
+    - [ ] allow a small set of high priority items to show up at the top
+    - [ ] add CI tests informted by palette.ux.mts
+5. Translate the lower priority tests
     - [ ] low impact on stability and coverage, but high effort changes
         - save these for after the PR migrating to new test/coverage setup
         - [ ] searchMotions.ux.mts integration tests
@@ -78,21 +89,13 @@ Integration test debugging:
         - [ ] configEdit.ux.mts
             - [ ] can create editable copy
             - [ ] can copy user config
-
-2. eliminate/cleanup functionality I don't have good coverage for
-    (e.g. binding loading/activation need not be quite so elaborate,
-    I don't need to auto load the install extension or documentation, I can just make
-    buttons for these options in the notification about activating keybindings)
-3. Refactor parsing to rust
-    a. in this early phase, we don't worry too much about providing detailed error messages
-       (if there are easy things to do here we can do them, but no UX work, etc...)
-4. Review documentation
-5. Release version 0.4
-6. Migration of selection utilities to the same build and test setup
-7. Generate detailed error reports for keybinding files and get them to show
+6. Review documentation
+7. Release version 0.4
+8. Migration of selection utilities to the same build and test setup
+9. Generate detailed error reports for keybinding files and get them to show
    up in VSCode's problem window / linting underlines
-8. Translate selection utility tests to new build setup
-9. Get CI working for all tests in selection utilities
-10. continue the quest for better test coverage
+10. Translate selection utility tests to new build setup
+11. Get CI working for all tests in selection utilities
+12. continue the quest for better test coverage
 
 \u001b[32m✔\u001b[39m Found existing install in /home/runner/work/vscode-master-key/vscode-master-key/.vscode-test/vscode-linux-x64-insiders\n
