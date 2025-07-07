@@ -8,8 +8,7 @@
             "command": "mise watch build",
             "problemMatcher": [
                 {
-                    "severity": "error",
-                    "applyTo": "closedDocuments",
+                    "applyTo": "allDocuments",
                     "source": "esbuild",
                     "fileLocation": "relative",
                     "pattern": [
@@ -27,28 +26,27 @@
                     ]
                 },
                 {
+                    "applyTo": "allDocuments",
                     "base": "$esbuild",
-                    "severity": "error",
-                    "applyTo": "closedDocuments",
                     "source": "esbuild",
                     "fileLocation": "relative",
                     "background": {
                         "activeOnStart": true,
                         "beginsPattern": {
-                            "regexp": "\\[build\\] \\[watch\\] build started"
+                            "regexp": "^\\[Running:.*"
                         },
                         "endsPattern": {
-                            "regexp": "\\[build\\] \\[watch\\] build finished"
+                            "regexp": "^\\[Command "
                         }
                     }
                 },
                 {
                     "applyTo": "closedDocuments",
                     "source": "eslint",
-                    "fileLocation": "relative",
+                    "fileLocation": "absolute",
                     "pattern": [
                         {
-                            "regexp": "^\\[lint\\]\\s(.*\\.ts)$",
+                            "regexp": "^\\[lint\\]\\s(.*)$",
                             "file": 1,
                         },
                         {

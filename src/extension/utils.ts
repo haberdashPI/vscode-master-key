@@ -11,7 +11,7 @@ export function validateInput<T, Def extends z.ZodTypeDef, I>(
     args_: unknown,
     using: z.ZodType<T, Def, I>,
 ): T | undefined {
-    const result = using.safeParse(args_);
+    const result = using.safeParse(args_ || {});
     if (!result.success) {
         showParseError(`'${command}' `, result.error);
         return;

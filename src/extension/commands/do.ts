@@ -115,7 +115,7 @@ async function resolveRepeat(args: RunCommandsArgs): Promise<number> {
         } else {
             vscode.window.showErrorMessage(`The expression '${args.computedRepeat}' did not
                 evaluate to a number`);
-            return 0;
+            return -1;
         }
     } else {
         return args.computedRepeat || 0;
@@ -145,6 +145,9 @@ export async function doCommands(args: RunCommandsArgs): Promise<CommandResult> 
         // running `doCommand` or the value of any transient variables (e.g. `count`) will
         // be cleared
         computedRepeat = await resolveRepeat(args);
+        if (computedRepeat < 0) {
+            return 'cancel';
+        }
 
         reifiedCommands = [];
         for (const cmd of args.do) {

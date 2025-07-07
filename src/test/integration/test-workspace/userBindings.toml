@@ -1,0 +1,7 @@
+[[bind]]
+name = "right"
+key = "r"
+command = "cursorMove"
+mode = "normal"
+when = "editorTextFocus"
+args.to = "down"

@@ -11,7 +11,7 @@ import {
 } from './parsing';
 import { processBindings, Bindings } from './processing';
 import { isSingleCommand } from '../utils';
-import { uniq, pick } from 'lodash';
+import { pick } from 'lodash';
 import replaceAll from 'string.prototype.replaceall';
 import { Utils } from 'vscode-uri';
 import {
@@ -437,8 +437,6 @@ export async function queryPreset(): Promise<Preset | undefined> {
     options.push(
         { label: 'add new presets...', kind: vscode.QuickPickItemKind.Separator },
         { label: 'Current File', command: 'current' },
-        { label: 'File...', command: 'file' },
-        { label: 'Directory...', command: 'dir' },
     );
     const picked = await vscode.window.showQuickPick(options);
     if (picked?.command === 'current') {
@@ -457,43 +455,6 @@ export async function queryPreset(): Promise<Preset | undefined> {
                 uri,
                 data: text,
             };
-        }
-    } else if (picked?.command === 'file') {
-        const file = await vscode.window.showOpenDialog({
-            openLabel: 'Import Master-Key-Binding Spec',
-
-            filters: { Preset: ['toml'] },
-            canSelectFiles: true,
-            canSelectFolders: false,
-            canSelectMany: false,
-        });
-        if (file && file.length === 1) {
-            const fileData = await vscode.workspace.fs.readFile(file[0]);
-            const data = new TextDecoder().decode(fileData);
-            return {
-                uri: file[0],
-                data,
-            };
-        }
-    } else if (picked?.command === 'dir') {
-        const config = vscode.workspace.getConfiguration('master-key');
-        const dir = await vscode.window.showOpenDialog({
-            openLabel: 'Select Directory',
-            canSelectFiles: false,
-            canSelectFolders: true,
-            canSelectMany: false,
-        });
-
-        if (dir) {
-            let dirs = config.get<string[]>('presetDirectories') || [];
-            dirs.push(dir[0].fsPath);
-            dirs = uniq(dirs);
-            await config.update(
-                'presetDirectories',
-                dirs,
-                vscode.ConfigurationTarget.Global,
-            );
-            return queryPreset();
         }
     } else {
         return picked?.preset;
@@ -596,39 +557,25 @@ async function activateBindings(preset?: Preset) {
         if (bindings) {
             await handleRequireExtensions(bindings);
             await insertKeybindingsIntoConfig(bindings);
-            await vscode.commands.executeCommand('master-key.showVisualDoc');
-            await vscode.commands.executeCommand('master-key.showTextDoc');
+            // TODO: this can be annoying maybe make an info dialog with links to look
+            // at these
+            // await vscode.commands.executeCommand('master-key.showVisualDoc');
+            // await vscode.commands.executeCommand('master-key.showTextDoc');
         }
     }
 }
 
-async function deleteUserBindings() {
+async function deactivateUserBindings() {
     const bindings = await clearUserBindings();
     if (bindings) {
         insertKeybindingsIntoConfig(bindings);
     }
 }
 
-async function selectUserBindings(file?: vscode.Uri) {
+async function activateUserBindings(file?: vscode.Uri) {
     if (!file) {
         const currentUri = vscode.window.activeTextEditor?.document.fileName;
-        let currentFile;
-        if (currentUri) {
-            currentFile = vscode.Uri.from({ scheme: 'file', path: currentUri });
-        }
-
-        const files = await vscode.window.showOpenDialog({
-            openLabel: 'Import User Bindings',
-
-            filters: { Binding: ['toml'] },
-            canSelectFiles: true,
-            canSelectFolders: false,
-            canSelectMany: false,
-            defaultUri: currentFile,
-        });
-        if (files && files.length === 1) {
-            file = files[0];
-        }
+        file = vscode.Uri.from({ scheme: 'file', path: currentUri });
     }
     if (file) {
         const fileData = await vscode.workspace.fs.readFile(file);
@@ -637,6 +584,8 @@ async function selectUserBindings(file?: vscode.Uri) {
         if (bindings) {
             await insertKeybindingsIntoConfig(bindings);
         }
+    } else {
+        vscode.window.showErrorMessage('Open document must be saved to a file first.');
     }
 }
 
@@ -718,15 +667,15 @@ export async function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand('master-key.deactivateBindings', removeKeybindings),
     );
     /**
-     * @userCommand selectUserBindings
+     * @userCommand activateUserBindings
      * @name Activate User Keybindings
      *
      * Select a set of user specified bindings, to append to your master key bindings
      */
     context.subscriptions.push(
         vscode.commands.registerCommand(
-            'master-key.selectUserBindings',
-            selectUserBindings),
+            'master-key.activateUserBindings',
+            activateUserBindings),
     );
     /**
      * @userCommand removeUserBindings
@@ -736,8 +685,8 @@ export async function activate(context: vscode.ExtensionContext) {
      */
     context.subscriptions.push(
         vscode.commands.registerCommand(
-            'master-key.removeUserBindings',
-            deleteUserBindings),
+            'master-key.deactivateUserBindings',
+            deactivateUserBindings),
     );
     /**
      * @userCommand editPreset

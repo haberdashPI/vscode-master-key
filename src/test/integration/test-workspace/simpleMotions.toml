@@ -1,0 +1,133 @@
+[header]
+version = "2.0"
+
+[[mode]]
+name = "insert"
+
+[[mode]]
+name = "normal"
+default = true
+highlight = "Highlight"
+cursorShape = "Block"
+
+[[bind]]
+name = "normal mode"
+key = "escape"
+command = "master-key.enterNormal"
+prefixes = "{{all_prefixes}}"
+
+[[default]]
+id = "motion"
+appendWhen = "editorTextFocus"
+default.command = "cursorMove"
+default.mode = "normal"
+default.computedArgs.value = "count"
+
+[[bind]]
+defaults = "motion"
+name = "left"
+key = "h"
+args.to = "left"
+
+[[bind]]
+defaults = "motion"
+name = "right"
+key = "l"
+args.to = "right"
+
+[[bind]]
+defaults = "motion"
+name = "down"
+key = "j"
+args.to = "down"
+
+[[bind]]
+defaults = "motion"
+name = "up"
+key = "k"
+args.to = "up"
+
+[[bind]]
+name = "insert mode"
+key = "i"
+command = "master-key.enterInsert"
+mode = "normal"
+when = "editorTextFocus"
+
+[[bind]]
+name = "ignore"
+key = "u"
+command = "master-key.ignore"
+mode = "normal"
+when = "editorTextFocus"
+
+[[bind]]
+name = "delete"
+key = "d"
+mode = "normal"
+command = "runCommands"
+when = "editorTextFocus"
+
+[[bind.args.commands]]
+command = "master-key.prefix"
+args.cursor = "Underline"
+
+[[bind.args.commands]]
+command = "master-key.storeCommand"
+args.command = "deleteRight"
+args.register = "operation"
+
+[[bind]]
+name = "word operation"
+key = "w"
+mode = "normal"
+#- to qualify from word *motion*
+prefixes = ["d"]
+command = "runCommands"
+when = "editorTextFocus"
+
+[[bind.args.commands]]
+command = "cursorWordEndRightSelect"
+
+[[bind.args.commands]]
+command = "master-key.executeStoredCommand"
+args.register = "operation"
+
+[[bind]]
+foreach.num = ["{{key: [0-3]}}"]
+key = "{{num}}"
+mode = "normal"
+name = "count {{num}}"
+command = "master-key.updateCount"
+args.value = "{{num}}"
+finalKey = false
+when = "editorTextFocus"
+
+[[bind]]
+key = "shift+g"
+mode = "normal"
+name = "normal-left mode"
+command = "master-key.setMode"
+args.value = "normal-left"
+when = "editorTextFocus"
+
+[[mode]]
+name = "normal-left"
+fallbackBindings = "normal"
+
+[[bind]]
+defaults = "motion"
+key = "shift+h"
+mode = "normal-left"
+name = "left"
+when = "editorTextFocus"
+command = "cursorMove"
+args.to = "left"
+
+[[bind]]
+defaults = "motion"
+name = "double left"
+mode = "normal-left"
+key = "shift+l"
+args.to = "left"
+computedArgs.value = 2
