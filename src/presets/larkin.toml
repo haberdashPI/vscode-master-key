@@ -5,7 +5,9 @@
 
 # # Master Keybindings: Larkin
 
-# Larkin is the default keybinding set that ships with Master Key. It follows in the footsteps of Vim, Kakoune and Helix. This is the version of Larkin that uses a layout dependent keymap.
+# Larkin is the default keybinding set that ships with Master Key. It follows in the footsteps of Vim, Kakoune and Helix.
+
+# It leverages a number of extensions which can be installed using the `Install Extensions Required by Keybindings` command.
 
 # Some key features:
 

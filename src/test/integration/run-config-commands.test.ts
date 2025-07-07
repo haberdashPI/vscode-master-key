@@ -9,6 +9,10 @@ test.describe('Visual Documentation', () => {
     });
 
     test('Can remove bindings', async ({ workbox }) => {
+        const activateMessage = workbox.getByLabel(
+            'Master keybindings were added to \`keybindings.json\`.',
+        ).first();
+        await expect(activateMessage).toBeAttached();
         await runCommand(workbox, 'Master Key: Deactivate Keybindings');
 
         const cursor = workbox.locator('div[role="presentation"].cursors-layer');
@@ -24,7 +28,7 @@ test.describe('Visual Documentation', () => {
         await runCommand(workbox, 'Master Key: Activate User Keybindings');
         const errorMessage = workbox.getByLabel(
             'Error: User bindings have not been activated because you ' +
-            'have no preset keybindings.',
+            'have no Master Key preset keybindings.',
         ).first();
         await expect(errorMessage).toBeAttached();
     });
