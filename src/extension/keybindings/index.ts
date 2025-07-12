@@ -25,6 +25,9 @@ import { toLayoutIndependentString } from './layout';
 import JSONC from 'jsonc-simple-parser';
 import TOML from 'smol-toml';
 
+// run `mise build-rust` to create this auto generated source file
+import initParsing, { simple, debug_parse_command } from '../../rust/parsing/lib';
+
 ////////////////////////////////////////////////////////////////////////////////////////////
 // Keybinding Generation
 
@@ -642,6 +645,66 @@ let extensionPresetsDir: vscode.Uri;
 export async function activate(context: vscode.ExtensionContext) {
     updateConfig(undefined, false);
     vscode.workspace.onDidChangeConfiguration(updateConfig);
+
+    // initialize rust WASM module for parsing keybinding files
+    const filename = vscode.Uri.joinPath(context.extensionUri, 'out', 'parsing_bg.wasm');
+    const bits = await vscode.workspace.fs.readFile(filename);
+    await initParsing(bits);
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('master-key.test-rust', () => {
+            const parsing = debug_parse_command(`
+                command = "do"
+                args = { a = "2", b = 3 }
+                computedArgs = { c = "1+2" }
+                key = "a"
+                when = "joe > 1"
+                mode = "normal"
+                priority = 1
+                defaults = "foo.bar"
+                foreach.index = [1,2,3]
+                prefixes = "c"
+                finalKey = true
+                computedRepeat = "2+c"
+                name = "foo"
+                description = "foo bar bin"
+                hideInPalette = false
+                hideInDocs = false
+                combinedName = "Up/down"
+                combinedKey = "A/B"
+                combinedDescription = "bla bla bla"
+                kind = "biz"
+                whenComputed = "f > 2"
+            `);
+
+            vscode.window.showInformationMessage(`Rust says:
+                command: ${parsing.command}
+                args: ${parsing.args}
+                computedArgs: ${parsing.computedArgs}
+                key: ${parsing.key}
+                when: ${parsing.when}
+                mode: ${parsing.mode}
+                priority: ${parsing.priority}
+                defaults: ${parsing.defaults}
+                foreach: ${parsing.foreach}
+                prefixes: ${parsing.prefixes}
+                finalKey: ${parsing.finalKey}
+                computedRepeat: ${parsing.computedRepeat}
+                name: ${parsing.name}
+                description: ${parsing.description}
+                hideInPalette: ${parsing.hideInPalette}
+                hideInDocs: ${parsing.hideInDocs}
+                combinedName: ${parsing.combinedName}
+                combinedKey: ${parsing.combinedKey}
+                combinedDescription: ${parsing.combinedDescription}
+                kind: ${parsing.kind}
+                whenComputed: ${parsing.whenComputed}
+            `);
+            const result = simple();
+            vscode.window.showInformationMessage('Rust says: "' + result + '"');
+            return result;
+        }),
+    );
 
     // TODO: add all user bindings
     /**
