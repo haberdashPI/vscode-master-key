@@ -4,7 +4,7 @@ node = "20"
 "npm:pnpm" = "10.12.4"
 "npm:typescript" = "5.8.3"
 "npm:vsce" = "2.15"
-rust = { version = "1.87", targets = "wasm32-unknown-unknown" }
+rust = { version = "1.88", targets = "wasm32-unknown-unknown" }
 watchexec = "2.3.2"
 "ubi:haberdashpi/simple-src-docs" = "0.6.0"
 "npm:c8" = "latest"
@@ -19,22 +19,22 @@ run = 'pnpm exec eslint src'
 [tasks.check-types]
 run = 'tsc --noEmit --project tsconfig.json'
 
-# [tasks.build-rust]
-# sources = ['src/rust/parsing/src/**/*.rs', 'src/rust/parsing/Cargo.toml']
-# outputs = ['out/**/*.wasm', 'src/rust/parsing/lib/*']
-# dir = 'src/rust/parsing'
-# run = [
-#     'wasm-pack build --target web --out-dir lib',
-#     'cp lib/parsing_bg.wasm ../../../out/parsing_bg.wasm',
-# ]
+[tasks.build-rust]
+sources = ['src/rust/parsing/src/**/*.rs', 'src/rust/parsing/Cargo.toml']
+outputs = ['out/**/*.wasm', 'src/rust/parsing/lib/*']
+dir = 'src/rust/parsing'
+run = [
+    'wasm-pack build --target web --out-dir lib',
+    'cp lib/parsing_bg.wasm ../../../out/parsing_bg.wasm',
+]
 
 [tasks.build]
-depends = ['check-types', 'lint'] #, 'build-rust']
+depends = ['check-types', 'lint', 'build-rust']
 sources = ['src/**/*.ts']
 run = ['pwd', 'node esbuild.mjs']
 
 [tasks.package]
-depends = ['check-types', 'lint'] #, 'build-rust']
+depends = ['check-types', 'lint', 'build-rust']
 sources = ['src/**/*.ts']
 run = [
     'node esbuild.mjs --release',

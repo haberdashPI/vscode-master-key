@@ -14,6 +14,7 @@ export default defineConfig([
         'src/rust/parsing/lib/**/*.{js,ts,t.ds}',
         'out/**/*.js',
         'src/oldtest/**',
+        'src/oldparsing/**',
         'docs/.vitepress/theme/**/*.{js,ts,t.ds}',
     ]),
     {

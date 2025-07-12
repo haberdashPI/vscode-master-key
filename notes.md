@@ -62,11 +62,12 @@ Integration test debugging:
 2. eliminate/cleanup functionality I don't have good coverage for
     - [X] eliminate elaborate loading UI
     - [X] don't auto load documentation
-    - [ ] don't automatically offer to install extensions
-    - [ ] add buttons to info message to show documentation
+    - [X] don't automatically offer to install extensions
+    - [X] add buttons to info message to show documentation
 3. Refactor parsing to rust
     a. in this early phase, we don't worry too much about providing detailed error messages
        (if there are easy things to do here we can do them, but no UX work, etc...)
+       - [ ] start by implementing parsing of `[[bind]]`
 4. Move palette from quick pick to tree view
     - [ ] get a simple tree view working (just show one item)
     - [ ] get tree view to show palette items
