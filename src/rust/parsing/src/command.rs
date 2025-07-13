@@ -1,93 +1,58 @@
 #![allow(non_snake_case)]
 
-use core::fmt;
+use crate::error::{Error, Result};
+
 use lazy_static::lazy_static;
 use regex::Regex;
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::de::Unexpected;
+use serde::{Deserialize, Serialize};
 use serde_wasm_bindgen;
-use std::collections::HashMap;
 use toml::Value;
-use toml::map::Map;
 use validator::{Validate, ValidationError};
 use wasm_bindgen::JsValue;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
-pub fn debug_parse_command(command_str: &str) -> Result<Command, JsError> {
+pub fn debug_parse_command(command_str: &str) -> std::result::Result<Command, JsError> {
     let result = toml::from_str::<CommandInput>(command_str)?;
-    return match Command::new(result) {
-        Ok(x) => Ok(x),
-        Err(e) => Err(JsError::from(e)),
-    };
+    return Ok(Command::new(result)?);
 }
 
 // ----------------------------------
 // Validate TOML table structure
 
-trait FoundError<T> {
-    fn found_error(self) -> Result<(), T>;
+fn valid_json_array(values: &Vec<toml::Value>) -> std::result::Result<(), ValidationError> {
+    return values.iter().try_for_each(valid_json_value);
 }
 
-impl<T> FoundError<T> for Option<T> {
-    fn found_error(self) -> Result<(), T> {
-        return match self {
-            Some(err) => Err(err),
-            None => Ok(()),
-        };
-    }
-}
-
-fn valid_json_array(values: &Vec<toml::Value>) -> Result<(), ValidationError> {
-    return values
-        .iter()
-        .find_map(|x| match valid_json_value(x) {
-            Ok(()) => None,
-            Err(err) => Some(err),
-        })
-        .found_error();
-}
-
-fn valid_json_object(kv: &toml::Table) -> Result<(), ValidationError> {
-    return kv
-        .iter()
-        .find_map(|(_, v)| match valid_json_value(v) {
-            Ok(()) => None,
-            Err(err) => Some(err),
-        })
-        .found_error();
+fn valid_json_object(kv: &toml::Table) -> std::result::Result<(), ValidationError> {
+    return kv.iter().try_for_each(|(_, v)| valid_json_value(v));
 }
 
 // we read in TOML values, but only want to accept JSON-valid values in some contexts
 // (since that is what we'll be serializing out to)
-fn valid_json_value(x: &Value) -> Result<(), ValidationError> {
+fn valid_json_value(x: &Value) -> std::result::Result<(), ValidationError> {
     match x {
         Value::Integer(_) | Value::Float(_) | Value::Boolean(_) | Value::String(_) => {
             return Ok(());
         }
-        Value::Datetime(_) => return Err(ValidationError::new("Unexpected datetime value")),
+        Value::Datetime(_) => {
+            return Err(ValidationError::new("DateTime values are not supported"));
+        }
         Value::Array(values) => return valid_json_array(values),
         Value::Table(kv) => return valid_json_object(kv),
     };
 }
 
-fn valid_json_array_object(kv: &toml::Table) -> Result<(), ValidationError> {
-    return kv
-        .iter()
-        .find_map(|(_, v)| match v {
-            Value::Array(_) => match valid_json_value(v) {
-                Ok(()) => None,
-                Err(err) => Some(err),
-            },
-            _ => Some(ValidationError::new(
-                "Expected all object fields to be arrays",
-            )),
-        })
-        .found_error();
+fn valid_json_array_object(kv: &toml::Table) -> std::result::Result<(), ValidationError> {
+    return kv.iter().try_for_each(|(_, v)| valid_json_value(v));
 }
 
-trait Merging<T, R> {
-    fn merge(self, default: T) -> T;
-    fn require(self) -> Result<R, CommandValidationError>;
+trait Merging {
+    fn merge(self, new: Self) -> Self;
+}
+trait Requiring<R> {
+    fn require(self, name: &'static str) -> Result<R>;
 }
 
 #[derive(Default, Deserialize, PartialEq, Debug)]
@@ -97,6 +62,15 @@ enum Plural<T> {
     Zero,
     One(T),
     Many(Vec<T>),
+}
+
+impl<T> Merging for Plural<T> {
+    fn merge(self, new: Self) -> Self {
+        return match new {
+            Plural::Zero => self,
+            _ => new,
+        };
+    }
 }
 
 impl Plural<String> {
@@ -119,20 +93,24 @@ enum Required<T> {
     Value(T),
 }
 
-impl<T> Merging<Required<T>, T> for Required<T> {
-    fn require(self) -> Result<T, CommandValidationError> {
+impl<T> Requiring<T> for Required<T> {
+    fn require(self, name: &'static str) -> Result<T> {
         return match self {
-            Required::DefaultValue => {
-                Err(CommandValidationError::new("Missing required field".into()))
-            }
+            Required::DefaultValue => Err(Error::RequiredField(name)),
             Required::Value(val) => Ok(val),
         };
     }
-    fn merge(self, default: Self) -> Self {
-        match self {
-            Required::Value(_) => self,
-            Required::DefaultValue => default,
-        }
+}
+
+impl<T: Merging> Merging for Required<T> {
+    fn merge(self, new: Self) -> Self {
+        return match new {
+            Required::Value(new_val) => match self {
+                Required::Value(old_val) => Required::Value(old_val.merge(new_val)),
+                Required::DefaultValue => Required::Value(new_val),
+            },
+            Required::DefaultValue => self,
+        };
     }
 }
 
@@ -225,7 +203,7 @@ lazy_static! {
     ];
 }
 
-fn valid_key_binding(val: &Required<String>) -> Result<(), ValidationError> {
+fn valid_key_binding(val: &Required<String>) -> std::result::Result<(), ValidationError> {
     match val {
         Required::DefaultValue => return Ok(()),
         Required::Value(x) => {
@@ -487,92 +465,98 @@ pub struct CommandInput {
     whenComputed: Option<String>,
 }
 
-// TODO: look into std::error::Error trait and `thiserror`
-#[derive(Debug)]
-pub struct CommandValidationError {
-    msg: String,
-}
-
-impl From<CommandValidationError> for JsError {
-    fn from(x: CommandValidationError) -> JsError {
-        return JsError::new(&format!("`command` validation failed; {}", x.msg));
-    }
-}
-
-impl fmt::Display for CommandValidationError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.msg)
-    }
-}
-
-impl CommandValidationError {
-    fn new(msg: String) -> CommandValidationError {
-        return CommandValidationError { msg };
-    }
-}
-
-impl From<ValidationError> for CommandValidationError {
-    fn from(e: ValidationError) -> CommandValidationError {
-        return CommandValidationError::new(format!("Validation error: {}", e));
-    }
-}
-
-impl From<toml::de::Error> for CommandValidationError {
-    fn from(e: toml::de::Error) -> CommandValidationError {
-        return CommandValidationError::new(format!("Error reading command: {}", e));
-    }
-}
-
-impl From<serde_wasm_bindgen::Error> for CommandValidationError {
-    // We don't expect these errors since we have already validated the TOML data
-    // to serializable to JSON-friendly data
-    fn from(e: serde_wasm_bindgen::Error) -> CommandValidationError {
-        return CommandValidationError::new(format!("Unexpected JS conversion error: {}", e));
-    }
-}
-
-impl<T> Merging<Option<T>, Option<T>> for Option<T> {
-    fn merge(self, y: Self) -> Self {
-        return match self {
-            Some(_) => self,
-            None => y,
+impl<T: Merging> Merging for Option<T> {
+    fn merge(self, new: Self) -> Self {
+        return match new {
+            Some(x) => match self {
+                Some(y) => Some(y.merge(x)),
+                None => Some(x),
+            },
+            None => self,
         };
     }
+}
 
-    fn require(self) -> Result<Self, CommandValidationError> {
+impl Merging for String {
+    fn merge(self, _: Self) -> Self {
+        return self;
+    }
+}
+
+impl Merging for i64 {
+    fn merge(self, _: Self) -> Self {
+        return self;
+    }
+}
+
+impl Merging for bool {
+    fn merge(self, _: Self) -> Self {
+        return self;
+    }
+}
+
+impl Merging for toml::Value {
+    fn merge(self, new: Self) -> Self {
+        match new {
+            Value::Array(mut new_values) => match self {
+                Value::Array(mut old_values) => {
+                    old_values.append(&mut new_values);
+                    Value::Array(old_values)
+                }
+                _ => Value::Array(new_values),
+            },
+            Value::Table(new_kv) => match self {
+                Value::Table(old_kv) => Value::Table(old_kv.merge(new_kv)),
+                _ => Value::Table(new_kv),
+            },
+            _ => new,
+        }
+    }
+}
+
+// TODO: think through ownship here
+impl Merging for toml::Table {
+    fn merge(mut self, new: Self) -> Self {
+        self.extend(new);
+        return self;
+    }
+}
+
+impl<T> Requiring<Option<T>> for Option<T> {
+    fn require(self, _: &str) -> Result<Self> {
         return Ok(self);
     }
 }
 
-// // TODO: before I finish implementing this, make sure I can
-// // read in the TOML table values to a javascript
-// impl Merging<CommandInput, Command> for CommandInput {
-//     fn merge(self, y: Self) -> Self {
-//         CommandInput {
-//             command: self.command.merge(y.command),
-//             args: self.args.merge(y.args),
-//             computedArgs: self.computedArgs.merge(y.computedArgs),
-//             key: self.key.merge(y.key),
-//             when: self.when.merge(y.when),
-//             mode: self.mode.merge(y.mode),
-//             priority: self.priority.merge(y.priority),
-//             defaults: self.defaults.merge(y.defaults),
-//             foreach: self.foreach.merge(y.foreach),
-//             prefixes: self.prefixes.merge(y.prefixes),
-//             finalKey: self.finalKey.merge(y.finalKey),
-//             computedRepeat: self.computedRepeat.merge(y.computedRepeat),
-//             name: self.name.merge(y.name),
-//             description: self.description.merge(y.description),
-//             hideInPalette: self.hideInPalette.merge(y.hideInPalette),
-//             hideInDocs: self.hideInDocs.merge(y.hideInDocs),
-//             combinedName: self.combinedName.merge(y.combinedName),
-//             combinedKey: self.combinedKey.merge(y.combinedKey),
-//             combinedDescription: self.combinedDescription.merge(y.combinedDescription),
-//             kind: self.kind.merge(y.kind),
-//             whenComputed: self.whenComputed.merge(y.whenComputed),
-//         }
-//     }
-// }
+// TODO: before I finish implementing this, make sure I can
+// read in the TOML table values to a javascript
+impl Merging for CommandInput {
+    fn merge(self, y: Self) -> Self {
+        CommandInput {
+            command: self.command.merge(y.command),
+            args: self.args.merge(y.args),
+            computedArgs: self.computedArgs.merge(y.computedArgs),
+            key: self.key.merge(y.key),
+            when: self.when.merge(y.when),
+            mode: self.mode.merge(y.mode),
+            priority: self.priority.merge(y.priority),
+            defaults: self.defaults.merge(y.defaults),
+            foreach: self.foreach.merge(y.foreach),
+            prefixes: self.prefixes.merge(y.prefixes),
+            finalKey: self.finalKey.merge(y.finalKey),
+            computedRepeat: self.computedRepeat.merge(y.computedRepeat),
+            name: self.name.merge(y.name),
+            description: self.description.merge(y.description),
+            hideInPalette: self.hideInPalette.merge(y.hideInPalette),
+            hideInDocs: self.hideInDocs.merge(y.hideInDocs),
+            combinedName: self.combinedName.merge(y.combinedName),
+            combinedKey: self.combinedKey.merge(y.combinedKey),
+            combinedDescription: self.combinedDescription.merge(y.combinedDescription),
+            kind: self.kind.merge(y.kind),
+            whenComputed: self.whenComputed.merge(y.whenComputed),
+        }
+    }
+}
 
 // TODO: do the Table objects get properly understand as basic JS objects
 // or do we have to convert them here to JsObjects?
@@ -587,7 +571,6 @@ pub struct Command {
     pub mode: Vec<String>,
     pub priority: i64,
     pub defaults: String,
-    pub foreach: JsValue,
     pub prefixes: Vec<String>,
     pub finalKey: bool,
     pub computedRepeat: Option<String>,
@@ -606,19 +589,26 @@ pub struct Command {
 
 // TODO: think about whether I want to represent commands as a sequence in the output...
 impl Command {
-    pub fn new(input: CommandInput) -> Result<Self, CommandValidationError> {
+    pub fn new(input: CommandInput) -> Result<Self> {
+        if let Some(_) = input.foreach {
+            return Err(Error::Unexpected("`foreach` remains unresolved"));
+        }
+        let to_json = serde_wasm_bindgen::Serializer::json_compatible();
         return Ok(Command {
-            command: input.command.require()?,
-            args: serde_wasm_bindgen::to_value(&input.args.unwrap_or_else(|| toml::Table::new()))?,
-            computedArgs: serde_wasm_bindgen::to_value(
-                &input.computedArgs.unwrap_or_else(|| toml::Table::new()),
-            )?,
-            key: input.key.require()?,
+            command: input.command.require("command")?,
+            args: input
+                .args
+                .unwrap_or_else(|| toml::Table::new())
+                .serialize(&to_json)?,
+            computedArgs: input
+                .computedArgs
+                .unwrap_or_else(|| toml::Table::new())
+                .serialize(&to_json)?,
+            key: input.key.require("key")?,
             when: input.when.to_array(),
             mode: input.mode.to_array(),
             priority: input.priority.unwrap_or(0),
             defaults: input.defaults.unwrap_or_default(),
-            foreach: serde_wasm_bindgen::to_value(&input.foreach.unwrap_or_default())?,
             prefixes: input.prefixes.to_array(),
             finalKey: input.finalKey.unwrap_or_default(),
             computedRepeat: input.computedRepeat,

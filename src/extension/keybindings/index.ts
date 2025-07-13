@@ -679,14 +679,14 @@ export async function activate(context: vscode.ExtensionContext) {
 
             vscode.window.showInformationMessage(`Rust says:
                 command: ${parsing.command}
-                args: ${parsing.args}
-                computedArgs: ${parsing.computedArgs}
+                args: ${JSON.stringify(parsing.args, null, 2)}
+                computedArgs: ${JSON.stringify(parsing.computedArgs, null, 2)}
                 key: ${parsing.key}
                 when: ${parsing.when}
                 mode: ${parsing.mode}
                 priority: ${parsing.priority}
                 defaults: ${parsing.defaults}
-                foreach: ${parsing.foreach}
+                foreach: ${JSON.stringify(parsing.foreach, null, 2)}
                 prefixes: ${parsing.prefixes}
                 finalKey: ${parsing.finalKey}
                 computedRepeat: ${parsing.computedRepeat}
