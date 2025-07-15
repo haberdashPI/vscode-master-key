@@ -1,5 +1,6 @@
 use crate::error::{Error, Result};
 
+use log::info;
 use serde::{Deserialize, Serialize};
 use toml::Value;
 
@@ -10,11 +11,18 @@ pub trait Requiring<R> {
     fn require(self, name: &'static str) -> Result<R>;
 }
 
-// TODO: think through ownship here
+// TODO: is there any way to avoid so much copying here
 impl Merging for toml::Table {
-    fn merge(mut self, new: Self) -> Self {
-        self.extend(new);
-        return self;
+    fn merge(self, new: Self) -> Self {
+        let mut result = new.clone();
+        for (k, v) in self {
+            if new.contains_key(&k) {
+                result[&k] = v.merge(result[&k].clone());
+            } else {
+                result.insert(k, v);
+            }
+        }
+        return result;
     }
 }
 
@@ -92,6 +100,7 @@ impl<T: Clone> Plural<T> {
 
 impl<T: Merging> Merging for Option<T> {
     fn merge(self, new: Self) -> Self {
+        info!("Merging `Option`");
         return match new {
             Some(x) => match self {
                 Some(y) => Some(y.merge(x)),

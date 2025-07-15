@@ -63,3 +63,9 @@ impl<T: ForeachExpanding> ForeachExpanding for Option<T> {
         };
     }
 }
+
+impl ForeachExpanding for String {
+    fn expand_foreach_value(&self, var: &str, value: &str) -> Self {
+        return self.replace(&format!("{}{var}{}", "{{", "}}"), value);
+    }
+}

@@ -3,11 +3,12 @@
 mod foreach;
 mod validation;
 
+use crate::command::foreach::ForeachExpanding;
+use crate::command::validation::{valid_json_array_object, valid_json_object, valid_key_binding};
 use crate::error::{Error, Result};
 use crate::util::{Merging, Plural, Required, Requiring};
-use foreach::ForeachExpanding;
-use validation::{valid_json_array_object, valid_json_object, valid_key_binding};
 
+use log::info;
 use serde::{Deserialize, Serialize};
 use serde_wasm_bindgen;
 use toml::Value;
@@ -21,8 +22,6 @@ pub fn debug_parse_command(command_str: &str) -> std::result::Result<Command, Js
     return Ok(Command::new(result)?);
 }
 
-// ----------------------------------
-// Validate TOML table structure
 fn default_mode() -> Plural<String> {
     return Plural::One("default".into());
 }
@@ -257,12 +256,6 @@ pub struct CommandInput {
     whenComputed: Option<String>,
 }
 
-impl ForeachExpanding for String {
-    fn expand_foreach_value(&self, var: &str, value: &str) -> Self {
-        return self.replace(&format!("{}{var}{}", "{{", "}}"), value);
-    }
-}
-
 impl Merging for CommandInput {
     fn merge(self, y: Self) -> Self {
         CommandInput {
@@ -434,6 +427,7 @@ impl Command {
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
+    use test_log::test;
 
     use super::*;
     #[test]
@@ -539,14 +533,50 @@ mod tests {
             left.args.unwrap().get("to").unwrap().as_str().unwrap(),
             "left"
         );
+        assert_eq!(
+            left.computedArgs
+                .unwrap()
+                .get("value")
+                .unwrap()
+                .as_str()
+                .unwrap(),
+            "count"
+        );
 
         assert_eq!(left.when, Plural::Zero);
         assert_eq!(left.combinedDescription, None);
         assert_eq!(left.combinedName, None);
     }
 
+    #[test]
+    fn merge_nested_arguments() {
+        let data = r#"
+            [[bind]]
+            name = "default"
+            command = "cursorMove"
+            args.foo = { a = 2, b = 3, c = { x = 1 } }
+
+            [[bind]]
+            key = "r"
+            name = "→"
+            args.foo = { d = 12, c = { y = 2 } }
+
+            [[bind]]
+            key = "x"
+            name = "expected"
+            args.foo = { a = 2, b = 3, c = { x = 1, y = 2 }, d = 12 }
+        "#;
+
+        let result = toml::from_str::<HashMap<String, Vec<CommandInput>>>(data).unwrap();
+        let default = result.get("bind").unwrap()[0].clone();
+        let left = result.get("bind").unwrap()[1].clone();
+        let expected = result.get("bind").unwrap()[2].clone();
+        let left = default.merge(left);
+
+        assert_eq!(left.args, expected.args);
+    }
     // TODO: test more elaborate merging scenarios
-    // (e.g. nested argument structures, proper overlaoding of lists
+    // (proper overlaoding of lists
     // of when clauses, array of arguments that get properly merged)
 
     // TODO: errors on missing required fields
