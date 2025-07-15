@@ -28,6 +28,10 @@ run = [
     'cp lib/parsing_bg.wasm ../../../out/parsing_bg.wasm',
 ]
 
+[tasks.test-rust]
+dir = 'src/rust/parsing'
+run = 'cargo test'
+
 [tasks.build]
 depends = ['check-types', 'lint', 'build-rust']
 sources = ['src/**/*.ts']

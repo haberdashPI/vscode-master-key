@@ -67,7 +67,32 @@ Integration test debugging:
 3. Refactor parsing to rust
     a. in this early phase, we don't worry too much about providing detailed error messages
        (if there are easy things to do here we can do them, but no UX work, etc...)
-       - [ ] start by implementing parsing of `[[bind]]`
+    - [ ] start by implementing parsing of `[[bind]]`
+        - [x] basic parsing
+        - [~] merging defaults (unit tests remain)
+        - [~] foreach expansion (unit tests remain)
+        - [ ] refactor code
+        - [ ] validation that `master-key.prefix` uses `finalKey`
+        - [ ] properly identify spans: both `[[bind]]` header and entire `[[bind]]` region
+            - [ ] validate by checking error reporting
+              NOTE: short term goal here is to support literate docs
+    - [ ] pipeline for `[[bind]]` entries
+        - [ ] basic pipeline
+        - [ ] proper parsing with `[[default]]` and `defaults`
+        - [ ] mode expansion
+        - [ ] documentation expandsion/validation across all `[[bind]]` values
+              with the same key and mode
+        - [ ] key-sequence expansion and duplicate resolution
+        - [ ] proper parsing and expansion of `[[define]]` sections
+    - [ ] proper conversion to keybindings.json command
+        - [ ] expand prefixes to prefixCode and move to when clause
+        - [ ] move mode to when clause
+    - [ ] extraction of markdown docs
+        - [ ] extract all comment regions (exclude `#-`)
+        - [ ] replace `[[bind]]` regions:
+            - [ ] identify each non-comment region, and look for parsed elements
+                  whose span overlaps
+            - [ ] convert any bind elements in this overlap into markdown table
 4. Move palette from quick pick to tree view
     - [ ] get a simple tree view working (just show one item)
     - [ ] get tree view to show palette items

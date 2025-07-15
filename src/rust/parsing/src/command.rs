@@ -119,6 +119,15 @@ impl<T> Requiring<T> for Required<T> {
 }
 
 impl<T> Required<T> {
+    fn unwrap(self) -> T {
+        return match self {
+            Required::Value(x) => x,
+            Required::DefaultValue => panic!("Required value missing"),
+        };
+    }
+}
+
+impl<T> Required<T> {
     fn or(self, new: Self) -> Self {
         return match new {
             Required::Value(new_val) => match self {
@@ -773,6 +782,8 @@ impl Command {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+
     use super::*;
     #[test]
     fn complete_parsing() {
@@ -832,12 +843,63 @@ mod tests {
         assert_eq!(result.whenComputed.unwrap(), "f > 2");
     }
 
-    // TODO: can handle defaults
-    // TODO: can merge from defaults
+    #[test]
+    fn default_parsing() {
+        let data = r#"
+        key = "l"
+        command = "cursorMove"
+        args.to = "left"
+        "#;
+
+        let result = toml::from_str::<CommandInput>(data).unwrap();
+        assert_eq!(result.key.unwrap(), "l");
+        assert_eq!(result.command.unwrap(), "cursorMove");
+        assert_eq!(
+            result.args.unwrap().get("to").unwrap().as_str().unwrap(),
+            "left"
+        );
+
+        assert_eq!(result.when, Plural::Zero);
+        assert_eq!(result.combinedDescription, None);
+        assert_eq!(result.combinedName, None);
+    }
+
+    #[test]
+    fn simple_command_merging() {
+        let data = r#"
+        [[bind]]
+        name = "default"
+        command = "cursorMove"
+        computedArgs.value = "count"
+
+        [[bind]]
+        key = "l"
+        name = "←"
+        args.to = "left"
+        "#;
+
+        let result = toml::from_str::<HashMap<String, Vec<CommandInput>>>(data).unwrap();
+        let default = result.get("bind").unwrap()[0].clone();
+        let left = result.get("bind").unwrap()[1].clone();
+        let left = default.merge(left);
+        assert_eq!(left.key.unwrap(), "l");
+        assert_eq!(left.command.unwrap(), "cursorMove");
+        assert_eq!(
+            left.args.unwrap().get("to").unwrap().as_str().unwrap(),
+            "left"
+        );
+
+        assert_eq!(left.when, Plural::Zero);
+        assert_eq!(left.combinedDescription, None);
+        assert_eq!(left.combinedName, None);
+    }
+
+    // TODO: test more elaborate merging scenarios
+    // (e.g. nested argument structures, proper overlaoding of lists
+    // of when clauses, array of arguments that get properly merged)
+
     // TODO: errors on missing required fields
     // TODO: can expand foreach
-    // TODO: doesn't error on missing non-required fields
-    //
 }
 
 // TODO: define the "output" type for `Command` that can actually be passed to javascript
