@@ -1,5 +1,6 @@
 pub mod command;
 mod error;
+mod util;
 
 use wasm_bindgen::prelude::*;
 

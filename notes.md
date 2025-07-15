@@ -93,6 +93,13 @@ Integration test debugging:
             - [ ] identify each non-comment region, and look for parsed elements
                   whose span overlaps
             - [ ] convert any bind elements in this overlap into markdown table
+    - [ ] actually replace javascript behavior with rust functions
+    - [ ] CI
+        - [ ] setup CI unit tests for rust
+        - [ ] setup rust coverage
+        - [ ] setup CI and merge coverage across rust and javascript
+            - [ ] maybe: https://github.com/mweibel/lcov-result-merger (research others)
+
 4. Move palette from quick pick to tree view
     - [ ] get a simple tree view working (just show one item)
     - [ ] get tree view to show palette items
