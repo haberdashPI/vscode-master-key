@@ -4,7 +4,6 @@ use crate::error::{Error, Result};
 
 use lazy_static::lazy_static;
 use regex::Regex;
-use serde::de::Unexpected;
 use serde::{Deserialize, Serialize};
 use serde_wasm_bindgen;
 use toml::Value;
@@ -55,7 +54,7 @@ trait Requiring<R> {
     fn require(self, name: &'static str) -> Result<R>;
 }
 
-#[derive(Default, Deserialize, PartialEq, Debug)]
+#[derive(Default, Deserialize, PartialEq, Debug, Clone)]
 #[serde(untagged)]
 enum Plural<T> {
     #[default]
@@ -64,12 +63,18 @@ enum Plural<T> {
     Many(Vec<T>),
 }
 
-impl<T> Merging for Plural<T> {
-    fn merge(self, new: Self) -> Self {
-        return match new {
-            Plural::Zero => self,
-            _ => new,
-        };
+impl<T: ForeachExpanding> ForeachExpanding for Plural<T> {
+    fn expand_foreach_value(&self, var: &str, value: &str) -> Self {
+        match self {
+            Plural::Zero => Plural::Zero,
+            Plural::One(x) => Plural::One(x.expand_foreach_value(var, value)),
+            Plural::Many(items) => Plural::Many(
+                items
+                    .iter()
+                    .map(|v| v.expand_foreach_value(var, value))
+                    .collect(),
+            ),
+        }
     }
 }
 
@@ -83,15 +88,26 @@ impl Plural<String> {
     }
 }
 
+impl<T: Clone> Plural<T> {
+    fn or(self, default: Plural<T>) -> Plural<T> {
+        return match self {
+            Plural::Zero => default,
+            _ => self,
+        };
+    }
+}
+
 // required values are only required at the very end of parsing, once all known defaults
 // have been resolved
-#[derive(Default, Deserialize, Serialize, PartialEq, Debug)]
+#[derive(Default, Deserialize, Serialize, PartialEq, Debug, Clone)]
 #[serde(untagged)]
 enum Required<T> {
     #[default]
     DefaultValue,
     Value(T),
 }
+
+impl<T> Required<T> {}
 
 impl<T> Requiring<T> for Required<T> {
     fn require(self, name: &'static str) -> Result<T> {
@@ -102,16 +118,64 @@ impl<T> Requiring<T> for Required<T> {
     }
 }
 
-impl<T: Merging> Merging for Required<T> {
-    fn merge(self, new: Self) -> Self {
+impl<T> Required<T> {
+    fn or(self, new: Self) -> Self {
         return match new {
             Required::Value(new_val) => match self {
-                Required::Value(old_val) => Required::Value(old_val.merge(new_val)),
                 Required::DefaultValue => Required::Value(new_val),
+                _ => self,
             },
             Required::DefaultValue => self,
         };
     }
+}
+
+impl<T: ForeachExpanding> ForeachExpanding for Required<T> {
+    fn expand_foreach_value(&self, var: &str, value: &str) -> Self {
+        return match self {
+            Required::DefaultValue => Required::DefaultValue,
+            Required::Value(x) => Required::Value(x.expand_foreach_value(var, value)),
+        };
+    }
+}
+
+impl ForeachExpanding for toml::map::Map<String, toml::Value> {
+    fn expand_foreach_value(&self, var: &str, value: &str) -> Self {
+        let mut result = toml::map::Map::new();
+        for (k, v) in self {
+            result[k] = v.expand_foreach_value(var, value);
+        }
+        return result;
+    }
+}
+
+impl ForeachExpanding for toml::Value {
+    fn expand_foreach_value(&self, var: &str, value: &str) -> Self {
+        match self {
+            Value::String(str) => Value::String(str.expand_foreach_value(var, value)),
+            Value::Array(items) => Value::Array(
+                items
+                    .iter()
+                    .map(|i| i.expand_foreach_value(var, value))
+                    .collect(),
+            ),
+            Value::Table(kv) => Value::Table(kv.expand_foreach_value(var, value)),
+            other => other.clone(),
+        }
+    }
+}
+
+impl<T: ForeachExpanding> ForeachExpanding for Option<T> {
+    fn expand_foreach_value(&self, var: &str, value: &str) -> Self {
+        return match self {
+            Some(v) => Some(v.expand_foreach_value(var, value)),
+            None => None,
+        };
+    }
+}
+
+trait ForeachExpanding {
+    fn expand_foreach_value(&self, var: &str, value: &str) -> Self;
 }
 
 fn default_mode() -> Plural<String> {
@@ -256,7 +320,7 @@ fn valid_key_binding_str(str: &str) -> bool {
  * a `*`.
  *
  */
-#[derive(Deserialize, Validate)]
+#[derive(Deserialize, Validate, Clone)]
 pub struct CommandInput {
     /**
      * @forBindingField bind
@@ -483,25 +547,36 @@ impl Merging for String {
     }
 }
 
-impl Merging for i64 {
-    fn merge(self, _: Self) -> Self {
-        return self;
-    }
-}
-
-impl Merging for bool {
-    fn merge(self, _: Self) -> Self {
-        return self;
+impl ForeachExpanding for String {
+    fn expand_foreach_value(&self, var: &str, value: &str) -> Self {
+        return self.replace(&format!("{}{var}{}", "{{", "}}"), value);
     }
 }
 
 impl Merging for toml::Value {
     fn merge(self, new: Self) -> Self {
         match new {
-            Value::Array(mut new_values) => match self {
-                Value::Array(mut old_values) => {
-                    old_values.append(&mut new_values);
-                    Value::Array(old_values)
+            Value::Array(new_values) => match self {
+                Value::Array(old_values) => {
+                    let mut result = Vec::with_capacity(new_values.len().max(old_values.len()));
+                    let mut new_iter = new_values.iter();
+                    let mut old_iter = old_values.iter();
+                    loop {
+                        let new_item = new_iter.next();
+                        let old_item = old_iter.next();
+                        if let Some(new_val) = new_item {
+                            if let Some(old_val) = old_item {
+                                result.push(old_val.clone().merge(new_val.clone()));
+                            } else {
+                                result.push(new_val.clone());
+                            }
+                        } else if let Some(old_val) = old_item {
+                            result.push(old_val.clone());
+                        } else {
+                            break;
+                        }
+                    }
+                    Value::Array(result)
                 }
                 _ => Value::Array(new_values),
             },
@@ -528,38 +603,34 @@ impl<T> Requiring<Option<T>> for Option<T> {
     }
 }
 
-// TODO: before I finish implementing this, make sure I can
-// read in the TOML table values to a javascript
 impl Merging for CommandInput {
     fn merge(self, y: Self) -> Self {
         CommandInput {
-            command: self.command.merge(y.command),
+            command: y.command.or(self.command),
             args: self.args.merge(y.args),
             computedArgs: self.computedArgs.merge(y.computedArgs),
-            key: self.key.merge(y.key),
-            when: self.when.merge(y.when),
-            mode: self.mode.merge(y.mode),
-            priority: self.priority.merge(y.priority),
-            defaults: self.defaults.merge(y.defaults),
-            foreach: self.foreach.merge(y.foreach),
-            prefixes: self.prefixes.merge(y.prefixes),
-            finalKey: self.finalKey.merge(y.finalKey),
-            computedRepeat: self.computedRepeat.merge(y.computedRepeat),
-            name: self.name.merge(y.name),
-            description: self.description.merge(y.description),
-            hideInPalette: self.hideInPalette.merge(y.hideInPalette),
-            hideInDocs: self.hideInDocs.merge(y.hideInDocs),
-            combinedName: self.combinedName.merge(y.combinedName),
-            combinedKey: self.combinedKey.merge(y.combinedKey),
-            combinedDescription: self.combinedDescription.merge(y.combinedDescription),
-            kind: self.kind.merge(y.kind),
-            whenComputed: self.whenComputed.merge(y.whenComputed),
+            key: y.key.or(self.key),
+            when: y.when.or(self.when),
+            mode: y.mode.or(self.mode),
+            priority: y.priority.or(self.priority),
+            defaults: y.defaults.or(self.defaults),
+            foreach: self.foreach,
+            prefixes: y.prefixes.or(self.prefixes),
+            finalKey: y.finalKey.or(self.finalKey),
+            computedRepeat: y.computedRepeat.or(self.computedRepeat),
+            name: y.name.or(self.name),
+            description: y.description.or(self.description),
+            hideInPalette: y.hideInPalette.or(self.hideInPalette),
+            hideInDocs: y.hideInDocs.or(self.hideInDocs),
+            combinedName: y.combinedName.or(self.combinedName),
+            combinedKey: y.combinedKey.or(self.combinedKey),
+            combinedDescription: y.combinedDescription.or(self.combinedDescription),
+            kind: y.kind.or(self.kind),
+            whenComputed: y.whenComputed.or(self.whenComputed),
         }
     }
 }
 
-// TODO: do the Table objects get properly understand as basic JS objects
-// or do we have to convert them here to JsObjects?
 #[wasm_bindgen(getter_with_clone)]
 #[allow(non_snake_case)]
 pub struct Command {
@@ -586,6 +657,81 @@ pub struct Command {
 }
 
 // TODO: convert errors to my own error type for Validation and serde_wasm_bindgen error
+
+impl CommandInput {
+    fn has_foreach(&self) -> bool {
+        if let Some(foreach) = &self.foreach {
+            return foreach.len() > 0;
+        }
+        return false;
+    }
+
+    fn expand_foreach(&mut self) -> Result<Vec<CommandInput>> {
+        let mut result = vec![];
+        while self.has_foreach() {
+            result = self.expand_foreach_once(&result)?;
+        }
+        return Ok(result);
+    }
+
+    fn expand_foreach_once(&mut self, inputs: &Vec<CommandInput>) -> Result<Vec<CommandInput>> {
+        let foreach = match &self.foreach {
+            Some(foreach) => foreach,
+            None => &toml::map::Map::new(),
+        };
+        let mut final_foreach = foreach.clone();
+        let mut iter = foreach.iter();
+        let first = iter.next();
+        if let Some(item) = first {
+            let (var, values) = item;
+            final_foreach.remove(var);
+
+            if let Value::Array(items) = values {
+                let mut result = Vec::with_capacity(inputs.len() * items.len());
+                for input in inputs {
+                    for value in items {
+                        let str = format!("{}", value);
+                        result.push(input.expand_foreach_value(var, &str));
+                    }
+                }
+                self.foreach = Some(final_foreach);
+                return Ok(result);
+            } else {
+                return Err(Error::Unexpected(
+                    "`foreach` was expected to be a key of arrays.`",
+                ));
+            }
+        } else {
+            return Ok(vec![]);
+        }
+    }
+
+    fn expand_foreach_value(&self, var: &str, value: &str) -> Self {
+        return CommandInput {
+            command: self.command.expand_foreach_value(var, value),
+            args: self.args.expand_foreach_value(var, value),
+            computedArgs: self.computedArgs.expand_foreach_value(var, value),
+            key: self.key.expand_foreach_value(var, value),
+            when: self.when.expand_foreach_value(var, value),
+            mode: self.mode.expand_foreach_value(var, value),
+            priority: self.priority,
+            defaults: self.defaults.expand_foreach_value(var, value),
+            prefixes: self.prefixes.expand_foreach_value(var, value),
+            finalKey: self.finalKey,
+            computedRepeat: self.computedRepeat.expand_foreach_value(var, value),
+            foreach: None,
+            name: self.name.expand_foreach_value(var, value),
+            description: self.description.expand_foreach_value(var, value),
+            hideInPalette: self.hideInPalette,
+            hideInDocs: self.hideInDocs,
+            combinedName: self.combinedName.expand_foreach_value(var, value),
+            combinedKey: self.combinedKey.expand_foreach_value(var, value),
+            combinedDescription: self.combinedDescription.expand_foreach_value(var, value),
+            kind: self.kind.expand_foreach_value(var, value),
+            whenComputed: self.whenComputed.expand_foreach_value(var, value),
+        };
+    }
+}
 
 // TODO: think about whether I want to represent commands as a sequence in the output...
 impl Command {
@@ -687,7 +833,9 @@ mod tests {
     }
 
     // TODO: can handle defaults
+    // TODO: can merge from defaults
     // TODO: errors on missing required fields
+    // TODO: can expand foreach
     // TODO: doesn't error on missing non-required fields
     //
 }
