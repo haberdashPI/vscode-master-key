@@ -68,10 +68,15 @@ Integration test debugging:
     a. in this early phase, we don't worry too much about providing detailed error messages
        (if there are easy things to do here we can do them, but no UX work, etc...)
     - [ ] start by implementing parsing of `[[bind]]`
-        - [x] basic parsing
-        - [~] merging defaults (unit tests remain)
+        - [X] basic parsing
+        - [X] merging defaults (unit tests remain)
         - [~] foreach expansion (unit tests remain)
-        - [ ] refactor code
+        - [X] refactor code
+        - [ ] initial coverage output
+            - https://crates.io/crates/cargo-tarpaulin
+            - or look at https://doc.rust-lang.org/rustc/instrument-coverage.html and use
+            nightly tool-chain with
+                - rustup toolchain install nightly
         - [ ] validation that `master-key.prefix` uses `finalKey`
         - [ ] properly identify spans: both `[[bind]]` header and entire `[[bind]]` region
             - [ ] validate by checking error reporting

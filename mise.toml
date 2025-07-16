@@ -1,14 +1,16 @@
 [tools]
-"cargo:wasm-pack" = "0.13.1"
 node = "20"
-"npm:pnpm" = "10.12.4"
 "npm:typescript" = "5.8.3"
 "npm:vsce" = "2.15"
-rust = { version = "1.88", targets = "wasm32-unknown-unknown" }
-watchexec = "2.3.2"
-"ubi:haberdashpi/simple-src-docs" = "0.6.0"
 "npm:c8" = "latest"
 "npm:http-server" = "14.1.1"
+"npm:pnpm" = "10.13.1"
+"ubi:haberdashpi/simple-src-docs" = "0.6.0"
+watchexec = "2.3.2"
+rust = { version = "1.88", targets = "wasm32-unknown-unknown", component = "lvm-tools" }
+"cargo:wasm-pack" = "0.13.1"
+"cargo:cargo-binutils" = "0.3.6"
+"cargo:rustfilt" = "0.2.1"
 
 [hooks]
 postinstall = ['pnpm install --frozen-lockfile', 'pnpm exec playwright install chromium']
@@ -31,6 +33,36 @@ run = [
 [tasks.test-rust]
 dir = 'src/rust/parsing'
 run = 'cargo test'
+
+# TODO: split out coverage tasks
+# TODO: use the following code to handle specifying the object
+# $ llvm-cov report \
+#     $( \
+#       for file in \
+#         $( \
+#           RUSTFLAGS="-C instrument-coverage" \
+#             cargo test --tests --no-run --message-format=json \
+#               | jq -r "select(.profile.test == true) | .filenames[]" \
+#               | grep -v dSYM - \
+#         ); \
+#       do \
+#         printf "%s %s " -object $file; \
+#       done \
+#     ) \
+#   --instr-profile=json5format.profdata --summary-only # and/or other options
+
+# TODO: generate an lcov report I can merge with the other coverage output
+[tasks.coverage-rust]
+dir = 'src/rust/parsing'
+run = [
+    'RUSTFLAGS="-C instrument-coverage" cargo test --tests',
+    'cargo profdata -- merge -sparse default_*.profraw -o parsing.profraw',
+    '''
+    cargo cov -- report --use-color --ignore-filename-regex='/.cargo/registry' \
+        --ignore-filename-regex='.rustup/toolchains' \
+        --instr-profile=parsing.profraw --object target/debug/deps/parsing-af68333d2940d566
+    ''',
+]
 
 [tasks.build]
 depends = ['check-types', 'lint', 'build-rust']
