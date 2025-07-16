@@ -516,11 +516,13 @@ mod tests {
         name = "default"
         command = "cursorMove"
         computedArgs.value = "count"
+        prefixes = ["a"]
 
         [[bind]]
         key = "l"
         name = "←"
         args.to = "left"
+        prefixes = ["b", "c"]
         "#;
 
         let result = toml::from_str::<HashMap<String, Vec<CommandInput>>>(data).unwrap();
@@ -542,6 +544,7 @@ mod tests {
                 .unwrap(),
             "count"
         );
+        assert_eq!(left.prefixes, Plural::Many(vec!["b".into(), "c".into()]));
 
         assert_eq!(left.when, Plural::Zero);
         assert_eq!(left.combinedDescription, None);
@@ -575,12 +578,86 @@ mod tests {
 
         assert_eq!(left.args, expected.args);
     }
-    // TODO: test more elaborate merging scenarios
-    // (proper overlaoding of lists
-    // of when clauses, array of arguments that get properly merged)
 
-    // TODO: errors on missing required fields
-    // TODO: can expand foreach
+    #[test]
+    fn merge_nested_array_arguments() {
+        let data = r#"
+            [[bind]]
+            name = "default"
+            command = "runCommands"
+
+            [[bind.args.commands]]
+            command = "step1"
+            args.b = "bar"
+
+            [[bind.args.commands]]
+            command = "step2"
+            args.x = "biz"
+
+            [[bind]]
+            name = "run"
+            key = "x"
+            command = "runCommands"
+
+            [[bind.args.commands]]
+            command = "step1"
+            args.a = "foo"
+
+            [[bind.args.commands]]
+            command = "step2"
+            args.y = "fiz"
+
+
+            [[bind]]
+            name = "run_merged"
+            key = "x"
+            command = "runCommands"
+
+            [[bind.args.commands]]
+            command = "step1"
+            args = {a = "foo", b = "bar"}
+
+            [[bind.args.commands]]
+            command = "step2"
+            args = {x = "biz", y = "fiz"}
+        "#;
+
+        let result = toml::from_str::<HashMap<String, Vec<CommandInput>>>(data).unwrap();
+        let default = result.get("bind").unwrap()[0].clone();
+        let left = result.get("bind").unwrap()[1].clone();
+        let expected = result.get("bind").unwrap()[2].clone();
+        let left = default.merge(left);
+
+        assert_eq!(left.args, expected.args);
+    }
+
+    // #[test]
+    // fn expands_foreach() {
+    //     let data = r#"
+    //         foreach.a = [1, 2]
+    //         foreach.b = ["x", "y"]
+    //         name = "test {{a}}-{{b}}"
+    //         command = "run-{{a}}"
+    //         args.value = "with-{{b}}"
+    //     "#;
+
+    //     let mut result = toml::from_str::<CommandInput>(data).unwrap();
+    //     let items = result.expand_foreach().unwrap();
+
+    //     let expected_command = vec!["run-1", "run-1", "run-2", "run-2"];
+    //     let expected_value = vec!["with-x", "with-y", "witih-x", "with-y"];
+    //     let expected_name = vec!["test 1-x", "test 1-y", "test 2-x", "test 2-y"];
+
+    //     for i in 0..4 {
+    //         let item = items[i].clone();
+    //         assert_eq!(item.command.unwrap().as_str(), expected_command[i]);
+    //         assert_eq!(item.name.unwrap().as_str(), expected_name[i]);
+    //         assert_eq!(
+    //             item.args.unwrap().get("value").unwrap().as_str().unwrap(),
+    //             expected_value[i]
+    //         );
+    //     }
+    // }
 }
 
 // TODO: define the "output" type for `Command` that can actually be passed to javascript
