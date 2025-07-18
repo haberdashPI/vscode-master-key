@@ -11,6 +11,7 @@ node_modules
 coverage/**
 coverage.json
 *.profraw
+*.lcov
 
 # unit testing
 test/temp/**

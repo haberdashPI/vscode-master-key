@@ -72,7 +72,7 @@ Integration test debugging:
         - [X] merging defaults (unit tests remain)
         - [~] foreach expansion (unit tests remain)
         - [X] refactor code
-        - [ ] initial coverage output
+        - [x] initial coverage output
             - https://crates.io/crates/cargo-tarpaulin
             - or look at https://doc.rust-lang.org/rustc/instrument-coverage.html and use
             nightly tool-chain with
@@ -100,10 +100,10 @@ Integration test debugging:
             - [ ] convert any bind elements in this overlap into markdown table
     - [ ] actually replace javascript behavior with rust functions
     - [ ] CI
-        - [ ] setup CI unit tests for rust
-        - [ ] setup rust coverage
-        - [ ] setup CI and merge coverage across rust and javascript
-            - [ ] maybe: https://github.com/mweibel/lcov-result-merger (research others)
+        - [x] setup CI unit tests for rust
+        - [x] setup rust coverage
+        - [x] setup CI and merge coverage across rust and javascript
+        - [ ] verify that CI is running and coverage is showing up
 
 4. Move palette from quick pick to tree view
     - [ ] get a simple tree view working (just show one item)

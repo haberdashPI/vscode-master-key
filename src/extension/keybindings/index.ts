@@ -686,7 +686,6 @@ export async function activate(context: vscode.ExtensionContext) {
                 mode: ${parsing.mode}
                 priority: ${parsing.priority}
                 defaults: ${parsing.defaults}
-                foreach: ${JSON.stringify(parsing.foreach, null, 2)}
                 prefixes: ${parsing.prefixes}
                 finalKey: ${parsing.finalKey}
                 computedRepeat: ${parsing.computedRepeat}
