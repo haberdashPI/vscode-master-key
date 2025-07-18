@@ -37,19 +37,14 @@ run = [
 ]
 
 [vars]
-coverage_options = '''--ignore-filename-regex '/.cargo/registry'
-    --ignore-filename-regex '.rustup/toolchains'
-    --ignore-filename-regex 'rustc/'
-    --compilation-dir src/rust/parsing
-    --instr-profile coverage/parsing.profdata
-    --Xdemangler rustfilt'''
+coverage_options = '''--ignore-filename-regex '/.cargo/registry' --ignore-filename-regex '.rustup/toolchains' --ignore-filename-regex 'rustc/' --compilation-dir src/rust/parsing --instr-profile coverage/parsing.profdata --Xdemangler rustfilt'''
 
 # TODO: generate an lcov report I can merge with the other coverage output
 [tasks.test-rust]
 dir = 'src/rust/parsing'
 shell = 'nu -c'
 run = '''
-if ($env.COVERAGE? | into bool) {
+if ($env.COVERAGE? | default false | into bool) {
     $env.RUSTFLAGS = '-C instrument-coverage'
     $env.LLVM_PROFILE_FILE = 'coverage/parsing.profraw'
 

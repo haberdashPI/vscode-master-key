@@ -70,14 +70,18 @@ Integration test debugging:
     - [ ] start by implementing parsing of `[[bind]]`
         - [X] basic parsing
         - [X] merging defaults (unit tests remain)
-        - [~] foreach expansion (unit tests remain)
         - [X] refactor code
-        - [x] initial coverage output
+        - [X] initial coverage output
             - https://crates.io/crates/cargo-tarpaulin
             - or look at https://doc.rust-lang.org/rustc/instrument-coverage.html and use
             nightly tool-chain with
-                - rustup toolchain install nightly
-        - [ ] validation that `master-key.prefix` uses `finalKey`
+                - [X] rustup toolchain install nightly
+        - [X] foreach expansion (unit tests remain)
+        - [ ] use DeTable instead of Table so we can generate more precise errors
+        - [ ] validation that `master-key.prefix` uses `finalKey: false`
+        - [ ] expand keys in `foreach`
+        - [ ] validation that keybindings with non modifier keybindings
+              have a condition requiring textEditorFocus
         - [ ] properly identify spans: both `[[bind]]` header and entire `[[bind]]` region
             - [ ] validate by checking error reporting
               NOTE: short term goal here is to support literate docs

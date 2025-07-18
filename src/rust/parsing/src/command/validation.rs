@@ -1,4 +1,4 @@
-use crate::util::Required;
+use crate::{command::CommandInput, util::Required};
 use lazy_static::lazy_static;
 use regex::Regex;
 use toml::Value;

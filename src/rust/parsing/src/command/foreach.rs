@@ -1,3 +1,6 @@
+#[allow(unused_imports)]
+use log::info;
+
 use crate::util::{Plural, Required};
 use toml::Value;
 
@@ -33,7 +36,7 @@ impl ForeachExpanding for toml::map::Map<String, toml::Value> {
     fn expand_foreach_value(&self, var: &str, value: &str) -> Self {
         let mut result = toml::map::Map::new();
         for (k, v) in self {
-            result[k] = v.expand_foreach_value(var, value);
+            result.insert(k.clone(), v.expand_foreach_value(var, value));
         }
         return result;
     }
@@ -67,5 +70,18 @@ impl<T: ForeachExpanding> ForeachExpanding for Option<T> {
 impl ForeachExpanding for String {
     fn expand_foreach_value(&self, var: &str, value: &str) -> Self {
         return self.replace(&format!("{}{var}{}", "{{", "}}"), value);
+    }
+}
+
+pub trait ForeachInterpolated {
+    fn foreach_interpolation(&self) -> String;
+}
+
+impl ForeachInterpolated for Value {
+    fn foreach_interpolation(&self) -> String {
+        match self {
+            Value::String(str) => str.clone(),
+            _ => format!("{}", self),
+        }
     }
 }

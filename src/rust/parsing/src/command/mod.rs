@@ -1,13 +1,15 @@
 #![allow(non_snake_case)]
 
+mod constraints;
 mod foreach;
 mod validation;
 
-use crate::command::foreach::ForeachExpanding;
+use crate::command::foreach::{ForeachExpanding, ForeachInterpolated};
 use crate::command::validation::{valid_json_array_object, valid_json_object, valid_key_binding};
 use crate::error::{Error, Result};
 use crate::util::{Merging, Plural, Required, Requiring};
 
+#[allow(unused_imports)]
 use log::info;
 use serde::{Deserialize, Serialize};
 use serde_wasm_bindgen;
@@ -47,7 +49,7 @@ fn default_mode() -> Plural<String> {
  * a `*`.
  *
  */
-#[derive(Deserialize, Validate, Clone)]
+#[derive(Deserialize, Validate, Clone, Debug)]
 pub struct CommandInput {
     /**
      * @forBindingField bind
@@ -161,7 +163,7 @@ pub struct CommandInput {
      *   [`master-key.prefix`](/commands/prefix) for details.
      */
     #[serde(default)]
-    finalKey: Option<bool>,
+    finalKey: DefaultTrue<bool>,
 
     /**
      * @forBindingField bind
@@ -320,7 +322,7 @@ impl CommandInput {
     }
 
     fn expand_foreach(&mut self) -> Result<Vec<CommandInput>> {
-        let mut result = vec![];
+        let mut result = vec![self.clone()];
         while self.has_foreach() {
             result = self.expand_foreach_once(&result)?;
         }
@@ -343,7 +345,7 @@ impl CommandInput {
                 let mut result = Vec::with_capacity(inputs.len() * items.len());
                 for input in inputs {
                     for value in items {
-                        let str = format!("{}", value);
+                        let str = value.foreach_interpolation();
                         result.push(input.expand_foreach_value(var, &str));
                     }
                 }
@@ -631,33 +633,39 @@ mod tests {
         assert_eq!(left.args, expected.args);
     }
 
-    // #[test]
-    // fn expands_foreach() {
-    //     let data = r#"
-    //         foreach.a = [1, 2]
-    //         foreach.b = ["x", "y"]
-    //         name = "test {{a}}-{{b}}"
-    //         command = "run-{{a}}"
-    //         args.value = "with-{{b}}"
-    //     "#;
+    #[test]
+    fn expands_foreach() {
+        let data = r#"
+            foreach.a = [1, 2]
+            foreach.b = ["x", "y"]
+            name = "test {{a}}-{{b}}"
+            command = "run-{{a}}"
+            args.value = "with-{{b}}"
+        "#;
 
-    //     let mut result = toml::from_str::<CommandInput>(data).unwrap();
-    //     let items = result.expand_foreach().unwrap();
+        let mut result = toml::from_str::<CommandInput>(data).unwrap();
+        let items = result.expand_foreach().unwrap();
 
-    //     let expected_command = vec!["run-1", "run-1", "run-2", "run-2"];
-    //     let expected_value = vec!["with-x", "with-y", "witih-x", "with-y"];
-    //     let expected_name = vec!["test 1-x", "test 1-y", "test 2-x", "test 2-y"];
+        let expected_command = vec!["run-1", "run-1", "run-2", "run-2"];
+        let expected_value = vec!["with-x", "with-y", "with-x", "with-y"];
+        let expected_name = vec!["test 1-x", "test 1-y", "test 2-x", "test 2-y"];
 
-    //     for i in 0..4 {
-    //         let item = items[i].clone();
-    //         assert_eq!(item.command.unwrap().as_str(), expected_command[i]);
-    //         assert_eq!(item.name.unwrap().as_str(), expected_name[i]);
-    //         assert_eq!(
-    //             item.args.unwrap().get("value").unwrap().as_str().unwrap(),
-    //             expected_value[i]
-    //         );
-    //     }
-    // }
+        for i in 0..4 {
+            let item = items[i].clone();
+            assert_eq!(item.command.unwrap().as_str(), expected_command[i]);
+            assert_eq!(item.name.unwrap().as_str(), expected_name[i]);
+            assert_eq!(
+                item.args.unwrap().get("value").unwrap().as_str().unwrap(),
+                expected_value[i]
+            );
+        }
+    }
+
+    // TODO: are there any edge cases / failure modes I want to look at in the tests
+    // (most of the things seem likely to be covered by serde / toml parsing, and the
+    // stuff I would want to check should be done at a higher level when I'm working
+    // through default resolution across multiple commands rather than the within
+    // command tests I'm working on here)
 }
 
 // TODO: define the "output" type for `Command` that can actually be passed to javascript
