@@ -62,11 +62,53 @@ Integration test debugging:
 2. eliminate/cleanup functionality I don't have good coverage for
     - [X] eliminate elaborate loading UI
     - [X] don't auto load documentation
-    - [ ] don't automatically offer to install extensions
-    - [ ] add buttons to info message to show documentation
+    - [X] don't automatically offer to install extensions
+    - [X] add buttons to info message to show documentation
 3. Refactor parsing to rust
     a. in this early phase, we don't worry too much about providing detailed error messages
        (if there are easy things to do here we can do them, but no UX work, etc...)
+    - [ ] start by implementing parsing of `[[bind]]`
+        - [X] basic parsing
+        - [X] merging defaults (unit tests remain)
+        - [X] refactor code
+        - [X] initial coverage output
+            - https://crates.io/crates/cargo-tarpaulin
+            - or look at https://doc.rust-lang.org/rustc/instrument-coverage.html and use
+            nightly tool-chain with
+                - [X] rustup toolchain install nightly
+        - [X] foreach expansion (unit tests remain)
+        - [ ] use DeTable instead of Table so we can generate more precise errors
+        - [ ] validation that `master-key.prefix` uses `finalKey: false`
+        - [ ] expand keys in `foreach`
+        - [ ] validation that keybindings with non modifier keybindings
+              have a condition requiring textEditorFocus
+        - [ ] properly identify spans: both `[[bind]]` header and entire `[[bind]]` region
+            - [ ] validate by checking error reporting
+              NOTE: short term goal here is to support literate docs
+    - [ ] pipeline for `[[bind]]` entries
+        - [ ] basic pipeline
+        - [ ] proper parsing with `[[default]]` and `defaults`
+        - [ ] mode expansion
+        - [ ] documentation expandsion/validation across all `[[bind]]` values
+              with the same key and mode
+        - [ ] key-sequence expansion and duplicate resolution
+        - [ ] proper parsing and expansion of `[[define]]` sections
+    - [ ] proper conversion to keybindings.json command
+        - [ ] expand prefixes to prefixCode and move to when clause
+        - [ ] move mode to when clause
+    - [ ] extraction of markdown docs
+        - [ ] extract all comment regions (exclude `#-`)
+        - [ ] replace `[[bind]]` regions:
+            - [ ] identify each non-comment region, and look for parsed elements
+                  whose span overlaps
+            - [ ] convert any bind elements in this overlap into markdown table
+    - [ ] actually replace javascript behavior with rust functions
+    - [ ] CI
+        - [x] setup CI unit tests for rust
+        - [x] setup rust coverage
+        - [x] setup CI and merge coverage across rust and javascript
+        - [ ] verify that CI is running and coverage is showing up
+
 4. Move palette from quick pick to tree view
     - [ ] get a simple tree view working (just show one item)
     - [ ] get tree view to show palette items
