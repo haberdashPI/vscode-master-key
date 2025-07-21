@@ -88,7 +88,7 @@ run = 'tsc -p src/test --outDir out/test'
 depends = ['build-tests']
 shell = 'nu -c'
 run = '''
-if ($env.COVERAGE? | into bool) {
+if ($env.COVERAGE? | default false | into bool) {
     (pnpm exec vscode-test --config .vscode-test.mjs --extensionDevelopmentPath .
         --version insiders --coverage --coverage-output coverage/unit
         --coverage-reporter json)

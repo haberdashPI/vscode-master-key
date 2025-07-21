@@ -2,35 +2,38 @@
 // keybinding file has already been fully parsed
 
 use crate::command::CommandInput;
-use crate::error::{ConstrainArray, Constrainable, ConstraintString, Error, Result};
+use crate::error::{Error, Result, constrain};
 use crate::util::Requiring;
 
-fn prefix_is_not_final_key(val: &CommandInput) -> Result<()> {
-    if val.finalKey.unwrap_or(|| true) {
-        let command = val.command.require("command")?;
+// TODO: change this and test it *after* writing the other bits of the pipeline
+pub fn prefix_is_not_final_key(val: &CommandInput) -> Result<()> {
+    if val.finalKey.unwrap_or(true) {
+        let command = val.command.clone().require("command")?;
         if command == "master-key.prefix" {
-            return Err(Error::ConstraintError(
-                "`mater-key.prefix` commands to include `finalKey = false` in their bindings",
-            ));
+            return constrain("`finalKey == false` when calling command `mater-key.prefix`");
         } else if command == "runCommands" {
             let commands = val
                 .args
-                .constrain("`runCommands` to have `args` field")?
-                .get("commands")
-                .constrain("`runCommands.args` to have `commands` field")?
-                .constrain_array("`commands` to be an array")?;
+                .as_ref()
+                .map(|x| x.get("commands"))
+                .flatten()
+                .map(|x| x.as_array())
+                .unwrap_or_default();
 
-            for command in commands {
+            for command in commands.into_iter().flatten() {
                 let command_name = command
                     .get("command")
-                    .constrain("`command` field in `args.commands` of `runCommands`")?
-                    .constrain_string("`command` field to be a string")?;
+                    // while there are other valid forms for `args.commands` to take they
+                    // can all be normalized (before this function call) to take on this
+                    // format
+                    .expect("`runCommands` `args.commands` elements to have `command` field")
+                    .as_str()
+                    .unwrap_or_default();
 
                 if command_name == "master-key.prefix" {
-                    return Err(Error::ConstraintError(
-                        "`mater-key.prefix` commands to include `finalKey = \
-                                    false` in their bindings",
-                    ));
+                    return constrain(
+                        "`finalKey == false` when calling command `mater-key.prefix`",
+                    );
                 }
             }
         }

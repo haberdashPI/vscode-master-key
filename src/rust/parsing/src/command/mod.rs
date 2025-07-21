@@ -4,9 +4,9 @@ mod constraints;
 mod foreach;
 mod validation;
 
-use crate::command::foreach::{ForeachExpanding, ForeachInterpolated};
+use crate::command::foreach::{ForeachExpanding, ForeachInterpolated, expand_keys};
 use crate::command::validation::{valid_json_array_object, valid_json_object, valid_key_binding};
-use crate::error::{Error, Result};
+use crate::error::{Error, Result, unexpected};
 use crate::util::{Merging, Plural, Required, Requiring};
 
 #[allow(unused_imports)]
@@ -163,7 +163,7 @@ pub struct CommandInput {
      *   [`master-key.prefix`](/commands/prefix) for details.
      */
     #[serde(default)]
-    finalKey: DefaultTrue<bool>,
+    finalKey: Option<bool>,
 
     /**
      * @forBindingField bind
@@ -258,7 +258,7 @@ pub struct CommandInput {
     whenComputed: Option<String>,
 }
 
-impl Merging for CommandInput {
+impl<'a> Merging for CommandInput {
     fn merge(self, y: Self) -> Self {
         CommandInput {
             command: y.command.or(self.command),
@@ -342,9 +342,12 @@ impl CommandInput {
             final_foreach.remove(var);
 
             if let Value::Array(items) = values {
-                let mut result = Vec::with_capacity(inputs.len() * items.len());
+                info!("{items:?}");
+                let expanded_items = expand_keys(items)?;
+                info!("{expanded_items:?}");
+                let mut result = Vec::with_capacity(inputs.len() * expanded_items.len());
                 for input in inputs {
-                    for value in items {
+                    for value in &expanded_items {
                         let str = value.foreach_interpolation();
                         result.push(input.expand_foreach_value(var, &str));
                     }
@@ -352,9 +355,7 @@ impl CommandInput {
                 self.foreach = Some(final_foreach);
                 return Ok(result);
             } else {
-                return Err(Error::Unexpected(
-                    "`foreach` was expected to be a key of arrays.`",
-                ));
+                return unexpected("`foreach` was not an object of arrays");
             }
         } else {
             return Ok(vec![]);
@@ -392,7 +393,7 @@ impl CommandInput {
 impl Command {
     pub fn new(input: CommandInput) -> Result<Self> {
         if let Some(_) = input.foreach {
-            return Err(Error::Unexpected("`foreach` remains unresolved"));
+            return unexpected("`foreach` with unresolved variables");
         }
         let to_json = serde_wasm_bindgen::Serializer::json_compatible();
         return Ok(Command {
@@ -658,6 +659,39 @@ mod tests {
                 item.args.unwrap().get("value").unwrap().as_str().unwrap(),
                 expected_value[i]
             );
+        }
+    }
+
+    #[test]
+    fn expand_foreach_keys() {
+        let data = r#"
+            foreach.key = ["{{key: [0-9}}"]
+            name = "update {{key}}"
+            command = "foo"
+            args.value = "{{key}}"
+        "#;
+
+        let mut result = toml::from_str::<CommandInput>(data).unwrap();
+        let items = result.expand_foreach().unwrap();
+
+        let expected_name: Vec<String> =
+            (0..9).into_iter().map(|n| format!("update {n}")).collect();
+        let expected_value: Vec<String> = (0..9).into_iter().map(|n| format!("{}", n)).collect();
+
+        assert_eq!(items.len(), 10);
+        for i in 0..9 {
+            assert_eq!(items[i].name.as_ref().unwrap(), &expected_name[i]);
+            assert_eq!(
+                items[i]
+                    .args
+                    .as_ref()
+                    .unwrap()
+                    .get("value")
+                    .unwrap()
+                    .as_str()
+                    .unwrap(),
+                expected_value[i]
+            )
         }
     }
 

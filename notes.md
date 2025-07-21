@@ -77,17 +77,21 @@ Integration test debugging:
             nightly tool-chain with
                 - [X] rustup toolchain install nightly
         - [X] foreach expansion (unit tests remain)
-        - [ ] use DeTable instead of Table so we can generate more precise errors
-        - [ ] validation that `master-key.prefix` uses `finalKey: false`
-        - [ ] expand keys in `foreach`
-        - [ ] validation that keybindings with non modifier keybindings
-              have a condition requiring textEditorFocus
+        - [X] expand keys in `foreach` lists
         - [ ] properly identify spans: both `[[bind]]` header and entire `[[bind]]` region
             - [ ] validate by checking error reporting
               NOTE: short term goal here is to support literate docs
     - [ ] pipeline for `[[bind]]` entries
         - [ ] basic pipeline
         - [ ] proper parsing with `[[default]]` and `defaults`
+        - [ ] foreach expansion
+        - [ ] command normalization (always `runCommand` with an array of objects with `command` field)
+        - [ ] check constraints
+            - [ ] validation that `master-key.prefix` uses `finalKey: false`
+            - [ ] validation that keybindings with non modifier keybindings
+              have a condition requiring textEditorFocus
+            - [ ] modes are all positive or negative
+            - [ ] required keys are present
         - [ ] mode expansion
         - [ ] documentation expandsion/validation across all `[[bind]]` values
               with the same key and mode
@@ -136,6 +140,12 @@ Integration test debugging:
 8. Migration of selection utilities to the same build and test setup
 9. Generate detailed error reports for keybinding files and get them to show
    up in VSCode's problem window / linting underlines
+    - [ ] we need to let TOML language server know about the schema...
+        - [ ] https://github.com/GREsau/schemars to export schema
+        - [ ] insert '$schema' key into file
+    - [ ] use `document.positionAt` to convert spans byte offsets to char and line
+    - [ ] https://code.visualstudio.com/api/references/vscode-api#languages
+        look for `createDiagnosticsCollection` to create new linting hints
 10. Translate selection utility tests to new build setup
 11. Get CI working for all tests in selection utilities
 12. continue the quest for better test coverage

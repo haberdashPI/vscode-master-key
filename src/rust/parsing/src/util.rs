@@ -45,7 +45,7 @@ pub enum Required<T> {
 impl<T> Requiring<T> for Required<T> {
     fn require(self, name: &'static str) -> Result<T> {
         return match self {
-            Required::DefaultValue => Err(Error::RequiredField(name)),
+            Required::DefaultValue => Err(Error::RequiredField(name).into()),
             Required::Value(val) => Ok(val),
         };
     }
