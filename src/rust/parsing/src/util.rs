@@ -1,34 +1,114 @@
-use crate::error::{Error, Result};
+use crate::{
+    bind::UNKNOWN_RANGE,
+    error::{Error, ErrorContext, Result},
+};
 
 use log::info;
 use serde::{Deserialize, Serialize};
-use toml::Value;
+use toml::{Spanned, Value};
 
 pub trait Merging {
     fn merge(self, new: Self) -> Self;
+    fn coalesce(self, new: Self) -> Self;
 }
+pub trait Resolving<R> {
+    fn resolve(self, name: &'static str) -> Result<R>;
+}
+
 pub trait Requiring<R> {
     fn require(self, name: &'static str) -> Result<R>;
 }
 
 // TODO: is there any way to avoid so much copying here
 impl Merging for toml::Table {
-    fn merge(self, new: Self) -> Self {
-        let mut result = new.clone();
+    fn merge(self, mut new: Self) -> Self {
         for (k, v) in self {
             if new.contains_key(&k) {
-                result[&k] = v.merge(result[&k].clone());
+                new[&k] = v.merge(new[&k].clone());
             } else {
-                result.insert(k, v);
+                new.insert(k, v);
             }
         }
-        return result;
+        return new;
+    }
+    fn coalesce(self, new: Self) -> Self {
+        return new;
     }
 }
 
-impl<T> Requiring<Option<T>> for Option<T> {
-    fn require(self, _: &str) -> Result<Self> {
+impl<T: Merging> Merging for Spanned<T> {
+    fn merge(self, new: Self) -> Self {
+        return Spanned::new(self.span(), self.into_inner().merge(new.into_inner()));
+    }
+    fn coalesce(self, new: Self) -> Self {
+        return Spanned::new(self.span(), self.into_inner().coalesce(new.into_inner()));
+    }
+}
+
+impl<T: Merging> Merging for Required<T> {
+    fn merge(self, new: Self) -> Self {
+        return match new {
+            Required::Value(newval) => match self {
+                Required::Value(oldval) => Required::Value(oldval.merge(newval)),
+                Required::DefaultValue => Required::Value(newval),
+            },
+            Required::DefaultValue => self,
+        };
+    }
+
+    fn coalesce(self, new: Self) -> Self {
+        return match new {
+            Required::Value(_) => new,
+            Required::DefaultValue => self,
+        };
+    }
+}
+
+impl<T: Merging> Merging for Plural<T> {
+    fn merge(self, _: Self) -> Self {
+        panic!("Not yet implemented (we don't yet need this function)")
+    }
+
+    fn coalesce(self, new: Self) -> Self {
+        return match new {
+            Plural::Zero => self,
+            _ => new,
+        };
+    }
+}
+
+impl Merging for i64 {
+    fn merge(self, new: Self) -> Self {
+        return new;
+    }
+
+    fn coalesce(self, new: Self) -> Self {
+        return new;
+    }
+}
+
+impl Merging for bool {
+    fn merge(self, new: Self) -> Self {
+        return new;
+    }
+
+    fn coalesce(self, new: Self) -> Self {
+        return new;
+    }
+}
+
+impl<T> Resolving<Option<T>> for Option<T> {
+    fn resolve(self, _name: &'static str) -> Result<Self> {
         return Ok(self);
+    }
+}
+
+impl<T> Requiring<T> for Option<T> {
+    fn require(self, name: &'static str) -> Result<T> {
+        match self {
+            Some(x) => Ok(x),
+            None => Err(Error::RequiredField(name).into()),
+        }
     }
 }
 
@@ -42,12 +122,27 @@ pub enum Required<T> {
     Value(T),
 }
 
-impl<T> Requiring<T> for Required<T> {
-    fn require(self, name: &'static str) -> Result<T> {
+impl<T> Required<Spanned<T>> {
+    pub fn into_inner(self) -> Required<T> {
+        return match self {
+            Required::DefaultValue => Required::DefaultValue,
+            Required::Value(val) => Required::Value(val.into_inner()),
+        };
+    }
+}
+
+impl<T> Resolving<T> for Required<T> {
+    fn resolve(self, name: &'static str) -> Result<T> {
         return match self {
             Required::DefaultValue => Err(Error::RequiredField(name).into()),
             Required::Value(val) => Ok(val),
         };
+    }
+}
+
+impl<T> Requiring<T> for Required<T> {
+    fn require(self, name: &'static str) -> Result<T> {
+        return self.resolve(name);
     }
 }
 
@@ -79,12 +174,33 @@ pub enum Plural<T> {
     Many(Vec<T>),
 }
 
-impl Plural<String> {
-    pub fn to_array(self) -> Vec<String> {
+impl<T> Plural<Spanned<T>> {
+    pub fn into_inner(self) -> Plural<T> {
+        return match self {
+            Plural::Zero => Plural::Zero,
+            Plural::One(x) => Plural::One(x.into_inner()),
+            Plural::Many(xs) => Plural::Many(xs.into_iter().map(|x| x.into_inner()).collect()),
+        };
+    }
+}
+
+impl<T> Plural<T> {
+    pub fn to_array(self) -> Vec<T> {
         return match self {
             Plural::Zero => Vec::new(),
             Plural::One(val) => vec![val],
             Plural::Many(vals) => vals,
+        };
+    }
+
+    pub fn map<F, R>(self, f: F) -> Plural<R>
+    where
+        F: Fn(&T) -> R,
+    {
+        return match self {
+            Plural::Zero => Plural::Zero,
+            Plural::One(x) => Plural::One(f(&x)),
+            Plural::Many(xs) => Plural::Many(xs.iter().map(f).collect()),
         };
     }
 }
@@ -100,24 +216,33 @@ impl<T: Clone> Plural<T> {
 
 impl<T: Merging> Merging for Option<T> {
     fn merge(self, new: Self) -> Self {
-        info!("Merging `Option`");
         return match new {
-            Some(x) => match self {
-                Some(y) => Some(y.merge(x)),
-                None => Some(x),
+            Some(newval) => match self {
+                Some(oldval) => Some(oldval.merge(newval)),
+                None => Some(newval),
             },
             None => self,
         };
     }
+
+    fn coalesce(self, new: Self) -> Self {
+        return new.or(self);
+    }
 }
 
 impl Merging for String {
-    fn merge(self, _: Self) -> Self {
-        return self;
+    fn merge(self, new: Self) -> Self {
+        return new;
+    }
+    fn coalesce(self, new: Self) -> Self {
+        return new;
     }
 }
 
 impl Merging for toml::Value {
+    fn coalesce(self, new: Self) -> Self {
+        return new;
+    }
     fn merge(self, new: Self) -> Self {
         match new {
             Value::Array(new_values) => match self {

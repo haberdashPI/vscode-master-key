@@ -1,33 +1,43 @@
 #![allow(non_snake_case)]
 
-mod constraints;
 mod foreach;
 mod validation;
 
-use crate::command::foreach::{ForeachExpanding, ForeachInterpolated, expand_keys};
-use crate::command::validation::{valid_json_array_object, valid_json_object, valid_key_binding};
-use crate::error::{Error, Result, unexpected};
-use crate::util::{Merging, Plural, Required, Requiring};
+use crate::bind::foreach::{ForeachExpanding, ForeachInterpolated, expand_keys};
+use crate::bind::validation::{JsonObjectShape, valid_json_array_object, valid_key_binding};
+use crate::error::{Context, ErrorContext, Result, constrain, unexpected};
+use crate::util::{Merging, Plural, Required, Requiring, Resolving};
 
+use js_sys::Intl::PluralRules;
+use lazy_static::lazy_static;
 #[allow(unused_imports)]
 use log::info;
 use serde::{Deserialize, Serialize};
 use serde_wasm_bindgen;
-use toml::Value;
+use toml::{Spanned, Value};
 use validator::Validate;
 use wasm_bindgen::JsValue;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
-pub fn debug_parse_command(command_str: &str) -> std::result::Result<Command, JsError> {
-    let result = toml::from_str::<CommandInput>(command_str)?;
-    return Ok(Command::new(result)?);
+pub fn debug_parse_command(command_str: &str) -> std::result::Result<Binding, JsError> {
+    let result = toml::from_str::<BindingInput>(command_str)?;
+    return Ok(Binding::new(result)?);
 }
 
-fn default_mode() -> Plural<String> {
-    return Plural::One("default".into());
+pub const UNKNOWN_RANGE: core::ops::Range<usize> = usize::MIN..usize::MAX;
+
+fn default_mode() -> Spanned<Plural<String>> {
+    return Spanned::new(UNKNOWN_RANGE, Plural::One("default".into()));
 }
 
+fn span_required_default<T>() -> Spanned<Required<T>> {
+    return Spanned::new(UNKNOWN_RANGE, Required::DefaultValue);
+}
+
+fn span_plural_default<T>() -> Spanned<Plural<T>> {
+    return Spanned::new(UNKNOWN_RANGE, Plural::Zero);
+}
 /**
  * @bindingField bind
  * @description an actual keybinding; extends the schema used by VSCode's `keybindings.json`
@@ -50,7 +60,7 @@ fn default_mode() -> Plural<String> {
  *
  */
 #[derive(Deserialize, Validate, Clone, Debug)]
-pub struct CommandInput {
+pub struct BindingInput {
     /**
      * @forBindingField bind
      *
@@ -60,8 +70,8 @@ pub struct CommandInput {
      *   behavior for the command `runCommands`
      *   (see [running multiple commands](#running-multiple-commands)).
      */
-    #[serde(default)]
-    command: Required<String>,
+    #[serde(default = "span_required_default")]
+    command: Spanned<Required<String>>,
 
     /**
      * @forBindingField bind
@@ -69,9 +79,9 @@ pub struct CommandInput {
      * - `args`: The arguments to directly pass to the `command`, these are static
      *   values.
      */
-    #[validate(custom(function = "valid_json_object"))]
+    #[validate(custom(function = "JsonObjectShape::valid_json_object"))]
     #[serde(default)]
-    args: Option<toml::Table>,
+    args: Option<Spanned<toml::Table>>,
 
     /**
      * @forBindingField bind
@@ -79,10 +89,10 @@ pub struct CommandInput {
      * - `computedArgs`: Like `args` except that each value is a string that is
      *   evaluated as an [expression](/expressions/index).
      */
-    // TODO: should be fieldds of strings not a general table (right??)
-    #[validate(custom(function = "valid_json_object"))]
+    // TODO: Spanned<should be fieldds of strings not a general table (right??)
+    #[validate(custom(function = "JsonObjectShape::valid_json_object"))]
     #[serde(default)]
-    computedArgs: Option<toml::Table>,
+    computedArgs: Option<Spanned<toml::Table>>,
 
     /**
      * @forBindingField bind
@@ -91,9 +101,9 @@ pub struct CommandInput {
      *   [keybinding](https://code.visualstudio.com/docs/getstarted/keybindings) that
      *   triggers `command`.
      */
-    #[serde(default)]
+    #[serde(default = "span_required_default")]
     #[validate(custom(function = "valid_key_binding"))]
-    key: Required<String>,
+    key: Spanned<Required<String>>,
     /**
      * @forBindingField bind
      *
@@ -102,8 +112,8 @@ pub struct CommandInput {
      *   context under which the binding will be active. Also see Master Key's
      *   [available contexts](#available-contexts)
      */
-    #[serde(default)]
-    when: Plural<String>,
+    #[serde(default = "span_plural_default")]
+    when: Spanned<Plural<String>>,
     /**
      * @forBindingField bind
      *
@@ -113,7 +123,7 @@ pub struct CommandInput {
      *   a binding that is applied in all modes use "{{all_modes}}".
      */
     #[serde(default = "default_mode")]
-    mode: Plural<String>,
+    mode: Spanned<Plural<String>>,
     /**
      * @forBindingField bind
      *
@@ -121,7 +131,7 @@ pub struct CommandInput {
      *   bindings take precedence. Defaults to 0.
      */
     #[serde(default)]
-    priority: Option<i64>,
+    priority: Option<Spanned<i64>>,
     /**
      * @forBindingField bind
      *
@@ -129,7 +139,7 @@ pub struct CommandInput {
      *   [`default`](/bindings/default) for more details.
      */
     #[serde(default)]
-    defaults: Option<String>,
+    defaults: Option<Spanned<String>>,
     /**
      * @forBindingField bind
      *
@@ -138,7 +148,7 @@ pub struct CommandInput {
      */
     #[serde(default)]
     #[validate(custom(function = "valid_json_array_object"))]
-    foreach: Option<toml::Table>,
+    foreach: Option<Spanned<toml::Table>>,
 
     /**
      * @forBindingField bind
@@ -152,8 +162,8 @@ pub struct CommandInput {
      *   sequence that has been pressed (e.g. this is used for the "escape" key binding
      *   in Larkin).
      */
-    #[serde(default)]
-    prefixes: Plural<String>,
+    #[serde(default = "span_plural_default")]
+    prefixes: Spanned<Plural<String>>,
 
     /**
      * @forBindingField bind
@@ -163,7 +173,7 @@ pub struct CommandInput {
      *   [`master-key.prefix`](/commands/prefix) for details.
      */
     #[serde(default)]
-    finalKey: Option<bool>,
+    finalKey: Option<Spanned<bool>>,
 
     /**
      * @forBindingField bind
@@ -174,7 +184,7 @@ pub struct CommandInput {
      * - `command` will be repeated the given
      *   number of times.
      */
-    computedRepeat: Option<String>,
+    computedRepeat: Option<Spanned<String>>,
 
     /**
      * @forBindingField bind
@@ -190,7 +200,7 @@ pub struct CommandInput {
      *   keys. Favor unicode symbols such as → and ← over text.
      */
     #[serde(default)]
-    name: Option<String>,
+    name: Option<Spanned<String>>,
 
     /**
      * @forBindingField bind
@@ -201,7 +211,7 @@ pub struct CommandInput {
      *   for the literate comments.
      */
     #[serde(default)]
-    description: Option<String>,
+    description: Option<Spanned<String>>,
     /**
      * @forBindingField bind
      * @order 10
@@ -210,9 +220,9 @@ pub struct CommandInput {
      *   and the documentation. These both default to false.
      */
     #[serde(default)]
-    hideInPalette: Option<bool>,
+    hideInPalette: Option<Spanned<bool>>,
     #[serde(default)]
-    hideInDocs: Option<bool>,
+    hideInDocs: Option<Spanned<bool>>,
 
     /**
      * @forBindingField bind
@@ -226,11 +236,11 @@ pub struct CommandInput {
      *   `combinedDescription` are ignored.
      */
     #[serde(default)]
-    combinedName: Option<String>,
+    combinedName: Option<Spanned<String>>,
     #[serde(default)]
-    combinedKey: Option<String>,
+    combinedKey: Option<Spanned<String>>,
     #[serde(default)]
-    combinedDescription: Option<String>,
+    combinedDescription: Option<Spanned<String>>,
 
     /**
      * @forBindingField bind
@@ -241,58 +251,51 @@ pub struct CommandInput {
      *   entry in the top-level `kind` array.
      */
     #[serde(default)]
-    kind: Option<String>,
-    /**
-     * @forBindingField bind
-     * @order 5
-     *
-     * - `whenComputed`: an [expression](/expressions/index) that, if evaluated to
-     *   false, the command will not execute. Favor `when` clauses over `whenComputed`.
-     *   The `whenComputed` field is distinct from the `when` clause because it uses the
-     *   scope of expressions rather than when clause statements. Furthermore, even if
-     *   the `whenComputed` is false, the binding is still considered to have triggered,
-     *   and now downstream keybindings will be triggered. It is most useful in
-     *   conjunction with `runCommands` or [`storeCommand`](/commands/storeCommand).
-     */
-    #[serde(default)]
-    whenComputed: Option<String>,
+    kind: Option<Spanned<String>>,
 }
 
-impl<'a> Merging for CommandInput {
+impl Merging for BindingInput {
+    fn coalesce(self, new: Self) -> Self {
+        return new;
+    }
     fn merge(self, y: Self) -> Self {
-        CommandInput {
-            command: y.command.or(self.command),
+        BindingInput {
+            command: self.command.coalesce(y.command),
             args: self.args.merge(y.args),
             computedArgs: self.computedArgs.merge(y.computedArgs),
-            key: y.key.or(self.key),
-            when: y.when.or(self.when),
-            mode: y.mode.or(self.mode),
-            priority: y.priority.or(self.priority),
-            defaults: y.defaults.or(self.defaults),
+            key: self.key.coalesce(y.key),
+            when: self.when.coalesce(y.when),
+            mode: self.mode.coalesce(y.mode),
+            priority: self.priority.coalesce(y.priority),
+            defaults: self.defaults.coalesce(y.defaults),
             foreach: self.foreach,
-            prefixes: y.prefixes.or(self.prefixes),
-            finalKey: y.finalKey.or(self.finalKey),
-            computedRepeat: y.computedRepeat.or(self.computedRepeat),
-            name: y.name.or(self.name),
-            description: y.description.or(self.description),
-            hideInPalette: y.hideInPalette.or(self.hideInPalette),
-            hideInDocs: y.hideInDocs.or(self.hideInDocs),
-            combinedName: y.combinedName.or(self.combinedName),
-            combinedKey: y.combinedKey.or(self.combinedKey),
-            combinedDescription: y.combinedDescription.or(self.combinedDescription),
-            kind: y.kind.or(self.kind),
-            whenComputed: y.whenComputed.or(self.whenComputed),
+            prefixes: self.prefixes.coalesce(y.prefixes),
+            finalKey: self.finalKey.coalesce(y.finalKey),
+            computedRepeat: self.computedRepeat.coalesce(y.computedRepeat),
+            name: self.name.coalesce(y.name),
+            description: self.description.coalesce(y.description),
+            hideInPalette: self.hideInPalette.coalesce(y.hideInPalette),
+            hideInDocs: self.hideInDocs.coalesce(y.hideInDocs),
+            combinedName: self.combinedName.coalesce(y.combinedName),
+            combinedKey: self.combinedKey.coalesce(y.combinedKey),
+            combinedDescription: self.combinedDescription.coalesce(y.combinedDescription),
+            kind: self.kind.coalesce(y.kind),
         }
     }
 }
 
 #[wasm_bindgen(getter_with_clone)]
-#[allow(non_snake_case)]
+#[derive(Clone)]
 pub struct Command {
     pub command: String,
     pub args: JsValue,
-    pub computedArgs: JsValue,
+}
+
+#[allow(non_snake_case)]
+#[wasm_bindgen(getter_with_clone)]
+pub struct Binding {
     pub key: String,
+    pub commands: Vec<Command>,
     pub when: Vec<String>,
     pub mode: Vec<String>,
     pub priority: i64,
@@ -308,20 +311,19 @@ pub struct Command {
     pub combinedKey: Option<String>,
     pub combinedDescription: Option<String>,
     pub kind: Option<String>,
-    pub whenComputed: Option<String>,
 }
 
 // TODO: convert errors to my own error type for Validation and serde_wasm_bindgen error
 
-impl CommandInput {
+impl BindingInput {
     fn has_foreach(&self) -> bool {
         if let Some(foreach) = &self.foreach {
-            return foreach.len() > 0;
+            return foreach.get_ref().len() > 0;
         }
         return false;
     }
 
-    fn expand_foreach(&mut self) -> Result<Vec<CommandInput>> {
+    fn expand_foreach(&mut self) -> Result<Vec<BindingInput>> {
         let mut result = vec![self.clone()];
         while self.has_foreach() {
             result = self.expand_foreach_once(&result)?;
@@ -329,9 +331,9 @@ impl CommandInput {
         return Ok(result);
     }
 
-    fn expand_foreach_once(&mut self, inputs: &Vec<CommandInput>) -> Result<Vec<CommandInput>> {
+    fn expand_foreach_once(&mut self, inputs: &Vec<BindingInput>) -> Result<Vec<BindingInput>> {
         let foreach = match &self.foreach {
-            Some(foreach) => foreach,
+            Some(foreach) => foreach.get_ref(),
             None => &toml::map::Map::new(),
         };
         let mut final_foreach = foreach.clone();
@@ -342,9 +344,8 @@ impl CommandInput {
             final_foreach.remove(var);
 
             if let Value::Array(items) = values {
-                info!("{items:?}");
-                let expanded_items = expand_keys(items)?;
-                info!("{expanded_items:?}");
+                let expanded_items = expand_keys(items)
+                    .context(Context::String(format!("while reading {}", values)))?;
                 let mut result = Vec::with_capacity(inputs.len() * expanded_items.len());
                 for input in inputs {
                     for value in &expanded_items {
@@ -352,7 +353,7 @@ impl CommandInput {
                         result.push(input.expand_foreach_value(var, &str));
                     }
                 }
-                self.foreach = Some(final_foreach);
+                self.foreach = Some(Spanned::new(UNKNOWN_RANGE, final_foreach));
                 return Ok(result);
             } else {
                 return unexpected("`foreach` was not an object of arrays");
@@ -363,66 +364,126 @@ impl CommandInput {
     }
 
     fn expand_foreach_value(&self, var: &str, value: &str) -> Self {
-        return CommandInput {
+        return BindingInput {
             command: self.command.expand_foreach_value(var, value),
             args: self.args.expand_foreach_value(var, value),
             computedArgs: self.computedArgs.expand_foreach_value(var, value),
             key: self.key.expand_foreach_value(var, value),
             when: self.when.expand_foreach_value(var, value),
             mode: self.mode.expand_foreach_value(var, value),
-            priority: self.priority,
+            priority: self.priority.clone(),
             defaults: self.defaults.expand_foreach_value(var, value),
             prefixes: self.prefixes.expand_foreach_value(var, value),
-            finalKey: self.finalKey,
+            finalKey: self.finalKey.clone(),
             computedRepeat: self.computedRepeat.expand_foreach_value(var, value),
             foreach: None,
             name: self.name.expand_foreach_value(var, value),
             description: self.description.expand_foreach_value(var, value),
-            hideInPalette: self.hideInPalette,
-            hideInDocs: self.hideInDocs,
+            hideInPalette: self.hideInPalette.clone(),
+            hideInDocs: self.hideInDocs.clone(),
             combinedName: self.combinedName.expand_foreach_value(var, value),
             combinedKey: self.combinedKey.expand_foreach_value(var, value),
             combinedDescription: self.combinedDescription.expand_foreach_value(var, value),
             kind: self.kind.expand_foreach_value(var, value),
-            whenComputed: self.whenComputed.expand_foreach_value(var, value),
         };
     }
 }
 
+fn regularize_commands(input: BindingInput) -> Result<(BindingInput, Vec<Command>)> {
+    let to_json = serde_wasm_bindgen::Serializer::json_compatible();
+    let command_pos = input.command.span();
+    let command = input.command.get_ref().clone().resolve("command")?;
+    let args = input.args.clone();
+    if command == "runCommands" {
+        let spanned = args
+            .require("`args`")
+            .context(Context::Range(command_pos))
+            .context(Context::String(
+                "`runCommands` must have `args` field".into(),
+            ))?;
+        let args_pos = spanned.span();
+        let args = spanned.into_inner();
+        let commands = args
+            .get("commands")
+            .require("`commands`")
+            .context(Context::String(
+                "`runCommands.args` must have a `commands` fields".into(),
+            ))
+            .context(Context::Range(args_pos.clone()))?;
+        let commands = commands.as_array().require("`commands` to be an array")?;
+        let mut command_result = Vec::with_capacity(commands.len());
+        for command in commands {
+            let (command, args) = match command {
+                Value::String(str) => (str.to_owned(), toml::Table::new()),
+                Value::Table(kv) => {
+                    let command_name = kv
+                        .get("command")
+                        .require("`command`")?
+                        .as_str()
+                        .require("`command` to be string")
+                        .context(Context::Range(args_pos.clone()))?
+                        .to_owned();
+                    let args = command
+                        .get("args")
+                        .require("`args`")?
+                        .as_table()
+                        .require("`args` to be a table")?
+                        .to_owned();
+                    (command_name, args)
+                }
+                _ => {
+                    return constrain(
+                        "`commands` to be an array that includes objects and strings only",
+                    )?;
+                }
+            };
+
+            command_result.push(Command {
+                command,
+                args: args.serialize(&to_json)?,
+            })
+        }
+
+        return Ok((input, command_result));
+    } else {
+        return Ok((
+            input,
+            vec![Command {
+                command,
+                args: args.serialize(&to_json)?,
+            }],
+        ));
+    }
+}
+
 // TODO: think about whether I want to represent commands as a sequence in the output...
-impl Command {
-    pub fn new(input: CommandInput) -> Result<Self> {
+impl Binding {
+    pub fn new(input: BindingInput) -> Result<Self> {
+        serde_wasm_bindgen::Serializer::json_compatible();
         if let Some(_) = input.foreach {
             return unexpected("`foreach` with unresolved variables");
         }
-        let to_json = serde_wasm_bindgen::Serializer::json_compatible();
-        return Ok(Command {
-            command: input.command.require("command")?,
-            args: input
-                .args
-                .unwrap_or_else(|| toml::Table::new())
-                .serialize(&to_json)?,
-            computedArgs: input
-                .computedArgs
-                .unwrap_or_else(|| toml::Table::new())
-                .serialize(&to_json)?,
-            key: input.key.require("key")?,
-            when: input.when.to_array(),
-            mode: input.mode.to_array(),
-            priority: input.priority.unwrap_or(0),
-            defaults: input.defaults.unwrap_or_default(),
-            prefixes: input.prefixes.to_array(),
-            finalKey: input.finalKey.unwrap_or_default(),
-            computedRepeat: input.computedRepeat,
-            name: input.name,
-            description: input.description,
-            hideInPalette: input.hideInPalette,
-            hideInDocs: input.hideInDocs,
-            combinedName: input.combinedName,
-            combinedKey: input.combinedKey,
-            combinedDescription: input.combinedDescription,
-            kind: input.kind,
-            whenComputed: input.whenComputed,
+        let (input, commands) = regularize_commands(input)?;
+        // TODO this is where we should validate that prefix has `finalKey == false`
+
+        return Ok(Binding {
+            commands: commands,
+            key: input.key.into_inner().require("key")?,
+            when: input.when.into_inner().to_array(),
+            mode: input.mode.into_inner().to_array(),
+            priority: input.priority.map(|x| x.into_inner()).unwrap_or(0),
+            defaults: input.defaults.map(|x| x.into_inner()).unwrap_or_default(),
+            prefixes: input.prefixes.into_inner().to_array(),
+            finalKey: input.finalKey.map(|x| x.into_inner()).unwrap_or_default(),
+            computedRepeat: input.computedRepeat.map(|x| x.into_inner()),
+            name: input.name.map(|x| x.into_inner()),
+            description: input.description.map(|x| x.into_inner()),
+            hideInPalette: input.hideInPalette.map(|x| x.into_inner()),
+            hideInDocs: input.hideInDocs.map(|x| x.into_inner()),
+            combinedName: input.combinedName.map(|x| x.into_inner()),
+            combinedKey: input.combinedKey.map(|x| x.into_inner()),
+            combinedDescription: input.combinedDescription.map(|x| x.into_inner()),
+            kind: input.kind.clone().map(|x| x.into_inner()),
         });
     }
 }
@@ -456,39 +517,46 @@ mod tests {
         combinedKey = "A/B"
         combinedDescription = "bla bla bla"
         kind = "biz"
-        whenComputed = "f > 2"
         "#;
 
-        let result = toml::from_str::<CommandInput>(data).unwrap();
+        let result = toml::from_str::<BindingInput>(data).unwrap();
 
-        assert_eq!(result.command, Required::Value("do".into()));
-        let args = result.args.unwrap();
+        assert_eq!(result.command.into_inner(), Required::Value("do".into()));
+        let args = result.args.unwrap().into_inner();
         assert_eq!(args.get("a").unwrap(), &Value::String("2".into()));
         assert_eq!(args.get("b").unwrap(), &Value::Integer(3));
         assert_eq!(
-            result.computedArgs.unwrap().get("c").unwrap(),
+            result.computedArgs.unwrap().into_inner().get("c").unwrap(),
             &Value::String("1+2".into())
         );
-        assert_eq!(result.key, Required::Value("a".into()));
-        assert_eq!(result.when, Plural::One("joe > 1".into()));
-        assert_eq!(result.mode, Plural::One("normal".into()));
-        assert_eq!(result.priority.unwrap(), 1);
-        assert_eq!(result.defaults.unwrap(), "foo.bar");
+        assert_eq!(result.key.into_inner(), Required::Value("a".into()));
+        assert_eq!(result.when.into_inner(), Plural::One("joe > 1".into()));
+        assert_eq!(result.mode.into_inner(), Plural::One("normal".into()));
+        assert_eq!(result.priority.map(|x| x.into_inner()).unwrap(), 1);
+        assert_eq!(result.defaults.map(|x| x.into_inner()).unwrap(), "foo.bar");
         assert_eq!(
-            result.foreach.unwrap().get("index").unwrap(),
+            result.foreach.unwrap().into_inner().get("index").unwrap(),
             &Value::Array(vec![1, 2, 3].iter().map(|x| Value::Integer(*x)).collect())
         );
-        assert_eq!(result.prefixes, Plural::One("c".into()));
-        assert_eq!(result.finalKey.unwrap(), true);
-        assert_eq!(result.name.unwrap(), "foo");
-        assert_eq!(result.description.unwrap(), "foo bar bin");
-        assert_eq!(result.hideInDocs.unwrap(), false);
-        assert_eq!(result.hideInPalette.unwrap(), false);
-        assert_eq!(result.combinedName.unwrap(), "Up/down");
-        assert_eq!(result.combinedKey.unwrap(), "A/B");
-        assert_eq!(result.combinedDescription.unwrap(), "bla bla bla");
-        assert_eq!(result.kind.unwrap(), "biz");
-        assert_eq!(result.whenComputed.unwrap(), "f > 2");
+        assert_eq!(result.prefixes.into_inner(), Plural::One("c".into()));
+        assert_eq!(result.finalKey.map(|x| x.into_inner()).unwrap(), true);
+        assert_eq!(result.name.map(|x| x.into_inner()).unwrap(), "foo");
+        assert_eq!(
+            result.description.map(|x| x.into_inner()).unwrap(),
+            "foo bar bin"
+        );
+        assert_eq!(result.hideInDocs.map(|x| x.into_inner()).unwrap(), false);
+        assert_eq!(result.hideInPalette.map(|x| x.into_inner()).unwrap(), false);
+        assert_eq!(
+            result.combinedName.map(|x| x.into_inner()).unwrap(),
+            "Up/down"
+        );
+        assert_eq!(result.combinedKey.map(|x| x.into_inner()).unwrap(), "A/B");
+        assert_eq!(
+            result.combinedDescription.map(|x| x.into_inner()).unwrap(),
+            "bla bla bla"
+        );
+        assert_eq!(result.kind.map(|x| x.into_inner()).unwrap(), "biz");
     }
 
     #[test]
@@ -499,15 +567,22 @@ mod tests {
         args.to = "left"
         "#;
 
-        let result = toml::from_str::<CommandInput>(data).unwrap();
-        assert_eq!(result.key.unwrap(), "l");
-        assert_eq!(result.command.unwrap(), "cursorMove");
+        let result = toml::from_str::<BindingInput>(data).unwrap();
+        assert_eq!(result.key.into_inner().unwrap(), "l");
+        assert_eq!(result.command.into_inner().unwrap(), "cursorMove");
         assert_eq!(
-            result.args.unwrap().get("to").unwrap().as_str().unwrap(),
+            result
+                .args
+                .unwrap()
+                .into_inner()
+                .get("to")
+                .unwrap()
+                .as_str()
+                .unwrap(),
             "left"
         );
 
-        assert_eq!(result.when, Plural::Zero);
+        assert_eq!(result.when.into_inner(), Plural::Zero);
         assert_eq!(result.combinedDescription, None);
         assert_eq!(result.combinedName, None);
     }
@@ -528,28 +603,38 @@ mod tests {
         prefixes = ["b", "c"]
         "#;
 
-        let result = toml::from_str::<HashMap<String, Vec<CommandInput>>>(data).unwrap();
+        let result = toml::from_str::<HashMap<String, Vec<BindingInput>>>(data).unwrap();
         let default = result.get("bind").unwrap()[0].clone();
         let left = result.get("bind").unwrap()[1].clone();
         let left = default.merge(left);
-        assert_eq!(left.key.unwrap(), "l");
-        assert_eq!(left.command.unwrap(), "cursorMove");
+        assert_eq!(left.key.into_inner().unwrap(), "l");
+        assert_eq!(left.command.into_inner().unwrap(), "cursorMove");
         assert_eq!(
-            left.args.unwrap().get("to").unwrap().as_str().unwrap(),
+            left.args
+                .unwrap()
+                .into_inner()
+                .get("to")
+                .unwrap()
+                .as_str()
+                .unwrap(),
             "left"
         );
         assert_eq!(
             left.computedArgs
                 .unwrap()
+                .into_inner()
                 .get("value")
                 .unwrap()
                 .as_str()
                 .unwrap(),
             "count"
         );
-        assert_eq!(left.prefixes, Plural::Many(vec!["b".into(), "c".into()]));
+        assert_eq!(
+            left.prefixes.into_inner(),
+            Plural::Many(vec!["b".into(), "c".into()])
+        );
 
-        assert_eq!(left.when, Plural::Zero);
+        assert_eq!(left.when.into_inner(), Plural::Zero);
         assert_eq!(left.combinedDescription, None);
         assert_eq!(left.combinedName, None);
     }
@@ -573,7 +658,7 @@ mod tests {
             args.foo = { a = 2, b = 3, c = { x = 1, y = 2 }, d = 12 }
         "#;
 
-        let result = toml::from_str::<HashMap<String, Vec<CommandInput>>>(data).unwrap();
+        let result = toml::from_str::<HashMap<String, Vec<BindingInput>>>(data).unwrap();
         let default = result.get("bind").unwrap()[0].clone();
         let left = result.get("bind").unwrap()[1].clone();
         let expected = result.get("bind").unwrap()[2].clone();
@@ -625,7 +710,7 @@ mod tests {
             args = {x = "biz", y = "fiz"}
         "#;
 
-        let result = toml::from_str::<HashMap<String, Vec<CommandInput>>>(data).unwrap();
+        let result = toml::from_str::<HashMap<String, Vec<BindingInput>>>(data).unwrap();
         let default = result.get("bind").unwrap()[0].clone();
         let left = result.get("bind").unwrap()[1].clone();
         let expected = result.get("bind").unwrap()[2].clone();
@@ -644,7 +729,7 @@ mod tests {
             args.value = "with-{{b}}"
         "#;
 
-        let mut result = toml::from_str::<CommandInput>(data).unwrap();
+        let mut result = toml::from_str::<BindingInput>(data).unwrap();
         let items = result.expand_foreach().unwrap();
 
         let expected_command = vec!["run-1", "run-1", "run-2", "run-2"];
@@ -653,10 +738,19 @@ mod tests {
 
         for i in 0..4 {
             let item = items[i].clone();
-            assert_eq!(item.command.unwrap().as_str(), expected_command[i]);
-            assert_eq!(item.name.unwrap().as_str(), expected_name[i]);
             assert_eq!(
-                item.args.unwrap().get("value").unwrap().as_str().unwrap(),
+                item.command.as_ref().clone().unwrap().as_str(),
+                expected_command[i]
+            );
+            assert_eq!(item.name.unwrap().as_ref().as_str(), expected_name[i]);
+            assert_eq!(
+                item.args
+                    .unwrap()
+                    .as_ref()
+                    .get("value")
+                    .unwrap()
+                    .as_str()
+                    .unwrap(),
                 expected_value[i]
             );
         }
@@ -665,13 +759,13 @@ mod tests {
     #[test]
     fn expand_foreach_keys() {
         let data = r#"
-            foreach.key = ["{{key: [0-9}}"]
+            foreach.key = ["{{key: [0-9]}}"]
             name = "update {{key}}"
             command = "foo"
             args.value = "{{key}}"
         "#;
 
-        let mut result = toml::from_str::<CommandInput>(data).unwrap();
+        let mut result = toml::from_str::<BindingInput>(data).unwrap();
         let items = result.expand_foreach().unwrap();
 
         let expected_name: Vec<String> =
@@ -680,18 +774,9 @@ mod tests {
 
         assert_eq!(items.len(), 10);
         for i in 0..9 {
-            assert_eq!(items[i].name.as_ref().unwrap(), &expected_name[i]);
-            assert_eq!(
-                items[i]
-                    .args
-                    .as_ref()
-                    .unwrap()
-                    .get("value")
-                    .unwrap()
-                    .as_str()
-                    .unwrap(),
-                expected_value[i]
-            )
+            assert_eq!(items[i].name.as_ref().unwrap().get_ref(), &expected_name[i]);
+            let value = items[i].args.as_ref().unwrap().get_ref().get("value");
+            assert_eq!(value.unwrap().as_str().unwrap(), expected_value[i]);
         }
     }
 
@@ -702,4 +787,4 @@ mod tests {
     // command tests I'm working on here)
 }
 
-// TODO: define the "output" type for `Command` that can actually be passed to javascript
+// TODO: define the "output" type for `Binding` that can actually be passed to javascript

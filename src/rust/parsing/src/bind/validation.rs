@@ -1,15 +1,30 @@
 use crate::util::Required;
 use lazy_static::lazy_static;
 use regex::Regex;
-use toml::Value;
+use toml::{Spanned, Value};
 use validator::ValidationError;
 
 pub fn valid_json_array(values: &Vec<toml::Value>) -> std::result::Result<(), ValidationError> {
     return values.iter().try_for_each(valid_json_value);
 }
 
-pub fn valid_json_object(kv: &toml::Table) -> std::result::Result<(), ValidationError> {
-    return kv.iter().try_for_each(|(_, v)| valid_json_value(v));
+pub trait JsonObjectShape {
+    fn valid_json_object(kv: &Self) -> std::result::Result<(), ValidationError>;
+}
+
+impl JsonObjectShape for toml::Table {
+    fn valid_json_object(kv: &Self) -> std::result::Result<(), ValidationError> {
+        return kv.iter().try_for_each(|(_, v)| valid_json_value(v));
+    }
+}
+
+impl JsonObjectShape for &Spanned<toml::Table> {
+    fn valid_json_object(kv: &Self) -> std::result::Result<(), ValidationError> {
+        return kv
+            .get_ref()
+            .iter()
+            .try_for_each(|(_, v)| valid_json_value(v));
+    }
 }
 
 // we read in TOML values, but only want to accept JSON-valid values in some contexts
@@ -23,12 +38,17 @@ pub fn valid_json_value(x: &Value) -> std::result::Result<(), ValidationError> {
             return Err(ValidationError::new("DateTime values are not supported"));
         }
         Value::Array(values) => return valid_json_array(values),
-        Value::Table(kv) => return valid_json_object(kv),
+        Value::Table(kv) => return toml::Table::valid_json_object(kv),
     };
 }
 
-pub fn valid_json_array_object(kv: &toml::Table) -> std::result::Result<(), ValidationError> {
-    return kv.iter().try_for_each(|(_, v)| valid_json_value(v));
+pub fn valid_json_array_object(
+    kv: &Spanned<toml::Table>,
+) -> std::result::Result<(), ValidationError> {
+    return kv
+        .as_ref()
+        .iter()
+        .try_for_each(|(_, v)| valid_json_value(v));
 }
 
 lazy_static! {
@@ -116,11 +136,13 @@ lazy_static! {
     ];
 }
 
-pub fn valid_key_binding(val: &Required<String>) -> std::result::Result<(), ValidationError> {
-    match val {
+pub fn valid_key_binding(
+    val: &Spanned<Required<String>>,
+) -> std::result::Result<(), ValidationError> {
+    match val.get_ref() {
         Required::DefaultValue => return Ok(()),
         Required::Value(x) => {
-            if valid_key_binding_str(&x) {
+            if valid_key_binding_str(x) {
                 return Err(ValidationError::new("Invalid key binding"));
             } else {
                 return Ok(());

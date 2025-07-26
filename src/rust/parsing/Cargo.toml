@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 env_logger = "0.11.8"
+js-sys = "0.3.77"
 lazy_static = "1.5.0"
 log = { version = "0.4.27", features = ["release_max_level_error"] }
 regex = "1.11.1"

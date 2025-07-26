@@ -5,10 +5,16 @@ use lazy_static::lazy_static;
 #[allow(unused_imports)]
 use log::info;
 use regex::Regex;
-use toml::Value;
+use toml::{Spanned, Value};
 
 pub trait ForeachExpanding {
     fn expand_foreach_value(&self, var: &str, value: &str) -> Self;
+}
+
+impl<T: ForeachExpanding> ForeachExpanding for Spanned<T> {
+    fn expand_foreach_value(&self, var: &str, value: &str) -> Self {
+        return Spanned::new(self.span(), self.get_ref().expand_foreach_value(var, value));
+    }
 }
 
 impl<T: ForeachExpanding> ForeachExpanding for Plural<T> {

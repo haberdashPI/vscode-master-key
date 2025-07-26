@@ -1,6 +1,9 @@
 use std::fmt;
 use thiserror::Error;
 
+use crate::bind::UNKNOWN_RANGE;
+use core::ops::Range;
+
 // TODO: properly handle `WhileTrying` (e.g. by having an outer type to prevent nesting)
 
 #[derive(Debug, Error)]
@@ -13,7 +16,7 @@ pub enum Error {
     ConstraintError(&'static str),
     #[error("unexpected error binding rust values to javascript - {0}")]
     JavaScriptError(#[from] serde_wasm_bindgen::Error),
-    #[error("required field `{0}`")]
+    #[error("required {0}")]
     RequiredField(&'static str),
     #[error("unexpected {0}")]
     Unexpected(&'static str),
@@ -25,13 +28,29 @@ pub enum Error {
 pub struct ErrorWithContext {
     #[source]
     error: Error,
-    contexts: Vec<&'static str>,
+    contexts: Vec<Context>,
+}
+
+#[derive(Debug)]
+pub enum Context {
+    String(String),
+    Range(Range<usize>),
 }
 
 impl fmt::Display for ErrorWithContext {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> std::result::Result<(), fmt::Error> {
         for context in &self.contexts {
-            write!(f, "{}\n", context);
+            match context {
+                Context::String(str) => {
+                    write!(f, "{}\n", str);
+                }
+                Context::Range(range) => {
+                    // TODO: we may evenutally wan to support showing the text
+                    // here. *HOWEVER* this is something we can also do downstream
+                    // with the document class in vscode so probably not necessary
+                    write!(f, "byte range {:?}\n", range);
+                }
+            }
         }
         self.error.fmt(f);
         return Ok(());
@@ -56,11 +75,11 @@ pub fn unexpected<T>(msg: &'static str) -> Result<T> {
 }
 
 pub trait ErrorContext<T> {
-    fn context(self, context: &'static str) -> Result<T>;
+    fn context(self, context: Context) -> Result<T>;
 }
 
 impl<T, E: Into<Error>> ErrorContext<T> for std::result::Result<T, E> {
-    fn context(self, context: &'static str) -> Result<T> {
+    fn context(self, context: Context) -> Result<T> {
         return match self {
             Ok(x) => Ok(x),
             Err(e) => Err(ErrorWithContext {
@@ -72,7 +91,7 @@ impl<T, E: Into<Error>> ErrorContext<T> for std::result::Result<T, E> {
 }
 
 impl<T> ErrorContext<T> for Result<T> {
-    fn context(self, context: &'static str) -> Result<T> {
+    fn context(self, context: Context) -> Result<T> {
         return match self {
             Ok(x) => Ok(x),
             Err(mut e) => {

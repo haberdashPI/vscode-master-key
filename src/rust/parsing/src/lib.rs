@@ -1,4 +1,4 @@
-pub mod command;
+pub mod bind;
 mod error;
 mod util;
 

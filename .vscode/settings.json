@@ -1,0 +1,28 @@
+{
+    "rust-analyzer.linkedProjects": [
+        "src/rust/parsing/Cargo.toml"
+    ],
+    "workbench.colorCustomizations": {
+        "editorBracketHighlight.foreground1": "#1b9e77",
+        "editorBracketHighlight.foreground2": "#d95f02",
+        "editorBracketHighlight.foreground3": "#7570b3",
+        "editorBracketHighlight.foreground4": "#e7298a",
+        "editorBracketHighlight.foreground5": "#66a61e",
+        "editorBracketHighlight.foreground6": "#e6ab02",
+        "editorBracketHighlight.unexpectedBracket.foreground": "#ff0000",
+        "titleBar.activeBackground": "#7279f9",
+        "titleBar.activeForeground": "#000000",
+        "titleBar.inactiveBackground": "#7279f9",
+        "titleBar.inactiveForeground": "#000000",
+        "titleBar.border": "#7279f9",
+        "activityBar.background": "#7279f9",
+        "activityBar.foreground": "#000000",
+        "statusBar.background": "#7279f9",
+        "statusBar.foreground": "#000000",
+        "statusBar.debuggingBackground": "#7279f9",
+        "statusBar.debuggingForeground": "#000000",
+        "tab.activeBorder": "#7279f9",
+        "iLoveWorkSpaceColors": true,
+        "iLoveWorkSpaceRandom": false
+    }
+}
