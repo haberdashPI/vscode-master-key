@@ -79,24 +79,12 @@ Integration test debugging:
                 - [X] rustup toolchain install nightly
         - [X] foreach expansion (unit tests remain)
         - [X] expand keys in `foreach` lists
-        - [ ] include `Spanned` in fields of `BindInput`
-        - [ ] remove `computedArgs` and related functionality
-              and replace with more generic "{{value}}" replacement
-              (permitting the injection of e.g. objects, not just strings)
-              this can replace `[[default]]` and `default` elements as well
-              NOTE: internally we still use `computedArgs` in the binding
-              object `Binding`---it's only removed for `BindingInput`---
-              this ensures a fast path for commands that don't have a computed argument
-              and limits the time to search and replace commands during binding
-              execution
-              TODO: we'll need to check for any remaining `{{}}` arguments
-              once `foreach` gets expanded and `computedArgs` gets completed
-        - [ ] format error messages appropriately
-        - [ ] properly identify spans: both `[[bind]]` header and entire `[[bind]]` region
-            - [ ] validate by checking error reporting
-              NOTE: short term goal here is to support literate docs
+        - [x] include `Spanned` in fields of `BindInput`
+        - [ ] cleanup and refactor code
     - [ ] pipeline for `[[bind]]` entries
         - [ ] basic pipeline
+        - [ ] properly identify spans: both `[[bind]]` header and entire `[[bind]]` region
+              NOTE: short term goal here is to support literate docs
         - [ ] proper parsing with `[[default]]` and `defaults`
         - [ ] foreach expansion
         - [ ] command normalization (always `runCommand` with an array of objects with `command` field)

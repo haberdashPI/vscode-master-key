@@ -8,8 +8,6 @@ use crate::bind::validation::{JsonObjectShape, valid_json_array_object, valid_ke
 use crate::error::{Context, ErrorContext, Result, constrain, unexpected};
 use crate::util::{Merging, Plural, Required, Requiring, Resolving};
 
-use js_sys::Intl::PluralRules;
-use lazy_static::lazy_static;
 #[allow(unused_imports)]
 use log::info;
 use serde::{Deserialize, Serialize};
