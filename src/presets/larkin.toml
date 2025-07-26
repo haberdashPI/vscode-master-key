@@ -166,7 +166,7 @@ combinedKey = "escape/ctrl+["
 combinedName = "normal"
 combinedDescription = "Enter normal mode"
 key = "{{key}}"
-mode = []
+mode = "{{all_modes}}"
 hideInPalette = true
 hideInDocs = false
 command = "master-key.enterNormal"
@@ -183,7 +183,7 @@ hideInDocs = true
 when = "suggestWidgetVisible && editorTextFocus && !findWidgetVisible"
 command = "runCommands"
 args.commands = ["hideSuggestWidget", "master-key.enterNormal"]
-mode = []
+mode = "{{all_modes}}"
 prefixes = "{{all_prefixes}}"
 
 #- in "command" like modes (e.g. normal), typing keys without a command defined below should have no effect
@@ -2460,7 +2460,7 @@ key = "shift+ctrl+;"
 name = "palette"
 finalKey = false
 hideInPalette = true
-mode = []
+mode = "{{all_modes}}"
 prefixes = "{{all_prefixes}}"
 description = """
 show command suggestions within the context of the current mode and keybinding prefix
