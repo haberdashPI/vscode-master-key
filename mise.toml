@@ -44,24 +44,27 @@ coverage_options = '''--ignore-filename-regex '/.cargo/registry' --ignore-filena
 dir = 'src/rust/parsing'
 shell = 'nu -c'
 run = '''
-if ($env.COVERAGE? | default false | into bool) {
-    $env.RUSTFLAGS = '-C instrument-coverage'
-    $env.LLVM_PROFILE_FILE = 'coverage/parsing.profraw'
+def main [...args] {
+    if ($env.COVERAGE? | default false | into bool) {
+        $env.RUSTFLAGS = '-C instrument-coverage'
+        $env.LLVM_PROFILE_FILE = 'coverage/parsing.profraw'
 
-    let object_files = cargo +nightly test --tests --no-run --message-format=json |
-        from json -o | where profile?.test |
-        get filenames.0 |
-        each { |f| $'--object=($in)' }
+        let object_files = cargo +nightly test --tests --no-run --message-format=json |
+            from json -o | where profile?.test |
+            get filenames.0 |
+            each { |f| $'--object=($in)' }
 
-    cargo +nightly test --tests
-    cargo profdata -- merge -sparse coverage/parsing.profraw -o coverage/parsing.profdata
-    (cargo cov -- export {{vars.coverage_options}} --format=lcov ...($object_files) o>
-        ../../../coverage/rs_coverage.info)
+        cargo +nightly test --tests ...$args
+        cargo profdata -- merge -sparse coverage/parsing.profraw -o coverage/parsing.profdata
+        (cargo cov -- export {{vars.coverage_options}} --format=lcov ...($object_files) o>
+            ../../../coverage/rs_coverage.info)
 
-    cargo cov -- report --use-color {{vars.coverage_options}} ...($object_files)
-} else {
-    cargo test
+        cargo cov -- report --use-color {{vars.coverage_options}} ...($object_files)
+    } else {
+        cargo test ...$args
+    }
 }
+main
 '''
 
 [tasks.build]

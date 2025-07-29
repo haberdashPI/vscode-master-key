@@ -80,11 +80,13 @@ Integration test debugging:
         - [X] foreach expansion (unit tests remain)
         - [X] expand keys in `foreach` lists
         - [x] include `Spanned` in fields of `BindInput`
-        - [ ] cleanup and refactor code
     - [ ] pipeline for `[[bind]]` entries
         - [ ] basic pipeline
         - [ ] properly identify spans: both `[[bind]]` header and entire `[[bind]]` region
               NOTE: short term goal here is to support literate docs
+        - [ ] cleanup and refactor code
+            - NOTE: we're waiting until we test out spans, because that could require
+              more refactoring
         - [ ] proper parsing with `[[default]]` and `defaults`
         - [ ] foreach expansion
         - [ ] command normalization (always `runCommand` with an array of objects with `command` field)

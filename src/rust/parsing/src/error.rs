@@ -1,12 +1,13 @@
 use std::fmt;
 use thiserror::Error;
+use wasm_bindgen::prelude::*;
 
 use crate::bind::UNKNOWN_RANGE;
 use core::ops::Range;
 
 // TODO: properly handle `WhileTrying` (e.g. by having an outer type to prevent nesting)
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, Clone)]
 pub enum Error {
     #[error("parsing {0}")]
     Parsing(#[from] toml::de::Error),
@@ -14,8 +15,6 @@ pub enum Error {
     Validation(#[from] validator::ValidationError),
     #[error("expected {0}")]
     ConstraintError(&'static str),
-    #[error("unexpected error binding rust values to javascript - {0}")]
-    JavaScriptError(#[from] serde_wasm_bindgen::Error),
     #[error("required {0}")]
     RequiredField(&'static str),
     #[error("unexpected {0}")]
@@ -24,14 +23,15 @@ pub enum Error {
     Regex(#[from] regex::Error),
 }
 
-#[derive(Debug, Error)]
+#[wasm_bindgen]
+#[derive(Debug, Error, Clone)]
 pub struct ErrorWithContext {
     #[source]
     error: Error,
     contexts: Vec<Context>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Context {
     String(String),
     Range(Range<usize>),

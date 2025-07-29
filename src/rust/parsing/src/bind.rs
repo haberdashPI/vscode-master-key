@@ -1,3 +1,5 @@
+// parsing of individual `[[bind]]` elements
+
 #![allow(non_snake_case)]
 
 mod foreach;
@@ -84,17 +86,6 @@ pub struct BindingInput {
     /**
      * @forBindingField bind
      *
-     * - `computedArgs`: Like `args` except that each value is a string that is
-     *   evaluated as an [expression](/expressions/index).
-     */
-    // TODO: Spanned<should be fieldds of strings not a general table (right??)
-    #[validate(custom(function = "JsonObjectShape::valid_json_object"))]
-    #[serde(default)]
-    computedArgs: Option<Spanned<toml::Table>>,
-
-    /**
-     * @forBindingField bind
-     *
      * - `key`*: the
      *   [keybinding](https://code.visualstudio.com/docs/getstarted/keybindings) that
      *   triggers `command`.
@@ -176,13 +167,15 @@ pub struct BindingInput {
     /**
      * @forBindingField bind
      *
-     * - `computedRepeat`: This is an [expression](/expressions/index). It is expected
+     *  **TODO**: update docs, and make it possible to be a number or a string
+     *
+     * - `repeat`: This is an [expression](/expressions/index). It is expected
      *   to evaluate to the number of times to repeat the command. Defaults to zero: one
      *   repeat means the command is run twice.
      * - `command` will be repeated the given
      *   number of times.
      */
-    computedRepeat: Option<Spanned<String>>,
+    repeat: Option<Spanned<String>>,
 
     /**
      * @forBindingField bind
@@ -260,7 +253,6 @@ impl Merging for BindingInput {
         BindingInput {
             command: self.command.coalesce(y.command),
             args: self.args.merge(y.args),
-            computedArgs: self.computedArgs.merge(y.computedArgs),
             key: self.key.coalesce(y.key),
             when: self.when.coalesce(y.when),
             mode: self.mode.coalesce(y.mode),
@@ -269,7 +261,7 @@ impl Merging for BindingInput {
             foreach: self.foreach,
             prefixes: self.prefixes.coalesce(y.prefixes),
             finalKey: self.finalKey.coalesce(y.finalKey),
-            computedRepeat: self.computedRepeat.coalesce(y.computedRepeat),
+            repeat: self.repeat.coalesce(y.repeat),
             name: self.name.coalesce(y.name),
             description: self.description.coalesce(y.description),
             hideInPalette: self.hideInPalette.coalesce(y.hideInPalette),
@@ -289,6 +281,7 @@ pub struct Command {
     pub args: JsValue,
 }
 
+#[derive(Clone)]
 #[allow(non_snake_case)]
 #[wasm_bindgen(getter_with_clone)]
 pub struct Binding {
@@ -300,7 +293,7 @@ pub struct Binding {
     pub defaults: String,
     pub prefixes: Vec<String>,
     pub finalKey: bool,
-    pub computedRepeat: Option<String>,
+    pub repeat: Option<String>,
     pub name: Option<String>,
     pub description: Option<String>,
     pub hideInPalette: Option<bool>,
@@ -365,7 +358,6 @@ impl BindingInput {
         return BindingInput {
             command: self.command.expand_foreach_value(var, value),
             args: self.args.expand_foreach_value(var, value),
-            computedArgs: self.computedArgs.expand_foreach_value(var, value),
             key: self.key.expand_foreach_value(var, value),
             when: self.when.expand_foreach_value(var, value),
             mode: self.mode.expand_foreach_value(var, value),
@@ -373,7 +365,7 @@ impl BindingInput {
             defaults: self.defaults.expand_foreach_value(var, value),
             prefixes: self.prefixes.expand_foreach_value(var, value),
             finalKey: self.finalKey.clone(),
-            computedRepeat: self.computedRepeat.expand_foreach_value(var, value),
+            repeat: self.repeat.expand_foreach_value(var, value),
             foreach: None,
             name: self.name.expand_foreach_value(var, value),
             description: self.description.expand_foreach_value(var, value),
@@ -391,6 +383,7 @@ fn regularize_commands(input: BindingInput) -> Result<(BindingInput, Vec<Command
     let to_json = serde_wasm_bindgen::Serializer::json_compatible();
     let command_pos = input.command.span();
     let command = input.command.get_ref().clone().resolve("command")?;
+    // TODO: replicate for computedArgs (and do in a function?)
     let args = input.args.clone();
     if command == "runCommands" {
         let spanned = args
@@ -438,7 +431,9 @@ fn regularize_commands(input: BindingInput) -> Result<(BindingInput, Vec<Command
 
             command_result.push(Command {
                 command,
-                args: args.serialize(&to_json)?,
+                args: args
+                    .serialize(&to_json)
+                    .expect("while serializing command arguments"),
             })
         }
 
@@ -448,7 +443,9 @@ fn regularize_commands(input: BindingInput) -> Result<(BindingInput, Vec<Command
             input,
             vec![Command {
                 command,
-                args: args.serialize(&to_json)?,
+                args: args
+                    .serialize(&to_json)
+                    .expect("while serializing command arguments"),
             }],
         ));
     }
@@ -473,7 +470,7 @@ impl Binding {
             defaults: input.defaults.map(|x| x.into_inner()).unwrap_or_default(),
             prefixes: input.prefixes.into_inner().to_array(),
             finalKey: input.finalKey.map(|x| x.into_inner()).unwrap_or_default(),
-            computedRepeat: input.computedRepeat.map(|x| x.into_inner()),
+            repeat: input.repeat.map(|x| x.into_inner()),
             name: input.name.map(|x| x.into_inner()),
             description: input.description.map(|x| x.into_inner()),
             hideInPalette: input.hideInPalette.map(|x| x.into_inner()),
@@ -497,7 +494,6 @@ mod tests {
         let data = r#"
         command = "do"
         args = { a = "2", b = 3 }
-        computedArgs = { c = "1+2" }
         key = "a"
         when = "joe > 1"
         mode = "normal"
@@ -506,7 +502,7 @@ mod tests {
         foreach.index = [1,2,3]
         prefixes = "c"
         finalKey = true
-        computedRepeat = "2+c"
+        repeat = "2+c"
         name = "foo"
         description = "foo bar bin"
         hideInPalette = false
@@ -523,10 +519,6 @@ mod tests {
         let args = result.args.unwrap().into_inner();
         assert_eq!(args.get("a").unwrap(), &Value::String("2".into()));
         assert_eq!(args.get("b").unwrap(), &Value::Integer(3));
-        assert_eq!(
-            result.computedArgs.unwrap().into_inner().get("c").unwrap(),
-            &Value::String("1+2".into())
-        );
         assert_eq!(result.key.into_inner(), Required::Value("a".into()));
         assert_eq!(result.when.into_inner(), Plural::One("joe > 1".into()));
         assert_eq!(result.mode.into_inner(), Plural::One("normal".into()));
@@ -591,7 +583,6 @@ mod tests {
         [[bind]]
         name = "default"
         command = "cursorMove"
-        computedArgs.value = "count"
         prefixes = ["a"]
 
         [[bind]]
@@ -616,16 +607,6 @@ mod tests {
                 .as_str()
                 .unwrap(),
             "left"
-        );
-        assert_eq!(
-            left.computedArgs
-                .unwrap()
-                .into_inner()
-                .get("value")
-                .unwrap()
-                .as_str()
-                .unwrap(),
-            "count"
         );
         assert_eq!(
             left.prefixes.into_inner(),
