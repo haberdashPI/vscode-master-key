@@ -1,21 +1,23 @@
 // top-level parsing of an entire file
 use crate::bind::{Binding, BindingInput};
-use crate::error::{Error, ErrorWithContext, Result};
+use crate::error::{Context, Error, ErrorContext, ErrorWithContext, Result};
 
+use log::info;
 use serde::{Deserialize, Serialize};
+use toml::Spanned;
 use wasm_bindgen::prelude::*;
 
 // TODO: copy over docs from typescript
 #[derive(Deserialize, Clone, Debug)]
 struct KeyFileInput {
-    bind: Vec<BindingInput>,
+    bind: Vec<Spanned<BindingInput>>,
 }
 
 #[derive(Clone)]
 #[allow(non_snake_case)]
 #[wasm_bindgen(getter_with_clone)]
-struct KeyFile {
-    bind: Vec<Binding>,
+pub struct KeyFile {
+    pub bind: Vec<Binding>,
 }
 
 impl KeyFile {
@@ -24,7 +26,10 @@ impl KeyFile {
             bind: input
                 .bind
                 .into_iter()
-                .map(|b| Binding::new(b))
+                .map(|b| {
+                    let span = b.span();
+                    return Binding::new(b.into_inner()).context(Context::Range(span));
+                })
                 .collect::<Result<Vec<_>>>()?,
         });
     }

@@ -33,6 +33,7 @@ outputs = ['out/**/*.wasm', 'src/rust/parsing/lib/*']
 dir = 'src/rust/parsing'
 run = [
     'wasm-pack build --target web --out-dir lib',
+    'mkdir -p ../../../out',
     'cp lib/parsing_bg.wasm ../../../out/parsing_bg.wasm',
 ]
 
@@ -54,14 +55,14 @@ def main [...args] {
             get filenames.0 |
             each { |f| $'--object=($in)' }
 
-        cargo +nightly test --tests ...$args
+        cargo +nightly test --tests ...$args -- --nocapture
         cargo profdata -- merge -sparse coverage/parsing.profraw -o coverage/parsing.profdata
         (cargo cov -- export {{vars.coverage_options}} --format=lcov ...($object_files) o>
             ../../../coverage/rs_coverage.info)
 
         cargo cov -- report --use-color {{vars.coverage_options}} ...($object_files)
     } else {
-        cargo test ...$args
+        cargo test ...$args -- --nocapture
     }
 }
 main
@@ -70,7 +71,7 @@ main
 [tasks.build]
 depends = ['check-types', 'lint', 'build-rust']
 sources = ['src/**/*.ts']
-run = ['pwd', 'node esbuild.mjs']
+run = 'node esbuild.mjs'
 
 [tasks.package]
 depends = ['check-types', 'lint', 'build-rust']

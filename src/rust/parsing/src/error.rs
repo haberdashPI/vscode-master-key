@@ -23,12 +23,61 @@ pub enum Error {
     Regex(#[from] regex::Error),
 }
 
+// TODO: figure out how to expose errors in wasm
+// (maybe we output some regular formatting structure rather than individual error types)
 #[wasm_bindgen]
 #[derive(Debug, Error, Clone)]
 pub struct ErrorWithContext {
     #[source]
     error: Error,
     contexts: Vec<Context>,
+}
+
+#[wasm_bindgen]
+impl ErrorWithContext {
+    pub fn report(&self) -> ErrorReport {
+        let mut items = Vec::with_capacity(self.contexts.len() + 1);
+        items.push(ErrorReportItem {
+            message: Some(self.error.to_string()),
+            range: None,
+        });
+        for context in &self.contexts {
+            let item = match context {
+                Context::String(str) => ErrorReportItem {
+                    message: Some(str.clone()),
+                    range: None,
+                },
+                Context::Range(range) => ErrorReportItem {
+                    message: None,
+                    range: Some(ByteRange {
+                        start: range.start,
+                        end: range.end,
+                    }),
+                },
+            };
+            items.push(item);
+        }
+        return ErrorReport { items };
+    }
+}
+
+#[wasm_bindgen(getter_with_clone)]
+pub struct ErrorReport {
+    pub items: Vec<ErrorReportItem>,
+}
+
+#[wasm_bindgen]
+#[derive(Debug, Clone)]
+pub struct ByteRange {
+    pub start: usize,
+    pub end: usize,
+}
+
+#[wasm_bindgen(getter_with_clone)]
+#[derive(Debug, Clone)]
+pub struct ErrorReportItem {
+    pub message: Option<String>,
+    pub range: Option<ByteRange>,
 }
 
 #[derive(Debug, Clone)]

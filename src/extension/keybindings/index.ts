@@ -25,8 +25,8 @@ import { toLayoutIndependentString } from './layout';
 import JSONC from 'jsonc-simple-parser';
 import TOML from 'smol-toml';
 
-// run `mise build-rust` to create this auto generated source file
-import initParsing, { simple, debug_parse_command } from '../../rust/parsing/lib';
+// run `mise build-rust` to create this auto generated source fileu
+import initParsing, { parse_string } from '../../rust/parsing/lib';
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 // Keybinding Generation
@@ -653,19 +653,18 @@ export async function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.test-rust', () => {
-            const parsing = debug_parse_command(`
+            const parsed = parse_string(`
+                [[bind]]
                 command = "do"
                 args = { a = "2", b = 3 }
-                computedArgs = { c = "1+2" }
                 key = "a"
                 when = "joe > 1"
                 mode = "normal"
                 priority = 1
                 defaults = "foo.bar"
-                foreach.index = [1,2,3]
                 prefixes = "c"
                 finalKey = true
-                computedRepeat = "2+c"
+                repeat = "2+c"
                 name = "foo"
                 description = "foo bar bin"
                 hideInPalette = false
@@ -677,31 +676,40 @@ export async function activate(context: vscode.ExtensionContext) {
                 whenComputed = "f > 2"
             `);
 
-            vscode.window.showInformationMessage(`Rust says:
-                command: ${parsing.command}
-                args: ${JSON.stringify(parsing.args, null, 2)}
-                computedArgs: ${JSON.stringify(parsing.computedArgs, null, 2)}
-                key: ${parsing.key}
-                when: ${parsing.when}
-                mode: ${parsing.mode}
-                priority: ${parsing.priority}
-                defaults: ${parsing.defaults}
-                prefixes: ${parsing.prefixes}
-                finalKey: ${parsing.finalKey}
-                computedRepeat: ${parsing.computedRepeat}
-                name: ${parsing.name}
-                description: ${parsing.description}
-                hideInPalette: ${parsing.hideInPalette}
-                hideInDocs: ${parsing.hideInDocs}
-                combinedName: ${parsing.combinedName}
-                combinedKey: ${parsing.combinedKey}
-                combinedDescription: ${parsing.combinedDescription}
-                kind: ${parsing.kind}
-                whenComputed: ${parsing.whenComputed}
-            `);
-            const result = simple();
-            vscode.window.showInformationMessage('Rust says: "' + result + '"');
-            return result;
+            if (parsed.file) {
+                const binding = parsed.file.bind[0];
+                vscode.window.showInformationMessage(`Rust says:
+                    command: ${binding.commands[0].command},
+                    args: ${JSON.stringify(binding.commands[0].args, null, 2)}
+                    key: ${binding.key}
+                    when: ${binding.when}
+                    mode: ${binding.mode}
+                    priority: ${binding.priority}
+                    defaults: ${binding.defaults}
+                    prefixes: ${binding.prefixes}
+                    finalKey: ${binding.finalKey}
+                    computedRepeat: ${binding.repeat}
+                    name: ${binding.name}
+                    description: ${binding.description}
+                    hideInPalette: ${binding.hideInPalette}
+                    hideInDocs: ${binding.hideInDocs}
+                    combinedName: ${binding.combinedName}
+                    combinedKey: ${binding.combinedKey}
+                    combinedDescription: ${binding.combinedDescription}
+                    kind: ${binding.kind}
+                `);
+            } else if (parsed.error) {
+                const report = parsed.error.report();
+                let message = '';
+                for (const item of report.items) {
+                    message += (item.message || '') + ' at ' +
+                        (item.range ? `(${item.range.start}, ${item.range.end})` : '') +
+                        '\n';
+                }
+                vscode.window.showErrorMessage(
+                    'Parsing error: ' + message,
+                );
+            }
         }),
     );
 

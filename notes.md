@@ -81,7 +81,7 @@ Integration test debugging:
         - [X] expand keys in `foreach` lists
         - [x] include `Spanned` in fields of `BindInput`
     - [ ] pipeline for `[[bind]]` entries
-        - [ ] basic pipeline
+        - [X] basic pipeline
         - [ ] properly identify spans: both `[[bind]]` header and entire `[[bind]]` region
               NOTE: short term goal here is to support literate docs
         - [ ] cleanup and refactor code

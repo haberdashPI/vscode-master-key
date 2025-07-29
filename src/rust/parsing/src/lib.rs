@@ -1,11 +1,8 @@
-pub mod bind;
-mod error;
-mod file;
+// error reporting
+pub mod error;
 mod util;
 
-use wasm_bindgen::prelude::*;
-
-#[wasm_bindgen]
-pub fn simple() -> String {
-    return "hello from rust!".into();
-}
+// [[bind]] level parsing
+mod bind;
+// file level parsing
+pub mod file;
