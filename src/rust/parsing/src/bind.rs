@@ -387,10 +387,10 @@ fn regularize_commands(input: BindingInput) -> Result<(BindingInput, Vec<Command
     if command == "runCommands" {
         let spanned = args
             .require("`args`")
-            .context(Context::Range(command_pos))
             .context(Context::String(
                 "`runCommands` must have `args` field".into(),
-            ))?;
+            ))
+            .context(Context::Range(command_pos))?;
         let args_pos = spanned.span();
         let args = spanned.into_inner();
         let commands = args

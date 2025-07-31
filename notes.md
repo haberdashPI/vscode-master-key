@@ -68,9 +68,9 @@ Integration test debugging:
 3. Refactor parsing to rust
     a. in this early phase, we don't worry too much about providing detailed error messages
        (if there are easy things to do here we can do them, but no UX work, etc...)
-    - [ ] start by implementing parsing of `[[bind]]`
+    - [x] start by implementing parsing of `[[bind]]`
         - [X] basic parsing
-        - [X] merging defaults (unit tests remain)
+        - [X] merging defaults
         - [X] refactor code
         - [X] initial coverage output
             - https://crates.io/crates/cargo-tarpaulin
@@ -82,14 +82,20 @@ Integration test debugging:
         - [x] include `Spanned` in fields of `BindInput`
     - [ ] pipeline for `[[bind]]` entries
         - [X] basic pipeline
+        - [X] implement parsing of vscode file with rust command (and generate problems)
+            - [X] we need to detect that the file should be parsed
+            - [X] we need to send detected files to the rust parser
+            - [X] we need to process errors to generate the diagnostic outputs
         - [ ] properly identify spans: both `[[bind]]` header and entire `[[bind]]` region
               NOTE: short term goal here is to support literate docs
+        - [ ] expansion of `[define]` sections
+            - [ ] make sure to error on fields that cannot have runtime computation
+              (only certain fields can be evaluated at runtime: `args` and `repeat`)
+            - [ ] get basic interpolation of `{{var}}` elements working for `bind` and its fields
         - [ ] cleanup and refactor code
-            - NOTE: we're waiting until we test out spans, because that could require
-              more refactoring
-        - [ ] proper parsing with `[[default]]` and `defaults`
+            - NOTE: we're waiting until we test out spans and the other stuff above because that could require more refactoring
         - [ ] foreach expansion
-        - [ ] command normalization (always `runCommand` with an array of objects with `command` field)
+        - [X] command normalization (always `runCommand` with an array of objects with `command` field)
         - [ ] check constraints
             - [ ] validation that `master-key.prefix` uses `finalKey: false`
             - [ ] validation that keybindings with non modifier keybindings

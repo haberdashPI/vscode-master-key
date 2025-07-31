@@ -1,0 +1,20 @@
+[[bind]]
+command = "do"
+args = { a = "2", b = 3 }
+key = "a"
+when = "joe > 1"
+mode = "normal"
+priority = 1
+defaults = "foo.bar"
+prefixes = "c"
+finalKey = true
+repeat = "2+c"
+name = "foo"
+description = "foo bar bin"
+hideInPalette = false
+hideInDocs = false
+combinedName = "foo/bar"
+combinedKey = "A/B"
+combinedDescription = "bla bla bla"
+kind = "biz"
+whenComputed = "f > 2"

@@ -642,9 +642,60 @@ async function loadPresets(allDirs: vscode.Uri[]) {
 
 let extensionPresetsDir: vscode.Uri;
 
+async function validateKeybindings(file: vscode.Uri) {
+    if (file.toString().endsWith('.mk.toml')) {
+        const fileData = await vscode.workspace.fs.readFile(file);
+        // TODO: read bytes directly in `parse_string` to avoid extra copies
+        const fileString = new TextDecoder('utf8').decode(fileData);
+        const parsed = parse_string(fileString);
+        if (parsed.error) {
+            const diagnosticItems: vscode.Diagnostic[] = [];
+            let message = '';
+            for (const item of parsed.error.items) {
+                if (item.message) {
+                    message += item.message + '\n';
+                }
+                if (item.range) {
+                    diagnosticItems.push(
+                        new vscode.Diagnostic(
+                            new vscode.Range(
+                                new vscode.Position(
+                                    item.range.start.line,
+                                    item.range.start.col,
+                                ),
+                                new vscode.Position(
+                                    item.range.end.line,
+                                    item.range.end.col,
+                                ),
+                            ),
+                            message,
+                            vscode.DiagnosticSeverity.Error,
+                        ),
+                    );
+                    message = '';
+                }
+            }
+            diagnostics.set(file, diagnosticItems);
+        } else {
+            diagnostics.delete(file);
+        }
+    }
+}
+
+let diagnostics: vscode.DiagnosticCollection;
+
 export async function activate(context: vscode.ExtensionContext) {
     updateConfig(undefined, false);
     vscode.workspace.onDidChangeConfiguration(updateConfig);
+
+    diagnostics = vscode.languages.createDiagnosticCollection('Master Key Bindings');
+
+    vscode.workspace.onDidSaveTextDocument(async (e) => {
+        await validateKeybindings(e.uri);
+    });
+    vscode.workspace.onDidOpenTextDocument(async (e) => {
+        await validateKeybindings(e.uri);
+    });
 
     // initialize rust WASM module for parsing keybinding files
     const filename = vscode.Uri.joinPath(context.extensionUri, 'out', 'parsing_bg.wasm');
@@ -699,9 +750,8 @@ export async function activate(context: vscode.ExtensionContext) {
                     kind: ${binding.kind}
                 `);
             } else if (parsed.error) {
-                const report = parsed.error.report();
                 let message = '';
-                for (const item of report.items) {
+                for (const item of parsed.error.items) {
                     message += (item.message || '') + ' at ' +
                         (item.range ? `(${item.range.start}, ${item.range.end})` : '') +
                         '\n';

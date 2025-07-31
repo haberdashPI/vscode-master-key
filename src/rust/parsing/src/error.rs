@@ -1,4 +1,5 @@
 use std::fmt;
+use string_offsets::{Pos, StringOffsets};
 use thiserror::Error;
 use wasm_bindgen::prelude::*;
 
@@ -33,13 +34,26 @@ pub struct ErrorWithContext {
     contexts: Vec<Context>,
 }
 
+fn range_to_pos(range: Range<usize>, offsets: &StringOffsets) -> CharRange {
+    let start = offsets.utf8_to_char_pos(range.start);
+    let end = offsets.utf8_to_char_pos(range.end);
+    CharRange { start, end }
+}
+
 #[wasm_bindgen]
 impl ErrorWithContext {
-    pub fn report(&self) -> ErrorReport {
+    pub fn report(&self, content: &str) -> ErrorReport {
         let mut items = Vec::with_capacity(self.contexts.len() + 1);
-        items.push(ErrorReportItem {
-            message: Some(self.error.to_string()),
-            range: None,
+        let offsets: StringOffsets = StringOffsets::new(content);
+        items.push(match &self.error {
+            Error::Parsing(toml) => ErrorReportItem {
+                message: Some(toml.message().into()),
+                range: toml.span().map(|r| range_to_pos(r, &offsets)),
+            },
+            _ => ErrorReportItem {
+                message: Some(self.error.to_string()),
+                range: None,
+            },
         });
         for context in &self.contexts {
             let item = match context {
@@ -49,10 +63,7 @@ impl ErrorWithContext {
                 },
                 Context::Range(range) => ErrorReportItem {
                     message: None,
-                    range: Some(ByteRange {
-                        start: range.start,
-                        end: range.end,
-                    }),
+                    range: Some(range_to_pos(range.clone(), &offsets)),
                 },
             };
             items.push(item);
@@ -61,6 +72,7 @@ impl ErrorWithContext {
     }
 }
 
+#[derive(Debug, Clone)]
 #[wasm_bindgen(getter_with_clone)]
 pub struct ErrorReport {
     pub items: Vec<ErrorReportItem>,
@@ -68,16 +80,16 @@ pub struct ErrorReport {
 
 #[wasm_bindgen]
 #[derive(Debug, Clone)]
-pub struct ByteRange {
-    pub start: usize,
-    pub end: usize,
+pub struct CharRange {
+    pub start: Pos,
+    pub end: Pos,
 }
 
 #[wasm_bindgen(getter_with_clone)]
 #[derive(Debug, Clone)]
 pub struct ErrorReportItem {
     pub message: Option<String>,
-    pub range: Option<ByteRange>,
+    pub range: Option<CharRange>,
 }
 
 #[derive(Debug, Clone)]

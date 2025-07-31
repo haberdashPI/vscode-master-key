@@ -357,7 +357,7 @@ key = "shift+x"
 name = "exapand"
 description = "expand selections to full lines"
 command = "expandLineSelection"
-computedRepeat = "{{count}}"
+repeat = "{{count}}"
 
 [[define.edit_motion_obj]]
 command = "selection-utilities.moveBy"
@@ -649,7 +649,7 @@ name = "repeat motion"
 description = """
 Repeat the last motion command. Motions usually move the cursor or change the selection.
 """
-computedRepeat = "{{count}}"
+repeat = "{{count}}"
 command = "master-key.replayFromHistory"
 args.whereComputedIndexIs = """
 commandHistory[index].tags.contains('motion') &&
@@ -1576,7 +1576,7 @@ key = "c"
 when = "!editorHasSelection && master-key.count > 1"
 command = "runCommands"
 args.commands = [
-    { defined = "selectLinesDown" },
+    "{{selectLinesDown}}",
     "deleteRight",
     "editor.action.insertLineBefore",
     "master-key.enterInsert",
@@ -1605,7 +1605,7 @@ mode = ["normal", "selectedit"]
 when = "master-key.count > 1"
 command = "runCommands"
 args.commands = [
-    { defined = "selectLinesUp" },
+    "{{selectLinesUp}}",
     "deleteRight",
     "editor.action.insertLineBefore",
     "master-key.enterInsert",
@@ -1705,7 +1705,7 @@ See also `,` which repeats the last subject.
 """
 key = "."
 command = "runCommands"
-computedRepeat = "{{count}}"
+repeat = "{{count}}"
 
 [[bind.args.commands]]
 command = "master-key.replayFromHistory"
@@ -1751,7 +1751,7 @@ count, delete up to the next `count` lines and store to clipboard.
 when = "!editorHasSelection"
 command = "runCommands"
 args.commands = [
-    { defined = "selectLinesDown" },
+    "selectLinesDown",
     "editor.action.clipboardCutAction",
     { command = "master-key.setMode", args = { value = "normal" } },
 ]
@@ -1784,7 +1784,7 @@ key = "shift+d"
 mode = "normal"
 when = "master-key.count > 1"
 command = "runCommands"
-args.commands = [{ defined = "selectLinesUp" }, "deleteRight"]
+args.commands = ["{{selectLinesUp}}", "deleteRight"]
 
 [[bind]]
 merge = "{{edit_action}}"
@@ -1800,7 +1800,7 @@ key = "y"
 when = "master-key.count > 1"
 command = "runCommands"
 args.commands = [
-    { defined = "selectLinesDown" },
+    "{{selectLinesDown}}",
     "editor.action.clipboardCopyAction",
     "selection-utilities.shrinkToActive",
 ]
@@ -1825,7 +1825,7 @@ key = "shift+y"
 when = "master-key.count > 1"
 command = "runCommands"
 args.commands = [
-    { defined = "selectLinesUp" },
+    "{{selectLinesUp}}",
     "editor.action.clipboardCopyAction",
     "selection-utilities.shrinkToActive",
 ]
@@ -1838,13 +1838,13 @@ description = "Indent lines"
 command = "editor.action.indentLines"
 
 [[bind]]
+args.commands = ["{{selectLinesDown}}", "editor.action.indentLines"]
 merge = "{{edit_action}}"
 key = "shift+."
 name = "indent"
 description = "Indent lines"
 when = "master-key.count >= 1"
 command = "runCommands"
-args.commands = [{ defined = "selectLinesDown" }, "editor.action.indentLines"]
 
 [[bind]]
 merge = "{{edit_action}}"
@@ -1855,17 +1855,17 @@ description = "De-indent lines"
 command = "editor.action.outdentLines"
 
 [[bind]]
+args.commands = [
+    "{{selectLinesDown}}",
+    "editor.action.outdentLines",
+    "selection-utilities.shrinkToActive",
+]
 merge = "{{edit_action}}"
 key = "shift+,"
 name = "deindent"
 when = "master-key.count >= 1"
 description = "Deindent lines"
 command = "runCommands"
-args.commands = [
-    { defined = "selectLinesDown" },
-    "editor.action.outdentLines",
-    "selection-utilities.shrinkToActive",
-]
 
 [define.edit_action_history]
 merge = "{{edit_action}}"
@@ -2104,7 +2104,7 @@ key = "space j"
 mode = ["normal", "selectedit"]
 when = "!editorHasSelection"
 command = "runCommands"
-args.commands = [{ defined = "selectLinesDown" }, 'editor.action.joinLines']
+args.commands = ["{{selectLinesDown}}", 'editor.action.joinLines']
 
 [[bind]]
 merge = "{{edit_action}}"
@@ -2124,6 +2124,11 @@ when = "master-key.count < 1"
 command = "editor.action.formatSelection"
 
 [[bind]]
+args.commands = [
+    "{{selectLinesDown}}",
+    "editor.action.formatSelection",
+    "selection-utilities.shrinkToActive",
+]
 merge = "{{edit_action}}"
 key = "space f"
 combinedName = "format / format document"
@@ -2133,11 +2138,6 @@ name = "format"
 description = "Format sel"
 when = "master-key.count >= 1"
 command = "runCommands"
-args.commands = [
-    { defined = "selectLinesDown" },
-    "editor.action.formatSelection",
-    "selection-utilities.shrinkToActive",
-]
 
 [[bind]]
 merge = "{{edit_action}}"
@@ -2196,6 +2196,7 @@ when = "master-key.count < 1"
 command = "editor.action.commentLine"
 
 [[bind]]
+args.commands = ["{{selectLinesDown}}", "editor.action.commentLine"]
 merge = "{{edit_action}}"
 key = "space /"
 name = "comment lines"
@@ -2205,7 +2206,6 @@ combinedKey = "(shift+)/"
 description = "select next comment"
 when = "master-key.count >= 1"
 command = "runCommands"
-args.commands = [{ defined = "selectLinesDown" }, "editor.action.commentLine"]
 
 [[bind]]
 merge = "{{edit_action}}"
@@ -2215,6 +2215,11 @@ combinedName = "(block) comment"
 command = "editor.action.blockComment"
 
 [[bind]]
+args.commands = [
+    "{{selectLinesDown}}",
+    "editor.action.blockComment",
+    "selection-utilities.shrinkToActive",
+]
 merge = "{{edit_action}}"
 key = "space shift+/"
 name = "block comment lines"
@@ -2222,11 +2227,6 @@ combinedName = "(block) comment"
 description = "select previous comment"
 when = "master-key.count >= 1"
 command = "runCommands"
-args.commands = [
-    { defined = "selectLinesDown" },
-    "editor.action.blockComment",
-    "selection-utilities.shrinkToActive",
-]
 
 [[bind]]
 merge = "{{edit_action}}"
@@ -2949,7 +2949,7 @@ description = "add cursor at the next match to the primary cursor's text"
 combinedDescription = "add cursor at the next/previous match to the primary cursor's text"
 key = "l"
 combinedKey = "l/h"
-computedRepeat = "{{count}}"
+repeat = "{{count}}"
 command = "selection-utilities.addNext"
 
 [[bind]]
@@ -2959,7 +2959,7 @@ combinedName = "add →/←"
 description = "add cursor at the previous match to the primary cursor's text"
 key = "h"
 command = "selection-utilities.addPrev"
-computedRepeat = '{{count}}'
+repeat = '{{count}}'
 
 [[bind]]
 merge = "{{edit_select_edit}}"
@@ -2970,7 +2970,7 @@ combinedDescription = "move primary cursor to the next/previous match of the pri
 key = "shift+l"
 combinedKey = "shift+l/h"
 command = "selection-utilities.skipNext"
-computedRepeat = "{{count}}"
+repeat = "{{count}}"
 
 [[bind]]
 merge = "{{edit_select_edit}}"
@@ -2979,7 +2979,7 @@ combinedName = "skip →/←"
 description = "move primary cursor to the previous match of the primary cursor's text"
 key = "shift+h"
 command = "selection-utilities.skipPrev"
-computedRepeat = '{{count}}'
+repeat = '{{count}}'
 
 [[bind]]
 merge = "{{edit_select_edit}}"
@@ -3010,7 +3010,7 @@ what cursor you delete, and where the cursor goes when you clear or save selecti
 key = "j"
 combinedKey = "j/l"
 command = "selection-utilities.movePrimaryRight"
-computedRepeat = '{{count}}'
+repeat = '{{count}}'
 
 [[bind]]
 merge = "{{edit_select_edit}}"
@@ -3019,7 +3019,7 @@ combinedName = "→/← sel"
 description = "make the previous selection primary; primary selections determine from where you add cursors, what cursor you delete, and where the cursor goes when you clear or save selections"
 key = "k"
 command = "selection-utilities.movePrimaryLeft"
-computedRepeat = '{{count}}'
+repeat = '{{count}}'
 
 [[bind]]
 merge = "{{edit_select_edit}}"
@@ -3032,7 +3032,7 @@ combinedDescription = "insert cursor on line above/below"
 key = "shift+k"
 combinedKey = "shift+k/j"
 command = "editor.action.insertCursorAbove"
-computedRepeat = "{{count}}"
+repeat = "{{count}}"
 
 [[bind]]
 merge = "{{edit_select_edit}}"
@@ -3043,7 +3043,7 @@ insert cursor on line below
 """
 key = "shift+j"
 command = "editor.action.insertCursorBelow"
-computedRepeat = "{{count-1}}"
+repeat = "{{count-1}}"
 
 [[bind]]
 merge = "{{edit_select_edit}}"
@@ -3056,7 +3056,7 @@ mode if all selections are deleted.
 """
 key = "d"
 command = "selection-utilities.deletePrimary"
-computedRepeat = "{{count-1}}"
+repeat = "{{count-1}}"
 
 [[bind]]
 merge = "{{edit_select_edit}}"

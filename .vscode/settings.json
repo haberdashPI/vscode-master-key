@@ -1,4 +1,11 @@
 {
+    "editor.formatOnSave": true,
+    "eslint.validate": [
+        "javascript",
+        "javascriptreact",
+        "yaml",
+        "github-actions-workflow" // for GitHub Actions workflow files
+    ],
     "rust-analyzer.linkedProjects": [
         "src/rust/parsing/Cargo.toml"
     ],
@@ -10,19 +17,19 @@
         "editorBracketHighlight.foreground5": "#66a61e",
         "editorBracketHighlight.foreground6": "#e6ab02",
         "editorBracketHighlight.unexpectedBracket.foreground": "#ff0000",
-        "titleBar.activeBackground": "#7279f9",
-        "titleBar.activeForeground": "#000000",
-        "titleBar.inactiveBackground": "#7279f9",
-        "titleBar.inactiveForeground": "#000000",
-        "titleBar.border": "#7279f9",
-        "activityBar.background": "#7279f9",
-        "activityBar.foreground": "#000000",
-        "statusBar.background": "#7279f9",
-        "statusBar.foreground": "#000000",
-        "statusBar.debuggingBackground": "#7279f9",
-        "statusBar.debuggingForeground": "#000000",
-        "tab.activeBorder": "#7279f9",
+        "titleBar.activeBackground": "#d57aff",
+        "titleBar.activeForeground": "#FFFFFF",
+        "titleBar.inactiveBackground": "#d57aff",
+        "titleBar.inactiveForeground": "#FFFFFF",
+        "titleBar.border": "#d57aff",
+        "activityBar.background": "#d57aff",
+        "activityBar.foreground": "#FFFFFF",
+        "statusBar.background": "#d57aff",
+        "statusBar.foreground": "#FFFFFF",
+        "statusBar.debuggingBackground": "#d57aff",
+        "statusBar.debuggingForeground": "#FFFFFF",
+        "tab.activeBorder": "#d57aff",
         "iLoveWorkSpaceColors": true,
         "iLoveWorkSpaceRandom": false
-    }
+    },
 }

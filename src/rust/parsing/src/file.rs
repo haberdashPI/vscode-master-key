@@ -1,6 +1,7 @@
 // top-level parsing of an entire file
 use crate::bind::{Binding, BindingInput};
-use crate::error::{Context, Error, ErrorContext, ErrorWithContext, Result};
+use crate::error::{Context, Error, ErrorContext, ErrorReport, ErrorWithContext, Result};
+use crate::file;
 
 use log::info;
 use serde::{Deserialize, Serialize};
@@ -38,7 +39,7 @@ impl KeyFile {
 #[wasm_bindgen(getter_with_clone)]
 pub struct KeyFileResult {
     pub file: Option<KeyFile>,
-    pub error: Option<ErrorWithContext>,
+    pub error: Option<ErrorReport>,
 }
 
 #[wasm_bindgen]
@@ -50,7 +51,7 @@ pub fn parse_string(file_content: &str) -> KeyFileResult {
         },
         Err(err) => KeyFileResult {
             file: None,
-            error: Some(err),
+            error: Some(err.report(file_content)),
         },
     };
 }

@@ -416,6 +416,7 @@ dependencies = [
  "regex",
  "serde",
  "serde-wasm-bindgen",
+ "string-offsets",
  "test-log",
  "thiserror",
  "toml",
@@ -627,6 +628,15 @@ name = "stable_deref_trait"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a8f112729512f8e442d81f95a8a7ddf2b7c6b8a1a6f509a95864142b30cab2d3"
+
+[[package]]
+name = "string-offsets"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a651d1095b5b70f1a88e10dbcf58625e30140112b0f9f55f334e0f84ec2e3176"
+dependencies = [
+ "wasm-bindgen",
+]
 
 [[package]]
 name = "strsim"
