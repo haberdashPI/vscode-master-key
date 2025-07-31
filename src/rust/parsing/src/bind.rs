@@ -383,7 +383,6 @@ fn regularize_commands(input: BindingInput) -> Result<(BindingInput, Vec<Command
     let to_json = serde_wasm_bindgen::Serializer::json_compatible();
     let command_pos = input.command.span();
     let command = input.command.get_ref().clone().resolve("command")?;
-    // TODO: replicate for computedArgs (and do in a function?)
     let args = input.args.clone();
     if command == "runCommands" {
         let spanned = args
