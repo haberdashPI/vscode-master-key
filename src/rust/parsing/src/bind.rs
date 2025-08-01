@@ -289,7 +289,7 @@ pub struct Command {
 }
 
 impl Command {
-    fn new(input: CommandInput) -> Result<Self> {
+    pub fn new(input: CommandInput) -> Result<Self> {
         let to_json = serde_wasm_bindgen::Serializer::json_compatible();
         let command = input.command.into_inner().resolve("`command` field")?;
         let args = input
