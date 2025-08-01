@@ -22,24 +22,31 @@ pub struct KeyFile {
 }
 
 impl KeyFile {
-    fn new(input: KeyFileInput) -> Result<KeyFile> {
-        return Ok(KeyFile {
-            bind: input
-                .bind
-                .into_iter()
-                .map(|b| {
-                    let span = b.span();
-                    return Binding::new(b.into_inner()).context(Context::Range(span));
-                })
-                .collect::<Result<Vec<_>>>()?,
-        });
+    fn new(input: KeyFileInput) -> std::result::Result<KeyFile, Vec<ErrorWithContext>> {
+        let mut errors = Vec::new();
+        let result = input
+            .bind
+            .into_iter()
+            .filter_map(|b| {
+                let span = b.span();
+                Binding::new(b.into_inner())
+                    .context(Context::Range(span))
+                    .map_err(|e| errors.push(e))
+                    .ok()
+            })
+            .collect();
+        if !errors.len() > 0 {
+            return Err(errors);
+        } else {
+            return Ok(KeyFile { bind: result });
+        }
     }
 }
 
 #[wasm_bindgen(getter_with_clone)]
 pub struct KeyFileResult {
     pub file: Option<KeyFile>,
-    pub error: Option<ErrorReport>,
+    pub errors: Option<Vec<ErrorReport>>,
 }
 
 #[wasm_bindgen]
@@ -47,18 +54,21 @@ pub fn parse_string(file_content: &str) -> KeyFileResult {
     return match parse_string_helper(file_content) {
         Ok(result) => KeyFileResult {
             file: Some(result),
-            error: None,
+            errors: None,
         },
         Err(err) => KeyFileResult {
             file: None,
-            error: Some(err.report(file_content)),
+            errors: Some(err.iter().map(|e| e.report(file_content)).collect()),
         },
     };
 }
 
-fn parse_string_helper(file_content: &str) -> Result<KeyFile> {
-    let result = toml::from_str::<KeyFileInput>(file_content)?;
-    return KeyFile::new(result);
+fn parse_string_helper(file_content: &str) -> std::result::Result<KeyFile, Vec<ErrorWithContext>> {
+    let parsed = toml::from_str::<KeyFileInput>(file_content);
+    return match parsed {
+        Ok(input) => KeyFile::new(input),
+        Err(err) => return Err(vec![err.into()]),
+    };
 }
 
 #[cfg(test)]

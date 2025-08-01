@@ -11,7 +11,7 @@ import {
 } from './parsing';
 import { processBindings, Bindings } from './processing';
 import { isSingleCommand } from '../utils';
-import { pick } from 'lodash';
+import { pick, debounce } from 'lodash';
 import replaceAll from 'string.prototype.replaceall';
 import { Utils } from 'vscode-uri';
 import {
@@ -642,37 +642,44 @@ async function loadPresets(allDirs: vscode.Uri[]) {
 
 let extensionPresetsDir: vscode.Uri;
 
-async function validateKeybindings(file: vscode.Uri) {
+async function validateKeybindings(file: vscode.Uri, fileString?: string) {
     if (file.toString().endsWith('.mk.toml')) {
-        const fileData = await vscode.workspace.fs.readFile(file);
+        if (fileString === undefined) {
+            const fileData = await vscode.workspace.fs.readFile(file);
+            fileString = new TextDecoder('utf8').decode(fileData);
+        }
         // TODO: read bytes directly in `parse_string` to avoid extra copies
-        const fileString = new TextDecoder('utf8').decode(fileData);
         const parsed = parse_string(fileString);
-        if (parsed.error) {
+        if (parsed.errors) {
             const diagnosticItems: vscode.Diagnostic[] = [];
-            let message = '';
-            for (const item of parsed.error.items) {
-                if (item.message) {
-                    message += item.message + '\n';
-                }
-                if (item.range) {
-                    diagnosticItems.push(
-                        new vscode.Diagnostic(
-                            new vscode.Range(
-                                new vscode.Position(
-                                    item.range.start.line,
-                                    item.range.start.col,
+            for (const error of parsed.errors) {
+                let message = '';
+                for (const item of error.items) {
+                    if (item.message) {
+                        message += item.message + '\n';
+                    }
+                    if (item.range) {
+                        diagnosticItems.push(
+                            new vscode.Diagnostic(
+                                new vscode.Range(
+                                    new vscode.Position(
+                                        item.range.start.line,
+                                        item.range.start.col,
+                                    ),
+                                    new vscode.Position(
+                                        item.range.end.line,
+                                        item.range.end.col,
+                                    ),
                                 ),
-                                new vscode.Position(
-                                    item.range.end.line,
-                                    item.range.end.col,
-                                ),
+                                message,
+                                vscode.DiagnosticSeverity.Error,
                             ),
-                            message,
-                            vscode.DiagnosticSeverity.Error,
-                        ),
-                    );
-                    message = '';
+                        );
+                        message = '';
+                    }
+                }
+                if (message) {
+                    diagnosticItems[diagnosticItems.length - 1].message += message;
                 }
             }
             diagnostics.set(file, diagnosticItems);
@@ -689,6 +696,10 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.workspace.onDidChangeConfiguration(updateConfig);
 
     diagnostics = vscode.languages.createDiagnosticCollection('Master Key Bindings');
+
+    vscode.workspace.onDidChangeTextDocument(async (e) => {
+        debounce(() => validateKeybindings(e.document.uri, e.document.getText()), 500)();
+    });
 
     vscode.workspace.onDidSaveTextDocument(async (e) => {
         await validateKeybindings(e.uri);
@@ -749,9 +760,9 @@ export async function activate(context: vscode.ExtensionContext) {
                     combinedDescription: ${binding.combinedDescription}
                     kind: ${binding.kind}
                 `);
-            } else if (parsed.error) {
+            } else if (parsed.errors) {
                 let message = '';
-                for (const item of parsed.error.items) {
+                for (const item of parsed.errors[0].items) {
                     message += (item.message || '') + ' at ' +
                         (item.range ? `(${item.range.start}, ${item.range.end})` : '') +
                         '\n';

@@ -16,7 +16,7 @@ pub enum Error {
     Validation(#[from] validator::ValidationError),
     #[error("expected {0}")]
     ConstraintError(&'static str),
-    #[error("required {0}")]
+    #[error("requires {0}")]
     RequiredField(&'static str),
     #[error("unexpected {0}")]
     Unexpected(&'static str),

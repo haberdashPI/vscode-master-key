@@ -86,7 +86,7 @@ Integration test debugging:
             - [X] we need to detect that the file should be parsed
             - [X] we need to send detected files to the rust parser
             - [X] we need to process errors to generate the diagnostic outputs
-        - [ ] properly identify spans: both `[[bind]]` header and entire `[[bind]]` region
+        - [X] properly identify spans: both `[[bind]]` header and entire `[[bind]]` region
               NOTE: short term goal here is to support literate docs
         - [ ] expansion of `[define]` sections
             - [ ] make sure to error on fields that cannot have runtime computation

@@ -382,11 +382,11 @@ impl BindingInput {
 fn regularize_commands(input: BindingInput) -> Result<(BindingInput, Vec<Command>)> {
     let to_json = serde_wasm_bindgen::Serializer::json_compatible();
     let command_pos = input.command.span();
-    let command = input.command.get_ref().clone().resolve("command")?;
+    let command = input.command.get_ref().clone().resolve("`command` field")?;
     let args = input.args.clone();
     if command == "runCommands" {
         let spanned = args
-            .require("`args`")
+            .require("`args` field")
             .context(Context::String(
                 "`runCommands` must have `args` field".into(),
             ))
@@ -395,7 +395,7 @@ fn regularize_commands(input: BindingInput) -> Result<(BindingInput, Vec<Command
         let args = spanned.into_inner();
         let commands = args
             .get("commands")
-            .require("`commands`")
+            .require("`commands` field")
             .context(Context::String(
                 "`runCommands.args` must have a `commands` fields".into(),
             ))
@@ -408,14 +408,14 @@ fn regularize_commands(input: BindingInput) -> Result<(BindingInput, Vec<Command
                 Value::Table(kv) => {
                     let command_name = kv
                         .get("command")
-                        .require("`command`")?
+                        .require("`command` field")?
                         .as_str()
                         .require("`command` to be string")
                         .context(Context::Range(args_pos.clone()))?
                         .to_owned();
                     let args = command
                         .get("args")
-                        .require("`args`")?
+                        .require("`args` field")?
                         .as_table()
                         .require("`args` to be a table")?
                         .to_owned();
@@ -462,7 +462,7 @@ impl Binding {
 
         return Ok(Binding {
             commands: commands,
-            key: input.key.into_inner().require("key")?,
+            key: input.key.into_inner().require("`key` field")?,
             when: input.when.into_inner().to_array(),
             mode: input.mode.into_inner().to_array(),
             priority: input.priority.map(|x| x.into_inner()).unwrap_or(0),
