@@ -89,13 +89,16 @@ Integration test debugging:
         - [X] properly identify spans: both `[[bind]]` header and entire `[[bind]]` region
               NOTE: short term goal here is to support literate docs
         - [ ] expansion of `[define]` sections
+            - [ ] unit tests for `define` parsing
+            - [ ] get basic interpolation of `{{var}}` elements working for `bind` and its fields
             - [ ] make sure to error on fields that cannot have runtime computation
               (only certain fields can be evaluated at runtime: `args` and `repeat`)
-            - [ ] get basic interpolation of `{{var}}` elements working for `bind` and its fields
-        - [ ] cleanup and refactor code
+        - [ ] cleanup, document and refactor code
             - NOTE: we're waiting until we test out spans and the other stuff above because that could require more refactoring
         - [ ] foreach expansion
-        - [X] command normalization (always `runCommand` with an array of objects with `command` field)
+        - [~] command normalization
+            - [X] always `runCommand` with an array of objects with `command` field
+            - [ ] flatten all nested `runCommands` calls
         - [ ] check constraints
             - [ ] validation that `master-key.prefix` uses `finalKey: false`
             - [ ] validation that keybindings with non modifier keybindings

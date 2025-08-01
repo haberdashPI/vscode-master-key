@@ -274,11 +274,30 @@ impl Merging for BindingInput {
     }
 }
 
+#[derive(Deserialize, Clone, Debug)]
+pub struct CommandInput {
+    command: Spanned<Required<String>>,
+    args: Option<Spanned<toml::Table>>,
+}
+
 #[wasm_bindgen(getter_with_clone)]
 #[derive(Clone)]
 pub struct Command {
+    // TODO: add additional fields here
     pub command: String,
     pub args: JsValue,
+}
+
+impl Command {
+    fn new(input: CommandInput) -> Result<Self> {
+        let to_json = serde_wasm_bindgen::Serializer::json_compatible();
+        let command = input.command.into_inner().resolve("`command` field")?;
+        let args = input
+            .args
+            .serialize(&to_json)
+            .expect("while serializing command arguments");
+        return Ok(Command { command, args });
+    }
 }
 
 #[derive(Clone)]

@@ -646,6 +646,8 @@ async function validateKeybindings(file: vscode.Uri, fileString?: string) {
     if (file.toString().endsWith('.mk.toml')) {
         if (fileString === undefined) {
             const fileData = await vscode.workspace.fs.readFile(file);
+            // TODO: at some point we can probably circumvent the need to decode the file
+            // (since we can write the rust code to accept bytes instead of a string)
             fileString = new TextDecoder('utf8').decode(fileData);
         }
         // TODO: read bytes directly in `parse_string` to avoid extra copies

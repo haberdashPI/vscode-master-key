@@ -51,6 +51,10 @@ pub fn valid_json_array_object(
         .try_for_each(|(_, v)| valid_json_value(v));
 }
 
+trait MapLike {
+    fn no_reserved_fields(kv: &Self) -> std::result::Result<(), ValidationError>;
+}
+
 lazy_static! {
     static ref MODIFIER_REGEX: Regex = Regex::new(r"(?i)Ctrl|Shift|Alt|Cmd|Win|Meta").unwrap();
     static ref KEY_REGEXS: Vec<Regex> = vec![
