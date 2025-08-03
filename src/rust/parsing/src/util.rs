@@ -5,18 +5,20 @@ use crate::{
 
 use log::info;
 use serde::{Deserialize, Serialize};
+use serde_wasm_bindgen;
 use toml::{Spanned, Value};
+use wasm_bindgen::JsValue;
 
 pub trait Merging {
     fn merge(self, new: Self) -> Self;
     fn coalesce(self, new: Self) -> Self;
 }
 pub trait Resolving<R> {
-    fn resolve(self, name: &'static str) -> Result<R>;
+    fn resolve(self, name: impl Into<String>) -> Result<R>;
 }
 
 pub trait Requiring<R> {
-    fn require(self, name: &'static str) -> Result<R>;
+    fn require(self, name: impl Into<String>) -> Result<R>;
 }
 
 // TODO: is there any way to avoid so much copying here
@@ -98,16 +100,16 @@ impl Merging for bool {
 }
 
 impl<T> Resolving<Option<T>> for Option<T> {
-    fn resolve(self, _name: &'static str) -> Result<Self> {
+    fn resolve(self, _name: impl Into<String>) -> Result<Self> {
         return Ok(self);
     }
 }
 
 impl<T> Requiring<T> for Option<T> {
-    fn require(self, name: &'static str) -> Result<T> {
+    fn require(self, name: impl Into<String>) -> Result<T> {
         match self {
             Some(x) => Ok(x),
-            None => Err(Error::RequiredField(name).into()),
+            None => Err(Error::RequiredField(name.into()).into()),
         }
     }
 }
@@ -132,17 +134,17 @@ impl<T> Required<Spanned<T>> {
 }
 
 impl<T> Resolving<T> for Required<T> {
-    fn resolve(self, name: &'static str) -> Result<T> {
+    fn resolve(self, name: impl Into<String>) -> Result<T> {
         return match self {
-            Required::DefaultValue => Err(Error::RequiredField(name).into()),
+            Required::DefaultValue => Err(Error::RequiredField(name.into()).into()),
             Required::Value(val) => Ok(val),
         };
     }
 }
 
 impl<T> Requiring<T> for Required<T> {
-    fn require(self, name: &'static str) -> Result<T> {
-        return self.resolve(name);
+    fn require(self, name: impl Into<String>) -> Result<T> {
+        return self.resolve(name.into());
     }
 }
 
@@ -152,6 +154,13 @@ impl<T> Required<T> {
             Required::Value(x) => x,
             Required::DefaultValue => panic!("Required value missing"),
         };
+    }
+
+    pub fn as_ref(&self) -> Required<&T> {
+        match *self {
+            Required::Value(ref x) => Required::Value(x),
+            Required::DefaultValue => Required::DefaultValue,
+        }
     }
 
     pub fn or(self, new: Self) -> Self {

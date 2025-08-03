@@ -17,7 +17,7 @@ pub enum Error {
     #[error("expected {0}")]
     ConstraintError(&'static str),
     #[error("requires {0}")]
-    RequiredField(&'static str),
+    RequiredField(String),
     #[error("unexpected {0}")]
     Unexpected(&'static str),
     #[error("parsing regex failed with {0}")]
@@ -38,6 +38,12 @@ fn range_to_pos(range: Range<usize>, offsets: &StringOffsets) -> CharRange {
     let start = offsets.utf8_to_char_pos(range.start);
     let end = offsets.utf8_to_char_pos(range.end);
     CharRange { start, end }
+}
+
+impl From<ErrorWithContext> for Vec<ErrorWithContext> {
+    fn from(value: ErrorWithContext) -> Self {
+        return vec![value];
+    }
 }
 
 #[wasm_bindgen]

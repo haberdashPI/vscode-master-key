@@ -71,7 +71,7 @@ pub struct BindingInput {
      *   (see [running multiple commands](#running-multiple-commands)).
      */
     #[serde(default = "span_required_default")]
-    command: Spanned<Required<String>>,
+    pub command: Spanned<Required<String>>,
 
     /**
      * @forBindingField bind
@@ -81,7 +81,7 @@ pub struct BindingInput {
      */
     #[validate(custom(function = "JsonObjectShape::valid_json_object"))]
     #[serde(default)]
-    args: Option<Spanned<toml::Table>>,
+    pub args: Option<Spanned<toml::Table>>,
 
     /**
      * @forBindingField bind
@@ -92,7 +92,7 @@ pub struct BindingInput {
      */
     #[serde(default = "span_required_default")]
     #[validate(custom(function = "valid_key_binding"))]
-    key: Spanned<Required<String>>,
+    pub key: Spanned<Required<String>>,
     /**
      * @forBindingField bind
      *
@@ -102,7 +102,7 @@ pub struct BindingInput {
      *   [available contexts](#available-contexts)
      */
     #[serde(default = "span_plural_default")]
-    when: Spanned<Plural<String>>,
+    pub when: Spanned<Plural<String>>,
     /**
      * @forBindingField bind
      *
@@ -112,7 +112,7 @@ pub struct BindingInput {
      *   a binding that is applied in all modes use "{{all_modes}}".
      */
     #[serde(default = "default_mode")]
-    mode: Spanned<Plural<String>>,
+    pub mode: Spanned<Plural<String>>,
     /**
      * @forBindingField bind
      *
@@ -120,7 +120,7 @@ pub struct BindingInput {
      *   bindings take precedence. Defaults to 0.
      */
     #[serde(default)]
-    priority: Option<Spanned<i64>>,
+    pub priority: Option<Spanned<i64>>,
     /**
      * @forBindingField bind
      *
@@ -128,7 +128,7 @@ pub struct BindingInput {
      *   [`default`](/bindings/default) for more details.
      */
     #[serde(default)]
-    defaults: Option<Spanned<String>>,
+    pub defaults: Option<Spanned<String>>,
     /**
      * @forBindingField bind
      *
@@ -137,7 +137,7 @@ pub struct BindingInput {
      */
     #[serde(default)]
     #[validate(custom(function = "valid_json_array_object"))]
-    foreach: Option<Spanned<toml::Table>>,
+    pub foreach: Option<Spanned<toml::Table>>,
 
     /**
      * @forBindingField bind
@@ -152,7 +152,7 @@ pub struct BindingInput {
      *   in Larkin).
      */
     #[serde(default = "span_plural_default")]
-    prefixes: Spanned<Plural<String>>,
+    pub prefixes: Spanned<Plural<String>>,
 
     /**
      * @forBindingField bind
@@ -162,7 +162,7 @@ pub struct BindingInput {
      *   [`master-key.prefix`](/commands/prefix) for details.
      */
     #[serde(default)]
-    finalKey: Option<Spanned<bool>>,
+    pub finalKey: Option<Spanned<bool>>,
 
     /**
      * @forBindingField bind
@@ -191,7 +191,7 @@ pub struct BindingInput {
      *   keys. Favor unicode symbols such as → and ← over text.
      */
     #[serde(default)]
-    name: Option<Spanned<String>>,
+    pub name: Option<Spanned<String>>,
 
     /**
      * @forBindingField bind
@@ -202,7 +202,7 @@ pub struct BindingInput {
      *   for the literate comments.
      */
     #[serde(default)]
-    description: Option<Spanned<String>>,
+    pub description: Option<Spanned<String>>,
     /**
      * @forBindingField bind
      * @order 10
@@ -211,9 +211,9 @@ pub struct BindingInput {
      *   and the documentation. These both default to false.
      */
     #[serde(default)]
-    hideInPalette: Option<Spanned<bool>>,
+    pub hideInPalette: Option<Spanned<bool>>,
     #[serde(default)]
-    hideInDocs: Option<Spanned<bool>>,
+    pub hideInDocs: Option<Spanned<bool>>,
 
     /**
      * @forBindingField bind
@@ -227,11 +227,11 @@ pub struct BindingInput {
      *   `combinedDescription` are ignored.
      */
     #[serde(default)]
-    combinedName: Option<Spanned<String>>,
+    pub combinedName: Option<Spanned<String>>,
     #[serde(default)]
-    combinedKey: Option<Spanned<String>>,
+    pub combinedKey: Option<Spanned<String>>,
     #[serde(default)]
-    combinedDescription: Option<Spanned<String>>,
+    pub combinedDescription: Option<Spanned<String>>,
 
     /**
      * @forBindingField bind
@@ -242,7 +242,7 @@ pub struct BindingInput {
      *   entry in the top-level `kind` array.
      */
     #[serde(default)]
-    kind: Option<Spanned<String>>,
+    pub kind: Option<Spanned<String>>,
 }
 
 impl Merging for BindingInput {
@@ -276,31 +276,39 @@ impl Merging for BindingInput {
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct CommandInput {
-    command: Spanned<Required<String>>,
-    args: Option<Spanned<toml::Table>>,
+    pub command: Spanned<Required<String>>,
+    pub args: Option<Spanned<toml::Table>>,
 }
 
 #[wasm_bindgen(getter_with_clone)]
-#[derive(Clone)]
+#[derive(Clone, Debug, Serialize)]
 pub struct Command {
-    // TODO: add additional fields here
     pub command: String,
-    pub args: JsValue,
+    args: toml::Table,
+}
+
+#[wasm_bindgen]
+impl Command {
+    #[wasm_bindgen(getter)]
+    pub fn args(&self) -> std::result::Result<JsValue, serde_wasm_bindgen::Error> {
+        let to_json = serde_wasm_bindgen::Serializer::json_compatible();
+        return self.args.serialize(&to_json);
+    }
 }
 
 impl Command {
     pub fn new(input: CommandInput) -> Result<Self> {
-        let to_json = serde_wasm_bindgen::Serializer::json_compatible();
-        let command = input.command.into_inner().resolve("`command` field")?;
-        let args = input
-            .args
-            .serialize(&to_json)
-            .expect("while serializing command arguments");
-        return Ok(Command { command, args });
+        return Ok(Command {
+            command: input.command.into_inner().resolve("`command` field")?,
+            args: match input.args {
+                Some(x) => x.into_inner(),
+                None => toml::Table::new(),
+            },
+        });
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, Serialize)]
 #[allow(non_snake_case)]
 #[wasm_bindgen(getter_with_clone)]
 pub struct Binding {
@@ -399,7 +407,6 @@ impl BindingInput {
 }
 
 fn regularize_commands(input: BindingInput) -> Result<(BindingInput, Vec<Command>)> {
-    let to_json = serde_wasm_bindgen::Serializer::json_compatible();
     let command_pos = input.command.span();
     let command = input.command.get_ref().clone().resolve("`command` field")?;
     let args = input.args.clone();
@@ -447,12 +454,7 @@ fn regularize_commands(input: BindingInput) -> Result<(BindingInput, Vec<Command
                 }
             };
 
-            command_result.push(Command {
-                command,
-                args: args
-                    .serialize(&to_json)
-                    .expect("while serializing command arguments"),
-            })
+            command_result.push(Command { command, args })
         }
 
         return Ok((input, command_result));
@@ -461,9 +463,10 @@ fn regularize_commands(input: BindingInput) -> Result<(BindingInput, Vec<Command
             input,
             vec![Command {
                 command,
-                args: args
-                    .serialize(&to_json)
-                    .expect("while serializing command arguments"),
+                args: match args {
+                    Some(x) => x.into_inner(),
+                    None => toml::Table::new(),
+                },
             }],
         ));
     }

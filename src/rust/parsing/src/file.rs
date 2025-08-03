@@ -1,5 +1,6 @@
 // top-level parsing of an entire file
 use crate::bind::{Binding, BindingInput};
+use crate::define::{Define, DefineInput};
 use crate::error::{Context, Error, ErrorContext, ErrorReport, ErrorWithContext, Result};
 use crate::file;
 
@@ -11,34 +12,54 @@ use wasm_bindgen::prelude::*;
 // TODO: copy over docs from typescript
 #[derive(Deserialize, Clone, Debug)]
 struct KeyFileInput {
-    bind: Vec<Spanned<BindingInput>>,
+    define: Option<DefineInput>,
+    bind: Option<Vec<Spanned<BindingInput>>>,
 }
 
 #[derive(Clone)]
 #[allow(non_snake_case)]
 #[wasm_bindgen(getter_with_clone)]
 pub struct KeyFile {
+    pub define: Define,
     pub bind: Vec<Binding>,
 }
 
 impl KeyFile {
     fn new(input: KeyFileInput) -> std::result::Result<KeyFile, Vec<ErrorWithContext>> {
         let mut errors = Vec::new();
-        let result = input
+        let bind = input
             .bind
-            .into_iter()
-            .filter_map(|b| {
-                let span = b.span();
-                Binding::new(b.into_inner())
-                    .context(Context::Range(span))
-                    .map_err(|e| errors.push(e))
+            .map(|bind| {
+                return bind
+                    .into_iter()
+                    .filter_map(|b| {
+                        let span = b.span();
+                        Binding::new(b.into_inner())
+                            .context(Context::Range(span))
+                            .map_err(|e| errors.push(e))
+                            .ok()
+                    })
+                    .collect();
+            })
+            .unwrap_or_default();
+
+        let define = input
+            .define
+            .map(|define| {
+                Define::new(define)
+                    .map_err(|es| {
+                        for e in es.into_iter() {
+                            errors.push(e);
+                        }
+                    })
                     .ok()
             })
-            .collect();
+            .flatten()
+            .unwrap_or_default();
         if !errors.len() > 0 {
             return Err(errors);
         } else {
-            return Ok(KeyFile { bind: result });
+            return Ok(KeyFile { bind, define });
         }
     }
 }
@@ -70,6 +91,9 @@ fn parse_string_helper(file_content: &str) -> std::result::Result<KeyFile, Vec<E
         Err(err) => return Err(vec![err.into()]),
     };
 }
+
+// TOOD: is there some way to handle JsValue-like objects during the final
+// step to make tests easier
 
 #[cfg(test)]
 mod tests {
