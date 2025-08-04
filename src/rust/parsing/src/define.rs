@@ -22,9 +22,12 @@ pub struct DefineInput {
 #[wasm_bindgen]
 #[derive(Clone, Debug, Default)]
 pub struct Define {
-    bind: Option<HashMap<String, Binding>>,
-    command: Option<HashMap<String, Command>>,
-    var: Option<toml::Table>,
+    #[wasm_bindgen(skip)]
+    pub bind: Option<HashMap<String, Binding>>,
+    #[wasm_bindgen(skip)]
+    pub command: Option<HashMap<String, Command>>,
+    #[wasm_bindgen(skip)]
+    pub var: Option<toml::Table>,
 }
 
 #[wasm_bindgen]

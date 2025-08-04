@@ -109,17 +109,14 @@ impl fmt::Display for ErrorWithContext {
         for context in &self.contexts {
             match context {
                 Context::String(str) => {
-                    write!(f, "{}\n", str);
+                    write!(f, "{}\n", str)?;
                 }
                 Context::Range(range) => {
-                    // TODO: we may evenutally wan to support showing the text
-                    // here. *HOWEVER* this is something we can also do downstream
-                    // with the document class in vscode so probably not necessary
-                    write!(f, "byte range {:?}\n", range);
+                    write!(f, "byte range {:?}\n", range)?;
                 }
             }
         }
-        self.error.fmt(f);
+        self.error.fmt(f)?;
         return Ok(());
     }
 }

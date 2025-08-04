@@ -16,7 +16,7 @@ struct KeyFileInput {
     bind: Option<Vec<Spanned<BindingInput>>>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 #[allow(non_snake_case)]
 #[wasm_bindgen(getter_with_clone)]
 pub struct KeyFile {
@@ -56,10 +56,10 @@ impl KeyFile {
             })
             .flatten()
             .unwrap_or_default();
-        if !errors.len() > 0 {
-            return Err(errors);
-        } else {
+        if errors.len() == 0 {
             return Ok(KeyFile { bind, define });
+        } else {
+            return Err(errors);
         }
     }
 }
@@ -88,12 +88,9 @@ fn parse_string_helper(file_content: &str) -> std::result::Result<KeyFile, Vec<E
     let parsed = toml::from_str::<KeyFileInput>(file_content);
     return match parsed {
         Ok(input) => KeyFile::new(input),
-        Err(err) => return Err(vec![err.into()]),
+        Err(err) => Err(vec![err.into()]),
     };
 }
-
-// TOOD: is there some way to handle JsValue-like objects during the final
-// step to make tests easier
 
 #[cfg(test)]
 mod tests {
@@ -103,6 +100,9 @@ mod tests {
     #[test]
     fn parse_example() {
         let data = r#"
+        [define.var]
+        foo = "bar"
+
         [[bind]]
         key = "l"
         mode = "normal"
@@ -115,15 +115,24 @@ mod tests {
         "#;
 
         let result = parse_string(data);
-        assert_eq!(result.file.as_ref().unwrap().bind[0].key, "l");
+        let items = result.file.as_ref().unwrap();
+
+        assert_eq!(items.bind[0].key, "l");
+        assert_eq!(items.bind[0].commands[0].command, "cursorRight");
+        assert_eq!(items.bind[1].key, "h");
+        assert_eq!(items.bind[1].commands[0].command, "cursorLeft");
+
         assert_eq!(
-            result.file.as_ref().unwrap().bind[0].commands[0].command,
-            "cursorRight"
-        );
-        assert_eq!(result.file.as_ref().unwrap().bind[1].key, "h");
-        assert_eq!(
-            result.file.as_ref().unwrap().bind[1].commands[0].command,
-            "cursorLeft"
-        );
+            items
+                .define
+                .var
+                .as_ref()
+                .unwrap()
+                .get("foo")
+                .unwrap()
+                .as_str()
+                .unwrap(),
+            "bar"
+        )
     }
 }

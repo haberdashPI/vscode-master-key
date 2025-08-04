@@ -28,9 +28,9 @@ run = 'tsc --noEmit --project tsconfig.json'
 
 # TODO: maybe consider using colons and figure out mise task hierarchies???
 [tasks.build-rust]
-sources = ['src/rust/parsing/src/**/*.rs', 'src/rust/parsing/Cargo.toml']
-outputs = ['out/**/*.wasm', 'src/rust/parsing/lib/*']
 dir = 'src/rust/parsing'
+sources = ['src/**/*.rs', 'Cargo.toml']
+outputs = ['lib/*']
 run = [
     'wasm-pack build --target web --out-dir lib',
     'mkdir -p ../../../out',
