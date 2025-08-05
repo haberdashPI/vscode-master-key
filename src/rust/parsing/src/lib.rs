@@ -1,6 +1,7 @@
 // error reporting
 pub mod error;
 mod util;
+mod variable;
 
 // [[bind]] level parsing
 mod bind;

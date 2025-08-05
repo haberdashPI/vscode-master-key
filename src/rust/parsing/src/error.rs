@@ -12,10 +12,12 @@ use core::ops::Range;
 pub enum Error {
     #[error("parsing {0}")]
     Parsing(#[from] toml::de::Error),
+    #[error("serializing {0}")]
+    Serialization(#[from] toml::ser::Error),
     #[error("validating {0}")]
     Validation(#[from] validator::ValidationError),
     #[error("expected {0}")]
-    ConstraintError(&'static str),
+    Constraint(String),
     #[error("requires {0}")]
     RequiredField(String),
     #[error("unexpected {0}")]
@@ -130,8 +132,8 @@ impl<E: Into<Error>> From<E> for ErrorWithContext {
     }
 }
 
-pub fn constrain<T>(msg: &'static str) -> Result<T> {
-    return Err(Error::ConstraintError(msg))?;
+pub fn constrain<T>(msg: &str) -> Result<T> {
+    return Err(Error::Constraint(msg.into()))?;
 }
 
 pub fn unexpected<T>(msg: &'static str) -> Result<T> {
