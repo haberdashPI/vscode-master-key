@@ -7,7 +7,9 @@ mod validation;
 
 use crate::bind::foreach::expand_keys;
 use crate::bind::validation::{JsonObjectShape, valid_json_array_object, valid_key_binding};
-use crate::error::{Context, ErrorContext, Result, constrain, unexpected};
+use crate::error::{
+    Context, ErrorContext, ErrorContexts, Result, ResultVec, constrain, unexpected,
+};
 use crate::util::{Merging, Plural, Required, Requiring, Resolving};
 use crate::variable;
 use crate::variable::VariableExpanding;
@@ -20,12 +22,6 @@ use toml::{Spanned, Value};
 use validator::Validate;
 use wasm_bindgen::JsValue;
 use wasm_bindgen::prelude::*;
-
-#[wasm_bindgen]
-pub fn debug_parse_command(command_str: &str) -> std::result::Result<Binding, JsError> {
-    let result = toml::from_str::<BindingInput>(command_str)?;
-    return Ok(Binding::new(result)?);
-}
 
 pub const UNKNOWN_RANGE: core::ops::Range<usize> = usize::MIN..usize::MAX;
 
@@ -61,7 +57,7 @@ fn span_plural_default<T>() -> Spanned<Plural<T>> {
  * a `*`.
  *
  */
-#[derive(Deserialize, Validate, Clone, Debug)]
+#[derive(Serialize, Deserialize, Validate, Clone, Debug)]
 pub struct BindingInput {
     /**
      * @forBindingField bind
@@ -276,10 +272,28 @@ impl Merging for BindingInput {
     }
 }
 
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct CommandInput {
     pub command: Spanned<Required<String>>,
     pub args: Option<Spanned<toml::Table>>,
+}
+
+impl VariableExpanding for CommandInput {
+    fn expand_with_getter<F>(&mut self, getter: F) -> ResultVec<()>
+    where
+        F: Fn(&str) -> Result<Option<toml::Value>>,
+        F: Clone,
+    {
+        self.command
+            .expand_with_getter(getter.clone())
+            .context_str("`command` field")
+            .context_range(&self.command)?;
+        self.args
+            .expand_with_getter(getter.clone())
+            .context_str("`args` field")
+            .context_range(&self.args)?;
+        return Ok(());
+    }
 }
 
 #[wasm_bindgen(getter_with_clone)]
@@ -346,7 +360,7 @@ impl BindingInput {
         return false;
     }
 
-    fn expand_foreach(&mut self) -> Result<Vec<BindingInput>> {
+    fn expand_foreach(&mut self) -> ResultVec<Vec<BindingInput>> {
         let mut result = vec![self.clone()];
         while self.has_foreach() {
             result = self.expand_foreach_once(&result)?;
@@ -354,7 +368,7 @@ impl BindingInput {
         return Ok(result);
     }
 
-    fn expand_foreach_once(&mut self, inputs: &Vec<BindingInput>) -> Result<Vec<BindingInput>> {
+    fn expand_foreach_once(&mut self, inputs: &Vec<BindingInput>) -> ResultVec<Vec<BindingInput>> {
         let foreach = match &self.foreach {
             Some(foreach) => foreach.get_ref(),
             None => &toml::map::Map::new(),
@@ -384,7 +398,7 @@ impl BindingInput {
                 }
                 return Ok(result);
             } else {
-                return unexpected("`foreach` was not an object of arrays");
+                return unexpected("`foreach` was not an object of arrays")?;
             }
         } else {
             return Ok(vec![]);
@@ -393,77 +407,81 @@ impl BindingInput {
 }
 
 impl VariableExpanding for BindingInput {
-    fn expand_value(&mut self, var: &str, value: &toml::Value) -> Result<()> {
+    fn expand_with_getter<F>(&mut self, getter: F) -> ResultVec<()>
+    where
+        F: Fn(&str) -> Result<Option<toml::Value>>,
+        F: Clone,
+    {
         self.command
-            .expand_value(var, value)
+            .expand_with_getter(getter.clone())
             .context_str("`command` field")
             .context_range(&self.command)?;
         self.args
-            .expand_value(var, value)
+            .expand_with_getter(getter.clone())
             .context_str("`args` field")
             .context_range(&self.args)?;
         self.key
-            .expand_value(var, value)
+            .expand_with_getter(getter.clone())
             .context_str("`key` field")
             .context_range(&self.key)?;
         self.when
-            .expand_value(var, value)
+            .expand_with_getter(getter.clone())
             .context_str("`when` field")
             .context_range(&self.when)?;
         self.mode
-            .expand_value(var, value)
+            .expand_with_getter(getter.clone())
             .context_str("`mode` field")
             .context_range(&self.mode)?;
         self.priority
-            .expand_value(var, value)
+            .expand_with_getter(getter.clone())
             .context_str("`priority` field")
             .context_range(&self.priority)?;
         self.defaults
-            .expand_value(var, value)
+            .expand_with_getter(getter.clone())
             .context_str("`defaults` field")
             .context_range(&self.defaults)?;
         self.prefixes
-            .expand_value(var, value)
+            .expand_with_getter(getter.clone())
             .context_str("`prefixes` field")
             .context_range(&self.prefixes)?;
         self.finalKey
-            .expand_value(var, value)
+            .expand_with_getter(getter.clone())
             .context_str("`finalKey` field")
             .context_range(&self.finalKey)?;
         self.repeat
-            .expand_value(var, value)
+            .expand_with_getter(getter.clone())
             .context_str("`repeat` field")
             .context_range(&self.repeat)?;
         self.name
-            .expand_value(var, value)
+            .expand_with_getter(getter.clone())
             .context_str("`name` field")
             .context_range(&self.name)?;
         self.description
-            .expand_value(var, value)
+            .expand_with_getter(getter.clone())
             .context_str("`description` field")
             .context_range(&self.description)?;
         self.hideInPalette
-            .expand_value(var, value)
+            .expand_with_getter(getter.clone())
             .context_str("`hideInPalette` field")
             .context_range(&self.hideInPalette)?;
         self.hideInDocs
-            .expand_value(var, value)
+            .expand_with_getter(getter.clone())
             .context_str("`hideInDocs` field")
             .context_range(&self.hideInDocs)?;
         self.combinedName
-            .expand_value(var, value)
+            .expand_with_getter(getter.clone())
             .context_str("`combinedName` field")
             .context_range(&self.combinedName)?;
         self.combinedKey
-            .expand_value(var, value)
+            .expand_with_getter(getter.clone())
             .context_str("`combinedKey` field")
             .context_range(&self.combinedKey)?;
         self.combinedDescription
-            .expand_value(var, value)
+            .expand_with_getter(getter.clone())
             .context_str("`combinedDescription` field")
             .context_range(&self.combinedDescription)?;
         self.kind
-            .expand_value(var, value)
+            .expand_with_getter(getter.clone())
             .context_str("`kind` field")
             .context_range(&self.kind)?;
         return Ok(());
@@ -471,7 +489,6 @@ impl VariableExpanding for BindingInput {
 }
 
 fn regularize_commands(input: BindingInput) -> Result<(BindingInput, Vec<Command>)> {
-    let command_pos = input.command.span();
     let command = input.command.get_ref().clone().resolve("`command` field")?;
     let args = input.args.clone();
     if command == "runCommands" {
@@ -540,6 +557,7 @@ impl Binding {
             return unexpected("`foreach` with unresolved variables");
         }
         let (input, commands) = regularize_commands(input)?;
+
         // TODO this is where we should validate that prefix has `finalKey == false`
 
         return Ok(Binding {

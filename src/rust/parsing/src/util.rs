@@ -114,7 +114,7 @@ impl<T> Requiring<T> for Option<T> {
 
 // required values are only required at the very end of parsing, once all known defaults
 // have been resolved
-#[derive(Default, Deserialize, Serialize, PartialEq, Debug, Clone)]
+#[derive(Serialize, Default, Deserialize, PartialEq, Debug, Clone)]
 #[serde(untagged)]
 pub enum Required<T> {
     #[default]
@@ -172,7 +172,7 @@ impl<T> Required<T> {
     }
 }
 
-#[derive(Default, Deserialize, PartialEq, Debug, Clone)]
+#[derive(Serialize, Default, Deserialize, PartialEq, Debug, Clone)]
 #[serde(untagged)]
 pub enum Plural<T> {
     #[default]

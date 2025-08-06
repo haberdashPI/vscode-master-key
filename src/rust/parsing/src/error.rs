@@ -25,6 +25,10 @@ pub enum Error {
     Unexpected(&'static str),
     #[error("unresolved {0}")]
     Unresolved(String),
+    #[error("undefined variable {0}")]
+    UndefinedVariable(String),
+    #[error("forward reference to {0}")]
+    ForwardReference(String),
     #[error("parsing regex failed with {0}")]
     Regex(#[from] regex::Error),
 }
@@ -35,8 +39,10 @@ pub enum Error {
 #[derive(Debug, Error, Clone)]
 pub struct ErrorWithContext {
     #[source]
-    error: Error,
-    contexts: Vec<Context>,
+    #[wasm_bindgen(skip)]
+    pub error: Error,
+    #[wasm_bindgen(skip)]
+    pub contexts: Vec<Context>,
 }
 
 fn range_to_pos(range: Range<usize>, offsets: &StringOffsets) -> CharRange {
@@ -48,6 +54,12 @@ fn range_to_pos(range: Range<usize>, offsets: &StringOffsets) -> CharRange {
 impl From<ErrorWithContext> for Vec<ErrorWithContext> {
     fn from(value: ErrorWithContext) -> Self {
         return vec![value];
+    }
+}
+
+impl From<Error> for Vec<ErrorWithContext> {
+    fn from(value: Error) -> Self {
+        return vec![value.into()];
     }
 }
 
@@ -214,4 +226,36 @@ impl<T> ErrorContext<T> for Result<T> {
     }
 }
 
+pub trait ErrorContexts<T>
+where
+    T: Sized,
+    Self: Sized,
+{
+    fn context(self, context: Context) -> ResultVec<T>;
+    fn context_str(self, context: impl Into<String>) -> ResultVec<T> {
+        self.context(Context::String(context.into()))
+    }
+    fn context_range(self, context: &impl Spannable) -> ResultVec<T> {
+        if let Some(range) = context.range() {
+            return self.context(Context::Range(range));
+        } else {
+            return self.context(Context::Range(UNKNOWN_RANGE));
+        }
+    }
+}
+
+impl<T> ErrorContexts<T> for ResultVec<T> {
+    fn context(self, context: Context) -> ResultVec<T> {
+        return match self {
+            Ok(x) => Ok(x),
+            Err(mut errs) => {
+                errs.iter_mut()
+                    .for_each(|e| e.contexts.push(context.clone()));
+                Err(errs)
+            }
+        };
+    }
+}
+
 pub type Result<T> = std::result::Result<T, ErrorWithContext>;
+pub type ResultVec<T> = std::result::Result<T, Vec<ErrorWithContext>>;

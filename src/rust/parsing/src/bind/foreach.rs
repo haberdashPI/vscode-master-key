@@ -202,7 +202,7 @@ const ALL_KEYS: [&'static str; 192] = [
 ];
 
 lazy_static! {
-    static ref KEY_PATTERN_REGEX: Regex = Regex::new(r"\{\{key:\s*(.*)\}\}").unwrap();
+    static ref KEY_PATTERN_REGEX: Regex = Regex::new(r"\{\{\s*key\(\s*`(.*)`\s*\)\s*\}\}").unwrap();
 }
 
 pub fn expand_keys(items: &Vec<toml::Value>) -> Result<Vec<toml::Value>> {
