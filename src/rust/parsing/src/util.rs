@@ -5,9 +5,7 @@ use crate::{
 
 use log::info;
 use serde::{Deserialize, Serialize};
-use serde_wasm_bindgen;
 use toml::{Spanned, Value};
-use wasm_bindgen::JsValue;
 
 pub trait Merging {
     fn merge(self, new: Self) -> Self;

@@ -1,10 +1,11 @@
+use crate::bind::UNKNOWN_RANGE;
+
+use core::ops::Range;
 use std::fmt;
 use string_offsets::{Pos, StringOffsets};
 use thiserror::Error;
+use toml::Spanned;
 use wasm_bindgen::prelude::*;
-
-use crate::bind::UNKNOWN_RANGE;
-use core::ops::Range;
 
 // TODO: properly handle `WhileTrying` (e.g. by having an outer type to prevent nesting)
 
@@ -22,6 +23,8 @@ pub enum Error {
     RequiredField(String),
     #[error("unexpected {0}")]
     Unexpected(&'static str),
+    #[error("unresolved {0}")]
+    Unresolved(String),
     #[error("parsing regex failed with {0}")]
     Regex(#[from] regex::Error),
 }
@@ -69,10 +72,15 @@ impl ErrorWithContext {
                     message: Some(str.clone()),
                     range: None,
                 },
-                Context::Range(range) => ErrorReportItem {
-                    message: None,
-                    range: Some(range_to_pos(range.clone(), &offsets)),
-                },
+                Context::Range(range) => {
+                    if *range == UNKNOWN_RANGE {
+                        continue;
+                    }
+                    ErrorReportItem {
+                        message: None,
+                        range: Some(range_to_pos(range.clone(), &offsets)),
+                    }
+                }
             };
             items.push(item);
         }
@@ -140,8 +148,43 @@ pub fn unexpected<T>(msg: &'static str) -> Result<T> {
     return Err(Error::Unexpected(msg))?;
 }
 
-pub trait ErrorContext<T> {
+pub trait ErrorContext<T>
+where
+    Self: Sized,
+{
     fn context(self, context: Context) -> Result<T>;
+    fn context_str(self, context: impl Into<String>) -> Result<T> {
+        self.context(Context::String(context.into()))
+    }
+    fn context_range(self, context: &impl Spannable) -> Result<T> {
+        if let Some(range) = context.range() {
+            return self.context(Context::Range(range));
+        } else {
+            return self.context(Context::Range(UNKNOWN_RANGE));
+        }
+    }
+}
+
+pub trait Spannable {
+    fn range(&self) -> Option<Range<usize>>;
+}
+
+impl<T> Spannable for Spanned<T> {
+    fn range(&self) -> Option<Range<usize>> {
+        Some(self.span())
+    }
+}
+
+impl<T> Spannable for Option<Spanned<T>> {
+    fn range(&self) -> Option<Range<usize>> {
+        self.as_ref().map(|x| x.span())
+    }
+}
+
+impl Spannable for Range<usize> {
+    fn range(&self) -> Option<Range<usize>> {
+        return Some(self.clone());
+    }
 }
 
 impl<T, E: Into<Error>> ErrorContext<T> for std::result::Result<T, E> {

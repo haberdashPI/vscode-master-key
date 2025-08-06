@@ -5,10 +5,12 @@
 mod foreach;
 mod validation;
 
-use crate::bind::foreach::{ForeachExpanding, ForeachInterpolated, expand_keys};
+use crate::bind::foreach::expand_keys;
 use crate::bind::validation::{JsonObjectShape, valid_json_array_object, valid_key_binding};
 use crate::error::{Context, ErrorContext, Result, constrain, unexpected};
 use crate::util::{Merging, Plural, Required, Requiring, Resolving};
+use crate::variable;
+use crate::variable::VariableExpanding;
 
 #[allow(unused_imports)]
 use log::info;
@@ -67,7 +69,7 @@ pub struct BindingInput {
      * - `command`*: A string denoting the command to execute. This is a command
      *   defined by VSCode or an extension thereof.
      *   See [finding commands](#finding-commands). This field has special
-     *   behavior for the command `runCommands`
+     *   behavior when set to`runCommands`
      *   (see [running multiple commands](#running-multiple-commands)).
      */
     #[serde(default = "span_required_default")]
@@ -120,7 +122,7 @@ pub struct BindingInput {
      *   bindings take precedence. Defaults to 0.
      */
     #[serde(default)]
-    pub priority: Option<Spanned<i64>>,
+    pub priority: Option<Spanned<variable::Value<i64>>>,
     /**
      * @forBindingField bind
      *
@@ -162,7 +164,7 @@ pub struct BindingInput {
      *   [`master-key.prefix`](/commands/prefix) for details.
      */
     #[serde(default)]
-    pub finalKey: Option<Spanned<bool>>,
+    pub finalKey: Option<Spanned<variable::Value<bool>>>,
 
     /**
      * @forBindingField bind
@@ -211,9 +213,9 @@ pub struct BindingInput {
      *   and the documentation. These both default to false.
      */
     #[serde(default)]
-    pub hideInPalette: Option<Spanned<bool>>,
+    pub hideInPalette: Option<Spanned<variable::Value<bool>>>,
     #[serde(default)]
-    pub hideInDocs: Option<Spanned<bool>>,
+    pub hideInDocs: Option<Spanned<variable::Value<bool>>>,
 
     /**
      * @forBindingField bind
@@ -308,6 +310,7 @@ impl Command {
     }
 }
 
+// TODO: have Value and Value
 #[derive(Clone, Debug, Serialize)]
 #[allow(non_snake_case)]
 #[wasm_bindgen(getter_with_clone)]
@@ -323,13 +326,15 @@ pub struct Binding {
     pub repeat: Option<String>,
     pub name: Option<String>,
     pub description: Option<String>,
-    pub hideInPalette: Option<bool>,
-    pub hideInDocs: Option<bool>,
+    pub hideInPalette: bool,
+    pub hideInDocs: bool,
     pub combinedName: Option<String>,
     pub combinedKey: Option<String>,
     pub combinedDescription: Option<String>,
     pub kind: Option<String>,
 }
+
+// TODO: define functions for variable expansion on `Binding??`
 
 // TODO: convert errors to my own error type for Validation and serde_wasm_bindgen error
 
@@ -362,16 +367,21 @@ impl BindingInput {
             final_foreach.remove(var);
 
             if let Value::Array(items) = values {
-                let expanded_items = expand_keys(items)
-                    .context(Context::String(format!("while reading {}", values)))?;
+                let expanded_items =
+                    expand_keys(items).context_str(format!("while reading {}", values))?;
                 let mut result = Vec::with_capacity(inputs.len() * expanded_items.len());
                 for input in inputs {
                     for value in &expanded_items {
-                        let str = value.foreach_interpolation();
-                        result.push(input.expand_foreach_value(var, &str));
+                        let mut expanded = input.clone();
+                        expanded.expand_value(var, value)?;
+                        result.push(expanded);
                     }
                 }
-                self.foreach = Some(Spanned::new(UNKNOWN_RANGE, final_foreach));
+                if final_foreach.len() > 0 {
+                    self.foreach = Some(Spanned::new(UNKNOWN_RANGE, final_foreach));
+                } else {
+                    self.foreach = None;
+                }
                 return Ok(result);
             } else {
                 return unexpected("`foreach` was not an object of arrays");
@@ -380,29 +390,83 @@ impl BindingInput {
             return Ok(vec![]);
         }
     }
+}
 
-    fn expand_foreach_value(&self, var: &str, value: &str) -> Self {
-        return BindingInput {
-            command: self.command.expand_foreach_value(var, value),
-            args: self.args.expand_foreach_value(var, value),
-            key: self.key.expand_foreach_value(var, value),
-            when: self.when.expand_foreach_value(var, value),
-            mode: self.mode.expand_foreach_value(var, value),
-            priority: self.priority.clone(),
-            defaults: self.defaults.expand_foreach_value(var, value),
-            prefixes: self.prefixes.expand_foreach_value(var, value),
-            finalKey: self.finalKey.clone(),
-            repeat: self.repeat.expand_foreach_value(var, value),
-            foreach: None,
-            name: self.name.expand_foreach_value(var, value),
-            description: self.description.expand_foreach_value(var, value),
-            hideInPalette: self.hideInPalette.clone(),
-            hideInDocs: self.hideInDocs.clone(),
-            combinedName: self.combinedName.expand_foreach_value(var, value),
-            combinedKey: self.combinedKey.expand_foreach_value(var, value),
-            combinedDescription: self.combinedDescription.expand_foreach_value(var, value),
-            kind: self.kind.expand_foreach_value(var, value),
-        };
+impl VariableExpanding for BindingInput {
+    fn expand_value(&mut self, var: &str, value: &toml::Value) -> Result<()> {
+        self.command
+            .expand_value(var, value)
+            .context_str("`command` field")
+            .context_range(&self.command)?;
+        self.args
+            .expand_value(var, value)
+            .context_str("`args` field")
+            .context_range(&self.args)?;
+        self.key
+            .expand_value(var, value)
+            .context_str("`key` field")
+            .context_range(&self.key)?;
+        self.when
+            .expand_value(var, value)
+            .context_str("`when` field")
+            .context_range(&self.when)?;
+        self.mode
+            .expand_value(var, value)
+            .context_str("`mode` field")
+            .context_range(&self.mode)?;
+        self.priority
+            .expand_value(var, value)
+            .context_str("`priority` field")
+            .context_range(&self.priority)?;
+        self.defaults
+            .expand_value(var, value)
+            .context_str("`defaults` field")
+            .context_range(&self.defaults)?;
+        self.prefixes
+            .expand_value(var, value)
+            .context_str("`prefixes` field")
+            .context_range(&self.prefixes)?;
+        self.finalKey
+            .expand_value(var, value)
+            .context_str("`finalKey` field")
+            .context_range(&self.finalKey)?;
+        self.repeat
+            .expand_value(var, value)
+            .context_str("`repeat` field")
+            .context_range(&self.repeat)?;
+        self.name
+            .expand_value(var, value)
+            .context_str("`name` field")
+            .context_range(&self.name)?;
+        self.description
+            .expand_value(var, value)
+            .context_str("`description` field")
+            .context_range(&self.description)?;
+        self.hideInPalette
+            .expand_value(var, value)
+            .context_str("`hideInPalette` field")
+            .context_range(&self.hideInPalette)?;
+        self.hideInDocs
+            .expand_value(var, value)
+            .context_str("`hideInDocs` field")
+            .context_range(&self.hideInDocs)?;
+        self.combinedName
+            .expand_value(var, value)
+            .context_str("`combinedName` field")
+            .context_range(&self.combinedName)?;
+        self.combinedKey
+            .expand_value(var, value)
+            .context_str("`combinedKey` field")
+            .context_range(&self.combinedKey)?;
+        self.combinedDescription
+            .expand_value(var, value)
+            .context_str("`combinedDescription` field")
+            .context_range(&self.combinedDescription)?;
+        self.kind
+            .expand_value(var, value)
+            .context_str("`kind` field")
+            .context_range(&self.kind)?;
+        return Ok(());
     }
 }
 
@@ -413,19 +477,15 @@ fn regularize_commands(input: BindingInput) -> Result<(BindingInput, Vec<Command
     if command == "runCommands" {
         let spanned = args
             .require("`args` field")
-            .context(Context::String(
-                "`runCommands` must have `args` field".into(),
-            ))
-            .context(Context::Range(command_pos))?;
+            .context_str("`runCommands` must have `args` field")
+            .context_range(&input.command)?;
         let args_pos = spanned.span();
         let args = spanned.into_inner();
         let commands = args
             .get("commands")
             .require("`commands` field")
-            .context(Context::String(
-                "`runCommands.args` must have a `commands` fields".into(),
-            ))
-            .context(Context::Range(args_pos.clone()))?;
+            .context_str("`runCommands.args` must have a `commands` fields")
+            .context_range(&args_pos)?;
         let commands = commands.as_array().require("`commands` to be an array")?;
         let mut command_result = Vec::with_capacity(commands.len());
         for command in commands {
@@ -437,7 +497,7 @@ fn regularize_commands(input: BindingInput) -> Result<(BindingInput, Vec<Command
                         .require("`command` field")?
                         .as_str()
                         .require("`command` to be string")
-                        .context(Context::Range(args_pos.clone()))?
+                        .context_range(&args_pos)?
                         .to_owned();
                     let args = command
                         .get("args")
@@ -487,15 +547,27 @@ impl Binding {
             key: input.key.into_inner().require("`key` field")?,
             when: input.when.into_inner().to_array(),
             mode: input.mode.into_inner().to_array(),
-            priority: input.priority.map(|x| x.into_inner()).unwrap_or(0),
+            priority: input
+                .priority
+                .map(|x| x.into_inner().resolve("`priority` field"))
+                .unwrap_or_else(|| Ok(0))?,
             defaults: input.defaults.map(|x| x.into_inner()).unwrap_or_default(),
             prefixes: input.prefixes.into_inner().to_array(),
-            finalKey: input.finalKey.map(|x| x.into_inner()).unwrap_or_default(),
+            finalKey: input
+                .finalKey
+                .map(|x| x.into_inner().resolve("`finalKey` field"))
+                .unwrap_or_else(|| Ok(true))?,
             repeat: input.repeat.map(|x| x.into_inner()),
             name: input.name.map(|x| x.into_inner()),
             description: input.description.map(|x| x.into_inner()),
-            hideInPalette: input.hideInPalette.map(|x| x.into_inner()),
-            hideInDocs: input.hideInDocs.map(|x| x.into_inner()),
+            hideInPalette: input
+                .hideInPalette
+                .map(|x| x.into_inner().resolve("`hideInPalette` field"))
+                .unwrap_or_else(|| Ok(false))?,
+            hideInDocs: input
+                .hideInDocs
+                .map(|x| x.into_inner().resolve("`hideInDocs` field"))
+                .unwrap_or_else(|| Ok(false))?,
             combinedName: input.combinedName.map(|x| x.into_inner()),
             combinedKey: input.combinedKey.map(|x| x.into_inner()),
             combinedDescription: input.combinedDescription.map(|x| x.into_inner()),
@@ -543,21 +615,34 @@ mod tests {
         assert_eq!(result.key.into_inner(), Required::Value("a".into()));
         assert_eq!(result.when.into_inner(), Plural::One("joe > 1".into()));
         assert_eq!(result.mode.into_inner(), Plural::One("normal".into()));
-        assert_eq!(result.priority.map(|x| x.into_inner()).unwrap(), 1);
+        assert_eq!(result.priority.map(|x| x.into_inner()).unwrap().unwrap(), 1);
         assert_eq!(result.defaults.map(|x| x.into_inner()).unwrap(), "foo.bar");
         assert_eq!(
             result.foreach.unwrap().into_inner().get("index").unwrap(),
             &Value::Array(vec![1, 2, 3].iter().map(|x| Value::Integer(*x)).collect())
         );
         assert_eq!(result.prefixes.into_inner(), Plural::One("c".into()));
-        assert_eq!(result.finalKey.map(|x| x.into_inner()).unwrap(), true);
+        assert_eq!(
+            result.finalKey.map(|x| x.into_inner()).unwrap().unwrap(),
+            true
+        );
         assert_eq!(result.name.map(|x| x.into_inner()).unwrap(), "foo");
         assert_eq!(
             result.description.map(|x| x.into_inner()).unwrap(),
             "foo bar bin"
         );
-        assert_eq!(result.hideInDocs.map(|x| x.into_inner()).unwrap(), false);
-        assert_eq!(result.hideInPalette.map(|x| x.into_inner()).unwrap(), false);
+        assert_eq!(
+            result.hideInDocs.map(|x| x.into_inner()).unwrap().unwrap(),
+            false
+        );
+        assert_eq!(
+            result
+                .hideInPalette
+                .map(|x| x.into_inner())
+                .unwrap()
+                .unwrap(),
+            false
+        );
         assert_eq!(
             result.combinedName.map(|x| x.into_inner()).unwrap(),
             "Up/down"

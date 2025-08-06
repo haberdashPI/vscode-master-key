@@ -6,19 +6,6 @@ use log::info;
 use regex::Regex;
 use toml::Value;
 
-pub trait ForeachInterpolated {
-    fn foreach_interpolation(&self) -> String;
-}
-
-impl ForeachInterpolated for Value {
-    fn foreach_interpolation(&self) -> String {
-        match self {
-            Value::String(str) => str.clone(),
-            _ => format!("{}", self),
-        }
-    }
-}
-
 const ALL_KEYS: [&'static str; 192] = [
     "f0",
     "f1",

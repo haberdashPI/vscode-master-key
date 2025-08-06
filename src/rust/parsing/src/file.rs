@@ -35,7 +35,7 @@ impl KeyFile {
                     .filter_map(|b| {
                         let span = b.span();
                         Binding::new(b.into_inner())
-                            .context(Context::Range(span))
+                            .context_range(&span)
                             .map_err(|e| errors.push(e))
                             .ok()
                     })

@@ -1,5 +1,8 @@
 use crate::error::{Error, Result};
-use crate::util::{Plural, Required};
+use crate::util::{Merging, Plural, Required, Resolving};
+
+#[allow(unused_imports)]
+use log::info;
 
 use lazy_static::lazy_static;
 use regex::Regex;
@@ -115,15 +118,17 @@ where
 
 #[derive(Deserialize, Clone, Debug)]
 #[serde(transparent)]
-struct Value<T>(ValueEnum<T>)
+pub struct Value<T>(ValueEnum<T>)
 where
-    toml::Value: As<T>;
+    toml::Value: As<T>,
+    T: Copy;
 
 #[derive(Deserialize, Clone, Debug)]
 #[serde(untagged)]
 enum ValueEnum<T>
 where
     toml::Value: As<T>,
+    T: Copy,
 {
     Literal(T),
     Variable(String),
@@ -146,7 +151,7 @@ fn variable_name(x: &str) -> Result<&str> {
 impl<T> VariableExpanding for Value<T>
 where
     toml::Value: As<T>,
-    T: Clone,
+    T: Copy,
 {
     fn expand_value(&mut self, var: &str, value: &toml::Value) -> Result<()> {
         match &self.0 {
@@ -168,11 +173,52 @@ where
     }
 }
 
+impl<T> Merging for Value<T>
+where
+    toml::Value: As<T>,
+    T: Copy,
+{
+    fn coalesce(self, new: Self) -> Self {
+        return new;
+    }
+
+    fn merge(self, new: Self) -> Self {
+        return new;
+    }
+}
+
+impl<T> Value<T>
+where
+    T: Copy,
+    toml::Value: As<T>,
+{
+    pub fn unwrap(self) -> T {
+        return match self.0 {
+            ValueEnum::Literal(x) => x,
+            ValueEnum::Variable(_) => panic!("Expected literal value"),
+        };
+    }
+}
+
+impl<T> Resolving<T> for Value<T>
+where
+    T: Copy,
+    toml::Value: As<T>,
+{
+    fn resolve(self, name: impl Into<String>) -> Result<T> {
+        return match self.0 {
+            ValueEnum::Literal(x) => Ok(x),
+            ValueEnum::Variable(str) => {
+                Err(Error::Unresolved(format!("{str} for {}", name.into())))?
+            }
+        };
+    }
+}
 impl VariableExpanding for String {
     fn expand_value(&mut self, var: &str, value: &toml::Value) -> Result<()> {
         let output = match value {
             toml::Value::String(x) => x.clone(),
-            _ => toml::to_string(value)?,
+            _ => value.to_string(),
         };
         let new_value = self.replace(&format!("{}{var}{}", "{{", "}}"), &output);
         self.clear();
