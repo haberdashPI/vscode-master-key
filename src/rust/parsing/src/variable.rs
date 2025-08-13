@@ -111,30 +111,75 @@ impl VariableExpanding for toml::map::Map<String, toml::Value> {
     }
 }
 
+fn expand_to_value<F>(value: &mut toml::Value, getter: F) -> ResultVec<toml::Value>
+where
+    F: Fn(&str) -> Result<Option<toml::Value>>,
+    F: Clone,
+{
+    match value {
+        toml::Value::String(str) => {
+            let captures = VAR_STRING.captures(str);
+            if let Some(c) = captures {
+                if c.get(0).unwrap().end() == str.len() {
+                    let var = c.get(1).expect("variable capture group").as_str();
+                    let expanded = getter(var)?.unwrap_or_else(|| value.clone());
+                    return Ok(expanded);
+                }
+            }
+
+            str.expand_with_getter(getter);
+            return Ok(value.clone());
+        }
+        _ => {
+            value.expand_with_getter(getter);
+            return Ok(value.clone());
+        }
+    }
+}
+
 impl VariableExpanding for toml::Value {
     fn expand_with_getter<F>(&mut self, getter: F) -> ResultVec<()>
     where
         F: Fn(&str) -> Result<Option<toml::Value>>,
         F: Clone,
     {
-        // TODO: this is one place where we would want to implement pruning
-        // when computing multiple passes of variable expansion
-        // we'd need some structure to keep track of where we are in the
-        // tree and mark certain branches as dead if they return `Ok(false)`
-        // or any `Err`.
-        // we could do this with a mutable hash map that maps given
-        // items to their last return state
         match self {
-            toml::Value::String(str) => return str.expand_with_getter(getter),
+            toml::Value::String(_) => return Ok(()),
             toml::Value::Array(items) => {
-                return flatten_errors(
-                    items
-                        .iter_mut()
-                        .map(|i| i.expand_with_getter(getter.clone())),
-                );
+                let mut errors = Vec::<ErrorWithContext>::new();
+                for i in 0..items.len() {
+                    match expand_to_value(&mut items[i], getter.clone()) {
+                        Err(ref mut err) => {
+                            errors.append(err);
+                        }
+                        Ok(value) => {
+                            items[i] = value;
+                        }
+                    }
+                }
+                if errors.len() > 0 {
+                    return Err(errors);
+                } else {
+                    return Ok(());
+                }
             }
-            toml::Value::Table(kv) => return kv.expand_with_getter(getter.clone()),
-            _ => return Ok(()),
+            toml::Value::Table(kv) => {
+                let mut errors = Vec::new();
+                let keys: Vec<String> = kv.keys().map(String::clone).collect();
+                for k in keys {
+                    match expand_to_value(&mut kv[&k], getter.clone()) {
+                        Err(err) => {
+                            errors.push(err);
+                        }
+                        Ok(value) => {
+                            kv.insert(k.clone(), value);
+                        }
+                    }
+                }
+                return Ok(());
+            }
+            toml::Value::Boolean(_) | toml::Value::Datetime(_) => return Ok(()),
+            toml::Value::Float(_) | toml::Value::Integer(_) => return Ok(()),
         }
     }
 }
@@ -206,16 +251,22 @@ where
 }
 
 lazy_static! {
-    static ref VAR_STRING: Regex = Regex::new(r"^\{\{(.+)\}\}$").unwrap();
+    static ref VAR_STRING: Regex = Regex::new(r"\{\{(.+)\}\}").unwrap();
 }
 
 fn variable_name(x: &str) -> Result<&str> {
-    return Ok(VAR_STRING
-        .captures(x)
-        .ok_or_else(|| Error::Constraint(r"string surrounded by `{{` and `}}`".into()))?
-        .get(1)
-        .ok_or_else(|| Error::Unexpected("empty variable"))?
-        .as_str());
+    if VAR_STRING.captures(x).is_some_and(|c| c.len() == x.len()) {
+        return Ok(VAR_STRING
+            .captures(x)
+            .ok_or_else(|| Error::Constraint(r"string starts and ends with `{{` and `}}`".into()))?
+            .get(1)
+            .ok_or_else(|| Error::Unexpected("empty variable"))?
+            .as_str());
+    } else {
+        return Err(Error::Constraint(
+            r"string starts and ends with `{{` and `}}`".into(),
+        ))?;
+    }
 }
 
 impl<T> VariableExpanding for Value<T>

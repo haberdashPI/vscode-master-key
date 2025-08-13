@@ -239,7 +239,7 @@ mod tests {
 
     use super::*;
     #[test]
-    fn complete_parsing() {
+    fn simple_parsing() {
         let data = r#"
         [[var]]
         y = "bill"
@@ -295,6 +295,62 @@ mod tests {
         let commands = foobar.args.get("commands").unwrap().as_array().unwrap();
         assert_eq!(commands[0].as_str().unwrap(), "foo");
         assert_eq!(commands[1].as_str().unwrap(), "bar");
+    }
+
+    #[test]
+    fn parsing_resolved_variables() {
+        let data = r#"
+        [[var]]
+        foo = 1
+
+        [[var]]
+        foo_string = "number-{{foo}}"
+
+        [[command]]
+        id = "run_shebang"
+        command = "shebang"
+        args.a = 1
+        args.b = "{{foo_string}}"
+
+        [[bind]]
+        id = "whole_shebang"
+        key = "a"
+        name = "the whole shebang"
+        command = "runCommands"
+        args.commands = ["{{command.run_shebang}}", "bar"]
+        "#;
+
+        let result = Define::new(toml::from_str::<DefineInput>(data).unwrap()).unwrap();
+        let bind_args = result
+            .bind
+            .get("whole_shebang")
+            .as_ref()
+            .unwrap()
+            .args
+            .as_ref()
+            .unwrap();
+        let bind_commands = bind_args
+            .get_ref()
+            .get("commands")
+            .unwrap()
+            .as_array()
+            .unwrap();
+        info!("{:?}", bind_commands[0]);
+        assert_eq!(
+            bind_commands[0].get("command").unwrap().as_str().unwrap(),
+            "shebang"
+        );
+        assert_eq!(
+            bind_commands[0]
+                .get("args")
+                .unwrap()
+                .get("b")
+                .unwrap()
+                .as_str()
+                .unwrap(),
+            "number-1"
+        );
+        assert_eq!(bind_commands[1].as_str().unwrap(), "bar");
     }
 }
 
