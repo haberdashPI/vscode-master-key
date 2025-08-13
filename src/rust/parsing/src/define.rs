@@ -304,13 +304,13 @@ mod tests {
         foo = 1
 
         [[var]]
-        foo_string = "number-{{foo}}"
+        foo_string = "number-{{var.foo}}"
 
         [[command]]
         id = "run_shebang"
         command = "shebang"
         args.a = 1
-        args.b = "{{foo_string}}"
+        args.b = "{{var.foo_string}}"
 
         [[bind]]
         id = "whole_shebang"
@@ -352,6 +352,8 @@ mod tests {
         );
         assert_eq!(bind_commands[1].as_str().unwrap(), "bar");
     }
+
+    // TODO: implement tests that show resolution errors in the proper places
 }
 
 // TODO: tests

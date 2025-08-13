@@ -104,10 +104,19 @@ impl VariableExpanding for toml::map::Map<String, toml::Value> {
         F: Fn(&str) -> Result<Option<toml::Value>>,
         F: Clone,
     {
-        return flatten_errors(
-            self.iter_mut()
-                .map(|(_, v)| v.expand_with_getter(getter.clone())),
-        );
+        let mut errors = Vec::new();
+        let keys: Vec<String> = self.keys().map(String::clone).collect();
+        for k in keys {
+            match expand_to_value(&mut self[&k], getter.clone()) {
+                Err(err) => {
+                    errors.push(err);
+                }
+                Ok(value) => {
+                    self.insert(k.clone(), value);
+                }
+            }
+        }
+        return Ok(());
     }
 }
 
@@ -127,11 +136,11 @@ where
                 }
             }
 
-            str.expand_with_getter(getter);
+            str.expand_with_getter(getter)?;
             return Ok(value.clone());
         }
         _ => {
-            value.expand_with_getter(getter);
+            value.expand_with_getter(getter)?;
             return Ok(value.clone());
         }
     }
@@ -144,7 +153,10 @@ impl VariableExpanding for toml::Value {
         F: Clone,
     {
         match self {
-            toml::Value::String(_) => return Ok(()),
+            toml::Value::String(x) => {
+                x.expand_with_getter(getter)?;
+                return Ok(());
+            }
             toml::Value::Array(items) => {
                 let mut errors = Vec::<ErrorWithContext>::new();
                 for i in 0..items.len() {
@@ -164,19 +176,7 @@ impl VariableExpanding for toml::Value {
                 }
             }
             toml::Value::Table(kv) => {
-                let mut errors = Vec::new();
-                let keys: Vec<String> = kv.keys().map(String::clone).collect();
-                for k in keys {
-                    match expand_to_value(&mut kv[&k], getter.clone()) {
-                        Err(err) => {
-                            errors.push(err);
-                        }
-                        Ok(value) => {
-                            kv.insert(k.clone(), value);
-                        }
-                    }
-                }
-                return Ok(());
+                return kv.expand_with_getter(getter);
             }
             toml::Value::Boolean(_) | toml::Value::Datetime(_) => return Ok(()),
             toml::Value::Float(_) | toml::Value::Integer(_) => return Ok(()),
@@ -251,7 +251,8 @@ where
 }
 
 lazy_static! {
-    static ref VAR_STRING: Regex = Regex::new(r"\{\{(.+)\}\}").unwrap();
+    static ref VAR_STRING: Regex = Regex::new(r"\{\{(.*)\}\}").unwrap();
+    static ref TEST_STRING: Regex = Regex::new(r"\{(.)").unwrap();
 }
 
 fn variable_name(x: &str) -> Result<&str> {
@@ -368,6 +369,9 @@ impl VariableExpanding for String {
             };
             result.push_str(&output);
             last_match = r;
+        }
+        if last_match.start == 0 && last_match.end == 0 {
+            return Ok(());
         }
 
         if last_match.end < self.len() {
