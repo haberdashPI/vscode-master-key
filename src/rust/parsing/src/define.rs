@@ -276,63 +276,25 @@ mod tests {
                 .as_integer()
                 .unwrap(),
             1
-        )
+        );
 
-        // let ref foo = result.bind.as_ref().unwrap().get("foo").unwrap().as_ref();
-        // assert_eq!(foo.key.as_ref().as_ref().unwrap(), "x");
-        // assert_eq!(foo.command.as_ref().as_ref().unwrap(), "foo");
-        // assert_eq!(
-        //     foo.args
-        //         .as_ref()
-        //         .unwrap()
-        //         .as_ref()
-        //         .get("k")
-        //         .unwrap()
-        //         .as_integer()
-        //         .unwrap(),
-        //     1
-        // );
-        // assert_eq!(
-        //     foo.args
-        //         .as_ref()
-        //         .unwrap()
-        //         .as_ref()
-        //         .get("h")
-        //         .unwrap()
-        //         .as_integer()
-        //         .unwrap(),
-        //     2
-        // );
+        assert_eq!(
+            foo.args
+                .as_ref()
+                .unwrap()
+                .get_ref()
+                .get("h")
+                .unwrap()
+                .as_integer()
+                .unwrap(),
+            2
+        );
 
-        // let foobar = result
-        //     .command
-        //     .as_ref()
-        //     .unwrap()
-        //     .get("foobar")
-        //     .unwrap()
-        //     .as_ref();
-        // assert_eq!(foobar.command.as_ref().as_ref().unwrap(), "runCommands");
-        // let commands = foobar
-        //     .args
-        //     .as_ref()
-        //     .unwrap()
-        //     .as_ref()
-        //     .get("commands")
-        //     .unwrap();
-        // let command_list = commands.as_array().unwrap();
-        // assert_eq!(command_list[0].as_str().unwrap(), "foo");
-        // assert_eq!(command_list[1].as_str().unwrap(), "bar");
-
-        // let define = Define::new(result);
-        // let foo_out = define
-        //     .as_ref()
-        //     .unwrap()
-        //     .bind
-        //     .as_ref()
-        //     .unwrap()
-        //     .get("foo")
-        //     .unwrap();
-        // assert_eq!(foo_out.commands[0].command, "foo");
+        let foobar = result.command.get("foobar").unwrap();
+        assert_eq!(foobar.command, "runCommands");
+        let commands = foobar.args.get("commands").unwrap().as_array().unwrap();
+        assert_eq!(commands[0].as_str().unwrap(), "foo");
+        assert_eq!(commands[1].as_str().unwrap(), "bar");
     }
 }
 

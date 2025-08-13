@@ -342,7 +342,7 @@ impl CommandInput {
 #[derive(Clone, Debug, Serialize)]
 pub struct Command {
     pub command: String,
-    args: toml::Table,
+    pub(crate) args: toml::Table,
 }
 
 #[wasm_bindgen]
