@@ -89,13 +89,18 @@ Integration test debugging:
         - [X] properly identify spans: both `[[bind]]` header and entire `[[bind]]` region
               NOTE: short term goal here is to support literate docs
         - [ ] expansion of `[define]` sections
-            - [ ] unit tests for `define` parsing
-            - [ ] get basic interpolation of `{{var}}` elements working for `bind` and its fields
+            - [X] implement support for resolving `var.`, `command.` and `bind.` definitions
+            - [X] problem: spannd doesn't work with flatten; we can solve this by
+              creating an `id` field for `command` and `bind` that will throw
+              an error if populatd when passed on to the non-input constructors
+            - [~] unit tests for `define` parsing
+            - [ ] get basic interpolation of `{{var}}` from `define` elements working for `bind` and its fields
+            - [ ] implement `default` keyword for `bind`
             - [ ] make sure to error on fields that cannot have runtime computation
               (only certain fields can be evaluated at runtime: `args` and `repeat`)
         - [ ] cleanup, document and refactor code
             - NOTE: we're waiting until we test out spans and the other stuff above because that could require more refactoring
-        - [ ] foreach expansion
+        - [ ] foreach expansion within a KeyFile context
         - [~] command normalization
             - [X] always `runCommand` with an array of objects with `command` field
             - [ ] flatten all nested `runCommands` calls
@@ -106,13 +111,13 @@ Integration test debugging:
             - [ ] modes are all positive or negative
             - [ ] required keys are present
         - [ ] mode expansion
+        - [ ] key-sequence expansion and duplicate resolution
         - [ ] documentation expandsion/validation across all `[[bind]]` values
               with the same key and mode
-        - [ ] key-sequence expansion and duplicate resolution
-        - [ ] proper parsing and expansion of `[[define]]` sections
     - [ ] proper conversion to keybindings.json command
         - [ ] expand prefixes to prefixCode and move to when clause
         - [ ] move mode to when clause
+    - [ ] extraction of visual docs
     - [ ] extraction of markdown docs
         - [ ] extract all comment regions (exclude `#-`)
         - [ ] replace `[[bind]]` regions:
