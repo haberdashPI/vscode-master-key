@@ -6,6 +6,7 @@ use crate::error::{Context, Error, ErrorContext, ErrorWithContext, Result, Resul
 use crate::util::Requiring;
 use crate::variable::VariableExpanding;
 
+use indexmap::IndexMap;
 #[allow(unused_imports)]
 use log::info;
 use serde::{Deserialize, Serialize};
@@ -15,15 +16,10 @@ use wasm_bindgen::prelude::*;
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct DefineInput {
-    pub var: Option<Vec<HashMap<String, Spanned<toml::Value>>>>,
+    pub var: Option<Vec<IndexMap<String, Spanned<toml::Value>>>>,
     pub command: Option<Vec<Spanned<CommandInput>>>,
     pub bind: Option<Vec<Spanned<BindingInput>>>,
 }
-
-// TODO: resolve variables for each item in `DefineInput` until
-// there are no variables left to resolve or we hit a limit
-// NOTE: we might have to implement pruning to get this to
-// run in a reasonable time
 
 pub trait VariableResolver {
     fn resolve_variables(&self, x: &mut impl VariableExpanding) -> ResultVec<()>;
@@ -68,10 +64,6 @@ impl Define {
         let mut resolved_command = HashMap::<String, Spanned<CommandInput>>::new();
         let mut resolved_var = HashMap::<String, toml::Value>::new();
         let mut errors = Vec::new();
-
-        // TODO: we don't want to parse *expressions* that start with a reference to a var.
-        // command. or bind. (e.g. {{var.a + var.b}}) variable to be read as a variable
-        // reference here (also a good thing to writ ea test for down below)
 
         // STEP 1a: resolve [[define.var]] blocks; fields can have any structure but they
         // must only reference previously defined variables (we've included the TOML feature
@@ -381,6 +373,9 @@ mod tests {
 
         [[var]]
         b = "{{var.a}}-boot"
+        c = "bop-{{var.b}}"
+        d = "bop-{{var.e}}"
+        e = "fop"
 
         [[var]]
         c = "{{var.not_defined}}-boot"
@@ -408,14 +403,14 @@ mod tests {
         args.value = "{{count}}"
 
         [[bind]]
-        default = "{{bind.horace}}
-        id = "bob
+        default = "{{bind.horace}}"
+        id = "bob"
         key = "ctrl+y"
         command = "cursorRight"
 
         [[bind]]
-        default = "{{bind.will}}
-        id = "bob
+        default = "{{bind.will}}"
+        id = "bob"
         key = "ctrl+k"
         command = "cursorDown"
         "#;
@@ -428,22 +423,24 @@ mod tests {
             false
         });
         assert!(if let Error::UndefinedVariable(ref str) = result[1].error {
-            str.starts_with("`var.not_defined`")
+            str.starts_with("`var.e`")
         } else {
             false
         });
         assert!(if let Error::UndefinedVariable(ref str) = result[2].error {
+            str.starts_with("`var.not_defined`")
+        } else {
+            false
+        });
+        assert!(if let Error::UndefinedVariable(ref str) = result[3].error {
             str.starts_with("`command.biz`")
         } else {
             false
         });
-        assert!(if let Error::ForwardReference(ref str) = result[3].error {
+        assert!(if let Error::ForwardReference(ref str) = result[4].error {
             str.starts_with("`bind.horace`")
         } else {
             false
         });
     }
-
-    // - missing `var.`, `bind.` or `command.` values
-    // - bad order of values thereof
 }

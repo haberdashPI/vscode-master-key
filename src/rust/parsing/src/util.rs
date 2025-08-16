@@ -1,6 +1,6 @@
 use crate::{
     bind::UNKNOWN_RANGE,
-    error::{Error, ErrorContext, Result},
+    error::{Error, ErrorContext, ErrorWithContext, Result},
 };
 
 use log::info;
@@ -115,11 +115,24 @@ impl<T> Requiring<T> for Option<T> {
 // required values are only required at the very end of parsing, once all known defaults
 // have been resolved
 #[derive(Serialize, Default, Deserialize, PartialEq, Debug, Clone)]
-#[serde(untagged)]
+#[serde(untagged, try_from = "Option<toml::Value>")]
 pub enum Required<T> {
     #[default]
     DefaultValue,
     Value(T),
+}
+
+impl<'de, T> TryFrom<Option<toml::Value>> for Required<T>
+where
+    T: Deserialize<'de>,
+{
+    type Error = ErrorWithContext;
+    fn try_from(value: Option<toml::Value>) -> Result<Self> {
+        match value {
+            None => Ok(Required::DefaultValue),
+            Some(x) => Ok(Required::Value(toml::Value::try_into(x)?)),
+        }
+    }
 }
 
 impl<T> Required<Spanned<T>> {
@@ -172,6 +185,7 @@ impl<T> Required<T> {
     }
 }
 
+// TODO: use `try_from` to improve error messages
 #[derive(Serialize, Default, Deserialize, PartialEq, Debug, Clone)]
 #[serde(untagged)]
 pub enum Plural<T> {

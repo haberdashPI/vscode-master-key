@@ -95,23 +95,23 @@ lazy_static! {
     ];
 }
 
-fn valid_key_binding_str(str: &str) -> bool {
+fn valid_key_binding_str(str: &str) -> Result<()> {
     for press in Regex::new(r"\s+").unwrap().split(str) {
         let mut first = true;
-        for part in press.split('+') {
+        for part in press.split('+').rev() {
             if first {
                 first = false;
                 if !KEY_REGEXS.iter().any(|r| r.is_match(part)) {
-                    return false;
+                    return Err(Error::Validation(format!("key name {part}")))?;
                 }
             } else {
                 if !MODIFIER_REGEX.is_match(part) {
-                    return false;
+                    return Err(Error::Validation(format!("modifier name {part}")))?;
                 }
             }
         }
     }
-    return true;
+    return Ok(());
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -123,13 +123,8 @@ impl TryFrom<String> for KeyBinding {
     fn try_from(value: String) -> Result<Self> {
         if VAR_STRING.is_match(&value) {
             return Ok(KeyBinding(ValueEnum::Variable(value)));
-        } else if !valid_key_binding_str(&value) {
-            return Err(crate::error::Error::Validation(
-                "keybinding; must be\
-                a sequence of [mod]+[key] values (see \
-                https://code.visualstudio.com/docs/getstarted/keybindings#_accepted-keys)",
-            ))?;
         } else {
+            valid_key_binding_str(&value)?;
             return Ok(KeyBinding(ValueEnum::Literal(value)));
         }
     }
@@ -203,7 +198,7 @@ impl TryFrom<String> for BindingReference {
     fn try_from(value: String) -> Result<Self> {
         let captures = BIND_STRING.captures(&value).ok_or_else(|| {
             crate::error::Error::Validation(
-                "binding reference; must be of the form `{{bind.[identifier]}})",
+                "binding reference; must be of the form `{{bind.[identifier]}})".into(),
             )
         })?;
         let name = captures.get(1).expect("`bind.` identifier capture");

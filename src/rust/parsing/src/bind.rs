@@ -876,8 +876,10 @@ mod tests {
 
     #[test]
     fn expand_foreach_keys() {
+        // TODO: error out if the regex inside of `{{}}` is not valid (right now it just
+        // fails silently)
         let data = r#"
-            foreach.key = ["{{key: [0-9]}}"]
+            foreach.key = ["{{key(`[0-9]`)}}"]
             name = "update {{key}}"
             command = "foo"
             args.value = "{{key}}"

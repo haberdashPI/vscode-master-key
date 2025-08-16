@@ -273,7 +273,7 @@ where
 }
 
 lazy_static! {
-    pub static ref VAR_STRING: Regex = Regex::new(r"\{\{([\w--\d]\w*)\}\}").unwrap();
+    pub static ref VAR_STRING: Regex = Regex::new(r"\{\{([\w--\d][\.\w]*)\}\}").unwrap();
 }
 
 fn variable_name(x: &str) -> Result<&str> {

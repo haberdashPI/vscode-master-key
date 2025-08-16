@@ -104,7 +104,7 @@ mod tests {
     #[test]
     fn parse_example() {
         let data = r#"
-        [define.var]
+        [[define.var]]
         foo = "bar"
 
         [[bind]]
