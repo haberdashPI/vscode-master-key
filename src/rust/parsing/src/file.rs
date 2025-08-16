@@ -10,7 +10,7 @@ use toml::Spanned;
 use wasm_bindgen::prelude::*;
 
 // TODO: copy over docs from typescript
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 struct KeyFileInput {
     define: Option<DefineInput>,
     bind: Option<Vec<Spanned<BindingInput>>>,

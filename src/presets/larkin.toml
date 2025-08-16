@@ -223,8 +223,8 @@ tags = ["motion"]
 id = "edit_motion_prim"
 default = "{{bind.edit_motion}}"
 command = "cursorMove"
-value = "{{count}}"
-select = "{{editorHasSelection || var.select}}"
+args.value = "{{count}}"
+args.select = "{{editorHasSelection || var.select}}"
 
 [[bind]]
 default = "{{bind.edit_motion_prim}}"
@@ -300,7 +300,7 @@ command = "selection-utilities.shrinkToActive"
 
 [[bind.args.commands]]
 command = "cursorMove"
-args = { to = "up", by = "wrappedLine", select = true, value = "count" }
+args = { to = "up", by = "wrappedLine", select = true, value = "{{count}}" }
 
 [[bind.args.commands]]
 command = "expandLineSelection"
@@ -321,7 +321,7 @@ command = "selection-utilities.shrinkToActive"
 
 [[bind.args.commands]]
 command = "cursorMove"
-args = { to = "down", by = "wrappedLine", select = true, value = "count" }
+args = { to = "down", by = "wrappedLine", select = true, value = "{{count}}" }
 
 [[bind.args.commands]]
 command = "expandLineSelection"

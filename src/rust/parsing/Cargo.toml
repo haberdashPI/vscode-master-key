@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 env_logger = "0.11.8"
+indexmap = { version = "2.10.0", features = ["serde"] }
 js-sys = "0.3.77"
 lazy_static = "1.5.0"
 log = { version = "0.4.27", features = ["release_max_level_error"] }
@@ -15,7 +16,6 @@ string-offsets = { version = "0.2.0", features = ["wasm"] }
 test-log = "0.2.18"
 thiserror = "2.0.12"
 toml = { version = "0.9.2", features = ["preserve_order"] }
-validator = { version = "0.20.0", features = ["derive"] }
 wasm-bindgen = "0.2.100"
 
 [lib]

@@ -108,15 +108,19 @@ impl VariableExpanding for toml::map::Map<String, toml::Value> {
         let keys: Vec<String> = self.keys().map(String::clone).collect();
         for k in keys {
             match expand_to_value(&mut self[&k], getter.clone()) {
-                Err(err) => {
-                    errors.push(err);
+                Err(ref mut err) => {
+                    errors.append(err);
                 }
                 Ok(value) => {
                     self.insert(k.clone(), value);
                 }
             }
         }
-        return Ok(());
+        if errors.len() > 0 {
+            return Err(errors);
+        } else {
+            return Ok(());
+        }
     }
 }
 
@@ -129,7 +133,7 @@ where
         toml::Value::String(str) => {
             let captures = VAR_STRING.captures(str);
             if let Some(c) = captures {
-                if c.get(0).unwrap().end() == str.len() {
+                if c.get(0).unwrap().len() == str.len() {
                     let var = c.get(1).expect("variable capture group").as_str();
                     let expanded = getter(var)?.unwrap_or_else(|| value.clone());
                     return Ok(expanded);
@@ -197,31 +201,40 @@ impl<T: VariableExpanding> VariableExpanding for Option<T> {
     }
 }
 
-trait As<T> {
-    fn astype(&self) -> Option<T>;
+pub(crate) trait As<T> {
+    fn astype(&self) -> Result<T>;
 }
 
 impl As<String> for toml::Value {
-    fn astype(&self) -> Option<String> {
-        self.as_str().map(|s| s.into())
+    fn astype(&self) -> Result<String> {
+        Ok(self
+            .as_str()
+            .map(|s| s.into())
+            .ok_or_else(|| Error::Constraint(format!("type String, found {}", self)))?)
     }
 }
 
 impl As<bool> for toml::Value {
-    fn astype(&self) -> Option<bool> {
-        self.as_bool()
+    fn astype(&self) -> Result<bool> {
+        Ok(self
+            .as_bool()
+            .ok_or_else(|| Error::Constraint(format!("type bool, found {}", self)))?)
     }
 }
 
 impl As<i64> for toml::Value {
-    fn astype(&self) -> Option<i64> {
-        self.as_integer()
+    fn astype(&self) -> Result<i64> {
+        Ok(self
+            .as_integer()
+            .ok_or_else(|| Error::Constraint(format!("type i64, found {}", self)))?)
     }
 }
 
 impl As<f64> for toml::Value {
-    fn astype(&self) -> Option<f64> {
-        self.as_float()
+    fn astype(&self) -> Result<f64> {
+        Ok(self
+            .as_float()
+            .ok_or_else(|| Error::Constraint(format!("type f64, found {}", self)))?)
     }
 }
 
@@ -229,20 +242,20 @@ impl<T> As<T> for T
 where
     T: Clone,
 {
-    fn astype(&self) -> Option<Self> {
-        Some(self.clone())
+    fn astype(&self) -> Result<Self> {
+        Ok(self.clone())
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(transparent)]
 pub struct Value<T>(ValueEnum<T>)
 where
     toml::Value: As<T>;
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(untagged)]
-enum ValueEnum<T>
+pub enum ValueEnum<T>
 where
     toml::Value: As<T>,
 {
@@ -250,9 +263,17 @@ where
     Variable(String),
 }
 
+impl<T> Value<T>
+where
+    toml::Value: As<T>,
+{
+    pub fn var(x: String) -> Self {
+        return Value(ValueEnum::Variable(x));
+    }
+}
+
 lazy_static! {
-    static ref VAR_STRING: Regex = Regex::new(r"\{\{(.*)\}\}").unwrap();
-    static ref TEST_STRING: Regex = Regex::new(r"\{(.)").unwrap();
+    pub static ref VAR_STRING: Regex = Regex::new(r"\{\{([\w--\d]\w*)\}\}").unwrap();
 }
 
 fn variable_name(x: &str) -> Result<&str> {
@@ -282,18 +303,14 @@ where
         match &self.0 {
             ValueEnum::Literal(_) => return Ok(()),
             ValueEnum::Variable(str) => {
+                // TODO: use `try_from` to extract name during parse time
+                // rather than expansion time
                 let name = variable_name(&str)?;
                 let value = match getter(name)? {
                     Some(x) => x,
                     None => return Ok(()),
                 };
-                self.0 = ValueEnum::Literal(As::<T>::astype(&value).ok_or_else(|| {
-                    Error::Constraint(format!(
-                        "variable of type `{}`, found {}",
-                        std::any::type_name::<T>(),
-                        value
-                    ))
-                })?);
+                self.0 = ValueEnum::Literal(As::<T>::astype(&value)?);
                 return Ok(());
             }
         };
@@ -303,7 +320,6 @@ where
 impl<T> Merging for Value<T>
 where
     toml::Value: As<T>,
-    T: Copy,
 {
     fn coalesce(self, new: Self) -> Self {
         return new;
@@ -316,7 +332,6 @@ where
 
 impl<T> Value<T>
 where
-    T: Copy,
     toml::Value: As<T>,
 {
     pub fn unwrap(self) -> T {
@@ -329,7 +344,6 @@ where
 
 impl<T> Resolving<T> for Value<T>
 where
-    T: Copy,
     toml::Value: As<T>,
 {
     fn resolve(self, name: impl Into<String>) -> Result<T> {

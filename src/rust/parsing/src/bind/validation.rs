@@ -1,59 +1,14 @@
-use crate::util::Required;
+use crate::error::{Error, ErrorWithContext, Result, ResultVec};
+use crate::util::Merging;
+use crate::variable;
+use crate::variable::{As, VAR_STRING, Value, ValueEnum, VariableExpanding};
+
+#[allow(unused_imports)]
+use log::info;
+
 use lazy_static::lazy_static;
 use regex::Regex;
-use toml::{Spanned, Value};
-use validator::ValidationError;
-
-pub fn valid_json_array(values: &Vec<toml::Value>) -> std::result::Result<(), ValidationError> {
-    return values.iter().try_for_each(valid_json_value);
-}
-
-pub trait JsonObjectShape {
-    fn valid_json_object(kv: &Self) -> std::result::Result<(), ValidationError>;
-}
-
-impl JsonObjectShape for toml::Table {
-    fn valid_json_object(kv: &Self) -> std::result::Result<(), ValidationError> {
-        return kv.iter().try_for_each(|(_, v)| valid_json_value(v));
-    }
-}
-
-impl JsonObjectShape for &Spanned<toml::Table> {
-    fn valid_json_object(kv: &Self) -> std::result::Result<(), ValidationError> {
-        return kv
-            .get_ref()
-            .iter()
-            .try_for_each(|(_, v)| valid_json_value(v));
-    }
-}
-
-// we read in TOML values, but only want to accept JSON-valid values in some contexts
-// (since that is what we'll be serializing out to)
-pub fn valid_json_value(x: &Value) -> std::result::Result<(), ValidationError> {
-    match x {
-        Value::Integer(_) | Value::Float(_) | Value::Boolean(_) | Value::String(_) => {
-            return Ok(());
-        }
-        Value::Datetime(_) => {
-            return Err(ValidationError::new("DateTime values are not supported"));
-        }
-        Value::Array(values) => return valid_json_array(values),
-        Value::Table(kv) => return toml::Table::valid_json_object(kv),
-    };
-}
-
-pub fn valid_json_array_object(
-    kv: &Spanned<toml::Table>,
-) -> std::result::Result<(), ValidationError> {
-    return kv
-        .as_ref()
-        .iter()
-        .try_for_each(|(_, v)| valid_json_value(v));
-}
-
-trait MapLike {
-    fn no_reserved_fields(kv: &Self) -> std::result::Result<(), ValidationError>;
-}
+use serde::{Deserialize, Serialize};
 
 lazy_static! {
     static ref MODIFIER_REGEX: Regex = Regex::new(r"(?i)Ctrl|Shift|Alt|Cmd|Win|Meta").unwrap();
@@ -140,21 +95,6 @@ lazy_static! {
     ];
 }
 
-pub fn valid_key_binding(
-    val: &Spanned<Required<String>>,
-) -> std::result::Result<(), ValidationError> {
-    match val.get_ref() {
-        Required::DefaultValue => return Ok(()),
-        Required::Value(x) => {
-            if valid_key_binding_str(x) {
-                return Err(ValidationError::new("Invalid key binding"));
-            } else {
-                return Ok(());
-            }
-        }
-    };
-}
-
 fn valid_key_binding_str(str: &str) -> bool {
     for press in Regex::new(r"\s+").unwrap().split(str) {
         let mut first = true;
@@ -171,5 +111,127 @@ fn valid_key_binding_str(str: &str) -> bool {
             }
         }
     }
-    return false;
+    return true;
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(try_from = "String", into = "String")]
+pub struct KeyBinding(ValueEnum<String>);
+
+impl TryFrom<String> for KeyBinding {
+    type Error = crate::error::ErrorWithContext;
+    fn try_from(value: String) -> Result<Self> {
+        if VAR_STRING.is_match(&value) {
+            return Ok(KeyBinding(ValueEnum::Variable(value)));
+        } else if !valid_key_binding_str(&value) {
+            return Err(crate::error::Error::Validation(
+                "keybinding; must be\
+                a sequence of [mod]+[key] values (see \
+                https://code.visualstudio.com/docs/getstarted/keybindings#_accepted-keys)",
+            ))?;
+        } else {
+            return Ok(KeyBinding(ValueEnum::Literal(value)));
+        }
+    }
+}
+
+impl From<KeyBinding> for String {
+    fn from(value: KeyBinding) -> Self {
+        match value.0 {
+            ValueEnum::Literal(x) => x,
+            ValueEnum::Variable(x) => x,
+        }
+    }
+}
+
+impl As<KeyBinding> for toml::Value {
+    fn astype(&self) -> crate::error::Result<KeyBinding> {
+        match self {
+            toml::Value::String(str) => Ok(KeyBinding::try_from(str.clone())?),
+            _ => Err(Error::Constraint("a string describing a keybinding".into()))?,
+        }
+    }
+}
+
+impl VariableExpanding for KeyBinding {
+    fn expand_with_getter<F>(&mut self, getter: F) -> crate::error::ResultVec<()>
+    where
+        F: Fn(&str) -> crate::error::Result<Option<toml::Value>>,
+        F: Clone,
+    {
+        match &mut self.0 {
+            ValueEnum::Literal(_) => (),
+            ValueEnum::Variable(str) => {
+                let mut new_str = str.clone();
+                new_str.expand_with_getter(getter)?;
+                let new = KeyBinding::try_from(new_str)?;
+                self.0 = new.0;
+            }
+        }
+        return Ok(());
+    }
+}
+
+impl Merging for KeyBinding {
+    fn merge(self, new: Self) -> Self {
+        return new;
+    }
+    fn coalesce(self, new: Self) -> Self {
+        return new;
+    }
+}
+
+impl KeyBinding {
+    pub fn unwrap(self) -> String {
+        match self.0 {
+            ValueEnum::Literal(x) => x,
+            ValueEnum::Variable(_) => panic!("unresolved variable"),
+        }
+    }
+}
+
+lazy_static! {
+    static ref BIND_STRING: Regex = Regex::new(r"\{\{(bind\.[\w--\d]\w*)\}\}").unwrap();
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(try_from = "String")]
+pub struct BindingReference(variable::Value<toml::Value>);
+
+impl TryFrom<String> for BindingReference {
+    type Error = ErrorWithContext;
+    fn try_from(value: String) -> Result<Self> {
+        let captures = BIND_STRING.captures(&value).ok_or_else(|| {
+            crate::error::Error::Validation(
+                "binding reference; must be of the form `{{bind.[identifier]}})",
+            )
+        })?;
+        let name = captures.get(1).expect("`bind.` identifier capture");
+        return Ok(BindingReference(variable::Value::var(name.as_str().into())));
+    }
+}
+
+impl VariableExpanding for BindingReference {
+    fn expand_with_getter<F>(&mut self, getter: F) -> crate::error::ResultVec<()>
+    where
+        F: Fn(&str) -> crate::error::Result<Option<toml::Value>>,
+        F: Clone,
+    {
+        return self.0.expand_with_getter(getter);
+    }
+}
+
+impl Merging for BindingReference {
+    fn coalesce(self, new: Self) -> Self {
+        return new;
+    }
+    fn merge(self, new: Self) -> Self {
+        return new;
+    }
+}
+
+impl BindingReference {
+    pub fn unwrap(self) -> toml::Value {
+        return self.0.unwrap();
+    }
 }

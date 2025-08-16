@@ -6,9 +6,9 @@ mod foreach;
 mod validation;
 
 use crate::bind::foreach::expand_keys;
-use crate::bind::validation::{JsonObjectShape, valid_json_array_object, valid_key_binding};
+use crate::bind::validation::{BindingReference, KeyBinding};
 use crate::error::{
-    Context, ErrorContext, ErrorContexts, Result, ResultVec, constrain, reserved, unexpected,
+    ErrorContext, ErrorContexts, Result, ResultVec, constrain, reserved, unexpected,
 };
 use crate::util::{Merging, Plural, Required, Requiring, Resolving};
 use crate::variable;
@@ -16,10 +16,11 @@ use crate::variable::VariableExpanding;
 
 #[allow(unused_imports)]
 use log::info;
+
+use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use serde_wasm_bindgen;
 use toml::{Spanned, Value};
-use validator::Validate;
 use wasm_bindgen::JsValue;
 use wasm_bindgen::prelude::*;
 
@@ -57,7 +58,7 @@ fn span_plural_default<T>() -> Spanned<Plural<T>> {
  * a `*`.
  *
  */
-#[derive(Serialize, Deserialize, Validate, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct BindingInput {
     // should only be `Some` in context of `Define(Input)`
     pub(crate) id: Option<Spanned<String>>,
@@ -79,7 +80,6 @@ pub struct BindingInput {
      * - `args`: The arguments to directly pass to the `command`, these are static
      *   values.
      */
-    #[validate(custom(function = "JsonObjectShape::valid_json_object"))]
     #[serde(default)]
     pub args: Option<Spanned<toml::Table>>,
 
@@ -91,8 +91,7 @@ pub struct BindingInput {
      *   triggers `command`.
      */
     #[serde(default = "span_required_default")]
-    #[validate(custom(function = "valid_key_binding"))]
-    pub key: Spanned<Required<String>>,
+    pub key: Spanned<Required<KeyBinding>>,
     /**
      * @forBindingField bind
      *
@@ -124,11 +123,12 @@ pub struct BindingInput {
     /**
      * @forBindingField bind
      *
-     * - `defaults`: the hierarchy of defaults applied to this binding, see
-     *   [`default`](/bindings/default) for more details.
+     * - `default`: the default values to use for fields, specified as
+     *    string of the form `{{bind.[name]}}`.
+     *    See [`define`](/bindings/define) for more details.
      */
     #[serde(default)]
-    pub defaults: Option<Spanned<String>>,
+    pub default: Option<Spanned<BindingReference>>,
     /**
      * @forBindingField bind
      *
@@ -136,8 +136,7 @@ pub struct BindingInput {
      *   [`foreach` clauses](#foreach-clauses).
      */
     #[serde(default)]
-    #[validate(custom(function = "valid_json_array_object"))]
-    pub foreach: Option<Spanned<toml::Table>>,
+    pub foreach: Option<IndexMap<String, Vec<Spanned<toml::Value>>>>,
 
     /**
      * @forBindingField bind
@@ -255,7 +254,7 @@ impl BindingInput {
             when: self.when.clone(),
             mode: self.mode.clone(),
             priority: self.priority.clone(),
-            defaults: self.defaults.clone(),
+            default: self.default.clone(),
             foreach: self.foreach.clone(),
             prefixes: self.prefixes.clone(),
             finalKey: self.finalKey.clone(),
@@ -285,7 +284,7 @@ impl Merging for BindingInput {
             when: self.when.coalesce(y.when),
             mode: self.mode.coalesce(y.mode),
             priority: self.priority.coalesce(y.priority),
-            defaults: self.defaults.coalesce(y.defaults),
+            default: self.default.coalesce(y.default),
             foreach: self.foreach,
             prefixes: self.prefixes.coalesce(y.prefixes),
             finalKey: self.finalKey.coalesce(y.finalKey),
@@ -379,7 +378,6 @@ pub struct Binding {
     pub when: Vec<String>,
     pub mode: Vec<String>,
     pub priority: i64,
-    pub defaults: String,
     pub prefixes: Vec<String>,
     pub finalKey: bool,
     pub repeat: Option<String>,
@@ -400,7 +398,7 @@ pub struct Binding {
 impl BindingInput {
     fn has_foreach(&self) -> bool {
         if let Some(foreach) = &self.foreach {
-            return foreach.get_ref().len() > 0;
+            return foreach.len() > 0;
         }
         return false;
     }
@@ -414,37 +412,31 @@ impl BindingInput {
     }
 
     fn expand_foreach_once(&mut self, inputs: &Vec<BindingInput>) -> ResultVec<Vec<BindingInput>> {
-        let foreach = match &self.foreach {
-            Some(foreach) => foreach.get_ref(),
-            None => &toml::map::Map::new(),
+        let foreach = match self.foreach {
+            Some(ref mut foreach) => foreach,
+            None => &mut IndexMap::new(),
         };
-        let mut final_foreach = foreach.clone();
+        let final_foreach = foreach.split_off(1);
         let mut iter = foreach.iter();
         let first = iter.next();
         if let Some(item) = first {
             let (var, values) = item;
-            final_foreach.remove(var);
 
-            if let Value::Array(items) = values {
-                let expanded_items =
-                    expand_keys(items).context_str(format!("while reading {}", values))?;
-                let mut result = Vec::with_capacity(inputs.len() * expanded_items.len());
-                for input in inputs {
-                    for value in &expanded_items {
-                        let mut expanded = input.clone();
-                        expanded.expand_value(var, value)?;
-                        result.push(expanded);
-                    }
+            let expanded_items = expand_keys(values)?;
+            let mut result = Vec::with_capacity(inputs.len() * expanded_items.len());
+            for input in inputs {
+                for value in &expanded_items {
+                    let mut expanded = input.clone();
+                    expanded.expand_value(var, value)?;
+                    result.push(expanded);
                 }
-                if final_foreach.len() > 0 {
-                    self.foreach = Some(Spanned::new(UNKNOWN_RANGE, final_foreach));
-                } else {
-                    self.foreach = None;
-                }
-                return Ok(result);
-            } else {
-                return unexpected("`foreach` was not an object of arrays")?;
             }
+            if final_foreach.len() > 0 {
+                self.foreach = Some(final_foreach);
+            } else {
+                self.foreach = None;
+            }
+            return Ok(result);
         } else {
             return Ok(vec![]);
         }
@@ -457,78 +449,25 @@ impl VariableExpanding for BindingInput {
         F: Fn(&str) -> Result<Option<toml::Value>>,
         F: Clone,
     {
-        self.command
-            .expand_with_getter(getter.clone())
-            .context_str("`command` field")
-            .context_range(&self.command)?;
-        self.args
-            .expand_with_getter(getter.clone())
-            .context_str("`args` field")
-            .context_range(&self.args)?;
-        self.key
-            .expand_with_getter(getter.clone())
-            .context_str("`key` field")
-            .context_range(&self.key)?;
-        self.when
-            .expand_with_getter(getter.clone())
-            .context_str("`when` field")
-            .context_range(&self.when)?;
-        self.mode
-            .expand_with_getter(getter.clone())
-            .context_str("`mode` field")
-            .context_range(&self.mode)?;
-        self.priority
-            .expand_with_getter(getter.clone())
-            .context_str("`priority` field")
-            .context_range(&self.priority)?;
-        self.defaults
-            .expand_with_getter(getter.clone())
-            .context_str("`defaults` field")
-            .context_range(&self.defaults)?;
-        self.prefixes
-            .expand_with_getter(getter.clone())
-            .context_str("`prefixes` field")
-            .context_range(&self.prefixes)?;
-        self.finalKey
-            .expand_with_getter(getter.clone())
-            .context_str("`finalKey` field")
-            .context_range(&self.finalKey)?;
-        self.repeat
-            .expand_with_getter(getter.clone())
-            .context_str("`repeat` field")
-            .context_range(&self.repeat)?;
-        self.name
-            .expand_with_getter(getter.clone())
-            .context_str("`name` field")
-            .context_range(&self.name)?;
-        self.description
-            .expand_with_getter(getter.clone())
-            .context_str("`description` field")
-            .context_range(&self.description)?;
-        self.hideInPalette
-            .expand_with_getter(getter.clone())
-            .context_str("`hideInPalette` field")
-            .context_range(&self.hideInPalette)?;
-        self.hideInDocs
-            .expand_with_getter(getter.clone())
-            .context_str("`hideInDocs` field")
-            .context_range(&self.hideInDocs)?;
-        self.combinedName
-            .expand_with_getter(getter.clone())
-            .context_str("`combinedName` field")
-            .context_range(&self.combinedName)?;
-        self.combinedKey
-            .expand_with_getter(getter.clone())
-            .context_str("`combinedKey` field")
-            .context_range(&self.combinedKey)?;
+        self.command.expand_with_getter(getter.clone())?;
+        self.args.expand_with_getter(getter.clone())?;
+        self.key.expand_with_getter(getter.clone())?;
+        self.when.expand_with_getter(getter.clone())?;
+        self.mode.expand_with_getter(getter.clone())?;
+        self.priority.expand_with_getter(getter.clone())?;
+        self.default.expand_with_getter(getter.clone())?;
+        self.prefixes.expand_with_getter(getter.clone())?;
+        self.finalKey.expand_with_getter(getter.clone())?;
+        self.repeat.expand_with_getter(getter.clone())?;
+        self.name.expand_with_getter(getter.clone())?;
+        self.description.expand_with_getter(getter.clone())?;
+        self.hideInPalette.expand_with_getter(getter.clone())?;
+        self.hideInDocs.expand_with_getter(getter.clone())?;
+        self.combinedName.expand_with_getter(getter.clone())?;
+        self.combinedKey.expand_with_getter(getter.clone())?;
         self.combinedDescription
-            .expand_with_getter(getter.clone())
-            .context_str("`combinedDescription` field")
-            .context_range(&self.combinedDescription)?;
-        self.kind
-            .expand_with_getter(getter.clone())
-            .context_str("`kind` field")
-            .context_range(&self.kind)?;
+            .expand_with_getter(getter.clone())?;
+        self.kind.expand_with_getter(getter.clone())?;
         return Ok(());
     }
 }
@@ -611,14 +550,13 @@ impl Binding {
 
         return Ok(Binding {
             commands: commands,
-            key: input.key.into_inner().require("`key` field")?,
+            key: input.key.into_inner().require("`key` field")?.unwrap(),
             when: input.when.into_inner().to_array(),
             mode: input.mode.into_inner().to_array(),
             priority: input
                 .priority
                 .map(|x| x.into_inner().resolve("`priority` field"))
                 .unwrap_or_else(|| Ok(0))?,
-            defaults: input.defaults.map(|x| x.into_inner()).unwrap_or_default(),
             prefixes: input.prefixes.into_inner().to_array(),
             finalKey: input
                 .finalKey
@@ -658,7 +596,7 @@ mod tests {
         when = "joe > 1"
         mode = "normal"
         priority = 1
-        defaults = "foo.bar"
+        default = "{{bind.foo_bar}}"
         foreach.index = [1,2,3]
         prefixes = "c"
         finalKey = true
@@ -679,14 +617,24 @@ mod tests {
         let args = result.args.unwrap().into_inner();
         assert_eq!(args.get("a").unwrap(), &Value::String("2".into()));
         assert_eq!(args.get("b").unwrap(), &Value::Integer(3));
-        assert_eq!(result.key.into_inner(), Required::Value("a".into()));
+        assert_eq!(result.key.into_inner().unwrap().unwrap(), "a");
         assert_eq!(result.when.into_inner(), Plural::One("joe > 1".into()));
         assert_eq!(result.mode.into_inner(), Plural::One("normal".into()));
         assert_eq!(result.priority.map(|x| x.into_inner()).unwrap().unwrap(), 1);
-        assert_eq!(result.defaults.map(|x| x.into_inner()).unwrap(), "foo.bar");
         assert_eq!(
-            result.foreach.unwrap().into_inner().get("index").unwrap(),
-            &Value::Array(vec![1, 2, 3].iter().map(|x| Value::Integer(*x)).collect())
+            result.default.map(|x| x.into_inner()).as_ref().unwrap(),
+            &BindingReference::try_from(String::from("{{bind.foo_bar}}")).unwrap()
+        );
+        assert_eq!(
+            result
+                .foreach
+                .unwrap()
+                .get("index")
+                .unwrap()
+                .iter()
+                .map(|x| x.get_ref().as_integer().unwrap())
+                .collect::<Vec<_>>(),
+            vec![1, 2, 3],
         );
         assert_eq!(result.prefixes.into_inner(), Plural::One("c".into()));
         assert_eq!(
@@ -731,7 +679,7 @@ mod tests {
         "#;
 
         let result = toml::from_str::<BindingInput>(data).unwrap();
-        assert_eq!(result.key.into_inner().unwrap(), "l");
+        assert_eq!(result.key.into_inner().unwrap().unwrap(), "l");
         assert_eq!(result.command.into_inner().unwrap(), "cursorMove");
         assert_eq!(
             result
@@ -769,7 +717,7 @@ mod tests {
         let default = result.get("bind").unwrap()[0].clone();
         let left = result.get("bind").unwrap()[1].clone();
         let left = default.merge(left);
-        assert_eq!(left.key.into_inner().unwrap(), "l");
+        assert_eq!(left.key.into_inner().unwrap().unwrap(), "l");
         assert_eq!(left.command.into_inner().unwrap(), "cursorMove");
         assert_eq!(
             left.args
@@ -883,6 +831,24 @@ mod tests {
 
         let mut result = toml::from_str::<BindingInput>(data).unwrap();
         let items = result.expand_foreach().unwrap();
+
+        // for it in items.iter() {
+        //     info!("{}", "{");
+        //     info!("  name: {}", it.name.clone().unwrap().get_ref());
+        //     info!("  command: {}", it.command.get_ref().clone().unwrap());
+        //     info!(
+        //         "  args.value: {}",
+        //         it.args
+        //             .clone()
+        //             .unwrap()
+        //             .get_ref()
+        //             .get("value")
+        //             .unwrap()
+        //             .as_str()
+        //             .unwrap()
+        //     );
+        //     info!("{}", "}");
+        // }
 
         let expected_command = vec!["run-1", "run-1", "run-2", "run-2"];
         let expected_value = vec!["with-x", "with-y", "with-x", "with-y"];

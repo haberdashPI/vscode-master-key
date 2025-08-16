@@ -93,11 +93,17 @@ Integration test debugging:
             - [X] problem: spannd doesn't work with flatten; we can solve this by
               creating an `id` field for `command` and `bind` that will throw
               an error if populatd when passed on to the non-input constructors
+            - [x] setup default keyword for `bind`
+            - [ ] rework how `var.` works, resolving it at run time, not definition time
             - [~] unit tests for `define` parsing
-            - [ ] get basic interpolation of `{{var}}` from `define` elements working for `bind` and its fields
+            - [ ] get basic interpolation of `{{bind/command}}` from `define` elements working for `bind` and its fields
             - [ ] implement `default` keyword for `bind`
+            - [ ] get evaluation of computed elements working
+                - [ ] use rhai to implement expression evaluation
+                    - [ ] disable keywords/features that are for multiline or assignment
             - [ ] make sure to error on fields that cannot have runtime computation
               (only certain fields can be evaluated at runtime: `args` and `repeat`)
+            - [ ] implement support for tags on `bind` (for filter them)
         - [ ] cleanup, document and refactor code
             - NOTE: we're waiting until we test out spans and the other stuff above because that could require more refactoring
         - [ ] foreach expansion within a KeyFile context

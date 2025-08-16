@@ -1,3 +1,4 @@
+use core::error;
 use std::collections::HashMap;
 
 use crate::bind::{Binding, BindingInput, Command, CommandInput};
@@ -10,10 +11,9 @@ use log::info;
 use serde::{Deserialize, Serialize};
 use serde_wasm_bindgen;
 use toml::Spanned;
-use validator::Validate;
 use wasm_bindgen::prelude::*;
 
-#[derive(Deserialize, Clone, Debug, Validate)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct DefineInput {
     pub var: Option<Vec<HashMap<String, Spanned<toml::Value>>>>,
     pub command: Option<Vec<Spanned<CommandInput>>>,
@@ -67,10 +67,11 @@ impl Define {
         let mut resolved_bind = HashMap::<String, Spanned<BindingInput>>::new();
         let mut resolved_command = HashMap::<String, Spanned<CommandInput>>::new();
         let mut resolved_var = HashMap::<String, toml::Value>::new();
+        let mut errors = Vec::new();
 
-        // TODO: we don't want to parse expressions that start with a reference
-        // to a var. command. or bind. variable to be read as a variable reference here
-        // (also a good thing to writ ea test for down below)
+        // TODO: we don't want to parse *expressions* that start with a reference to a var.
+        // command. or bind. (e.g. {{var.a + var.b}}) variable to be read as a variable
+        // reference here (also a good thing to writ ea test for down below)
 
         // STEP 1a: resolve [[define.var]] blocks; fields can have any structure but they
         // must only reference previously defined variables (we've included the TOML feature
@@ -78,7 +79,7 @@ impl Define {
         // same block)
         for def_block in input.var.into_iter().flatten() {
             for (var, mut value) in def_block.into_iter() {
-                value.expand_with_getter(|id| {
+                let mut var_result = value.expand_with_getter(|id| {
                     if let Some((prefix, name)) = id.split_once('.') {
                         if prefix == "var" {
                             let resolved = resolved_var.get(name).
@@ -95,14 +96,17 @@ impl Define {
 
                     // other types of variables are left unresolved
                     return Ok(None);
-                })?;
+                });
+                if let Err(ref mut errs) = var_result {
+                    errors.append(errs);
+                }
                 resolved_var.insert(var.clone(), value.get_ref().clone());
             }
         }
 
         // STEP 1b: resolve [[define.command]] blocks
         for mut def in input.command.into_iter().flatten() {
-            def.get_mut().expand_with_getter(|id| {
+            let mut command_result = def.get_mut().expand_with_getter(|id| {
                 if let Some((prefix, name)) = id.split_once('.') {
                     if prefix == "var" {
                         let value = resolved_var
@@ -121,7 +125,11 @@ impl Define {
                     }
                 }
                 return Ok(None);
-            })?;
+            });
+            if let Err(ref mut errs) = command_result {
+                errors.append(errs);
+            }
+
             let id = def.get_ref().id.clone();
             resolved_command.insert(
                 id.require("id")
@@ -134,7 +142,7 @@ impl Define {
 
         // STEP 1c: resolve [[define.bind]] blocks
         for mut def in input.bind.into_iter().flatten() {
-            def.get_mut().expand_with_getter(|id| {
+            let mut bind_result = def.get_mut().expand_with_getter(|id| {
                 if let Some((prefix, name)) = id.split_once('.') {
                     if prefix == "var" {
                         let value = resolved_var
@@ -154,7 +162,11 @@ impl Define {
                     }
                 }
                 return Ok(None);
-            })?;
+            });
+            if let Err(ref mut errs) = bind_result {
+                errors.append(errs);
+            }
+
             let id = def.get_ref().id.clone();
             resolved_bind.insert(
                 id.require("id")
@@ -167,21 +179,24 @@ impl Define {
 
         // STEP 2: cleanup results for use in `Define` struct
 
-        // TODO: because resolution to the Binding and Command structs does not occur until
-        // later, we could, in theory end up with a *lot* of errors for the same lines, it
-        // will be important to clean up the output to only show one of these errors and
-        // remove the other instances; or convince our selves no such issue will arise
-        let bind = resolved_bind
-            .into_iter()
-            .map(|(k, v)| (k, v.into_inner().without_id()))
-            .collect();
-        let command = map_with_err(resolved_command, &mut |c| Command::new(c.without_id()))?;
-
-        return Ok(Define {
-            bind,
-            command,
-            var: resolved_var,
-        });
+        if errors.len() > 0 {
+            return Err(errors);
+        } else {
+            // TODO: because resolution to the Binding and Command structs does not occur until
+            // later, we could, in theory end up with a *lot* of errors for the same lines, it
+            // will be important to clean up the output to only show one of these errors and
+            // remove the other instances; or convince our selves no such issue will arise
+            let bind = resolved_bind
+                .into_iter()
+                .map(|(k, v)| (k, v.into_inner().without_id()))
+                .collect();
+            let command = map_with_err(resolved_command, &mut |c| Command::new(c.without_id()))?;
+            return Ok(Define {
+                bind,
+                command,
+                var: resolved_var,
+            });
+        }
     }
 }
 
@@ -200,6 +215,9 @@ impl Define {
         };
     }
 }
+
+// TODO: we don't actually want to resolve `var.`s as they might change during runtime
+// TODO: we need to avoid parsing expressions as variables to insert
 
 impl VariableResolver for Define {
     fn resolve_variables(&self, x: &mut impl VariableExpanding) -> ResultVec<()> {
@@ -265,7 +283,7 @@ mod tests {
         assert_eq!(result.var.get("y").unwrap().as_str().unwrap(), "bill");
         assert_eq!(result.var.get("joe").unwrap().as_str().unwrap(), "bob");
         let foo = result.bind.get("foo").unwrap();
-        assert_eq!(foo.key.get_ref().as_ref().unwrap().as_str(), "x");
+        assert_eq!(foo.key.as_ref().to_owned().unwrap().unwrap(), "x");
         assert_eq!(
             foo.args
                 .as_ref()
@@ -335,7 +353,6 @@ mod tests {
             .unwrap()
             .as_array()
             .unwrap();
-        info!("{:?}", bind_commands[0]);
         assert_eq!(
             bind_commands[0].get("command").unwrap().as_str().unwrap(),
             "shebang"
@@ -353,7 +370,80 @@ mod tests {
         assert_eq!(bind_commands[1].as_str().unwrap(), "bar");
     }
 
-    // TODO: implement tests that show resolution errors in the proper places
-}
+    #[test]
+    fn parsing_order_error() {
+        let data = r#"
+        [[var]]
+        k = "{{command.foo}}"
 
-// TODO: tests
+        [[var]]
+        a = 1
+
+        [[var]]
+        b = "{{var.a}}-boot"
+
+        [[var]]
+        c = "{{var.not_defined}}-boot"
+
+        [[command]]
+        id = "foo"
+        command = "joe"
+        args.x = 1
+
+        [[command]]
+        id = "bar"
+        command = "runCommands"
+        args.commands = ["{{command.biz}}", "baz"]
+
+        [[command]]
+        id = "biz"
+        command = "bob"
+        args.y = 2
+        args.x = "{{bind.horace}}"
+
+        [[bind]]
+        id = "horace"
+        key = "ctrl+k"
+        command = "cursorLeft"
+        args.value = "{{count}}"
+
+        [[bind]]
+        default = "{{bind.horace}}
+        id = "bob
+        key = "ctrl+y"
+        command = "cursorRight"
+
+        [[bind]]
+        default = "{{bind.will}}
+        id = "bob
+        key = "ctrl+k"
+        command = "cursorDown"
+        "#;
+        // TODO: add `default` key to `bind` so we can accomplish the todo below
+        // TODO: test for missing `bind`
+        let result = Define::new(toml::from_str::<DefineInput>(data).unwrap()).unwrap_err();
+        assert!(if let Error::ForwardReference(ref str) = result[0].error {
+            str.starts_with("`command.foo`")
+        } else {
+            false
+        });
+        assert!(if let Error::UndefinedVariable(ref str) = result[1].error {
+            str.starts_with("`var.not_defined`")
+        } else {
+            false
+        });
+        assert!(if let Error::UndefinedVariable(ref str) = result[2].error {
+            str.starts_with("`command.biz`")
+        } else {
+            false
+        });
+        assert!(if let Error::ForwardReference(ref str) = result[3].error {
+            str.starts_with("`bind.horace`")
+        } else {
+            false
+        });
+    }
+
+    // - missing `var.`, `bind.` or `command.` values
+    // - bad order of values thereof
+}

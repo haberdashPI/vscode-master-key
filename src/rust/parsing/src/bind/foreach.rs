@@ -1,10 +1,10 @@
-use crate::error::Result;
+use crate::error::{ErrorContext, Result};
 
 use lazy_static::lazy_static;
 #[allow(unused_imports)]
 use log::info;
 use regex::Regex;
-use toml::Value;
+use toml::{Spanned, Value};
 
 const ALL_KEYS: [&'static str; 192] = [
     "f0",
@@ -205,13 +205,13 @@ lazy_static! {
     static ref KEY_PATTERN_REGEX: Regex = Regex::new(r"\{\{\s*key\(\s*`(.*)`\s*\)\s*\}\}").unwrap();
 }
 
-pub fn expand_keys(items: &Vec<toml::Value>) -> Result<Vec<toml::Value>> {
+pub fn expand_keys(items: &Vec<Spanned<toml::Value>>) -> Result<Vec<toml::Value>> {
     let mut result = Vec::new();
 
     for item in items {
-        if let Value::String(str_item) = item {
+        if let Value::String(str_item) = item.get_ref() {
             if let Some(caps) = KEY_PATTERN_REGEX.captures(&str_item) {
-                let key_regex = Regex::new(&caps[1])?;
+                let key_regex = Regex::new(&caps[1]).context_range(&item.span())?;
                 for key in ALL_KEYS {
                     if key_regex.find(key).is_some_and(|m| m.len() == key.len()) {
                         result.push(Value::String(key.into()));
@@ -220,7 +220,7 @@ pub fn expand_keys(items: &Vec<toml::Value>) -> Result<Vec<toml::Value>> {
                 continue;
             }
         }
-        result.push(item.clone());
+        result.push(item.get_ref().clone());
     }
     return Ok(result);
 }

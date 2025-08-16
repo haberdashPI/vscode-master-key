@@ -15,8 +15,8 @@ pub enum Error {
     Parsing(#[from] toml::de::Error),
     #[error("serializing {0}")]
     Serialization(#[from] toml::ser::Error),
-    #[error("validating {0}")]
-    Validation(#[from] validator::ValidationError),
+    #[error("invalid {0}")]
+    Validation(&'static str),
     #[error("expected {0}")]
     Constraint(String),
     #[error("requires {0}")]
