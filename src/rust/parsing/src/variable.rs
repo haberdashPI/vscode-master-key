@@ -276,21 +276,6 @@ lazy_static! {
     pub static ref VAR_STRING: Regex = Regex::new(r"\{\{([\w--\d][\.\w]*)\}\}").unwrap();
 }
 
-fn variable_name(x: &str) -> Result<&str> {
-    if VAR_STRING.captures(x).is_some_and(|c| c.len() == x.len()) {
-        return Ok(VAR_STRING
-            .captures(x)
-            .ok_or_else(|| Error::Constraint(r"string starts and ends with `{{` and `}}`".into()))?
-            .get(1)
-            .ok_or_else(|| Error::Unexpected("empty variable"))?
-            .as_str());
-    } else {
-        return Err(Error::Constraint(
-            r"string starts and ends with `{{` and `}}`".into(),
-        ))?;
-    }
-}
-
 impl<T> VariableExpanding for Value<T>
 where
     toml::Value: As<T>,
@@ -302,10 +287,9 @@ where
     {
         match &self.0 {
             ValueEnum::Literal(_) => return Ok(()),
-            ValueEnum::Variable(str) => {
+            ValueEnum::Variable(name) => {
                 // TODO: use `try_from` to extract name during parse time
                 // rather than expansion time
-                let name = variable_name(&str)?;
                 let value = match getter(name)? {
                     Some(x) => x,
                     None => return Ok(()),

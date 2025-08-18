@@ -94,21 +94,22 @@ Integration test debugging:
               creating an `id` field for `command` and `bind` that will throw
               an error if populatd when passed on to the non-input constructors
             - [X] setup default keyword for `bind`
-            - [ ] rework how `var.` works, resolving it at run time, not definition time
-            - [~] unit tests for `define` parsing
+            - [X] rework how `var.` works, resolving it at run time, not definition time
+            - [X] unit tests for `define` parsing
                 - [X] rework `Required<KeyBinding>` so we get a meaningful error message
                   when the keybinding is wrong
-                - [ ] tests for `var`
-            - [ ] get basic interpolation of `{{bind/command}}` from `define` elements working for `bind` and its fields
-            - [ ] implement `default` expansion for `bind`
+                - [X] tests for `var`
             - [ ] get evaluation of computed elements working
                 - [ ] use rhai to implement expression evaluation
                     - [ ] preparse all `{{}}` into
                         - [ ] parse time variables (for loop, `bind.` and `command.`)
+                        - [ ] interpolated string
                         - [ ] single variables references (no `rhai` required)
                         - [ ] actual expressions that are parsed into an AST by `rhai`
                     - [ ] disable keywords/features that are for multiline or assignment
                     - [ ] include tests to prevent use of `command.` and `bind.` variables
+            - [ ] get basic interpolation of `{{bind/command}}` from `define` elements working for `bind` and its fields
+            - [ ] implement `default` expansion for `bind`
             - [ ] make sure to error on fields that cannot have runtime computation
               (only certain fields can be evaluated at runtime: `args` and `repeat`)
             - [ ] implement support for tags on `bind` (for filter them)

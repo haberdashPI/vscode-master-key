@@ -69,14 +69,16 @@ impl Define {
         // must only reference previously defined variables (we've included the TOML feature
         // to preserve order, so variables can reference other variables defined within the
         // same block)
+
+        // TODO: do not resolve `var` values, and do not allow `{{}}` inside of `var.` values
         for def_block in input.var.into_iter().flatten() {
             for (var, mut value) in def_block.into_iter() {
                 let mut var_result = value.expand_with_getter(|id| {
                     if let Some((prefix, name)) = id.split_once('.') {
                         if prefix == "var" {
-                            let resolved = resolved_var.get(name).
-                                ok_or_else(|| Error::UndefinedVariable(format!("`{id}`")))?;
-                            return Ok(Some(resolved.clone()));
+                            return Err(Error::Constraint(
+                                "no references to `var` within a `var` definition".into()
+                            ))?;
                         } else if prefix == "bind" || prefix == "command" {
                             return Err(Error::ForwardReference(format!(
                                 "`{id}`; you cannot refer to `{prefix}` values within `var` definitions"
@@ -373,12 +375,6 @@ mod tests {
 
         [[var]]
         b = "{{var.a}}-boot"
-        c = "bop-{{var.b}}"
-        d = "bop-{{var.e}}"
-        e = "fop"
-
-        [[var]]
-        c = "{{var.not_defined}}-boot"
 
         [[command]]
         id = "foo"
@@ -422,25 +418,22 @@ mod tests {
         } else {
             false
         });
-        assert!(if let Error::UndefinedVariable(ref str) = result[1].error {
-            str.starts_with("`var.e`")
+        assert!(if let Error::Constraint(ref str) = result[1].error {
+            str.starts_with("no references to `var`")
         } else {
             false
         });
         assert!(if let Error::UndefinedVariable(ref str) = result[2].error {
-            str.starts_with("`var.not_defined`")
-        } else {
-            false
-        });
-        assert!(if let Error::UndefinedVariable(ref str) = result[3].error {
             str.starts_with("`command.biz`")
         } else {
             false
         });
-        assert!(if let Error::ForwardReference(ref str) = result[4].error {
+        assert!(if let Error::ForwardReference(ref str) = result[3].error {
             str.starts_with("`bind.horace`")
         } else {
             false
         });
+        info!("result: {:#?}", result);
+        assert_eq!(result.len(), 4);
     }
 }

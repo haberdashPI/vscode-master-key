@@ -121,11 +121,16 @@ pub struct KeyBinding(ValueEnum<String>);
 impl TryFrom<String> for KeyBinding {
     type Error = crate::error::ErrorWithContext;
     fn try_from(value: String) -> Result<Self> {
-        if VAR_STRING.is_match(&value) {
-            return Ok(KeyBinding(ValueEnum::Variable(value)));
-        } else {
-            valid_key_binding_str(&value)?;
-            return Ok(KeyBinding(ValueEnum::Literal(value)));
+        match BIND_STRING.captures(&value) {
+            Some(captures) => {
+                return Ok(KeyBinding(ValueEnum::Variable(
+                    captures.get(1).expect("variable name").as_str().into(),
+                )));
+            }
+            None => {
+                valid_key_binding_str(&value)?;
+                return Ok(KeyBinding(ValueEnum::Literal(value)));
+            }
         }
     }
 }
@@ -134,7 +139,7 @@ impl From<KeyBinding> for String {
     fn from(value: KeyBinding) -> Self {
         match value.0 {
             ValueEnum::Literal(x) => x,
-            ValueEnum::Variable(x) => x,
+            ValueEnum::Variable(x) => format!("{}{x}{}", "{{", "}}"),
         }
     }
 }
