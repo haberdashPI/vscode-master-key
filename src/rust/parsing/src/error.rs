@@ -1,6 +1,7 @@
 use crate::bind::UNKNOWN_RANGE;
 
 use core::ops::Range;
+use rhai;
 use std::fmt;
 use string_offsets::{Pos, StringOffsets};
 use thiserror::Error;
@@ -11,8 +12,10 @@ use wasm_bindgen::prelude::*;
 
 #[derive(Debug, Error, Clone)]
 pub enum Error {
-    #[error("parsing {0}")]
-    Parsing(#[from] toml::de::Error),
+    #[error("toml parsing {0}")]
+    TomlParsing(#[from] toml::de::Error),
+    #[error("expression parsing {0}")]
+    ExpressionParsing(#[from] rhai::parser::ParseResult),
     #[error("serializing {0}")]
     Serialization(#[from] toml::ser::Error),
     #[error("invalid {0}")]
@@ -106,6 +109,20 @@ impl ErrorWithContext {
 #[wasm_bindgen(getter_with_clone)]
 pub struct ErrorReport {
     pub items: Vec<ErrorReportItem>,
+}
+
+fn flatten_errors<T>(errs: impl Iterator<Item = ResultVec<T>>) -> ResultVec<T> {
+    let (results, errors) = errs.partition(Result::is_ok);
+    let flat_errs = errors
+        .into_iter()
+        .flat_map(|x| x.unwrap_err().into_iter())
+        .collect::<Vec<ErrorWithContext>>();
+
+    if flat_errs.len() > 0 {
+        return Err(flat_errs);
+    } else {
+        return Ok(results.into_iter().any(|x| x.unwrap()));
+    }
 }
 
 #[wasm_bindgen]
