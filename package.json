@@ -24,6 +24,11 @@
     "contributes": {
         "commands": [
             {
+                "command": "master-key.test-rust",
+                "category": "Master Key",
+                "title": "Test Rust"
+            },
+            {
                 "command": "master-key.activateBindings",
                 "category": "Master Key",
                 "title": "Activate Keybindings"

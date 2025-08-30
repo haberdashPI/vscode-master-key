@@ -1,3 +1,4 @@
+validation.rs(11, 99): consider introducing a `where` clause, but there might be an alternative better way to express this requirement: ` where &toml::map::Map<std::string::String, Value>: From<&T>`
 Next steps:
 
 **TODO**: set up start and stop for tasks.json
@@ -62,11 +63,89 @@ Integration test debugging:
 2. eliminate/cleanup functionality I don't have good coverage for
     - [X] eliminate elaborate loading UI
     - [X] don't auto load documentation
-    - [ ] don't automatically offer to install extensions
-    - [ ] add buttons to info message to show documentation
+    - [X] don't automatically offer to install extensions
+    - [X] add buttons to info message to show documentation
 3. Refactor parsing to rust
     a. in this early phase, we don't worry too much about providing detailed error messages
        (if there are easy things to do here we can do them, but no UX work, etc...)
+    - [x] start by implementing parsing of `[[bind]]`
+        - [X] basic parsing
+        - [X] merging defaults
+        - [X] refactor code
+        - [X] initial coverage output
+            - https://crates.io/crates/cargo-tarpaulin
+            - or look at https://doc.rust-lang.org/rustc/instrument-coverage.html and use
+            nightly tool-chain with
+                - [X] rustup toolchain install nightly
+        - [X] foreach expansion (unit tests remain)
+        - [X] expand keys in `foreach` lists
+        - [x] include `Spanned` in fields of `BindInput`
+    - [ ] pipeline for `[[bind]]` entries
+        - [X] basic pipeline
+        - [X] implement parsing of vscode file with rust command (and generate problems)
+            - [X] we need to detect that the file should be parsed
+            - [X] we need to send detected files to the rust parser
+            - [X] we need to process errors to generate the diagnostic outputs
+        - [X] properly identify spans: both `[[bind]]` header and entire `[[bind]]` region
+              NOTE: short term goal here is to support literate docs
+        - [ ] expansion of `[define]` sections
+            - [X] implement support for resolving `var.`, `command.` and `bind.` definitions
+            - [X] problem: spannd doesn't work with flatten; we can solve this by
+              creating an `id` field for `command` and `bind` that will throw
+              an error if populatd when passed on to the non-input constructors
+            - [X] setup default keyword for `bind`
+            - [X] rework how `var.` works, resolving it at run time, not definition time
+            - [X] unit tests for `define` parsing
+                - [X] rework `Required<KeyBinding>` so we get a meaningful error message
+                  when the keybinding is wrong
+                - [X] tests for `var`
+            - [ ] get evaluation of computed elements working
+                - [ ] use rhai to implement expression evaluation
+                    - [ ] preparse all `{{}}` into
+                        - [ ] parse time variables (for loop, `bind.` and `command.`)
+                        - [ ] interpolated string
+                        - [ ] single variables references (no `rhai` required)
+                        - [ ] actual expressions that are parsed into an AST by `rhai`
+                    - [ ] disable keywords/features that are for multiline or assignment
+                    - [ ] include tests to prevent use of `command.` and `bind.` variables
+            - [ ] get basic interpolation of `{{bind/command}}` from `define` elements working for `bind` and its fields
+            - [ ] implement `default` expansion for `bind`
+            - [ ] make sure to error on fields that cannot have runtime computation
+              (only certain fields can be evaluated at runtime: `args` and `repeat`)
+            - [ ] implement support for tags on `bind` (for filter them)
+        - [ ] cleanup, document and refactor code
+            - NOTE: we're waiting until we test out spans and the other stuff above because that could require more refactoring
+        - [ ] foreach expansion within a KeyFile context
+        - [~] command normalization
+            - [X] always `runCommand` with an array of objects with `command` field
+            - [ ] flatten all nested `runCommands` calls
+        - [ ] check constraints
+            - [ ] validation that `master-key.prefix` uses `finalKey: false`
+            - [ ] validation that keybindings with non modifier keybindings
+              have a condition requiring textEditorFocus
+            - [ ] modes are all positive or negative
+            - [ ] required keys are present
+        - [ ] mode expansion
+        - [ ] key-sequence expansion and duplicate resolution
+        - [ ] documentation expandsion/validation across all `[[bind]]` values
+              with the same key and mode
+    - [ ] proper conversion to keybindings.json command
+        - [ ] expand prefixes to prefixCode and move to when clause
+        - [ ] move mode to when clause
+    - [ ] extraction of visual docs
+    - [ ] extraction of markdown docs
+        - [ ] extract all comment regions (exclude `#-`)
+        - [ ] replace `[[bind]]` regions:
+            - [ ] identify each non-comment region, and look for parsed elements
+                  whose span overlaps
+            - [ ] convert any bind elements in this overlap into markdown table
+    - [ ] actually replace javascript behavior with rust functions
+    - [ ] CI
+        - [x] setup CI unit tests for rust
+        - [x] setup rust coverage
+        - [x] setup CI and merge coverage across rust and javascript
+        - [ ] verify that CI is running and coverage is showing up
+
 4. Move palette from quick pick to tree view
     - [ ] get a simple tree view working (just show one item)
     - [ ] get tree view to show palette items
@@ -94,6 +173,12 @@ Integration test debugging:
 8. Migration of selection utilities to the same build and test setup
 9. Generate detailed error reports for keybinding files and get them to show
    up in VSCode's problem window / linting underlines
+    - [ ] we need to let TOML language server know about the schema...
+        - [ ] https://github.com/GREsau/schemars to export schema
+        - [ ] insert '$schema' key into file
+    - [ ] use `document.positionAt` to convert spans byte offsets to char and line
+    - [ ] https://code.visualstudio.com/api/references/vscode-api#languages
+        look for `createDiagnosticsCollection` to create new linting hints
 10. Translate selection utility tests to new build setup
 11. Get CI working for all tests in selection utilities
 12. continue the quest for better test coverage
