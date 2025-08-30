@@ -15,7 +15,7 @@ pub enum Error {
     #[error("toml parsing {0}")]
     TomlParsing(#[from] toml::de::Error),
     #[error("expression parsing {0}")]
-    ExpressionParsing(#[from] rhai::parser::ParseResult),
+    ExpressionParsing(#[from] rhai::ParseError),
     #[error("serializing {0}")]
     Serialization(#[from] toml::ser::Error),
     #[error("invalid {0}")]
@@ -50,21 +50,24 @@ pub struct ErrorWithContext {
     pub contexts: Vec<Context>,
 }
 
+#[wasm_bindgen]
+#[derive(Debug, Clone, Error)]
+#[error("first error: {}", .errors[0])]
+pub struct ErrorsWithContext {
+    pub(crate) errors: Vec<ErrorWithContext>,
+}
+
 fn range_to_pos(range: Range<usize>, offsets: &StringOffsets) -> CharRange {
     let start = offsets.utf8_to_char_pos(range.start);
     let end = offsets.utf8_to_char_pos(range.end);
     CharRange { start, end }
 }
 
-impl From<ErrorWithContext> for Vec<ErrorWithContext> {
+impl From<ErrorWithContext> for ErrorsWithContext {
     fn from(value: ErrorWithContext) -> Self {
-        return vec![value];
-    }
-}
-
-impl From<Error> for Vec<ErrorWithContext> {
-    fn from(value: Error) -> Self {
-        return vec![value.into()];
+        return ErrorsWithContext {
+            errors: vec![value],
+        };
     }
 }
 
@@ -74,7 +77,7 @@ impl ErrorWithContext {
         let mut items = Vec::with_capacity(self.contexts.len() + 1);
         let offsets: StringOffsets = StringOffsets::new(content);
         items.push(match &self.error {
-            Error::Parsing(toml) => ErrorReportItem {
+            Error::TomlParsing(toml) => ErrorReportItem {
                 message: Some(toml.message().into()),
                 range: toml.span().map(|r| range_to_pos(r, &offsets)),
             },
@@ -105,23 +108,33 @@ impl ErrorWithContext {
     }
 }
 
+#[wasm_bindgen]
+impl ErrorsWithContext {
+    pub fn report(&self, content: &str) -> Vec<ErrorReport> {
+        return self.errors.iter().map(|e| e.report(content)).collect();
+    }
+}
+
 #[derive(Debug, Clone)]
 #[wasm_bindgen(getter_with_clone)]
 pub struct ErrorReport {
     pub items: Vec<ErrorReportItem>,
 }
 
-fn flatten_errors<T>(errs: impl Iterator<Item = ResultVec<T>>) -> ResultVec<T> {
-    let (results, errors) = errs.partition(Result::is_ok);
+pub fn flatten_errors<T>(errs: impl Iterator<Item = ResultVec<T>>) -> ResultVec<Vec<T>>
+where
+    T: std::fmt::Debug,
+{
+    let (results, errors): (Vec<_>, Vec<_>) = errs.partition(|e| e.is_ok());
     let flat_errs = errors
         .into_iter()
-        .flat_map(|x| x.unwrap_err().into_iter())
+        .flat_map(|x| x.unwrap_err().errors.into_iter())
         .collect::<Vec<ErrorWithContext>>();
 
     if flat_errs.len() > 0 {
-        return Err(flat_errs);
+        return Err(flat_errs.into());
     } else {
-        return Ok(results.into_iter().any(|x| x.unwrap()));
+        return Ok(results.into_iter().map(|x| x.unwrap()).collect());
     }
 }
 
@@ -171,6 +184,20 @@ impl<E: Into<Error>> From<E> for ErrorWithContext {
     }
 }
 
+impl<E: Into<Error>> From<E> for ErrorsWithContext {
+    fn from(error: E) -> Self {
+        let error: Error = error.into();
+        let error: ErrorWithContext = error.into();
+        return error.into();
+    }
+}
+
+impl From<Vec<ErrorWithContext>> for ErrorsWithContext {
+    fn from(value: Vec<ErrorWithContext>) -> Self {
+        return ErrorsWithContext { errors: value };
+    }
+}
+
 pub fn constrain<T>(msg: &str) -> Result<T> {
     return Err(Error::Constraint(msg.into()))?;
 }
@@ -187,11 +214,12 @@ pub trait ErrorContext<T>
 where
     Self: Sized,
 {
-    fn context(self, context: Context) -> Result<T>;
-    fn context_str(self, context: impl Into<String>) -> Result<T> {
+    type Error;
+    fn context(self, context: Context) -> std::result::Result<T, Self::Error>;
+    fn context_str(self, context: impl Into<String>) -> std::result::Result<T, Self::Error> {
         self.context(Context::String(context.into()))
     }
-    fn context_range(self, context: &impl Spannable) -> Result<T> {
+    fn context_range(self, context: &impl Spannable) -> std::result::Result<T, Self::Error> {
         if let Some(range) = context.range() {
             return self.context(Context::Range(range));
         } else {
@@ -223,6 +251,7 @@ impl Spannable for Range<usize> {
 }
 
 impl<T, E: Into<Error>> ErrorContext<T> for std::result::Result<T, E> {
+    type Error = ErrorWithContext;
     fn context(self, context: Context) -> Result<T> {
         return match self {
             Ok(x) => Ok(x),
@@ -235,6 +264,7 @@ impl<T, E: Into<Error>> ErrorContext<T> for std::result::Result<T, E> {
 }
 
 impl<T> ErrorContext<T> for Result<T> {
+    type Error = ErrorWithContext;
     fn context(self, context: Context) -> Result<T> {
         return match self {
             Ok(x) => Ok(x),
@@ -249,30 +279,14 @@ impl<T> ErrorContext<T> for Result<T> {
     }
 }
 
-pub trait ErrorContexts<T>
-where
-    T: Sized,
-    Self: Sized,
-{
-    fn context(self, context: Context) -> ResultVec<T>;
-    fn context_str(self, context: impl Into<String>) -> ResultVec<T> {
-        self.context(Context::String(context.into()))
-    }
-    fn context_range(self, context: &impl Spannable) -> ResultVec<T> {
-        if let Some(range) = context.range() {
-            return self.context(Context::Range(range));
-        } else {
-            return self.context(Context::Range(UNKNOWN_RANGE));
-        }
-    }
-}
-
-impl<T> ErrorContexts<T> for ResultVec<T> {
+impl<T> ErrorContext<T> for ResultVec<T> {
+    type Error = ErrorsWithContext;
     fn context(self, context: Context) -> ResultVec<T> {
         return match self {
             Ok(x) => Ok(x),
             Err(mut errs) => {
-                errs.iter_mut()
+                errs.errors
+                    .iter_mut()
                     .for_each(|e| e.contexts.push(context.clone()));
                 Err(errs)
             }
@@ -281,4 +295,4 @@ impl<T> ErrorContexts<T> for ResultVec<T> {
 }
 
 pub type Result<T> = std::result::Result<T, ErrorWithContext>;
-pub type ResultVec<T> = std::result::Result<T, Vec<ErrorWithContext>>;
+pub type ResultVec<T> = std::result::Result<T, ErrorsWithContext>;

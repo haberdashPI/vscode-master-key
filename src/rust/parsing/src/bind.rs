@@ -2,32 +2,39 @@
 
 #![allow(non_snake_case)]
 
+#[allow(unused_imports)]
+use log::info;
+
+use std::convert::identity;
+
+use std::collections::VecDeque;
+use std::error;
+
+use indexmap::IndexMap;
+use serde::{Deserialize, Serialize};
+use serde_wasm_bindgen;
+use std::io;
+use toml::Spanned;
+use wasm_bindgen::JsValue;
+use wasm_bindgen::prelude::*;
+
 mod foreach;
 mod validation;
 
 use crate::bind::foreach::expand_keys;
 use crate::bind::validation::{BindingReference, KeyBinding};
-use crate::error::{
-    ErrorContext, ErrorContexts, Result, ResultVec, constrain, reserved, unexpected,
-};
+use crate::error::ErrorsWithContext;
+use crate::error::{Error, ErrorContext, Result, ResultVec, constrain, reserved, unexpected};
 use crate::util::{Merging, Plural, Required, Requiring, Resolving};
-use crate::variable;
-use crate::variable::VariableExpanding;
-
-#[allow(unused_imports)]
-use log::info;
-
-use indexmap::IndexMap;
-use serde::{Deserialize, Serialize};
-use serde_wasm_bindgen;
-use toml::{Spanned, Value};
-use wasm_bindgen::JsValue;
-use wasm_bindgen::prelude::*;
+use crate::value::{Expanding, TypedValue, Value};
 
 pub const UNKNOWN_RANGE: core::ops::Range<usize> = usize::MIN..usize::MAX;
 
-fn default_mode() -> Spanned<Plural<String>> {
-    return Spanned::new(UNKNOWN_RANGE, Plural::One("default".into()));
+fn default_mode() -> Spanned<Plural<TypedValue<String>>> {
+    return Spanned::new(
+        UNKNOWN_RANGE,
+        Plural::One(TypedValue::Constant("default".into())),
+    );
 }
 
 fn span_required_default<T>() -> Spanned<Required<T>> {
@@ -58,7 +65,7 @@ fn span_plural_default<T>() -> Spanned<Plural<T>> {
  * a `*`.
  *
  */
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Deserialize, Clone, Debug)]
 pub struct BindingInput {
     // should only be `Some` in context of `Define(Input)`
     pub(crate) id: Option<Spanned<String>>,
@@ -72,7 +79,7 @@ pub struct BindingInput {
      *   (see [running multiple commands](#running-multiple-commands)).
      */
     #[serde(default = "span_required_default")]
-    pub command: Spanned<Required<String>>,
+    pub command: Spanned<Required<TypedValue<String>>>,
 
     /**
      * @forBindingField bind
@@ -81,7 +88,7 @@ pub struct BindingInput {
      *   values.
      */
     #[serde(default)]
-    pub args: Option<Spanned<toml::Table>>,
+    pub args: Option<Spanned<Value>>,
 
     /**
      * @forBindingField bind
@@ -100,18 +107,17 @@ pub struct BindingInput {
      *   context under which the binding will be active. Also see Master Key's
      *   [available contexts](#available-contexts)
      */
-    #[serde(default = "span_plural_default")]
-    pub when: Spanned<Plural<String>>,
+    pub when: Option<Spanned<TypedValue<String>>>,
     /**
      * @forBindingField bind
      *
      * - `mode`: The mode during which the binding will be active. The default mode is
      *   used when this field is not specified (either directly or via the `defaults`
      *   field). You can also specify multiple modes as an array of strings. To specify
-     *   a binding that is applied in all modes use "{{all_modes}}".
+     *   a binding that is applied in all modes use "{{all_modes()}}".
      */
     #[serde(default = "default_mode")]
-    pub mode: Spanned<Plural<String>>,
+    pub mode: Spanned<Plural<TypedValue<String>>>,
     /**
      * @forBindingField bind
      *
@@ -119,7 +125,7 @@ pub struct BindingInput {
      *   bindings take precedence. Defaults to 0.
      */
     #[serde(default)]
-    pub priority: Option<Spanned<variable::Value<i64>>>,
+    pub priority: Option<Spanned<TypedValue<f64>>>,
     /**
      * @forBindingField bind
      *
@@ -136,7 +142,7 @@ pub struct BindingInput {
      *   [`foreach` clauses](#foreach-clauses).
      */
     #[serde(default)]
-    pub foreach: Option<IndexMap<String, Vec<Spanned<toml::Value>>>>,
+    pub foreach: Option<IndexMap<String, Vec<Spanned<Value>>>>,
 
     /**
      * @forBindingField bind
@@ -151,7 +157,7 @@ pub struct BindingInput {
      *   in Larkin).
      */
     #[serde(default = "span_plural_default")]
-    pub prefixes: Spanned<Plural<String>>,
+    pub prefixes: Spanned<Plural<TypedValue<String>>>,
 
     /**
      * @forBindingField bind
@@ -161,7 +167,7 @@ pub struct BindingInput {
      *   [`master-key.prefix`](/commands/prefix) for details.
      */
     #[serde(default)]
-    pub finalKey: Option<Spanned<variable::Value<bool>>>,
+    pub finalKey: Option<Spanned<TypedValue<bool>>>,
 
     /**
      * @forBindingField bind
@@ -174,7 +180,7 @@ pub struct BindingInput {
      * - `command` will be repeated the given
      *   number of times.
      */
-    repeat: Option<Spanned<String>>,
+    repeat: Option<Spanned<TypedValue<i64>>>,
 
     /**
      * @forBindingField bind
@@ -190,7 +196,7 @@ pub struct BindingInput {
      *   keys. Favor unicode symbols such as → and ← over text.
      */
     #[serde(default)]
-    pub name: Option<Spanned<String>>,
+    pub name: Option<Spanned<TypedValue<String>>>,
 
     /**
      * @forBindingField bind
@@ -201,7 +207,7 @@ pub struct BindingInput {
      *   for the literate comments.
      */
     #[serde(default)]
-    pub description: Option<Spanned<String>>,
+    pub description: Option<Spanned<TypedValue<String>>>,
     /**
      * @forBindingField bind
      * @order 10
@@ -210,9 +216,9 @@ pub struct BindingInput {
      *   and the documentation. These both default to false.
      */
     #[serde(default)]
-    pub hideInPalette: Option<Spanned<variable::Value<bool>>>,
+    pub hideInPalette: Option<Spanned<TypedValue<bool>>>,
     #[serde(default)]
-    pub hideInDocs: Option<Spanned<variable::Value<bool>>>,
+    pub hideInDocs: Option<Spanned<TypedValue<bool>>>,
 
     /**
      * @forBindingField bind
@@ -226,11 +232,11 @@ pub struct BindingInput {
      *   `combinedDescription` are ignored.
      */
     #[serde(default)]
-    pub combinedName: Option<Spanned<String>>,
+    pub combinedName: Option<Spanned<TypedValue<String>>>,
     #[serde(default)]
-    pub combinedKey: Option<Spanned<String>>,
+    pub combinedKey: Option<Spanned<TypedValue<String>>>,
     #[serde(default)]
-    pub combinedDescription: Option<Spanned<String>>,
+    pub combinedDescription: Option<Spanned<TypedValue<String>>>,
 
     /**
      * @forBindingField bind
@@ -241,7 +247,7 @@ pub struct BindingInput {
      *   entry in the top-level `kind` array.
      */
     #[serde(default)]
-    pub kind: Option<Spanned<String>>,
+    pub kind: Option<Spanned<TypedValue<String>>>,
 }
 
 impl BindingInput {
@@ -281,6 +287,7 @@ impl Merging for BindingInput {
             command: self.command.coalesce(y.command),
             args: self.args.merge(y.args),
             key: self.key.coalesce(y.key),
+            kind: self.kind.coalesce(y.kind),
             when: self.when.coalesce(y.when),
             mode: self.mode.coalesce(y.mode),
             priority: self.priority.coalesce(y.priority),
@@ -296,34 +303,49 @@ impl Merging for BindingInput {
             combinedName: self.combinedName.coalesce(y.combinedName),
             combinedKey: self.combinedKey.coalesce(y.combinedKey),
             combinedDescription: self.combinedDescription.coalesce(y.combinedDescription),
-            kind: self.kind.coalesce(y.kind),
         }
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Deserialize, Clone, Debug)]
 pub struct CommandInput {
     // should only be `Some` in context of `Define(Input)`
-    pub(crate) id: Option<Spanned<String>>,
-    pub command: Spanned<Required<String>>,
-    pub args: Option<Spanned<toml::Table>>,
+    pub(crate) id: Option<Spanned<TypedValue<String>>>,
+    pub command: Spanned<Required<TypedValue<String>>>,
+    pub args: Option<Spanned<Value>>,
 }
 
-impl VariableExpanding for CommandInput {
-    fn expand_with_getter<F>(&mut self, getter: F) -> ResultVec<()>
+impl Expanding for CommandInput {
+    fn is_constant(&self) -> bool {
+        if self.command.is_constant() {
+            return false;
+        }
+        if self.args.is_constant() {
+            return false;
+        }
+        return true;
+    }
+    fn map_expressions<F>(self, f: &F) -> ResultVec<Self>
     where
-        F: Fn(&str) -> Result<Option<toml::Value>>,
-        F: Clone,
+        F: Fn(String) -> Result<Value>,
     {
-        self.command
-            .expand_with_getter(getter.clone())
-            .context_str("`command` field")
-            .context_range(&self.command)?;
-        self.args
-            .expand_with_getter(getter.clone())
-            .context_str("`args` field")
-            .context_range(&self.args)?;
-        return Ok(());
+        let mut errors = Vec::new();
+        let result = CommandInput {
+            id: self.id,
+            command: self.command.map_expressions(f).unwrap_or_else(|mut e| {
+                errors.append(&mut e.errors);
+                Spanned::new(UNKNOWN_RANGE, Required::DefaultValue)
+            }),
+            args: self.args.map_expressions(f).unwrap_or_else(|mut e| {
+                errors.append(&mut e.errors);
+                None
+            }),
+        };
+        if errors.len() > 0 {
+            return Err(errors.into());
+        } else {
+            return Ok(result);
+        }
     }
 }
 
@@ -340,12 +362,16 @@ impl CommandInput {
 #[wasm_bindgen(getter_with_clone)]
 #[derive(Clone, Debug, Serialize)]
 pub struct Command {
-    pub command: String,
-    pub(crate) args: toml::Table,
+    pub(crate) command: TypedValue<String>,
+    pub(crate) args: Value,
 }
 
+// TODO: here is where we would want to invoke rhai to resolve any outstanding expressions
 #[wasm_bindgen]
 impl Command {
+    pub fn command(&self) -> std::result::Result<String, JsError> {
+        return Ok("TODO".into());
+    }
     #[wasm_bindgen(getter)]
     pub fn args(&self) -> std::result::Result<JsValue, serde_wasm_bindgen::Error> {
         let to_json = serde_wasm_bindgen::Serializer::json_compatible();
@@ -362,7 +388,7 @@ impl Command {
             command: input.command.into_inner().resolve("`command` field")?,
             args: match input.args {
                 Some(x) => x.into_inner(),
-                None => toml::Table::new(),
+                None => Value::Table(IndexMap::new()),
             },
         });
     }
@@ -380,7 +406,7 @@ pub struct Binding {
     pub priority: i64,
     pub prefixes: Vec<String>,
     pub finalKey: bool,
-    pub repeat: Option<String>,
+    pub(crate) repeat: Option<TypedValue<i64>>,
     pub name: Option<String>,
     pub description: Option<String>,
     pub hideInPalette: bool,
@@ -389,6 +415,13 @@ pub struct Binding {
     pub combinedKey: Option<String>,
     pub combinedDescription: Option<String>,
     pub kind: Option<String>,
+}
+
+#[wasm_bindgen]
+impl Binding {
+    pub fn repeat_count(&self) -> std::result::Result<String, JsError> {
+        return Ok("TODO".into());
+    }
 }
 
 // TODO: define functions for variable expansion on `Binding??`
@@ -403,187 +436,289 @@ impl BindingInput {
         return false;
     }
 
-    fn expand_foreach(&mut self) -> ResultVec<Vec<BindingInput>> {
-        let mut result = vec![self.clone()];
-        while self.has_foreach() {
-            result = self.expand_foreach_once(&result)?;
-        }
-        return Ok(result);
-    }
+    pub fn expand_foreach(mut self) -> ResultVec<Vec<BindingInput>> {
+        if self.has_foreach() {
+            let foreach = expand_keys(self.foreach.clone().unwrap())?;
+            foreach.require_constant().context_str(
+                "`foreach` values can only include expressions of the form {{keys(`regex`)}}",
+            )?;
 
-    fn expand_foreach_once(&mut self, inputs: &Vec<BindingInput>) -> ResultVec<Vec<BindingInput>> {
-        let foreach = match self.foreach {
-            Some(ref mut foreach) => foreach,
-            None => &mut IndexMap::new(),
-        };
-        let final_foreach = foreach.split_off(1);
-        let mut iter = foreach.iter();
-        let first = iter.next();
-        if let Some(item) = first {
-            let (var, values) = item;
-
-            let expanded_items = expand_keys(values)?;
-            let mut result = Vec::with_capacity(inputs.len() * expanded_items.len());
-            for input in inputs {
-                for value in &expanded_items {
-                    let mut expanded = input.clone();
-                    expanded.expand_value(var, value)?;
-                    result.push(expanded);
-                }
-            }
-            if final_foreach.len() > 0 {
-                self.foreach = Some(final_foreach);
-            } else {
-                self.foreach = None;
-            }
-            return Ok(result);
-        } else {
-            return Ok(vec![]);
+            let values = expand_foreach_values(foreach).into_iter().map(|values| {
+                self.clone()
+                    .map_expressions(&|x| {
+                        Ok(values
+                            .get(&x)
+                            .map_or_else(|| Value::Expression(x), |ex| ex.clone()))
+                    })
+                    .expect("no errors") // since our mapping function has no errors
+            });
+            return Ok(values.collect());
         }
+        return Ok(vec![self]);
     }
 }
 
-impl VariableExpanding for BindingInput {
-    fn expand_with_getter<F>(&mut self, getter: F) -> ResultVec<()>
+fn expand_foreach_values(foreach: IndexMap<String, Vec<Value>>) -> Vec<IndexMap<String, Value>> {
+    let mut result = vec![IndexMap::new()];
+
+    for (k, vals) in foreach {
+        result = result
+            .iter()
+            .flat_map(|seed| {
+                vals.iter().map(|v| {
+                    let mut with_k = seed.clone();
+                    with_k.insert(k.clone(), v.clone());
+                    return with_k;
+                })
+            })
+            .collect();
+    }
+
+    return result;
+}
+
+impl Expanding for BindingInput {
+    fn is_constant(&self) -> bool {
+        [
+            self.command.is_constant(),
+            self.args.is_constant(),
+            self.key.is_constant(),
+            self.when.is_constant(),
+            self.mode.is_constant(),
+            self.priority.is_constant(),
+            self.default.is_constant(),
+            self.foreach.is_constant(),
+            self.prefixes.is_constant(),
+            self.finalKey.is_constant(),
+            self.repeat.is_constant(),
+            self.name.is_constant(),
+            self.description.is_constant(),
+            self.hideInPalette.is_constant(),
+            self.hideInDocs.is_constant(),
+            self.combinedName.is_constant(),
+            self.combinedKey.is_constant(),
+            self.combinedDescription.is_constant(),
+            self.kind.is_constant(),
+        ]
+        .into_iter()
+        .all(identity)
+    }
+    fn map_expressions<F>(self, f: &F) -> ResultVec<Self>
     where
-        F: Fn(&str) -> Result<Option<toml::Value>>,
-        F: Clone,
+        F: Fn(String) -> Result<Value>,
     {
-        self.command.expand_with_getter(getter.clone())?;
-        self.args.expand_with_getter(getter.clone())?;
-        self.key.expand_with_getter(getter.clone())?;
-        self.when.expand_with_getter(getter.clone())?;
-        self.mode.expand_with_getter(getter.clone())?;
-        self.priority.expand_with_getter(getter.clone())?;
-        self.default.expand_with_getter(getter.clone())?;
-        self.prefixes.expand_with_getter(getter.clone())?;
-        self.finalKey.expand_with_getter(getter.clone())?;
-        self.repeat.expand_with_getter(getter.clone())?;
-        self.name.expand_with_getter(getter.clone())?;
-        self.description.expand_with_getter(getter.clone())?;
-        self.hideInPalette.expand_with_getter(getter.clone())?;
-        self.hideInDocs.expand_with_getter(getter.clone())?;
-        self.combinedName.expand_with_getter(getter.clone())?;
-        self.combinedKey.expand_with_getter(getter.clone())?;
-        self.combinedDescription
-            .expand_with_getter(getter.clone())?;
-        self.kind.expand_with_getter(getter.clone())?;
-        return Ok(());
-    }
-}
-
-fn regularize_commands(input: BindingInput) -> Result<(BindingInput, Vec<Command>)> {
-    let command = input.command.get_ref().clone().resolve("`command` field")?;
-    let args = input.args.clone();
-    if command == "runCommands" {
-        let spanned = args
-            .require("`args` field")
-            .context_str("`runCommands` must have `args` field")
-            .context_range(&input.command)?;
-        let args_pos = spanned.span();
-        let args = spanned.into_inner();
-        let commands = args
-            .get("commands")
-            .require("`commands` field")
-            .context_str("`runCommands.args` must have a `commands` fields")
-            .context_range(&args_pos)?;
-        let commands = commands.as_array().require("`commands` to be an array")?;
-        let mut command_result = Vec::with_capacity(commands.len());
-        for command in commands {
-            let (command, args) = match command {
-                Value::String(str) => (str.to_owned(), toml::Table::new()),
-                Value::Table(kv) => {
-                    let command_name = kv
-                        .get("command")
-                        .require("`command` field")?
-                        .as_str()
-                        .require("`command` to be string")
-                        .context_range(&args_pos)?
-                        .to_owned();
-                    let args = command
-                        .get("args")
-                        .require("`args` field")?
-                        .as_table()
-                        .require("`args` to be a table")?
-                        .to_owned();
-                    (command_name, args)
-                }
-                _ => {
-                    return constrain(
-                        "`commands` to be an array that includes objects and strings only",
-                    )?;
-                }
-            };
-
-            command_result.push(Command { command, args })
-        }
-
-        return Ok((input, command_result));
-    } else {
-        return Ok((
-            input,
-            vec![Command {
-                command,
-                args: match args {
-                    Some(x) => x.into_inner(),
-                    None => toml::Table::new(),
-                },
-            }],
-        ));
-    }
-}
-
-// TODO: think about whether I want to represent commands as a sequence in the output...
-impl Binding {
-    pub fn new(input: BindingInput) -> Result<Self> {
-        if let Some(_) = input.id {
-            return reserved("id");
-        }
-
-        serde_wasm_bindgen::Serializer::json_compatible();
-        if let Some(_) = input.foreach {
-            return unexpected("`foreach` with unresolved variables");
-        }
-        let (input, commands) = regularize_commands(input)?;
-
-        // TODO this is where we should validate that prefix has `finalKey == false`
-
-        return Ok(Binding {
-            commands: commands,
-            key: input.key.into_inner().require("`key` field")?.unwrap(),
-            when: input.when.into_inner().to_array(),
-            mode: input.mode.into_inner().to_array(),
-            priority: input
-                .priority
-                .map(|x| x.into_inner().resolve("`priority` field"))
-                .unwrap_or_else(|| Ok(0))?,
-            prefixes: input.prefixes.into_inner().to_array(),
-            finalKey: input
-                .finalKey
-                .map(|x| x.into_inner().resolve("`finalKey` field"))
-                .unwrap_or_else(|| Ok(true))?,
-            repeat: input.repeat.map(|x| x.into_inner()),
-            name: input.name.map(|x| x.into_inner()),
-            description: input.description.map(|x| x.into_inner()),
-            hideInPalette: input
+        let mut errors = Vec::new();
+        let result = BindingInput {
+            id: self.id,
+            foreach: self.foreach.map_expressions(f).unwrap_or_else(|mut e| {
+                errors.append(&mut e.errors);
+                None
+            }),
+            command: self.command.map_expressions(f).unwrap_or_else(|mut e| {
+                errors.append(&mut e.errors);
+                Spanned::new(UNKNOWN_RANGE, Required::DefaultValue)
+            }),
+            args: self.args.map_expressions(f).unwrap_or_else(|mut e| {
+                errors.append(&mut e.errors);
+                None
+            }),
+            key: self.key.map_expressions(f).unwrap_or_else(|mut e| {
+                errors.append(&mut e.errors);
+                Spanned::new(UNKNOWN_RANGE, Required::DefaultValue)
+            }),
+            when: self.when.map_expressions(f).unwrap_or_else(|mut e| {
+                errors.append(&mut e.errors);
+                None
+            }),
+            mode: self.mode.map_expressions(f).unwrap_or_else(|mut e| {
+                errors.append(&mut e.errors);
+                Spanned::new(UNKNOWN_RANGE, Plural::Zero)
+            }),
+            priority: self.priority.map_expressions(f).unwrap_or_else(|mut e| {
+                errors.append(&mut e.errors);
+                None
+            }),
+            default: self.default.map_expressions(f).unwrap_or_else(|mut e| {
+                errors.append(&mut e.errors);
+                None
+            }),
+            prefixes: self.prefixes.map_expressions(f).unwrap_or_else(|mut e| {
+                errors.append(&mut e.errors);
+                Spanned::new(UNKNOWN_RANGE, Plural::Zero)
+            }),
+            finalKey: self.finalKey.map_expressions(f).unwrap_or_else(|mut e| {
+                errors.append(&mut e.errors);
+                None
+            }),
+            repeat: self.repeat.map_expressions(f).unwrap_or_else(|mut e| {
+                errors.append(&mut e.errors);
+                None
+            }),
+            name: self.name.map_expressions(f).unwrap_or_else(|mut e| {
+                errors.append(&mut e.errors);
+                None
+            }),
+            description: self.description.map_expressions(f).unwrap_or_else(|mut e| {
+                errors.append(&mut e.errors);
+                None
+            }),
+            hideInPalette: self
                 .hideInPalette
-                .map(|x| x.into_inner().resolve("`hideInPalette` field"))
-                .unwrap_or_else(|| Ok(false))?,
-            hideInDocs: input
-                .hideInDocs
-                .map(|x| x.into_inner().resolve("`hideInDocs` field"))
-                .unwrap_or_else(|| Ok(false))?,
-            combinedName: input.combinedName.map(|x| x.into_inner()),
-            combinedKey: input.combinedKey.map(|x| x.into_inner()),
-            combinedDescription: input.combinedDescription.map(|x| x.into_inner()),
-            kind: input.kind.clone().map(|x| x.into_inner()),
-        });
+                .map_expressions(f)
+                .unwrap_or_else(|mut e| {
+                    errors.append(&mut e.errors);
+                    None
+                }),
+            hideInDocs: self.hideInDocs.map_expressions(f).unwrap_or_else(|mut e| {
+                errors.append(&mut e.errors);
+                None
+            }),
+            combinedName: self
+                .combinedName
+                .map_expressions(f)
+                .unwrap_or_else(|mut e| {
+                    errors.append(&mut e.errors);
+                    None
+                }),
+            combinedKey: self.combinedKey.map_expressions(f).unwrap_or_else(|mut e| {
+                errors.append(&mut e.errors);
+                None
+            }),
+            combinedDescription: self.combinedDescription.map_expressions(f).unwrap_or_else(
+                |mut e| {
+                    errors.append(&mut e.errors);
+                    None
+                },
+            ),
+            kind: self.kind.map_expressions(f).unwrap_or_else(|mut e| {
+                errors.append(&mut e.errors);
+                None
+            }),
+        };
+        if errors.len() > 0 {
+            return Err(errors.into());
+        } else {
+            return Ok(result);
+        }
     }
 }
+
+fn regularize_commands(input: BindingInput) -> ResultVec<(BindingInput, Vec<Command>)> {
+    return Err(Error::Unexpected("TODO"))?;
+    // // TODO: this works with TOML values, need to figure out how to
+    // // work with Value's since some of them can be expressions
+    // let command_value: toml::Value = input.command.into();
+    // let command = command_value.get_ref().clone().resolve("`command` field")?;
+    // let args = input.args.clone();
+    // if command == "runCommands" {
+    //     let spanned = args
+    //         .require("`args` field")
+    //         .context_str("`runCommands` must have `args` field")
+    //         .context_range(&command_value)?;
+    //     let args_pos = spanned.span();
+    //     let args = spanned.into_inner();
+    //     let commands = args
+    //         .get("commands")
+    //         .require("`commands` field")
+    //         .context_str("`runCommands.args` must have a `commands` fields")
+    //         .context_range(&args_pos)?;
+    //     let commands = commands.as_array().require("`commands` to be an array")?;
+    //     let mut command_result = Vec::with_capacity(commands.len());
+    //     for command in commands {
+    //         let (command, args) = match command {
+    //             Value::String(str) => (str.to_owned(), toml::Table::new()),
+    //             Value::Table(kv) => {
+    //                 let command_name = kv
+    //                     .get("command")
+    //                     .require("`command` field")?
+    //                     .as_str()
+    //                     .require("`command` to be string")
+    //                     .context_range(&args_pos)?
+    //                     .to_owned();
+    //                 let args = command
+    //                     .get("args")
+    //                     .require("`args` field")?
+    //                     .as_table()
+    //                     .require("`args` to be a table")?
+    //                     .to_owned();
+    //                 (command_name, args)
+    //             }
+    //             _ => {
+    //                 return constrain(
+    //                     "`commands` to be an array that includes objects and strings only",
+    //                 )?;
+    //             }
+    //         };
+
+    //         command_result.push(Command { command, args })
+    //     }
+
+    //     return Ok((input, command_result));
+    // } else {
+    //     return Ok((
+    //         input,
+    //         vec![Command {
+    //             command,
+    //             args: match args {
+    //                 Some(x) => x.into_inner(),
+    //                 None => toml::Table::new(),
+    //             },
+    //         }],
+    //     ));
+    // }
+}
+
+// impl Binding {
+//     pub fn new(input: BindingInput) -> ResultVec<Self> {
+//         if let Some(_) = input.id {
+//             return reserved("id");
+//         }
+
+//         serde_wasm_bindgen::Serializer::json_compatible();
+//         if let Some(_) = input.foreach {
+//             return unexpected("`foreach` with unresolved variables");
+//         }
+//         let (input, commands) = regularize_commands(input)?;
+
+//         // TODO this is where we should validate that prefix has `finalKey == false`
+
+//         // TODO: cleanup below now that we've updated types for `BindingInput`
+//         return Ok(Binding {
+//             commands: commands,
+//             key: input.key.into_inner().require("`key` field")?.unwrap(),
+//             when: input.when.into_inner().to_array(),
+//             mode: input.mode.into_inner().to_array(),
+//             priority: input
+//                 .priority
+//                 .map(|x| x.into_inner().resolve("`priority` field"))
+//                 .unwrap_or_else(|| Ok(0))?,
+//             prefixes: input.prefixes.into_inner().to_array(),
+//             finalKey: input
+//                 .finalKey
+//                 .map(|x| x.into_inner().resolve("`finalKey` field"))
+//                 .unwrap_or_else(|| Ok(true))?,
+//             repeat: input.repeat.map(|x| x.into_inner()),
+//             name: input.name.map(|x| x.into_inner()),
+//             description: input.description.map(|x| x.into_inner()),
+//             hideInPalette: input
+//                 .hideInPalette
+//                 .map(|x| x.into_inner().resolve("`hideInPalette` field"))
+//                 .unwrap_or_else(|| Ok(false))?,
+//             hideInDocs: input
+//                 .hideInDocs
+//                 .map(|x| x.into_inner().resolve("`hideInDocs` field"))
+//                 .unwrap_or_else(|| Ok(false))?,
+//             combinedName: input.combinedName.map(|x| x.into_inner()),
+//             combinedKey: input.combinedKey.map(|x| x.into_inner()),
+//             combinedDescription: input.combinedDescription.map(|x| x.into_inner()),
+//             kind: input.kind.clone().map(|x| x.into_inner()),
+//         });
+//     }
+// }
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
+    use std::{collections::HashMap, io::Write};
     use test_log::test;
 
     use super::*;
@@ -600,7 +735,7 @@ mod tests {
         foreach.index = [1,2,3]
         prefixes = "c"
         finalKey = true
-        repeat = "2+c"
+        repeat = "{{2+c}}"
         name = "foo"
         description = "foo bar bin"
         hideInPalette = false
@@ -611,63 +746,82 @@ mod tests {
         kind = "biz"
         "#;
 
+        io::stdout().flush().unwrap();
+
         let result = toml::from_str::<BindingInput>(data).unwrap();
 
-        assert_eq!(result.command.into_inner(), Required::Value("do".into()));
+        assert_eq!(
+            String::from(result.command.into_inner().unwrap()),
+            "do".to_string()
+        );
+
         let args = result.args.unwrap().into_inner();
-        assert_eq!(args.get("a").unwrap(), &Value::String("2".into()));
-        assert_eq!(args.get("b").unwrap(), &Value::Integer(3));
-        assert_eq!(result.key.into_inner().unwrap().unwrap(), "a");
-        assert_eq!(result.when.into_inner(), Plural::One("joe > 1".into()));
-        assert_eq!(result.mode.into_inner(), Plural::One("normal".into()));
-        assert_eq!(result.priority.map(|x| x.into_inner()).unwrap().unwrap(), 1);
         assert_eq!(
-            result.default.map(|x| x.into_inner()).as_ref().unwrap(),
-            &BindingReference::try_from(String::from("{{bind.foo_bar}}")).unwrap()
+            args,
+            Value::Table(IndexMap::from([
+                ("a".into(), Value::String("2".into())),
+                ("b".into(), Value::Integer(3))
+            ]))
         );
+        let key: String = result.key.into_inner().unwrap().into();
+        assert_eq!(key, "a".to_string());
+        let when: String = result.when.unwrap().into_inner().into();
+        assert_eq!(when, "joe > 1".to_string());
+        let mode: Vec<String> = result
+            .mode
+            .into_inner()
+            .map(|m| m.clone().into())
+            .to_array();
+
+        assert_eq!(mode, ["normal"]);
+        let priority: f64 = result.priority.unwrap().into_inner().into();
+        assert_eq!(priority, 1.0);
         assert_eq!(
-            result
-                .foreach
-                .unwrap()
-                .get("index")
-                .unwrap()
-                .iter()
-                .map(|x| x.get_ref().as_integer().unwrap())
-                .collect::<Vec<_>>(),
-            vec![1, 2, 3],
+            result.default.unwrap().into_inner().0,
+            "bind.foo_bar".to_string()
         );
-        assert_eq!(result.prefixes.into_inner(), Plural::One("c".into()));
+        let foreach = result.foreach.unwrap();
+        let values = foreach.get("index").unwrap();
+        let numbers: Vec<Value> = values.iter().map(|it| it.clone().into_inner()).collect();
         assert_eq!(
-            result.finalKey.map(|x| x.into_inner()).unwrap().unwrap(),
-            true
+            numbers,
+            [Value::Integer(1), Value::Integer(2), Value::Integer(3)]
         );
-        assert_eq!(result.name.map(|x| x.into_inner()).unwrap(), "foo");
-        assert_eq!(
-            result.description.map(|x| x.into_inner()).unwrap(),
-            "foo bar bin"
-        );
-        assert_eq!(
-            result.hideInDocs.map(|x| x.into_inner()).unwrap().unwrap(),
-            false
-        );
-        assert_eq!(
-            result
-                .hideInPalette
-                .map(|x| x.into_inner())
-                .unwrap()
-                .unwrap(),
-            false
-        );
-        assert_eq!(
-            result.combinedName.map(|x| x.into_inner()).unwrap(),
-            "Up/down"
-        );
-        assert_eq!(result.combinedKey.map(|x| x.into_inner()).unwrap(), "A/B");
-        assert_eq!(
-            result.combinedDescription.map(|x| x.into_inner()).unwrap(),
-            "bla bla bla"
-        );
-        assert_eq!(result.kind.map(|x| x.into_inner()).unwrap(), "biz");
+
+        assert_eq!(when, "joe > 1".to_string());
+        let prefixes: Vec<String> = result
+            .prefixes
+            .into_inner()
+            .map(|m| m.clone().into())
+            .to_array();
+        assert_eq!(prefixes, ["c"]);
+
+        let finalKey: bool = result.finalKey.unwrap().into_inner().into();
+        assert_eq!(finalKey, true);
+
+        let name: String = result.name.unwrap().into_inner().into();
+        assert_eq!(name, "foo");
+
+        let description: String = result.description.unwrap().into_inner().into();
+        assert_eq!(description, "foo bar bin");
+
+        let hideInDocs: bool = result.hideInDocs.unwrap().into_inner().into();
+        assert_eq!(hideInDocs, false);
+
+        let hideInPalette: bool = result.hideInPalette.unwrap().into_inner().into();
+        assert_eq!(hideInPalette, false);
+
+        let combinedName: String = result.combinedName.unwrap().into_inner().into();
+        assert_eq!(combinedName, "Up/down");
+
+        let combinedKey: String = result.combinedKey.unwrap().into_inner().into();
+        assert_eq!(combinedKey, "A/B");
+
+        let combinedDescription: String = result.combinedDescription.unwrap().into_inner().into();
+        assert_eq!(combinedDescription, "bla bla bla");
+
+        let kind: String = result.kind.unwrap().into_inner().into();
+        assert_eq!(kind, "biz");
     }
 
     #[test]
@@ -679,21 +833,26 @@ mod tests {
         "#;
 
         let result = toml::from_str::<BindingInput>(data).unwrap();
-        assert_eq!(result.key.into_inner().unwrap().unwrap(), "l");
-        assert_eq!(result.command.into_inner().unwrap(), "cursorMove");
         assert_eq!(
-            result
-                .args
-                .unwrap()
-                .into_inner()
-                .get("to")
-                .unwrap()
-                .as_str()
-                .unwrap(),
-            "left"
+            String::from(result.key.into_inner().unwrap()),
+            "l".to_string()
+        );
+        assert_eq!(
+            String::from(result.command.into_inner().unwrap()),
+            "cursorMove"
+        );
+        assert_eq!(
+            result.args.unwrap().into_inner(),
+            Value::Table(IndexMap::from([(
+                "to".into(),
+                Value::String("left".into())
+            )]))
         );
 
-        assert_eq!(result.when.into_inner(), Plural::Zero);
+        assert_eq!(
+            String::from(result.mode.into_inner().to_array().first().unwrap().clone()),
+            "default".to_string()
+        );
         assert_eq!(result.combinedDescription, None);
         assert_eq!(result.combinedName, None);
     }
@@ -717,24 +876,29 @@ mod tests {
         let default = result.get("bind").unwrap()[0].clone();
         let left = result.get("bind").unwrap()[1].clone();
         let left = default.merge(left);
-        assert_eq!(left.key.into_inner().unwrap().unwrap(), "l");
-        assert_eq!(left.command.into_inner().unwrap(), "cursorMove");
+
+        let key: String = left.key.into_inner().unwrap().into();
+        assert_eq!(key, "l".to_string());
         assert_eq!(
-            left.args
-                .unwrap()
-                .into_inner()
-                .get("to")
-                .unwrap()
-                .as_str()
-                .unwrap(),
-            "left"
-        );
-        assert_eq!(
-            left.prefixes.into_inner(),
-            Plural::Many(vec!["b".into(), "c".into()])
+            String::from(left.command.into_inner().unwrap()),
+            "cursorMove"
         );
 
-        assert_eq!(left.when.into_inner(), Plural::Zero);
+        assert_eq!(
+            left.args.unwrap().into_inner(),
+            Value::Table(IndexMap::from([(
+                "to".into(),
+                Value::String("left".into())
+            )]))
+        );
+
+        let prefixes: Vec<String> = left
+            .prefixes
+            .into_inner()
+            .map(|m| m.clone().into())
+            .to_array();
+        assert_eq!(prefixes, ["b".to_string(), "c".to_string()]);
+
         assert_eq!(left.combinedDescription, None);
         assert_eq!(left.combinedName, None);
     }
@@ -795,7 +959,6 @@ mod tests {
             command = "step2"
             args.y = "fiz"
 
-
             [[bind]]
             name = "run_merged"
             key = "x"
@@ -832,24 +995,6 @@ mod tests {
         let mut result = toml::from_str::<BindingInput>(data).unwrap();
         let items = result.expand_foreach().unwrap();
 
-        // for it in items.iter() {
-        //     info!("{}", "{");
-        //     info!("  name: {}", it.name.clone().unwrap().get_ref());
-        //     info!("  command: {}", it.command.get_ref().clone().unwrap());
-        //     info!(
-        //         "  args.value: {}",
-        //         it.args
-        //             .clone()
-        //             .unwrap()
-        //             .get_ref()
-        //             .get("value")
-        //             .unwrap()
-        //             .as_str()
-        //             .unwrap()
-        //     );
-        //     info!("{}", "}");
-        // }
-
         let expected_command = vec!["run-1", "run-1", "run-2", "run-2"];
         let expected_value = vec!["with-x", "with-y", "with-x", "with-y"];
         let expected_name = vec!["test 1-x", "test 1-y", "test 2-x", "test 2-y"];
@@ -857,19 +1002,20 @@ mod tests {
         for i in 0..4 {
             let item = items[i].clone();
             assert_eq!(
-                item.command.as_ref().clone().unwrap().as_str(),
+                String::from(item.command.into_inner().unwrap()),
                 expected_command[i]
             );
-            assert_eq!(item.name.unwrap().as_ref().as_str(), expected_name[i]);
+
             assert_eq!(
-                item.args
-                    .unwrap()
-                    .as_ref()
-                    .get("value")
-                    .unwrap()
-                    .as_str()
-                    .unwrap(),
-                expected_value[i]
+                String::from(item.name.unwrap().into_inner()),
+                expected_name[i]
+            );
+            assert_eq!(
+                item.args.unwrap().into_inner(),
+                Value::Table(IndexMap::from([(
+                    "value".to_string(),
+                    Value::String(expected_value[i].into())
+                )]))
             );
         }
     }
@@ -879,7 +1025,7 @@ mod tests {
         // TODO: error out if the regex inside of `{{}}` is not valid (right now it just
         // fails silently)
         let data = r#"
-            foreach.key = ["{{key(`[0-9]`)}}"]
+            foreach.key = ["{{keys(`[0-9]`)}}"]
             name = "update {{key}}"
             command = "foo"
             args.value = "{{key}}"
@@ -894,9 +1040,16 @@ mod tests {
 
         assert_eq!(items.len(), 10);
         for i in 0..9 {
-            assert_eq!(items[i].name.as_ref().unwrap().get_ref(), &expected_name[i]);
-            let value = items[i].args.as_ref().unwrap().get_ref().get("value");
-            assert_eq!(value.unwrap().as_str().unwrap(), expected_value[i]);
+            let name: String = items[i].name.as_ref().unwrap().get_ref().clone().into();
+            assert_eq!(name, expected_name[i]);
+            let value = items[i].args.as_ref().unwrap().get_ref().clone();
+            assert_eq!(
+                value,
+                Value::Table(IndexMap::from([(
+                    "value".to_string(),
+                    Value::String(expected_value[i].clone())
+                )]))
+            );
         }
     }
 

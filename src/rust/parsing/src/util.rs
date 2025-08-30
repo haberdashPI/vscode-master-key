@@ -1,8 +1,6 @@
-use crate::{
-    bind::UNKNOWN_RANGE,
-    error::{Error, ErrorContext, ErrorWithContext, Result},
-};
+use crate::error::{Error, ErrorContext, ErrorWithContext, Result};
 
+use indexmap::IndexMap;
 use log::info;
 use serde::{Deserialize, Serialize};
 use toml::{Spanned, Value};
@@ -32,6 +30,22 @@ impl Merging for toml::Table {
         return new;
     }
     fn coalesce(self, new: Self) -> Self {
+        return new;
+    }
+}
+
+impl<T: Merging + Clone> Merging for IndexMap<String, T> {
+    fn coalesce(self, new: Self) -> Self {
+        return new;
+    }
+    fn merge(self, mut new: Self) -> Self {
+        for (k, v) in self {
+            if new.contains_key(&k) {
+                new[&k] = v.merge(new[&k].clone());
+            } else {
+                new.insert(k, v);
+            }
+        }
         return new;
     }
 }
@@ -171,6 +185,16 @@ impl<T> Required<T> {
         match *self {
             Required::Value(ref x) => Required::Value(x),
             Required::DefaultValue => Required::DefaultValue,
+        }
+    }
+
+    pub fn map<F, R>(self, f: F) -> Required<R>
+    where
+        F: Fn(T) -> R,
+    {
+        match self {
+            Required::DefaultValue => Required::DefaultValue,
+            Required::Value(x) => Required::Value(f(x)),
         }
     }
 

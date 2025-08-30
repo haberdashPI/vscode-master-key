@@ -89,16 +89,16 @@ Integration test debugging:
         - [X] properly identify spans: both `[[bind]]` header and entire `[[bind]]` region
               NOTE: short term goal here is to support literate docs
         - [ ] expansion of `[define]` sections
-            - [X] implement support for resolving `var.`, `command.` and `bind.` definitions
-            - [X] problem: spannd doesn't work with flatten; we can solve this by
+            - [ ] implement support for resolving `var.`, `command.` and `bind.` definitions
+            - [ ] problem: spannd doesn't work with flatten; we can solve this by
               creating an `id` field for `command` and `bind` that will throw
               an error if populatd when passed on to the non-input constructors
-            - [X] setup default keyword for `bind`
-            - [X] rework how `var.` works, resolving it at run time, not definition time
-            - [X] unit tests for `define` parsing
-                - [X] rework `Required<KeyBinding>` so we get a meaningful error message
+            - [ ] setup default keyword for `bind`
+            - [ ] rework how `var.` works, resolving it at run time, not definition time
+            - [ ] unit tests for `define` parsing
+                - [ ] rework `Required<KeyBinding>` so we get a meaningful error message
                   when the keybinding is wrong
-                - [X] tests for `var`
+                - [ ] tests for `var`
             - [ ] get evaluation of computed elements working
                 - [ ] use rhai to implement expression evaluation
                     - [ ] preparse all `{{}}` into

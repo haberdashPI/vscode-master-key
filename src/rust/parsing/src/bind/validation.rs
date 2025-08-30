@@ -1,7 +1,6 @@
-use crate::error::{Error, ErrorWithContext, Result, ResultVec};
+use crate::error::{Error, ErrorWithContext, ErrorsWithContext, Result, ResultVec};
 use crate::util::Merging;
-use crate::variable;
-use crate::variable::{As, VAR_STRING, Value, ValueEnum, VariableExpanding};
+use crate::value::{EXPRESSION, Expanding, TypedValue, Value};
 
 #[allow(unused_imports)]
 use log::info;
@@ -116,59 +115,54 @@ fn valid_key_binding_str(str: &str) -> Result<()> {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(try_from = "String", into = "String")]
-pub struct KeyBinding(ValueEnum<String>);
+pub struct KeyBinding(TypedValue<String>);
 
 impl TryFrom<String> for KeyBinding {
-    type Error = crate::error::ErrorWithContext;
-    fn try_from(value: String) -> Result<Self> {
-        match BIND_STRING.captures(&value) {
-            Some(captures) => {
-                return Ok(KeyBinding(ValueEnum::Variable(
-                    captures.get(1).expect("variable name").as_str().into(),
-                )));
-            }
-            None => {
-                valid_key_binding_str(&value)?;
-                return Ok(KeyBinding(ValueEnum::Literal(value)));
-            }
+    type Error = ErrorsWithContext;
+    fn try_from(value: String) -> ResultVec<Self> {
+        if EXPRESSION.is_match(&value) {
+            return Ok(KeyBinding(TypedValue::Variable(
+                toml::Value::String(value).try_into()?,
+            )));
+        } else {
+            valid_key_binding_str(&value)?;
+            return Ok(KeyBinding(TypedValue::Constant(value)));
         }
+    }
+}
+
+impl Expanding for KeyBinding {
+    fn is_constant(&self) -> bool {
+        match self {
+            KeyBinding(TypedValue::Constant(_)) => true,
+            KeyBinding(TypedValue::Variable(_)) => false,
+        }
+    }
+    fn map_expressions<F>(self, f: &F) -> ResultVec<Self>
+    where
+        F: Fn(String) -> Result<Value>,
+    {
+        Ok(match self {
+            KeyBinding(TypedValue::Constant(ref x)) => self,
+            KeyBinding(TypedValue::Variable(value)) => match value.map_expressions(f)? {
+                interp @ Value::Interp(_) => KeyBinding(TypedValue::Variable(interp)),
+                exp @ Value::Expression(_) => KeyBinding(TypedValue::Variable(exp)),
+                Value::String(val) => {
+                    valid_key_binding_str(&val)?;
+                    KeyBinding(TypedValue::Constant(val))
+                }
+                other @ _ => return Err(Error::Unexpected("non-string value"))?,
+            },
+        })
     }
 }
 
 impl From<KeyBinding> for String {
     fn from(value: KeyBinding) -> Self {
-        match value.0 {
-            ValueEnum::Literal(x) => x,
-            ValueEnum::Variable(x) => format!("{}{x}{}", "{{", "}}"),
+        match value {
+            KeyBinding(TypedValue::Constant(x)) => x,
+            KeyBinding(TypedValue::Variable(value)) => panic!("Unresolved expression {value:?}"),
         }
-    }
-}
-
-impl As<KeyBinding> for toml::Value {
-    fn astype(&self) -> crate::error::Result<KeyBinding> {
-        match self {
-            toml::Value::String(str) => Ok(KeyBinding::try_from(str.clone())?),
-            _ => Err(Error::Constraint("a string describing a keybinding".into()))?,
-        }
-    }
-}
-
-impl VariableExpanding for KeyBinding {
-    fn expand_with_getter<F>(&mut self, getter: F) -> crate::error::ResultVec<()>
-    where
-        F: Fn(&str) -> crate::error::Result<Option<toml::Value>>,
-        F: Clone,
-    {
-        match &mut self.0 {
-            ValueEnum::Literal(_) => (),
-            ValueEnum::Variable(str) => {
-                let mut new_str = str.clone();
-                new_str.expand_with_getter(getter)?;
-                let new = KeyBinding::try_from(new_str)?;
-                self.0 = new.0;
-            }
-        }
-        return Ok(());
     }
 }
 
@@ -183,41 +177,61 @@ impl Merging for KeyBinding {
 
 impl KeyBinding {
     pub fn unwrap(self) -> String {
-        match self.0 {
-            ValueEnum::Literal(x) => x,
-            ValueEnum::Variable(_) => panic!("unresolved variable"),
+        match self {
+            KeyBinding(TypedValue::Constant(x)) => x,
+            KeyBinding(TypedValue::Variable(_)) => panic!("unresolved variable"),
         }
     }
 }
 
 lazy_static! {
-    static ref BIND_STRING: Regex = Regex::new(r"\{\{(bind\.[\w--\d]\w*)\}\}").unwrap();
+    static ref BIND_VARIABLE: Regex = Regex::new(r"bind\.([\w--\d][\w]*)").unwrap();
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-#[serde(try_from = "String")]
-pub struct BindingReference(variable::Value<toml::Value>);
+#[derive(Deserialize, Clone, Debug)]
+#[serde(try_from = "String", into = "String")]
+pub struct BindingReference(pub(crate) String);
 
 impl TryFrom<String> for BindingReference {
-    type Error = ErrorWithContext;
-    fn try_from(value: String) -> Result<Self> {
-        let captures = BIND_STRING.captures(&value).ok_or_else(|| {
-            crate::error::Error::Validation(
-                "binding reference; must be of the form `{{bind.[identifier]}})".into(),
-            )
-        })?;
-        let name = captures.get(1).expect("`bind.` identifier capture");
-        return Ok(BindingReference(variable::Value::var(name.as_str().into())));
+    type Error = ErrorsWithContext;
+    fn try_from(value: String) -> ResultVec<Self> {
+        let value: Value = toml::Value::String(value).try_into()?;
+        match value {
+            Value::Expression(x) => {
+                if !BIND_VARIABLE.is_match(&x) {
+                    Err(Error::Validation(
+                        "binding reference (must be of the form `{{bind.[identifier]}}`".into(),
+                    ))?;
+                }
+                return Ok(BindingReference(x));
+            }
+            _ => Err(Error::Validation(
+                "binding reference (must be of the form `{{bind.[identifier]}}`".into(),
+            ))?,
+        }
     }
 }
 
-impl VariableExpanding for BindingReference {
-    fn expand_with_getter<F>(&mut self, getter: F) -> crate::error::ResultVec<()>
+// This implementation of `Expanding` may seem unintuitive, but we don't actually use
+// `map-expressions` to expand `BindingReference` instead we review review these values
+// during a separate `BindingInput` resolution phase. During variable expansion, we simply
+// want to ignore the `{{bind.}}` expression present in `BindingReference`
+impl Expanding for BindingReference {
+    fn is_constant(&self) -> bool {
+        false
+    }
+    fn map_expressions<F>(self, f: &F) -> ResultVec<Self>
     where
-        F: Fn(&str) -> crate::error::Result<Option<toml::Value>>,
-        F: Clone,
+        Self: Sized,
+        F: Fn(String) -> Result<Value>,
     {
-        return self.0.expand_with_getter(getter);
+        return Ok(self);
+    }
+}
+
+impl From<BindingReference> for String {
+    fn from(value: BindingReference) -> Self {
+        return value.0;
     }
 }
 
@@ -225,13 +239,8 @@ impl Merging for BindingReference {
     fn coalesce(self, new: Self) -> Self {
         return new;
     }
+
     fn merge(self, new: Self) -> Self {
         return new;
-    }
-}
-
-impl BindingReference {
-    pub fn unwrap(self) -> toml::Value {
-        return self.0.unwrap();
     }
 }

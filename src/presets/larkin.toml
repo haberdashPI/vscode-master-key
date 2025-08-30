@@ -184,11 +184,9 @@ prefixes = "{{all_prefixes}}"
 default = "{{bind.modes}}"
 name = "ignore"
 description = "this key does nothing"
-foreach.key = [
-    '{{key(`.`)}}',
-    'shift+{{key(`.`)}}',
-] #- all keys whose bindings are described by a single character
-key = "{{key}}"
+foreach.key = ["{{keys(`.`}}"]
+foreach.modifier = ["shift+", ""]
+key = "{{modifier}}{{key}}"
 command = "master-key.ignore"
 prefixes = "{{all_prefixes}}"
 mode = ["normal", "selectedit"]
@@ -629,7 +627,7 @@ args.boundary = "both"
 # times e.g. 2w would select the next two words starting from the current cursor position.
 
 [[bind]]
-foreach.num = ['{{key(`[0-9]`)}}']
+foreach.num = ['{{keys(`[0-9]`)}}']
 name = "count {{num}}"
 key = "{{num}}"
 command = "master-key.updateCount"
@@ -3320,10 +3318,11 @@ mode = "syminsert"
 
 [[bind]]
 default = "{{bind.edit_action_symmetric}}"
-foreach.key = ["{{key(`[a-z]`)}}", "shift+{{key(`[a-z]`)}}"]
+foreach.key = ["{{keys(`[a-z]`)}}"]
+foreach.modifier = ["shift+", ""]
 name = ""
 description = "this key is ignored and has no associated command in syminsert mode"
-key = "{{key}}"
+key = "{{modifier}}{{key}}"
 command = "master-key.ignore"
 mode = "syminsert"
 hideInDocs = true

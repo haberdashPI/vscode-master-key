@@ -56,7 +56,7 @@ def main [...args] {
             get filenames.0 |
             each { |f| $'--object=($in)' }
 
-        cargo +nightly test --tests ...$args -- --nocapture
+        cargo +nightly test --target wasm32-unknown-unknown --tests ...$args -- --nocapture
         cargo profdata -- merge -sparse coverage/parsing.profraw -o coverage/parsing.profdata
         (cargo cov -- export {{vars.coverage_options}} --format=lcov ...($object_files) o>
             ../../../coverage/rs_coverage.info)

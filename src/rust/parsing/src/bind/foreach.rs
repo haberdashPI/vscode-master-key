@@ -1,10 +1,14 @@
-use crate::error::{ErrorContext, Result};
+use std::collections::VecDeque;
 
+use indexmap::IndexMap;
 use lazy_static::lazy_static;
 #[allow(unused_imports)]
 use log::info;
 use regex::Regex;
-use toml::{Spanned, Value};
+use toml::Spanned;
+
+use crate::error::{ErrorContext, Result, ResultVec};
+use crate::value::{Expanding, Value};
 
 const ALL_KEYS: [&'static str; 192] = [
     "f0",
@@ -202,25 +206,44 @@ const ALL_KEYS: [&'static str; 192] = [
 ];
 
 lazy_static! {
-    static ref KEY_PATTERN_REGEX: Regex = Regex::new(r"\{\{\s*key\(\s*`(.*)`\s*\)\s*\}\}").unwrap();
+    static ref KEY_PATTERN_REGEX: Regex = Regex::new(r"^\s*keys\(\s*`(.*)`\s*\)\s*$").unwrap();
+    // static ref KEY_PATTERN_REGEX: Regex = Regex::new(r"^\s*keys\(\s*`(.*)`\s*\)\s*$").unwrap();
 }
 
-pub fn expand_keys(items: &Vec<Spanned<toml::Value>>) -> Result<Vec<toml::Value>> {
-    let mut result = Vec::new();
-
-    for item in items {
-        if let Value::String(str_item) = item.get_ref() {
-            if let Some(caps) = KEY_PATTERN_REGEX.captures(&str_item) {
-                let key_regex = Regex::new(&caps[1]).context_range(&item.span())?;
-                for key in ALL_KEYS {
-                    if key_regex.find(key).is_some_and(|m| m.len() == key.len()) {
-                        result.push(Value::String(key.into()));
-                    }
-                }
-                continue;
+fn expand_keys_str(val: String) -> Result<Value> {
+    let c = KEY_PATTERN_REGEX.captures(&val);
+    if let Some(caps) = c {
+        let key_regex = Regex::new(&caps[1])?;
+        let mut result = Vec::new();
+        for key in ALL_KEYS {
+            if key_regex.find(key).is_some_and(|m| m.len() == key.len()) {
+                result.push(Value::String(key.into()));
             }
         }
-        result.push(item.get_ref().clone());
+        return Ok(Value::Array(result));
+    } else {
+        return Ok(Value::Expression(val));
     }
-    return Ok(result);
+}
+
+pub fn expand_keys(
+    items: IndexMap<String, Vec<Spanned<Value>>>,
+) -> ResultVec<IndexMap<String, Vec<Value>>> {
+    // expand any `{{key(`regex`)}}` expressions (these are arrays of possible keys)
+    let items = items.map_expressions(&expand_keys_str)?;
+
+    // flatten any arrays
+    return Ok(items
+        .into_iter()
+        .map(|(k, v)| {
+            let vals = v
+                .into_iter()
+                .flat_map(|i| match i.into_inner() {
+                    Value::Array(x) => x,
+                    x @ _ => vec![x],
+                })
+                .collect();
+            return (k.clone(), vals);
+        })
+        .collect());
 }
