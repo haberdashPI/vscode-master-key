@@ -1,4 +1,4 @@
-use crate::error::{Error, ErrorContext, ErrorWithContext, Result};
+use crate::error::{Error, ErrorContext, ErrorWithContext, Result, ResultVec, flatten_errors};
 
 use indexmap::IndexMap;
 use log::info;
@@ -8,13 +8,6 @@ use toml::{Spanned, Value};
 pub trait Merging {
     fn merge(self, new: Self) -> Self;
     fn coalesce(self, new: Self) -> Self;
-}
-pub trait Resolving<R> {
-    fn resolve(self, name: impl Into<String>) -> Result<R>;
-}
-
-pub trait Requiring<R> {
-    fn require(self, name: impl Into<String>) -> Result<R>;
 }
 
 // TODO: is there any way to avoid so much copying here
@@ -111,17 +104,32 @@ impl Merging for bool {
     }
 }
 
-impl<T> Resolving<Option<T>> for Option<T> {
-    fn resolve(self, _name: impl Into<String>) -> Result<Self> {
-        return Ok(self);
+pub trait Resolving<R> {
+    fn resolve(self, name: impl Into<String>) -> ResultVec<R>;
+}
+
+pub trait Requiring<R> {
+    fn require(self, name: impl Into<String>) -> Result<R>;
+}
+
+impl<T, U> Resolving<U> for Spanned<T>
+where
+    T: Resolving<U>,
+{
+    fn resolve(self, name: impl Into<String>) -> ResultVec<U> {
+        let span = self.span();
+        Ok(self.into_inner().resolve(name).context_range(&span)?)
     }
 }
 
-impl<T> Requiring<T> for Option<T> {
-    fn require(self, name: impl Into<String>) -> Result<T> {
+impl<T, U> Resolving<Option<U>> for Option<T>
+where
+    T: Resolving<U>,
+{
+    fn resolve(self, name: impl Into<String>) -> ResultVec<Option<U>> {
         match self {
-            Some(x) => Ok(x),
-            None => Err(Error::RequiredField(name.into()).into()),
+            Some(x) => Ok(Some(x.resolve(name)?)),
+            None => Ok(None),
         }
     }
 }
@@ -149,27 +157,15 @@ where
     }
 }
 
-impl<T> Required<Spanned<T>> {
-    pub fn into_inner(self) -> Required<T> {
-        return match self {
-            Required::DefaultValue => Required::DefaultValue,
-            Required::Value(val) => Required::Value(val.into_inner()),
-        };
-    }
-}
-
-impl<T> Resolving<T> for Required<T> {
-    fn resolve(self, name: impl Into<String>) -> Result<T> {
-        return match self {
-            Required::DefaultValue => Err(Error::RequiredField(name.into()).into()),
-            Required::Value(val) => Ok(val),
-        };
-    }
-}
-
-impl<T> Requiring<T> for Required<T> {
-    fn require(self, name: impl Into<String>) -> Result<T> {
-        return self.resolve(name.into());
+impl<T, U> Resolving<U> for Required<T>
+where
+    T: Resolving<U>,
+{
+    fn resolve(self, name: impl Into<String>) -> ResultVec<U> {
+        match self {
+            Required::DefaultValue => Err(Error::RequiredField(name.into()))?,
+            Required::Value(x) => x.resolve(name),
+        }
     }
 }
 
@@ -256,6 +252,20 @@ impl<T: Clone> Plural<T> {
             Plural::Zero => default,
             _ => self,
         };
+    }
+}
+
+impl<T, U> Resolving<Vec<U>> for Plural<T>
+where
+    T: Resolving<U> + std::fmt::Debug,
+    U: std::fmt::Debug,
+{
+    fn resolve(self, name: impl Into<String>) -> ResultVec<Vec<U>> {
+        let vals = self.to_array();
+        let name = name.into();
+        Ok(flatten_errors(
+            vals.into_iter().map(|x| x.resolve(name.clone())),
+        )?)
     }
 }
 

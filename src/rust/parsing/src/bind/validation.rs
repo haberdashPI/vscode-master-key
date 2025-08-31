@@ -1,5 +1,5 @@
 use crate::error::{Error, ErrorWithContext, ErrorsWithContext, Result, ResultVec};
-use crate::util::Merging;
+use crate::util::{Merging, Resolving};
 use crate::value::{EXPRESSION, Expanding, TypedValue, Value};
 
 #[allow(unused_imports)]
@@ -128,6 +128,13 @@ impl TryFrom<String> for KeyBinding {
             valid_key_binding_str(&value)?;
             return Ok(KeyBinding(TypedValue::Constant(value)));
         }
+    }
+}
+
+impl Resolving<String> for KeyBinding {
+    fn resolve(self, name: impl Into<String>) -> ResultVec<String> {
+        self.require_constant()?;
+        Ok(self.into())
     }
 }
 

@@ -278,6 +278,7 @@ where
 impl<T: Serialize + std::fmt::Debug> Expanding for TypedValue<T>
 where
     T: From<TypedValue<T>>,
+    T: TryFrom<toml::Value>,
 {
     fn is_constant(&self) -> bool {
         match self {
@@ -292,8 +293,12 @@ where
         return Ok(match self {
             TypedValue::Variable(v) => {
                 let result = v.map_expressions(f)?;
+                info!("result {result:?} {}", result.is_constant());
                 if result.is_constant() {
-                    TypedValue::Constant(TypedValue::Variable(result).into())
+                    // TODO: WIP debugging
+                    let x = TypedValue::Constant(result.try_into()?);
+                    info!("to constant: {x:?}");
+                    x
                 } else {
                     TypedValue::Variable(result)
                 }
@@ -307,10 +312,7 @@ impl From<TypedValue<i64>> for i64 {
     fn from(value: TypedValue<i64>) -> Self {
         return match value {
             TypedValue::Constant(x) => x,
-            TypedValue::Variable(value) => {
-                let toml: toml::Value = value.into();
-                toml.try_into().expect("proper typing")
-            }
+            TypedValue::Variable(value) => panic!("Unresolved variable value: {value:?}"),
         };
     }
 }
@@ -319,10 +321,7 @@ impl From<TypedValue<f64>> for f64 {
     fn from(value: TypedValue<f64>) -> Self {
         return match value {
             TypedValue::Constant(x) => x,
-            TypedValue::Variable(value) => {
-                let toml: toml::Value = value.into();
-                toml.try_into().expect("proper typing")
-            }
+            TypedValue::Variable(value) => panic!("Unresolved variable value: {value:?}"),
         };
     }
 }
@@ -331,10 +330,7 @@ impl From<TypedValue<String>> for String {
     fn from(value: TypedValue<String>) -> Self {
         return match value {
             TypedValue::Constant(x) => x,
-            TypedValue::Variable(value) => {
-                let toml: toml::Value = value.into();
-                toml.try_into().expect("proper typing")
-            }
+            TypedValue::Variable(value) => panic!("Unresolved variable value: {value:?}"),
         };
     }
 }
@@ -343,11 +339,29 @@ impl From<TypedValue<bool>> for bool {
     fn from(value: TypedValue<bool>) -> Self {
         return match value {
             TypedValue::Constant(x) => x,
-            TypedValue::Variable(value) => {
-                let toml: toml::Value = value.into();
-                toml.try_into().expect("proper typing")
-            }
+            TypedValue::Variable(value) => panic!("Unresolved variable value: {value:?}"),
         };
+    }
+}
+
+impl<T> Resolving<T> for TypedValue<T>
+where
+    T: Serialize + std::fmt::Debug,
+    TypedValue<T>: Expanding + Clone + Into<T>,
+{
+    fn resolve(self, name: impl Into<String>) -> ResultVec<T> {
+        self.require_constant()
+            .context_str(format!("for {}", name.into()))?;
+        return Ok(self.into());
+    }
+}
+
+impl<T> Resolving<TypedValue<T>> for TypedValue<T>
+where
+    T: Serialize + std::fmt::Debug,
+{
+    fn resolve(self, _name: impl Into<String>) -> ResultVec<TypedValue<T>> {
+        return Ok(self);
     }
 }
 

@@ -44,6 +44,7 @@ fn span_required_default<T>() -> Spanned<Required<T>> {
 fn span_plural_default<T>() -> Spanned<Plural<T>> {
     return Spanned::new(UNKNOWN_RANGE, Plural::Zero);
 }
+
 /**
  * @bindingField bind
  * @description an actual keybinding; extends the schema used by VSCode's `keybindings.json`
@@ -362,7 +363,7 @@ impl CommandInput {
 #[wasm_bindgen(getter_with_clone)]
 #[derive(Clone, Debug, Serialize)]
 pub struct Command {
-    pub(crate) command: TypedValue<String>,
+    pub(crate) command: String,
     pub(crate) args: Value,
 }
 
@@ -380,12 +381,12 @@ impl Command {
 }
 
 impl Command {
-    pub fn new(input: CommandInput) -> Result<Self> {
+    pub fn new(input: CommandInput) -> ResultVec<Self> {
         if let Some(_) = input.id {
-            return reserved("id");
+            return reserved("id")?;
         }
         return Ok(Command {
-            command: input.command.into_inner().resolve("`command` field")?,
+            command: input.command.resolve("`command` field")?,
             args: match input.args {
                 Some(x) => x.into_inner(),
                 None => Value::Table(IndexMap::new()),
@@ -401,9 +402,9 @@ impl Command {
 pub struct Binding {
     pub key: String,
     pub commands: Vec<Command>,
-    pub when: Vec<String>,
+    pub when: Option<String>,
     pub mode: Vec<String>,
-    pub priority: i64,
+    pub priority: f64,
     pub prefixes: Vec<String>,
     pub finalKey: bool,
     pub(crate) repeat: Option<TypedValue<i64>>,
@@ -436,7 +437,7 @@ impl BindingInput {
         return false;
     }
 
-    pub fn expand_foreach(mut self) -> ResultVec<Vec<BindingInput>> {
+    pub fn expand_foreach(self) -> ResultVec<Vec<BindingInput>> {
         if self.has_foreach() {
             let foreach = expand_keys(self.foreach.clone().unwrap())?;
             foreach.require_constant().context_str(
@@ -444,7 +445,9 @@ impl BindingInput {
             )?;
 
             let values = expand_foreach_values(foreach).into_iter().map(|values| {
-                self.clone()
+                let mut result = self.clone();
+                result.foreach = None;
+                result
                     .map_expressions(&|x| {
                         Ok(values
                             .get(&x)
@@ -603,118 +606,131 @@ impl Expanding for BindingInput {
     }
 }
 
-fn regularize_commands(input: BindingInput) -> ResultVec<(BindingInput, Vec<Command>)> {
-    return Err(Error::Unexpected("TODO"))?;
-    // // TODO: this works with TOML values, need to figure out how to
-    // // work with Value's since some of them can be expressions
-    // let command_value: toml::Value = input.command.into();
-    // let command = command_value.get_ref().clone().resolve("`command` field")?;
-    // let args = input.args.clone();
-    // if command == "runCommands" {
-    //     let spanned = args
-    //         .require("`args` field")
-    //         .context_str("`runCommands` must have `args` field")
-    //         .context_range(&command_value)?;
-    //     let args_pos = spanned.span();
-    //     let args = spanned.into_inner();
-    //     let commands = args
-    //         .get("commands")
-    //         .require("`commands` field")
-    //         .context_str("`runCommands.args` must have a `commands` fields")
-    //         .context_range(&args_pos)?;
-    //     let commands = commands.as_array().require("`commands` to be an array")?;
-    //     let mut command_result = Vec::with_capacity(commands.len());
-    //     for command in commands {
-    //         let (command, args) = match command {
-    //             Value::String(str) => (str.to_owned(), toml::Table::new()),
-    //             Value::Table(kv) => {
-    //                 let command_name = kv
-    //                     .get("command")
-    //                     .require("`command` field")?
-    //                     .as_str()
-    //                     .require("`command` to be string")
-    //                     .context_range(&args_pos)?
-    //                     .to_owned();
-    //                 let args = command
-    //                     .get("args")
-    //                     .require("`args` field")?
-    //                     .as_table()
-    //                     .require("`args` to be a table")?
-    //                     .to_owned();
-    //                 (command_name, args)
-    //             }
-    //             _ => {
-    //                 return constrain(
-    //                     "`commands` to be an array that includes objects and strings only",
-    //                 )?;
-    //             }
-    //         };
+fn regularize_commands(input: &BindingInput) -> ResultVec<Vec<Command>> {
+    let command: String = input.clone().command.resolve("`command` field")?;
+    if command != "runCommands" {
+        let commands = vec![Command {
+            command,
+            args: match &input.args {
+                None => Value::Table(IndexMap::new()),
+                Some(spanned) => spanned.as_ref().clone(),
+            },
+        }];
+        return Ok(commands);
+    } else {
+        let spanned = input
+            .args
+            .as_ref()
+            .ok_or_else(|| Error::Constraint("`runCommands` must have `args` field".to_string()))?;
+        let args_pos = spanned.span();
+        let args = spanned.as_ref().to_owned();
+        let commands = match args {
+            Value::Table(kv) => kv
+                .get("commands")
+                .ok_or_else(|| {
+                    Error::Constraint("`runCommands` must have `args.commands` field".into())
+                })?
+                .clone(),
+            _ => Err(Error::Validation(
+                "Expected `args` to be an object with `commands` field".to_string(),
+            ))?,
+        };
+        let command_vec = match commands {
+            Value::Array(items) => items,
+            _ => Err(Error::Validation(
+                "Expected `args.commands` of `runCommands` to \
+                be a vector of commands to run."
+                    .to_string(),
+            ))?,
+        };
 
-    //         command_result.push(Command { command, args })
-    //     }
+        let mut command_result = Vec::with_capacity(command_vec.len());
 
-    //     return Ok((input, command_result));
-    // } else {
-    //     return Ok((
-    //         input,
-    //         vec![Command {
-    //             command,
-    //             args: match args {
-    //                 Some(x) => x.into_inner(),
-    //                 None => toml::Table::new(),
-    //             },
-    //         }],
-    //     ));
-    // }
+        for command in command_vec {
+            let (command, args) = match command {
+                Value::String(str) => (str.to_owned(), Value::Table(IndexMap::new())),
+                Value::Table(kv) => {
+                    let result = kv.get("command").ok_or_else({
+                        || {
+                            Error::RequiredField(
+                                "`args.commands.command` field for `runCommands`".into(),
+                            )
+                        }
+                    })?;
+                    let command_name = match result {
+                        Value::String(x) => x.to_owned(),
+                        _ => {
+                            return Err(Error::Constraint("`command` to be a string".into()))
+                                .context_range(&args_pos)?;
+                        }
+                    };
+                    let result = kv.get("args").ok_or_else(|| {
+                        Error::RequiredField("`args.commands.arg` field for `runCommands`".into())
+                    })?;
+                    let args = match result {
+                        x @ Value::Table(_) => x,
+                        x @ Value::Array(_) => x,
+                        _ => {
+                            return Err(Error::Constraint("`args` to be a table or array".into()))?;
+                        }
+                    };
+                    (command_name, args.to_owned())
+                }
+                _ => {
+                    return constrain(
+                        "`commands` to be an array that includes objects and strings only",
+                    )?;
+                }
+            };
+            command_result.push(Command { command, args })
+        }
+
+        return Ok(command_result);
+    }
 }
 
-// impl Binding {
-//     pub fn new(input: BindingInput) -> ResultVec<Self> {
-//         if let Some(_) = input.id {
-//             return reserved("id");
-//         }
+impl Binding {
+    pub fn new(input: BindingInput) -> ResultVec<Self> {
+        if let Some(_) = input.id {
+            return reserved("id")?;
+        }
 
-//         serde_wasm_bindgen::Serializer::json_compatible();
-//         if let Some(_) = input.foreach {
-//             return unexpected("`foreach` with unresolved variables");
-//         }
-//         let (input, commands) = regularize_commands(input)?;
+        if let Some(_) = input.foreach {
+            return unexpected("`foreach` with unresolved variables")?;
+        }
+        let commands = regularize_commands(&input)?;
 
-//         // TODO this is where we should validate that prefix has `finalKey == false`
+        // TODO this is where we should validate that prefix has `finalKey == false`
 
-//         // TODO: cleanup below now that we've updated types for `BindingInput`
-//         return Ok(Binding {
-//             commands: commands,
-//             key: input.key.into_inner().require("`key` field")?.unwrap(),
-//             when: input.when.into_inner().to_array(),
-//             mode: input.mode.into_inner().to_array(),
-//             priority: input
-//                 .priority
-//                 .map(|x| x.into_inner().resolve("`priority` field"))
-//                 .unwrap_or_else(|| Ok(0))?,
-//             prefixes: input.prefixes.into_inner().to_array(),
-//             finalKey: input
-//                 .finalKey
-//                 .map(|x| x.into_inner().resolve("`finalKey` field"))
-//                 .unwrap_or_else(|| Ok(true))?,
-//             repeat: input.repeat.map(|x| x.into_inner()),
-//             name: input.name.map(|x| x.into_inner()),
-//             description: input.description.map(|x| x.into_inner()),
-//             hideInPalette: input
-//                 .hideInPalette
-//                 .map(|x| x.into_inner().resolve("`hideInPalette` field"))
-//                 .unwrap_or_else(|| Ok(false))?,
-//             hideInDocs: input
-//                 .hideInDocs
-//                 .map(|x| x.into_inner().resolve("`hideInDocs` field"))
-//                 .unwrap_or_else(|| Ok(false))?,
-//             combinedName: input.combinedName.map(|x| x.into_inner()),
-//             combinedKey: input.combinedKey.map(|x| x.into_inner()),
-//             combinedDescription: input.combinedDescription.map(|x| x.into_inner()),
-//             kind: input.kind.clone().map(|x| x.into_inner()),
-//         });
-//     }
-// }
+        // TODO: cleanup below now that we've updated types for `BindingInput`
+        return Ok(Binding {
+            commands: commands,
+            key: input.key.resolve("`key` field")?,
+            when: input.when.resolve("`when` field")?,
+            mode: input.mode.resolve("`mode` field")?,
+            priority: input.priority.resolve("`priority` field")?.unwrap_or(0.0),
+            prefixes: input.prefixes.resolve("`prefixes` fields")?,
+            finalKey: input.finalKey.resolve("`finalKey` field")?.unwrap_or(true),
+            repeat: input.repeat.resolve("`repeat` field")?,
+            name: input.name.resolve("`name` field")?,
+            description: input.description.resolve("`description` field")?,
+            hideInPalette: input
+                .hideInPalette
+                .resolve("`hideInPalette`")?
+                .unwrap_or(false),
+            hideInDocs: input
+                .hideInDocs
+                .resolve("`hideInPalette`")?
+                .unwrap_or(false),
+            combinedName: input.combinedName.resolve("`combinedName` field")?,
+            combinedKey: input.combinedKey.resolve("`combinedKey` field")?,
+            combinedDescription: input
+                .combinedDescription
+                .resolve("`combinedDescription` field")?,
+            kind: input.kind.resolve("`kind` field")?,
+        });
+    }
+}
 
 #[cfg(test)]
 mod tests {
