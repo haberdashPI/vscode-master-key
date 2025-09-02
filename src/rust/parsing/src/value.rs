@@ -325,8 +325,8 @@ where
     }
 }
 
-impl From<TypedValue<i64>> for i64 {
-    fn from(value: TypedValue<i64>) -> Self {
+impl From<TypedValue<i32>> for i32 {
+    fn from(value: TypedValue<i32>) -> Self {
         return match value {
             TypedValue::Constant(x) => x,
             TypedValue::Variable(value) => panic!("Unresolved variable value: {value:?}"),
@@ -357,6 +357,25 @@ impl From<TypedValue<bool>> for bool {
         return match value {
             TypedValue::Constant(x) => x,
             TypedValue::Variable(value) => panic!("Unresolved variable value: {value:?}"),
+        };
+    }
+}
+
+impl<T> From<TypedValue<T>> for Value
+where
+    T: Into<toml::Value> + Serialize + std::fmt::Debug,
+{
+    fn from(value: TypedValue<T>) -> Self {
+        return match value {
+            TypedValue::Constant(x) => {
+                let toml: toml::Value = x.into();
+                // the reasons for failing this `try_into` should not be true of the types
+                // we can use TypedValue<T> with. (We only want to be able to use
+                // TypedValues for objects that can round trip serialize): this is any value
+                // that can't be stored directly in JSON (e.g. a large 64-bit number).
+                toml.try_into().expect("serializable value")
+            }
+            TypedValue::Variable(x) => x,
         };
     }
 }

@@ -361,11 +361,16 @@ impl CommandInput {
 }
 
 impl From<CommandInput> for Value {
-    fn from(value: Command) -> Self {
-        return Value::Table(IndexMap::from([
-            ("command".to_string(), Value::String(value.command)),
-            ("args".to_string(), value.args),
-        ]));
+    fn from(value: CommandInput) -> Self {
+        let mut entries = IndexMap::new();
+        let command = value.command.into_inner();
+        if let Required::Value(command_value) = command {
+            entries.insert("command".to_string(), command_value.into());
+        }
+        if let Some(arg_value) = value.args {
+            entries.insert("args".to_string(), arg_value.into_inner());
+        }
+        return Value::Table(entries);
     }
 }
 
@@ -490,13 +495,6 @@ fn expand_foreach_values(foreach: IndexMap<String, Vec<Value>>) -> Vec<IndexMap<
 }
 
 impl Expanding for BindingInput {
-    fn default_expression(self) -> Option<String> {
-        if let Some(x) = self.default {
-            Some(x.into_inner().0)
-        } else {
-            None
-        }
-    }
     fn is_constant(&self) -> bool {
         [
             self.command.is_constant(),

@@ -173,194 +173,188 @@ impl Define {
     }
 }
 
-// mod tests {
-//     // use test_log::test;
+mod tests {
+    // use test_log::test;
 
-//     use super::*;
-//     #[test]
-//     fn simple_parsing() {
-//         let data = r#"
-//         [[var]]
-//         y = "bill"
+    use super::*;
+    #[test]
+    fn simple_parsing() {
+        let data = r#"
+        [[var]]
+        y = "bill"
 
-//         [[bind]]
-//         id = "foo"
-//         key = "x"
-//         command = "foo"
-//         args = { k = 1, h = 2 }
+        [[bind]]
+        id = "foo"
+        key = "x"
+        command = "foo"
+        args = { k = 1, h = 2 }
 
-//         [[command]]
-//         id = "foobar"
-//         command = "runCommands"
-//         args.commands = ["foo", "bar"]
+        [[command]]
+        id = "foobar"
+        command = "runCommands"
+        args.commands = ["foo", "bar"]
 
-//         [[var]]
-//         joe = "bob"
+        [[var]]
+        joe = "bob"
 
-//         "#;
+        "#;
 
-//         let result = Define::new(toml::from_str::<DefineInput>(data).unwrap()).unwrap();
+        let result = Define::new(toml::from_str::<DefineInput>(data).unwrap()).unwrap();
 
-//         assert_eq!(result.var.get("y").unwrap().as_str().unwrap(), "bill");
-//         assert_eq!(result.var.get("joe").unwrap().as_str().unwrap(), "bob");
-//         let foo = result.bind.get("foo").unwrap();
-//         assert_eq!(foo.key.as_ref().to_owned().unwrap().unwrap(), "x");
-//         assert_eq!(
-//             foo.args
-//                 .as_ref()
-//                 .unwrap()
-//                 .get_ref()
-//                 .get("k")
-//                 .unwrap()
-//                 .as_integer()
-//                 .unwrap(),
-//             1
-//         );
+        assert_eq!(result.var.get("y").unwrap(), &Value::String("bill".into()));
+        assert_eq!(result.var.get("joe").unwrap(), &Value::String("bob".into()));
+        let foo = result.bind.get("foo").unwrap();
+        assert_eq!(foo.key.as_ref().to_owned().unwrap().unwrap(), "x");
+        let args = foo.args.as_ref().unwrap().clone().into_inner();
+        assert_eq!(
+            args,
+            Value::Table(IndexMap::from([
+                ("k".into(), Value::Integer(1)),
+                ("h".into(), Value::Integer(2))
+            ]))
+        );
 
-//         assert_eq!(
-//             foo.args
-//                 .as_ref()
-//                 .unwrap()
-//                 .get_ref()
-//                 .get("h")
-//                 .unwrap()
-//                 .as_integer()
-//                 .unwrap(),
-//             2
-//         );
+        let foobar = result.command.get("foobar").unwrap();
+        let command: String = foobar.command.clone().resolve("`command`").unwrap();
+        assert_eq!(command, "runCommands");
+        let commands = foobar.args.as_ref().unwrap().clone().into_inner();
+        assert_eq!(
+            commands,
+            Value::Table(IndexMap::from([(
+                "commands".into(),
+                Value::Array(vec![
+                    Value::String("foo".into()),
+                    Value::String("bar".into())
+                ])
+            )]))
+        );
+    }
 
-//         let foobar = result.command.get("foobar").unwrap();
-//         assert_eq!(foobar.command, "runCommands");
-//         let commands = foobar.args.get("commands").unwrap().as_array().unwrap();
-//         assert_eq!(commands[0].as_str().unwrap(), "foo");
-//         assert_eq!(commands[1].as_str().unwrap(), "bar");
-//     }
+    // #[test]
+    // fn parsing_resolved_variables() {
+    //     let data = r#"
+    //     [[var]]
+    //     foo = 1
 
-//     #[test]
-//     fn parsing_resolved_variables() {
-//         let data = r#"
-//         [[var]]
-//         foo = 1
+    //     [[var]]
+    //     foo_string = "number-{{var.foo}}"
 
-//         [[var]]
-//         foo_string = "number-{{var.foo}}"
+    //     [[command]]
+    //     id = "run_shebang"
+    //     command = "shebang"
+    //     args.a = 1
+    //     args.b = "{{var.foo_string}}"
 
-//         [[command]]
-//         id = "run_shebang"
-//         command = "shebang"
-//         args.a = 1
-//         args.b = "{{var.foo_string}}"
+    //     [[bind]]
+    //     id = "whole_shebang"
+    //     key = "a"
+    //     name = "the whole shebang"
+    //     command = "runCommands"
+    //     args.commands = ["{{command.run_shebang}}", "bar"]
+    //     "#;
 
-//         [[bind]]
-//         id = "whole_shebang"
-//         key = "a"
-//         name = "the whole shebang"
-//         command = "runCommands"
-//         args.commands = ["{{command.run_shebang}}", "bar"]
-//         "#;
+    //     let result = Define::new(toml::from_str::<DefineInput>(data).unwrap()).unwrap();
+    //     let bind_args = result
+    //         .bind
+    //         .get("whole_shebang")
+    //         .as_ref()
+    //         .unwrap()
+    //         .args
+    //         .as_ref()
+    //         .unwrap();
+    //     let bind_commands = bind_args
+    //         .get_ref()
+    //         .get("commands")
+    //         .unwrap()
+    //         .as_array()
+    //         .unwrap();
+    //     assert_eq!(
+    //         bind_commands[0].get("command").unwrap().as_str().unwrap(),
+    //         "shebang"
+    //     );
+    //     assert_eq!(
+    //         bind_commands[0]
+    //             .get("args")
+    //             .unwrap()
+    //             .get("b")
+    //             .unwrap()
+    //             .as_str()
+    //             .unwrap(),
+    //         "number-1"
+    //     );
+    //     assert_eq!(bind_commands[1].as_str().unwrap(), "bar");
+    // }
 
-//         let result = Define::new(toml::from_str::<DefineInput>(data).unwrap()).unwrap();
-//         let bind_args = result
-//             .bind
-//             .get("whole_shebang")
-//             .as_ref()
-//             .unwrap()
-//             .args
-//             .as_ref()
-//             .unwrap();
-//         let bind_commands = bind_args
-//             .get_ref()
-//             .get("commands")
-//             .unwrap()
-//             .as_array()
-//             .unwrap();
-//         assert_eq!(
-//             bind_commands[0].get("command").unwrap().as_str().unwrap(),
-//             "shebang"
-//         );
-//         assert_eq!(
-//             bind_commands[0]
-//                 .get("args")
-//                 .unwrap()
-//                 .get("b")
-//                 .unwrap()
-//                 .as_str()
-//                 .unwrap(),
-//             "number-1"
-//         );
-//         assert_eq!(bind_commands[1].as_str().unwrap(), "bar");
-//     }
+    // #[test]
+    // fn parsing_order_error() {
+    //     let data = r#"
+    //     [[var]]
+    //     k = "{{command.foo}}"
 
-//     #[test]
-//     fn parsing_order_error() {
-//         let data = r#"
-//         [[var]]
-//         k = "{{command.foo}}"
+    //     [[var]]
+    //     a = 1
 
-//         [[var]]
-//         a = 1
+    //     [[var]]
+    //     b = "{{var.a}}-boot"
 
-//         [[var]]
-//         b = "{{var.a}}-boot"
+    //     [[command]]
+    //     id = "foo"
+    //     command = "joe"
+    //     args.x = 1
 
-//         [[command]]
-//         id = "foo"
-//         command = "joe"
-//         args.x = 1
+    //     [[command]]
+    //     id = "bar"
+    //     command = "runCommands"
+    //     args.commands = ["{{command.biz}}", "baz"]
 
-//         [[command]]
-//         id = "bar"
-//         command = "runCommands"
-//         args.commands = ["{{command.biz}}", "baz"]
+    //     [[command]]
+    //     id = "biz"
+    //     command = "bob"
+    //     args.y = 2
+    //     args.x = "{{bind.horace}}"
 
-//         [[command]]
-//         id = "biz"
-//         command = "bob"
-//         args.y = 2
-//         args.x = "{{bind.horace}}"
+    //     [[bind]]
+    //     id = "horace"
+    //     key = "ctrl+k"
+    //     command = "cursorLeft"
+    //     args.value = "{{count}}"
 
-//         [[bind]]
-//         id = "horace"
-//         key = "ctrl+k"
-//         command = "cursorLeft"
-//         args.value = "{{count}}"
+    //     [[bind]]
+    //     default = "{{bind.horace}}"
+    //     id = "bob"
+    //     key = "ctrl+y"
+    //     command = "cursorRight"
 
-//         [[bind]]
-//         default = "{{bind.horace}}"
-//         id = "bob"
-//         key = "ctrl+y"
-//         command = "cursorRight"
-
-//         [[bind]]
-//         default = "{{bind.will}}"
-//         id = "bob"
-//         key = "ctrl+k"
-//         command = "cursorDown"
-//         "#;
-//         // TODO: add `default` key to `bind` so we can accomplish the todo below
-//         // TODO: test for missing `bind`
-//         let result = Define::new(toml::from_str::<DefineInput>(data).unwrap()).unwrap_err();
-//         assert!(if let Error::ForwardReference(ref str) = result[0].error {
-//             str.starts_with("`command.foo`")
-//         } else {
-//             false
-//         });
-//         assert!(if let Error::Constraint(ref str) = result[1].error {
-//             str.starts_with("no references to `var`")
-//         } else {
-//             false
-//         });
-//         assert!(if let Error::UndefinedVariable(ref str) = result[2].error {
-//             str.starts_with("`command.biz`")
-//         } else {
-//             false
-//         });
-//         assert!(if let Error::ForwardReference(ref str) = result[3].error {
-//             str.starts_with("`bind.horace`")
-//         } else {
-//             false
-//         });
-//         info!("result: {:#?}", result);
-//         assert_eq!(result.len(), 4);
-//     }
-// }
+    //     [[bind]]
+    //     default = "{{bind.will}}"
+    //     id = "bob"
+    //     key = "ctrl+k"
+    //     command = "cursorDown"
+    //     "#;
+    //     // TODO: add `default` key to `bind` so we can accomplish the todo below
+    //     // TODO: test for missing `bind`
+    //     let result = Define::new(toml::from_str::<DefineInput>(data).unwrap()).unwrap_err();
+    //     assert!(if let Error::ForwardReference(ref str) = result[0].error {
+    //         str.starts_with("`command.foo`")
+    //     } else {
+    //         false
+    //     });
+    //     assert!(if let Error::Constraint(ref str) = result[1].error {
+    //         str.starts_with("no references to `var`")
+    //     } else {
+    //         false
+    //     });
+    //     assert!(if let Error::UndefinedVariable(ref str) = result[2].error {
+    //         str.starts_with("`command.biz`")
+    //     } else {
+    //         false
+    //     });
+    //     assert!(if let Error::ForwardReference(ref str) = result[3].error {
+    //         str.starts_with("`bind.horace`")
+    //     } else {
+    //         false
+    //     });
+    //     info!("result: {:#?}", result);
+    //     assert_eq!(result.len(), 4);
+    // }
+}
