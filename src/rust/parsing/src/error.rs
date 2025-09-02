@@ -30,8 +30,6 @@ pub enum Error {
     Unresolved(String),
     #[error("undefined variable {0}")]
     UndefinedVariable(String),
-    #[error("forward reference to {0}")]
-    ForwardReference(String),
     #[error("reserved field name {0}")]
     ReservedField(&'static str),
     #[error("parsing regex failed with {0}")]

@@ -144,6 +144,12 @@ impl Merging for Value {
     }
 }
 
+pub trait Expander {
+    fn expand<T>(self, x: T) -> ResultVec<T>
+    where
+        T: Expanding + Merging;
+}
+
 pub trait Expanding {
     fn map_expressions<F>(self, f: &F) -> ResultVec<Self>
     where
@@ -244,6 +250,19 @@ impl From<Value> for toml::Value {
     }
 }
 
+impl Resolving<Value> for Value {
+    fn resolve(self, _name: impl Into<String>) -> ResultVec<Value> {
+        Ok(self)
+    }
+}
+
+impl Resolving<toml::Value> for Value {
+    fn resolve(self, name: impl Into<String>) -> ResultVec<toml::Value> {
+        self.require_constant().context_str(name)?;
+        return Ok(self.into());
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(try_from = "toml::Value")]
 pub enum TypedValue<T>
@@ -275,10 +294,9 @@ where
     }
 }
 
-impl<T: Serialize + std::fmt::Debug> Expanding for TypedValue<T>
+impl<'de, T> Expanding for TypedValue<T>
 where
-    T: From<TypedValue<T>>,
-    T: TryFrom<toml::Value>,
+    T: std::fmt::Debug + Deserialize<'de> + Serialize,
 {
     fn is_constant(&self) -> bool {
         match self {
@@ -293,11 +311,10 @@ where
         return Ok(match self {
             TypedValue::Variable(v) => {
                 let result = v.map_expressions(f)?;
-                info!("result {result:?} {}", result.is_constant());
                 if result.is_constant() {
                     // TODO: WIP debugging
-                    let x = TypedValue::Constant(result.try_into()?);
-                    info!("to constant: {x:?}");
+                    let toml: toml::Value = result.into();
+                    let x = TypedValue::Constant(toml.try_into()?);
                     x
                 } else {
                     TypedValue::Variable(result)

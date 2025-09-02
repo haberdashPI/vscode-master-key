@@ -19,7 +19,7 @@ use wasm_bindgen::JsValue;
 use wasm_bindgen::prelude::*;
 
 mod foreach;
-mod validation;
+pub mod validation;
 
 use crate::bind::foreach::expand_keys;
 use crate::bind::validation::{BindingReference, KeyBinding};
@@ -360,6 +360,15 @@ impl CommandInput {
     }
 }
 
+impl From<CommandInput> for Value {
+    fn from(value: Command) -> Self {
+        return Value::Table(IndexMap::from([
+            ("command".to_string(), Value::String(value.command)),
+            ("args".to_string(), value.args),
+        ]));
+    }
+}
+
 #[wasm_bindgen(getter_with_clone)]
 #[derive(Clone, Debug, Serialize)]
 pub struct Command {
@@ -481,6 +490,13 @@ fn expand_foreach_values(foreach: IndexMap<String, Vec<Value>>) -> Vec<IndexMap<
 }
 
 impl Expanding for BindingInput {
+    fn default_expression(self) -> Option<String> {
+        if let Some(x) = self.default {
+            Some(x.into_inner().0)
+        } else {
+            None
+        }
+    }
     fn is_constant(&self) -> bool {
         [
             self.command.is_constant(),
@@ -702,7 +718,6 @@ impl Binding {
 
         // TODO this is where we should validate that prefix has `finalKey == false`
 
-        // TODO: cleanup below now that we've updated types for `BindingInput`
         return Ok(Binding {
             commands: commands,
             key: input.key.resolve("`key` field")?,

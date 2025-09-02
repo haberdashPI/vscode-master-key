@@ -205,6 +205,12 @@ impl<T> Required<T> {
     }
 }
 
+impl Resolving<String> for String {
+    fn resolve(self, name: impl Into<String>) -> ResultVec<String> {
+        return Ok(self);
+    }
+}
+
 // TODO: use `try_from` to improve error messages
 #[derive(Serialize, Default, Deserialize, PartialEq, Debug, Clone)]
 #[serde(untagged)]
