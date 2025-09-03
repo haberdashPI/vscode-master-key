@@ -181,7 +181,7 @@ pub struct BindingInput {
      * - `command` will be repeated the given
      *   number of times.
      */
-    repeat: Option<Spanned<TypedValue<i64>>>,
+    repeat: Option<Spanned<TypedValue<i32>>>,
 
     /**
      * @forBindingField bind
@@ -421,7 +421,7 @@ pub struct Binding {
     pub priority: f64,
     pub prefixes: Vec<String>,
     pub finalKey: bool,
-    pub(crate) repeat: Option<TypedValue<i64>>,
+    pub(crate) repeat: Option<TypedValue<i32>>,
     pub name: Option<String>,
     pub description: Option<String>,
     pub hideInPalette: bool,

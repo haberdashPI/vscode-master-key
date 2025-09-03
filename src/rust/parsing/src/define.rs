@@ -19,7 +19,7 @@ use serde_wasm_bindgen;
 use toml::Spanned;
 use wasm_bindgen::prelude::*;
 
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Deserialize, Clone, Debug, Default)]
 pub struct DefineInput {
     pub var: Option<Vec<IndexMap<String, Spanned<Value>>>>,
     pub command: Option<Vec<Spanned<CommandInput>>>,
@@ -135,7 +135,7 @@ lazy_static! {
 }
 
 impl Define {
-    fn expand(&mut self, binding: BindingInput) -> ResultVec<BindingInput> {
+    pub fn expand(&mut self, binding: BindingInput) -> ResultVec<BindingInput> {
         // resolve default values
         let binding = if let Some(ref default) = binding.default {
             let BindingReference(name) = default.as_ref();
@@ -229,132 +229,4 @@ mod tests {
             )]))
         );
     }
-
-    // #[test]
-    // fn parsing_resolved_variables() {
-    //     let data = r#"
-    //     [[var]]
-    //     foo = 1
-
-    //     [[var]]
-    //     foo_string = "number-{{var.foo}}"
-
-    //     [[command]]
-    //     id = "run_shebang"
-    //     command = "shebang"
-    //     args.a = 1
-    //     args.b = "{{var.foo_string}}"
-
-    //     [[bind]]
-    //     id = "whole_shebang"
-    //     key = "a"
-    //     name = "the whole shebang"
-    //     command = "runCommands"
-    //     args.commands = ["{{command.run_shebang}}", "bar"]
-    //     "#;
-
-    //     let result = Define::new(toml::from_str::<DefineInput>(data).unwrap()).unwrap();
-    //     let bind_args = result
-    //         .bind
-    //         .get("whole_shebang")
-    //         .as_ref()
-    //         .unwrap()
-    //         .args
-    //         .as_ref()
-    //         .unwrap();
-    //     let bind_commands = bind_args
-    //         .get_ref()
-    //         .get("commands")
-    //         .unwrap()
-    //         .as_array()
-    //         .unwrap();
-    //     assert_eq!(
-    //         bind_commands[0].get("command").unwrap().as_str().unwrap(),
-    //         "shebang"
-    //     );
-    //     assert_eq!(
-    //         bind_commands[0]
-    //             .get("args")
-    //             .unwrap()
-    //             .get("b")
-    //             .unwrap()
-    //             .as_str()
-    //             .unwrap(),
-    //         "number-1"
-    //     );
-    //     assert_eq!(bind_commands[1].as_str().unwrap(), "bar");
-    // }
-
-    // #[test]
-    // fn parsing_order_error() {
-    //     let data = r#"
-    //     [[var]]
-    //     k = "{{command.foo}}"
-
-    //     [[var]]
-    //     a = 1
-
-    //     [[var]]
-    //     b = "{{var.a}}-boot"
-
-    //     [[command]]
-    //     id = "foo"
-    //     command = "joe"
-    //     args.x = 1
-
-    //     [[command]]
-    //     id = "bar"
-    //     command = "runCommands"
-    //     args.commands = ["{{command.biz}}", "baz"]
-
-    //     [[command]]
-    //     id = "biz"
-    //     command = "bob"
-    //     args.y = 2
-    //     args.x = "{{bind.horace}}"
-
-    //     [[bind]]
-    //     id = "horace"
-    //     key = "ctrl+k"
-    //     command = "cursorLeft"
-    //     args.value = "{{count}}"
-
-    //     [[bind]]
-    //     default = "{{bind.horace}}"
-    //     id = "bob"
-    //     key = "ctrl+y"
-    //     command = "cursorRight"
-
-    //     [[bind]]
-    //     default = "{{bind.will}}"
-    //     id = "bob"
-    //     key = "ctrl+k"
-    //     command = "cursorDown"
-    //     "#;
-    //     // TODO: add `default` key to `bind` so we can accomplish the todo below
-    //     // TODO: test for missing `bind`
-    //     let result = Define::new(toml::from_str::<DefineInput>(data).unwrap()).unwrap_err();
-    //     assert!(if let Error::ForwardReference(ref str) = result[0].error {
-    //         str.starts_with("`command.foo`")
-    //     } else {
-    //         false
-    //     });
-    //     assert!(if let Error::Constraint(ref str) = result[1].error {
-    //         str.starts_with("no references to `var`")
-    //     } else {
-    //         false
-    //     });
-    //     assert!(if let Error::UndefinedVariable(ref str) = result[2].error {
-    //         str.starts_with("`command.biz`")
-    //     } else {
-    //         false
-    //     });
-    //     assert!(if let Error::ForwardReference(ref str) = result[3].error {
-    //         str.starts_with("`bind.horace`")
-    //     } else {
-    //         false
-    //     });
-    //     info!("result: {:#?}", result);
-    //     assert_eq!(result.len(), 4);
-    // }
 }
