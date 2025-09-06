@@ -82,17 +82,17 @@ id = "selectLinesDown"
 command = "runCommands"
 args.commands = [
     "selection-utilities.shrinkToActive",
-    { command = "cursorMove", args = { to = "down", by = "wrappedLine", select = true, value = "{{count}}" }, abort = "{{count <= 0}}" },
+    { skipWhen = "{{count <= 0}}", command = "cursorMove", args = { to = "down", by = "wrappedLine", select = true, value = "{{count}}" } },
     "expandLineSelection",
     "selection-utilities.exchangeAnchorActive",
 ]
 
 [[define.command]]
 id = "selectLinesUp"
-command = "selection-utilities.shrinkToActive"
+command = "runCommands"
 args.commands = [
     "selection-utilities.shrinkToActive",
-    { command = "cursorMove", args = { to = "up", by = "wrappedLine", select = true, value = "{{count}}" }, abort = "{{count <= 0}}" },
+    { skipWhen = "{{count <= 0}}", command = "cursorMove", args = { to = "up", by = "wrappedLine", select = true, value = "{{count}}" } },
     "expandLineSelection",
 ]
 

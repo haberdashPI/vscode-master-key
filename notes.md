@@ -99,20 +99,25 @@ Integration test debugging:
             - [X] make sure to error on fields that cannot have runtime computation
               (only certain fields can be evaluated at runtime: `args` and `repeat`)
             - [X] get basic interpolation of `{{bind/command}}` from `define` elements working for `bind` and its fields
-        - [ ] get evaluation of computed elements working `Command` and `Bind` working
-            - [ ] use rhai to implement expression evaluation
-                - [ ] preparse all `{{}}` into
-                - [ ] evaluate expressions
+        - [X] get evaluation of computed elements working `Command` and `Bind` working
+        - [ ] use rhai to implement expression evaluation
+            - [ ] setup state object definitions
+            - [ ] verify they can be called from typescript to evaluate an expression
+            - [ ] preparse all `{{}}` into
+            - [ ] evaluate expressions in command etc...
+        - [ ] foreach expansion within a KeyFile context
         - [ ] get `KeyFile` working with `bind`, `define` and runtime `command` calls
             - [ ] implementation
             - [ ] unit tests
                 - [X] basic parsing
-                - [ ] define expansion for `bind.` and `command.`
+                - [X] define expansion for `bind.` and `command.`
+                - [ ] command expansion from program state
             - [ ] try it out from extension debugging
             - [ ] write an integration test
         - [ ] cleanup, document and refactor code
             - NOTE: we're waiting until we test out spans and the other stuff above because that could require more refactoring
-        - [ ] foreach expansion within a KeyFile context
+        - [ ] implement support for tags on `bind` (for filter them)
+        - [ ] implement support for `skipWhen` in `command`
         - [~] command normalization
             - [X] always `runCommand` with an array of objects with `command` field
             - [ ] flatten all nested `runCommands` calls
@@ -129,6 +134,7 @@ Integration test debugging:
     - [ ] proper conversion to keybindings.json command
         - [ ] expand prefixes to prefixCode and move to when clause
         - [ ] move mode to when clause
+    - [ ] implement `replay`
     - [ ] extraction of visual docs
     - [ ] extraction of markdown docs
         - [ ] extract all comment regions (exclude `#-`)
@@ -136,12 +142,14 @@ Integration test debugging:
             - [ ] identify each non-comment region, and look for parsed elements
                   whose span overlaps
             - [ ] convert any bind elements in this overlap into markdown table
+    - [ ] serialization of bindings to settings.json
     - [ ] actually replace javascript behavior with rust functions
     - [ ] CI
         - [x] setup CI unit tests for rust
         - [x] setup rust coverage
         - [x] setup CI and merge coverage across rust and javascript
-        - [ ] verify that CI is running and coverage is showing up
+        - [X] verify that CI is running and coverage is showing up
+        - [ ] check in with CI setup once we get the above tasks completed
 
 4. Move palette from quick pick to tree view
     - [ ] get a simple tree view working (just show one item)

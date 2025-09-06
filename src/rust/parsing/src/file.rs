@@ -2,6 +2,7 @@
 use crate::bind::{Binding, BindingInput};
 use crate::define::{Define, DefineInput};
 use crate::error::{ErrorContext, ErrorReport, ResultVec, flatten_errors};
+use crate::value::Value;
 
 use log::info;
 use serde::{Deserialize, Serialize};
@@ -93,6 +94,7 @@ fn parse_string_helper(file_content: &str) -> ResultVec<KeyFile> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use indexmap::IndexMap;
     use test_log::test;
 
     #[test]
@@ -121,30 +123,83 @@ mod tests {
         assert_eq!(items.bind[1].commands[0].command, "cursorLeft");
     }
 
-    // #[test]
-    // fn parsing_resolved_bind_and_command() {
-    //     let data = r#"
+    #[test]
+    fn resolve_bind_and_command() {
+        let data = r#"
 
-    //     [[define.var]]
-    //     foo_string = "bizbaz"
+        [[define.var]]
+        foo_string = "bizbaz"
 
-    //     [[define.command]]
-    //     id = "run_shebang"
-    //     command = "shebang"
-    //     args.a = 1
-    //     args.b = "{{var.foo_string}}"
+        [[define.command]]
+        id = "run_shebang"
+        command = "shebang"
+        args.a = 1
+        args.b = "{{var.foo_string}}"
 
-    //     [[define.bind]]
-    //     id = "whole_shebang"
-    //     name = "the whole shebang"
-    //     command = "runCommands"
-    //     args.commands = ["{{command.run_shebang}}", "bar"]
+        [[define.bind]]
+        id = "whole_shebang"
+        name = "the whole shebang"
+        command = "runCommands"
+        args.commands = ["{{command.run_shebang}}", "bar"]
 
-    //     [[bind]]
-    //     default = "{{whole_shebang}}"
-    //     key = "a"
-    //     "#;
+        [[bind]]
+        default = "{{bind.whole_shebang}}"
+        key = "a"
+        "#;
 
-    //     // TODO
-    // }
+        let result = KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap()).unwrap();
+
+        assert_eq!(result.bind[0].name.as_ref().unwrap(), "the whole shebang");
+        assert_eq!(result.bind[0].key, "a");
+        assert_eq!(result.bind[0].commands[0].command, "shebang");
+        assert_eq!(
+            result.bind[0].commands[0].args,
+            Value::Table(IndexMap::from([
+                ("a".into(), Value::Integer(1)),
+                ("b".into(), Value::Expression("var.foo_string".into())),
+            ]))
+        );
+        assert_eq!(result.bind[0].commands[1].command, "bar");
+    }
+
+    #[test]
+    fn resolve_nested_command() {
+        let data = r#"
+
+        [[define.command]]
+        id = "run_shebang"
+        command = "shebang"
+        args.a = 1
+        args.b = "{{var.foo_string}}"
+
+        [[define.bind]]
+        id = "a"
+        args.commands = ["{{command.run_shebang}}", "bar"]
+
+        [[define.bind]]
+        id = "b"
+        key = "x"
+        command = "runCommands"
+        default = "{{bind.a}}"
+
+        [[bind]]
+        default = "{{bind.b}}"
+        name = "the whole shebang"
+        key = "a"
+        "#;
+
+        let result = KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap()).unwrap();
+
+        assert_eq!(result.bind[0].name.as_ref().unwrap(), "the whole shebang");
+        assert_eq!(result.bind[0].key, "a");
+        assert_eq!(result.bind[0].commands[0].command, "shebang");
+        assert_eq!(
+            result.bind[0].commands[0].args,
+            Value::Table(IndexMap::from([
+                ("a".into(), Value::Integer(1)),
+                ("b".into(), Value::Expression("var.foo_string".into())),
+            ]))
+        );
+        assert_eq!(result.bind[0].commands[1].command, "bar");
+    }
 }

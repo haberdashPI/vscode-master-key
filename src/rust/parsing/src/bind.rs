@@ -1,19 +1,15 @@
-// parsing of individual `[[bind]]` elements
-
 #![allow(non_snake_case)]
 
 #[allow(unused_imports)]
 use log::info;
 
-use std::convert::identity;
-
+use std::collections::HashMap;
 use std::collections::VecDeque;
-use std::error;
+use std::convert::identity;
 
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use serde_wasm_bindgen;
-use std::io;
 use toml::Spanned;
 use wasm_bindgen::JsValue;
 use wasm_bindgen::prelude::*;
@@ -23,9 +19,8 @@ pub mod validation;
 
 use crate::bind::foreach::expand_keys;
 use crate::bind::validation::{BindingReference, KeyBinding};
-use crate::error::ErrorsWithContext;
 use crate::error::{Error, ErrorContext, Result, ResultVec, constrain, reserved, unexpected};
-use crate::util::{Merging, Plural, Required, Requiring, Resolving};
+use crate::util::{Merging, Plural, Required, Resolving};
 use crate::value::{Expanding, TypedValue, Value};
 
 pub const UNKNOWN_RANGE: core::ops::Range<usize> = usize::MIN..usize::MAX;
@@ -326,9 +321,9 @@ impl Expanding for CommandInput {
         }
         return true;
     }
-    fn map_expressions<F>(self, f: &F) -> ResultVec<Self>
+    fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
     where
-        F: Fn(String) -> Result<Value>,
+        F: FnMut(String) -> Result<Value>,
     {
         let mut errors = Vec::new();
         let result = CommandInput {
@@ -377,20 +372,130 @@ impl From<CommandInput> for Value {
 #[wasm_bindgen(getter_with_clone)]
 #[derive(Clone, Debug, Serialize)]
 pub struct Command {
-    pub(crate) command: String,
+    pub command: String,
     pub(crate) args: Value,
 }
 
 // TODO: here is where we would want to invoke rhai to resolve any outstanding expressions
+
+#[wasm_bindgen]
+pub struct Scope {
+    asts: HashMap<String, rhai::AST>,
+    engine: rhai::Engine,
+    state: rhai::Scope<'static>,
+    queues: HashMap<String, VecDeque<Command>>,
+}
+
+// TODO: we'll need to define `CustomType` on `Value` and `Command`
+#[wasm_bindgen]
+impl Scope {
+    // TODO: incorporate command queues
+    fn expand<T>(&mut self, obj: &T) -> ResultVec<T>
+    where
+        T: Expanding + Clone,
+    {
+        for (k, v) in self.queues.iter() {
+            // TODO: tell engine how to handle dequeues
+            // TODO: I don't love that we have to copy the queue for every evaluation
+            // there's probalby a better solution here
+            self.state.set_or_push(k, v.clone());
+        }
+        return Ok(obj.clone().map_expressions(&mut |expr| {
+            let ast = &self.asts[&expr];
+            let result = self.engine.eval_ast_with_scope(&mut self.state, &ast);
+            let value: rhai::Dynamic = match result {
+                Err(x) => Err(Error::ExpressionEval(format!("{}", x)))?,
+                Ok(x) => x,
+            };
+            let result_value: Value = match value.clone().try_cast_result() {
+                Err(e) => Err(Error::Rhai(format!("{}", e)))?,
+                Ok(x) => x,
+            };
+            return Ok(result_value);
+        })?);
+    }
+
+    fn parse_asts(&mut self, x: impl Expanding + Clone) -> ResultVec<()> {
+        x.clone().map_expressions(&mut |expr| {
+            let ast = self.engine.compile_expression(expr.clone())?;
+            self.asts.insert(expr.clone(), ast);
+            return Ok(Value::Expression(expr));
+        })?;
+        return Ok(());
+    }
+
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> Scope {
+        let engine = rhai::Engine::new();
+
+        return Scope {
+            asts: HashMap::new(),
+            engine: engine,
+            state: rhai::Scope::new(),
+            queues: HashMap::new(),
+        };
+    }
+
+    pub fn set(&mut self, name: String, value: JsValue) -> Result<()> {
+        let toml: toml::Value = match serde_wasm_bindgen::from_value(value) {
+            Err(e) => Err(Error::JsSerialization(format!("{}", e)))?,
+            Ok(x) => x,
+        };
+        let val: Value = toml.try_into()?;
+        self.state.set_or_push(&name, val);
+        return Ok(());
+    }
+
+    pub fn unset(&mut self, name: String) -> Result<()> {
+        return Ok(self
+            .state
+            .remove(&name)
+            .ok_or_else(|| Error::UndefinedVariable(name))?);
+    }
+
+    pub fn get(&self, name: String) -> Result<JsValue> {
+        let x: &rhai::Dynamic = self
+            .state
+            .get(&name)
+            .ok_or_else(|| Error::UndefinedVariable(name))?;
+        let x: Value = match x.clone().try_cast_result() {
+            Err(e) => Err(Error::Rhai(format!("{}", e)))?,
+            Ok(x) => x,
+        };
+        let x: toml::Value = x.into();
+        let to_json = serde_wasm_bindgen::Serializer::json_compatible();
+        return match x.serialize(&to_json) {
+            Err(e) => Err(Error::JsSerialization(format!("{}", e)))?,
+            Ok(x) => Ok(x),
+        };
+    }
+
+    pub fn add_to_command_queue(&mut self, queue: String, x: Command) {
+        let queue = self.queues.entry(queue).or_insert_with(|| VecDeque::new());
+        queue.push_back(x);
+        // TODO: pop queue if it gets too large
+    }
+
+    pub fn pop_command_queue(&mut self, queue: String) -> Option<Command> {
+        let queue = self.queues.entry(queue).or_insert_with(|| VecDeque::new());
+        return queue.pop_front();
+    }
+
+    // TODO: function to evaluate args of replay and return a range of expressions
+    // to replay in type script
+}
+
 #[wasm_bindgen]
 impl Command {
-    pub fn command(&self) -> std::result::Result<String, JsError> {
-        return Ok("TODO".into());
-    }
     #[wasm_bindgen(getter)]
-    pub fn args(&self) -> std::result::Result<JsValue, serde_wasm_bindgen::Error> {
+    pub fn args(&self, scope: &mut Scope) -> ResultVec<JsValue> {
         let to_json = serde_wasm_bindgen::Serializer::json_compatible();
-        return self.args.serialize(&to_json);
+        let flat_args = scope.expand(&self.args)?;
+
+        return match toml::Value::from(flat_args).serialize(&to_json) {
+            Err(e) => Err(Error::JsSerialization(format!("{}", e)))?,
+            Ok(x) => Ok(x),
+        };
     }
 }
 
@@ -409,7 +514,6 @@ impl Command {
     }
 }
 
-// TODO: have Value and Value
 #[derive(Clone, Debug, Serialize)]
 #[allow(non_snake_case)]
 #[wasm_bindgen(getter_with_clone)]
@@ -462,7 +566,7 @@ impl BindingInput {
                 let mut result = self.clone();
                 result.foreach = None;
                 result
-                    .map_expressions(&|x| {
+                    .map_expressions(&mut |x| {
                         Ok(values
                             .get(&x)
                             .map_or_else(|| Value::Expression(x), |ex| ex.clone()))
@@ -520,9 +624,9 @@ impl Expanding for BindingInput {
         .into_iter()
         .all(identity)
     }
-    fn map_expressions<F>(self, f: &F) -> ResultVec<Self>
+    fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
     where
-        F: Fn(String) -> Result<Value>,
+        F: FnMut(String) -> Result<Value>,
     {
         let mut errors = Vec::new();
         let result = BindingInput {
@@ -703,8 +807,16 @@ fn regularize_commands(input: &BindingInput) -> ResultVec<Vec<Command>> {
     }
 }
 
+#[wasm_bindgen]
 impl Binding {
-    pub fn new(input: BindingInput) -> ResultVec<Self> {
+    pub fn repeat(&mut self, scope: &mut Scope) -> ResultVec<i32> {
+        return match scope.expand(&self.repeat)? {
+            None => Ok(0),
+            Some(val) => Ok(val.into()),
+        };
+    }
+
+    pub(crate) fn new(input: BindingInput) -> ResultVec<Self> {
         if let Some(_) = input.id {
             return reserved("id")?;
         }
@@ -747,7 +859,6 @@ impl Binding {
 
 #[cfg(test)]
 mod tests {
-    use std::{collections::HashMap, io::Write};
     use test_log::test;
 
     use super::*;
@@ -774,8 +885,6 @@ mod tests {
         combinedDescription = "bla bla bla"
         kind = "biz"
         "#;
-
-        io::stdout().flush().unwrap();
 
         let result = toml::from_str::<BindingInput>(data).unwrap();
 
@@ -807,7 +916,7 @@ mod tests {
         assert_eq!(priority, 1.0);
         assert_eq!(
             result.default.unwrap().into_inner().0,
-            "bind.foo_bar".to_string()
+            "foo_bar".to_string()
         );
         let foreach = result.foreach.unwrap();
         let values = foreach.get("index").unwrap();
@@ -1081,6 +1190,37 @@ mod tests {
             );
         }
     }
+
+    // TODO: implement functions that don't require WASM runtime
+    // to test here, and then test JS wrapped functions in integration tests
+    #[test]
+    fn expand_args() {
+        let data = r#"
+            key = "k"
+            name = "test"
+            command = "foo"
+            args.value = '{{joe + "_biz"}}'
+            args.number = '{{2+1}}'
+        "#;
+
+        let result = Binding::new(toml::from_str::<BindingInput>(data).unwrap()).unwrap();
+        let mut scope = Scope::new();
+        scope.set("joe".to_string(), JsValue::from_str("fiz"));
+        let flat_args = result.commands[0].args(&mut scope).unwrap();
+
+        let to_json = serde_wasm_bindgen::Serializer::json_compatible();
+        let mut args_table = toml::map::Map::new();
+        args_table.insert(
+            "value".to_string(),
+            toml::Value::String("fiz_biz".to_string()),
+        );
+        args_table.insert("number".to_string(), toml::Value::Integer(3));
+        let expected = toml::Value::Table(args_table).serialize(&to_json).unwrap();
+
+        assert_eq!(flat_args, expected)
+    }
+
+    // TODO: test out command queue evaluation in expressions
 
     // TODO: are there any edge cases / failure modes I want to look at in the tests
     // (most of the things seem likely to be covered by serde / toml parsing, and the

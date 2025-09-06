@@ -7,7 +7,7 @@ use crate::bind::validation::BindingReference;
 use crate::bind::{Binding, BindingInput, Command, CommandInput};
 use crate::error::{Context, Error, ErrorContext, ErrorWithContext, Result, ResultVec, unexpected};
 use crate::util::{Merging, Resolving};
-use crate::value::{Expander, Expanding, Value};
+use crate::value::{Expanding, Value};
 
 use indexmap::IndexMap;
 use lazy_static::lazy_static;
@@ -157,11 +157,16 @@ impl Define {
             binding
         };
 
-        return binding.map_expressions(&|exp: String| {
+        return binding.map_expressions(&mut |exp: String| {
             let command = COMMAND_REF.captures(&exp);
             if let Some(captures) = command {
                 let name = captures.get(1).expect("variable name").as_str();
-                return Ok(self.command[name].without_id().into());
+                return Ok(self
+                    .command
+                    .get(name)
+                    .ok_or_else(|| Error::UndefinedVariable(name.to_string()))?
+                    .without_id()
+                    .into());
             }
             if BIND_REF.is_match(&exp) {
                 Err(Error::Constraint(

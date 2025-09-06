@@ -145,9 +145,9 @@ impl Expanding for KeyBinding {
             KeyBinding(TypedValue::Variable(_)) => false,
         }
     }
-    fn map_expressions<F>(self, f: &F) -> ResultVec<Self>
+    fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
     where
-        F: Fn(String) -> Result<Value>,
+        F: FnMut(String) -> Result<Value>,
     {
         Ok(match self {
             KeyBinding(TypedValue::Constant(ref x)) => self,
@@ -205,12 +205,15 @@ impl TryFrom<String> for BindingReference {
         let value: Value = toml::Value::String(value).try_into()?;
         match value {
             Value::Expression(x) => {
-                if !BIND_VARIABLE.is_match(&x) {
+                if let Some(captures) = BIND_VARIABLE.captures(&x) {
+                    Ok(BindingReference(
+                        captures.get(1).expect("variable name").as_str().to_string(),
+                    ))
+                } else {
                     Err(Error::Validation(
                         "binding reference (must be of the form `{{bind.[identifier]}}`".into(),
-                    ))?;
+                    ))?
                 }
-                return Ok(BindingReference(x));
             }
             _ => Err(Error::Validation(
                 "binding reference (must be of the form `{{bind.[identifier]}}`".into(),
@@ -227,10 +230,10 @@ impl Expanding for BindingReference {
     fn is_constant(&self) -> bool {
         false
     }
-    fn map_expressions<F>(self, f: &F) -> ResultVec<Self>
+    fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
     where
         Self: Sized,
-        F: Fn(String) -> Result<Value>,
+        F: FnMut(String) -> Result<Value>,
     {
         return Ok(self);
     }

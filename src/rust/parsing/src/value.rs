@@ -21,13 +21,6 @@ use crate::error::{
 };
 use crate::util::{Merging, Plural, Required, Resolving};
 
-// TODO: implement Expanding type
-
-pub enum ExpandResult {
-    Expanded(Value),
-    Deferred,
-}
-
 // TODO: implement Float / Integer, and deal with regularizing that
 // to float64 only when we serialize to JSON (but still enforce the
 // boundary on integers in the same place we do now)
@@ -41,6 +34,8 @@ pub enum Value {
     Array(Vec<Value>),
     Table(IndexMap<String, Value>),
     Interp(Vec<Value>),
+    // TODO: could optimize further by using an internned string (simplifying AST lookup)
+    // TODO: include a span so that we can improve error messages
     Expression(String),
 }
 
@@ -144,24 +139,18 @@ impl Merging for Value {
     }
 }
 
-pub trait Expander {
-    fn expand<T>(self, x: T) -> ResultVec<T>
-    where
-        T: Expanding + Merging;
-}
-
 pub trait Expanding {
-    fn map_expressions<F>(self, f: &F) -> ResultVec<Self>
+    fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
     where
         Self: Sized,
-        F: Fn(String) -> Result<Value>;
+        F: FnMut(String) -> Result<Value>;
 
     fn is_constant(&self) -> bool;
     fn require_constant(&self) -> ResultVec<()>
     where
         Self: Sized + Clone,
     {
-        self.clone().map_expressions(&|e| {
+        self.clone().map_expressions(&mut |e| {
             Err(Error::Unresolved(format!("Unresolved expression {e}")).into())
         })?;
         return Ok(());
@@ -172,9 +161,9 @@ impl<T: Expanding + std::fmt::Debug> Expanding for IndexMap<String, T> {
     fn is_constant(&self) -> bool {
         self.values().all(|v| v.is_constant())
     }
-    fn map_expressions<F>(self, f: &F) -> ResultVec<Self>
+    fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
     where
-        F: Fn(String) -> Result<Value>,
+        F: FnMut(String) -> Result<Value>,
     {
         return Ok(flatten_errors(
             self.into_iter()
@@ -195,9 +184,9 @@ impl Expanding for Value {
             Value::Boolean(_) | Value::Float(_) | Value::Integer(_) | Value::String(_) => true,
         }
     }
-    fn map_expressions<F>(self, f: &F) -> ResultVec<Self>
+    fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
     where
-        F: Fn(String) -> Result<Value>,
+        F: FnMut(String) -> Result<Value>,
     {
         // XXX: we could optimize by pruning constant branches
         return Ok(match self {
@@ -304,9 +293,9 @@ where
             TypedValue::Variable(_) => false,
         }
     }
-    fn map_expressions<F>(self, f: &F) -> ResultVec<Self>
+    fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
     where
-        F: Fn(String) -> Result<Value>,
+        F: FnMut(String) -> Result<Value>,
     {
         return Ok(match self {
             TypedValue::Variable(v) => {
@@ -416,9 +405,9 @@ impl<T: Expanding> Expanding for Spanned<T> {
     fn is_constant(&self) -> bool {
         self.as_ref().is_constant()
     }
-    fn map_expressions<F>(self, f: &F) -> ResultVec<Self>
+    fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
     where
-        F: Fn(String) -> Result<Value>,
+        F: FnMut(String) -> Result<Value>,
     {
         let span = self.span();
         Ok(Spanned::new(
@@ -432,9 +421,9 @@ impl<T: Expanding + std::fmt::Debug> Expanding for Vec<T> {
     fn is_constant(&self) -> bool {
         self.iter().all(|x| x.is_constant())
     }
-    fn map_expressions<F>(self, f: &F) -> ResultVec<Self>
+    fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
     where
-        F: Fn(String) -> Result<Value>,
+        F: FnMut(String) -> Result<Value>,
     {
         Ok(flatten_errors(
             self.into_iter().map(|x| x.map_expressions(f)),
@@ -450,9 +439,9 @@ impl<T: Expanding + std::fmt::Debug> Expanding for Plural<T> {
             Plural::Many(xs) => xs.iter().all(|x| x.is_constant()),
         }
     }
-    fn map_expressions<F>(self, f: &F) -> ResultVec<Self>
+    fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
     where
-        F: Fn(String) -> Result<Value>,
+        F: FnMut(String) -> Result<Value>,
     {
         Ok(match self {
             Plural::Zero => self,
@@ -469,9 +458,9 @@ impl<T: Expanding + std::fmt::Debug> Expanding for Required<T> {
             Required::Value(x) => x.is_constant(),
         }
     }
-    fn map_expressions<F>(self, f: &F) -> ResultVec<Self>
+    fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
     where
-        F: Fn(String) -> Result<Value>,
+        F: FnMut(String) -> Result<Value>,
     {
         return Ok(match self {
             Required::DefaultValue => self,
@@ -487,9 +476,9 @@ impl<T: Expanding> Expanding for Option<T> {
             Some(x) => x.is_constant(),
         }
     }
-    fn map_expressions<F>(self, f: &F) -> ResultVec<Self>
+    fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
     where
-        F: Fn(String) -> Result<Value>,
+        F: FnMut(String) -> Result<Value>,
     {
         return Ok(match self {
             None => self,

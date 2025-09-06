@@ -16,8 +16,14 @@ pub enum Error {
     TomlParsing(#[from] toml::de::Error),
     #[error("expression parsing {0}")]
     ExpressionParsing(#[from] rhai::ParseError),
+    #[error("expression eval {0}")]
+    ExpressionEval(String),
     #[error("serializing {0}")]
     Serialization(#[from] toml::ser::Error),
+    #[error("deserializing {0}")]
+    JsSerialization(String),
+    #[error("expression failed with {0}")]
+    Rhai(String),
     #[error("invalid {0}")]
     Validation(String),
     #[error("expected {0}")]

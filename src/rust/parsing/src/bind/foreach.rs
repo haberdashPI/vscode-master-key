@@ -230,7 +230,7 @@ pub fn expand_keys(
     items: IndexMap<String, Vec<Spanned<Value>>>,
 ) -> ResultVec<IndexMap<String, Vec<Value>>> {
     // expand any `{{key(`regex`)}}` expressions (these are arrays of possible keys)
-    let items = items.map_expressions(&expand_keys_str)?;
+    let items = items.map_expressions(&mut expand_keys_str)?;
 
     // flatten any arrays
     return Ok(items
