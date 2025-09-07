@@ -11,6 +11,7 @@ use log::info;
 use indexmap::IndexMap;
 use lazy_static::lazy_static;
 use regex::Regex;
+use rhai::Dynamic;
 use rhai::{AST, CustomType, Engine};
 use serde::{Deserialize, Serialize};
 use toml::Spanned;
@@ -37,6 +38,72 @@ pub enum Value {
     // TODO: could optimize further by using an internned string (simplifying AST lookup)
     // TODO: include a span so that we can improve error messages
     Expression(String),
+}
+
+impl From<Value> for Dynamic {
+    fn from(value: Value) -> Self {
+        return match value {
+            Value::Float(x) => Dynamic::from(x),
+            Value::Integer(x) => Dynamic::from(x),
+            Value::Boolean(x) => Dynamic::from(x),
+            Value::String(x) => Dynamic::from(x),
+            Value::Array(x) => {
+                let elements: Vec<Dynamic> = x.into_iter().map(|x| Dynamic::from(x)).collect();
+                elements.into()
+            }
+            Value::Table(x) => {
+                let map: std::collections::HashMap<String, Dynamic> =
+                    x.into_iter().map(|(k, v)| (k, v.into())).collect();
+                map.into()
+            }
+            // the from here results in an opaque custom type
+            Value::Expression(x) => Dynamic::from(x),
+            Value::Interp(x) => Dynamic::from(x),
+        };
+    }
+}
+
+impl TryFrom<Dynamic> for Value {
+    type Error = crate::error::ErrorWithContext;
+    // TODO: this is currently almost certainly quite inefficient (we clone arrays and
+    // maps), but we can worry about optimizing this later
+    fn try_from(value: Dynamic) -> Result<Self> {
+        if value.is_array() {
+            let elements = value.as_array_ref().expect("array value");
+            let values = elements
+                .clone()
+                .into_iter()
+                .map(|x| Value::try_from(x.to_owned()))
+                .collect::<Result<Vec<_>>>()?;
+            return Ok(Value::Array(values));
+        } else if value.is_map() {
+            let pairs = value.as_map_ref().expect("map value");
+            let values = pairs
+                .clone()
+                .into_iter()
+                .map(|(k, v)| Ok((k.as_str().to_string(), Value::try_from(v.to_owned())?)))
+                .collect::<Result<IndexMap<_, _>>>()?;
+            return Ok(Value::Table(values));
+        } else if value.is_bool() {
+            return Ok(Value::Boolean(value.as_bool().expect("boolean")));
+        } else if value.is_float() {
+            return Ok(Value::Float(value.as_float().expect("float")));
+        } else if value.is_int() {
+            return Ok(Value::Integer(value.as_int().expect("integer") as i32));
+        } else if value.is_string() {
+            return Ok(Value::String(
+                value
+                    .as_immutable_string_ref()
+                    .expect("string")
+                    .as_str()
+                    .to_string(),
+            ));
+        } else {
+            Err(Error::Constraint(format!(
+                "usable script value; but {value} is unusable"
+            )))?
+        }
+    }
 }
 
 lazy_static! {

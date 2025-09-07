@@ -2,6 +2,7 @@
 
 #[allow(unused_imports)]
 use log::info;
+use rhai::Dynamic;
 
 use std::collections::HashMap;
 use std::collections::VecDeque;
@@ -397,7 +398,11 @@ impl Scope {
         for (k, v) in self.queues.iter() {
             // TODO: tell engine how to handle dequeues
             // TODO: I don't love that we have to copy the queue for every evaluation
-            // there's probalby a better solution here
+            // this will have to be fixed to avoid ridiculous amounts of copying
+            // per command run
+
+            // PLAN: make queue type a CustomType and track it in `state` instead of
+            // in `queues`.
             self.state.set_or_push(k, v.clone());
         }
         return Ok(obj.clone().map_expressions(&mut |expr| {
@@ -407,15 +412,12 @@ impl Scope {
                 Err(x) => Err(Error::ExpressionEval(format!("{}", x)))?,
                 Ok(x) => x,
             };
-            let result_value: Value = match value.clone().try_cast_result() {
-                Err(e) => Err(Error::Rhai(format!("{}", e)))?,
-                Ok(x) => x,
-            };
+            let result_value: Value = value.clone().try_into()?;
             return Ok(result_value);
         })?);
     }
 
-    fn parse_asts(&mut self, x: impl Expanding + Clone) -> ResultVec<()> {
+    fn parse_asts(&mut self, x: &(impl Expanding + Clone)) -> ResultVec<()> {
         x.clone().map_expressions(&mut |expr| {
             let ast = self.engine.compile_expression(expr.clone())?;
             self.asts.insert(expr.clone(), ast);
@@ -442,6 +444,7 @@ impl Scope {
             Ok(x) => x,
         };
         let val: Value = toml.try_into()?;
+        let val: Dynamic = val.into();
         self.state.set_or_push(&name, val);
         return Ok(());
     }
@@ -487,12 +490,14 @@ impl Scope {
 
 #[wasm_bindgen]
 impl Command {
-    #[wasm_bindgen(getter)]
+    pub(crate) fn toml_args(&self, scope: &mut Scope) -> ResultVec<toml::Value> {
+        let flat_args = scope.expand(&self.args)?;
+        return Ok(toml::Value::from(flat_args));
+    }
+
     pub fn args(&self, scope: &mut Scope) -> ResultVec<JsValue> {
         let to_json = serde_wasm_bindgen::Serializer::json_compatible();
-        let flat_args = scope.expand(&self.args)?;
-
-        return match toml::Value::from(flat_args).serialize(&to_json) {
+        return match self.toml_args(scope)?.serialize(&to_json) {
             Err(e) => Err(Error::JsSerialization(format!("{}", e)))?,
             Ok(x) => Ok(x),
         };
@@ -1191,8 +1196,6 @@ mod tests {
         }
     }
 
-    // TODO: implement functions that don't require WASM runtime
-    // to test here, and then test JS wrapped functions in integration tests
     #[test]
     fn expand_args() {
         let data = r#"
@@ -1203,24 +1206,21 @@ mod tests {
             args.number = '{{2+1}}'
         "#;
 
-        let result = Binding::new(toml::from_str::<BindingInput>(data).unwrap()).unwrap();
+        let input = toml::from_str::<BindingInput>(data).unwrap();
         let mut scope = Scope::new();
-        scope.set("joe".to_string(), JsValue::from_str("fiz"));
-        let flat_args = result.commands[0].args(&mut scope).unwrap();
+        scope.parse_asts(&input);
+        let result = Binding::new(input).unwrap();
+        scope.state.set_or_push("joe", Dynamic::from("fiz"));
+        let flat_args = result.commands[0].toml_args(&mut scope).unwrap();
 
-        let to_json = serde_wasm_bindgen::Serializer::json_compatible();
-        let mut args_table = toml::map::Map::new();
-        args_table.insert(
+        let mut args_expected = toml::map::Map::new();
+        args_expected.insert(
             "value".to_string(),
             toml::Value::String("fiz_biz".to_string()),
         );
-        args_table.insert("number".to_string(), toml::Value::Integer(3));
-        let expected = toml::Value::Table(args_table).serialize(&to_json).unwrap();
-
-        assert_eq!(flat_args, expected)
+        args_expected.insert("number".to_string(), toml::Value::Integer(3));
+        assert_eq!(flat_args, toml::Value::Table(args_expected));
     }
-
-    // TODO: test out command queue evaluation in expressions
 
     // TODO: are there any edge cases / failure modes I want to look at in the tests
     // (most of the things seem likely to be covered by serde / toml parsing, and the
