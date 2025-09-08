@@ -656,28 +656,33 @@ async function validateKeybindings(file: vscode.Uri, fileString?: string) {
             const diagnosticItems: vscode.Diagnostic[] = [];
             for (const error of parsed.errors) {
                 let message = '';
+                let firstMessage = true;
                 for (const item of error.items) {
                     if (item.message) {
                         message += item.message + '\n';
                     }
                     if (item.range) {
-                        diagnosticItems.push(
-                            new vscode.Diagnostic(
-                                new vscode.Range(
-                                    new vscode.Position(
-                                        item.range.start.line,
-                                        item.range.start.col,
+                        if (message.length > 0) {
+                            diagnosticItems.push(
+                                new vscode.Diagnostic(
+                                    new vscode.Range(
+                                        new vscode.Position(
+                                            item.range.start.line,
+                                            item.range.start.col,
+                                        ),
+                                        new vscode.Position(
+                                            item.range.end.line,
+                                            item.range.end.col,
+                                        ),
                                     ),
-                                    new vscode.Position(
-                                        item.range.end.line,
-                                        item.range.end.col,
-                                    ),
+                                    message,
+                                    firstMessage ? vscode.DiagnosticSeverity.Error :
+                                        vscode.DiagnosticSeverity.Hint,
                                 ),
-                                message,
-                                vscode.DiagnosticSeverity.Error,
-                            ),
-                        );
-                        message = '';
+                            );
+                            firstMessage = false;
+                            message = '';
+                        }
                     }
                 }
                 if (message) {

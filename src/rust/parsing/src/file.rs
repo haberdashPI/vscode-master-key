@@ -4,6 +4,7 @@ use crate::define::{Define, DefineInput};
 use crate::error::{ErrorContext, ErrorReport, ResultVec, flatten_errors};
 use crate::value::Value;
 
+use js_sys::Math::exp;
 use log::info;
 use serde::{Deserialize, Serialize};
 use toml::Spanned;
@@ -36,13 +37,13 @@ impl KeyFile {
             Ok(x) => x,
         };
 
-        let bind_input = match flatten_errors(
-            input
-                .bind
-                .into_iter()
-                .flatten()
-                .map(|x| define.expand(x.into_inner())),
-        ) {
+        let input_iter = input
+            .bind
+            .into_iter()
+            .flatten()
+            .map(|x| Ok(Spanned::new(x.span(), define.expand(x.into_inner())?)));
+
+        let bind_input = match flatten_errors(input_iter) {
             Err(mut es) => {
                 errors.append(&mut es.errors);
                 Vec::new()
@@ -50,13 +51,38 @@ impl KeyFile {
             Ok(x) => x,
         };
 
-        let bind = match flatten_errors(bind_input.into_iter().map(|x| Binding::new(x))) {
-            Err(mut es) => {
-                errors.append(&mut es.errors);
-                Vec::new()
-            }
-            Ok(x) => x,
-        };
+        let bind: Vec<_> = bind_input
+            .into_iter()
+            .flat_map(|x| {
+                let span = x.span().clone();
+                match x.into_inner().expand_foreach() {
+                    Ok(replicates) => {
+                        // we resolve the foreach elements originating from a single item here,
+                        // rather than expanding and flattening all errors. That's because we
+                        // only want the first instance of an error at a given text span to show
+                        // up in the final error output (e.g. if we have foreach.key = [1,2,3]
+                        // we don't want an error about a missing required key to show up three
+                        // times
+                        let items = replicates
+                            .into_iter()
+                            .map(Binding::new)
+                            .collect::<ResultVec<Vec<_>>>()
+                            .context_range(&span);
+                        match items {
+                            Ok(x) => x,
+                            Err(mut e) => {
+                                errors.append(&mut e.errors);
+                                Vec::new()
+                            }
+                        }
+                    }
+                    Err(mut e) => {
+                        errors.append(&mut e.errors);
+                        Vec::new()
+                    }
+                }
+            })
+            .collect();
 
         if errors.len() == 0 {
             return Ok(KeyFile { define, bind });
@@ -202,4 +228,62 @@ mod tests {
         );
         assert_eq!(result.bind[0].commands[1].command, "bar");
     }
+
+    #[test]
+    fn expand_foreach() {
+        let data = r#"
+        [[bind]]
+        foreach.key = ["{{keys(`[0-9]`)}}"]
+        key = "c {{key}}"
+        name = "update {{key}}"
+        command = "foo"
+        args.value = "{{key}}"
+        "#;
+
+        let result = KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap()).unwrap();
+
+        let expected_name: Vec<String> =
+            (0..9).into_iter().map(|n| format!("update {n}")).collect();
+        let expected_value: Vec<String> = (0..9).into_iter().map(|n| format!("{}", n)).collect();
+
+        assert_eq!(result.bind.len(), 10);
+        for i in 0..9 {
+            assert_eq!(
+                result.bind[i].name.as_ref().unwrap().clone(),
+                expected_name[i]
+            );
+            assert_eq!(
+                result.bind[i].commands[0].args,
+                Value::Table(IndexMap::from([(
+                    "value".to_string(),
+                    Value::String(expected_value[i].clone())
+                ),]))
+            );
+        }
+    }
+
+    #[test]
+    fn foreach_error() {
+        let data = r#"
+        [[bind]]
+        foreach.key = ["{{keys(`[0-9]`)}}"]
+        name = "update {{key}}"
+        command = "foo"
+        args.value = "{{key}}"
+        "#;
+
+        // TODO: ensure that a proper span is shown here
+        let result = KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap());
+        let report = result.unwrap_err().report(data);
+        assert_eq!(
+            report[0].items[0].message,
+            Some("requires `key` field".to_string())
+        );
+        assert_eq!(report[0].items[1].range.as_ref().unwrap().start.line, 1);
+        assert_eq!(report[0].items[1].range.as_ref().unwrap().end.line, 1);
+    }
+
+    // TODO: write a test for required field `key` and ensure the span
+    // is narrowed to the appropriate `[[bind]]` element; also should only error once
+    // (right now we're erroring on the expanded value)
 }

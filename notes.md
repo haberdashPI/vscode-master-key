@@ -104,18 +104,20 @@ Integration test debugging:
             - [X] setup state object definitions
             - [X] preparse all `{{}}` into AST
             - [X] evaluate expressions in command etc...
-        - [ ] foreach expansion within a KeyFile context
+        - [X] foreach expansion within a KeyFile context
         - [ ] get `KeyFile` working with `bind`, `define` and runtime `command` calls
-            - [ ] implementation
-            - [ ] unit tests
+            - [X] implementation
+            - [X] unit tests
                 - [X] basic parsing
                 - [X] define expansion for `bind.` and `command.`
-                - [ ] command expansion from program state
             - [ ] try it out from extension debugging
             - [ ] write some integration tests
         - [ ] cleanup, document and refactor code
             - NOTE: we're waiting until we test out spans and the other stuff above because that could require more refactoring
-            - [ ] fix and test command queues implementation
+            - [ ] re-organize the code into smaller units
+            - [ ] update documentation of `bind`, `define` and expressions
+            - [ ] update documentation rendering pipeline
+            - [ ] fix and test command queues implementation (avoid so much copying)
             - [ ] replace IndexMap with BTreeMap
         - [ ] implement support for tags on `bind` (for filter them)
         - [ ] implement support for `skipWhen` in `command`
@@ -123,20 +125,31 @@ Integration test debugging:
         - [~] command normalization
             - [X] always `runCommand` with an array of objects with `command` field
             - [ ] flatten all nested `runCommands` calls
+                - [ ] `skipWhen` will have to be propagated/merged to children
         - [ ] check constraints
             - [ ] validation that `master-key.prefix` uses `finalKey: false`
             - [ ] validation that keybindings with non modifier keybindings
               have a condition requiring textEditorFocus
             - [ ] modes are all positive or negative
             - [ ] required keys are present
-        - [ ] mode expansion
-        - [ ] key-sequence expansion and duplicate resolution
+        - [ ] mode expansion: define a key binding per mode
+        - [ ] key-sequence expansion and duplicate resolution:
+              - [ ] create a binding per key in a sequence that requires a given prefix
+              (depending on the prefix code of its prefix)
+              - [ ] add any missing prefixes
         - [ ] documentation expandsion/validation across all `[[bind]]` values
               with the same key and mode
+              e.g. merge all shared documentation across the shared names
     - [ ] proper conversion to keybindings.json command
         - [ ] expand prefixes to prefixCode and move to when clause
         - [ ] move mode to when clause
-    - [ ] implement `replay`
+        - [ ] re-implement master-key.do
+            - [ ] transfer scope state from TS to rust Scope object
+            - [ ] properly handle command queues (no controlled by rust)
+        - [ ] unit tests
+        - [ ] integration tests
+    - [ ] implement `replay`: use the new rust command queues instead of the old
+          state management
     - [ ] extraction of visual docs
     - [ ] extraction of markdown docs
         - [ ] extract all comment regions (exclude `#-`)
