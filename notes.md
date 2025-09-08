@@ -121,7 +121,10 @@ Integration test debugging:
             - [ ] replace IndexMap with BTreeMap
         - [ ] implement support for tags on `bind` (for filter them)
         - [ ] implement support for `skipWhen` in `command`
-        - [ ] implement support for `{{all_prefixes()}}` and `{{all_modes()}}`
+        - [ ] implement support for `all` functions:
+            - [ ] `{{all_prefixes()}}`
+            - [ ] `{{all_modes()}}`
+            - [ ] `{{all_modes_but(["not_me", "or_me"])}}`
         - [~] command normalization
             - [X] always `runCommand` with an array of objects with `command` field
             - [ ] flatten all nested `runCommands` calls
