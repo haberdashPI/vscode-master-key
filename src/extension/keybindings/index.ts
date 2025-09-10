@@ -542,10 +542,8 @@ async function handleRequireExtensions(bindings_?: Bindings) {
                     'workbench.extensions.installExtension',
                     item.label,
                 );
-            } catch (e) {
+            } catch (_) {
                 vscode.window.showErrorMessage('Error installing extension: ' + item.label);
-                console.log('Error installing extension: ' + item.label);
-                console.dir(e);
             }
         }
     }
@@ -704,7 +702,8 @@ export async function activate(context: vscode.ExtensionContext) {
     const encoder = new TextEncoder();
     vscode.workspace.onDidChangeTextDocument(async (e) => {
         debounce(() => {
-            const bytes = encoder.encode(e.document.getText());
+            const text = e.document.getText();
+            const bytes = encoder.encode(text);
             validateKeybindings(e.document.uri, bytes);
         }, 1000)();
     });

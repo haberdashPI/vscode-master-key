@@ -2,7 +2,6 @@
 [[define.bind]]
 id = "my_defaults"
 command = "bar"
-key = "c"
 
 [[bind]]
 default = "{{bind.my_defaults}}"
@@ -23,7 +22,7 @@ combinedDescription = "bla bla bla"
 kind = "biz"
 
 [[bind]]
-foreach.key = ["{{0..9}}"]
+foreach.key = ["{{keys(`[0-9]`)}}"]
 key = "c {{key}}"
 command = "foobar"
 args.value = "{{key}}"

@@ -123,13 +123,13 @@ Integration test debugging:
                      but it is also large and ambitious and not intended for
                      small embedded-language applications
             - conclusion: we stick with Rhai
-        - [ ] get `KeyFile` working with `bind`, `define` and runtime `command` calls
+        - [X] get `KeyFile` working with `bind`, `define` and runtime `command` calls
             - [X] implementation
             - [X] unit tests
                 - [X] basic parsing
                 - [X] define expansion for `bind.` and `command.`
             - [X] try it out from extension debugging
-            - [ ] write some type-script unit tests
+            - [X] write some type-script unit tests
         - [ ] cleanup, document and refactor code
             - NOTE: we're waiting until we test out spans and the other stuff above because that could require more refactoring
             - [ ] re-organize the code into smaller units
