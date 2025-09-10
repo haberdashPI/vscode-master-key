@@ -1,11 +1,8 @@
 // top-level parsing of an entire file
-use crate::bind::{Binding, BindingInput};
+use crate::bind::{Binding, BindingInput, Scope};
 use crate::define::{Define, DefineInput};
-use crate::error::{ErrorContext, ErrorReport, ResultVec, flatten_errors};
-use crate::value::Value;
+use crate::error::{self, ErrorContext, ErrorReport, ResultVec, flatten_errors};
 
-use js_sys::Math::exp;
-use log::info;
 use serde::{Deserialize, Serialize};
 use toml::Spanned;
 use wasm_bindgen::prelude::*;
@@ -51,18 +48,24 @@ impl KeyFile {
             Ok(x) => x,
         };
 
+        let mut scope = Scope::new();
+        let _ = scope
+            .parse_asts(&bind_input)
+            .map_err(|mut es| errors.append(&mut es.errors));
+
         let bind: Vec<_> = bind_input
             .into_iter()
             .flat_map(|x| {
                 let span = x.span().clone();
                 match x.into_inner().expand_foreach() {
                     Ok(replicates) => {
-                        // we resolve the foreach elements originating from a single item here,
-                        // rather than expanding and flattening all errors. That's because we
-                        // only want the first instance of an error at a given text span to show
-                        // up in the final error output (e.g. if we have foreach.key = [1,2,3]
-                        // we don't want an error about a missing required key to show up three
-                        // times
+                        // we resolve the foreach elements originating from a single item
+                        // here, rather than expanding and flattening all errors across
+                        // every iteration of the `foreach`. That's because we only want the
+                        // first instance of an error at a given text span to show up in the
+                        // final error output (e.g. if we have [[bind]] item with
+                        // foreach.key = [1,2,3] we don't want an error about a missing
+                        // required `key` field` to show up three times
                         let items = replicates
                             .into_iter()
                             .map(Binding::new)
@@ -99,21 +102,21 @@ pub struct KeyFileResult {
 }
 
 #[wasm_bindgen]
-pub fn parse_string(file_content: &str) -> KeyFileResult {
-    return match parse_string_helper(file_content) {
+pub fn parse_keybinding_bytes(file_content: Box<[u8]>) -> KeyFileResult {
+    return match parse_bytes_helper(&file_content) {
         Ok(result) => KeyFileResult {
             file: Some(result),
             errors: None,
         },
         Err(err) => KeyFileResult {
             file: None,
-            errors: Some(err.errors.iter().map(|e| e.report(file_content)).collect()),
+            errors: Some(err.errors.iter().map(|e| e.report(&file_content)).collect()),
         },
     };
 }
 
-fn parse_string_helper(file_content: &str) -> ResultVec<KeyFile> {
-    let parsed = toml::from_str::<KeyFileInput>(file_content)?;
+fn parse_bytes_helper(file_content: &[u8]) -> ResultVec<KeyFile> {
+    let parsed = toml::from_slice::<KeyFileInput>(file_content)?;
     return KeyFile::new(parsed);
 }
 

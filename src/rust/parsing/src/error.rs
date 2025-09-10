@@ -77,9 +77,9 @@ impl From<ErrorWithContext> for ErrorsWithContext {
 
 #[wasm_bindgen]
 impl ErrorWithContext {
-    pub fn report(&self, content: &str) -> ErrorReport {
+    pub fn report(&self, content: &[u8]) -> ErrorReport {
         let mut items = Vec::with_capacity(self.contexts.len() + 1);
-        let offsets: StringOffsets = StringOffsets::new(content);
+        let offsets: StringOffsets = StringOffsets::from_bytes(content);
         items.push(match &self.error {
             Error::TomlParsing(toml) => ErrorReportItem {
                 message: Some(toml.message().into()),
@@ -114,7 +114,7 @@ impl ErrorWithContext {
 
 #[wasm_bindgen]
 impl ErrorsWithContext {
-    pub fn report(&self, content: &str) -> Vec<ErrorReport> {
+    pub fn report(&self, content: &[u8]) -> Vec<ErrorReport> {
         return self.errors.iter().map(|e| e.report(content)).collect();
     }
 }

@@ -1,35 +1,18 @@
-[[bind]]
-key = "a"
-command = "foo"
-args = { a = "2", b = 3 }
-when = "joe > 1"
-mode = "normal"
-priority = 1
-defaults = "foo.bar"
-prefixes = "c"
-finalKey = true
-repeat = "2+c"
-name = "foo"
-description = "foo bar bin"
-hideInPalette = false
-hideInDocs = false
-combinedName = "foo/bar"
-combinedKey = "A/B"
-combinedDescription = "bla bla bla"
-kind = "biz"
-whenComputed = "f > 2"
+
+[[define.bind]]
+id = "my_defaults"
+command = "bar"
+key = "c"
 
 [[bind]]
-key = "b"
-command = "bar"
-args = { a = "2", b = 3 }
+default = "{{bind.my_defaults}}"
+args = { a = "2", b = 3, c = "{{x + 1}}" }
 when = "joe > 1"
 mode = "normal"
 priority = 1
-defaults = "foo.bar"
 prefixes = "c"
 finalKey = true
-repeat = "2+c"
+repeat = "{{2+c}}"
 name = "foo"
 description = "foo bar bin"
 hideInPalette = false
@@ -38,4 +21,9 @@ combinedName = "foo/bar"
 combinedKey = "A/B"
 combinedDescription = "bla bla bla"
 kind = "biz"
-whenComputed = "f > 2"
+
+[[bind]]
+foreach.key = ["{{0..9}}"]
+key = "c {{key}}"
+command = "foobar"
+args.value = "{{key}}"

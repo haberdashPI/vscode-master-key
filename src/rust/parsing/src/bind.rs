@@ -417,7 +417,7 @@ impl Scope {
         })?);
     }
 
-    fn parse_asts(&mut self, x: &(impl Expanding + Clone)) -> ResultVec<()> {
+    pub(crate) fn parse_asts(&mut self, x: &(impl Expanding + Clone)) -> ResultVec<()> {
         x.clone().map_expressions(&mut |expr| {
             let ast = self.engine.compile_expression(expr.clone())?;
             self.asts.insert(expr.clone(), ast);

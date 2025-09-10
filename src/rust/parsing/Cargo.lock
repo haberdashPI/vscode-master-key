@@ -352,6 +352,7 @@ version = "0.1.0"
 dependencies = [
  "env_logger",
  "indexmap",
+ "instant",
  "js-sys",
  "lazy_static",
  "log",

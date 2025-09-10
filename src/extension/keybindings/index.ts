@@ -26,7 +26,7 @@ import JSONC from 'jsonc-simple-parser';
 import TOML from 'smol-toml';
 
 // run `mise build-rust` to create this auto generated source fileu
-import initParsing, { parse_string } from '../../rust/parsing/lib';
+import initParsing, { parse_keybinding_bytes } from '../../rust/parsing/lib';
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 // Keybinding Generation
@@ -642,16 +642,12 @@ async function loadPresets(allDirs: vscode.Uri[]) {
 
 let extensionPresetsDir: vscode.Uri;
 
-async function validateKeybindings(file: vscode.Uri, fileString?: string) {
+async function validateKeybindings(file: vscode.Uri, fileData?: Uint8Array) {
     if (file.toString().endsWith('.mk.toml')) {
-        if (fileString === undefined) {
-            const fileData = await vscode.workspace.fs.readFile(file);
-            // TODO: at some point we can probably circumvent the need to decode the file
-            // (since we can write the rust code to accept bytes instead of a string)
-            fileString = new TextDecoder('utf8').decode(fileData);
+        if (fileData === undefined) {
+            fileData = await vscode.workspace.fs.readFile(file);
         }
-        // TODO: read bytes directly in `parse_string` to avoid extra copies
-        const parsed = parse_string(fileString);
+        const parsed = parse_keybinding_bytes(fileData!);
         if (parsed.errors) {
             const diagnosticItems: vscode.Diagnostic[] = [];
             for (const error of parsed.errors) {
@@ -676,7 +672,8 @@ async function validateKeybindings(file: vscode.Uri, fileString?: string) {
                                         ),
                                     ),
                                     message,
-                                    firstMessage ? vscode.DiagnosticSeverity.Error :
+                                    firstMessage ?
+                                        vscode.DiagnosticSeverity.Error :
                                         vscode.DiagnosticSeverity.Hint,
                                 ),
                             );
@@ -704,8 +701,12 @@ export async function activate(context: vscode.ExtensionContext) {
 
     diagnostics = vscode.languages.createDiagnosticCollection('Master Key Bindings');
 
+    const encoder = new TextEncoder();
     vscode.workspace.onDidChangeTextDocument(async (e) => {
-        debounce(() => validateKeybindings(e.document.uri, e.document.getText()), 500)();
+        debounce(() => {
+            const bytes = encoder.encode(e.document.getText());
+            validateKeybindings(e.document.uri, bytes);
+        }, 1000)();
     });
 
     vscode.workspace.onDidSaveTextDocument(async (e) => {
@@ -720,68 +721,6 @@ export async function activate(context: vscode.ExtensionContext) {
     const bits = await vscode.workspace.fs.readFile(filename);
     await initParsing(bits);
 
-    context.subscriptions.push(
-        vscode.commands.registerCommand('master-key.test-rust', () => {
-            const parsed = parse_string(`
-                [[bind]]
-                command = "do"
-                args = { a = "2", b = 3 }
-                key = "a"
-                when = "joe > 1"
-                mode = "normal"
-                priority = 1
-                defaults = "foo.bar"
-                prefixes = "c"
-                finalKey = true
-                repeat = "2+c"
-                name = "foo"
-                description = "foo bar bin"
-                hideInPalette = false
-                hideInDocs = false
-                combinedName = "Up/down"
-                combinedKey = "A/B"
-                combinedDescription = "bla bla bla"
-                kind = "biz"
-                whenComputed = "f > 2"
-            `);
-
-            if (parsed.file) {
-                const binding = parsed.file.bind[0];
-                vscode.window.showInformationMessage(`Rust says:
-                    command: ${binding.commands[0].command},
-                    args: ${JSON.stringify(binding.commands[0].args, null, 2)}
-                    key: ${binding.key}
-                    when: ${binding.when}
-                    mode: ${binding.mode}
-                    priority: ${binding.priority}
-                    defaults: ${binding.defaults}
-                    prefixes: ${binding.prefixes}
-                    finalKey: ${binding.finalKey}
-                    computedRepeat: ${binding.repeat}
-                    name: ${binding.name}
-                    description: ${binding.description}
-                    hideInPalette: ${binding.hideInPalette}
-                    hideInDocs: ${binding.hideInDocs}
-                    combinedName: ${binding.combinedName}
-                    combinedKey: ${binding.combinedKey}
-                    combinedDescription: ${binding.combinedDescription}
-                    kind: ${binding.kind}
-                `);
-            } else if (parsed.errors) {
-                let message = '';
-                for (const item of parsed.errors[0].items) {
-                    message += (item.message || '') + ' at ' +
-                        (item.range ? `(${item.range.start}, ${item.range.end})` : '') +
-                        '\n';
-                }
-                vscode.window.showErrorMessage(
-                    'Parsing error: ' + message,
-                );
-            }
-        }),
-    );
-
-    // TODO: add all user bindings
     /**
      * @userCommand activateBindings
      * @name Activate Keybindings

@@ -105,13 +105,31 @@ Integration test debugging:
             - [X] preparse all `{{}}` into AST
             - [X] evaluate expressions in command etc...
         - [X] foreach expansion within a KeyFile context
+        - [X] I'm running into some issues with Rhai, consider switching:
+            - it's large
+            - it has a number of frail dependencies (e.g. no longer maintained)
+            - I'm a *little* bit concerned by the overall judgement/attitude of the maintainer (seems okay with a dependency that is no longer maintained
+            to avoid "breakage")
+            - alternatives:
+                - mlua: looks nice and stable but no WASM support
+                    - doesn't support WASM
+                - koto: a little less stable and with less backing
+                    but has many features I want
+                    - having slept on it, I don't think the tradeoffs for koto
+                      are much better than Rhai. Rhai has seen more use and is a similar
+                      scale of project (pet project of one person with some support
+                      from other developers), while being less battle tested.
+                - starlark: backed by big tech this is definitely more reliable
+                     but it is also large and ambitious and not intended for
+                     small embedded-language applications
+            - conclusion: we stick with Rhai
         - [ ] get `KeyFile` working with `bind`, `define` and runtime `command` calls
             - [X] implementation
             - [X] unit tests
                 - [X] basic parsing
                 - [X] define expansion for `bind.` and `command.`
-            - [ ] try it out from extension debugging
-            - [ ] write some integration tests
+            - [X] try it out from extension debugging
+            - [ ] write some type-script unit tests
         - [ ] cleanup, document and refactor code
             - NOTE: we're waiting until we test out spans and the other stuff above because that could require more refactoring
             - [ ] re-organize the code into smaller units
