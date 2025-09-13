@@ -1,8 +1,8 @@
 use crate::error::{Error, ErrorContext, ErrorWithContext, Result, ResultVec, flatten_errors};
 
-use indexmap::IndexMap;
 use log::info;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 use toml::{Spanned, Value};
 
 pub trait Merging {
@@ -27,7 +27,7 @@ impl Merging for toml::Table {
     }
 }
 
-impl<T: Merging + Clone> Merging for IndexMap<String, T> {
+impl<T: Merging + Clone> Merging for BTreeMap<String, T> {
     fn coalesce(self, new: Self) -> Self {
         return new;
     }

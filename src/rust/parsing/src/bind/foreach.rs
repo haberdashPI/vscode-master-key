@@ -1,14 +1,52 @@
-use std::collections::VecDeque;
+/// @forBindingField bind
+/// @order 20
+///
+/// ## `foreach` Clauses
+///
+/// The `bind.foreach` field of a keybinding can be used to generate many bindings from one
+/// entry. Each field under `foreach` is looped through exhaustively. On each iteration, any
+/// expressions with `foreach` defined variables are replaced with those variables' values
+/// for the given iteration. For example, the following defines 9 bindings:
+///
+/// ::: v-pre
+/// ```toml
+/// [[bind]]
+/// foreach.a = [1,2,3]
+/// foreach.b = [1,2,3]
+/// key = "ctrl+; {{a}} {{b}}"
+/// command = "type"
+/// args.text = "{{a-b}}"
+/// ```
+/// :::
+///
+/// Furthermore, if the expression <code v-pre>{{keys(`[regex]`)}}</code> is included in a
+/// `foreach` value, it is expanded to all keybindings that match the given regular
+/// expression and spliced into the array of values. For example, the following definition
+/// is used in `Larkin` to allow the numeric keys to be used as count prefix for motions.
+///
+/// ::: v-pre
+/// ```toml
+/// [[bind]]
+/// foreach.num = ['{{key(`[0-9]`)}}'] # matches all numeric keybindings
+/// name = "count {{num}}"
+/// key = "{{num}}"
+/// command = "master-key.updateCount"
+/// description = "Add digit {{num}} to the count argument of a command"
+/// args.value = "{{num}}"
+/// # etc...
+/// ```
+/// :::
+use crate::bind::BindingInput;
 
-use indexmap::IndexMap;
 use lazy_static::lazy_static;
 #[allow(unused_imports)]
 use log::info;
 use regex::Regex;
+use std::collections::BTreeMap;
 use toml::Spanned;
 
 use crate::error::{ErrorContext, Result, ResultVec};
-use crate::value::{Expanding, Value};
+use crate::expression::value::{Expanding, Value};
 
 const ALL_KEYS: [&'static str; 192] = [
     "f0",
@@ -227,8 +265,8 @@ fn expand_keys_str(val: String) -> Result<Value> {
 }
 
 pub fn expand_keys(
-    items: IndexMap<String, Vec<Spanned<Value>>>,
-) -> ResultVec<IndexMap<String, Vec<Value>>> {
+    items: BTreeMap<String, Vec<Spanned<Value>>>,
+) -> ResultVec<BTreeMap<String, Vec<Value>>> {
     // expand any `{{key(`regex`)}}` expressions (these are arrays of possible keys)
     let items = items.map_expressions(&mut expand_keys_str)?;
 
@@ -246,4 +284,55 @@ pub fn expand_keys(
             return (k.clone(), vals);
         })
         .collect());
+}
+
+impl BindingInput {
+    fn has_foreach(&self) -> bool {
+        if let Some(foreach) = &self.foreach {
+            return foreach.len() > 0;
+        }
+        return false;
+    }
+
+    pub fn expand_foreach(self) -> ResultVec<Vec<BindingInput>> {
+        if self.has_foreach() {
+            let foreach = expand_keys(self.foreach.clone().unwrap())?;
+            foreach.require_constant().context_str(
+                "`foreach` values can only include expressions of the form {{keys(`regex`)}}",
+            )?;
+
+            let values = expand_foreach_values(foreach).into_iter().map(|values| {
+                let mut result = self.clone();
+                result.foreach = None;
+                result
+                    .map_expressions(&mut |x| {
+                        Ok(values
+                            .get(&x)
+                            .map_or_else(|| Value::Expression(x), |ex| ex.clone()))
+                    })
+                    .expect("no errors") // since our mapping function has no errors
+            });
+            return Ok(values.collect());
+        }
+        return Ok(vec![self]);
+    }
+}
+
+fn expand_foreach_values(foreach: BTreeMap<String, Vec<Value>>) -> Vec<BTreeMap<String, Value>> {
+    let mut result = vec![BTreeMap::new()];
+
+    for (k, vals) in foreach {
+        result = result
+            .iter()
+            .flat_map(|seed| {
+                vals.iter().map(|v| {
+                    let mut with_k = seed.clone();
+                    with_k.insert(k.clone(), v.clone());
+                    return with_k;
+                })
+            })
+            .collect();
+    }
+
+    return result;
 }

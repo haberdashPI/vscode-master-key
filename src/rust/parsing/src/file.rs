@@ -1,7 +1,20 @@
+///
+/// @file bindings/index.md
+/// @order -10
+///
+/// # Master Keybindings
+///
+/// This defines version 2.0 of the master keybinding file format.
+///
+/// Master keybindings are [TOML](https://toml.io/en/) files composed of the following
+/// top-level fields:
+///
+///
 // top-level parsing of an entire file
-use crate::bind::{Binding, BindingInput, Scope};
+use crate::bind::{Binding, BindingInput};
 use crate::define::{Define, DefineInput};
-use crate::error::{self, ErrorContext, ErrorReport, ResultVec, flatten_errors};
+use crate::error::{ErrorContext, ErrorReport, ResultVec, flatten_errors};
+use crate::expression::Scope;
 
 use serde::{Deserialize, Serialize};
 use toml::Spanned;
@@ -14,11 +27,11 @@ struct KeyFileInput {
     bind: Option<Vec<Spanned<BindingInput>>>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 #[allow(non_snake_case)]
 #[wasm_bindgen(getter_with_clone)]
 pub struct KeyFile {
-    pub define: Define,
+    define: Define,
     pub bind: Vec<Binding>,
 }
 
@@ -49,6 +62,7 @@ impl KeyFile {
         };
 
         let mut scope = Scope::new();
+        define.add_to_scope(&mut scope);
         let _ = scope
             .parse_asts(&bind_input)
             .map_err(|mut es| errors.append(&mut es.errors));
@@ -123,7 +137,7 @@ fn parse_bytes_helper(file_content: &[u8]) -> ResultVec<KeyFile> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use indexmap::IndexMap;
+    use std::collections::BTreeMap;
     use test_log::test;
 
     #[test]
@@ -183,7 +197,7 @@ mod tests {
         assert_eq!(result.bind[0].commands[0].command, "shebang");
         assert_eq!(
             result.bind[0].commands[0].args,
-            Value::Table(IndexMap::from([
+            Value::Table(BTreeMap::from([
                 ("a".into(), Value::Integer(1)),
                 ("b".into(), Value::Expression("var.foo_string".into())),
             ]))
@@ -224,7 +238,7 @@ mod tests {
         assert_eq!(result.bind[0].commands[0].command, "shebang");
         assert_eq!(
             result.bind[0].commands[0].args,
-            Value::Table(IndexMap::from([
+            Value::Table(BTreeMap::from([
                 ("a".into(), Value::Integer(1)),
                 ("b".into(), Value::Expression("var.foo_string".into())),
             ]))
@@ -257,7 +271,7 @@ mod tests {
             );
             assert_eq!(
                 result.bind[i].commands[0].args,
-                Value::Table(IndexMap::from([(
+                Value::Table(BTreeMap::from([(
                     "value".to_string(),
                     Value::String(expected_value[i].clone())
                 ),]))

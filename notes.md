@@ -133,16 +133,37 @@ Integration test debugging:
         - [ ] cleanup, document and refactor code
             - NOTE: we're waiting until we test out spans and the other stuff above because that could require more refactoring
             - [ ] re-organize the code into smaller units
-            - [ ] update documentation of `bind`, `define` and expressions
+                - [X] bind is way to big start by breaking that up
+                - [ ] organize order of definitions in files (e.g. join separate `impl`
+                      segments)
+                      - [X] `bind`
+                      - [X] define
+                      - [X] value
+                      - [X] validation
+                      - [X] foreach
+                      - [ ] error
+                      - [X] expression
+                      - [ ] file
+                      - [ ] lib
+                      - [ ] util
+            - [X] replace IndexMap with BTreeMap
+            - [X] update documentation of `bind`, `define` and `expressions`
             - [ ] update documentation rendering pipeline
             - [ ] fix and test command queues implementation (avoid so much copying)
-            - [ ] replace IndexMap with BTreeMap
+            - [ ] error reporting is still a little finicky
+                - [ ] could probably make what is part of the same error more explicit
+                - [ ] reduce types of errors and tie error message string more explicitly
+                      to name of enum variant
         - [ ] implement support for tags on `bind` (for filter them)
         - [ ] implement support for `skipWhen` in `command`
-        - [ ] implement support for `all` functions:
-            - [ ] `{{all_prefixes()}}`
-            - [ ] `{{all_modes()}}`
-            - [ ] `{{all_modes_but(["not_me", "or_me"])}}`
+        - [ ] improve expression evaluation
+            - [ ] support expressions in `foreach` resolution
+            - [ ] allow for `var` evaluation in parse-time expressions
+            - [ ] move all bare variables in an expression to `code.` object
+            - [ ] implement support for `all` functions:
+                - [ ] `{{all_prefixes()}}`
+                - [ ] `{{all_modes()}}`
+                - [ ] `{{all_modes_but(["not_me", "or_me"])}}`
         - [~] command normalization
             - [X] always `runCommand` with an array of objects with `command` field
             - [ ] flatten all nested `runCommands` calls
@@ -179,6 +200,8 @@ Integration test debugging:
                   whose span overlaps
             - [ ] convert any bind elements in this overlap into markdown table
     - [ ] serialization of bindings to settings.json
+    - [ ] create data types to generate warnings/hints for old/unused fields
+        - [ ] test this on the old version of larkin.toml
     - [ ] actually replace javascript behavior with rust functions
     - [ ] CI
         - [x] setup CI unit tests for rust

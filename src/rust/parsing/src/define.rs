@@ -1,40 +1,182 @@
-// TODO: refactor this *AFTER* we've got `bind` working again
-
-use core::error;
-use std::collections::{HashMap, hash_map};
-
-use crate::bind::validation::BindingReference;
-use crate::bind::{Binding, BindingInput, Command, CommandInput};
-use crate::error::{Context, Error, ErrorContext, ErrorWithContext, Result, ResultVec, unexpected};
-use crate::util::{Merging, Resolving};
-use crate::value::{Expanding, Value};
-
-use indexmap::IndexMap;
-use lazy_static::lazy_static;
 #[allow(unused_imports)]
 use log::info;
-use regex::Regex;
-use serde::{Deserialize, Serialize};
-use serde_wasm_bindgen;
-use toml::Spanned;
-use wasm_bindgen::prelude::*;
 
+use lazy_static::lazy_static;
+use regex::Regex;
+use rhai::Dynamic;
+use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
+use std::collections::{HashMap, hash_map};
+use toml::Spanned;
+
+use crate::bind::BindingInput;
+use crate::bind::command::CommandInput;
+use crate::bind::validation::BindingReference;
+use crate::error::{Error, ErrorContext, ErrorWithContext, Result, ResultVec, unexpected};
+use crate::expression::Scope;
+use crate::expression::value::{Expanding, Value};
+use crate::util::{Merging, Resolving};
+
+/// @bindingField define
+/// @description object of arbitrary fields which can be used in
+/// computed arguments.
+///
+/// The `define` field can be used to define re-usable values. There are three types of
+/// values that be defined.
+///
+/// 1. `[[define.var]]:` variable definitions: defines any number of key-value pairs that can
+///    be referenced inside an [expression](/expressions/index)
+/// 2. `[[define.command]]`: command definitions: defines one or more commands that can be
+///    referenced when [running multiple commands](/bindings/bind#running-multiple-commands).
+/// 3. `[[define.bind]]`: bind definitions: defines a partial set of `command` fields that can
+///    be referenced using the `default` field of [bind](/bindings/bind).
+///
 #[derive(Deserialize, Clone, Debug, Default)]
 pub struct DefineInput {
-    pub var: Option<Vec<IndexMap<String, Spanned<Value>>>>,
+    /// @bindingField define
+    ///
+    /// ## Variable Definitions
+    ///
+    /// These can be any arbitrary TOML values. You can define multiple variables within
+    /// each `[[define.var]]` element this way. These are then available in any expressions
+    /// evaluated at runtime.
+    ///
+    /// ### Example
+    ///
+    /// A common command pattern in Larkin is to allow multiple lines to be selected using a
+    /// count followed by the operation to perform on those lines. The line selection is
+    /// defined as follows
+    ///
+    /// To handle symmetric insert of brackets, Larkin uses the following definition
+    ///
+    /// ```toml
+    /// [define.braces]
+    /// "{".before = "{"
+    /// "{".after = "}"
+    /// "}".before = "{"
+    /// "}".after = "}"
+    /// "[".before = "["
+    /// "[".after = "]"
+    /// "]".before = "["
+    /// "]".after = "]"
+    /// "(".before = "("
+    /// "(".after = ")"
+    /// ")".before = "("
+    /// ")".after = ")"
+    /// "<".before = "<"
+    /// "<".after = ">"
+    /// ">".before = "<"
+    /// ">".after = ">"
+    /// ```
+    ///
+    /// This is then applied when handling symmetric typing using the
+    /// [`onType`](/bindings/mode#ontype-field) field of `[[mode]]`.
+    ///
+    /// ```toml
+    /// [[mode]]
+    /// name = "syminsert"
+    /// highlight = "Highlight"
+    /// cursorShape = "BlockOutline"
+    ///
+    /// [[mode.onType]]
+    /// command = "selection-utilities.insertAround"
+    /// args.before = "{{braces[captured].?before ?? captured}}"
+    /// args.after = "{{braces[captured].?after ?? captured}}"
+    /// args.followCursor = true
+    /// ```
+    pub var: Option<Vec<BTreeMap<String, Spanned<Value>>>>,
+    /// @bindingField define
+    ///
+    /// ## Command Definitions
+    ///
+    /// You can define re-usable commands that can be run when running
+    /// [running multiple commands](/bindings/bind#running-multiple-commands).
+    ///
+    /// In addition the normal fields of a command, you must provide an `id` to refer to the
+    /// command as `{{command.[id]}}`.
+    ///
+    /// ### Example
+    ///
+    /// Larkin defines commands to select N lines downwards
+    ///
+    /// ```toml
+    /// [[define.command]]
+    /// id = "selectLinesDown"
+    /// command = "runCommands"
+    /// args.commands = [
+    ///     "selection-utilities.shrinkToActive",
+    ///     { skipWhen = "{{count <= 0}}", command = "cursorMove", args = { to = "down", by = "wrappedLine", select = true, value = "{{count}}" } },
+    ///     "expandLineSelection",
+    ///     "selection-utilities.exchangeAnchorActive",
+    /// ]
+    /// ```
+    /// And uses this definition is as follows
+    ///
+    /// ```toml
+    /// [[bind]]
+    /// default = "{{bind.edit_action}}"
+    /// key = "c"
+    /// when = "!editorHasSelection && master-key.count > 1"
+    /// command = "runCommands"
+    /// args.commands = [
+    ///     "{{command.selectLinesDown}}",
+    ///     "deleteRight",
+    ///     "editor.action.insertLineBefore",
+    ///     "master-key.enterInsert",
+    /// ]
+    /// ```
     pub command: Option<Vec<Spanned<CommandInput>>>,
+    /// @bindingField define
+    ///
+    /// ## Binding Definitions
+    ///
+    /// You can define partial [bind](/bindings/bind) definitions, e.g. for common default
+    /// values to use across many bindings.
+    ///
+    /// The `args` field is merged recursively, allowing you to specify some arguments in
+    /// the default `[[define.bind]]` and others in `[[bind]]` directly.
+    ///
+    /// ### Example
+    ///
+    /// Larkin makes extensive use of this for the simple cursor motions. The default
+    /// command is always `cursorMove` and each motion indications in what direction to move
+    /// using `args.value.`
+    ///
+    /// ```toml
+    /// [[define.bind]]
+    /// id = "edit_motion_prim"
+    /// default = "{{bind.edit_motion}}"
+    /// command = "cursorMove"
+    /// args.value = "{{count}}"
+    /// args.select = "{{editorHasSelection}}"
+    ///
+    /// [[bind]]
+    /// default = "{{bind.edit_motion_prim}}"
+    /// key = "h"
+    /// args.to = "left"
+    /// mode = "normal"
+    ///
+    /// [[bind]]
+    /// default = "{{bind.edit_motion_prim}}"
+    /// key = "l"
+    /// args.to = "right"
+    /// ```
+    ///
     pub bind: Option<Vec<Spanned<BindingInput>>>,
 }
 
-#[wasm_bindgen]
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize)]
 pub struct Define {
-    #[wasm_bindgen(skip)]
+    #[serde(skip)]
     pub bind: HashMap<String, BindingInput>,
-    #[wasm_bindgen(skip)]
+    #[serde(skip)]
     pub command: HashMap<String, CommandInput>,
-    #[wasm_bindgen(skip)]
     pub var: HashMap<String, Value>,
+}
+
+lazy_static! {
+    pub static ref BIND_REF: Regex = Regex::new(r"^bind\.([\w--\d]+\w*)$").unwrap();
+    pub static ref COMMAND_REF: Regex = Regex::new(r"^command\.([\w--\d]+\w*)$").unwrap();
 }
 
 impl Define {
@@ -107,34 +249,17 @@ impl Define {
             });
         }
     }
-}
 
-// NOTE: why don't we provide public access to `bind` and `command`: this avoids
-// extra implementation work, when the main use case for these two categories of
-// definitions is to make the binding file more concise; `var.` values on
-// the other hand are often used at runtime
-#[wasm_bindgen]
-impl Define {
-    // TODO: implement rhai evaluation
-    pub fn var(&self, key: &str) -> Result<JsValue> {
-        let to_json = serde_wasm_bindgen::Serializer::json_compatible();
-        let value = self
-            .var
-            .get(key)
-            .ok_or_else(|| Error::RequiredField(format!("`{key}` field")))?;
-        return match value.serialize(&to_json) {
-            Ok(result) => Ok(result),
-            Err(_) => unexpected("unexpected serialization error"),
-        };
+    pub fn add_to_scope(&self, scope: &mut Scope) -> ResultVec<()> {
+        for (k, v) in self.var.iter() {
+            v.require_constant()?;
+            let val: Dynamic = v.clone().into();
+            // TODO: add all of these to a `var.` value
+            scope.state.set_or_push(k, val);
+        }
+        return Ok(());
     }
-}
 
-lazy_static! {
-    pub static ref BIND_REF: Regex = Regex::new(r"^bind\.([\w--\d]+\w*)$").unwrap();
-    pub static ref COMMAND_REF: Regex = Regex::new(r"^command\.([\w--\d]+\w*)$").unwrap();
-}
-
-impl Define {
     pub fn expand(&mut self, binding: BindingInput) -> ResultVec<BindingInput> {
         // resolve default values
         let binding = if let Some(ref default) = binding.default {
@@ -152,7 +277,7 @@ impl Define {
             } else {
                 default_value = occupied_entry.get().clone()
             }
-            default_value.merge(binding)
+            default_value.without_id().merge(binding)
         } else {
             binding
         };
@@ -213,7 +338,7 @@ mod tests {
         let args = foo.args.as_ref().unwrap().clone().into_inner();
         assert_eq!(
             args,
-            Value::Table(IndexMap::from([
+            Value::Table(BTreeMap::from([
                 ("k".into(), Value::Integer(1)),
                 ("h".into(), Value::Integer(2))
             ]))
@@ -225,7 +350,7 @@ mod tests {
         let commands = foobar.args.as_ref().unwrap().clone().into_inner();
         assert_eq!(
             commands,
-            Value::Table(IndexMap::from([(
+            Value::Table(BTreeMap::from([(
                 "commands".into(),
                 Value::Array(vec![
                     Value::String("foo".into()),

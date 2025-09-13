@@ -2,27 +2,23 @@
 
 #[allow(unused_imports)]
 use log::info;
-use rhai::Dynamic;
 
-use std::collections::HashMap;
-use std::collections::VecDeque;
-use std::convert::identity;
-
-use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
-use serde_wasm_bindgen;
+use std::collections::BTreeMap;
+use std::convert::identity;
 use toml::Spanned;
-use wasm_bindgen::JsValue;
 use wasm_bindgen::prelude::*;
 
+pub mod command;
 mod foreach;
 pub mod validation;
 
-use crate::bind::foreach::expand_keys;
+use crate::bind::command::{Command, regularize_commands};
 use crate::bind::validation::{BindingReference, KeyBinding};
-use crate::error::{Error, ErrorContext, Result, ResultVec, constrain, reserved, unexpected};
+use crate::error::{Result, ResultVec, reserved, unexpected};
+use crate::expression::Scope;
+use crate::expression::value::{Expanding, TypedValue, Value};
 use crate::util::{Merging, Plural, Required, Resolving};
-use crate::value::{Expanding, TypedValue, Value};
 
 pub const UNKNOWN_RANGE: core::ops::Range<usize> = usize::MIN..usize::MAX;
 
@@ -41,213 +37,170 @@ fn span_plural_default<T>() -> Spanned<Plural<T>> {
     return Spanned::new(UNKNOWN_RANGE, Plural::Zero);
 }
 
-/**
- * @bindingField bind
- * @description an actual keybinding; extends the schema used by VSCode's `keybindings.json`
- *
- * **Example**
- *
- * ```toml
- * [[bind]]
- * name = "left"
- * key = "h"
- * mode = "normal"
- * command = "cursorLeft"
- * ```
- * The `bind` element has two categories of fields: functional and documenting.
- *
- * ## Functional Fields
- *
- * The functional fields determine what the keybinding does. Required fields are marked with
- * a `*`.
- *
- */
+//
+// ================ `[[bind]]` parsing ================
+//
+
+/// @bindingField bind
+/// @description an actual keybinding; extends the schema used by VSCode's `keybindings.json`
+///
+/// **Example**
+///
+/// ```toml
+/// [[bind]]
+/// doc.name = "←"
+/// key = "h"
+/// mode = "normal"
+/// command = "cursorLeft"
+/// ```
+/// In the below field descriptions note that:
+///
+/// - ❗ denotes a required field.
+/// - ⚡ denotes that a field can include runtime [expressions](/expressions/index)
+///
 #[derive(Deserialize, Clone, Debug)]
 pub struct BindingInput {
-    // should only be `Some` in context of `Define(Input)`
+    // implementation detail of `BindingInput`: this field should only be `Some` when used
+    // as a part of an entry to `Define`. It is removed downstream using `without_id`.
     pub(crate) id: Option<Spanned<String>>,
-    /**
-     * @forBindingField bind
-     *
-     * - `command`*: A string denoting the command to execute. This is a command
-     *   defined by VSCode or an extension thereof.
-     *   See [finding commands](#finding-commands). This field has special
-     *   behavior when set to`runCommands`
-     *   (see [running multiple commands](#running-multiple-commands)).
-     */
+
+    /// @forBindingField bind
+    ///
+    /// - ❗`command`: A string denoting the command to execute. This is a command defined by
+    ///   VSCode or an extension thereof. See [finding commands](#finding-commands). This
+    ///   field has special behavior when set to`runCommands` (see
+    ///   [running multiple commands](#running-multiple-commands)).
     #[serde(default = "span_required_default")]
     pub command: Spanned<Required<TypedValue<String>>>,
 
-    /**
-     * @forBindingField bind
-     *
-     * - `args`: The arguments to directly pass to the `command`, these are static
-     *   values.
-     */
+    /// @forBindingField bind
+    ///
+    /// - ⚡ `args`: The arguments to directly pass to `command`. Args may include
+    ///    runtime evaluated [expressions](/expressions/index).
     #[serde(default)]
     pub args: Option<Spanned<Value>>,
 
-    /**
-     * @forBindingField bind
-     *
-     * - `key`*: the
-     *   [keybinding](https://code.visualstudio.com/docs/getstarted/keybindings) that
-     *   triggers `command`.
-     */
+    /// @forBindingField bind
+    ///
+    /// - ❗`key`: the
+    ///   [keybinding](https://code.visualstudio.com/docs/getstarted/keybindings) that
+    ///   triggers `command`.
     #[serde(default = "span_required_default")]
     pub key: Spanned<Required<KeyBinding>>,
-    /**
-     * @forBindingField bind
-     *
-     * - `when`: A [when
-     *   clause](https://code.visualstudio.com/api/references/when-clause-contexts)
-     *   context under which the binding will be active. Also see Master Key's
-     *   [available contexts](#available-contexts)
-     */
+
+    /// @forBindingField bind
+    ///
+    /// - `when`: A [when clause](https://code.visualstudio.com/api/references/when-clause-contexts)
+    ///   context under which the binding will be active. Also see Master Key's
+    ///   [available contexts](#available-when-contexts)
     pub when: Option<Spanned<TypedValue<String>>>,
-    /**
-     * @forBindingField bind
-     *
-     * - `mode`: The mode during which the binding will be active. The default mode is
-     *   used when this field is not specified (either directly or via the `defaults`
-     *   field). You can also specify multiple modes as an array of strings. To specify
-     *   a binding that is applied in all modes use "{{all_modes()}}".
-     */
+    /// @forBindingField bind
+    ///
+    /// - `mode`: The mode during which the binding will be active. The default mode is
+    ///   used when this field is not specified (either directly or via the `defaults`
+    ///   field). You can also make use of an [expression](/expressions/index)
+    ///   that will be evaluated while the bindings are being parsed. There are two
+    ///   available functions of use here:
+    ///   [`all_modes`](/expressions/functions#all_modes) and
+    ///   [`all_modes_but`](/expressions/functions#all_modes_but)
     #[serde(default = "default_mode")]
     pub mode: Spanned<Plural<TypedValue<String>>>,
-    /**
-     * @forBindingField bind
-     *
-     * - `priority`: The ordering of the keybinding relative to others; determines which
-     *   bindings take precedence. Defaults to 0.
-     */
+    /// @forBindingField bind
+    ///
+    /// - `priority`: The ordering of the keybinding relative to others; determines which
+    ///   bindings take precedence. Defaults to 0.
     #[serde(default)]
     pub priority: Option<Spanned<TypedValue<f64>>>,
-    /**
-     * @forBindingField bind
-     *
-     * - `default`: the default values to use for fields, specified as
-     *    string of the form `{{bind.[name]}}`.
-     *    See [`define`](/bindings/define) for more details.
-     */
+    /// @forBindingField bind
+    ///
+    /// - `default`: the default values to use for fields, specified as
+    ///    string of the form `{{bind.[name]}}`.
+    ///    See [`define`](/bindings/define) for more details.
     #[serde(default)]
     pub default: Option<Spanned<BindingReference>>,
-    /**
-     * @forBindingField bind
-     *
-     * - `foreach`: Allows parametric definition of multiple keybindings, see
-     *   [`foreach` clauses](#foreach-clauses).
-     */
+    /// @forBindingField bind
+    ///
+    /// - `foreach`: Allows parametric definition of multiple keybindings, see
+    ///   [`foreach` clauses](#foreach-clauses).
     #[serde(default)]
-    pub foreach: Option<IndexMap<String, Vec<Spanned<Value>>>>,
+    pub foreach: Option<BTreeMap<String, Vec<Spanned<Value>>>>,
 
-    /**
-     * @forBindingField bind
-     *
-     * - `prefixes`: (array of strings or the string
-     *   <code v-pre>{{all_prefixes}}</code>). Determines one or more *unresolved* key
-     *   sequences that can have occurred before typing this key. See
-     *   [`master-key.prefix`](/commands/prefix) for details. Defaults to `""` (a.k.a.
-     *   no prefix is allowed). This can be set to <code v-pre>{{all_prefixes}}</code>,
-     *   if you wish to allow the key binding to work regardless of any unresolved key
-     *   sequence that has been pressed (e.g. this is used for the "escape" key binding
-     *   in Larkin).
-     */
+    /// @forBindingField bind
+    ///
+    /// - `prefixes`: array of strings or an expression of producing such an array.
+    ///   (see also [`all_prefixes`](expressions/functions#all_prefixes).
+    ///   The prefixes determine one or more *unresolved* key
+    ///   sequences that can have occurred before typing this key. See
+    ///   [`master-key.prefix`](/commands/prefix) for details. Defaults to `""` (a.k.a.
+    ///   no prefix is allowed). Setting this to <code v-pre>{{all_prefixes}}</code>,
+    ///   will allow a key binding to work regardless of any unresolved key
+    ///   sequence that has been pressed: this is how `esc` is defined to work
+    ///   in Larkin.
     #[serde(default = "span_plural_default")]
     pub prefixes: Spanned<Plural<TypedValue<String>>>,
 
-    /**
-     * @forBindingField bind
-     *
-     * - `finalKey`: (boolean, default=true) Whether this key should clear any transient
-     *   state associated with the pending keybinding prefix. See
-     *   [`master-key.prefix`](/commands/prefix) for details.
-     */
+    /// @forBindingField bind
+    ///
+    /// - `finalKey`: (boolean, default=true) Whether this key should clear any transient
+    ///   state associated with the pending keybinding prefix. See
+    ///   [`master-key.prefix`](/commands/prefix) for details.
     #[serde(default)]
     pub finalKey: Option<Spanned<TypedValue<bool>>>,
 
-    /**
-     * @forBindingField bind
-     *
-     *  **TODO**: update docs, and make it possible to be a number or a string
-     *
-     * - `repeat`: This is an [expression](/expressions/index). It is expected
-     *   to evaluate to the number of times to repeat the command. Defaults to zero: one
-     *   repeat means the command is run twice.
-     * - `command` will be repeated the given
-     *   number of times.
-     */
+    /// @forBindingField bind
+    ///
+    /// - ⚡ `repeat`: The number of times to repeat the command; this can be a runtime
+    ///   [expression](/expressions/index). This defaults to zero: one repeat means the
+    ///   command is run twice.
     repeat: Option<Spanned<TypedValue<i32>>>,
 
-    /**
-     * @forBindingField bind
-     * @order 10
-     *
-     * ## Documenting Fields
-     *
-     * The documenting fields determine how the keybinding is documented. They are all
-     * optional.
-     *
-     * - `name`: A very description for the command; this must fit in the visual
-     *   documentation so it shouldn't be much longer than five characters for most
-     *   keys. Favor unicode symbols such as → and ← over text.
-     */
-    #[serde(default)]
-    pub name: Option<Spanned<TypedValue<String>>>,
-
-    /**
-     * @forBindingField bind
-     * @order 10
-     *
-     * - `description`: A longer description of what the command does. Shouldn't be much
-     *   longer than a single sentence for most keys. Save more detailed descriptions
-     *   for the literate comments.
-     */
-    #[serde(default)]
-    pub description: Option<Spanned<TypedValue<String>>>,
-    /**
-     * @forBindingField bind
-     * @order 10
-     *
-     * - `hideInPalette/hideInDocs`: whether to show the keys in the popup suggestions
-     *   and the documentation. These both default to false.
-     */
-    #[serde(default)]
-    pub hideInPalette: Option<Spanned<TypedValue<bool>>>,
-    #[serde(default)]
-    pub hideInDocs: Option<Spanned<TypedValue<bool>>>,
-
-    /**
-     * @forBindingField bind
-     * @order 10
-     *
-     * - `combinedName/combinedKey/combinedDescription`: in the suggestion palette and
-     *   textual documentation, keys that have the same `combinedName` will be
-     *   represented as single entry, using the `combinedKey` and `combinedDescription`
-     *   instead of `key` and `description`. The `combinedKey` for a multi-key sequence
-     *   should only include the suffix key. All but the first key's `combinedKey` and
-     *   `combinedDescription` are ignored.
-     */
-    #[serde(default)]
-    pub combinedName: Option<Spanned<TypedValue<String>>>,
-    #[serde(default)]
-    pub combinedKey: Option<Spanned<TypedValue<String>>>,
-    #[serde(default)]
-    pub combinedDescription: Option<Spanned<TypedValue<String>>>,
-
-    /**
-     * @forBindingField bind
-     * @order 10
-     *
-     * - `kind`: The broad cagegory of commands this binding falls under. There should
-     *   be no more than 4-5 of these. Each `kind` here should have a corresponding
-     *   entry in the top-level `kind` array.
-     */
-    #[serde(default)]
-    pub kind: Option<Spanned<TypedValue<String>>>,
+    /// @forBindingField bind
+    ///
+    /// - `doc`: Documentation for this keybinding, none of the fields of this object
+    ///   impact the behavior of the keybinding, only the interactive documentation
+    ///   features describing keybindings.
+    doc: Option<BindingDocInput>,
 }
 
+/// @forBindingField bind
+/// @order 20
+///
+/// ## Finding Commands
+///
+/// You can find commands in a few ways:
+///
+/// - Find command you want to use from the command palette, and click on the gear (`⚙︎`)
+///   symbol to copy the command string to your clipboard
+/// - Review the [list of built-in
+///  commands](https://code.visualstudio.com/api/references/commands/index)
+/// - Run the command `Preferences: Open Default Keyboard Shortcuts (JSON)` to get a list of
+///   built-in commands and extension commands already associated with a keybinding
+///
+/// Furthermore, you can also use:
+///
+/// - [Master Key Commands](/commands/index)
+/// - [Selection Utility
+///   Commands](https://haberdashpi.github.io/vscode-selection-utilities/)
+///
+/// Selection Utilities is a complimentary extension used extensively by the `Larkin`
+/// preset.
+///
+/// ## Available `when` Contexts
+///
+/// Each keybinding can make use of any context defined in VSCode across any extension.
+/// Master Key adds the follow contexts:
+///
+/// - All variables available to an [expression](/expressions/index), prefixed with
+///   `master-key.`
+/// - `master-key.keybindingPaletteBindingMode`: true when the suggestion palette accepts
+///   keybinding key presses, false it accepts a string to search the descriptions of said
+///   keybindings
+/// - `master-key.keybindingPaletteOpen`: true when the suggestion palette is open
+///
+
 impl BindingInput {
+    // removes `id` field, this field is an implementation detail and should only be present
+    // as a part of a `Define` object.
     pub(crate) fn without_id(&self) -> Self {
         return BindingInput {
             id: None,
@@ -262,14 +215,7 @@ impl BindingInput {
             prefixes: self.prefixes.clone(),
             finalKey: self.finalKey.clone(),
             repeat: self.repeat.clone(),
-            name: self.name.clone(),
-            description: self.description.clone(),
-            hideInPalette: self.hideInPalette.clone(),
-            hideInDocs: self.hideInDocs.clone(),
-            combinedName: self.combinedName.clone(),
-            combinedKey: self.combinedKey.clone(),
-            combinedDescription: self.combinedDescription.clone(),
-            kind: self.kind.clone(),
+            doc: self.doc.clone(),
         };
     }
 }
@@ -284,7 +230,6 @@ impl Merging for BindingInput {
             command: self.command.coalesce(y.command),
             args: self.args.merge(y.args),
             key: self.key.coalesce(y.key),
-            kind: self.kind.coalesce(y.kind),
             when: self.when.coalesce(y.when),
             mode: self.mode.coalesce(y.mode),
             priority: self.priority.coalesce(y.priority),
@@ -293,314 +238,9 @@ impl Merging for BindingInput {
             prefixes: self.prefixes.coalesce(y.prefixes),
             finalKey: self.finalKey.coalesce(y.finalKey),
             repeat: self.repeat.coalesce(y.repeat),
-            name: self.name.coalesce(y.name),
-            description: self.description.coalesce(y.description),
-            hideInPalette: self.hideInPalette.coalesce(y.hideInPalette),
-            hideInDocs: self.hideInDocs.coalesce(y.hideInDocs),
-            combinedName: self.combinedName.coalesce(y.combinedName),
-            combinedKey: self.combinedKey.coalesce(y.combinedKey),
-            combinedDescription: self.combinedDescription.coalesce(y.combinedDescription),
+            doc: self.doc.merge(y.doc),
         }
     }
-}
-
-#[derive(Deserialize, Clone, Debug)]
-pub struct CommandInput {
-    // should only be `Some` in context of `Define(Input)`
-    pub(crate) id: Option<Spanned<TypedValue<String>>>,
-    pub command: Spanned<Required<TypedValue<String>>>,
-    pub args: Option<Spanned<Value>>,
-}
-
-impl Expanding for CommandInput {
-    fn is_constant(&self) -> bool {
-        if self.command.is_constant() {
-            return false;
-        }
-        if self.args.is_constant() {
-            return false;
-        }
-        return true;
-    }
-    fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
-    where
-        F: FnMut(String) -> Result<Value>,
-    {
-        let mut errors = Vec::new();
-        let result = CommandInput {
-            id: self.id,
-            command: self.command.map_expressions(f).unwrap_or_else(|mut e| {
-                errors.append(&mut e.errors);
-                Spanned::new(UNKNOWN_RANGE, Required::DefaultValue)
-            }),
-            args: self.args.map_expressions(f).unwrap_or_else(|mut e| {
-                errors.append(&mut e.errors);
-                None
-            }),
-        };
-        if errors.len() > 0 {
-            return Err(errors.into());
-        } else {
-            return Ok(result);
-        }
-    }
-}
-
-impl CommandInput {
-    pub(crate) fn without_id(&self) -> Self {
-        return CommandInput {
-            id: None,
-            command: self.command.clone(),
-            args: self.args.clone(),
-        };
-    }
-}
-
-impl From<CommandInput> for Value {
-    fn from(value: CommandInput) -> Self {
-        let mut entries = IndexMap::new();
-        let command = value.command.into_inner();
-        if let Required::Value(command_value) = command {
-            entries.insert("command".to_string(), command_value.into());
-        }
-        if let Some(arg_value) = value.args {
-            entries.insert("args".to_string(), arg_value.into_inner());
-        }
-        return Value::Table(entries);
-    }
-}
-
-#[wasm_bindgen(getter_with_clone)]
-#[derive(Clone, Debug, Serialize)]
-pub struct Command {
-    pub command: String,
-    pub(crate) args: Value,
-}
-
-// TODO: here is where we would want to invoke rhai to resolve any outstanding expressions
-
-#[wasm_bindgen]
-pub struct Scope {
-    asts: HashMap<String, rhai::AST>,
-    engine: rhai::Engine,
-    state: rhai::Scope<'static>,
-    queues: HashMap<String, VecDeque<Command>>,
-}
-
-// TODO: we'll need to define `CustomType` on `Value` and `Command`
-#[wasm_bindgen]
-impl Scope {
-    // TODO: incorporate command queues
-    fn expand<T>(&mut self, obj: &T) -> ResultVec<T>
-    where
-        T: Expanding + Clone,
-    {
-        for (k, v) in self.queues.iter() {
-            // TODO: tell engine how to handle dequeues
-            // TODO: I don't love that we have to copy the queue for every evaluation
-            // this will have to be fixed to avoid ridiculous amounts of copying
-            // per command run
-
-            // PLAN: make queue type a CustomType and track it in `state` instead of
-            // in `queues`.
-            self.state.set_or_push(k, v.clone());
-        }
-        return Ok(obj.clone().map_expressions(&mut |expr| {
-            let ast = &self.asts[&expr];
-            let result = self.engine.eval_ast_with_scope(&mut self.state, &ast);
-            let value: rhai::Dynamic = match result {
-                Err(x) => Err(Error::ExpressionEval(format!("{}", x)))?,
-                Ok(x) => x,
-            };
-            let result_value: Value = value.clone().try_into()?;
-            return Ok(result_value);
-        })?);
-    }
-
-    pub(crate) fn parse_asts(&mut self, x: &(impl Expanding + Clone)) -> ResultVec<()> {
-        x.clone().map_expressions(&mut |expr| {
-            let ast = self.engine.compile_expression(expr.clone())?;
-            self.asts.insert(expr.clone(), ast);
-            return Ok(Value::Expression(expr));
-        })?;
-        return Ok(());
-    }
-
-    #[wasm_bindgen(constructor)]
-    pub fn new() -> Scope {
-        let engine = rhai::Engine::new();
-
-        return Scope {
-            asts: HashMap::new(),
-            engine: engine,
-            state: rhai::Scope::new(),
-            queues: HashMap::new(),
-        };
-    }
-
-    pub fn set(&mut self, name: String, value: JsValue) -> Result<()> {
-        let toml: toml::Value = match serde_wasm_bindgen::from_value(value) {
-            Err(e) => Err(Error::JsSerialization(format!("{}", e)))?,
-            Ok(x) => x,
-        };
-        let val: Value = toml.try_into()?;
-        let val: Dynamic = val.into();
-        self.state.set_or_push(&name, val);
-        return Ok(());
-    }
-
-    pub fn unset(&mut self, name: String) -> Result<()> {
-        return Ok(self
-            .state
-            .remove(&name)
-            .ok_or_else(|| Error::UndefinedVariable(name))?);
-    }
-
-    pub fn get(&self, name: String) -> Result<JsValue> {
-        let x: &rhai::Dynamic = self
-            .state
-            .get(&name)
-            .ok_or_else(|| Error::UndefinedVariable(name))?;
-        let x: Value = match x.clone().try_cast_result() {
-            Err(e) => Err(Error::Rhai(format!("{}", e)))?,
-            Ok(x) => x,
-        };
-        let x: toml::Value = x.into();
-        let to_json = serde_wasm_bindgen::Serializer::json_compatible();
-        return match x.serialize(&to_json) {
-            Err(e) => Err(Error::JsSerialization(format!("{}", e)))?,
-            Ok(x) => Ok(x),
-        };
-    }
-
-    pub fn add_to_command_queue(&mut self, queue: String, x: Command) {
-        let queue = self.queues.entry(queue).or_insert_with(|| VecDeque::new());
-        queue.push_back(x);
-        // TODO: pop queue if it gets too large
-    }
-
-    pub fn pop_command_queue(&mut self, queue: String) -> Option<Command> {
-        let queue = self.queues.entry(queue).or_insert_with(|| VecDeque::new());
-        return queue.pop_front();
-    }
-
-    // TODO: function to evaluate args of replay and return a range of expressions
-    // to replay in type script
-}
-
-#[wasm_bindgen]
-impl Command {
-    pub(crate) fn toml_args(&self, scope: &mut Scope) -> ResultVec<toml::Value> {
-        let flat_args = scope.expand(&self.args)?;
-        return Ok(toml::Value::from(flat_args));
-    }
-
-    pub fn args(&self, scope: &mut Scope) -> ResultVec<JsValue> {
-        let to_json = serde_wasm_bindgen::Serializer::json_compatible();
-        return match self.toml_args(scope)?.serialize(&to_json) {
-            Err(e) => Err(Error::JsSerialization(format!("{}", e)))?,
-            Ok(x) => Ok(x),
-        };
-    }
-}
-
-impl Command {
-    pub fn new(input: CommandInput) -> ResultVec<Self> {
-        if let Some(_) = input.id {
-            return reserved("id")?;
-        }
-        return Ok(Command {
-            command: input.command.resolve("`command` field")?,
-            args: match input.args {
-                Some(x) => x.into_inner(),
-                None => Value::Table(IndexMap::new()),
-            },
-        });
-    }
-}
-
-#[derive(Clone, Debug, Serialize)]
-#[allow(non_snake_case)]
-#[wasm_bindgen(getter_with_clone)]
-pub struct Binding {
-    pub key: String,
-    pub commands: Vec<Command>,
-    pub when: Option<String>,
-    pub mode: Vec<String>,
-    pub priority: f64,
-    pub prefixes: Vec<String>,
-    pub finalKey: bool,
-    pub(crate) repeat: Option<TypedValue<i32>>,
-    pub name: Option<String>,
-    pub description: Option<String>,
-    pub hideInPalette: bool,
-    pub hideInDocs: bool,
-    pub combinedName: Option<String>,
-    pub combinedKey: Option<String>,
-    pub combinedDescription: Option<String>,
-    pub kind: Option<String>,
-}
-
-#[wasm_bindgen]
-impl Binding {
-    pub fn repeat_count(&self) -> std::result::Result<String, JsError> {
-        return Ok("TODO".into());
-    }
-}
-
-// TODO: define functions for variable expansion on `Binding??`
-
-// TODO: convert errors to my own error type for Validation and serde_wasm_bindgen error
-
-impl BindingInput {
-    fn has_foreach(&self) -> bool {
-        if let Some(foreach) = &self.foreach {
-            return foreach.len() > 0;
-        }
-        return false;
-    }
-
-    pub fn expand_foreach(self) -> ResultVec<Vec<BindingInput>> {
-        if self.has_foreach() {
-            let foreach = expand_keys(self.foreach.clone().unwrap())?;
-            foreach.require_constant().context_str(
-                "`foreach` values can only include expressions of the form {{keys(`regex`)}}",
-            )?;
-
-            let values = expand_foreach_values(foreach).into_iter().map(|values| {
-                let mut result = self.clone();
-                result.foreach = None;
-                result
-                    .map_expressions(&mut |x| {
-                        Ok(values
-                            .get(&x)
-                            .map_or_else(|| Value::Expression(x), |ex| ex.clone()))
-                    })
-                    .expect("no errors") // since our mapping function has no errors
-            });
-            return Ok(values.collect());
-        }
-        return Ok(vec![self]);
-    }
-}
-
-fn expand_foreach_values(foreach: IndexMap<String, Vec<Value>>) -> Vec<IndexMap<String, Value>> {
-    let mut result = vec![IndexMap::new()];
-
-    for (k, vals) in foreach {
-        result = result
-            .iter()
-            .flat_map(|seed| {
-                vals.iter().map(|v| {
-                    let mut with_k = seed.clone();
-                    with_k.insert(k.clone(), v.clone());
-                    return with_k;
-                })
-            })
-            .collect();
-    }
-
-    return result;
 }
 
 impl Expanding for BindingInput {
@@ -617,14 +257,7 @@ impl Expanding for BindingInput {
             self.prefixes.is_constant(),
             self.finalKey.is_constant(),
             self.repeat.is_constant(),
-            self.name.is_constant(),
-            self.description.is_constant(),
-            self.hideInPalette.is_constant(),
-            self.hideInDocs.is_constant(),
-            self.combinedName.is_constant(),
-            self.combinedKey.is_constant(),
-            self.combinedDescription.is_constant(),
-            self.kind.is_constant(),
+            self.doc.is_constant(),
         ]
         .into_iter()
         .all(identity)
@@ -680,6 +313,123 @@ impl Expanding for BindingInput {
                 errors.append(&mut e.errors);
                 None
             }),
+            doc: self.doc.map_expressions(f).unwrap_or_else(|mut e| {
+                errors.append(&mut e.errors);
+                None
+            }),
+        };
+        if errors.len() > 0 {
+            return Err(errors.into());
+        } else {
+            return Ok(result);
+        }
+    }
+}
+
+//
+// ---------------- `bind.doc` parsing ----------------
+//
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub struct BindingDocInput {
+    /// @forBindingField bind
+    /// @order 10
+    ///
+    /// ## Documentation
+    ///
+    /// The documentation object `bind.doc` is composed of the following fields
+    ///
+    /// - `name`: A very brief description for the command; this must fit in the visual
+    ///   documentation of keybindings so it shouldn't be much longer than five characters for most
+    ///   keys. Favor unicode symbols such as →/← over text like left/right.
+    #[serde(default)]
+    pub name: Option<Spanned<TypedValue<String>>>,
+
+    /// @forBindingField bind
+    /// @order 10
+    ///
+    /// - `description`: A sentence or two about the command. Save more detailed descriptions
+    ///   for the comments around your keybindings: the keybinding file is a literate
+    ///   document and all users can see these comments when reviewing the textual documentation.
+    #[serde(default)]
+    pub description: Option<Spanned<TypedValue<String>>>,
+    /// @forBindingField bind
+    /// @order 10
+    ///
+    /// - `hideInPalette/hideInDocs`: whether to show the keys in the popup suggestions
+    ///   and the documentation. These both default to false.
+    #[serde(default)]
+    pub hideInPalette: Option<Spanned<TypedValue<bool>>>,
+    #[serde(default)]
+    pub hideInDocs: Option<Spanned<TypedValue<bool>>>,
+
+    /// @forBindingField bind
+    /// @order 10
+    ///
+    /// - `combinedName/combinedKey/combinedDescription`: in the suggestion palette and
+    ///   textual documentation, keys that have the same `combinedName` will be
+    ///   represented as single entry, using the `combinedKey` and `combinedDescription`
+    ///   instead of `key` and `description`. The `combinedKey` for a multi-key sequence
+    ///   should only include the suffix key. You need only define `combinedKey` and
+    ///   `combinedDescription` once across keys that share the same `combinedName`
+    ///   entry.
+    #[serde(default)]
+    pub combinedName: Option<Spanned<TypedValue<String>>>,
+    #[serde(default)]
+    pub combinedKey: Option<Spanned<TypedValue<String>>>,
+    #[serde(default)]
+    pub combinedDescription: Option<Spanned<TypedValue<String>>>,
+
+    /// @forBindingField bind
+    /// @order 10
+    ///
+    /// - `kind`: The broad cagegory of commands this binding falls under. There should
+    ///   be no more than 4-5 of these. Each `kind` here should have a corresponding
+    ///   entry in the top-level `kind` array.
+    #[serde(default)]
+    pub kind: Option<Spanned<TypedValue<String>>>,
+}
+
+impl Merging for BindingDocInput {
+    fn coalesce(self, new: Self) -> Self {
+        return new;
+    }
+    fn merge(self, y: Self) -> Self {
+        BindingDocInput {
+            name: self.name.coalesce(y.name),
+            description: self.description.coalesce(y.description),
+            hideInPalette: self.hideInPalette.coalesce(y.hideInPalette),
+            hideInDocs: self.hideInDocs.coalesce(y.hideInDocs),
+            combinedName: self.combinedName.coalesce(y.combinedName),
+            combinedKey: self.combinedKey.coalesce(y.combinedKey),
+            combinedDescription: self.combinedDescription.coalesce(y.combinedDescription),
+            kind: self.kind.coalesce(y.kind),
+        }
+    }
+}
+
+impl Expanding for BindingDocInput {
+    fn is_constant(&self) -> bool {
+        [
+            self.name.is_constant(),
+            self.description.is_constant(),
+            self.hideInPalette.is_constant(),
+            self.hideInDocs.is_constant(),
+            self.combinedName.is_constant(),
+            self.combinedKey.is_constant(),
+            self.combinedDescription.is_constant(),
+            self.kind.is_constant(),
+        ]
+        .into_iter()
+        .all(identity)
+    }
+    fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
+    where
+        Self: Sized,
+        F: FnMut(String) -> Result<Value>,
+    {
+        let mut errors = Vec::new();
+        let result = BindingDocInput {
             name: self.name.map_expressions(f).unwrap_or_else(|mut e| {
                 errors.append(&mut e.errors);
                 None
@@ -729,87 +479,23 @@ impl Expanding for BindingInput {
     }
 }
 
-fn regularize_commands(input: &BindingInput) -> ResultVec<Vec<Command>> {
-    let command: String = input.clone().command.resolve("`command` field")?;
-    if command != "runCommands" {
-        let commands = vec![Command {
-            command,
-            args: match &input.args {
-                None => Value::Table(IndexMap::new()),
-                Some(spanned) => spanned.as_ref().clone(),
-            },
-        }];
-        return Ok(commands);
-    } else {
-        let spanned = input
-            .args
-            .as_ref()
-            .ok_or_else(|| Error::Constraint("`runCommands` must have `args` field".to_string()))?;
-        let args_pos = spanned.span();
-        let args = spanned.as_ref().to_owned();
-        let commands = match args {
-            Value::Table(kv) => kv
-                .get("commands")
-                .ok_or_else(|| {
-                    Error::Constraint("`runCommands` must have `args.commands` field".into())
-                })?
-                .clone(),
-            _ => Err(Error::Validation(
-                "Expected `args` to be an object with `commands` field".to_string(),
-            ))?,
-        };
-        let command_vec = match commands {
-            Value::Array(items) => items,
-            _ => Err(Error::Validation(
-                "Expected `args.commands` of `runCommands` to \
-                be a vector of commands to run."
-                    .to_string(),
-            ))?,
-        };
+//
+// ================ `[[bind]]` object ================
+//
 
-        let mut command_result = Vec::with_capacity(command_vec.len());
-
-        for command in command_vec {
-            let (command, args) = match command {
-                Value::String(str) => (str.to_owned(), Value::Table(IndexMap::new())),
-                Value::Table(kv) => {
-                    let result = kv.get("command").ok_or_else({
-                        || {
-                            Error::RequiredField(
-                                "`args.commands.command` field for `runCommands`".into(),
-                            )
-                        }
-                    })?;
-                    let command_name = match result {
-                        Value::String(x) => x.to_owned(),
-                        _ => {
-                            return Err(Error::Constraint("`command` to be a string".into()))
-                                .context_range(&args_pos)?;
-                        }
-                    };
-                    let result = kv.get("args").ok_or_else(|| {
-                        Error::RequiredField("`args.commands.arg` field for `runCommands`".into())
-                    })?;
-                    let args = match result {
-                        x @ Value::Table(_) => x,
-                        x @ Value::Array(_) => x,
-                        _ => {
-                            return Err(Error::Constraint("`args` to be a table or array".into()))?;
-                        }
-                    };
-                    (command_name, args.to_owned())
-                }
-                _ => {
-                    return constrain(
-                        "`commands` to be an array that includes objects and strings only",
-                    )?;
-                }
-            };
-            command_result.push(Command { command, args })
-        }
-
-        return Ok(command_result);
-    }
+#[derive(Clone, Debug, Serialize)]
+#[allow(non_snake_case)]
+#[wasm_bindgen(getter_with_clone)]
+pub struct Binding {
+    pub key: String,
+    pub commands: Vec<Command>,
+    pub when: Option<String>,
+    pub mode: Vec<String>,
+    pub priority: f64,
+    pub prefixes: Vec<String>,
+    pub finalKey: bool,
+    pub(crate) repeat: Option<TypedValue<i32>>,
+    pub doc: Option<BindingDoc>,
 }
 
 #[wasm_bindgen]
@@ -842,6 +528,36 @@ impl Binding {
             prefixes: input.prefixes.resolve("`prefixes` fields")?,
             finalKey: input.finalKey.resolve("`finalKey` field")?.unwrap_or(true),
             repeat: input.repeat.resolve("`repeat` field")?,
+            doc: match input.doc {
+                Some(doc) => Some(BindingDoc::new(doc)?),
+                None => None,
+            },
+        });
+    }
+}
+
+//
+// ---------------- `bind.doc` object ----------------
+//
+
+#[derive(Clone, Debug, Serialize)]
+#[allow(non_snake_case)]
+#[wasm_bindgen(getter_with_clone)]
+pub struct BindingDoc {
+    pub name: Option<String>,
+    pub description: Option<String>,
+    pub hideInPalette: bool,
+    pub hideInDocs: bool,
+    pub combinedName: Option<String>,
+    pub combinedKey: Option<String>,
+    pub combinedDescription: Option<String>,
+    pub kind: Option<String>,
+}
+
+#[wasm_bindgen]
+impl BindingDoc {
+    pub(crate) fn new(input: BindingDocInput) -> ResultVec<Self> {
+        return Ok(BindingDoc {
             name: input.name.resolve("`name` field")?,
             description: input.description.resolve("`description` field")?,
             hideInPalette: input
@@ -862,9 +578,16 @@ impl Binding {
     }
 }
 
+//
+// ================ Tests ================
+//
+
 #[cfg(test)]
 mod tests {
     use test_log::test;
+
+    use rhai::Dynamic;
+    use std::collections::HashMap;
 
     use super::*;
     #[test]
@@ -901,7 +624,7 @@ mod tests {
         let args = result.args.unwrap().into_inner();
         assert_eq!(
             args,
-            Value::Table(IndexMap::from([
+            Value::Table(BTreeMap::from([
                 ("a".into(), Value::String("2".into())),
                 ("b".into(), Value::Integer(3))
             ]))
@@ -986,7 +709,7 @@ mod tests {
         );
         assert_eq!(
             result.args.unwrap().into_inner(),
-            Value::Table(IndexMap::from([(
+            Value::Table(BTreeMap::from([(
                 "to".into(),
                 Value::String("left".into())
             )]))
@@ -1029,7 +752,7 @@ mod tests {
 
         assert_eq!(
             left.args.unwrap().into_inner(),
-            Value::Table(IndexMap::from([(
+            Value::Table(BTreeMap::from([(
                 "to".into(),
                 Value::String("left".into())
             )]))
@@ -1155,7 +878,7 @@ mod tests {
             );
             assert_eq!(
                 item.args.unwrap().into_inner(),
-                Value::Table(IndexMap::from([(
+                Value::Table(BTreeMap::from([(
                     "value".to_string(),
                     Value::String(expected_value[i].into())
                 )]))
@@ -1188,7 +911,7 @@ mod tests {
             let value = items[i].args.as_ref().unwrap().get_ref().clone();
             assert_eq!(
                 value,
-                Value::Table(IndexMap::from([(
+                Value::Table(BTreeMap::from([(
                     "value".to_string(),
                     Value::String(expected_value[i].clone())
                 )]))

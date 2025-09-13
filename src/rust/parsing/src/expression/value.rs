@@ -1,30 +1,28 @@
-use std::any::TypeId;
-use std::collections::VecDeque;
-use std::error;
-use std::io;
-use std::io::Write;
-
-use js_sys::Boolean;
 #[allow(unused_imports)]
 use log::info;
 
-use indexmap::IndexMap;
+use std::collections::BTreeMap;
 use lazy_static::lazy_static;
 use regex::Regex;
 use rhai::Dynamic;
-use rhai::{AST, CustomType, Engine};
 use serde::{Deserialize, Serialize};
+use std::io;
+use std::io::Write;
 use toml::Spanned;
-use toml::ser::Buffer;
 
-use crate::error::{
-    Error, ErrorContext, ErrorWithContext, ErrorsWithContext, Result, ResultVec, flatten_errors,
-};
+use crate::error::{Error, ErrorContext, ErrorsWithContext, Result, ResultVec, flatten_errors};
 use crate::util::{Merging, Plural, Required, Resolving};
 
-// TODO: implement Float / Integer, and deal with regularizing that
-// to float64 only when we serialize to JSON (but still enforce the
-// boundary on integers in the same place we do now)
+//
+// ---------------- `Value` ----------------
+//
+
+/// `Value` is an expressive type that can be used to represent any TOML / JSON object with
+/// one more expressions in them. Crucially, it implements the `Expanding` trait, which
+/// allows those expressions to be expanded into `Value`'s themselves. Values are used
+/// to represent parsed TOML data, expand the expressions in them, and translate
+/// those values to JSON and/or Rhai `Dynaamic` objects.
+
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 #[serde(try_from = "toml::Value")]
 pub enum Value {
@@ -33,7 +31,7 @@ pub enum Value {
     String(String),
     Boolean(bool),
     Array(Vec<Value>),
-    Table(IndexMap<String, Value>),
+    Table(BTreeMap<String, Value>),
     Interp(Vec<Value>),
     // TODO: could optimize further by using an internned string (simplifying AST lookup)
     // TODO: include a span so that we can improve error messages
@@ -82,7 +80,7 @@ impl TryFrom<Dynamic> for Value {
                 .clone()
                 .into_iter()
                 .map(|(k, v)| Ok((k.as_str().to_string(), Value::try_from(v.to_owned())?)))
-                .collect::<Result<IndexMap<_, _>>>()?;
+                .collect::<Result<BTreeMap<_, _>>>()?;
             return Ok(Value::Table(values));
         } else if value.is_bool() {
             return Ok(Value::Boolean(value.as_bool().expect("boolean")));
@@ -174,6 +172,27 @@ fn string_to_expression(x: String) -> Value {
     return Value::Interp(interps);
 }
 
+impl From<Value> for toml::Value {
+    fn from(value: Value) -> toml::Value {
+        return match value {
+            Value::Expression(x) => panic!("Unresolved expression {x}"),
+            Value::Interp(interps) => panic!("Unresolved interpolation {interps:?}"),
+            Value::Array(items) => {
+                let new_items = items.into_iter().map(|it| it.into()).collect();
+                toml::Value::Array(new_items)
+            }
+            Value::Table(kv) => {
+                let new_kv = kv.into_iter().map(|(k, v)| (k, v.into())).collect();
+                toml::Value::Table(new_kv)
+            }
+            Value::Boolean(x) => toml::Value::Boolean(x),
+            Value::Float(x) => toml::Value::Float(x),
+            Value::Integer(x) => toml::Value::Integer(x as i64),
+            Value::String(x) => toml::Value::String(x),
+        };
+    }
+}
+
 impl Merging for Value {
     fn coalesce(self, new: Self) -> Self {
         return new;
@@ -206,13 +225,42 @@ impl Merging for Value {
     }
 }
 
+impl Resolving<Value> for Value {
+    fn resolve(self, _name: impl Into<String>) -> ResultVec<Value> {
+        Ok(self)
+    }
+}
+
+impl Resolving<toml::Value> for Value {
+    fn resolve(self, name: impl Into<String>) -> ResultVec<toml::Value> {
+        self.require_constant().context_str(name)?;
+        return Ok(self.into());
+    }
+}
+
+//
+// ---------------- `Expanding` trait ----------------
+//
+
+/// The `Expanding` trait is used to expand expressions contained within an object
+/// into `Value`s. Any type that contains one or more `Value`'s should implement `Expanding`
+/// so that the `Value` can be expanded.
+
 pub trait Expanding {
+    /// `map_expressions` is used to expand expressions. On each call to the function `f`
+    /// the string inside the curly braces of an expression is passed, and `f` should return
+    /// a `Value`. If `f` doesn't know how to translate the given expression, it can bypass
+    /// evaluation by returning a `Value::Expression` containing the passed expression.
     fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
     where
         Self: Sized,
         F: FnMut(String) -> Result<Value>;
 
+    /// returns true if there are no `Value::Expression` enum variants in any contained
+    /// `Value`
     fn is_constant(&self) -> bool;
+    /// returns an `Err` if there are any `Value::Expression` enum variants in any
+    /// contained `Value`.
     fn require_constant(&self) -> ResultVec<()>
     where
         Self: Sized + Clone,
@@ -224,7 +272,7 @@ pub trait Expanding {
     }
 }
 
-impl<T: Expanding + std::fmt::Debug> Expanding for IndexMap<String, T> {
+impl<T: Expanding + std::fmt::Debug> Expanding for BTreeMap<String, T> {
     fn is_constant(&self) -> bool {
         self.values().all(|v| v.is_constant())
     }
@@ -285,40 +333,99 @@ impl Expanding for Value {
     }
 }
 
-impl From<Value> for toml::Value {
-    fn from(value: Value) -> toml::Value {
-        return match value {
-            Value::Expression(x) => panic!("Unresolved expression {x}"),
-            Value::Interp(interps) => panic!("Unresolved interpolation {interps:?}"),
-            Value::Array(items) => {
-                let new_items = items.into_iter().map(|it| it.into()).collect();
-                toml::Value::Array(new_items)
-            }
-            Value::Table(kv) => {
-                let new_kv = kv.into_iter().map(|(k, v)| (k, v.into())).collect();
-                toml::Value::Table(new_kv)
-            }
-            Value::Boolean(x) => toml::Value::Boolean(x),
-            Value::Float(x) => toml::Value::Float(x),
-            Value::Integer(x) => toml::Value::Integer(x as i64),
-            Value::String(x) => toml::Value::String(x),
-        };
+// expansion for other kinds of types
+impl<T: Expanding> Expanding for Spanned<T> {
+    fn is_constant(&self) -> bool {
+        self.as_ref().is_constant()
+    }
+    fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
+    where
+        F: FnMut(String) -> Result<Value>,
+    {
+        let span = self.span();
+        Ok(Spanned::new(
+            span.clone(),
+            self.into_inner().map_expressions(f).context_range(&span)?,
+        ))
     }
 }
 
-impl Resolving<Value> for Value {
-    fn resolve(self, _name: impl Into<String>) -> ResultVec<Value> {
-        Ok(self)
+impl<T: Expanding + std::fmt::Debug> Expanding for Vec<T> {
+    fn is_constant(&self) -> bool {
+        self.iter().all(|x| x.is_constant())
+    }
+    fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
+    where
+        F: FnMut(String) -> Result<Value>,
+    {
+        Ok(flatten_errors(
+            self.into_iter().map(|x| x.map_expressions(f)),
+        )?)
     }
 }
 
-impl Resolving<toml::Value> for Value {
-    fn resolve(self, name: impl Into<String>) -> ResultVec<toml::Value> {
-        self.require_constant().context_str(name)?;
-        return Ok(self.into());
+impl<T: Expanding + std::fmt::Debug> Expanding for Plural<T> {
+    fn is_constant(&self) -> bool {
+        match self {
+            Plural::Zero => true,
+            Plural::One(x) => x.is_constant(),
+            Plural::Many(xs) => xs.iter().all(|x| x.is_constant()),
+        }
+    }
+    fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
+    where
+        F: FnMut(String) -> Result<Value>,
+    {
+        Ok(match self {
+            Plural::Zero => self,
+            Plural::One(x) => Plural::One(x.map_expressions(f)?),
+            Plural::Many(items) => Plural::Many(items.map_expressions(f)?),
+        })
     }
 }
 
+impl<T: Expanding + std::fmt::Debug> Expanding for Required<T> {
+    fn is_constant(&self) -> bool {
+        match self {
+            Required::DefaultValue => true,
+            Required::Value(x) => x.is_constant(),
+        }
+    }
+    fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
+    where
+        F: FnMut(String) -> Result<Value>,
+    {
+        return Ok(match self {
+            Required::DefaultValue => self,
+            Required::Value(x) => Required::Value(x.map_expressions(f)?),
+        });
+    }
+}
+
+impl<T: Expanding> Expanding for Option<T> {
+    fn is_constant(&self) -> bool {
+        match self {
+            None => true,
+            Some(x) => x.is_constant(),
+        }
+    }
+    fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
+    where
+        F: FnMut(String) -> Result<Value>,
+    {
+        return Ok(match self {
+            None => self,
+            Some(x) => Some(x.map_expressions(f)?),
+        });
+    }
+}
+
+//
+// ---------------- `TypedValue` objects ----------------
+//
+
+/// A `TypedValue` wraps `Value`, requiring it to evaluate to an object that can be
+/// converted into the given type `T`.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(try_from = "toml::Value")]
 pub enum TypedValue<T>
@@ -464,92 +571,5 @@ impl<T: Serialize + std::fmt::Debug> Merging for TypedValue<T> {
 
     fn merge(self, new: Self) -> Self {
         return new;
-    }
-}
-
-// expansion for other kinds of types
-impl<T: Expanding> Expanding for Spanned<T> {
-    fn is_constant(&self) -> bool {
-        self.as_ref().is_constant()
-    }
-    fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
-    where
-        F: FnMut(String) -> Result<Value>,
-    {
-        let span = self.span();
-        Ok(Spanned::new(
-            span.clone(),
-            self.into_inner().map_expressions(f).context_range(&span)?,
-        ))
-    }
-}
-
-impl<T: Expanding + std::fmt::Debug> Expanding for Vec<T> {
-    fn is_constant(&self) -> bool {
-        self.iter().all(|x| x.is_constant())
-    }
-    fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
-    where
-        F: FnMut(String) -> Result<Value>,
-    {
-        Ok(flatten_errors(
-            self.into_iter().map(|x| x.map_expressions(f)),
-        )?)
-    }
-}
-
-impl<T: Expanding + std::fmt::Debug> Expanding for Plural<T> {
-    fn is_constant(&self) -> bool {
-        match self {
-            Plural::Zero => true,
-            Plural::One(x) => x.is_constant(),
-            Plural::Many(xs) => xs.iter().all(|x| x.is_constant()),
-        }
-    }
-    fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
-    where
-        F: FnMut(String) -> Result<Value>,
-    {
-        Ok(match self {
-            Plural::Zero => self,
-            Plural::One(x) => Plural::One(x.map_expressions(f)?),
-            Plural::Many(items) => Plural::Many(items.map_expressions(f)?),
-        })
-    }
-}
-
-impl<T: Expanding + std::fmt::Debug> Expanding for Required<T> {
-    fn is_constant(&self) -> bool {
-        match self {
-            Required::DefaultValue => true,
-            Required::Value(x) => x.is_constant(),
-        }
-    }
-    fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
-    where
-        F: FnMut(String) -> Result<Value>,
-    {
-        return Ok(match self {
-            Required::DefaultValue => self,
-            Required::Value(x) => Required::Value(x.map_expressions(f)?),
-        });
-    }
-}
-
-impl<T: Expanding> Expanding for Option<T> {
-    fn is_constant(&self) -> bool {
-        match self {
-            None => true,
-            Some(x) => x.is_constant(),
-        }
-    }
-    fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
-    where
-        F: FnMut(String) -> Result<Value>,
-    {
-        return Ok(match self {
-            None => self,
-            Some(x) => Some(x.map_expressions(f)?),
-        });
     }
 }

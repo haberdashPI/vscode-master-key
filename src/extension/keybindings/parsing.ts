@@ -151,66 +151,11 @@ const bindingHeader = z.
     strict();
 // type BindingHeader = z.infer<typeof bindingHeader>;
 
-/**
- * @bindingField bind
- * @description an actual keybinding; extends the schema used by VSCode's `keybindings.json`
- *
- * **Example**
- *
- * ```toml
- * [[bind]]
- * name = "left"
- * key = "h"
- * mode = "normal"
- * command = "cursorLeft"
- * ```
- * The `bind` element has two categories of fields: functional and documenting.
- *
- * ## Functional Fields
- *
- * The functional fields determine what the keybinding does. Required fields are marked with
- * a `*`.
- *
- */
-
 const rawBindingCommand = z.
     object({
-        /**
-         * @forBindingField bind
-         *
-         * - `command`*: A string denoting the command to execute. This is a command
-         *   defined by VSCode or an extension thereof.
-         *   See [finding commands](#finding-commands). This field has special
-         *   behavior for the command `runCommands`
-         *   (see [running multiple commands](#running-multiple-commands)).
-         */
         command: z.string().optional(), // only optional before default expansion
-        /**
-         * @forBindingField bind
-         *
-         * - `args`: The arguments to directly pass to the `command`, these are static
-         *   values.
-         */
         args: z.any(),
-        /**
-         * @forBindingField bind
-         *
-         * - `computedArgs`: Like `args` except that each value is a string that is
-         *   evaluated as an [expression](/expressions/index).
-         */
         computedArgs: z.object({}).passthrough().optional(),
-        /**
-         * @forBindingField bind
-         * @order 5
-         *
-         * - `whenComputed`: an [expression](/expressions/index) that, if evaluated to
-         *   false, the command will not execute. Favor `when` clauses over `whenComputed`.
-         *   The `whenComputed` field is distinct from the `when` clause because it uses the
-         *   scope of expressions rather than when clause statements. Furthermore, even if
-         *   the `whenComputed` is false, the binding is still considered to have triggered,
-         *   and now downstream keybindings will be triggered. It is most useful in
-         *   conjunction with `runCommands` or [`storeCommand`](/commands/storeCommand).
-         */
         whenComputed: z.string().or(z.boolean()).default(true).optional(),
     }).
     strict();
@@ -396,146 +341,31 @@ export const vscodeBinding = z.object({
 });
 
 export const rawBindingItem = z.object({
-    /**
-     * @forBindingField bind
-     *
-     * - `key`*: the
-     *   [keybinding](https://code.visualstudio.com/docs/getstarted/keybindings) that
-     *   triggers `command`.
-     */
     key: z.string().optional(),
-    /**
-     * @forBindingField bind
-     *
-     * - `when`: A [when
-     *   clause](https://code.visualstudio.com/api/references/when-clause-contexts)
-     *   context under which the binding will be active. Also see Master Key's
-     *   [available contexts](#available-contexts)
-     */
     when: z.
         union([z.string(), z.string().array()]).
         optional().
         transform(parseWhen).
         pipe(parsedWhen.array()),
-    /**
-     * @forBindingField bind
-     *
-     * - `mode`: The mode during which the binding will be active. The default mode is
-     *   used when this field is not specified (either directly or via the `defaults`
-     *   field)
-     */
     mode: z.union([z.string(), z.string().array()]).optional(),
-    /**
-     * @forBindingField bind
-     *
-     * - `priority`: The ordering of the keybinding relative to others; determines which
-     *   bindings take precedence. Defaults to 0.
-     */
     priority: z.number().default(0).optional(),
-    /**
-     * @forBindingField bind
-     *
-     * - `defaults`: the hierarchy of defaults applied to this binding, see
-     *   [`default`](/bindings/default) for more details.
-     */
     defaults: z.string().optional(),
-    /**
-     * @forBindingField bind
-     *
-     * - `foreach`: Allows parametric definition of multiple keybindings, see
-     *   [`foreach` clauses](#foreach-clauses).
-     */
     foreach: z.record(z.string(), z.array(z.string())).optional(),
-    /**
-     * @forBindingField bind
-     *
-     * - `prefixes`: (array of strings or the string
-     *   <code v-pre>{{all_prefixes}}</code>). Determines one or more *unresolved* key
-     *   sequences that can have occurred before typing this key. See
-     *   [`master-key.prefix`](/commands/prefix) for details. Defaults to `""` (a.k.a.
-     *   no prefix is allowed). This can be set to <code v-pre>{{all_prefixes}}</code>,
-     *   if you wish to allow the key binding to work regardless of any unresolved key
-     *   sequence that has been pressed (e.g. this is used for the "escape" key binding
-     *   in Larkin).
-     */
     prefixes: z.
         preprocess(
             x => (x === '{{all_prefixes}}' ? [] : x),
             bindingKey.or(z.string().length(0)).array(),
         ).
         optional(),
-    /**
-     * @forBindingField bind
-     *
-     * - `finalKey`: (boolean, default=true) Whether this key should clear any transient
-     *   state associated with the pending keybinding prefix. See
-     *   [`master-key.prefix`](/commands/prefix) for details.
-     */
     finalKey: z.boolean().optional(),
-    /**
-     * @forBindingField bind
-     *
-     * - `computedRepeat`: This is an [expression](/expressions/index). It is expected
-     *   to evaluate to the number of times to repeat the command. Defaults to zero: one
-     *   repeat means the command is run twice.
-     * - `command` will be repeated the given
-     *   number of times.
-     */
     computedRepeat: z.number().min(0).or(z.string()).default(0).optional(),
-    /**
-     * @forBindingField bind
-     * @order 10
-     *
-     * ## Documenting Fields
-     *
-     * The documenting fields determine how the keybinding is documented. They are all
-     * optional.
-     *
-     * - `name`: A very description for the command; this must fit in the visual
-     *   documentation so it shouldn't be much longer than five characters for most
-     *   keys. Favor unicode symbols such as → and ← over text.
-     */
     name: z.string().optional(),
-    /**
-     * @forBindingField bind
-     * @order 10
-     *
-     * - `description`: A longer description of what the command does. Shouldn't be much
-     *   longer than a single sentence for most keys. Save more detailed descriptions
-     *   for the literate comments.
-     */
     description: z.string().optional(),
-    /**
-     * @forBindingField bind
-     * @order 10
-     *
-     * - `hideInPalette/hideInDocs`: whether to show the keys in the popup suggestions
-     *   and the documentation. These both default to false.
-     */
     hideInPalette: z.boolean().default(false).optional(),
     hideInDocs: z.boolean().default(false).optional(),
-    /**
-     * @forBindingField bind
-     * @order 10
-     *
-     * - `combinedName/combinedKey/combinedDescription`: in the suggestion palette and
-     *   textual documentation, keys that have the same `combinedName` will be
-     *   represented as single entry, using the `combinedKey` and `combinedDescription`
-     *   instead of `key` and `description`. The `combinedKey` for a multi-key sequence
-     *   should only include the suffix key. All but the first key's `combinedKey` and
-     *   `combinedDescription` are ignored.
-     */
     combinedName: z.string().optional().default(''),
     combinedKey: z.string().optional().default(''),
     combinedDescription: z.string().optional().default(''),
-    /**
-     * @forBindingField bind
-     * @order 10
-     *
-     * - `kind`: The broad cagegory of commands this binding falls under. There should
-     *   be no more than 4-5 of these. Each `kind` here should have a corresponding
-     *   entry in the top-level `kind` array.
-     */
     kind: z.string().optional(),
 }).merge(rawBindingCommand).strict();
 export type RawBindingItem = z.output<typeof rawBindingItem>;
@@ -561,89 +391,6 @@ export const doArgs = bindingCommand.array().refine(
 );
 export type DoArgs = z.infer<typeof doArgs>;
 
-/**
- * @forBindingField bind
- * @order 20
- *
- * ## Finding Commands
- *
- * You can find commands in a few ways:
- *
- * - Find command you want to use from the command palette, and click on the gear (`⚙︎`)
- *   symbol to copy the command string to your clipboard
- * - Review the
- *  [list of built-in commands](https://code.visualstudio.com/api/references/commands/index)
- * - Run the command `Preferences: Open Default Keyboard Shortcuts (JSON)` to get a list of
- *   built-in commands and extension commands already associated with a keybinding
- *
- * Furthermore, you can also use:
- *
- * - [Master Key Commands](/commands/index)
- * - [Selection Utility Commands](https://haberdashpi.github.io/vscode-selection-utilities/)
- *
- * Selection Utilities is a complimentary extension used extensively by the `Larkin` preset.
- *
- * ## Running Multiple Commands
- *
- * When `command` is set to `runCommands`, you can run multiple commands with a signle key
- * press. The`args.commands` list can be:
- *
- * - an array of strings listing the commands
- * - an array of objects with `command`, `args` `computedWhen` and `computedArgs` fields,
- *   defined in the same way as the top-level `bind` fields of the same names are defined.
- *   You cannot have nested calls to `"runCommands"`.
- * - an object with the field `defined` set to a command object defined under a
- *   [`define`](/bindings/define) field.
- *
- * ## Available `when` Contexts
- *
- * Each keybinding can make use of any context defined in VSCode across any extension.
- * Master Key adds the follow contexts:
- *
- * - All variables available in [expression](/expressions/index), prefixed with
- *   `master-key.`
- * - `master-key.keybindingPaletteBindingMode`: true when the suggestion palette accepts
- *   keybinding key presses, false it accepts a string to search the descriptions of said
- *   keybindings
- * - `master-key.keybindingPaletteOpen`: true when the suggestion palette is open
- *
- * ## `foreach` Clauses
- *
- * The `foreach` clause of a keybinding can be used to generate many bindings from one
- * entry. Each field under `foreach` is looped through exhaustively. On each iteration, any
- * string values that contain <code v-pre>{{[var]}}</code> where `[var]` is a `foreach`
- * field, is replaced with that fields value for the given iteration. For example, the
- * following defines 9 bindings:
- *
- * ::: v-pre
- * ```toml
- * [[bind]]
- * foreach.a = [1,2,3]
- * foreach.b = [1,2,3]
- * key = "ctrl+; {{a}} {{b}}"
- * command = "type"
- * args.text = "{{a-b}}"
- * ```
- * :::
- *
- * Furthermore, if the value <code v-pre>{{key: [regex]}}</code> is included in a `foreach`
- * field, it is expanded to all keybindings that match the given regular expression. For
- * example, the following definition is used in `Larkin` to allow the numeric keys to be
- * used as count prefix for motions.
- *
- * ::: v-pre
- * ```toml
- * [[bind]]
- * foreach.num = ['{{key: [0-9]}}']
- * name = "count {{num}}"
- * key = "{{num}}"
- * command = "master-key.updateCount"
- * description = "Add digit {{num}} to the count argument of a command"
- * args.value = "{{num}}"
- * # etc...
- * ```
- * :::
- */
 
 // TODO: the errors are not very informative if we transform the result so early in this
 // way; we need to keep this as close as possible to the form in the raw file
@@ -678,75 +425,10 @@ export const bindingItem = z.
     strict();
 export type BindingItem = z.output<typeof bindingItem>;
 
-/**
- * @bindingField default
- * @description array that defines structured defaults that apply to keybinding subsets
- *
- * The `default` field describes a series of hierarchical defaults according to a
- * period-delimited set of identifiers.
- *
- * **Example**
- *
- * ```toml
- * [[default]]
- * id = "motion"
- * default.mode = "normal"
- *
- * [[default]]
- * id = "motion.cursor"
- * command = "cursorMove"
- *
- * [[bind]]
- * name = "lines"
- * description = "expand selection to full-line selections"
- * key = "shift+l"
- * command = "expandLineSelection"
- * defaults = "motion"
- * # mode = "normal" (because of the "motion" defaults)
- *
- * [[bind]]
- * key = "l"
- * name = "left"
- * defaults = "motion.cursor"
- * # mode = "normal" (because of the "motion" defaults)
- * # command = "cursorMove" (because of the "motion.cursor" defaults)
- * args.to = "left"
- * ```
- *
- * When you specify the defaults of a keybinding it draws not only from the exact id, but
- * also any of its period-delimited prefixes. Prefixes match when the same set of
- * identifiers in the same order occurs up until the end of the prefix: substrings are not
- * matched. For example `foo.bar.baz` matches `foo.bar` and `foo` but it does not match
- * `foo.ba`. In the above example, `motion.cursor` matches both `motion` and `motion.cursor`
- * path definitions.
- *
- * The following fields are available.
- *
- */
 
 export const bindingDefault = z.object({
-    /**
-     * @forBindingField default
-     *
-     * - `id` is a period-delimited set of identifiers that describe this default; each
-     *   identifier can include letters, numbers as well as `_` and `-`.
-     */
     id: z.string().regex(/(^$|[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)*)/),
-    /**
-     * @forBindingField default
-     *
-     * - `default`: contains all of the same fields as [`bind`](/bindings/bind),
-     * but they are all optional here. These are propagated to any keybindings
-     * associated with this default.
-     */
     default: rawBindingItem.partial().optional(),
-    /**
-     * @forBindingField default
-     *
-     * - `appendWhen`: this when clause is appended to the when clause of all associated
-     *   keybindings using `(when) && (appendWhen)`, and must therefore be true for any
-     *   associated keybindings to trigger.
-     */
     appendWhen: z.
         string().
         optional().

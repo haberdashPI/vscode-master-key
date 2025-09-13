@@ -1,7 +1,7 @@
 // error reporting
-pub mod error;
+mod error;
+mod expression;
 mod util;
-mod value;
 
 // [[bind]] level parsing
 mod bind;

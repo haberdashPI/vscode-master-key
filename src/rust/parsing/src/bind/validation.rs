@@ -1,6 +1,6 @@
-use crate::error::{Error, ErrorWithContext, ErrorsWithContext, Result, ResultVec};
+use crate::error::{Error, ErrorsWithContext, Result, ResultVec};
+use crate::expression::value::{EXPRESSION, Expanding, TypedValue, Value};
 use crate::util::{Merging, Resolving};
-use crate::value::{EXPRESSION, Expanding, TypedValue, Value};
 
 #[allow(unused_imports)]
 use log::info;
@@ -8,6 +8,10 @@ use log::info;
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+
+//
+// ---------------- Keybinding Validation ----------------
+//
 
 lazy_static! {
     static ref MODIFIER_REGEX: Regex = Regex::new(r"(?i)Ctrl|Shift|Alt|Cmd|Win|Meta").unwrap();
@@ -191,11 +195,18 @@ impl KeyBinding {
     }
 }
 
+//
+// ---------------- References to `bind` object ----------------
+//
+
 lazy_static! {
     static ref BIND_VARIABLE: Regex = Regex::new(r"bind\.([\w--\d][\w]*)").unwrap();
 }
 
-#[derive(Deserialize, Clone, Debug)]
+/// A `BindingReference` is an expression of the form `{{bind.[bindID]}}`, and it
+/// resolved to a `[[define.bind]]` defined partial keybinding object.
+
+#[derive(Deserialize, Clone, Debug, Serialize)]
 #[serde(try_from = "String", into = "String")]
 pub struct BindingReference(pub(crate) String);
 
@@ -223,14 +234,14 @@ impl TryFrom<String> for BindingReference {
 }
 
 // This implementation of `Expanding` may seem unintuitive, but we don't actually use
-// `map-expressions` to expand `BindingReference` instead we review review these values
-// during a separate `BindingInput` resolution phase. During variable expansion, we simply
-// want to ignore the `{{bind.}}` expression present in `BindingReference`
+// `map-expressions` to expand `BindingReference`. Instead we review these values during a
+// separate `BindingInput` resolution phase (see file.rs). During variable expansion, we
+// simply want to ignore the `{{bind.}}` expression present in `BindingReference`
 impl Expanding for BindingReference {
     fn is_constant(&self) -> bool {
         false
     }
-    fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
+    fn map_expressions<F>(self, _f: &mut F) -> ResultVec<Self>
     where
         Self: Sized,
         F: FnMut(String) -> Result<Value>,
