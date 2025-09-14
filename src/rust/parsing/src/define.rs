@@ -22,7 +22,7 @@ use crate::util::{Merging, Resolving};
 /// computed arguments.
 ///
 /// The `define` field can be used to define re-usable values. There are three types of
-/// values that be defined.
+/// values that can be defined.
 ///
 /// 1. `[[define.var]]:` variable definitions: defines any number of key-value pairs that can
 ///    be referenced inside an [expression](/expressions/index)
@@ -33,13 +33,14 @@ use crate::util::{Merging, Resolving};
 ///
 #[derive(Deserialize, Clone, Debug, Default)]
 pub struct DefineInput {
-    /// @bindingField define
+    /// @forBindingField define
     ///
     /// ## Variable Definitions
     ///
-    /// These can be any arbitrary TOML values. You can define multiple variables within
-    /// each `[[define.var]]` element this way. These are then available in any expressions
-    /// evaluated at runtime.
+    /// These can be any arbitrary TOML value. You can define multiple variables within
+    /// each `[[define.var]]` element this way. These are then available in any
+    /// [expressions](/expressions/index)
+    /// evaluated at runtime and in [when clauses](/bindings/bind#available-when-contexts).
     ///
     /// ### Example
     ///
@@ -85,7 +86,7 @@ pub struct DefineInput {
     /// args.followCursor = true
     /// ```
     pub var: Option<Vec<BTreeMap<String, Spanned<Value>>>>,
-    /// @bindingField define
+    /// @forBindingField define
     ///
     /// ## Command Definitions
     ///
@@ -93,7 +94,7 @@ pub struct DefineInput {
     /// [running multiple commands](/bindings/bind#running-multiple-commands).
     ///
     /// In addition the normal fields of a command, you must provide an `id` to refer to the
-    /// command as `{{command.[id]}}`.
+    /// command as <span v-pre>`{{command.[id]}}`</span>.
     ///
     /// ### Example
     ///
@@ -126,7 +127,7 @@ pub struct DefineInput {
     /// ]
     /// ```
     pub command: Option<Vec<Spanned<CommandInput>>>,
-    /// @bindingField define
+    /// @forBindingField define
     ///
     /// ## Binding Definitions
     ///
@@ -161,6 +162,9 @@ pub struct DefineInput {
     /// key = "l"
     /// args.to = "right"
     /// ```
+    ///
+    /// This example also demonstrates that `define.bind` definitions can themselves have
+    /// defaults, allowing for a hierarchy of defaults if so desired.
     ///
     pub bind: Option<Vec<Spanned<BindingInput>>>,
 }

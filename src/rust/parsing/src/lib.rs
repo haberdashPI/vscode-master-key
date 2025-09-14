@@ -1,10 +1,11 @@
-// error reporting
+// assorted utilities
 mod error;
 mod expression;
 mod util;
 
-// [[bind]] level parsing
+// define file sections
 mod bind;
 mod define;
-// file level parsing
+
+// top level parsing
 pub mod file;

@@ -1,13 +1,13 @@
 #[allow(unused_imports)]
 use log::info;
 
-use std::collections::BTreeMap;
 use lazy_static::lazy_static;
 use regex::Regex;
 use rhai::Dynamic;
 use serde::{Deserialize, Serialize};
-use std::io;
+use std::collections::BTreeMap;
 use std::io::Write;
+use std::{default, io};
 use toml::Spanned;
 
 use crate::error::{Error, ErrorContext, ErrorsWithContext, Result, ResultVec, flatten_errors};
@@ -364,23 +364,15 @@ impl<T: Expanding + std::fmt::Debug> Expanding for Vec<T> {
     }
 }
 
-impl<T: Expanding + std::fmt::Debug> Expanding for Plural<T> {
+impl<T: Expanding + std::fmt::Debug + Clone> Expanding for Plural<T> {
     fn is_constant(&self) -> bool {
-        match self {
-            Plural::Zero => true,
-            Plural::One(x) => x.is_constant(),
-            Plural::Many(xs) => xs.iter().all(|x| x.is_constant()),
-        }
+        return self.0.is_constant();
     }
     fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
     where
         F: FnMut(String) -> Result<Value>,
     {
-        Ok(match self {
-            Plural::Zero => self,
-            Plural::One(x) => Plural::One(x.map_expressions(f)?),
-            Plural::Many(items) => Plural::Many(items.map_expressions(f)?),
-        })
+        return Ok(Plural(self.0.map_expressions(f)?));
     }
 }
 
@@ -434,6 +426,15 @@ where
 {
     Variable(Value),
     Constant(T),
+}
+
+impl<T> Default for TypedValue<T>
+where
+    T: Default + Serialize + std::fmt::Debug,
+{
+    fn default() -> Self {
+        return TypedValue::Constant(T::default());
+    }
 }
 
 impl<'e, T> TryFrom<toml::Value> for TypedValue<T>

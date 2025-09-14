@@ -19,16 +19,41 @@ use crate::{
 ///
 /// You can use expressions in a number of places inside a [bind](/bindings/bind)
 /// definition. An expression is a snippet of code surrounded by double curly braces <code
-/// v-pre>{{like + this}}</code> that occurs within a TOML string. When the string begins
-/// and ends with the curly braces of the expression that string can evaluate to any valid
-/// TOML object. If there is additional text outside of the string, the expression will be
-/// converted to a string and interpolated into the the surrounding text.
+/// v-pre>{{like + this}}</code> that occurs within a TOML string. Expressions can evaluate
+/// to any valid TOML object when the entire string is an expression
+///
+/// ```toml
+/// [[define.var]]
+/// action_priority = 3
+///
+/// [[bind]]
+/// # ...other fields here...
+/// priority = "{{var.action_priority + 2}}"
+///
+/// # after expression evaluation, the above would evaluate to
+/// priority = 5
+/// ```
+///
+/// If there is additional text in the string that falls outside of the expression, the
+/// expression is interpolated into the string
+///
+/// ```toml
+/// [[define.var]]
+/// action_priority = 3
+///
+/// [[bind]]
+/// # ...other fields here...
+/// name = "My cool action (priority {{var.action_priority + 2}})"
+///
+/// # after expression evaluation, the above would evaluate to
+/// name = "My cool action (priority 5)"
+/// ```
 ///
 /// Valid expressions are a simple subset of [Rhai](https://rhai.rs/book/ref/index.html).
-/// You cannot execute statements, set variables, use loops, or define. If you find yourself
-/// wanting to write an elaborate expression, your goal is probably better accomplished by
-/// writing an [extension](https://code.visualstudio.com/api) and running the extension
-/// defined command.
+/// You cannot execute statements, set variables, use loops, or define functions. If you
+/// find yourself wanting to write an elaborate expression, your goal is probably better
+/// accomplished by writing an [extension](https://code.visualstudio.com/api) and running
+/// the extension defined-command.
 ///
 /// There are two points at which an expression can be evaluated: while parsing the master
 /// keybinding file (e.g. making use of [foreach](/bindings/bind#foreach-clauses)) or at
@@ -36,9 +61,9 @@ use crate::{
 ///
 /// ## Parse-time Evaluation
 ///
-/// Parse-time expressions improve expressivity of the keybinding spec. They are generally
-/// quite limited in terms of what values are in scope within the expression. The individual
-/// fields of `bind` document the scope of a given parse-time expression.
+/// Parse-time expressions are generally quite limited in terms of what values are in scope
+/// within the expression. The individual fields of `bind` document the scope of a given
+/// parse-time expression.
 ///
 /// ## Run-time Evaluation
 ///

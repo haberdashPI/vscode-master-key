@@ -1,29 +1,34 @@
-use crate::error::{Error, ErrorContext, ErrorWithContext, Result, ResultVec, flatten_errors};
-
+#[allow(unused_imports)]
 use log::info;
+
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use toml::{Spanned, Value};
 
+use crate::error::{Error, ErrorContext, ErrorWithContext, Result, ResultVec, flatten_errors};
+
+/// The `Merging` trait allows us to combine two versions of an object according to
+/// two different approaches (`coalesce` or `merge`).
 pub trait Merging {
-    fn merge(self, new: Self) -> Self;
+    /// `coalesce` returns `new`, unless it is a `null`-like value, such as `None`
+    /// or `Required::DefaultValue`
     fn coalesce(self, new: Self) -> Self;
+    /// `merge` combines values, coalescing at the leaf values of containers, and
+    /// recursively calling `merge` for any items that share a key. The returned container
+    /// has all keys from self and all keys from new.
+    fn merge(self, new: Self) -> Self;
 }
 
-// TODO: is there any way to avoid so much copying here
 impl Merging for toml::Table {
-    fn merge(self, mut new: Self) -> Self {
-        for (k, v) in self {
-            if new.contains_key(&k) {
-                new[&k] = v.merge(new[&k].clone());
-            } else {
-                new.insert(k, v);
-            }
-        }
-        return new;
-    }
     fn coalesce(self, new: Self) -> Self {
         return new;
+    }
+    fn merge(self, mut new: Self) -> Self {
+        let pairs = self.into_iter().map(|(k, v)| match new.remove(&k) {
+            Some(new_v) => (k, v.merge(new_v)),
+            None => (k, v),
+        });
+        return pairs.collect();
     }
 }
 
@@ -32,14 +37,11 @@ impl<T: Merging + Clone> Merging for BTreeMap<String, T> {
         return new;
     }
     fn merge(self, mut new: Self) -> Self {
-        for (k, v) in self {
-            if new.contains_key(&k) {
-                new[&k] = v.merge(new[&k].clone());
-            } else {
-                new.insert(k, v);
-            }
-        }
-        return new;
+        let pairs = self.into_iter().map(|(k, v)| match new.remove(&k) {
+            Some(new_v) => (k, v.merge(new_v)),
+            None => (k, v),
+        });
+        return pairs.collect();
     }
 }
 
@@ -71,16 +73,20 @@ impl<T: Merging> Merging for Required<T> {
     }
 }
 
-impl<T: Merging> Merging for Plural<T> {
+impl<T: Merging> Merging for Plural<T>
+where
+    T: Clone,
+{
     fn merge(self, _: Self) -> Self {
         panic!("Not yet implemented (we don't yet need this function)")
     }
 
     fn coalesce(self, new: Self) -> Self {
-        return match new {
-            Plural::Zero => self,
-            _ => new,
-        };
+        if new.0.is_empty() {
+            return self;
+        } else {
+            return new;
+        }
     }
 }
 
@@ -104,12 +110,12 @@ impl Merging for bool {
     }
 }
 
+/// `Resolving` objects implement `resolve` which removes book-keeping objects related to
+/// the parsing an object (e.g. toml::Span), and returns a more ergonomic object
+/// representations useful for downstream operations that don't care about these
+/// book-keeping objects.
 pub trait Resolving<R> {
     fn resolve(self, name: impl Into<String>) -> ResultVec<R>;
-}
-
-pub trait Requiring<R> {
-    fn require(self, name: impl Into<String>) -> Result<R>;
 }
 
 impl<T, U> Resolving<U> for Spanned<T>
@@ -134,8 +140,14 @@ where
     }
 }
 
-// required values are only required at the very end of parsing, once all known defaults
-// have been resolved
+impl Resolving<String> for String {
+    fn resolve(self, _name: impl Into<String>) -> ResultVec<String> {
+        return Ok(self);
+    }
+}
+
+/// required values represent a value that cannot be missing in a keybinding object after
+/// resolving all user defined defaults.
 #[derive(Serialize, Default, Deserialize, PartialEq, Debug, Clone)]
 #[serde(untagged, try_from = "Option<toml::Value>")]
 pub enum Required<T> {
@@ -205,72 +217,58 @@ impl<T> Required<T> {
     }
 }
 
-impl Resolving<String> for String {
-    fn resolve(self, name: impl Into<String>) -> ResultVec<String> {
-        return Ok(self);
-    }
-}
-
 // TODO: use `try_from` to improve error messages
-#[derive(Serialize, Default, Deserialize, PartialEq, Debug, Clone)]
-#[serde(untagged)]
-pub enum Plural<T> {
-    #[default]
-    Zero,
-    One(T),
-    Many(Vec<T>),
-}
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[serde(from = "Vec<T>", into = "Vec<T>")]
+pub struct Plural<T>(pub(crate) Vec<T>)
+where
+    T: Clone;
 
-impl<T> Plural<Spanned<T>> {
-    pub fn into_inner(self) -> Plural<T> {
-        return match self {
-            Plural::Zero => Plural::Zero,
-            Plural::One(x) => Plural::One(x.into_inner()),
-            Plural::Many(xs) => Plural::Many(xs.into_iter().map(|x| x.into_inner()).collect()),
-        };
+impl<T> From<Vec<T>> for Plural<T>
+where
+    T: Clone,
+{
+    fn from(values: Vec<T>) -> Self {
+        return Plural(values);
     }
 }
 
-impl<T> Plural<T> {
-    pub fn to_array(self) -> Vec<T> {
-        return match self {
-            Plural::Zero => Vec::new(),
-            Plural::One(val) => vec![val],
-            Plural::Many(vals) => vals,
-        };
-    }
-
-    pub fn map<F, R>(self, f: F) -> Plural<R>
-    where
-        F: Fn(&T) -> R,
-    {
-        return match self {
-            Plural::Zero => Plural::Zero,
-            Plural::One(x) => Plural::One(f(&x)),
-            Plural::Many(xs) => Plural::Many(xs.iter().map(f).collect()),
-        };
+impl<T> From<T> for Plural<T>
+where
+    T: Clone,
+{
+    fn from(value: T) -> Self {
+        return Plural(vec![value]);
     }
 }
 
-impl<T: Clone> Plural<T> {
-    pub fn or(self, default: Plural<T>) -> Plural<T> {
-        return match self {
-            Plural::Zero => default,
-            _ => self,
-        };
+impl<T> Default for Plural<T>
+where
+    T: Clone,
+{
+    fn default() -> Self {
+        return Plural(vec![]);
+    }
+}
+
+impl<T> From<Plural<T>> for Vec<T>
+where
+    T: Clone,
+{
+    fn from(value: Plural<T>) -> Self {
+        return value.0;
     }
 }
 
 impl<T, U> Resolving<Vec<U>> for Plural<T>
 where
-    T: Resolving<U> + std::fmt::Debug,
+    T: Clone + Resolving<U> + std::fmt::Debug,
     U: std::fmt::Debug,
 {
     fn resolve(self, name: impl Into<String>) -> ResultVec<Vec<U>> {
-        let vals = self.to_array();
         let name = name.into();
         Ok(flatten_errors(
-            vals.into_iter().map(|x| x.resolve(name.clone())),
+            self.0.into_iter().map(|x| x.resolve(name.clone())),
         )?)
     }
 }

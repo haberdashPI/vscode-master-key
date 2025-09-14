@@ -133,20 +133,28 @@ depends = ['build', 'build-tests']
 run = 'pnpm exec playwright test'
 
 [tasks.extract-docs]
-sources = ['README.md', 'src/extension/**/*.ts', 'docs/templates/**/*.md']
-outputs = { auto = true }
-run = 'simple-src-docs -d docs src README.md docs/templates'
+sources = ['README.md', 'src/extension/**/*.ts', 'src/rust/**/*.rs', 'src/docs/**/*.md']
+outputs = ['docs/**/*.md']
+run = ['simple-src-docs -d docs src README.md', 'cp src/docs/index.md docs/']
+
+[tasks.dev-docs]
+depends = ['extract-docs']
+run = 'pnpm exec vitepress dev docs'
 
 [tasks.build-docs]
-sources = [
-    'docs/index.md',
-    'docs/guide.md',
-    'docs/bindings/**/*.md',
-    'docs/commands/**/*.md',
-]
+sources = ['docs/**/*.md']
 outputs = ['docs/.vitepress/dist/**/*']
 depends = ['extract-docs']
 run = 'pnpm exec vitepress build docs'
+
+[tasks.clean-docs]
+shell = 'nu -c'
+run = '''
+let to_remove = glob docs/**/*.md
+if not ($to_remove | is-empty) {
+    rm ...$to_remove
+}
+'''
 
 [tasks.report-coverage]
 depends = ['test --coverage', 'test-integration']

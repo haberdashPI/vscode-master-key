@@ -10,7 +10,78 @@
 /// top-level fields:
 ///
 ///
-// top-level parsing of an entire file
+
+// NOTE: .simple-src-docs.config.toml is setup to insert a list of
+// bindings here, between the above text and the below example
+
+/// @file bindings/index.md
+/// @order 50
+///
+/// Here's a minimal example, demonstrating the most basic use of each field
+///
+/// ```toml
+/// [header]
+/// # this denotes the file-format version, it must be semver compatible with 2.0
+/// version = "2.0"
+/// name = "My Bindings"
+///
+/// [[mode]]
+/// name = "insert"
+///
+/// [[mode]]
+/// name = "normal"
+/// default = true
+///
+/// [[kind]]
+/// name = "motion"
+/// description = "Commands that move your cursor"
+///
+/// [[kind]]
+/// name = "mode"
+/// description = "Commands that change the keybinding mode"
+///
+/// [[bind]]
+/// key = "i"
+/// doc.name = "insert"
+/// mode = "normal"
+/// command = "master-key.enterInsert"
+/// doc.kind = "mode"
+///
+/// [[bind]]
+/// key = "escape"
+/// doc.name = "normal"
+/// mode = "insert"
+/// command = "master-key.enterNormal"
+/// doc.kind = "mode"
+///
+/// [[define.bind]]
+/// id = "basic_motion"
+/// mode = "normal"
+/// doc.kind = "motion"
+/// command = "cursorMove"
+///
+/// [[bind]]
+/// doc.name = "right"
+/// defaults = "{{basic_motion}}"
+/// key = "l"
+/// args.to = "right"
+///
+/// [[bind]]
+/// doc.name = "left"
+/// defaults = "{{basic_motion}}"
+/// key = "h"
+/// args.to = "left"
+///
+/// [[define.var]]
+/// foo = 1
+///
+/// [[bind]]
+/// doc.name = "double right"
+/// key = "g l"
+/// defaults = "{{basic_motion}}"
+/// args.to = "right"
+/// args.value = "{{foo+1}}"
+/// ```
 use crate::bind::{Binding, BindingInput};
 use crate::define::{Define, DefineInput};
 use crate::error::{ErrorContext, ErrorReport, ResultVec, flatten_errors};
@@ -37,6 +108,7 @@ pub struct KeyFile {
 
 impl KeyFile {
     fn new(input: KeyFileInput) -> ResultVec<KeyFile> {
+        // [[define]]
         let mut errors = Vec::new();
         let define_input = input.define.unwrap_or_default();
         let mut define = match Define::new(define_input) {
@@ -47,6 +119,7 @@ impl KeyFile {
             Ok(x) => x,
         };
 
+        // [[bind]]
         let input_iter = input
             .bind
             .into_iter()

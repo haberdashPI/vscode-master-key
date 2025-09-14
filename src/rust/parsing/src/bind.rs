@@ -23,18 +23,18 @@ use crate::util::{Merging, Plural, Required, Resolving};
 pub const UNKNOWN_RANGE: core::ops::Range<usize> = usize::MIN..usize::MAX;
 
 fn default_mode() -> Spanned<Plural<TypedValue<String>>> {
-    return Spanned::new(
-        UNKNOWN_RANGE,
-        Plural::One(TypedValue::Constant("default".into())),
-    );
+    return Spanned::new(UNKNOWN_RANGE, Plural::default());
 }
 
 fn span_required_default<T>() -> Spanned<Required<T>> {
     return Spanned::new(UNKNOWN_RANGE, Required::DefaultValue);
 }
 
-fn span_plural_default<T>() -> Spanned<Plural<T>> {
-    return Spanned::new(UNKNOWN_RANGE, Plural::Zero);
+fn span_plural_default<T>() -> Spanned<Plural<T>>
+where
+    T: Clone,
+{
+    return Spanned::new(UNKNOWN_RANGE, Plural::default());
 }
 
 //
@@ -58,11 +58,21 @@ fn span_plural_default<T>() -> Spanned<Plural<T>> {
 /// - ❗ denotes a required field.
 /// - ⚡ denotes that a field can include runtime [expressions](/expressions/index)
 ///
+/// ## Fields
+///
 #[derive(Deserialize, Clone, Debug)]
 pub struct BindingInput {
     // implementation detail of `BindingInput`: this field should only be `Some` when used
     // as a part of an entry to `Define`. It is removed downstream using `without_id`.
     pub(crate) id: Option<Spanned<String>>,
+
+    /// @forBindingField bind
+    ///
+    /// - ❗`key`: the
+    ///   [keybinding](https://code.visualstudio.com/docs/getstarted/keybindings) that
+    ///   triggers `command`.
+    #[serde(default = "span_required_default")]
+    pub key: Spanned<Required<KeyBinding>>,
 
     /// @forBindingField bind
     ///
@@ -79,14 +89,6 @@ pub struct BindingInput {
     ///    runtime evaluated [expressions](/expressions/index).
     #[serde(default)]
     pub args: Option<Spanned<Value>>,
-
-    /// @forBindingField bind
-    ///
-    /// - ❗`key`: the
-    ///   [keybinding](https://code.visualstudio.com/docs/getstarted/keybindings) that
-    ///   triggers `command`.
-    #[serde(default = "span_required_default")]
-    pub key: Spanned<Required<KeyBinding>>,
 
     /// @forBindingField bind
     ///
@@ -114,7 +116,7 @@ pub struct BindingInput {
     /// @forBindingField bind
     ///
     /// - `default`: the default values to use for fields, specified as
-    ///    string of the form `{{bind.[name]}}`.
+    ///    string of the form <span v-pre>`{{bind.[name]}}`</span>.
     ///    See [`define`](/bindings/define) for more details.
     #[serde(default)]
     pub default: Option<Spanned<BindingReference>>,
@@ -128,7 +130,7 @@ pub struct BindingInput {
     /// @forBindingField bind
     ///
     /// - `prefixes`: array of strings or an expression of producing such an array.
-    ///   (see also [`all_prefixes`](expressions/functions#all_prefixes).
+    ///   (see also [`all_prefixes`](expressions/functions#all_prefixes)).
     ///   The prefixes determine one or more *unresolved* key
     ///   sequences that can have occurred before typing this key. See
     ///   [`master-key.prefix`](/commands/prefix) for details. Defaults to `""` (a.k.a.
@@ -151,12 +153,14 @@ pub struct BindingInput {
     ///
     /// - ⚡ `repeat`: The number of times to repeat the command; this can be a runtime
     ///   [expression](/expressions/index). This defaults to zero: one repeat means the
-    ///   command is run twice.
+    ///   command is run twice. The most common use case here is to set this to <span
+    ///   v-pre>`'{{key.count}}'`</span> for a command that does not accept a count value as
+    ///   an argument.
     repeat: Option<Spanned<TypedValue<i32>>>,
 
     /// @forBindingField bind
     ///
-    /// - `doc`: Documentation for this keybinding, none of the fields of this object
+    /// - `doc`: Documentation for this keybinding. None of the fields of this object
     ///   impact the behavior of the keybinding, only the interactive documentation
     ///   features describing keybindings.
     doc: Option<BindingDocInput>,
@@ -190,8 +194,17 @@ pub struct BindingInput {
 /// Each keybinding can make use of any context defined in VSCode across any extension.
 /// Master Key adds the follow contexts:
 ///
-/// - All variables available to an [expression](/expressions/index), prefixed with
-///   `master-key.`
+/// - `master-key.mode`: the current keybinding mode
+/// - `master-key.count`: The current count, as defined by
+///   [`master-key.updateCount`](/commands/updateCount)
+/// - `master-key.captured`: The text currently captured by the most recent call to
+///   [`master-key.restoreNamed`](/commands/restoreNamed) or
+///   [`master-key.captureKeys`](/commands/captureKeys).
+/// - `master-key.prefix`: The currently active [keybinding prefix](/commands/prefix)
+/// - `master-key.record`: a boolean flag used to indicate when keys are marked for
+///   recording
+/// - `master-key.var.[name]`: the current value of a
+///   [defined variable](/bindings/define#variable-definitions).
 /// - `master-key.keybindingPaletteBindingMode`: true when the suggestion palette accepts
 ///   keybinding key presses, false it accepts a string to search the descriptions of said
 ///   keybindings
@@ -291,7 +304,7 @@ impl Expanding for BindingInput {
             }),
             mode: self.mode.map_expressions(f).unwrap_or_else(|mut e| {
                 errors.append(&mut e.errors);
-                Spanned::new(UNKNOWN_RANGE, Plural::Zero)
+                Spanned::new(UNKNOWN_RANGE, Plural::default())
             }),
             priority: self.priority.map_expressions(f).unwrap_or_else(|mut e| {
                 errors.append(&mut e.errors);
@@ -303,7 +316,7 @@ impl Expanding for BindingInput {
             }),
             prefixes: self.prefixes.map_expressions(f).unwrap_or_else(|mut e| {
                 errors.append(&mut e.errors);
-                Spanned::new(UNKNOWN_RANGE, Plural::Zero)
+                Spanned::new(UNKNOWN_RANGE, Plural::default())
             }),
             finalKey: self.finalKey.map_expressions(f).unwrap_or_else(|mut e| {
                 errors.append(&mut e.errors);
@@ -649,10 +662,11 @@ mod tests {
         let foreach = result.foreach.unwrap();
         let values = foreach.get("index").unwrap();
         let numbers: Vec<Value> = values.iter().map(|it| it.clone().into_inner()).collect();
-        assert_eq!(
-            numbers,
-            [Value::Integer(1), Value::Integer(2), Value::Integer(3)]
-        );
+        assert_eq!(numbers, [
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3)
+        ]);
 
         assert_eq!(when, "joe > 1".to_string());
         let prefixes: Vec<String> = result
@@ -715,10 +729,8 @@ mod tests {
             )]))
         );
 
-        assert_eq!(
-            String::from(result.mode.into_inner().to_array().first().unwrap().clone()),
-            "default".to_string()
-        );
+        let modes: Vec<String> = result.mode.resolve("`mode` field").unwrap();
+        assert_eq!(modes.first(), "default".to_string());
         assert_eq!(result.combinedDescription, None);
         assert_eq!(result.combinedName, None);
     }

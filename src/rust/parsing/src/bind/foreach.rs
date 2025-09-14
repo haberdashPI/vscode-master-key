@@ -5,10 +5,10 @@
 ///
 /// The `bind.foreach` field of a keybinding can be used to generate many bindings from one
 /// entry. Each field under `foreach` is looped through exhaustively. On each iteration, any
-/// expressions with `foreach` defined variables are replaced with those variables' values
-/// for the given iteration. For example, the following defines 9 bindings:
+/// [expressions](/expressions/index) with `foreach` defined variables are replaced with those variables' values
+/// for the given iteration. Any expression containing a `foreach` defined variable is
+/// resolved at parse-time. For example, the following defines 9 bindings:
 ///
-/// ::: v-pre
 /// ```toml
 /// [[bind]]
 /// foreach.a = [1,2,3]
@@ -17,17 +17,15 @@
 /// command = "type"
 /// args.text = "{{a-b}}"
 /// ```
-/// :::
 ///
-/// Furthermore, if the expression <code v-pre>{{keys(`[regex]`)}}</code> is included in a
-/// `foreach` value, it is expanded to all keybindings that match the given regular
+/// Furthermore, if the expression <code v-pre>{{keys([quoted-regex])}}</code> is included
+/// in a `foreach` value, it is expanded to all keybindings that match the given regular
 /// expression and spliced into the array of values. For example, the following definition
 /// is used in `Larkin` to allow the numeric keys to be used as count prefix for motions.
 ///
-/// ::: v-pre
 /// ```toml
 /// [[bind]]
-/// foreach.num = ['{{key(`[0-9]`)}}'] # matches all numeric keybindings
+/// foreach.num = ['{{keys(`[0-9]`)}}'] # matches all numeric keybindings
 /// name = "count {{num}}"
 /// key = "{{num}}"
 /// command = "master-key.updateCount"
@@ -35,7 +33,6 @@
 /// args.value = "{{num}}"
 /// # etc...
 /// ```
-/// :::
 use crate::bind::BindingInput;
 
 use lazy_static::lazy_static;

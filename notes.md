@@ -143,21 +143,24 @@ Integration test debugging:
                       - [X] foreach
                       - [ ] error
                       - [X] expression
-                      - [ ] file
-                      - [ ] lib
-                      - [ ] util
+                      - [X] file
+                      - [X] lib
+                      - [~] util
             - [X] replace IndexMap with BTreeMap
             - [X] update documentation of `bind`, `define` and `expressions`
-            - [ ] update documentation rendering pipeline
-            - [ ] fix and test command queues implementation (avoid so much copying)
+            - [X] refactor plural to use `into` / `from` Vec
+            - [X] update documentation rendering pipeline
             - [ ] error reporting is still a little finicky
                 - [ ] could probably make what is part of the same error more explicit
                 - [ ] reduce types of errors and tie error message string more explicitly
                       to name of enum variant
+            - [ ] fix and test command queues implementation (avoid so much copying)
+        - [ ] re-run tests
         - [ ] implement support for tags on `bind` (for filter them)
         - [ ] implement support for `skipWhen` in `command`
         - [ ] improve expression evaluation
             - [ ] support expressions in `foreach` resolution
+                - [ ] check if each AST has a `foreach` variable and resolve it
             - [ ] allow for `var` evaluation in parse-time expressions
             - [ ] move all bare variables in an expression to `code.` object
             - [ ] implement support for `all` functions:
@@ -166,6 +169,7 @@ Integration test debugging:
                 - [ ] `{{all_modes_but(["not_me", "or_me"])}}`
         - [~] command normalization
             - [X] always `runCommand` with an array of objects with `command` field
+            - [ ] support `skipWhen`
             - [ ] flatten all nested `runCommands` calls
                 - [ ] `skipWhen` will have to be propagated/merged to children
         - [ ] check constraints
