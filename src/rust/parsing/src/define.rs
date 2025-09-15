@@ -12,7 +12,7 @@ use toml::Spanned;
 use crate::bind::BindingInput;
 use crate::bind::command::CommandInput;
 use crate::bind::validation::BindingReference;
-use crate::error::{Error, ErrorContext, ErrorWithContext, Result, ResultVec, unexpected};
+use crate::error::{Error, ErrorContext, RawError, Result, ResultVec, unexpected};
 use crate::expression::Scope;
 use crate::expression::value::{Expanding, Value};
 use crate::util::{Merging, Resolving};
@@ -188,7 +188,7 @@ impl Define {
         let mut resolved_bind = HashMap::<String, BindingInput>::new();
         let mut resolved_command = HashMap::<String, CommandInput>::new();
         let mut resolved_var = HashMap::<String, Value>::new();
-        let mut errors: Vec<ErrorWithContext> = Vec::new();
+        let mut errors: Vec<Error> = Vec::new();
 
         for def_block in input.var.into_iter().flatten() {
             for (var, value) in def_block.into_iter() {
@@ -206,7 +206,7 @@ impl Define {
         for def in input.command.into_iter().flatten() {
             let id = def.get_ref().id.clone();
             let span = id
-                .ok_or_else(|| Error::RequiredField("`id` field".into()))
+                .ok_or_else(|| RawError::RequiredField("`id` field".into()))
                 .context_range(&def.span());
             match span {
                 Err(e) => errors.push(e.into()),
@@ -224,7 +224,7 @@ impl Define {
         for def in input.bind.into_iter().flatten() {
             let id = def.get_ref().id.clone();
             let span = id
-                .ok_or_else(|| Error::RequiredField("`id` field".into()))
+                .ok_or_else(|| RawError::RequiredField("`id` field".into()))
                 .context_range(&def.span());
             match span {
                 Err(e) => errors.push(e.into()),
@@ -270,7 +270,7 @@ impl Define {
             let BindingReference(name) = default.as_ref();
             let entry = self.bind.entry(name.clone());
             let occupied_entry = match entry {
-                hash_map::Entry::Vacant(_) => Err(Error::UndefinedVariable(name.clone()))?,
+                hash_map::Entry::Vacant(_) => Err(RawError::UndefinedVariable(name.clone()))?,
                 hash_map::Entry::Occupied(entry) => entry,
             };
             let mut default_value;
@@ -293,12 +293,12 @@ impl Define {
                 return Ok(self
                     .command
                     .get(name)
-                    .ok_or_else(|| Error::UndefinedVariable(name.to_string()))?
+                    .ok_or_else(|| RawError::UndefinedVariable(name.to_string()))?
                     .without_id()
                     .into());
             }
             if BIND_REF.is_match(&exp) {
-                Err(Error::Constraint(
+                Err(RawError::Constraint(
                     "`bind.` reference in `default` field only".into(),
                 ))?
             }

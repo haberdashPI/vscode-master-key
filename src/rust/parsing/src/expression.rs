@@ -6,10 +6,11 @@ use std::collections::{HashMap, VecDeque};
 
 use rhai::Dynamic;
 use serde::Serialize;
+use toml::Spanned;
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
 use crate::{
-    bind::command::Command, error::Error, error::Result, error::ResultVec,
+    bind::command::Command, error::RawError, error::Result, error::ResultVec,
     expression::value::Expanding, expression::value::Value,
 };
 
@@ -94,7 +95,7 @@ use crate::{
 
 #[wasm_bindgen]
 pub struct Scope {
-    pub(crate) asts: HashMap<String, rhai::AST>,
+    pub(crate) asts: HashMap<String, Spanned<rhai::AST>>,
     engine: rhai::Engine,
     pub(crate) state: rhai::Scope<'static>,
     pub(crate) queues: HashMap<String, VecDeque<Command>>,
@@ -119,10 +120,10 @@ impl Scope {
             self.state.set_or_push(k, v.clone());
         }
         return Ok(obj.clone().map_expressions(&mut |expr| {
-            let ast = &self.asts[&expr];
-            let result = self.engine.eval_ast_with_scope(&mut self.state, &ast);
+            let ast = self.asts[&expr].get_ref();
+            let result = self.engine.eval_ast_with_scope(&mut self.state, ast);
             let value: rhai::Dynamic = match result {
-                Err(x) => Err(Error::ExpressionEval(format!("{}", x)))?,
+                Err(x) => Err(RawError::ExpressionEval(format!("{}", x)))?,
                 Ok(x) => x,
             };
             let result_value: Value = value.clone().try_into()?;
@@ -154,7 +155,7 @@ impl Scope {
 
     pub fn set(&mut self, name: String, value: JsValue) -> Result<()> {
         let toml: toml::Value = match serde_wasm_bindgen::from_value(value) {
-            Err(e) => Err(Error::JsSerialization(format!("{}", e)))?,
+            Err(e) => Err(RawError::JsSerialization(format!("{}", e)))?,
             Ok(x) => x,
         };
         let val: Value = toml.try_into()?;
@@ -167,22 +168,22 @@ impl Scope {
         return Ok(self
             .state
             .remove(&name)
-            .ok_or_else(|| Error::UndefinedVariable(name))?);
+            .ok_or_else(|| RawError::UndefinedVariable(name))?);
     }
 
     pub fn get(&self, name: String) -> Result<JsValue> {
         let x: &rhai::Dynamic = self
             .state
             .get(&name)
-            .ok_or_else(|| Error::UndefinedVariable(name))?;
+            .ok_or_else(|| RawError::UndefinedVariable(name))?;
         let x: Value = match x.clone().try_cast_result() {
-            Err(e) => Err(Error::Rhai(format!("{}", e)))?,
+            Err(e) => Err(RawError::Rhai(format!("{}", e)))?,
             Ok(x) => x,
         };
         let x: toml::Value = x.into();
         let to_json = serde_wasm_bindgen::Serializer::json_compatible();
         return match x.serialize(&to_json) {
-            Err(e) => Err(Error::JsSerialization(format!("{}", e)))?,
+            Err(e) => Err(RawError::JsSerialization(format!("{}", e)))?,
             Ok(x) => Ok(x),
         };
     }

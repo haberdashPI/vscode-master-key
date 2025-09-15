@@ -1,4 +1,4 @@
-use crate::error::{Error, ErrorsWithContext, Result, ResultVec};
+use crate::error::{ErrorSet, RawError, Result, ResultVec};
 use crate::expression::value::{EXPRESSION, Expanding, TypedValue, Value};
 use crate::util::{Merging, Resolving};
 
@@ -105,11 +105,11 @@ fn valid_key_binding_str(str: &str) -> Result<()> {
             if first {
                 first = false;
                 if !KEY_REGEXS.iter().any(|r| r.is_match(part)) {
-                    return Err(Error::Validation(format!("key name {part}")))?;
+                    return Err(RawError::Validation(format!("key name {part}")))?;
                 }
             } else {
                 if !MODIFIER_REGEX.is_match(part) {
-                    return Err(Error::Validation(format!("modifier name {part}")))?;
+                    return Err(RawError::Validation(format!("modifier name {part}")))?;
                 }
             }
         }
@@ -122,7 +122,7 @@ fn valid_key_binding_str(str: &str) -> Result<()> {
 pub struct KeyBinding(TypedValue<String>);
 
 impl TryFrom<String> for KeyBinding {
-    type Error = ErrorsWithContext;
+    type RawError = ErrorSet;
     fn try_from(value: String) -> ResultVec<Self> {
         if EXPRESSION.is_match(&value) {
             return Ok(KeyBinding(TypedValue::Variable(
@@ -162,7 +162,7 @@ impl Expanding for KeyBinding {
                     valid_key_binding_str(&val)?;
                     KeyBinding(TypedValue::Constant(val))
                 }
-                other @ _ => return Err(Error::Unexpected("non-string value"))?,
+                other @ _ => return Err(RawError::Unexpected("non-string value"))?,
             },
         })
     }
@@ -211,7 +211,7 @@ lazy_static! {
 pub struct BindingReference(pub(crate) String);
 
 impl TryFrom<String> for BindingReference {
-    type Error = ErrorsWithContext;
+    type RawError = ErrorSet;
     fn try_from(value: String) -> ResultVec<Self> {
         let value: Value = toml::Value::String(value).try_into()?;
         match value {
@@ -221,12 +221,12 @@ impl TryFrom<String> for BindingReference {
                         captures.get(1).expect("variable name").as_str().to_string(),
                     ))
                 } else {
-                    Err(Error::Validation(
+                    Err(RawError::Validation(
                         "binding reference (must be of the form `{{bind.[identifier]}}`".into(),
                     ))?
                 }
             }
-            _ => Err(Error::Validation(
+            _ => Err(RawError::Validation(
                 "binding reference (must be of the form `{{bind.[identifier]}}`".into(),
             ))?,
         }

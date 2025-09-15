@@ -360,6 +360,7 @@ dependencies = [
  "rhai",
  "serde",
  "serde-wasm-bindgen",
+ "smallvec",
  "string-offsets",
  "test-log",
  "thiserror",

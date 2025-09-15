@@ -1,7 +1,8 @@
 use crate::bind::UNKNOWN_RANGE;
 
 use core::ops::Range;
-use rhai;
+use rhai::{self, EvalAltResult};
+use smallvec::SmallVec;
 use std::fmt;
 use string_offsets::{Pos, StringOffsets};
 use thiserror::Error;
@@ -11,54 +12,41 @@ use wasm_bindgen::prelude::*;
 // TODO: properly handle `WhileTrying` (e.g. by having an outer type to prevent nesting)
 
 #[derive(Debug, Error, Clone)]
-pub enum Error {
-    #[error("toml parsing {0}")]
+pub enum RawError {
+    #[error("while parsing toml: {0}")]
     TomlParsing(#[from] toml::de::Error),
-    #[error("expression parsing {0}")]
+    #[error("while parsing expression: {0}")]
     ExpressionParsing(#[from] rhai::ParseError),
-    #[error("expression eval {0}")]
-    ExpressionEval(String),
-    #[error("serializing {0}")]
+    #[error("while writing toml: {0}")]
     Serialization(#[from] toml::ser::Error),
-    #[error("deserializing {0}")]
-    JsSerialization(String),
-    #[error("expression failed with {0}")]
-    Rhai(String),
-    #[error("invalid {0}")]
-    Validation(String),
-    #[error("expected {0}")]
-    Constraint(String),
-    #[error("requires {0}")]
-    RequiredField(String),
-    #[error("unexpected {0}")]
-    Unexpected(&'static str),
-    #[error("unresolved {0}")]
-    Unresolved(String),
-    #[error("undefined variable {0}")]
-    UndefinedVariable(String),
-    #[error("reserved field name {0}")]
-    ReservedField(&'static str),
-    #[error("parsing regex failed with {0}")]
+    #[error("while parsing regex: {0}")]
     Regex(#[from] regex::Error),
+    #[error("{0}")]
+    Static(&'static str),
+    #[error("{0}")]
+    Dynamic(String),
 }
 
-// TODO: figure out how to expose errors in wasm
-// (maybe we output some regular formatting structure rather than individual error types)
 #[wasm_bindgen]
 #[derive(Debug, Error, Clone)]
-pub struct ErrorWithContext {
+pub struct Error {
     #[source]
-    #[wasm_bindgen(skip)]
-    pub error: Error,
-    #[wasm_bindgen(skip)]
-    pub contexts: Vec<Context>,
+    pub(crate) error: RawError,
+    pub(crate) contexts: SmallVec<[String; 8]>,
+    pub(crate) ranges: SmallVec<[Position; 8]>,
+}
+
+#[derive(Debug, Clone)]
+enum Position {
+    Rhai(rhai::Position),
+    Range(Range<usize>),
 }
 
 #[wasm_bindgen]
 #[derive(Debug, Clone, Error)]
 #[error("first error: {}", .errors[0])]
-pub struct ErrorsWithContext {
-    pub(crate) errors: Vec<ErrorWithContext>,
+pub struct ErrorSet {
+    pub(crate) errors: Vec<Error>,
 }
 
 fn range_to_pos(range: Range<usize>, offsets: &StringOffsets) -> CharRange {
@@ -67,21 +55,31 @@ fn range_to_pos(range: Range<usize>, offsets: &StringOffsets) -> CharRange {
     CharRange { start, end }
 }
 
-impl From<ErrorWithContext> for ErrorsWithContext {
-    fn from(value: ErrorWithContext) -> Self {
-        return ErrorsWithContext {
+// TODO: stopped working here
+impl From<Box<EvalAltResult>> for Error {
+    fn from(value: Box<EvalAltResult>) -> Self {
+        let error: Error = RawError::Dynamic(format!("{}", value)).into();
+        // how to combine with info about surrounding range
+        // (if we have a range after this one use it; or should it be before?)
+        error.context_range(Position::Rhai(value.position()));
+    }
+}
+
+impl From<Error> for ErrorSet {
+    fn from(value: Error) -> Self {
+        return ErrorSet {
             errors: vec![value],
         };
     }
 }
 
 #[wasm_bindgen]
-impl ErrorWithContext {
+impl Error {
     pub fn report(&self, content: &[u8]) -> ErrorReport {
         let mut items = Vec::with_capacity(self.contexts.len() + 1);
         let offsets: StringOffsets = StringOffsets::from_bytes(content);
         items.push(match &self.error {
-            Error::TomlParsing(toml) => ErrorReportItem {
+            RawError::TomlParsing(toml) => ErrorReportItem {
                 message: Some(toml.message().into()),
                 range: toml.span().map(|r| range_to_pos(r, &offsets)),
             },
@@ -113,7 +111,7 @@ impl ErrorWithContext {
 }
 
 #[wasm_bindgen]
-impl ErrorsWithContext {
+impl ErrorSet {
     pub fn report(&self, content: &[u8]) -> Vec<ErrorReport> {
         return self.errors.iter().map(|e| e.report(content)).collect();
     }
@@ -133,7 +131,7 @@ where
     let flat_errs = errors
         .into_iter()
         .flat_map(|x| x.unwrap_err().errors.into_iter())
-        .collect::<Vec<ErrorWithContext>>();
+        .collect::<Vec<Error>>();
 
     if flat_errs.len() > 0 {
         return Err(flat_errs.into());
@@ -162,8 +160,8 @@ pub enum Context {
     Range(Range<usize>),
 }
 
-impl fmt::Display for ErrorWithContext {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> std::result::Result<(), fmt::Error> {
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> std::result::Result<(), fmt::RawError> {
         for context in &self.contexts {
             match context {
                 Context::String(str) => {
@@ -179,51 +177,59 @@ impl fmt::Display for ErrorWithContext {
     }
 }
 
-impl<E: Into<Error>> From<E> for ErrorWithContext {
+impl<E: Into<RawError>> From<E> for Error {
     fn from(error: E) -> Self {
-        return ErrorWithContext {
+        return Error {
             error: error.into(),
-            contexts: vec![],
+            contexts: SmallVec::new(),
         };
     }
 }
 
-impl<E: Into<Error>> From<E> for ErrorsWithContext {
+impl From<Box<EvalAltResult>> for Error {}
+
+impl<E: Into<RawError>> From<E> for ErrorSet {
     fn from(error: E) -> Self {
+        let error: RawError = error.into();
         let error: Error = error.into();
-        let error: ErrorWithContext = error.into();
         return error.into();
     }
 }
 
-impl From<Vec<ErrorWithContext>> for ErrorsWithContext {
-    fn from(value: Vec<ErrorWithContext>) -> Self {
-        return ErrorsWithContext { errors: value };
+impl From<Vec<Error>> for ErrorSet {
+    fn from(value: Vec<Error>) -> Self {
+        return ErrorSet { errors: value };
     }
 }
 
 pub fn constrain<T>(msg: &str) -> Result<T> {
-    return Err(Error::Constraint(msg.into()))?;
+    return Err(RawError::Constraint(msg.into()))?;
 }
 
 pub fn unexpected<T>(msg: &'static str) -> Result<T> {
-    return Err(Error::Unexpected(msg))?;
+    return Err(RawError::Unexpected(msg))?;
 }
 
 pub fn reserved<T>(msg: &'static str) -> Result<T> {
-    return Err(Error::ReservedField(msg))?;
+    return Err(RawError::ReservedField(msg))?;
 }
+
+// TODO: range - we select the most narrowest error, or the first
+// such error if some don't overlap
+// TODO: keep context string
+// when reporting we don't split single Error into
+// multiple diagnostics
 
 pub trait ErrorContext<T>
 where
     Self: Sized,
 {
-    type Error;
-    fn context(self, context: Context) -> std::result::Result<T, Self::Error>;
-    fn context_str(self, context: impl Into<String>) -> std::result::Result<T, Self::Error> {
+    type RawError;
+    fn context(self, context: Context) -> std::result::Result<T, Self::RawError>;
+    fn context_str(self, context: impl Into<String>) -> std::result::Result<T, Self::RawError> {
         self.context(Context::String(context.into()))
     }
-    fn context_range(self, context: &impl Spannable) -> std::result::Result<T, Self::Error> {
+    fn context_range(self, context: &impl Spannable) -> std::result::Result<T, Self::RawError> {
         if let Some(range) = context.range() {
             return self.context(Context::Range(range));
         } else {
@@ -254,12 +260,12 @@ impl Spannable for Range<usize> {
     }
 }
 
-impl<T, E: Into<Error>> ErrorContext<T> for std::result::Result<T, E> {
-    type Error = ErrorWithContext;
+impl<T, E: Into<RawError>> ErrorContext<T> for std::result::Result<T, E> {
+    type RawError = Error;
     fn context(self, context: Context) -> Result<T> {
         return match self {
             Ok(x) => Ok(x),
-            Err(e) => Err(ErrorWithContext {
+            Err(e) => Err(Error {
                 error: e.into(),
                 contexts: vec![context],
             }),
@@ -268,13 +274,13 @@ impl<T, E: Into<Error>> ErrorContext<T> for std::result::Result<T, E> {
 }
 
 impl<T> ErrorContext<T> for Result<T> {
-    type Error = ErrorWithContext;
+    type RawError = Error;
     fn context(self, context: Context) -> Result<T> {
         return match self {
             Ok(x) => Ok(x),
             Err(mut e) => {
                 e.contexts.push(context);
-                Err(ErrorWithContext {
+                Err(Error {
                     error: e.error,
                     contexts: e.contexts,
                 })
@@ -284,7 +290,7 @@ impl<T> ErrorContext<T> for Result<T> {
 }
 
 impl<T> ErrorContext<T> for ResultVec<T> {
-    type Error = ErrorsWithContext;
+    type RawError = ErrorSet;
     fn context(self, context: Context) -> ResultVec<T> {
         return match self {
             Ok(x) => Ok(x),
@@ -298,5 +304,5 @@ impl<T> ErrorContext<T> for ResultVec<T> {
     }
 }
 
-pub type Result<T> = std::result::Result<T, ErrorWithContext>;
-pub type ResultVec<T> = std::result::Result<T, ErrorsWithContext>;
+pub type Result<T> = std::result::Result<T, Error>;
+pub type ResultVec<T> = std::result::Result<T, ErrorSet>;

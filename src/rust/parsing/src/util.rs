@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use toml::{Spanned, Value};
 
-use crate::error::{Error, ErrorContext, ErrorWithContext, Result, ResultVec, flatten_errors};
+use crate::error::{RawError, ErrorContext, Error, Result, ResultVec, flatten_errors};
 
 /// The `Merging` trait allows us to combine two versions of an object according to
 /// two different approaches (`coalesce` or `merge`).
@@ -160,7 +160,7 @@ impl<'de, T> TryFrom<Option<toml::Value>> for Required<T>
 where
     T: Deserialize<'de>,
 {
-    type Error = ErrorWithContext;
+    type RawError = Error;
     fn try_from(value: Option<toml::Value>) -> Result<Self> {
         match value {
             None => Ok(Required::DefaultValue),
@@ -175,7 +175,7 @@ where
 {
     fn resolve(self, name: impl Into<String>) -> ResultVec<U> {
         match self {
-            Required::DefaultValue => Err(Error::RequiredField(name.into()))?,
+            Required::DefaultValue => Err(RawError::RequiredField(name.into()))?,
             Required::Value(x) => x.resolve(name),
         }
     }

@@ -206,7 +206,8 @@ Integration test debugging:
     - [ ] serialization of bindings to settings.json
     - [ ] create data types to generate warnings/hints for old/unused fields
         - [ ] test this on the old version of larkin.toml
-    - [ ] actually replace javascript behavior with rust functions
+    - [ ] actually replace javascript behavior with rust functions (replace `dod`)
+    - [ ] replace `setFlag` with `updateDefine`
     - [ ] CI
         - [x] setup CI unit tests for rust
         - [x] setup rust coverage

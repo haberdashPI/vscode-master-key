@@ -6,11 +6,12 @@ use regex::Regex;
 use rhai::Dynamic;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use std::fmt::Display;
 use std::io::Write;
 use std::{default, io};
 use toml::Spanned;
 
-use crate::error::{Error, ErrorContext, ErrorsWithContext, Result, ResultVec, flatten_errors};
+use crate::error::{ErrorContext, ErrorSet, RawError, Result, ResultVec, flatten_errors};
 use crate::util::{Merging, Plural, Required, Resolving};
 
 //
@@ -62,7 +63,7 @@ impl From<Value> for Dynamic {
 }
 
 impl TryFrom<Dynamic> for Value {
-    type Error = crate::error::ErrorWithContext;
+    type RawError = crate::error::Error;
     // TODO: this is currently almost certainly quite inefficient (we clone arrays and
     // maps), but we can worry about optimizing this later
     fn try_from(value: Dynamic) -> Result<Self> {
@@ -97,7 +98,7 @@ impl TryFrom<Dynamic> for Value {
                     .to_string(),
             ));
         } else {
-            Err(Error::Constraint(format!(
+            Err(RawError::Constraint(format!(
                 "usable script value; but {value} is unusable"
             )))?
         }
@@ -109,14 +110,14 @@ lazy_static! {
 }
 
 impl TryFrom<toml::Value> for Value {
-    type Error = ErrorsWithContext;
+    type RawError = ErrorSet;
     fn try_from(value: toml::Value) -> ResultVec<Self> {
         return Ok(match value {
             toml::Value::Boolean(x) => Value::Boolean(x),
             toml::Value::Float(x) => Value::Float(x),
             toml::Value::Integer(x) => Value::Integer({
                 if x > (std::f64::MAX as i64) || x < (std::f64::MIN as i64) {
-                    return Err(Error::Constraint(format!(
+                    return Err(RawError::Constraint(format!(
                         "{x} cannot be expressed as a 64-bit floating point number."
                     ))
                     .into());
@@ -266,7 +267,7 @@ pub trait Expanding {
         Self: Sized + Clone,
     {
         self.clone().map_expressions(&mut |e| {
-            Err(Error::Unresolved(format!("Unresolved expression {e}")).into())
+            Err(RawError::Unresolved(format!("Unresolved expression {e}",)))?
         })?;
         return Ok(());
     }
@@ -441,13 +442,13 @@ impl<'e, T> TryFrom<toml::Value> for TypedValue<T>
 where
     T: Deserialize<'e> + Serialize + std::fmt::Debug,
 {
-    type Error = ErrorsWithContext;
+    type RawError = ErrorSet;
     fn try_from(value: toml::Value) -> ResultVec<TypedValue<T>> {
         io::stdout().flush().unwrap();
 
         let val: Value = value.try_into()?;
         io::stdout().flush().unwrap();
-        return match val.require_constant() {
+        return match val.require_constant("") {
             Err(_) => Ok(TypedValue::Variable(val)),
             Ok(_) => {
                 let toml: toml::Value = val.into();
