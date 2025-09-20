@@ -9,6 +9,10 @@ use crate::err;
 use crate::error::{Error, ErrorContext, Result, ResultVec, flatten_errors};
 use crate::expression::value::TypedValue;
 
+//
+// ---------------- Merging ----------------
+//
+
 /// The `Merging` trait allows us to combine two versions of an object according to
 /// two different approaches (`coalesce` or `merge`).
 pub trait Merging {
@@ -118,6 +122,74 @@ impl Merging for bool {
     }
 }
 
+impl<T: Merging> Merging for Option<T> {
+    fn merge(self, new: Self) -> Self {
+        return match new {
+            Some(newval) => match self {
+                Some(oldval) => Some(oldval.merge(newval)),
+                None => Some(newval),
+            },
+            None => self,
+        };
+    }
+
+    fn coalesce(self, new: Self) -> Self {
+        return new.or(self);
+    }
+}
+
+impl Merging for String {
+    fn merge(self, new: Self) -> Self {
+        return new;
+    }
+    fn coalesce(self, new: Self) -> Self {
+        return new;
+    }
+}
+
+impl Merging for toml::Value {
+    fn coalesce(self, new: Self) -> Self {
+        return new;
+    }
+    fn merge(self, new: Self) -> Self {
+        match new {
+            Value::Array(new_values) => match self {
+                Value::Array(old_values) => {
+                    let mut result = Vec::with_capacity(new_values.len().max(old_values.len()));
+                    let mut new_iter = new_values.iter();
+                    let mut old_iter = old_values.iter();
+                    loop {
+                        let new_item = new_iter.next();
+                        let old_item = old_iter.next();
+                        if let Some(new_val) = new_item {
+                            if let Some(old_val) = old_item {
+                                result.push(old_val.clone().merge(new_val.clone()));
+                            } else {
+                                result.push(new_val.clone());
+                            }
+                        } else if let Some(old_val) = old_item {
+                            result.push(old_val.clone());
+                        } else {
+                            break;
+                        }
+                    }
+                    Value::Array(result)
+                }
+                _ => Value::Array(new_values),
+            },
+            Value::Table(new_kv) => match self {
+                Value::Table(old_kv) => Value::Table(old_kv.merge(new_kv)),
+                _ => Value::Table(new_kv),
+            },
+            _ => new,
+        }
+    }
+}
+
+//
+// ---------------- Resolving ----------------
+//
+
 #[macro_export]
 macro_rules! resolve {
     ($x:expr, $field:ident) => {
@@ -185,6 +257,10 @@ where
         }
     }
 }
+
+//
+// ---------------- Required values ----------------
+//
 
 /// required values represent a value that cannot be missing in a keybinding object after
 /// resolving all user defined defaults.
@@ -257,6 +333,10 @@ impl<T> Required<T> {
     }
 }
 
+//
+// ---------------- Plural values ----------------
+//
+
 #[derive(Deserialize, Debug, Clone)]
 #[serde(untagged)]
 pub enum RawPlural<T> {
@@ -310,69 +390,5 @@ where
 {
     fn resolve(self, name: &'static str) -> ResultVec<Vec<U>> {
         Ok(flatten_errors(self.0.into_iter().map(|x| x.resolve(name)))?)
-    }
-}
-
-impl<T: Merging> Merging for Option<T> {
-    fn merge(self, new: Self) -> Self {
-        return match new {
-            Some(newval) => match self {
-                Some(oldval) => Some(oldval.merge(newval)),
-                None => Some(newval),
-            },
-            None => self,
-        };
-    }
-
-    fn coalesce(self, new: Self) -> Self {
-        return new.or(self);
-    }
-}
-
-impl Merging for String {
-    fn merge(self, new: Self) -> Self {
-        return new;
-    }
-    fn coalesce(self, new: Self) -> Self {
-        return new;
-    }
-}
-
-impl Merging for toml::Value {
-    fn coalesce(self, new: Self) -> Self {
-        return new;
-    }
-    fn merge(self, new: Self) -> Self {
-        match new {
-            Value::Array(new_values) => match self {
-                Value::Array(old_values) => {
-                    let mut result = Vec::with_capacity(new_values.len().max(old_values.len()));
-                    let mut new_iter = new_values.iter();
-                    let mut old_iter = old_values.iter();
-                    loop {
-                        let new_item = new_iter.next();
-                        let old_item = old_iter.next();
-                        if let Some(new_val) = new_item {
-                            if let Some(old_val) = old_item {
-                                result.push(old_val.clone().merge(new_val.clone()));
-                            } else {
-                                result.push(new_val.clone());
-                            }
-                        } else if let Some(old_val) = old_item {
-                            result.push(old_val.clone());
-                        } else {
-                            break;
-                        }
-                    }
-                    Value::Array(result)
-                }
-                _ => Value::Array(new_values),
-            },
-            Value::Table(new_kv) => match self {
-                Value::Table(old_kv) => Value::Table(old_kv.merge(new_kv)),
-                _ => Value::Table(new_kv),
-            },
-            _ => new,
-        }
     }
 }

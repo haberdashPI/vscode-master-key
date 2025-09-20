@@ -104,6 +104,8 @@ where
             return self.with_context(Context::Range(UNKNOWN_RANGE));
         }
     }
+    // TODO: use this once we have ranges for expressions
+    #[allow(dead_code)]
     fn with_expression_range(
         self,
         context: &impl Spannable,
@@ -114,6 +116,8 @@ where
             return self.with_context(Context::ExpressionRange(UNKNOWN_RANGE));
         }
     }
+    // TODO: use this once we have ranges for expressions
+    #[allow(dead_code)]
     fn with_pos(self, context: rhai::Position) -> std::result::Result<T, Self::Error> {
         return self.with_context(Context::RhaiPosition(context));
     }
@@ -308,6 +312,8 @@ fn resolve_rhai_pos_from_expression_range(
 
 #[wasm_bindgen]
 impl Error {
+    /// `report` is how we generate legible annotations
+    /// of *.mk.toml file errors in typescript
     pub fn report(&self, content: &[u8]) -> ErrorReport {
         let offsets: StringOffsets = StringOffsets::from_bytes(content);
         let mut message_buf = String::new();

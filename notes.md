@@ -132,39 +132,37 @@ Integration test debugging:
             - [X] write some type-script unit tests
         - [ ] cleanup, document and refactor code
             - NOTE: we're waiting until we test out spans and the other stuff above because that could require more refactoring
-            - [ ] re-organize the code into smaller units
+            - [X] re-organize the code into smaller units
                 - [X] bind is way to big start by breaking that up
-                - [ ] organize order of definitions in files (e.g. join separate `impl`
+                - [X] organize order of definitions in files (e.g. join separate `impl`
                       segments)
                       - [X] `bind`
                       - [X] define
                       - [X] value
                       - [X] validation
                       - [X] foreach
-                      - [ ] error
+                      - [X] error
                       - [X] expression
                       - [X] file
                       - [X] lib
-                      - [~] util
+                      - [X] util
             - [X] replace IndexMap with BTreeMap
             - [X] update documentation of `bind`, `define` and `expressions`
             - [X] refactor plural to use `into` / `from` Vec
             - [X] update documentation rendering pipeline
-            - [ ] error reporting is still a little finicky
-                - [ ] properly inject Rhai expression range into errors
+            - [X] error reporting is still a little finicky
+                - [X] properly inject Rhai expression range into errors
                 - [X] could probably make what is part of the same error more explicit
                 - [X] reduce types of errors and tie error message string more explicitly
                       to name of enum variant
-            - [ ] fix and test command queues implementation (avoid so much copying)
-            - [ ] support spans for expressions
-        - [ ] re-run tests
+            - [ ] get error reporting working in javascript again
         - [ ] implement support for tags on `bind` (for filter them)
         - [ ] implement support for `skipWhen` in `command`
         - [ ] improve expression evaluation
             - [ ] support expressions in `foreach` resolution
                 - [ ] check if each AST has a `foreach` variable and resolve it
             - [ ] allow for `var` evaluation in parse-time expressions
-            - [ ] move all bare variables in an expression to `code.` object
+            - [ ] move all bare variables in an expression to `key.` or `code.` object
             - [ ] implement support for `all` functions:
                 - [ ] `{{all_prefixes()}}`
                 - [ ] `{{all_modes()}}`
@@ -192,6 +190,10 @@ Integration test debugging:
         - [ ] expand prefixes to prefixCode and move to when clause
         - [ ] move mode to when clause
         - [ ] re-implement master-key.do
+            - [ ] fix and test command queues implementation (avoid copying)
+                - [ ] guess: don't have special command queue field
+                - [ ] support accessing values by their path (`val.foo`, `key.count`)
+                      from javascript
             - [ ] transfer scope state from TS to rust Scope object
             - [ ] properly handle command queues (no controlled by rust)
         - [ ] unit tests
@@ -209,7 +211,16 @@ Integration test debugging:
     - [ ] create data types to generate warnings/hints for old/unused fields
         - [ ] test this on the old version of larkin.toml
     - [ ] actually replace javascript behavior with rust functions (replace `dod`)
-    - [ ] replace `setFlag` with `updateDefine`
+    - [ ] replace `setFlag` with `updateDefine` (or something like that)
+    - [ ] improve error reporting in expressions
+        - [ ] support spans for expressions
+            - [ ] create a `SpannedValue` that tracks spans
+                - [ ] try to implement with just the Span for expressions tracked
+                - [ ] BUT this probably has to be for all variants, to avoid errors
+            - [ ] parse as `SpannedValue` instead of `toml::Value`
+            - [ ] inject Span into `Expression`
+        - [ ] inject expression spans and rhai positions into error contexts
+            - [ ] test that expressions spans properly resolve
     - [ ] CI
         - [x] setup CI unit tests for rust
         - [x] setup rust coverage
