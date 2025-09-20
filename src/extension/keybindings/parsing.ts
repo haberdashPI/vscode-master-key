@@ -15,7 +15,6 @@ export const INPUT_CAPTURE_COMMANDS = [
     'search',
 ];
 
-
 /**
  * @bindingField header
  * @description top-level properties of the binding file
@@ -307,7 +306,6 @@ export const doArgs = bindingCommand.array().refine(
 );
 export type DoArgs = z.infer<typeof doArgs>;
 
-
 // TODO: the errors are not very informative if we transform the result so early in this
 // way; we need to keep this as close as possible to the form in the raw file
 export const bindingItem = z.
@@ -340,7 +338,6 @@ export const bindingItem = z.
     required({ key: true, when: true, args: true }).
     strict();
 export type BindingItem = z.output<typeof bindingItem>;
-
 
 export const bindingDefault = z.object({
     id: z.string().regex(/(^$|[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)*)/),

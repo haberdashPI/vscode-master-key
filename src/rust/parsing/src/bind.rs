@@ -161,6 +161,14 @@ pub struct BindingInput {
 
     /// @forBindingField bind
     ///
+    /// - `tags`: An array of strings used to characterize the behavior of the binding. They
+    /// have no inherent meaning but are often used when filtering which commands in a call
+    /// to [`master-key.replayFromHistory`](/commands/replayFromHistory/) can be replayed.
+    #[serde(default = "span_plural_default")]
+    tags: Spanned<TypedValue<Plural<String>>>,
+
+    /// @forBindingField bind
+    ///
     /// - `doc`: Documentation for this keybinding. None of the fields of this object
     ///   impact the behavior of the keybinding, only the interactive documentation
     ///   features describing keybindings.
@@ -229,6 +237,7 @@ impl BindingInput {
             prefixes: self.prefixes.clone(),
             finalKey: self.finalKey.clone(),
             repeat: self.repeat.clone(),
+            tags: self.tags.clone(),
             doc: self.doc.clone(),
         };
     }
@@ -252,6 +261,7 @@ impl Merging for BindingInput {
             prefixes: self.prefixes.coalesce(y.prefixes),
             finalKey: self.finalKey.coalesce(y.finalKey),
             repeat: self.repeat.coalesce(y.repeat),
+            tags: self.tags.coalesce(y.tags),
             doc: self.doc.merge(y.doc),
         }
     }
@@ -271,6 +281,7 @@ impl Expanding for BindingInput {
             self.prefixes.is_constant(),
             self.finalKey.is_constant(),
             self.repeat.is_constant(),
+            self.tags.is_constant(),
             self.doc.is_constant(),
         ]
         .into_iter()
@@ -326,6 +337,10 @@ impl Expanding for BindingInput {
             repeat: self.repeat.map_expressions(f).unwrap_or_else(|mut e| {
                 errors.append(&mut e.errors);
                 None
+            }),
+            tags: self.tags.map_expressions(f).unwrap_or_else(|mut e| {
+                errors.append(&mut e.errors);
+                Spanned::new(UNKNOWN_RANGE, TypedValue::default())
             }),
             doc: self.doc.map_expressions(f).unwrap_or_else(|mut e| {
                 errors.append(&mut e.errors);
@@ -518,6 +533,7 @@ pub struct Binding {
     pub prefixes: Vec<String>,
     pub finalKey: bool,
     pub(crate) repeat: TypedValue<i32>,
+    pub tags: Vec<String>,
     pub doc: BindingDoc,
 }
 
@@ -548,6 +564,7 @@ impl Binding {
             prefixes: resolve!(input, prefixes)?,
             finalKey: resolve!(input, finalKey)?,
             repeat: resolve!(input, repeat)?,
+            tags: resolve!(input, tags)?,
             doc: resolve!(input, doc)?,
         });
     }
@@ -613,6 +630,7 @@ mod tests {
         prefixes = "c"
         finalKey = true
         repeat = "{{2+c}}"
+        tags = ["foo", "bar"]
         doc.name = "foo"
         doc.description = "foo bar bin"
         doc.hideInPalette = false
@@ -665,6 +683,9 @@ mod tests {
 
         let finalKey: bool = resolve!(result, finalKey).unwrap();
         assert_eq!(finalKey, true);
+
+        let tags: Vec<String> = resolve!(result, tags).unwrap();
+        assert_eq!(tags, ["foo".to_string(), "bar".to_string()]);
 
         let doc = result.doc.unwrap();
         let name: String = resolve!(doc, name).unwrap();
@@ -860,7 +881,7 @@ mod tests {
             args.value = "with-{{b}}"
         "#;
 
-        let mut result = toml::from_str::<BindingInput>(data).unwrap();
+        let result = toml::from_str::<BindingInput>(data).unwrap();
         let items = result.expand_foreach().unwrap();
 
         let expected_command = vec!["run-1", "run-1", "run-2", "run-2"];

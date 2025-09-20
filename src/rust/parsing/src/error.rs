@@ -407,3 +407,14 @@ pub struct ErrorReport {
     pub message: String,
     pub range: CharRange,
 }
+
+#[wasm_bindgen]
+impl ErrorReport {
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> Self {
+        return ErrorReport {
+            message: String::from(""),
+            range: CharRange::default(),
+        };
+    }
+}
