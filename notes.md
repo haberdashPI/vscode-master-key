@@ -156,7 +156,7 @@ Integration test debugging:
                 - [X] reduce types of errors and tie error message string more explicitly
                       to name of enum variant
             - [X] get error reporting working in javascript again
-            - [ ] remove all compile warnings
+            - [X] remove all compile warnings
         - [X] implement support for tags on `bind` (for filter them)
         - [X] implement support for `skipWhen` in `command`
         - [ ] improve expression evaluation

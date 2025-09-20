@@ -141,7 +141,8 @@ impl Scope {
     #[wasm_bindgen(constructor)]
     pub fn new() -> Scope {
         let mut engine = rhai::Engine::new();
-        engine.set_allow_looping(false).allow_statement_expression();
+        engine.set_allow_looping(false);
+        engine.set_allow_statement_expression(false);
 
         return Scope {
             asts: HashMap::new(),
@@ -175,7 +176,7 @@ impl Scope {
             .get(&name)
             .ok_or_else(|| err!("`{name}` is undefined"))?;
         let x: Value = match x.clone().try_cast_result() {
-            Err(e) => Err(err!("{x} is not a valid JSON value"))?,
+            Err(e) => Err(err!("{x} is not a valid JSON value: {e}"))?,
             Ok(x) => x,
         };
         let x: toml::Value = x.into();

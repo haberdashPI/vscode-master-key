@@ -8,6 +8,7 @@ use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
 use crate::{
     bind::{BindingInput, UNKNOWN_RANGE},
+    err,
     error::{ErrorContext, Result, ResultVec, err},
     expression::Scope,
     expression::value::{Expanding, TypedValue, Value},
@@ -222,7 +223,7 @@ impl Command {
     pub fn args(&self, scope: &mut Scope) -> ResultVec<JsValue> {
         let to_json = serde_wasm_bindgen::Serializer::json_compatible();
         return match self.toml_args(scope)?.serialize(&to_json) {
-            Err(e) => Err(err("object failed to serialize: {e}"))?,
+            Err(e) => Err(err!("object failed to serialize: {e}"))?,
             Ok(x) => Ok(x),
         };
     }

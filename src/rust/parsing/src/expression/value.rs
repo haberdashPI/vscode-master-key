@@ -402,7 +402,7 @@ impl<T: Expanding + std::fmt::Debug> Expanding for Required<T> {
 impl<T: Expanding> Expanding for Option<T> {
     fn is_constant(&self) -> bool {
         match self {
-            None => true,
+            Option::None => true,
             Some(x) => x.is_constant(),
         }
     }
@@ -411,7 +411,7 @@ impl<T: Expanding> Expanding for Option<T> {
         F: FnMut(String) -> Result<Value>,
     {
         return Ok(match self {
-            None => self,
+            Option::None => self,
             Some(x) => Some(x.map_expressions(f)?),
         });
     }
@@ -590,7 +590,7 @@ impl<T> Resolving<TypedValue<T>> for TypedValue<T>
 where
     T: LeafValue + Serialize + std::fmt::Debug,
 {
-    fn resolve(self, name: &'static str) -> ResultVec<TypedValue<T>> {
+    fn resolve(self, _name: &'static str) -> ResultVec<TypedValue<T>> {
         return Ok(self);
     }
 }
@@ -602,7 +602,7 @@ where
     fn resolve(self, _name: &'static str) -> ResultVec<TypedValue<T>> {
         return match self {
             Some(x) => Ok(x.into_inner()),
-            None => Ok(TypedValue::default()),
+            Option::None => Ok(TypedValue::default()),
         };
     }
 }

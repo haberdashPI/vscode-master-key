@@ -309,9 +309,9 @@ impl Define {
 }
 
 mod tests {
-    // use test_log::test;
-
+    #[allow(unused_imports)]
     use super::*;
+
     #[test]
     fn simple_parsing() {
         let data = r#"

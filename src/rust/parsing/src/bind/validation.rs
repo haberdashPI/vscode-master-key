@@ -5,8 +5,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
-use crate::err;
-use crate::error::{ErrorSet, RawError, Result, ResultVec, err};
+use crate::error::{ErrorSet, Result, ResultVec, err};
 use crate::expression::value::{EXPRESSION, Expanding, TypedValue, Value};
 use crate::util::{Merging, Resolving};
 
@@ -155,7 +154,7 @@ impl Expanding for KeyBinding {
         F: FnMut(String) -> Result<Value>,
     {
         Ok(match self {
-            KeyBinding(TypedValue::Constant(ref x)) => self,
+            KeyBinding(TypedValue::Constant(_)) => self,
             KeyBinding(TypedValue::Variable(value)) => match value.map_expressions(f)? {
                 interp @ Value::Interp(_) => KeyBinding(TypedValue::Variable(interp)),
                 exp @ Value::Expression(_) => KeyBinding(TypedValue::Variable(exp)),
@@ -167,7 +166,12 @@ impl Expanding for KeyBinding {
                     let mut result = String::new();
                     let toml: toml::Value = other.into();
                     let serializer = toml::ser::ValueSerializer::new(&mut result);
-                    toml.serialize(serializer);
+                    match toml.serialize(serializer) {
+                        Ok(_) => (),
+                        Err(_) => {
+                            result.push_str(&format!("{toml:?}"));
+                        }
+                    };
                     return Err(err("expected a string, found `{result}`"))?;
                 }
             },

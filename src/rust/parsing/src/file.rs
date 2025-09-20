@@ -138,7 +138,7 @@ impl KeyFile {
         };
 
         let mut scope = Scope::new();
-        define.add_to_scope(&mut scope);
+        define.add_to_scope(&mut scope)?;
         let _ = scope
             .parse_asts(&bind_input)
             .map_err(|mut es| errors.append(&mut es.errors));

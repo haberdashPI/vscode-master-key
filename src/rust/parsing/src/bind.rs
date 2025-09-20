@@ -914,7 +914,7 @@ mod tests {
             args.value = "{{key}}"
         "#;
 
-        let mut result = toml::from_str::<BindingInput>(data).unwrap();
+        let result = toml::from_str::<BindingInput>(data).unwrap();
         let items = result.expand_foreach().unwrap();
 
         let expected_name: Vec<String> =
@@ -947,7 +947,7 @@ mod tests {
 
         let input = toml::from_str::<BindingInput>(data).unwrap();
         let mut scope = Scope::new();
-        scope.parse_asts(&input);
+        scope.parse_asts(&input).unwrap();
         let result = Binding::new(input).unwrap();
         scope.state.set_or_push("joe", Dynamic::from("fiz"));
         let flat_args = result.commands[0].toml_args(&mut scope).unwrap();
