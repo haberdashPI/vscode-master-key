@@ -15,26 +15,27 @@ pub mod validation;
 
 use crate::bind::command::{Command, regularize_commands};
 use crate::bind::validation::{BindingReference, KeyBinding};
-use crate::error::{Result, ResultVec, reserved, unexpected};
+use crate::error::{Result, ResultVec, err};
 use crate::expression::Scope;
 use crate::expression::value::{Expanding, TypedValue, Value};
+use crate::resolve;
 use crate::util::{Merging, Plural, Required, Resolving};
 
 pub const UNKNOWN_RANGE: core::ops::Range<usize> = usize::MIN..usize::MAX;
 
-fn default_mode() -> Spanned<Plural<TypedValue<String>>> {
-    return Spanned::new(UNKNOWN_RANGE, Plural::default());
+fn default_mode() -> Spanned<TypedValue<Plural<String>>> {
+    return Spanned::new(
+        UNKNOWN_RANGE,
+        TypedValue::Constant(Plural(vec!["default".to_string()])),
+    );
 }
 
 fn span_required_default<T>() -> Spanned<Required<T>> {
     return Spanned::new(UNKNOWN_RANGE, Required::DefaultValue);
 }
 
-fn span_plural_default<T>() -> Spanned<Plural<T>>
-where
-    T: Clone,
-{
-    return Spanned::new(UNKNOWN_RANGE, Plural::default());
+fn span_plural_default() -> Spanned<TypedValue<Plural<String>>> {
+    return Spanned::new(UNKNOWN_RANGE, TypedValue::default());
 }
 
 //
@@ -106,7 +107,7 @@ pub struct BindingInput {
     ///   [`all_modes`](/expressions/functions#all_modes) and
     ///   [`all_modes_but`](/expressions/functions#all_modes_but)
     #[serde(default = "default_mode")]
-    pub mode: Spanned<Plural<TypedValue<String>>>,
+    pub mode: Spanned<TypedValue<Plural<String>>>,
     /// @forBindingField bind
     ///
     /// - `priority`: The ordering of the keybinding relative to others; determines which
@@ -139,7 +140,7 @@ pub struct BindingInput {
     ///   sequence that has been pressed: this is how `esc` is defined to work
     ///   in Larkin.
     #[serde(default = "span_plural_default")]
-    pub prefixes: Spanned<Plural<TypedValue<String>>>,
+    pub prefixes: Spanned<TypedValue<Plural<String>>>,
 
     /// @forBindingField bind
     ///
@@ -203,7 +204,7 @@ pub struct BindingInput {
 /// - `master-key.prefix`: The currently active [keybinding prefix](/commands/prefix)
 /// - `master-key.record`: a boolean flag used to indicate when keys are marked for
 ///   recording
-/// - `master-key.var.[name]`: the current value of a
+/// - `master-key.val.[name]`: the current value of a
 ///   [defined variable](/bindings/define#variable-definitions).
 /// - `master-key.keybindingPaletteBindingMode`: true when the suggestion palette accepts
 ///   keybinding key presses, false it accepts a string to search the descriptions of said
@@ -304,7 +305,7 @@ impl Expanding for BindingInput {
             }),
             mode: self.mode.map_expressions(f).unwrap_or_else(|mut e| {
                 errors.append(&mut e.errors);
-                Spanned::new(UNKNOWN_RANGE, Plural::default())
+                Spanned::new(UNKNOWN_RANGE, TypedValue::default())
             }),
             priority: self.priority.map_expressions(f).unwrap_or_else(|mut e| {
                 errors.append(&mut e.errors);
@@ -316,7 +317,7 @@ impl Expanding for BindingInput {
             }),
             prefixes: self.prefixes.map_expressions(f).unwrap_or_else(|mut e| {
                 errors.append(&mut e.errors);
-                Spanned::new(UNKNOWN_RANGE, Plural::default())
+                Spanned::new(UNKNOWN_RANGE, TypedValue::default())
             }),
             finalKey: self.finalKey.map_expressions(f).unwrap_or_else(|mut e| {
                 errors.append(&mut e.errors);
@@ -492,6 +493,15 @@ impl Expanding for BindingDocInput {
     }
 }
 
+impl Resolving<BindingDoc> for Option<BindingDocInput> {
+    fn resolve(self, _name: &'static str) -> ResultVec<BindingDoc> {
+        match self {
+            Some(doc) => Ok(BindingDoc::new(doc)?),
+            None => Ok(BindingDoc::default()),
+        }
+    }
+}
+
 //
 // ================ `[[bind]]` object ================
 //
@@ -507,26 +517,23 @@ pub struct Binding {
     pub priority: f64,
     pub prefixes: Vec<String>,
     pub finalKey: bool,
-    pub(crate) repeat: Option<TypedValue<i32>>,
-    pub doc: Option<BindingDoc>,
+    pub(crate) repeat: TypedValue<i32>,
+    pub doc: BindingDoc,
 }
 
 #[wasm_bindgen]
 impl Binding {
     pub fn repeat(&mut self, scope: &mut Scope) -> ResultVec<i32> {
-        return match scope.expand(&self.repeat)? {
-            None => Ok(0),
-            Some(val) => Ok(val.into()),
-        };
+        return scope.expand(&self.repeat)?.resolve("`repeat`");
     }
 
     pub(crate) fn new(input: BindingInput) -> ResultVec<Self> {
         if let Some(_) = input.id {
-            return reserved("id")?;
+            return Err(err("`id` field is reserved"))?;
         }
 
         if let Some(_) = input.foreach {
-            return unexpected("`foreach` with unresolved variables")?;
+            return Err(err("`foreach` included unresolved variables"))?;
         }
         let commands = regularize_commands(&input)?;
 
@@ -534,17 +541,14 @@ impl Binding {
 
         return Ok(Binding {
             commands: commands,
-            key: input.key.resolve("`key` field")?,
-            when: input.when.resolve("`when` field")?,
-            mode: input.mode.resolve("`mode` field")?,
-            priority: input.priority.resolve("`priority` field")?.unwrap_or(0.0),
-            prefixes: input.prefixes.resolve("`prefixes` fields")?,
-            finalKey: input.finalKey.resolve("`finalKey` field")?.unwrap_or(true),
-            repeat: input.repeat.resolve("`repeat` field")?,
-            doc: match input.doc {
-                Some(doc) => Some(BindingDoc::new(doc)?),
-                None => None,
-            },
+            key: resolve!(input, key)?,
+            when: resolve!(input, when)?,
+            mode: resolve!(input, mode)?,
+            priority: resolve!(input, priority)?,
+            prefixes: resolve!(input, prefixes)?,
+            finalKey: resolve!(input, finalKey)?,
+            repeat: resolve!(input, repeat)?,
+            doc: resolve!(input, doc)?,
         });
     }
 }
@@ -553,40 +557,32 @@ impl Binding {
 // ---------------- `bind.doc` object ----------------
 //
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Default)]
 #[allow(non_snake_case)]
 #[wasm_bindgen(getter_with_clone)]
 pub struct BindingDoc {
-    pub name: Option<String>,
-    pub description: Option<String>,
+    pub name: String,
+    pub description: String,
     pub hideInPalette: bool,
     pub hideInDocs: bool,
-    pub combinedName: Option<String>,
-    pub combinedKey: Option<String>,
-    pub combinedDescription: Option<String>,
-    pub kind: Option<String>,
+    pub combinedName: String,
+    pub combinedKey: String,
+    pub combinedDescription: String,
+    pub kind: String,
 }
 
 #[wasm_bindgen]
 impl BindingDoc {
     pub(crate) fn new(input: BindingDocInput) -> ResultVec<Self> {
         return Ok(BindingDoc {
-            name: input.name.resolve("`name` field")?,
-            description: input.description.resolve("`description` field")?,
-            hideInPalette: input
-                .hideInPalette
-                .resolve("`hideInPalette`")?
-                .unwrap_or(false),
-            hideInDocs: input
-                .hideInDocs
-                .resolve("`hideInPalette`")?
-                .unwrap_or(false),
-            combinedName: input.combinedName.resolve("`combinedName` field")?,
-            combinedKey: input.combinedKey.resolve("`combinedKey` field")?,
-            combinedDescription: input
-                .combinedDescription
-                .resolve("`combinedDescription` field")?,
-            kind: input.kind.resolve("`kind` field")?,
+            name: resolve!(input, name)?,
+            description: resolve!(input, description)?,
+            hideInPalette: resolve!(input, hideInPalette)?,
+            hideInDocs: resolve!(input, hideInDocs)?,
+            combinedName: resolve!(input, combinedName)?,
+            combinedKey: resolve!(input, combinedKey)?,
+            combinedDescription: resolve!(input, combinedDescription)?,
+            kind: resolve!(input, kind)?,
         });
     }
 }
@@ -617,14 +613,14 @@ mod tests {
         prefixes = "c"
         finalKey = true
         repeat = "{{2+c}}"
-        name = "foo"
-        description = "foo bar bin"
-        hideInPalette = false
-        hideInDocs = false
-        combinedName = "Up/down"
-        combinedKey = "A/B"
-        combinedDescription = "bla bla bla"
-        kind = "biz"
+        doc.name = "foo"
+        doc.description = "foo bar bin"
+        doc.hideInPalette = false
+        doc.hideInDocs = false
+        doc.combinedName = "Up/down"
+        doc.combinedKey = "A/B"
+        doc.combinedDescription = "bla bla bla"
+        doc.kind = "biz"
         "#;
 
         let result = toml::from_str::<BindingInput>(data).unwrap();
@@ -646,11 +642,7 @@ mod tests {
         assert_eq!(key, "a".to_string());
         let when: String = result.when.unwrap().into_inner().into();
         assert_eq!(when, "joe > 1".to_string());
-        let mode: Vec<String> = result
-            .mode
-            .into_inner()
-            .map(|m| m.clone().into())
-            .to_array();
+        let mode: Vec<String> = resolve!(result, mode).unwrap();
 
         assert_eq!(mode, ["normal"]);
         let priority: f64 = result.priority.unwrap().into_inner().into();
@@ -662,45 +654,44 @@ mod tests {
         let foreach = result.foreach.unwrap();
         let values = foreach.get("index").unwrap();
         let numbers: Vec<Value> = values.iter().map(|it| it.clone().into_inner()).collect();
-        assert_eq!(numbers, [
-            Value::Integer(1),
-            Value::Integer(2),
-            Value::Integer(3)
-        ]);
+        assert_eq!(
+            numbers,
+            [Value::Integer(1), Value::Integer(2), Value::Integer(3)]
+        );
 
         assert_eq!(when, "joe > 1".to_string());
-        let prefixes: Vec<String> = result
-            .prefixes
-            .into_inner()
-            .map(|m| m.clone().into())
-            .to_array();
+        let prefixes: Vec<String> = resolve!(result, prefixes).unwrap();
         assert_eq!(prefixes, ["c"]);
 
-        let finalKey: bool = result.finalKey.unwrap().into_inner().into();
+        let finalKey: bool = resolve!(result, finalKey).unwrap();
         assert_eq!(finalKey, true);
 
-        let name: String = result.name.unwrap().into_inner().into();
+        let doc = result.doc.unwrap();
+        let name: String = resolve!(doc, name).unwrap();
         assert_eq!(name, "foo");
 
-        let description: String = result.description.unwrap().into_inner().into();
+        let description: String = doc.description.resolve("`description`").unwrap();
         assert_eq!(description, "foo bar bin");
 
-        let hideInDocs: bool = result.hideInDocs.unwrap().into_inner().into();
+        let hideInDocs: bool = doc.hideInDocs.resolve("`hideInDocs`").unwrap();
         assert_eq!(hideInDocs, false);
 
-        let hideInPalette: bool = result.hideInPalette.unwrap().into_inner().into();
+        let hideInPalette: bool = doc.hideInPalette.resolve("`hideInPalette`").unwrap();
         assert_eq!(hideInPalette, false);
 
-        let combinedName: String = result.combinedName.unwrap().into_inner().into();
+        let combinedName: String = doc.combinedName.resolve("`combinedName`").unwrap();
         assert_eq!(combinedName, "Up/down");
 
-        let combinedKey: String = result.combinedKey.unwrap().into_inner().into();
+        let combinedKey: String = doc.combinedKey.resolve("`combinedKey`").unwrap();
         assert_eq!(combinedKey, "A/B");
 
-        let combinedDescription: String = result.combinedDescription.unwrap().into_inner().into();
+        let combinedDescription: String = doc
+            .combinedDescription
+            .resolve("`combinedDescription`")
+            .unwrap();
         assert_eq!(combinedDescription, "bla bla bla");
 
-        let kind: String = result.kind.unwrap().into_inner().into();
+        let kind: String = resolve!(doc, kind).unwrap();
         assert_eq!(kind, "biz");
     }
 
@@ -729,23 +720,23 @@ mod tests {
             )]))
         );
 
-        let modes: Vec<String> = result.mode.resolve("`mode` field").unwrap();
-        assert_eq!(modes.first(), "default".to_string());
-        assert_eq!(result.combinedDescription, None);
-        assert_eq!(result.combinedName, None);
+        let modes: Vec<String> = resolve!(result, mode).unwrap();
+        assert_eq!(modes.first().unwrap(), &"default".to_string());
+        let when: Option<String> = resolve!(result, when).unwrap();
+        assert_eq!(when, None);
     }
 
     #[test]
     fn simple_command_merging() {
         let data = r#"
         [[bind]]
-        name = "default"
+        doc.name = "default"
         command = "cursorMove"
         prefixes = ["a"]
 
         [[bind]]
         key = "l"
-        name = "←"
+        doc.name = "←"
         args.to = "left"
         prefixes = ["b", "c"]
         "#;
@@ -755,7 +746,7 @@ mod tests {
         let left = result.get("bind").unwrap()[1].clone();
         let left = default.merge(left);
 
-        let key: String = left.key.into_inner().unwrap().into();
+        let key: String = resolve!(left, key).unwrap();
         assert_eq!(key, "l".to_string());
         assert_eq!(
             String::from(left.command.into_inner().unwrap()),
@@ -770,33 +761,32 @@ mod tests {
             )]))
         );
 
-        let prefixes: Vec<String> = left
-            .prefixes
-            .into_inner()
-            .map(|m| m.clone().into())
-            .to_array();
+        let prefixes: Vec<String> = resolve!(left, prefixes).unwrap();
         assert_eq!(prefixes, ["b".to_string(), "c".to_string()]);
 
-        assert_eq!(left.combinedDescription, None);
-        assert_eq!(left.combinedName, None);
+        let doc = left.doc.unwrap();
+        let description: Option<String> = resolve!(doc, combinedDescription).unwrap();
+        assert_eq!(description, None);
+        let name: Option<String> = resolve!(doc, combinedName).unwrap();
+        assert_eq!(name, None);
     }
 
     #[test]
     fn merge_nested_arguments() {
         let data = r#"
             [[bind]]
-            name = "default"
+            doc.name = "default"
             command = "cursorMove"
             args.foo = { a = 2, b = 3, c = { x = 1 } }
 
             [[bind]]
             key = "r"
-            name = "→"
+            doc.name = "→"
             args.foo = { d = 12, c = { y = 2 } }
 
             [[bind]]
             key = "x"
-            name = "expected"
+            doc.name = "expected"
             args.foo = { a = 2, b = 3, c = { x = 1, y = 2 }, d = 12 }
         "#;
 
@@ -865,7 +855,7 @@ mod tests {
         let data = r#"
             foreach.a = [1, 2]
             foreach.b = ["x", "y"]
-            name = "test {{a}}-{{b}}"
+            doc.name = "test {{a}}-{{b}}"
             command = "run-{{a}}"
             args.value = "with-{{b}}"
         "#;
@@ -879,32 +869,26 @@ mod tests {
 
         for i in 0..4 {
             let item = items[i].clone();
-            assert_eq!(
-                String::from(item.command.into_inner().unwrap()),
-                expected_command[i]
-            );
+            let command: String = resolve!(item, command).unwrap();
+            assert_eq!(command, expected_command[i]);
 
-            assert_eq!(
-                String::from(item.name.unwrap().into_inner()),
-                expected_name[i]
+            let name: String = resolve!(item.doc.unwrap(), name).unwrap();
+            assert_eq!(name, expected_name[i]);
+            let args: Option<toml::Value> = resolve!(item, args).unwrap();
+            let mut expected_args = toml::Table::new();
+            expected_args.insert(
+                "value".to_string(),
+                toml::Value::String(expected_value[i].into()),
             );
-            assert_eq!(
-                item.args.unwrap().into_inner(),
-                Value::Table(BTreeMap::from([(
-                    "value".to_string(),
-                    Value::String(expected_value[i].into())
-                )]))
-            );
+            assert_eq!(args.unwrap(), toml::Value::Table(expected_args));
         }
     }
 
     #[test]
     fn expand_foreach_keys() {
-        // TODO: error out if the regex inside of `{{}}` is not valid (right now it just
-        // fails silently)
         let data = r#"
             foreach.key = ["{{keys(`[0-9]`)}}"]
-            name = "update {{key}}"
+            doc.name = "update {{key}}"
             command = "foo"
             args.value = "{{key}}"
         "#;
@@ -918,16 +902,15 @@ mod tests {
 
         assert_eq!(items.len(), 10);
         for i in 0..9 {
-            let name: String = items[i].name.as_ref().unwrap().get_ref().clone().into();
+            let name: String = resolve!(items[i].doc.clone().unwrap(), name).unwrap();
             assert_eq!(name, expected_name[i]);
-            let value = items[i].args.as_ref().unwrap().get_ref().clone();
-            assert_eq!(
-                value,
-                Value::Table(BTreeMap::from([(
-                    "value".to_string(),
-                    Value::String(expected_value[i].clone())
-                )]))
+            let value: Option<toml::Value> = resolve!(items[i].clone(), args).unwrap();
+            let mut table = toml::Table::new();
+            table.insert(
+                "value".to_string(),
+                toml::Value::String(expected_value[i].clone()),
             );
+            assert_eq!(value.unwrap(), toml::Value::Table(table));
         }
     }
 
@@ -935,7 +918,7 @@ mod tests {
     fn expand_args() {
         let data = r#"
             key = "k"
-            name = "test"
+            doc.name = "test"
             command = "foo"
             args.value = '{{joe + "_biz"}}'
             args.number = '{{2+1}}'

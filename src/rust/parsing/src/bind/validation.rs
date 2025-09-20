@@ -1,13 +1,14 @@
-use crate::error::{ErrorSet, RawError, Result, ResultVec};
-use crate::expression::value::{EXPRESSION, Expanding, TypedValue, Value};
-use crate::util::{Merging, Resolving};
-
 #[allow(unused_imports)]
 use log::info;
 
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+
+use crate::err;
+use crate::error::{ErrorSet, RawError, Result, ResultVec, err};
+use crate::expression::value::{EXPRESSION, Expanding, TypedValue, Value};
+use crate::util::{Merging, Resolving};
 
 //
 // ---------------- Keybinding Validation ----------------
@@ -105,11 +106,11 @@ fn valid_key_binding_str(str: &str) -> Result<()> {
             if first {
                 first = false;
                 if !KEY_REGEXS.iter().any(|r| r.is_match(part)) {
-                    return Err(RawError::Validation(format!("key name {part}")))?;
+                    return Err(err("`{part}` is an invalid key"))?;
                 }
             } else {
                 if !MODIFIER_REGEX.is_match(part) {
-                    return Err(RawError::Validation(format!("modifier name {part}")))?;
+                    return Err(err("`{part}` is an invalid modiier key"))?;
                 }
             }
         }
@@ -122,7 +123,7 @@ fn valid_key_binding_str(str: &str) -> Result<()> {
 pub struct KeyBinding(TypedValue<String>);
 
 impl TryFrom<String> for KeyBinding {
-    type RawError = ErrorSet;
+    type Error = ErrorSet;
     fn try_from(value: String) -> ResultVec<Self> {
         if EXPRESSION.is_match(&value) {
             return Ok(KeyBinding(TypedValue::Variable(
@@ -136,7 +137,7 @@ impl TryFrom<String> for KeyBinding {
 }
 
 impl Resolving<String> for KeyBinding {
-    fn resolve(self, name: impl Into<String>) -> ResultVec<String> {
+    fn resolve(self, _name: &'static str) -> ResultVec<String> {
         self.require_constant()?;
         Ok(self.into())
     }
@@ -162,7 +163,13 @@ impl Expanding for KeyBinding {
                     valid_key_binding_str(&val)?;
                     KeyBinding(TypedValue::Constant(val))
                 }
-                other @ _ => return Err(RawError::Unexpected("non-string value"))?,
+                other @ _ => {
+                    let mut result = String::new();
+                    let toml: toml::Value = other.into();
+                    let serializer = toml::ser::ValueSerializer::new(&mut result);
+                    toml.serialize(serializer);
+                    return Err(err("expected a string, found `{result}`"))?;
+                }
             },
         })
     }
@@ -211,7 +218,7 @@ lazy_static! {
 pub struct BindingReference(pub(crate) String);
 
 impl TryFrom<String> for BindingReference {
-    type RawError = ErrorSet;
+    type Error = ErrorSet;
     fn try_from(value: String) -> ResultVec<Self> {
         let value: Value = toml::Value::String(value).try_into()?;
         match value {
@@ -221,12 +228,12 @@ impl TryFrom<String> for BindingReference {
                         captures.get(1).expect("variable name").as_str().to_string(),
                     ))
                 } else {
-                    Err(RawError::Validation(
+                    Err(err(
                         "binding reference (must be of the form `{{bind.[identifier]}}`".into(),
                     ))?
                 }
             }
-            _ => Err(RawError::Validation(
+            _ => Err(err(
                 "binding reference (must be of the form `{{bind.[identifier]}}`".into(),
             ))?,
         }

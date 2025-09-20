@@ -151,10 +151,12 @@ Integration test debugging:
             - [X] refactor plural to use `into` / `from` Vec
             - [X] update documentation rendering pipeline
             - [ ] error reporting is still a little finicky
-                - [ ] could probably make what is part of the same error more explicit
-                - [ ] reduce types of errors and tie error message string more explicitly
+                - [ ] properly inject Rhai expression range into errors
+                - [X] could probably make what is part of the same error more explicit
+                - [X] reduce types of errors and tie error message string more explicitly
                       to name of enum variant
             - [ ] fix and test command queues implementation (avoid so much copying)
+            - [ ] support spans for expressions
         - [ ] re-run tests
         - [ ] implement support for tags on `bind` (for filter them)
         - [ ] implement support for `skipWhen` in `command`

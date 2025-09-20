@@ -12,7 +12,8 @@ use toml::Spanned;
 use crate::bind::BindingInput;
 use crate::bind::command::CommandInput;
 use crate::bind::validation::BindingReference;
-use crate::error::{Error, ErrorContext, RawError, Result, ResultVec, unexpected};
+use crate::err;
+use crate::error::{Error, ErrorContext, ResultVec, err};
 use crate::expression::Scope;
 use crate::expression::value::{Expanding, Value};
 use crate::util::{Merging, Resolving};
@@ -24,7 +25,7 @@ use crate::util::{Merging, Resolving};
 /// The `define` field can be used to define re-usable values. There are three types of
 /// values that can be defined.
 ///
-/// 1. `[[define.var]]:` variable definitions: defines any number of key-value pairs that can
+/// 1. `[[define.val]]:` variable definitions: defines any number of key-value pairs that can
 ///    be referenced inside an [expression](/expressions/index)
 /// 2. `[[define.command]]`: command definitions: defines one or more commands that can be
 ///    referenced when [running multiple commands](/bindings/bind#running-multiple-commands).
@@ -38,7 +39,7 @@ pub struct DefineInput {
     /// ## Variable Definitions
     ///
     /// These can be any arbitrary TOML value. You can define multiple variables within
-    /// each `[[define.var]]` element this way. These are then available in any
+    /// each `[[define.val]]` element this way. These are then available in any
     /// [expressions](/expressions/index)
     /// evaluated at runtime and in [when clauses](/bindings/bind#available-when-contexts).
     ///
@@ -85,7 +86,7 @@ pub struct DefineInput {
     /// args.after = "{{braces[captured].?after ?? captured}}"
     /// args.followCursor = true
     /// ```
-    pub var: Option<Vec<BTreeMap<String, Spanned<Value>>>>,
+    pub val: Option<Vec<BTreeMap<String, Spanned<Value>>>>,
     /// @forBindingField define
     ///
     /// ## Command Definitions
@@ -175,7 +176,7 @@ pub struct Define {
     pub bind: HashMap<String, BindingInput>,
     #[serde(skip)]
     pub command: HashMap<String, CommandInput>,
-    pub var: HashMap<String, Value>,
+    pub val: HashMap<String, Value>,
 }
 
 lazy_static! {
@@ -190,11 +191,11 @@ impl Define {
         let mut resolved_var = HashMap::<String, Value>::new();
         let mut errors: Vec<Error> = Vec::new();
 
-        for def_block in input.var.into_iter().flatten() {
-            for (var, value) in def_block.into_iter() {
-                match value.resolve("`{var}` definition") {
+        for def_block in input.val.into_iter().flatten() {
+            for (val, value) in def_block.into_iter() {
+                match value.resolve("`{val}` definition") {
                     Ok(x) => {
-                        resolved_var.insert(var, x);
+                        resolved_var.insert(val, x);
                     }
                     Err(mut e) => {
                         errors.append(&mut e.errors);
@@ -206,11 +207,11 @@ impl Define {
         for def in input.command.into_iter().flatten() {
             let id = def.get_ref().id.clone();
             let span = id
-                .ok_or_else(|| RawError::RequiredField("`id` field".into()))
-                .context_range(&def.span());
+                .ok_or_else(|| err("requires `id` field"))
+                .with_range(&def.span());
             match span {
                 Err(e) => errors.push(e.into()),
-                Ok(x) => match x.resolve("`id` field") {
+                Ok(x) => match x.resolve("requires `id`") {
                     Err(mut e) => {
                         errors.append(&mut e.errors);
                     }
@@ -224,11 +225,11 @@ impl Define {
         for def in input.bind.into_iter().flatten() {
             let id = def.get_ref().id.clone();
             let span = id
-                .ok_or_else(|| RawError::RequiredField("`id` field".into()))
-                .context_range(&def.span());
+                .ok_or_else(|| err("requires `id` field"))
+                .with_range(&def.span());
             match span {
                 Err(e) => errors.push(e.into()),
-                Ok(x) => match x.resolve("`id` field") {
+                Ok(x) => match x.resolve("`id`") {
                     Err(mut e) => {
                         errors.append(&mut e.errors);
                     }
@@ -249,16 +250,16 @@ impl Define {
             return Ok(Define {
                 bind: resolved_bind,
                 command: resolved_command,
-                var: resolved_var,
+                val: resolved_var,
             });
         }
     }
 
     pub fn add_to_scope(&self, scope: &mut Scope) -> ResultVec<()> {
-        for (k, v) in self.var.iter() {
+        for (k, v) in self.val.iter() {
             v.require_constant()?;
             let val: Dynamic = v.clone().into();
-            // TODO: add all of these to a `var.` value
+            // TODO: add all of these to a `val.` value
             scope.state.set_or_push(k, val);
         }
         return Ok(());
@@ -270,7 +271,7 @@ impl Define {
             let BindingReference(name) = default.as_ref();
             let entry = self.bind.entry(name.clone());
             let occupied_entry = match entry {
-                hash_map::Entry::Vacant(_) => Err(RawError::UndefinedVariable(name.clone()))?,
+                hash_map::Entry::Vacant(_) => Err(err!("{name}"))?,
                 hash_map::Entry::Occupied(entry) => entry,
             };
             let mut default_value;
@@ -293,14 +294,14 @@ impl Define {
                 return Ok(self
                     .command
                     .get(name)
-                    .ok_or_else(|| RawError::UndefinedVariable(name.to_string()))?
+                    .ok_or_else(|| err!("`{name}` is undefined"))?
                     .without_id()
                     .into());
             }
             if BIND_REF.is_match(&exp) {
-                Err(RawError::Constraint(
-                    "`bind.` reference in `default` field only".into(),
-                ))?
+                return Err(err(
+                    "unexpected `bind.` reference; only valid inside `bind.default`",
+                ))?;
             }
             return Ok(Value::Expression(exp));
         });
@@ -314,7 +315,7 @@ mod tests {
     #[test]
     fn simple_parsing() {
         let data = r#"
-        [[var]]
+        [[val]]
         y = "bill"
 
         [[bind]]
@@ -328,15 +329,15 @@ mod tests {
         command = "runCommands"
         args.commands = ["foo", "bar"]
 
-        [[var]]
+        [[val]]
         joe = "bob"
 
         "#;
 
         let result = Define::new(toml::from_str::<DefineInput>(data).unwrap()).unwrap();
 
-        assert_eq!(result.var.get("y").unwrap(), &Value::String("bill".into()));
-        assert_eq!(result.var.get("joe").unwrap(), &Value::String("bob".into()));
+        assert_eq!(result.val.get("y").unwrap(), &Value::String("bill".into()));
+        assert_eq!(result.val.get("joe").unwrap(), &Value::String("bob".into()));
         let foo = result.bind.get("foo").unwrap();
         assert_eq!(foo.key.as_ref().to_owned().unwrap().unwrap(), "x");
         let args = foo.args.as_ref().unwrap().clone().into_inner();

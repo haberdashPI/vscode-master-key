@@ -6,12 +6,11 @@ use std::collections::{HashMap, VecDeque};
 
 use rhai::Dynamic;
 use serde::Serialize;
-use toml::Spanned;
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
 use crate::{
-    bind::command::Command, error::RawError, error::Result, error::ResultVec,
-    expression::value::Expanding, expression::value::Value,
+    bind::command::Command, err, error::Result, error::ResultVec, expression::value::Expanding,
+    expression::value::Value,
 };
 
 /// @file expressions/index.md
@@ -24,12 +23,12 @@ use crate::{
 /// to any valid TOML object when the entire string is an expression
 ///
 /// ```toml
-/// [[define.var]]
+/// [[define.val]]
 /// action_priority = 3
 ///
 /// [[bind]]
 /// # ...other fields here...
-/// priority = "{{var.action_priority + 2}}"
+/// priority = "{{val.action_priority + 2}}"
 ///
 /// # after expression evaluation, the above would evaluate to
 /// priority = 5
@@ -39,12 +38,12 @@ use crate::{
 /// expression is interpolated into the string
 ///
 /// ```toml
-/// [[define.var]]
+/// [[define.val]]
 /// action_priority = 3
 ///
 /// [[bind]]
 /// # ...other fields here...
-/// name = "My cool action (priority {{var.action_priority + 2}})"
+/// name = "My cool action (priority {{val.action_priority + 2}})"
 ///
 /// # after expression evaluation, the above would evaluate to
 /// name = "My cool action (priority 5)"
@@ -71,8 +70,8 @@ use crate::{
 /// Expressions that get evaluated at run time are clearly denoted as such with a ⚡ emoji.
 /// They are more expressive, and have access to the following values:
 ///
-/// - Any field defined in a [`[[define.var]]`](/bindings/define) section. These variables
-///   are all stored under the top-level `var.` object.
+/// - Any field defined in a [`[[define.val]]`](/bindings/define) section. These variables
+///   are all stored under the top-level `val.` object.
 /// - `code.editorHasSelection`: true if there is any selection, false otherwise
 /// - `code.editorHasMultipleSelections`: true if there are multiple selections, false
 ///   otherwise
@@ -95,7 +94,7 @@ use crate::{
 
 #[wasm_bindgen]
 pub struct Scope {
-    pub(crate) asts: HashMap<String, Spanned<rhai::AST>>,
+    pub(crate) asts: HashMap<String, rhai::AST>,
     engine: rhai::Engine,
     pub(crate) state: rhai::Scope<'static>,
     pub(crate) queues: HashMap<String, VecDeque<Command>>,
@@ -120,17 +119,16 @@ impl Scope {
             self.state.set_or_push(k, v.clone());
         }
         return Ok(obj.clone().map_expressions(&mut |expr| {
-            let ast = self.asts[&expr].get_ref();
-            let result = self.engine.eval_ast_with_scope(&mut self.state, ast);
-            let value: rhai::Dynamic = match result {
-                Err(x) => Err(RawError::ExpressionEval(format!("{}", x)))?,
-                Ok(x) => x,
-            };
+            let ast = &self.asts[&expr];
+            let value: rhai::Dynamic = self.engine.eval_ast_with_scope(&mut self.state, ast)?;
             let result_value: Value = value.clone().try_into()?;
             return Ok(result_value);
         })?);
     }
 
+    // TODO: revelation, we don't actually have a way to get an expressions' precise
+    // position because of how parsing works. *MAYBE* we could write a custom
+    // deserializer or value::Value, but that seems very complex
     pub(crate) fn parse_asts(&mut self, x: &(impl Expanding + Clone)) -> ResultVec<()> {
         x.clone().map_expressions(&mut |expr| {
             let ast = self.engine.compile_expression(expr.clone())?;
@@ -155,7 +153,7 @@ impl Scope {
 
     pub fn set(&mut self, name: String, value: JsValue) -> Result<()> {
         let toml: toml::Value = match serde_wasm_bindgen::from_value(value) {
-            Err(e) => Err(RawError::JsSerialization(format!("{}", e)))?,
+            Err(e) => Err(err!("{}", e))?,
             Ok(x) => x,
         };
         let val: Value = toml.try_into()?;
@@ -168,22 +166,22 @@ impl Scope {
         return Ok(self
             .state
             .remove(&name)
-            .ok_or_else(|| RawError::UndefinedVariable(name))?);
+            .ok_or_else(|| err!("`{name}` is undefined"))?);
     }
 
     pub fn get(&self, name: String) -> Result<JsValue> {
         let x: &rhai::Dynamic = self
             .state
             .get(&name)
-            .ok_or_else(|| RawError::UndefinedVariable(name))?;
+            .ok_or_else(|| err!("`{name}` is undefined"))?;
         let x: Value = match x.clone().try_cast_result() {
-            Err(e) => Err(RawError::Rhai(format!("{}", e)))?,
+            Err(e) => Err(err!("{x} is not a valid JSON value"))?,
             Ok(x) => x,
         };
         let x: toml::Value = x.into();
         let to_json = serde_wasm_bindgen::Serializer::json_compatible();
         return match x.serialize(&to_json) {
-            Err(e) => Err(RawError::JsSerialization(format!("{}", e)))?,
+            Err(e) => Err(err!("JSON serialization error: {e}"))?,
             Ok(x) => Ok(x),
         };
     }

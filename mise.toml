@@ -7,7 +7,7 @@ node = "20"
 "npm:pnpm" = "10.13.1"
 "ubi:haberdashpi/simple-src-docs" = "0.6.0"
 watchexec = "2.3.2"
-rust = { version = "1.88", targets = "wasm32-unknown-unknown", component = "lvm-tools" }
+rust = { version = "1.89", targets = "wasm32-unknown-unknown", component = "lvm-tools" }
 "cargo:wasm-pack" = "0.13.1"
 "cargo:cargo-binutils" = "0.3.6"
 "cargo:rustfilt" = "latest"

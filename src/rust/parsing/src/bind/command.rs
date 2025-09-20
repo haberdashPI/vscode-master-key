@@ -1,13 +1,14 @@
-use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 use toml::Spanned;
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
 use crate::{
     bind::{BindingInput, UNKNOWN_RANGE},
-    error::{RawError, ErrorContext, Error, Result, ResultVec, constrain, reserved},
+    error::{ErrorContext, Result, ResultVec, err},
     expression::Scope,
     expression::value::{Expanding, TypedValue, Value},
+    resolve,
     util::{Required, Resolving},
 };
 
@@ -102,7 +103,7 @@ impl From<CommandInput> for Value {
 }
 
 pub(crate) fn regularize_commands(input: &BindingInput) -> ResultVec<Vec<Command>> {
-    let command: String = input.clone().command.resolve("`command` field")?;
+    let command: String = input.clone().command.resolve("`command`")?;
     if command != "runCommands" {
         let commands = vec![Command {
             command,
@@ -116,27 +117,24 @@ pub(crate) fn regularize_commands(input: &BindingInput) -> ResultVec<Vec<Command
         let spanned = input
             .args
             .as_ref()
-            .ok_or_else(|| RawError::Constraint("`runCommands` must have `args` field".to_string()))?;
+            .ok_or_else(|| err("`runCommands` must have `args` field"))?;
         let args_pos = spanned.span();
         let args = spanned.as_ref().to_owned();
         let commands = match args {
             Value::Table(kv) => kv
                 .get("commands")
-                .ok_or_else(|| {
-                    RawError::Constraint("`runCommands` must have `args.commands` field".into())
-                })?
+                .ok_or_else(|| err("`runCommands` must have `args.commands` field"))?
                 .clone(),
-            _ => Err(RawError::Validation(
-                "Expected `args` to be an object with `commands` field".to_string(),
-            ))?,
+            _ => {
+                return Err(err("Expected `args` to be an object with `commands` field"))?;
+            }
         };
         let command_vec = match commands {
             Value::Array(items) => items,
-            _ => Err(RawError::Validation(
-                "Expected `args.commands` of `runCommands` to \
-                be a vector of commands to run."
-                    .to_string(),
-            ))?,
+            _ => {
+                return Err(err("Expected `args.commands` of `runCommands` to \
+                    be a vector of commands to run."))?;
+            }
         };
 
         let mut command_result = Vec::with_capacity(command_vec.len());
@@ -145,37 +143,32 @@ pub(crate) fn regularize_commands(input: &BindingInput) -> ResultVec<Vec<Command
             let (command, args) = match command {
                 Value::String(str) => (str.to_owned(), Value::Table(BTreeMap::new())),
                 Value::Table(kv) => {
-                    let result = kv.get("command").ok_or_else({
-                        || {
-                            RawError::RequiredField(
-                                "`args.commands.command` field for `runCommands`".into(),
-                            )
-                        }
+                    let result = kv.get("command").ok_or_else(|| {
+                        err("expected `args.commands.command` field for `runCommands`")
                     })?;
                     let command_name = match result {
                         Value::String(x) => x.to_owned(),
                         _ => {
-                            let err: Error =
-                                RawError::Constraint("`command` to be a string".into()).into();
-                            Err(err).context_range(&args_pos)?
+                            return Err(err("expected `command` to be a string"))
+                                .with_range(&args_pos)?;
                         }
                     };
                     let result = kv.get("args").ok_or_else(|| {
-                        RawError::RequiredField("`args.commands.arg` field for `runCommands`".into())
+                        err("expected `args.commands.arg` field for `runCommands`")
                     })?;
                     let args = match result {
                         x @ Value::Table(_) => x,
                         x @ Value::Array(_) => x,
                         _ => {
-                            return Err(RawError::Constraint("`args` to be a table or array".into()))?;
+                            return Err(err("expected `args` to be a table or array"))?;
                         }
                     };
                     (command_name, args.to_owned())
                 }
                 _ => {
-                    return constrain(
+                    return Err(err(
                         "`commands` to be an array that includes objects and strings only",
-                    )?;
+                    ))?;
                 }
             };
             command_result.push(Command { command, args })
@@ -202,7 +195,7 @@ impl Command {
     pub fn args(&self, scope: &mut Scope) -> ResultVec<JsValue> {
         let to_json = serde_wasm_bindgen::Serializer::json_compatible();
         return match self.toml_args(scope)?.serialize(&to_json) {
-            Err(e) => Err(RawError::JsSerialization(format!("{}", e)))?,
+            Err(e) => Err(err("object failed to serialize: {e}"))?,
             Ok(x) => Ok(x),
         };
     }
@@ -211,10 +204,10 @@ impl Command {
 impl Command {
     pub fn new(input: CommandInput) -> ResultVec<Self> {
         if let Some(_) = input.id {
-            return reserved("id")?;
+            return Err(err("`id` fields is reserved"))?;
         }
         return Ok(Command {
-            command: input.command.resolve("`command` field")?,
+            command: resolve!(input, command)?,
             args: match input.args {
                 Some(x) => x.into_inner(),
                 None => Value::Table(BTreeMap::new()),

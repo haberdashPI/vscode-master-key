@@ -72,7 +72,7 @@
 /// key = "h"
 /// args.to = "left"
 ///
-/// [[define.var]]
+/// [[define.val]]
 /// foo = 1
 ///
 /// [[bind]]
@@ -82,6 +82,9 @@
 /// args.to = "right"
 /// args.value = "{{foo+1}}"
 /// ```
+#[allow(unused_imports)]
+use log::info;
+
 use crate::bind::{Binding, BindingInput};
 use crate::define::{Define, DefineInput};
 use crate::error::{ErrorContext, ErrorReport, ResultVec, flatten_errors};
@@ -157,7 +160,7 @@ impl KeyFile {
                             .into_iter()
                             .map(Binding::new)
                             .collect::<ResultVec<Vec<_>>>()
-                            .context_range(&span);
+                            .with_range(&span);
                         match items {
                             Ok(x) => x,
                             Err(mut e) => {
@@ -210,13 +213,14 @@ fn parse_bytes_helper(file_content: &[u8]) -> ResultVec<KeyFile> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::expression::value::Value;
     use std::collections::BTreeMap;
     use test_log::test;
 
     #[test]
     fn parse_example() {
         let data = r#"
-        [[define.var]]
+        [[define.val]]
         foo = "bar"
 
         [[bind]]
@@ -230,31 +234,30 @@ mod tests {
         command = "cursorLeft"
         "#;
 
-        let result = parse_string(data);
-        let items = result.file.unwrap();
+        let result = parse_bytes_helper(data.as_bytes()).unwrap();
 
-        assert_eq!(items.bind[0].key, "l");
-        assert_eq!(items.bind[0].commands[0].command, "cursorRight");
-        assert_eq!(items.bind[1].key, "h");
-        assert_eq!(items.bind[1].commands[0].command, "cursorLeft");
+        assert_eq!(result.bind[0].key, "l");
+        assert_eq!(result.bind[0].commands[0].command, "cursorRight");
+        assert_eq!(result.bind[1].key, "h");
+        assert_eq!(result.bind[1].commands[0].command, "cursorLeft");
     }
 
     #[test]
     fn resolve_bind_and_command() {
         let data = r#"
 
-        [[define.var]]
+        [[define.val]]
         foo_string = "bizbaz"
 
         [[define.command]]
         id = "run_shebang"
         command = "shebang"
         args.a = 1
-        args.b = "{{var.foo_string}}"
+        args.b = "{{val.foo_string}}"
 
         [[define.bind]]
         id = "whole_shebang"
-        name = "the whole shebang"
+        doc.name = "the whole shebang"
         command = "runCommands"
         args.commands = ["{{command.run_shebang}}", "bar"]
 
@@ -265,14 +268,14 @@ mod tests {
 
         let result = KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap()).unwrap();
 
-        assert_eq!(result.bind[0].name.as_ref().unwrap(), "the whole shebang");
+        assert_eq!(result.bind[0].doc.name, "the whole shebang");
         assert_eq!(result.bind[0].key, "a");
         assert_eq!(result.bind[0].commands[0].command, "shebang");
         assert_eq!(
             result.bind[0].commands[0].args,
             Value::Table(BTreeMap::from([
                 ("a".into(), Value::Integer(1)),
-                ("b".into(), Value::Expression("var.foo_string".into())),
+                ("b".into(), Value::Expression("val.foo_string".into())),
             ]))
         );
         assert_eq!(result.bind[0].commands[1].command, "bar");
@@ -286,7 +289,7 @@ mod tests {
         id = "run_shebang"
         command = "shebang"
         args.a = 1
-        args.b = "{{var.foo_string}}"
+        args.b = "{{val.foo_string}}"
 
         [[define.bind]]
         id = "a"
@@ -300,20 +303,20 @@ mod tests {
 
         [[bind]]
         default = "{{bind.b}}"
-        name = "the whole shebang"
+        doc.name = "the whole shebang"
         key = "a"
         "#;
 
         let result = KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap()).unwrap();
 
-        assert_eq!(result.bind[0].name.as_ref().unwrap(), "the whole shebang");
+        assert_eq!(result.bind[0].doc.name, "the whole shebang");
         assert_eq!(result.bind[0].key, "a");
         assert_eq!(result.bind[0].commands[0].command, "shebang");
         assert_eq!(
             result.bind[0].commands[0].args,
             Value::Table(BTreeMap::from([
                 ("a".into(), Value::Integer(1)),
-                ("b".into(), Value::Expression("var.foo_string".into())),
+                ("b".into(), Value::Expression("val.foo_string".into())),
             ]))
         );
         assert_eq!(result.bind[0].commands[1].command, "bar");
@@ -325,7 +328,7 @@ mod tests {
         [[bind]]
         foreach.key = ["{{keys(`[0-9]`)}}"]
         key = "c {{key}}"
-        name = "update {{key}}"
+        doc.name = "update {{key}}"
         command = "foo"
         args.value = "{{key}}"
         "#;
@@ -338,10 +341,7 @@ mod tests {
 
         assert_eq!(result.bind.len(), 10);
         for i in 0..9 {
-            assert_eq!(
-                result.bind[i].name.as_ref().unwrap().clone(),
-                expected_name[i]
-            );
+            assert_eq!(result.bind[i].doc.name, expected_name[i]);
             assert_eq!(
                 result.bind[i].commands[0].args,
                 Value::Table(BTreeMap::from([(
@@ -357,20 +357,17 @@ mod tests {
         let data = r#"
         [[bind]]
         foreach.key = ["{{keys(`[0-9]`)}}"]
-        name = "update {{key}}"
+        doc.name = "update {{key}}"
         command = "foo"
         args.value = "{{key}}"
         "#;
 
         // TODO: ensure that a proper span is shown here
         let result = KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap());
-        let report = result.unwrap_err().report(data);
-        assert_eq!(
-            report[0].items[0].message,
-            Some("requires `key` field".to_string())
-        );
-        assert_eq!(report[0].items[1].range.as_ref().unwrap().start.line, 1);
-        assert_eq!(report[0].items[1].range.as_ref().unwrap().end.line, 1);
+        let report = result.unwrap_err().report(data.as_bytes());
+        assert_eq!(report[0].message, "`key` field is required".to_string());
+        assert_eq!(report[0].range.start.line, 1);
+        assert_eq!(report[0].range.end.line, 1);
     }
 
     // TODO: write a test for required field `key` and ensure the span

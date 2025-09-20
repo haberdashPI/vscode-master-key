@@ -1,0 +1,433 @@
+[test-rust] $ def main [...args] {
+   Compiling parsing v0.1.0 (/Users/davidlittle/Documents/home/vscode-master-key/src/rust/parsing)
+warning: unused import: `RawError`
+ --> src/util.rs:9:41
+  |
+9 | use crate::error::{Error, ErrorContext, RawError, Result, ResultVec, flatten_errors};
+  |                                         ^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `crate::err`
+ --> src/bind/validation.rs:8:5
+  |
+8 | use crate::err;
+  |     ^^^^^^^^^^
+
+warning: unused import: `RawError`
+ --> src/bind/validation.rs:9:30
+  |
+9 | use crate::error::{ErrorSet, RawError, Result, ResultVec, err};
+  |                              ^^^^^^^^
+
+error[E0308]: mismatched types
+   --> src/bind.rs:755:61
+    |
+755 |         assert_eq!(result.doc.unwrap().combinedDescription, "".to_string());
+    |                                                             ^^^^^^^^^^^^^^ expected `Option<Spanned<TypedValue<String>>>`, found `String`
+    |
+    = note: expected enum `std::option::Option<Spanned<TypedValue<std::string::String>>>`
+             found struct `std::string::String`
+
+error[E0308]: mismatched types
+   --> src/bind.rs:756:54
+    |
+756 |         assert_eq!(result.doc.unwrap().combinedName, "".to_string());
+    |                                                      ^^^^^^^^^^^^^^ expected `Option<Spanned<TypedValue<String>>>`, found `String`
+    |
+    = note: expected enum `std::option::Option<Spanned<TypedValue<std::string::String>>>`
+             found struct `std::string::String`
+
+error[E0308]: mismatched types
+   --> src/util.rs:117:9
+    |
+117 |         crate::util::Resolving::resolve(($x).$field, stringify!($field))
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `Option<String>`, found `Result<_, ErrorSet>`
+    |
+   ::: src/bind.rs:797:26
+    |
+797 |         let description: Option<String> = resolve!(left.doc.unwrap(), combinedDescription);
+    |                          --------------   ------------------------------------------------ in this macro invocation
+    |                          |
+    |                          expected due to this
+    |
+    = note: expected enum `std::option::Option<std::string::String>`
+               found enum `std::result::Result<_, ErrorSet>`
+    = note: this error originates in the macro `resolve` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: consider using `Result::expect` to unwrap the `std::result::Result<_, ErrorSet>` value, panicking if the value is a `Result::Err`
+   --> src/bind.rs:797:91
+    |
+797 |         let description: Option<String> = resolve!(left.doc.unwrap(), combinedDescription).expect("REASON");
+    |                                                                                           +++++++++++++++++
+
+error[E0308]: mismatched types
+   --> src/util.rs:117:9
+    |
+117 |         crate::util::Resolving::resolve(($x).$field, stringify!($field))
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `Option<String>`, found `Result<_, ErrorSet>`
+    |
+   ::: src/bind.rs:799:19
+    |
+799 |         let name: Option<String> = resolve!(left.doc.unwrap(), combinedName);
+    |                   --------------   ----------------------------------------- in this macro invocation
+    |                   |
+    |                   expected due to this
+    |
+    = note: expected enum `std::option::Option<std::string::String>`
+               found enum `std::result::Result<_, ErrorSet>`
+    = note: this error originates in the macro `resolve` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: consider using `Result::expect` to unwrap the `std::result::Result<_, ErrorSet>` value, panicking if the value is a `Result::Err`
+   --> src/bind.rs:799:77
+    |
+799 |         let name: Option<String> = resolve!(left.doc.unwrap(), combinedName).expect("REASON");
+    |                                                                             +++++++++++++++++
+
+error[E0283]: type annotations needed
+   --> src/bind.rs:905:17
+    |
+905 |                 String::from(resolve!(item.doc.unwrap(), name).unwrap()),
+    |                 ^^^^^^ cannot infer type for type parameter `T` declared on the trait `From`
+    |
+note: multiple `impl`s satisfying `std::string::String: From<_>` found
+   --> src/expression/value.rs:509:1
+    |
+509 | impl From<TypedValue<String>> for String {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: src/bind/validation.rs:178:1
+    |
+178 | impl From<KeyBinding> for String {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+260 | impl From<BindingReference> for String {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = note: and more `impl`s found in the following crates: `alloc`, `js_sys`, `rhai`, `smartstring`:
+            - impl From<Box<str>> for std::string::String;
+            - impl From<ImmutableString> for std::string::String;
+            - impl From<char> for std::string::String;
+            - impl From<rhai::tokenizer::Token> for std::string::String;
+            - impl From<smartstring::boxed::BoxedString> for std::string::String;
+            - impl From<wasm_bindgen_futures::js_sys::JsString> for std::string::String;
+
+error[E0283]: type annotations needed
+   --> src/util.rs:117:9
+    |
+117 |         crate::util::Resolving::resolve(($x).$field, stringify!($field))
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ cannot infer type
+    |
+   ::: src/bind.rs:905:30
+    |
+905 |                 String::from(resolve!(item.doc.unwrap(), name).unwrap()),
+    |                              --------------------------------- in this macro invocation
+    |
+note: multiple `impl`s satisfying `std::option::Option<Spanned<TypedValue<std::string::String>>>: util::Resolving<_>` found
+   --> src/util.rs:155:1
+    |
+155 | / impl<T, U> Resolving<U> for Option<T>
+156 | | where
+157 | |     T: Resolving<U>,
+158 | |     U: Default + LeafValue,
+    | |___________________________^
+...
+168 | / impl<T, U> Resolving<Option<U>> for Option<T>
+169 | | where
+170 | |     T: Resolving<U>,
+    | |____________________^
+    = note: this error originates in the macro `resolve` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0283]: type annotations needed
+   --> src/util.rs:117:9
+    |
+117 |         crate::util::Resolving::resolve(($x).$field, stringify!($field))
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ cannot infer type
+    |
+   ::: src/bind.rs:909:17
+    |
+909 |                 resolve!(item, args).unwrap(),
+    |                 -------------------- in this macro invocation
+    |
+note: multiple `impl`s satisfying `std::option::Option<Spanned<expression::value::Value>>: util::Resolving<_>` found
+   --> src/util.rs:155:1
+    |
+155 | / impl<T, U> Resolving<U> for Option<T>
+156 | | where
+157 | |     T: Resolving<U>,
+158 | |     U: Default + LeafValue,
+    | |___________________________^
+...
+168 | / impl<T, U> Resolving<Option<U>> for Option<T>
+169 | | where
+170 | |     T: Resolving<U>,
+    | |____________________^
+    = note: this error originates in the macro `resolve` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0599]: no method named `unwrap` found for struct `bind::BindingInput` in the current scope
+   --> src/bind.rs:938:50
+    |
+65  | pub struct BindingInput {
+    | ----------------------- method `unwrap` not found for this struct
+...
+938 |             let name: String = resolve!(items[i].unwrap(), name).unwrap();
+    |                                                  ^^^^^^ method not found in `BindingInput`
+    |
+help: some of the expressions' fields have a method of the same name
+    |
+938 |             let name: String = resolve!(items[i].args.unwrap(), name).unwrap();
+    |                                                  +++++
+938 |             let name: String = resolve!(items[i].default.unwrap(), name).unwrap();
+    |                                                  ++++++++
+938 |             let name: String = resolve!(items[i].doc.unwrap(), name).unwrap();
+    |                                                  ++++
+938 |             let name: String = resolve!(items[i].finalKey.unwrap(), name).unwrap();
+    |                                                  +++++++++
+      and 5 other candidates
+
+error[E0425]: cannot find function `parse_bytes` in this scope
+   --> src/file.rs:234:22
+    |
+234 |         let result = parse_bytes(data);
+    |                      ^^^^^^^^^^^ not found in this scope
+
+error[E0609]: no field `name` on type `bind::Binding`
+   --> src/file.rs:269:35
+    |
+269 |         assert_eq!(result.bind[0].name.as_ref().unwrap(), "the whole shebang");
+    |                                   ^^^^ unknown field
+    |
+help: one of the expressions' fields has a field of the same name
+    |
+269 |         assert_eq!(result.bind[0].doc.name.as_ref().unwrap(), "the whole shebang");
+    |                                   ++++
+
+error[E0609]: no field `name` on type `bind::Binding`
+   --> src/file.rs:310:35
+    |
+310 |         assert_eq!(result.bind[0].name.as_ref().unwrap(), "the whole shebang");
+    |                                   ^^^^ unknown field
+    |
+help: one of the expressions' fields has a field of the same name
+    |
+310 |         assert_eq!(result.bind[0].doc.name.as_ref().unwrap(), "the whole shebang");
+    |                                   ++++
+
+error[E0609]: no field `name` on type `bind::Binding`
+   --> src/file.rs:343:32
+    |
+343 |                 result.bind[i].name.as_ref().unwrap().clone(),
+    |                                ^^^^ unknown field
+    |
+help: one of the expressions' fields has a field of the same name
+    |
+343 |                 result.bind[i].doc.name.as_ref().unwrap().clone(),
+    |                                ++++
+
+error[E0308]: mismatched types
+   --> src/file.rs:368:49
+    |
+368 |         let report = result.unwrap_err().report(data);
+    |                                          ------ ^^^^ expected `&[u8]`, found `&str`
+    |                                          |
+    |                                          arguments to this method are incorrect
+    |
+    = note: expected reference `&[u8]`
+               found reference `&str`
+note: method defined here
+   --> src/error.rs:370:12
+    |
+370 |     pub fn report(&self, content: &[u8]) -> Vec<ErrorReport> {
+    |            ^^^^^^        --------------
+
+error[E0609]: no field `items` on type `ErrorReport`
+   --> src/file.rs:370:23
+    |
+370 |             report[0].items[0].message,
+    |                       ^^^^^ unknown field
+    |
+    = note: available fields are: `message`, `range`
+
+error[E0609]: no field `items` on type `ErrorReport`
+   --> src/file.rs:373:30
+    |
+373 |         assert_eq!(report[0].items[1].range.as_ref().unwrap().start.line, 1);
+    |                              ^^^^^ unknown field
+    |
+    = note: available fields are: `message`, `range`
+
+error[E0609]: no field `items` on type `ErrorReport`
+   --> src/file.rs:374:30
+    |
+374 |         assert_eq!(report[0].items[1].range.as_ref().unwrap().end.line, 1);
+    |                              ^^^^^ unknown field
+    |
+    = note: available fields are: `message`, `range`
+
+warning: unused variable: `e`
+   --> src/expression.rs:178:17
+    |
+178 |             Err(e) => Err(err!("{x} is not a valid JSON value"))?,
+    |                 ^ help: if this is intentional, prefix it with an underscore: `_e`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `e`
+   --> src/bind/command.rs:198:17
+    |
+198 |             Err(e) => Err(err("object failed to serialize: {e}"))?,
+    |                 ^ help: if this is intentional, prefix it with an underscore: `_e`
+
+warning: unused variable: `x`
+   --> src/bind/validation.rs:158:49
+    |
+158 |             KeyBinding(TypedValue::Constant(ref x)) => self,
+    |                                                 ^ help: if this is intentional, prefix it with an underscore: `_x`
+
+error[E0382]: use of moved value: `result.doc`
+   --> src/bind.rs:676:35
+    |
+673 |           let name: String = resolve!(result.doc.unwrap(), name).unwrap();
+    |                                       ---------- -------- `result.doc` moved due to this method call
+    |                                       |
+    |                                       help: consider calling `.as_ref()` or `.as_mut()` to borrow the type's contents
+...
+676 |           let description: String = result
+    |  ___________________________________^
+677 | |             .doc
+    | |________________^ value used here after move
+    |
+note: `std::option::Option::<T>::unwrap` takes ownership of the receiver `self`, which moves `result.doc`
+   --> /rustc/6b00bc3880198600130e1cf62b8f8a93494488cc/library/core/src/option.rs:1000:25
+    = note: move occurs because `result.doc` has type `std::option::Option<BindingDocInput>`, which does not implement the `Copy` trait
+help: you can `clone` the value and consume it, but this might not be your desired behavior
+    |
+673 |         let name: String = resolve!(result.doc.clone().unwrap(), name).unwrap();
+    |                                               ++++++++
+
+error[E0382]: use of moved value: `result.doc`
+   --> src/bind.rs:684:32
+    |
+676 |           let description: String = result
+    |  ___________________________________-
+677 | |             .doc
+    | |________________- help: consider calling `.as_ref()` or `.as_mut()` to borrow the type's contents
+678 |               .unwrap()
+    |                -------- `result.doc` moved due to this method call
+...
+684 |           let hideInDocs: bool = result
+    |  ________________________________^
+685 | |             .doc
+    | |________________^ value used here after move
+    |
+    = note: move occurs because `result.doc` has type `std::option::Option<BindingDocInput>`, which does not implement the `Copy` trait
+help: you can `clone` the value and consume it, but this might not be your desired behavior
+    |
+677 |             .doc.clone()
+    |                 ++++++++
+
+error[E0382]: use of moved value: `result.doc`
+   --> src/bind.rs:692:35
+    |
+684 |           let hideInDocs: bool = result
+    |  ________________________________-
+685 | |             .doc
+    | |________________- help: consider calling `.as_ref()` or `.as_mut()` to borrow the type's contents
+686 |               .unwrap()
+    |                -------- `result.doc` moved due to this method call
+...
+692 |           let hideInPalette: bool = result
+    |  ___________________________________^
+693 | |             .doc
+    | |________________^ value used here after move
+    |
+    = note: move occurs because `result.doc` has type `std::option::Option<BindingDocInput>`, which does not implement the `Copy` trait
+help: you can `clone` the value and consume it, but this might not be your desired behavior
+    |
+685 |             .doc.clone()
+    |                 ++++++++
+
+error[E0382]: use of moved value: `result.doc`
+   --> src/bind.rs:700:36
+    |
+692 |           let hideInPalette: bool = result
+    |  ___________________________________-
+693 | |             .doc
+    | |________________- help: consider calling `.as_ref()` or `.as_mut()` to borrow the type's contents
+694 |               .unwrap()
+    |                -------- `result.doc` moved due to this method call
+...
+700 |           let combinedName: String = result
+    |  ____________________________________^
+701 | |             .doc
+    | |________________^ value used here after move
+    |
+    = note: move occurs because `result.doc` has type `std::option::Option<BindingDocInput>`, which does not implement the `Copy` trait
+help: you can `clone` the value and consume it, but this might not be your desired behavior
+    |
+693 |             .doc.clone()
+    |                 ++++++++
+
+error[E0382]: use of moved value: `result.doc`
+   --> src/bind.rs:708:35
+    |
+700 |           let combinedName: String = result
+    |  ____________________________________-
+701 | |             .doc
+    | |________________- help: consider calling `.as_ref()` or `.as_mut()` to borrow the type's contents
+702 |               .unwrap()
+    |                -------- `result.doc` moved due to this method call
+...
+708 |           let combinedKey: String = result
+    |  ___________________________________^
+709 | |             .doc
+    | |________________^ value used here after move
+    |
+    = note: move occurs because `result.doc` has type `std::option::Option<BindingDocInput>`, which does not implement the `Copy` trait
+help: you can `clone` the value and consume it, but this might not be your desired behavior
+    |
+701 |             .doc.clone()
+    |                 ++++++++
+
+error[E0382]: use of moved value: `result.doc`
+   --> src/bind.rs:716:43
+    |
+708 |           let combinedKey: String = result
+    |  ___________________________________-
+709 | |             .doc
+    | |________________- help: consider calling `.as_ref()` or `.as_mut()` to borrow the type's contents
+710 |               .unwrap()
+    |                -------- `result.doc` moved due to this method call
+...
+716 |           let combinedDescription: String = result
+    |  ___________________________________________^
+717 | |             .doc
+    | |________________^ value used here after move
+    |
+    = note: move occurs because `result.doc` has type `std::option::Option<BindingDocInput>`, which does not implement the `Copy` trait
+help: you can `clone` the value and consume it, but this might not be your desired behavior
+    |
+709 |             .doc.clone()
+    |                 ++++++++
+
+error[E0382]: use of moved value: `result.doc`
+   --> src/bind.rs:724:37
+    |
+716 |           let combinedDescription: String = result
+    |  ___________________________________________-
+717 | |             .doc
+    | |________________- help: consider calling `.as_ref()` or `.as_mut()` to borrow the type's contents
+718 |               .unwrap()
+    |                -------- `result.doc` moved due to this method call
+...
+724 |           let kind: String = resolve!(result.doc.unwrap(), kind).unwrap();
+    |                                       ^^^^^^^^^^ value used here after move
+    |
+    = note: move occurs because `result.doc` has type `std::option::Option<BindingDocInput>`, which does not implement the `Copy` trait
+help: you can `clone` the value and consume it, but this might not be your desired behavior
+    |
+717 |             .doc.clone()
+    |                 ++++++++
+
+Some errors have detailed explanations: E0283, E0308, E0382, E0425, E0599, E0609.
+For more information about an error, try `rustc --explain E0283`.
+warning: `parsing` (lib test) generated 6 warnings
+error: could not compile `parsing` (lib test) due to 23 previous errors; 6 warnings emitted
+[test-rust] ERROR task failed

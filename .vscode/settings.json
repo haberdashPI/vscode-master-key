@@ -9,8 +9,27 @@
         "src/rust/parsing/Cargo.toml"
     ],
     "window.title": "vscode-master-key",
-    "rust-analyzer.cargo.sysroot": "/Users/davidlittle/.rustup/toolchains/1.88.0-aarch64-apple-darwin",
+    "rust-analyzer.cargo.sysroot": "/Users/davidlittle/.rustup/toolchains/1.89.0-aarch64-apple-darwin",
     "rust-analyzer.checkOnSave": true,
     "rust-analyzer.cargo.allTargets": false,
     "rust-analyzer.cargo.buildScripts.rebuildOnSave": false,
+    "workbench.colorCustomizations": {
+        "editorBracketHighlight.foreground1": "#1b9e77",
+        "editorBracketHighlight.foreground2": "#d95f02",
+        "editorBracketHighlight.foreground3": "#7570b3",
+        "editorBracketHighlight.foreground4": "#e7298a",
+        "editorBracketHighlight.foreground5": "#66a61e",
+        "editorBracketHighlight.foreground6": "#e6ab02",
+        "editorBracketHighlight.unexpectedBracket.foreground": "#ff0000",
+        "titleBar.activeBackground": "#f46558",
+        "titleBar.activeForeground": "#000000",
+        "titleBar.inactiveBackground": "#f46558",
+        "titleBar.inactiveForeground": "#000000",
+        "titleBar.border": "#f46558",
+        "activityBar.foreground": "#f46558",
+        "tab.activeBorder": "#f46558",
+        "iLoveWorkSpaceColors": true,
+        "iLoveWorkSpaceRandom": false,
+        "useWorkspaceLite": true
+    },
 }

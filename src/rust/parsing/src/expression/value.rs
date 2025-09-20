@@ -6,13 +6,13 @@ use regex::Regex;
 use rhai::Dynamic;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
-use std::fmt::Display;
+use std::io;
 use std::io::Write;
-use std::{default, io};
 use toml::Spanned;
 
-use crate::error::{ErrorContext, ErrorSet, RawError, Result, ResultVec, flatten_errors};
-use crate::util::{Merging, Plural, Required, Resolving};
+use crate::err;
+use crate::error::{ErrorContext, ErrorSet, Result, ResultVec, flatten_errors};
+use crate::util::{LeafValue, Merging, Plural, Required, Resolving};
 
 //
 // ---------------- `Value` ----------------
@@ -39,6 +39,12 @@ pub enum Value {
     Expression(String),
 }
 
+impl Default for Value {
+    fn default() -> Self {
+        return Value::Table(BTreeMap::new());
+    }
+}
+
 impl From<Value> for Dynamic {
     fn from(value: Value) -> Self {
         return match value {
@@ -63,7 +69,7 @@ impl From<Value> for Dynamic {
 }
 
 impl TryFrom<Dynamic> for Value {
-    type RawError = crate::error::Error;
+    type Error = crate::error::Error;
     // TODO: this is currently almost certainly quite inefficient (we clone arrays and
     // maps), but we can worry about optimizing this later
     fn try_from(value: Dynamic) -> Result<Self> {
@@ -98,9 +104,7 @@ impl TryFrom<Dynamic> for Value {
                     .to_string(),
             ));
         } else {
-            Err(RawError::Constraint(format!(
-                "usable script value; but {value} is unusable"
-            )))?
+            return Err(err!("{value} cannot be interpreted as a valid TOML value"))?;
         }
     }
 }
@@ -110,17 +114,16 @@ lazy_static! {
 }
 
 impl TryFrom<toml::Value> for Value {
-    type RawError = ErrorSet;
+    type Error = ErrorSet;
     fn try_from(value: toml::Value) -> ResultVec<Self> {
         return Ok(match value {
             toml::Value::Boolean(x) => Value::Boolean(x),
             toml::Value::Float(x) => Value::Float(x),
             toml::Value::Integer(x) => Value::Integer({
                 if x > (std::f64::MAX as i64) || x < (std::f64::MIN as i64) {
-                    return Err(RawError::Constraint(format!(
-                        "{x} cannot be expressed as a 64-bit floating point number."
-                    ))
-                    .into());
+                    return Err(err!(
+                        "{x} cannot be expressed as a 64-bit floating point number.",
+                    ))?;
                 } else {
                     x.clone() as i32
                 }
@@ -227,14 +230,16 @@ impl Merging for Value {
 }
 
 impl Resolving<Value> for Value {
-    fn resolve(self, _name: impl Into<String>) -> ResultVec<Value> {
+    fn resolve(self, _name: &'static str) -> ResultVec<Value> {
         Ok(self)
     }
 }
 
 impl Resolving<toml::Value> for Value {
-    fn resolve(self, name: impl Into<String>) -> ResultVec<toml::Value> {
-        self.require_constant().context_str(name)?;
+    fn resolve(self, name: &'static str) -> ResultVec<toml::Value> {
+        self.require_constant()
+            .with_message("for ")
+            .with_message(name)?;
         return Ok(self.into());
     }
 }
@@ -266,9 +271,8 @@ pub trait Expanding {
     where
         Self: Sized + Clone,
     {
-        self.clone().map_expressions(&mut |e| {
-            Err(RawError::Unresolved(format!("Unresolved expression {e}",)))?
-        })?;
+        self.clone()
+            .map_expressions(&mut |e| Err(err!("Unresolved expression {e}"))?)?;
         return Ok(());
     }
 }
@@ -346,7 +350,7 @@ impl<T: Expanding> Expanding for Spanned<T> {
         let span = self.span();
         Ok(Spanned::new(
             span.clone(),
-            self.into_inner().map_expressions(f).context_range(&span)?,
+            self.into_inner().map_expressions(f).with_range(&span)?,
         ))
     }
 }
@@ -442,13 +446,13 @@ impl<'e, T> TryFrom<toml::Value> for TypedValue<T>
 where
     T: Deserialize<'e> + Serialize + std::fmt::Debug,
 {
-    type RawError = ErrorSet;
+    type Error = ErrorSet;
     fn try_from(value: toml::Value) -> ResultVec<TypedValue<T>> {
         io::stdout().flush().unwrap();
 
         let val: Value = value.try_into()?;
         io::stdout().flush().unwrap();
-        return match val.require_constant("") {
+        return match val.require_constant() {
             Err(_) => Ok(TypedValue::Variable(val)),
             Ok(_) => {
                 let toml: toml::Value = val.into();
@@ -526,6 +530,18 @@ impl From<TypedValue<bool>> for bool {
     }
 }
 
+impl<T> From<TypedValue<Plural<T>>> for Plural<T>
+where
+    T: Serialize + std::fmt::Debug + Clone,
+{
+    fn from(value: TypedValue<Plural<T>>) -> Self {
+        return match value {
+            TypedValue::Constant(x) => x,
+            TypedValue::Variable(value) => panic!("Unresolved variable value: {value:?}"),
+        };
+    }
+}
+
 impl<T> From<TypedValue<T>> for Value
 where
     T: Into<toml::Value> + Serialize + std::fmt::Debug,
@@ -545,24 +561,39 @@ where
     }
 }
 
-impl<T> Resolving<T> for TypedValue<T>
+impl<T, U> Resolving<U> for TypedValue<T>
 where
-    T: Serialize + std::fmt::Debug,
+    U: LeafValue,
+    T: Serialize + std::fmt::Debug + Resolving<U>,
     TypedValue<T>: Expanding + Clone + Into<T>,
 {
-    fn resolve(self, name: impl Into<String>) -> ResultVec<T> {
+    fn resolve(self, name: &'static str) -> ResultVec<U> {
         self.require_constant()
-            .context_str(format!("for {}", name.into()))?;
-        return Ok(self.into());
+            .with_message("for ")
+            .with_message(name)?;
+        let constant = self.into();
+        return constant.resolve(name);
     }
 }
 
 impl<T> Resolving<TypedValue<T>> for TypedValue<T>
 where
-    T: Serialize + std::fmt::Debug,
+    T: LeafValue + Serialize + std::fmt::Debug,
 {
-    fn resolve(self, _name: impl Into<String>) -> ResultVec<TypedValue<T>> {
+    fn resolve(self, name: &'static str) -> ResultVec<TypedValue<T>> {
         return Ok(self);
+    }
+}
+
+impl<T> Resolving<TypedValue<T>> for Option<Spanned<TypedValue<T>>>
+where
+    T: Default + Serialize + std::fmt::Debug,
+{
+    fn resolve(self, _name: &'static str) -> ResultVec<TypedValue<T>> {
+        return match self {
+            Some(x) => Ok(x.into_inner()),
+            None => Ok(TypedValue::default()),
+        };
     }
 }
 

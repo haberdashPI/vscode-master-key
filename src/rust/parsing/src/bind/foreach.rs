@@ -294,7 +294,7 @@ impl BindingInput {
     pub fn expand_foreach(self) -> ResultVec<Vec<BindingInput>> {
         if self.has_foreach() {
             let foreach = expand_keys(self.foreach.clone().unwrap())?;
-            foreach.require_constant().context_str(
+            foreach.require_constant().with_message(
                 "`foreach` values can only include expressions of the form {{keys(`regex`)}}",
             )?;
 

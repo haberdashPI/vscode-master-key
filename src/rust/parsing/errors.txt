@@ -1,5 +1,420 @@
+[test-rust] $ def main [...args] {
+   Compiling parsing v0.1.0 (/Users/davidlittle/Documents/home/vscode-master-key/src/rust/parsing)
+warning: unused import: `RawError`
+ --> src/util.rs:9:41
+  |
+9 | use crate::error::{Error, ErrorContext, RawError, Result, ResultVec, flatten_errors};
+  |                                         ^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
 
-running 0 tests
+warning: unused import: `crate::err`
+ --> src/bind/validation.rs:8:5
+  |
+8 | use crate::err;
+  |     ^^^^^^^^^^
 
-test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+warning: unused import: `RawError`
+ --> src/bind/validation.rs:9:30
+  |
+9 | use crate::error::{ErrorSet, RawError, Result, ResultVec, err};
+  |                              ^^^^^^^^
 
+warning: unused variable: `e`
+   --> src/expression.rs:178:17
+    |
+178 |             Err(e) => Err(err!("{x} is not a valid JSON value"))?,
+    |                 ^ help: if this is intentional, prefix it with an underscore: `_e`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `e`
+   --> src/bind/command.rs:198:17
+    |
+198 |             Err(e) => Err(err("object failed to serialize: {e}"))?,
+    |                 ^ help: if this is intentional, prefix it with an underscore: `_e`
+
+warning: unused variable: `x`
+   --> src/bind/validation.rs:158:49
+    |
+158 |             KeyBinding(TypedValue::Constant(ref x)) => self,
+    |                                                 ^ help: if this is intentional, prefix it with an underscore: `_x`
+
+warning: variable does not need to be mutable
+   --> src/bind.rs:869:13
+    |
+869 |         let mut result = toml::from_str::<BindingInput>(data).unwrap();
+    |             ----^^^^^^
+    |             |
+    |             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+warning: variable does not need to be mutable
+   --> src/bind.rs:904:13
+    |
+904 |         let mut result = toml::from_str::<BindingInput>(data).unwrap();
+    |             ----^^^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: methods `with_expression_range` and `with_pos` are never used
+   --> src/error.rs:107:8
+    |
+90  | pub trait ErrorContext<T>
+    |           ------------ methods in this trait
+...
+107 |     fn with_expression_range(
+    |        ^^^^^^^^^^^^^^^^^^^^^
+...
+117 |     fn with_pos(self, context: rhai::Position) -> std::result::Result<T, Self::Error> {
+    |        ^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+warning: unused return value of `rhai::api::options::<impl Engine>::allow_statement_expression` that must be used
+   --> src/expression.rs:144:9
+    |
+144 |         engine.set_allow_looping(false).allow_statement_expression();
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(unused_must_use)]` on by default
+help: use `let _ = ...` to ignore the resulting value
+    |
+144 |         let _ = engine.set_allow_looping(false).allow_statement_expression();
+    |         +++++++
+
+warning: unused `std::result::Result` that must be used
+   --> src/bind/validation.rs:170:21
+    |
+170 |                     toml.serialize(serializer);
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: this `Result` may be an `Err` variant, which should be handled
+help: use `let _ = ...` to ignore the resulting value
+    |
+170 |                     let _ = toml.serialize(serializer);
+    |                     +++++++
+
+warning: unused `std::result::Result` that must be used
+   --> src/bind.rs:937:9
+    |
+937 |         scope.parse_asts(&input);
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: this `Result` may be an `Err` variant, which should be handled
+help: use `let _ = ...` to ignore the resulting value
+    |
+937 |         let _ = scope.parse_asts(&input);
+    |         +++++++
+
+warning: unused `std::result::Result` that must be used
+   --> src/file.rs:138:9
+    |
+138 |         define.add_to_scope(&mut scope);
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: this `Result` may be an `Err` variant, which should be handled
+help: use `let _ = ...` to ignore the resulting value
+    |
+138 |         let _ = define.add_to_scope(&mut scope);
+    |         +++++++
+
+warning: `parsing` (lib test) generated 13 warnings (run `cargo fix --lib -p parsing --tests` to apply 5 suggestions)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.90s
+     Running unittests src/lib.rs (target/debug/deps/parsing-8ee028e04a7e2ca2)
+
+thread 'bind::tests::expands_foreach' panicked at src/bind.rs:881:50:
+called `Option::unwrap()` on a `None` value
+stack backtrace:
+   0: __rustc::rust_begin_unwind
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/std/src/panicking.rs:697:5
+   1: core::panicking::panic_fmt
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/panicking.rs:75:14
+   2: core::panicking::panic
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/panicking.rs:145:5
+   3: core::option::unwrap_failed
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/option.rs:2072:5
+   4: core::option::Option<T>::unwrap
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/option.rs:1005:21
+   5: parsing::bind::tests::expands_foreach
+             at ./src/bind.rs:881:50
+   6: parsing::bind::tests::expands_foreach::{{closure}}
+             at ./src/bind.rs:860:25
+   7: core::ops::function::FnOnce::call_once
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/ops/function.rs:250:5
+   8: core::ops::function::FnOnce::call_once
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/ops/function.rs:250:5
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+
+thread 'bind::tests::expand_foreach_keys' panicked at src/bind.rs:913:62:
+called `Option::unwrap()` on a `None` value
+stack backtrace:
+   0: __rustc::rust_begin_unwind
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/std/src/panicking.rs:697:5
+   1: core::panicking::panic_fmt
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/panicking.rs:75:14
+   2: core::panicking::panic
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/panicking.rs:145:5
+   3: core::option::unwrap_failed
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/option.rs:2072:5
+   4: core::option::Option<T>::unwrap
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/option.rs:1005:21
+   5: parsing::bind::tests::expand_foreach_keys
+             at ./src/bind.rs:913:62
+   6: parsing::bind::tests::expand_foreach_keys::{{closure}}
+             at ./src/bind.rs:894:29
+   7: core::ops::function::FnOnce::call_once
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/ops/function.rs:250:5
+   8: core::ops::function::FnOnce::call_once
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/ops/function.rs:250:5
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+
+thread 'bind::tests::simple_command_merging' panicked at src/bind.rs:773:28:
+called `Option::unwrap()` on a `None` value
+stack backtrace:
+   0: __rustc::rust_begin_unwind
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/std/src/panicking.rs:697:5
+   1: core::panicking::panic_fmt
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/panicking.rs:75:14
+   2: core::panicking::panic
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/panicking.rs:145:5
+   3: core::option::unwrap_failed
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/option.rs:2072:5
+   4: core::option::Option<T>::unwrap
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/option.rs:1005:21
+   5: parsing::bind::tests::simple_command_merging
+             at ./src/bind.rs:773:28
+   6: parsing::bind::tests::simple_command_merging::{{closure}}
+             at ./src/bind.rs:736:32
+   7: core::ops::function::FnOnce::call_once
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/ops/function.rs:250:5
+   8: core::ops::function::FnOnce::call_once
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/ops/function.rs:250:5
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+
+thread 'bind::tests::complete_parsing' panicked at src/bind.rs:629:59:
+called `Result::unwrap()` on an `Err` value: Error { message: "invalid type: string \"normal\", expected a sequence", input: Some("\n        command = \"do\"\n        args = { a = \"2\", b = 3 }\n        key = \"a\"\n        when = \"joe > 1\"\n        mode = \"normal\"\n        priority = 1\n        default = \"{{bind.foo_bar}}\"\n        foreach.index = [1,2,3]\n        prefixes = \"c\"\n        finalKey = true\n        repeat = \"{{2+c}}\"\n        name = \"foo\"\n        description = \"foo bar bin\"\n        hideInPalette = false\n        hideInDocs = false\n        combinedName = \"Up/down\"\n        combinedKey = \"A/B\"\n        combinedDescription = \"bla bla bla\"\n        kind = \"biz\"\n        "), keys: ["mode"], span: Some(116..124) }
+stack backtrace:
+   0: __rustc::rust_begin_unwind
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/std/src/panicking.rs:697:5
+   1: core::panicking::panic_fmt
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/panicking.rs:75:14
+   2: core::result::unwrap_failed
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/result.rs:1761:5
+   3: core::result::Result<T,E>::unwrap
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/result.rs:1167:23
+   4: parsing::bind::tests::complete_parsing
+             at ./src/bind.rs:629:59
+   5: parsing::bind::tests::complete_parsing::{{closure}}
+             at ./src/bind.rs:606:26
+   6: core::ops::function::FnOnce::call_once
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/ops/function.rs:250:5
+   7: core::ops::function::FnOnce::call_once
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/ops/function.rs:250:5
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+
+thread 'bind::tests::default_parsing' panicked at src/bind.rs:726:30:
+called `Option::unwrap()` on a `None` value
+stack backtrace:
+   0: __rustc::rust_begin_unwind
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/std/src/panicking.rs:697:5
+   1: core::panicking::panic_fmt
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/panicking.rs:75:14
+   2: core::panicking::panic
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/panicking.rs:145:5
+   3: core::option::unwrap_failed
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/option.rs:2072:5
+   4: core::option::Option<T>::unwrap
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/option.rs:1005:21
+   5: parsing::bind::tests::default_parsing
+             at ./src/bind.rs:726:30
+   6: parsing::bind::tests::default_parsing::{{closure}}
+             at ./src/bind.rs:702:25
+   7: core::ops::function::FnOnce::call_once
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/ops/function.rs:250:5
+   8: core::ops::function::FnOnce::call_once
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/ops/function.rs:250:5
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+
+thread 'bind::tests::merge_nested_arguments' panicked at src/bind.rs:805:9:
+assertion `left == right` failed
+  left: Some(Spanned { span: 98..102, value: Table({"foo": Table({"a": Integer(2), "b": Integer(3), "c": Table({"x": Integer(1)})})}) })
+ right: Some(Spanned { span: 345..349, value: Table({"foo": Table({"a": Integer(2), "b": Integer(3), "c": Table({"x": Integer(1), "y": Integer(2)}), "d": Integer(12)})}) })
+stack backtrace:
+   0: __rustc::rust_begin_unwind
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/std/src/panicking.rs:697:5
+   1: core::panicking::panic_fmt
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/panicking.rs:75:14
+   2: core::panicking::assert_failed_inner
+   3: core::panicking::assert_failed
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/panicking.rs:387:5
+   4: parsing::bind::tests::merge_nested_arguments
+             at ./src/bind.rs:805:9
+   5: parsing::bind::tests::merge_nested_arguments::{{closure}}
+             at ./src/bind.rs:781:32
+   6: core::ops::function::FnOnce::call_once
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/ops/function.rs:250:5
+   7: core::ops::function::FnOnce::call_once
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/ops/function.rs:250:5
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+
+thread 'bind::tests::merge_nested_array_arguments' panicked at src/bind.rs:856:9:
+assertion `left == right` failed
+  left: Some(Spanned { span: 107..111, value: Table({"commands": Array([Table({"args": Table({"b": String("bar")}), "command": String("step1")}), Table({"args": Table({"x": String("biz")}), "command": String("step2")})])}) })
+ right: Some(Spanned { span: 696..700, value: Table({"commands": Array([Table({"args": Table({"a": String("foo"), "b": String("bar")}), "command": String("step1")}), Table({"args": Table({"x": String("biz"), "y": String("fiz")}), "command": String("step2")})])}) })
+stack backtrace:
+   0: __rustc::rust_begin_unwind
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/std/src/panicking.rs:697:5
+   1: core::panicking::panic_fmt
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/panicking.rs:75:14
+   2: core::panicking::assert_failed_inner
+   3: core::panicking::assert_failed
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/panicking.rs:387:5
+   4: parsing::bind::tests::merge_nested_array_arguments
+             at ./src/bind.rs:856:9
+   5: parsing::bind::tests::merge_nested_array_arguments::{{closure}}
+             at ./src/bind.rs:809:38
+   6: core::ops::function::FnOnce::call_once
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/ops/function.rs:250:5
+   7: core::ops::function::FnOnce::call_once
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/ops/function.rs:250:5
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+
+thread 'file::tests::parse_example' panicked at src/file.rs:234:58:
+called `Result::unwrap()` on an `Err` value: ErrorSet { errors: [Error { error: TomlParsing(Error { message: "invalid type: string \"normal\", expected a sequence", input: Some("\n        [[define.var]]\n        foo = \"bar\"\n\n        [[bind]]\n        key = \"l\"\n        mode = \"normal\"\n        command = \"cursorRight\"\n\n        [[bind]]\n        key = \"h\"\n        model = \"normal\"\n        command = \"cursorLeft\"\n        "), keys: ["bind", "mode"], span: Some(95..103) }), contexts: [] }] }
+stack backtrace:
+   0: __rustc::rust_begin_unwind
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/std/src/panicking.rs:697:5
+   1: core::panicking::panic_fmt
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/panicking.rs:75:14
+   2: core::result::unwrap_failed
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/result.rs:1761:5
+   3: core::result::Result<T,E>::unwrap
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/result.rs:1167:23
+   4: parsing::file::tests::parse_example
+             at ./src/file.rs:234:58
+   5: parsing::file::tests::parse_example::{{closure}}
+             at ./src/file.rs:218:23
+   6: core::ops::function::FnOnce::call_once
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/ops/function.rs:250:5
+   7: core::ops::function::FnOnce::call_once
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/ops/function.rs:250:5
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+
+thread 'file::tests::foreach_error' panicked at /Users/davidlittle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/string-offsets-0.2.0/src/lib.rs:291:32:
+attempt to add with overflow
+stack backtrace:
+   0: __rustc::rust_begin_unwind
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/std/src/panicking.rs:697:5
+   1: core::panicking::panic_fmt
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/panicking.rs:75:14
+   2: core::panicking::panic_const::panic_const_add_overflow
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/panicking.rs:175:17
+   3: string_offsets::StringOffsets<C>::utf8_to_char
+             at /Users/davidlittle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/string-offsets-0.2.0/src/lib.rs:291:32
+   4: string_offsets::StringOffsets<C>::utf8_to_char_pos
+             at /Users/davidlittle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/string-offsets-0.2.0/src/lib.rs:264:29
+   5: parsing::error::range_to_pos
+             at ./src/error.rs:277:23
+   6: parsing::error::Error::report
+             at ./src/error.rs:327:41
+   7: parsing::error::ErrorSet::report::{{closure}}
+             at ./src/error.rs:371:45
+   8: core::iter::adapters::map::map_fold::{{closure}}
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/iter/adapters/map.rs:88:28
+   9: <core::slice::iter::Iter<T> as core::iter::traits::iterator::Iterator>::fold
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/slice/iter/macros.rs:255:27
+  10: <core::iter::adapters::map::Map<I,F> as core::iter::traits::iterator::Iterator>::fold
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/iter/adapters/map.rs:128:19
+  11: core::iter::traits::iterator::Iterator::for_each
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/iter/traits/iterator.rs:827:14
+  12: alloc::vec::Vec<T,A>::extend_trusted
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/alloc/src/vec/mod.rs:3611:26
+  13: <alloc::vec::Vec<T,A> as alloc::vec::spec_extend::SpecExtend<T,I>>::spec_extend
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/alloc/src/vec/spec_extend.rs:29:14
+  14: <alloc::vec::Vec<T> as alloc::vec::spec_from_iter_nested::SpecFromIterNested<T,I>>::from_iter
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/alloc/src/vec/spec_from_iter_nested.rs:62:16
+  15: <alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/alloc/src/vec/spec_from_iter.rs:34:9
+  16: <alloc::vec::Vec<T> as core::iter::traits::collect::FromIterator<T>>::from_iter
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/alloc/src/vec/mod.rs:3470:9
+  17: core::iter::traits::iterator::Iterator::collect
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/iter/traits/iterator.rs:2027:9
+  18: parsing::error::ErrorSet::report
+             at ./src/error.rs:371:62
+  19: parsing::file::tests::foreach_error
+             at ./src/file.rs:364:42
+  20: parsing::file::tests::foreach_error::{{closure}}
+             at ./src/file.rs:353:23
+  21: core::ops::function::FnOnce::call_once
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/ops/function.rs:250:5
+  22: core::ops::function::FnOnce::call_once
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/ops/function.rs:250:5
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+
+thread 'file::tests::resolve_nested_command' panicked at src/file.rs:307:82:
+called `Result::unwrap()` on an `Err` value: ErrorSet { errors: [Error { error: ExpressionParsing(ParseError(Reserved("var"), 1:1)), contexts: [Range(191..195), Range(374..382)] }] }
+stack backtrace:
+   0: __rustc::rust_begin_unwind
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/std/src/panicking.rs:697:5
+   1: core::panicking::panic_fmt
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/panicking.rs:75:14
+   2: core::result::unwrap_failed
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/result.rs:1761:5
+   3: core::result::Result<T,E>::unwrap
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/result.rs:1167:23
+   4: parsing::file::tests::resolve_nested_command
+             at ./src/file.rs:307:82
+   5: parsing::file::tests::resolve_nested_command::{{closure}}
+             at ./src/file.rs:282:32
+   6: core::ops::function::FnOnce::call_once
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/ops/function.rs:250:5
+   7: core::ops::function::FnOnce::call_once
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/ops/function.rs:250:5
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+
+thread 'file::tests::resolve_bind_and_command' panicked at src/file.rs:266:82:
+called `Result::unwrap()` on an `Err` value: ErrorSet { errors: [Error { error: ExpressionParsing(ParseError(Reserved("var"), 1:1)), contexts: [Range(324..328), Range(384..392)] }] }
+stack backtrace:
+   0: __rustc::rust_begin_unwind
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/std/src/panicking.rs:697:5
+   1: core::panicking::panic_fmt
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/panicking.rs:75:14
+   2: core::result::unwrap_failed
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/result.rs:1761:5
+   3: core::result::Result<T,E>::unwrap
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/result.rs:1167:23
+   4: parsing::file::tests::resolve_bind_and_command
+             at ./src/file.rs:266:82
+   5: parsing::file::tests::resolve_bind_and_command::{{closure}}
+             at ./src/file.rs:243:34
+   6: core::ops::function::FnOnce::call_once
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/ops/function.rs:250:5
+   7: core::ops::function::FnOnce::call_once
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/ops/function.rs:250:5
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+
+thread 'file::tests::expand_foreach' panicked at src/file.rs:341:13:
+assertion `left == right` failed
+  left: ""
+ right: "update 0"
+stack backtrace:
+   0: __rustc::rust_begin_unwind
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/std/src/panicking.rs:697:5
+   1: core::panicking::panic_fmt
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/panicking.rs:75:14
+   2: core::panicking::assert_failed_inner
+   3: core::panicking::assert_failed
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/panicking.rs:387:5
+   4: parsing::file::tests::expand_foreach
+             at ./src/file.rs:341:13
+   5: parsing::file::tests::expand_foreach::{{closure}}
+             at ./src/file.rs:323:24
+   6: core::ops::function::FnOnce::call_once
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/ops/function.rs:250:5
+   7: core::ops::function::FnOnce::call_once
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/ops/function.rs:250:5
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+error: test failed, to rerun pass `--lib`
+[test-rust] ERROR task failed
