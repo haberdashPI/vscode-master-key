@@ -156,8 +156,9 @@ Integration test debugging:
                 - [X] reduce types of errors and tie error message string more explicitly
                       to name of enum variant
             - [X] get error reporting working in javascript again
+            - [ ] remove all compile warnings
         - [X] implement support for tags on `bind` (for filter them)
-        - [ ] implement support for `skipWhen` in `command`
+        - [X] implement support for `skipWhen` in `command`
         - [ ] improve expression evaluation
             - [ ] support expressions in `foreach` resolution
                 - [ ] check if each AST has a `foreach` variable and resolve it
@@ -169,7 +170,6 @@ Integration test debugging:
                 - [ ] `{{all_modes_but(["not_me", "or_me"])}}`
         - [~] command normalization
             - [X] always `runCommand` with an array of objects with `command` field
-            - [ ] support `skipWhen`
             - [ ] flatten all nested `runCommands` calls
                 - [ ] `skipWhen` will have to be propagated/merged to children
         - [ ] check constraints

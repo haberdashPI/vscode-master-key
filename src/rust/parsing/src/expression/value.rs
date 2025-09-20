@@ -451,11 +451,21 @@ where
         io::stdout().flush().unwrap();
 
         let val: Value = value.try_into()?;
+        return Ok(val.try_into()?);
+    }
+}
+
+impl<'e, T> TryFrom<Value> for TypedValue<T>
+where
+    T: Deserialize<'e> + Serialize + std::fmt::Debug,
+{
+    type Error = ErrorSet;
+    fn try_from(value: Value) -> ResultVec<TypedValue<T>> {
         io::stdout().flush().unwrap();
-        return match val.require_constant() {
-            Err(_) => Ok(TypedValue::Variable(val)),
+        return match value.require_constant() {
+            Err(_) => Ok(TypedValue::Variable(value)),
             Ok(_) => {
-                let toml: toml::Value = val.into();
+                let toml: toml::Value = value.into();
                 let typed_value = toml.try_into();
                 Ok(TypedValue::Constant(typed_value?))
             }

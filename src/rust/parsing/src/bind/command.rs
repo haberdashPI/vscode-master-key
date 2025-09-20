@@ -1,3 +1,6 @@
+#[allow(unused_imports)]
+use log::info;
+
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use toml::Spanned;
@@ -31,17 +34,19 @@ use crate::{
 pub struct CommandInput {
     // should only be `Some` in context of `Define(Input)`
     pub(crate) id: Option<Spanned<TypedValue<String>>>,
-    /// @forBindingField bind @order 15
+    /// @forBindingField bind
+    /// @order 15
     /// - ❗`command`: as per the top level `command` field, this is a the command you wish to
     ///   run.
     pub command: Spanned<Required<TypedValue<String>>>,
-    /// @forBindingField bind @order 15
+    /// @forBindingField bind
+    /// @order 15
     /// - ⚡ `args`: as per the top level `args` field. Can include
     ///   runtime [expressions](/expressions/index).
+    pub args: Option<Spanned<Value>>,
     /// - ⚡ `skipWhen`: an [expression](/expressions/index) that, when evaluated to false, will
     ///    cause the command to *not* be run.
-    // **TODO**: implement `skipWhen`
-    pub args: Option<Spanned<Value>>,
+    pub skipWhen: Option<Spanned<TypedValue<bool>>>,
 }
 
 impl Expanding for CommandInput {
@@ -69,6 +74,10 @@ impl Expanding for CommandInput {
                 errors.append(&mut e.errors);
                 None
             }),
+            skipWhen: self.skipWhen.map_expressions(f).unwrap_or_else(|mut e| {
+                errors.append(&mut e.errors);
+                None
+            }),
         };
         if errors.len() > 0 {
             return Err(errors.into());
@@ -84,6 +93,7 @@ impl CommandInput {
             id: None,
             command: self.command.clone(),
             args: self.args.clone(),
+            skipWhen: self.skipWhen.clone(),
         };
     }
 }
@@ -111,6 +121,7 @@ pub(crate) fn regularize_commands(input: &BindingInput) -> ResultVec<Vec<Command
                 None => Value::Table(BTreeMap::new()),
                 Some(spanned) => spanned.as_ref().clone(),
             },
+            skipWhen: TypedValue::Constant(false),
         }];
         return Ok(commands);
     } else {
@@ -140,8 +151,12 @@ pub(crate) fn regularize_commands(input: &BindingInput) -> ResultVec<Vec<Command
         let mut command_result = Vec::with_capacity(command_vec.len());
 
         for command in command_vec {
-            let (command, args) = match command {
-                Value::String(str) => (str.to_owned(), Value::Table(BTreeMap::new())),
+            let (command, args, skipWhen) = match command {
+                Value::String(str) => (
+                    str.to_owned(),
+                    Value::Table(BTreeMap::new()),
+                    TypedValue::default(),
+                ),
                 Value::Table(kv) => {
                     let result = kv.get("command").ok_or_else(|| {
                         err("expected `args.commands.command` field for `runCommands`")
@@ -153,9 +168,10 @@ pub(crate) fn regularize_commands(input: &BindingInput) -> ResultVec<Vec<Command
                                 .with_range(&args_pos)?;
                         }
                     };
-                    let result = kv.get("args").ok_or_else(|| {
-                        err("expected `args.commands.arg` field for `runCommands`")
-                    })?;
+                    let result = match kv.get("args") {
+                        None => &Value::Table(BTreeMap::new()),
+                        Some(x) => x,
+                    };
                     let args = match result {
                         x @ Value::Table(_) => x,
                         x @ Value::Array(_) => x,
@@ -163,7 +179,13 @@ pub(crate) fn regularize_commands(input: &BindingInput) -> ResultVec<Vec<Command
                             return Err(err("expected `args` to be a table or array"))?;
                         }
                     };
-                    (command_name, args.to_owned())
+
+                    let result = match kv.get("skipWhen") {
+                        None => Value::Boolean(false),
+                        Some(x) => x.clone(),
+                    };
+                    let skipWhen: TypedValue<bool> = result.try_into()?;
+                    (command_name, args.to_owned(), skipWhen)
                 }
                 _ => {
                     return Err(err(
@@ -171,7 +193,11 @@ pub(crate) fn regularize_commands(input: &BindingInput) -> ResultVec<Vec<Command
                     ))?;
                 }
             };
-            command_result.push(Command { command, args })
+            command_result.push(Command {
+                command,
+                args,
+                skipWhen,
+            })
         }
 
         return Ok(command_result);
@@ -183,6 +209,7 @@ pub(crate) fn regularize_commands(input: &BindingInput) -> ResultVec<Vec<Command
 pub struct Command {
     pub command: String,
     pub(crate) args: Value,
+    pub(crate) skipWhen: TypedValue<bool>,
 }
 
 #[wasm_bindgen]
@@ -212,6 +239,89 @@ impl Command {
                 Some(x) => x.into_inner(),
                 None => Value::Table(BTreeMap::new()),
             },
+            skipWhen: resolve!(input, skipWhen)?,
         });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::bind::command::regularize_commands;
+    use test_log::test;
+
+    use super::*;
+
+    #[test]
+    fn parse_regularize_commands() {
+        let data = r#"
+        command = "runCommands"
+
+        [[args.commands]]
+        command = "a"
+
+        [[args.commands]]
+        command = "b"
+        args = { foo = 1, bar = 2 }
+
+        [[args.commands]]
+        command = "c"
+        args = [1,2]
+        skipWhen = "{{count > 2}}"
+        "#;
+
+        let bind = toml::from_str::<BindingInput>(data).unwrap();
+        let commands = regularize_commands(&bind).unwrap();
+
+        assert_eq!(commands[0].command, "a");
+        assert_eq!(commands[1].command, "b");
+        assert_eq!(commands[2].command, "c");
+
+        assert_eq!(commands[0].args, Value::Table(BTreeMap::new()));
+        assert_eq!(
+            commands[1].args,
+            Value::Table(BTreeMap::from([
+                ("foo".to_string(), Value::Integer(1)),
+                ("bar".to_string(), Value::Integer(2)),
+            ]))
+        );
+        assert_eq!(
+            commands[2].args,
+            Value::Array(vec![Value::Integer(1), Value::Integer(2)])
+        );
+
+        assert_eq!(commands[0].skipWhen, TypedValue::Constant(false));
+        assert_eq!(commands[1].skipWhen, TypedValue::Constant(false));
+        assert_eq!(
+            commands[2].skipWhen,
+            TypedValue::Variable(Value::Expression("count > 2".to_string()))
+        );
+    }
+
+    #[test]
+    fn command_is_required() {
+        let data = r#"
+        command = "runCommands"
+
+        [[args.commands]]
+        command = "a"
+
+        [[args.commands]]
+        args = { foo = 1, bar = 2 }
+        "#;
+
+        let bind = toml::from_str::<BindingInput>(data).unwrap();
+        let commands = regularize_commands(&bind).unwrap_err();
+        let msg = match commands.errors[0].error {
+            crate::error::RawError::Static(x) => x,
+            _ => {
+                assert!(false);
+                ""
+            }
+        };
+
+        assert_eq!(
+            msg,
+            "expected `args.commands.command` field for `runCommands`"
+        );
     }
 }
