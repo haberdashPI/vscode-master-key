@@ -1,13 +1,13 @@
 #[allow(unused_imports)]
 use log::info;
 
+use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 use toml::{Spanned, Value};
 
 use crate::err;
 use crate::error::{Error, ErrorContext, Result, ResultVec, flatten_errors};
-use crate::expression::value::TypedValue;
 
 //
 // ---------------- Merging ----------------
@@ -35,23 +35,37 @@ impl Merging for toml::Table {
             new.into_iter().partition(|(k, _)| self.get(k).is_some());
         let pairs = self.into_iter().map(|(k, v)| match to_merge.remove(&k) {
             Some(new_v) => (k, v.merge(new_v)),
-            None => (k, v),
+            Option::None => (k, v),
         });
         return pairs.chain(to_append.into_iter()).collect();
     }
 }
 
-impl<T: Merging + Clone> Merging for BTreeMap<String, T> {
+impl<T: Merging + Clone> Merging for HashMap<String, T> {
     fn coalesce(self, new: Self) -> Self {
         return new;
     }
-    // BUG!!!: we need to add the new keys that aren't in self to `pairs`
     fn merge(self, new: Self) -> Self {
-        let (mut to_merge, to_append): (BTreeMap<_, _>, BTreeMap<_, _>) =
+        let (mut to_merge, to_append): (HashMap<_, _>, HashMap<_, _>) =
             new.into_iter().partition(|(k, _)| self.get(k).is_some());
         let pairs = self.into_iter().map(|(k, v)| match to_merge.remove(&k) {
             Some(new_v) => (k, v.merge(new_v)),
-            None => (k, v),
+            Option::None => (k, v),
+        });
+        return pairs.chain(to_append.into_iter()).collect();
+    }
+}
+
+impl<T: Merging + Clone> Merging for IndexMap<String, T> {
+    fn coalesce(self, new: Self) -> Self {
+        return new;
+    }
+    fn merge(self, new: Self) -> Self {
+        let (mut to_merge, to_append): (IndexMap<_, _>, IndexMap<_, _>) =
+            new.into_iter().partition(|(k, _)| self.get(k).is_some());
+        let pairs = self.into_iter().map(|(k, v)| match to_merge.remove(&k) {
+            Some(new_v) => (k, v.merge(new_v)),
+            Option::None => (k, v),
         });
         return pairs.chain(to_append.into_iter()).collect();
     }
@@ -127,9 +141,9 @@ impl<T: Merging> Merging for Option<T> {
         return match new {
             Some(newval) => match self {
                 Some(oldval) => Some(oldval.merge(newval)),
-                None => Some(newval),
+                Option::None => Some(newval),
             },
-            None => self,
+            Option::None => self,
         };
     }
 
@@ -241,7 +255,7 @@ where
     fn resolve(self, name: &'static str) -> ResultVec<U> {
         match self {
             Some(x) => x.resolve(name),
-            None => Ok(U::default()),
+            Option::None => Ok(U::default()),
         }
     }
 }
@@ -253,7 +267,7 @@ where
     fn resolve(self, name: &'static str) -> ResultVec<Option<U>> {
         match self {
             Some(x) => Ok(Some(x.resolve(name)?)),
-            None => Ok(None),
+            Option::None => Ok(None),
         }
     }
 }
@@ -279,7 +293,7 @@ where
     type Error = Error;
     fn try_from(value: Option<toml::Value>) -> Result<Self> {
         match value {
-            None => Ok(Required::DefaultValue),
+            Option::None => Ok(Required::DefaultValue),
             Some(x) => Ok(Required::Value(toml::Value::try_into(x)?)),
         }
     }

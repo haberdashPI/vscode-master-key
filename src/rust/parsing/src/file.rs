@@ -213,8 +213,11 @@ fn parse_bytes_helper(file_content: &[u8]) -> ResultVec<KeyFile> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::bind::UNKNOWN_RANGE;
+    use crate::expression::value::Expression;
     use crate::expression::value::Value;
-    use std::collections::BTreeMap;
+    use smallvec::SmallVec;
+    use std::collections::HashMap;
     use test_log::test;
 
     #[test]
@@ -273,9 +276,16 @@ mod tests {
         assert_eq!(result.bind[0].commands[0].command, "shebang");
         assert_eq!(
             result.bind[0].commands[0].args,
-            Value::Table(BTreeMap::from([
+            Value::Table(HashMap::from([
                 ("a".into(), Value::Integer(1)),
-                ("b".into(), Value::Expression("val.foo_string".into())),
+                (
+                    "b".into(),
+                    Value::Exp(Expression {
+                        content: "val.foo_string".into(),
+                        span: UNKNOWN_RANGE,
+                        scope: SmallVec::new(),
+                    })
+                ),
             ]))
         );
         assert_eq!(result.bind[0].commands[1].command, "bar");
@@ -314,9 +324,16 @@ mod tests {
         assert_eq!(result.bind[0].commands[0].command, "shebang");
         assert_eq!(
             result.bind[0].commands[0].args,
-            Value::Table(BTreeMap::from([
+            Value::Table(HashMap::from([
                 ("a".into(), Value::Integer(1)),
-                ("b".into(), Value::Expression("val.foo_string".into())),
+                (
+                    "b".into(),
+                    Value::Exp(Expression {
+                        content: "val.foo_string".into(),
+                        span: UNKNOWN_RANGE,
+                        scope: SmallVec::new(),
+                    })
+                ),
             ]))
         );
         assert_eq!(result.bind[0].commands[1].command, "bar");
@@ -344,7 +361,7 @@ mod tests {
             assert_eq!(result.bind[i].doc.name, expected_name[i]);
             assert_eq!(
                 result.bind[i].commands[0].args,
-                Value::Table(BTreeMap::from([(
+                Value::Table(HashMap::from([(
                     "value".to_string(),
                     Value::String(expected_value[i].clone())
                 ),]))

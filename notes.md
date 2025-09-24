@@ -130,7 +130,7 @@ Integration test debugging:
                 - [X] define expansion for `bind.` and `command.`
             - [X] try it out from extension debugging
             - [X] write some type-script unit tests
-        - [ ] cleanup, document and refactor code
+        - [X] cleanup, document and refactor code
             - NOTE: we're waiting until we test out spans and the other stuff above because that could require more refactoring
             - [X] re-organize the code into smaller units
                 - [X] bind is way to big start by breaking that up
@@ -146,7 +146,7 @@ Integration test debugging:
                       - [X] file
                       - [X] lib
                       - [X] util
-            - [X] replace IndexMap with BTreeMap
+            - [X] replace IndexMap with IndexMap
             - [X] update documentation of `bind`, `define` and `expressions`
             - [X] refactor plural to use `into` / `from` Vec
             - [X] update documentation rendering pipeline
@@ -160,10 +160,34 @@ Integration test debugging:
         - [X] implement support for tags on `bind` (for filter them)
         - [X] implement support for `skipWhen` in `command`
         - [ ] improve expression evaluation
+            - [ ] improve error reporting in expressions
+                - [X] support spans for expressions
+                    - [X] create a `RawValue` that tracks spans
+                        - [X] try to implement with just the Span for expressions tracked
+                        - [X] BUT this probably has to be for all variants, to avoid errors
+                    - [X] parse as `RawValue` instead of `toml::Value`
+                    - [X] inject Span into `Expression`
+                    - NOTES: we can only include Span if the expression is a member of
+                      a table not an array. We can handle this by using an optional
+                      expression span. Error handling will then need to
+                      generate a more disperse error around the span of the
+                      array within its first containing map
+                    - [X] datetimes are not explicitly handled in
+                      `RawValue`: verify that we don't get an error parsing them
+                    - [X] refactor / redocument `value.rs`
+                - [X] inject expression spans and rhai positions into error contexts
+                    - [X] implementation
+                    - [X] test that expressions spans properly resolve
+                - [ ] check for unmatched `{{` and `}}` in strings
+                    - [X] implementation
+                    - [~] test that unmatched mustaches raise an error
+                        - need to defer these errors until we run parse_asts
+                          so that we can get proper span information without
+                          having to pass errors through a deserialization object
             - [ ] support expressions in `foreach` resolution
-                - [ ] check if each AST has a `foreach` variable and resolve it
+                - [ ] add foreach variables to a local scope object
+                - [ ] add this local scope when the expression is `resolve!`ed
             - [ ] allow for `var` evaluation in parse-time expressions
-            - [ ] move all bare variables in an expression to `key.` or `code.` object
             - [ ] implement support for `all` functions:
                 - [ ] `{{all_prefixes()}}`
                 - [ ] `{{all_modes()}}`
@@ -186,16 +210,21 @@ Integration test debugging:
         - [ ] documentation expandsion/validation across all `[[bind]]` values
               with the same key and mode
               e.g. merge all shared documentation across the shared names
+        - [ ] find low hanging fruit for problems with using 1.0 files
+            - [ ] fields that exist in the old but not new (use #[serde(flatten)])
+            - [ ] add hints for fields that don't exist anywhere as well (probably
+                  as a hint or something)
+            - [ ] others
     - [ ] proper conversion to keybindings.json command
         - [ ] expand prefixes to prefixCode and move to when clause
         - [ ] move mode to when clause
         - [ ] re-implement master-key.do
-            - [ ] fix and test command queues implementation (avoid copying)
+            - [ ] move all bare variables in an expression to `key.` or `code.` object
+            - [ ] transfer scope state from TS to rust Scope object
+            - [ ] properly handle command queues (no controlled by rust)
                 - [ ] guess: don't have special command queue field
                 - [ ] support accessing values by their path (`val.foo`, `key.count`)
                       from javascript
-            - [ ] transfer scope state from TS to rust Scope object
-            - [ ] properly handle command queues (no controlled by rust)
         - [ ] unit tests
         - [ ] integration tests
     - [ ] implement `replay`: use the new rust command queues instead of the old
@@ -212,15 +241,6 @@ Integration test debugging:
         - [ ] test this on the old version of larkin.toml
     - [ ] actually replace javascript behavior with rust functions (replace `dod`)
     - [ ] replace `setFlag` with `updateDefine` (or something like that)
-    - [ ] improve error reporting in expressions
-        - [ ] support spans for expressions
-            - [ ] create a `SpannedValue` that tracks spans
-                - [ ] try to implement with just the Span for expressions tracked
-                - [ ] BUT this probably has to be for all variants, to avoid errors
-            - [ ] parse as `SpannedValue` instead of `toml::Value`
-            - [ ] inject Span into `Expression`
-        - [ ] inject expression spans and rhai positions into error contexts
-            - [ ] test that expressions spans properly resolve
     - [ ] CI
         - [x] setup CI unit tests for rust
         - [x] setup rust coverage

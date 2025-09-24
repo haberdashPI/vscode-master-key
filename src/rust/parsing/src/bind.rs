@@ -3,8 +3,8 @@
 #[allow(unused_imports)]
 use log::info;
 
+use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
 use std::convert::identity;
 use toml::Spanned;
 use wasm_bindgen::prelude::*;
@@ -17,7 +17,7 @@ use crate::bind::command::{Command, regularize_commands};
 use crate::bind::validation::{BindingReference, KeyBinding};
 use crate::error::{Result, ResultVec, err};
 use crate::expression::Scope;
-use crate::expression::value::{Expanding, TypedValue, Value};
+use crate::expression::value::{Expanding, Expression, TypedValue, Value};
 use crate::resolve;
 use crate::util::{Merging, Plural, Required, Resolving};
 
@@ -126,7 +126,7 @@ pub struct BindingInput {
     /// - `foreach`: Allows parametric definition of multiple keybindings, see
     ///   [`foreach` clauses](#foreach-clauses).
     #[serde(default)]
-    pub foreach: Option<BTreeMap<String, Vec<Spanned<Value>>>>,
+    pub foreach: Option<IndexMap<String, Vec<Spanned<Value>>>>,
 
     /// @forBindingField bind
     ///
@@ -289,7 +289,7 @@ impl Expanding for BindingInput {
     }
     fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
     where
-        F: FnMut(String) -> Result<Value>,
+        F: FnMut(Expression) -> Result<Value>,
     {
         let mut errors = Vec::new();
         let result = BindingInput {
@@ -455,7 +455,7 @@ impl Expanding for BindingDocInput {
     fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
     where
         Self: Sized,
-        F: FnMut(String) -> Result<Value>,
+        F: FnMut(Expression) -> Result<Value>,
     {
         let mut errors = Vec::new();
         let result = BindingDocInput {
@@ -651,7 +651,7 @@ mod tests {
         let args = result.args.unwrap().into_inner();
         assert_eq!(
             args,
-            Value::Table(BTreeMap::from([
+            Value::Table(HashMap::from([
                 ("a".into(), Value::String("2".into())),
                 ("b".into(), Value::Integer(3))
             ]))
@@ -735,10 +735,7 @@ mod tests {
         );
         assert_eq!(
             result.args.unwrap().into_inner(),
-            Value::Table(BTreeMap::from([(
-                "to".into(),
-                Value::String("left".into())
-            )]))
+            Value::Table(HashMap::from([("to".into(), Value::String("left".into()))]))
         );
 
         let modes: Vec<String> = resolve!(result, mode).unwrap();
@@ -776,10 +773,7 @@ mod tests {
 
         assert_eq!(
             left.args.unwrap().into_inner(),
-            Value::Table(BTreeMap::from([(
-                "to".into(),
-                Value::String("left".into())
-            )]))
+            Value::Table(HashMap::from([("to".into(), Value::String("left".into()))]))
         );
 
         let prefixes: Vec<String> = resolve!(left, prefixes).unwrap();

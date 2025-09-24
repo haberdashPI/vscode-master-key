@@ -2,6 +2,9 @@
 
 pub mod value;
 
+#[allow(unused_imports)]
+use log::info;
+
 use std::collections::{HashMap, VecDeque};
 
 use rhai::Dynamic;
@@ -9,8 +12,8 @@ use serde::Serialize;
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
 use crate::{
-    bind::command::Command, err, error::Result, error::ResultVec, expression::value::Expanding,
-    expression::value::Value,
+    bind::command::Command, err, error::ErrorContext, error::Result, error::ResultVec,
+    expression::value::Expanding, expression::value::Value,
 };
 
 /// @file expressions/index.md
@@ -19,8 +22,12 @@ use crate::{
 ///
 /// You can use expressions in a number of places inside a [bind](/bindings/bind)
 /// definition. An expression is a snippet of code surrounded by double curly braces <code
-/// v-pre>{{like + this}}</code> that occurs within a TOML string. Expressions can evaluate
-/// to any valid TOML object when the entire string is an expression
+/// v-pre>{{like + this}}</code> that occurs within a TOML string.
+///
+/// When the string is comprised entirely of a single expression, it can evaluate to any
+/// valid TOML object.
+///
+/// **Example**
 ///
 /// ```toml
 /// [[define.val]]
@@ -50,28 +57,41 @@ use crate::{
 /// ```
 ///
 /// Valid expressions are a simple subset of [Rhai](https://rhai.rs/book/ref/index.html).
-/// You cannot execute statements, set variables, use loops, or define functions. If you
-/// find yourself wanting to write an elaborate expression, your goal is probably better
-/// accomplished by writing an [extension](https://code.visualstudio.com/api) and running
-/// the extension defined-command.
+/// You can only evaluate expressions not statements, and you cannot set variables, use
+/// loops, or define functions. If you find yourself wanting to write an elaborate
+/// expression, your goal is probably better accomplished by writing an
+/// [extension](https://code.visualstudio.com/api) and running the extension
+/// defined-command.
 ///
 /// There are two points at which an expression can be evaluated: while parsing the master
 /// keybinding file (e.g. making use of [foreach](/bindings/bind#foreach-clauses)) or at
 /// runtime: when the user presses a key.
 ///
-/// ## Parse-time Evaluation
+/// ## Read-time Evaluation
 ///
-/// Parse-time expressions are generally quite limited in terms of what values are in scope
-/// within the expression. The individual fields of `bind` document the scope of a given
-/// parse-time expression.
-///
-/// ## Run-time Evaluation
-///
-/// Expressions that get evaluated at run time are clearly denoted as such with a ⚡ emoji.
-/// They are more expressive, and have access to the following values:
+/// Read-time expressions are computed directly after a keybinding file (and any user
+/// defined bindings) have been loaded. The following values are in scope:
 ///
 /// - Any field defined in a [`[[define.val]]`](/bindings/define) section. These variables
 ///   are all stored under the top-level `val.` object.
+/// - Variables defined by [`foreach`](/bindings/bind#foreach-clauses)
+/// - `keys([regex]):` returns all keys matching the regular expression defined by the given
+///   string
+/// - `all_prefixes()`: returns an array of strings of all keybinding prefixes defined by
+///   the current set of keybindigs
+/// - `all_modes()`: returns an array of strings all keybinding modes defined by the current
+///   keybinding set
+/// - `all_modes_but([exclusions])`: given an array of strings of excluded modes, returns
+///   all keybinding modes defined by the current keybinding set that are not among these
+///   exclusions.
+///
+/// ## Run-time Evaluation
+///
+/// Fields for which expressions are evaluated at run time are clearly denoted as such with
+/// a ⚡ symbol. The are computed directly after a user presses the given keybinding. They
+/// have access to the following values:
+///
+/// - any value available at read-time (see above)
 /// - `code.editorHasSelection`: true if there is any selection, false otherwise
 /// - `code.editorHasMultipleSelections`: true if there are multiple selections, false
 ///   otherwise
@@ -119,21 +139,22 @@ impl Scope {
             self.state.set_or_push(k, v.clone());
         }
         return Ok(obj.clone().map_expressions(&mut |expr| {
-            let ast = &self.asts[&expr];
-            let value: rhai::Dynamic = self.engine.eval_ast_with_scope(&mut self.state, ast)?;
-            let result_value: Value = value.clone().try_into()?;
-            return Ok(result_value);
+            let ast = &self.asts[&expr.content];
+            let dynamic: rhai::Dynamic = self.engine.eval_ast_with_scope(&mut self.state, ast)?;
+            let result_value: std::result::Result<Value, _> = dynamic.clone().try_into();
+            let value = result_value.with_message(format!(" while evaluating:\n{expr}"))?;
+            return Ok(value);
         })?);
     }
 
-    // TODO: revelation, we don't actually have a way to get an expressions' precise
-    // position because of how parsing works. *MAYBE* we could write a custom
-    // deserializer or value::Value, but that seems very complex
     pub(crate) fn parse_asts(&mut self, x: &(impl Expanding + Clone)) -> ResultVec<()> {
         x.clone().map_expressions(&mut |expr| {
-            let ast = self.engine.compile_expression(expr.clone())?;
-            self.asts.insert(expr.clone(), ast);
-            return Ok(Value::Expression(expr));
+            let ast = self
+                .engine
+                .compile_expression(expr.content.clone())
+                .with_range(&expr.span)?;
+            self.asts.insert(expr.content.clone(), ast);
+            return Ok(Value::Exp(expr));
         })?;
         return Ok(());
     }
@@ -200,4 +221,67 @@ impl Scope {
 
     // TODO: function to evaluate args of replay and return a range of expressions
     // to replay in type script
+}
+
+mod tests {
+    use super::*;
+    use test_log::test;
+
+    #[test]
+    fn expression_paren_error() {
+        let data = r#"
+        joe = "{{(1 + 3}}"
+        "#;
+        let value: Value = toml::from_str(data).unwrap();
+        info!("{value:?}");
+
+        let mut scope = Scope::new();
+        let err = scope.parse_asts(&value).unwrap_err();
+        let report = err.report(data.as_bytes());
+        let message = report.first().unwrap().message.clone();
+        let range = report.first().unwrap().range.clone();
+        let val: String = data[(range.start.col)..=(range.end.col)].to_string();
+
+        assert_eq!("3", val);
+        assert!(message.contains("Expecting ')'"));
+    }
+
+    #[test]
+    fn expression_operator_error() {
+        let data = r#"
+        joe = "{{(1 # 3}}"
+        "#;
+        let value: Value = toml::from_str(data).unwrap();
+        info!("{value:?}");
+
+        let mut scope = Scope::new();
+        let err = scope.parse_asts(&value).unwrap_err();
+        let report = err.report(data.as_bytes());
+        let message = report.first().unwrap().message.clone();
+        let range = report.first().unwrap().range.clone();
+        let val: String = data[(range.start.col + 1)..=(range.end.col + 1)].to_string();
+
+        assert_eq!("#", val);
+        assert!(message.contains("Unknown operator"))
+    }
+
+    #[test]
+    fn expression_bracket_error() {
+        let data = r#"
+        joe = "{{joe bob {{ bill}}"
+        "#;
+        let value: std::result::Result<Value, _> = toml::from_str(data);
+        let err = value.unwrap_err();
+        info!("err: {err:?}")
+    }
+
+    #[test]
+    fn expression_bracket_error_2() {
+        let data = r#"
+        joe = "{{joe bob bill}} bob fob}}"
+        "#;
+        let value: std::result::Result<Value, _> = toml::from_str(data);
+        let err = value.unwrap_err();
+        info!("err: {err:?}")
+    }
 }

@@ -39,11 +39,11 @@ use lazy_static::lazy_static;
 #[allow(unused_imports)]
 use log::info;
 use regex::Regex;
-use std::collections::BTreeMap;
+use indexmap::IndexMap;
 use toml::Spanned;
 
 use crate::error::{ErrorContext, Result, ResultVec};
-use crate::expression::value::{Expanding, Value};
+use crate::expression::value::{Expanding, Expression, Value};
 
 const ALL_KEYS: [&'static str; 192] = [
     "f0",
@@ -245,8 +245,8 @@ lazy_static! {
     // static ref KEY_PATTERN_REGEX: Regex = Regex::new(r"^\s*keys\(\s*`(.*)`\s*\)\s*$").unwrap();
 }
 
-fn expand_keys_str(val: String) -> Result<Value> {
-    let c = KEY_PATTERN_REGEX.captures(&val);
+fn expand_keys_str(val: Expression) -> Result<Value> {
+    let c = KEY_PATTERN_REGEX.captures(&val.content);
     if let Some(caps) = c {
         let key_regex = Regex::new(&caps[1])?;
         let mut result = Vec::new();
@@ -257,13 +257,13 @@ fn expand_keys_str(val: String) -> Result<Value> {
         }
         return Ok(Value::Array(result));
     } else {
-        return Ok(Value::Expression(val));
+        return Ok(Value::Exp(val));
     }
 }
 
 pub fn expand_keys(
-    items: BTreeMap<String, Vec<Spanned<Value>>>,
-) -> ResultVec<BTreeMap<String, Vec<Value>>> {
+    items: IndexMap<String, Vec<Spanned<Value>>>,
+) -> ResultVec<IndexMap<String, Vec<Value>>> {
     // expand any `{{key(`regex`)}}` expressions (these are arrays of possible keys)
     let items = items.map_expressions(&mut expand_keys_str)?;
 
@@ -299,13 +299,15 @@ impl BindingInput {
             )?;
 
             let values = expand_foreach_values(foreach).into_iter().map(|values| {
+                // TODO: this is where we will eventually add the `for` variables
+                // to the expression scope instead of inserting the values directly
                 let mut result = self.clone();
                 result.foreach = None;
                 result
                     .map_expressions(&mut |x| {
                         Ok(values
-                            .get(&x)
-                            .map_or_else(|| Value::Expression(x), |ex| ex.clone()))
+                            .get(&x.content)
+                            .map_or_else(|| Value::Exp(x), |ex| ex.clone()))
                     })
                     .expect("no errors") // since our mapping function has no errors
             });
@@ -315,8 +317,8 @@ impl BindingInput {
     }
 }
 
-fn expand_foreach_values(foreach: BTreeMap<String, Vec<Value>>) -> Vec<BTreeMap<String, Value>> {
-    let mut result = vec![BTreeMap::new()];
+fn expand_foreach_values(foreach: IndexMap<String, Vec<Value>>) -> Vec<IndexMap<String, Value>> {
+    let mut result = vec![IndexMap::new()];
 
     for (k, vals) in foreach {
         result = result

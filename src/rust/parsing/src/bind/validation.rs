@@ -6,7 +6,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 use crate::error::{ErrorSet, Result, ResultVec, err};
-use crate::expression::value::{EXPRESSION, Expanding, TypedValue, Value};
+use crate::expression::value::{EXPRESSION, Expanding, Expression, TypedValue, Value};
 use crate::util::{Merging, Resolving};
 
 //
@@ -151,13 +151,13 @@ impl Expanding for KeyBinding {
     }
     fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
     where
-        F: FnMut(String) -> Result<Value>,
+        F: FnMut(Expression) -> Result<Value>,
     {
         Ok(match self {
             KeyBinding(TypedValue::Constant(_)) => self,
             KeyBinding(TypedValue::Variable(value)) => match value.map_expressions(f)? {
                 interp @ Value::Interp(_) => KeyBinding(TypedValue::Variable(interp)),
-                exp @ Value::Expression(_) => KeyBinding(TypedValue::Variable(exp)),
+                exp @ Value::Exp(_) => KeyBinding(TypedValue::Variable(exp)),
                 Value::String(val) => {
                     valid_key_binding_str(&val)?;
                     KeyBinding(TypedValue::Constant(val))
@@ -226,8 +226,8 @@ impl TryFrom<String> for BindingReference {
     fn try_from(value: String) -> ResultVec<Self> {
         let value: Value = toml::Value::String(value).try_into()?;
         match value {
-            Value::Expression(x) => {
-                if let Some(captures) = BIND_VARIABLE.captures(&x) {
+            Value::Exp(x) => {
+                if let Some(captures) = BIND_VARIABLE.captures(&x.content) {
                     Ok(BindingReference(
                         captures.get(1).expect("variable name").as_str().to_string(),
                     ))
@@ -255,7 +255,7 @@ impl Expanding for BindingReference {
     fn map_expressions<F>(self, _f: &mut F) -> ResultVec<Self>
     where
         Self: Sized,
-        F: FnMut(String) -> Result<Value>,
+        F: FnMut(Expression) -> Result<Value>,
     {
         return Ok(self);
     }

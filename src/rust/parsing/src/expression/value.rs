@@ -1,21 +1,24 @@
 #[allow(unused_imports)]
 use log::info;
 
+use core::ops::Range;
+use indexmap::IndexMap;
 use lazy_static::lazy_static;
 use regex::Regex;
 use rhai::Dynamic;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
-use std::io;
+use smallvec::SmallVec;
+use std::collections::HashMap;
 use std::io::Write;
 use toml::Spanned;
 
+use crate::bind::UNKNOWN_RANGE;
 use crate::err;
-use crate::error::{ErrorContext, ErrorSet, Result, ResultVec, flatten_errors};
+use crate::error::{ErrorContext, ErrorSet, RawError, Result, ResultVec, flatten_errors};
 use crate::util::{LeafValue, Merging, Plural, Required, Resolving};
 
 //
-// ---------------- `Value` ----------------
+// ================ Value ================
 //
 
 /// `Value` is an expressive type that can be used to represent any TOML / JSON object with
@@ -24,24 +27,393 @@ use crate::util::{LeafValue, Merging, Plural, Required, Resolving};
 /// to represent parsed TOML data, expand the expressions in them, and translate
 /// those values to JSON and/or Rhai `Dynaamic` objects.
 
-#[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-#[serde(try_from = "toml::Value")]
+#[derive(Serialize, Debug, Clone, PartialEq)]
 pub enum Value {
     Integer(i32),
     Float(f64),
     String(String),
     Boolean(bool),
     Array(Vec<Value>),
-    Table(BTreeMap<String, Value>),
+    Table(HashMap<String, Value>),
     Interp(Vec<Value>),
-    // TODO: could optimize further by using an internned string (simplifying AST lookup)
-    // TODO: include a span so that we can improve error messages
-    Expression(String),
+    Exp(Expression),
 }
 
-impl Default for Value {
-    fn default() -> Self {
-        return Value::Table(BTreeMap::new());
+//
+// ---------------- Value: Expressions ----------------
+//
+
+/// Expression's within a value are composed of both the expression code but also a span
+/// (usually) indicating where the expression is located in a source file and a scope, which
+/// describes any locally resolved values, such as from the `foreach` field of `[[bind]]`
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct Expression {
+    pub content: String,
+    pub span: Range<usize>,
+    pub scope: SmallVec<[(String, BareValue); 8]>,
+}
+
+impl std::fmt::Display for Expression {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        write!(fmt, "{}", "{{")?;
+        self.content.fmt(fmt)?;
+        write!(fmt, "{}", "}}")?;
+        return Ok(());
+    }
+}
+
+impl PartialEq for Expression {
+    fn eq(&self, other: &Self) -> bool {
+        if self.content != other.content {
+            return false;
+        }
+        // TODO: make this more efficient
+        let self_scope: HashMap<_, _> = self.scope.clone().into_iter().collect();
+        let other_scope: HashMap<_, _> = other.scope.clone().into_iter().collect();
+        return self_scope == other_scope;
+    }
+}
+
+//
+// ---------------- Value: Deserialization ----------------
+//
+
+impl<'de> Deserialize<'de> for Value {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let bare_value = BareValue::deserialize(deserializer)?;
+        match Value::new(bare_value, None) {
+            // TODO: could improve error handling here once we have a proper
+            // error type for the kinds of errors we expect to show here
+            Err(e) => Err(serde::de::Error::custom(e.to_string())),
+            Ok(x) => Ok(x),
+        }
+    }
+}
+
+#[derive(Serialize, Debug, Clone, PartialEq)]
+pub enum BareValue {
+    Integer(i32),
+    Float(f64),
+    String(String),
+    Datetime(toml::value::Datetime),
+    Boolean(bool),
+    Array(Vec<BareValue>),
+    Table(HashMap<String, Spanned<BareValue>>),
+}
+
+// Manual implementation of `Deserialize` is required here to capture `Spanned` within
+// `Table` values. Note: `toml`'s has a limitation that it cannot have `Spanned` `Array`
+// values in a dynamic type like `BareValue`. To work around this limitation we would
+// probably need to use a different deserialization approach that did not use `serde`
+// directly. Instead we simply accept that error messages for expressions will be
+// less precise when they occur as a direct child of an array.
+impl<'de> serde::de::Deserialize<'de> for BareValue {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::de::Deserializer<'de>,
+    {
+        struct ValueVisitor;
+
+        impl<'de> serde::de::Visitor<'de> for ValueVisitor {
+            type Value = BareValue;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("any valid TOML value")
+            }
+
+            fn visit_bool<E>(self, value: bool) -> std::result::Result<BareValue, E> {
+                Ok(BareValue::Boolean(value))
+            }
+
+            fn visit_i64<E: serde::de::Error>(
+                self,
+                value: i64,
+            ) -> std::result::Result<BareValue, E> {
+                if i32::try_from(value).is_ok() {
+                    Ok(BareValue::Integer(value as i32))
+                } else {
+                    Err(serde::de::Error::custom(
+                        "i64 value was too large (must fit in i32)",
+                    ))
+                }
+            }
+
+            fn visit_u64<E: serde::de::Error>(
+                self,
+                value: u64,
+            ) -> std::result::Result<BareValue, E> {
+                if i32::try_from(value).is_ok() {
+                    Ok(BareValue::Integer(value as i32))
+                } else {
+                    Err(serde::de::Error::custom(
+                        "u64 value was too large (must fit in i32",
+                    ))
+                }
+            }
+
+            fn visit_u32<E: serde::de::Error>(
+                self,
+                value: u32,
+            ) -> std::result::Result<BareValue, E> {
+                if i32::try_from(value).is_ok() {
+                    Ok(BareValue::Integer(value as i32))
+                } else {
+                    Err(serde::de::Error::custom(
+                        "u32 value was too large (must fit in i32)",
+                    ))
+                }
+            }
+
+            fn visit_i32<E>(self, value: i32) -> std::result::Result<BareValue, E> {
+                Ok(BareValue::Integer(value.into()))
+            }
+
+            fn visit_f64<E>(self, value: f64) -> std::result::Result<BareValue, E> {
+                Ok(BareValue::Float(value))
+            }
+
+            fn visit_str<E>(self, value: &str) -> std::result::Result<BareValue, E> {
+                Ok(BareValue::String(value.into()))
+            }
+
+            fn visit_string<E>(self, value: String) -> std::result::Result<BareValue, E> {
+                Ok(BareValue::String(value))
+            }
+
+            fn visit_some<D>(self, deserializer: D) -> std::result::Result<BareValue, D::Error>
+            where
+                D: serde::de::Deserializer<'de>,
+            {
+                serde::de::Deserialize::deserialize(deserializer)
+            }
+
+            fn visit_seq<V>(self, mut visitor: V) -> std::result::Result<BareValue, V::Error>
+            where
+                V: serde::de::SeqAccess<'de>,
+            {
+                let mut vec = Vec::new();
+                while let Some(elem) = visitor.next_element()? {
+                    vec.push(elem);
+                }
+                Ok(BareValue::Array(vec))
+            }
+
+            fn visit_map<V>(self, mut visitor: V) -> std::result::Result<BareValue, V::Error>
+            where
+                V: serde::de::MapAccess<'de>,
+            {
+                let key = match toml_datetime::de::VisitMap::next_key_seed(&mut visitor)? {
+                    Some(toml_datetime::de::VisitMap::Datetime(datetime)) => {
+                        return Ok(BareValue::Datetime(datetime));
+                    }
+                    Option::None => return Ok(BareValue::Table(HashMap::new())),
+                    Some(toml_datetime::de::VisitMap::Key(key)) => key,
+                };
+                let mut map = HashMap::new();
+                map.insert(key.into_owned(), visitor.next_value()?);
+                while let Some(key) = visitor.next_key::<String>()? {
+                    match map.entry(key) {
+                        std::collections::hash_map::Entry::Vacant(vacant) => {
+                            vacant.insert(visitor.next_value()?);
+                        }
+                        std::collections::hash_map::Entry::Occupied(occupied) => {
+                            let msg = format!("duplicate key: `{}`", occupied.key());
+                            return Err(serde::de::Error::custom(msg));
+                        }
+                    }
+                }
+                Ok(BareValue::Table(map))
+            }
+        }
+
+        deserializer.deserialize_any(ValueVisitor)
+    }
+}
+
+lazy_static! {
+    pub static ref EXPRESSION: Regex = Regex::new(r"\{\{(.*?)\}\}").unwrap();
+}
+
+impl Value {
+    fn new(value: BareValue, range: Option<Range<usize>>) -> Result<Self> {
+        return Ok(match value {
+            BareValue::Boolean(x) => Value::Boolean(x),
+            BareValue::Float(x) => Value::Float(x),
+            BareValue::Integer(x) => Value::Integer(x),
+            BareValue::Datetime(x) => Value::String(x.to_string()),
+            BareValue::String(x) => string_to_expression(x, range)?,
+            BareValue::Array(toml_values) => {
+                let values = toml_values.into_iter().map(|x| {
+                    return Ok(Value::new(x, None)?);
+                });
+                Value::Array(values.collect::<Result<_>>()?)
+            }
+            BareValue::Table(toml_kv) => {
+                let kv = toml_kv.into_iter().map(|(k, v)| {
+                    let span = v.span();
+                    return Ok((k, Value::new(v.into_inner(), Some(span))?));
+                });
+                Value::Table(kv.collect::<Result<_>>()?)
+            }
+        });
+    }
+}
+
+fn match_to_expression(maybe_parent_span: &Option<Range<usize>>, m: regex::Match) -> Result<Value> {
+    if let Some(parent_span) = maybe_parent_span {
+        let r = m.range();
+        let exp_span = (parent_span.start + r.start)..(parent_span.start + r.end);
+        let content: String = m.as_str().into();
+        if content.contains("{{") {
+            return Err(RawError::Static("unexpected `{{`")).with_range(&exp_span)?;
+        }
+        return Ok(Value::Exp(Expression {
+            content,
+            span: exp_span,
+            scope: SmallVec::new(),
+        }));
+    } else {
+        let content: String = m.as_str().into();
+        if content.contains("{{") {
+            return Err(RawError::Static("unexpected `{{`"))?;
+        }
+        return Ok(Value::Exp(Expression {
+            content,
+            span: UNKNOWN_RANGE,
+            scope: SmallVec::new(),
+        }));
+    }
+}
+
+fn string_to_expression(x: String, span: Option<Range<usize>>) -> Result<Value> {
+    let exprs = EXPRESSION.captures_iter(&x);
+    // there are multiple expressions interpolated into the string
+    let mut interps = Vec::new();
+    let mut last_match = 0..0;
+    // TODO: check for unmatched `{{` or `}}`
+    // push rest
+    for expr in exprs {
+        let r = expr.get(0).expect("full match").range();
+        if r.len() == x.len() {
+            return match_to_expression(&span, expr.get(1).expect("variable name"));
+        }
+        if last_match.end < r.start {
+            interps.push(Value::String(x[last_match.end..r.start].into()));
+        }
+        last_match = r;
+
+        interps.push(match_to_expression(
+            &span,
+            expr.get(1).expect("variable name"),
+        )?);
+    }
+    if last_match.start == 0 && last_match.end == 0 {
+        if x.contains("{{") {
+            let result = Err(RawError::Static("unexpected `{{`"));
+            if let Some(r) = span {
+                return result.with_range(&r);
+            } else {
+                result?;
+            }
+        } else if x.contains("}}") {
+            let result = Err(RawError::Static("unexpected `}}`"));
+            if let Some(r) = span {
+                return result.with_range(&r);
+            } else {
+                result?;
+            }
+        }
+        return Ok(Value::String(x));
+    }
+    if last_match.end < x.len() {
+        interps.push(Value::String(x[last_match.end..].into()));
+    }
+    return Ok(Value::Interp(interps));
+}
+
+fn interp_to_string(interps: Vec<Value>) -> String {
+    let mut result = String::new();
+    for v in interps {
+        match v {
+            Value::String(x) => result.push_str(&x),
+            Value::Exp(Expression { content: x, .. }) => {
+                result.push_str(&format!("{}{x}{}", "{{", "}}"));
+            }
+            other @ _ => {
+                let toml: toml::Value = other.into();
+                let mut other_str = String::new();
+                match toml.serialize(toml::ser::ValueSerializer::new(&mut other_str)) {
+                    Err(_) => result.push_str("<!err!>"),
+                    Ok(_) => (),
+                };
+                result.push_str(&other_str)
+            }
+        }
+    }
+    return result;
+}
+
+//
+// ---------------- Value: Conversion ----------------
+//
+
+impl TryFrom<toml::Value> for BareValue {
+    type Error = ErrorSet;
+    fn try_from(value: toml::Value) -> ResultVec<Self> {
+        return Ok(match value {
+            toml::Value::Boolean(x) => BareValue::Boolean(x),
+            toml::Value::Float(x) => BareValue::Float(x),
+            toml::Value::Integer(x) => BareValue::Integer({
+                if i32::try_from(x).is_ok() {
+                    x as i32
+                } else {
+                    Err(RawError::Static(
+                        "i64 value was too large (must fit in i32)",
+                    ))?;
+                    0
+                }
+            }),
+            toml::Value::Datetime(x) => BareValue::String(x.to_string()),
+            toml::Value::String(x) => BareValue::String(x),
+            toml::Value::Array(toml_values) => {
+                let values = flatten_errors(toml_values.into_iter().map(|x| {
+                    return Ok(x.try_into::<BareValue>()?);
+                }))?;
+                BareValue::Array(values)
+            }
+            toml::Value::Table(toml_kv) => {
+                let kv = flatten_errors(toml_kv.into_iter().map(|(k, v)| {
+                    Ok((k, Spanned::new(UNKNOWN_RANGE, v.try_into::<BareValue>()?)))
+                }))?;
+                BareValue::Table(kv.into_iter().collect())
+            }
+        });
+    }
+}
+
+impl From<Value> for toml::Value {
+    fn from(value: Value) -> toml::Value {
+        return match value {
+            Value::Exp(Expression { content: x, .. }) => panic!("Unresolved expression {x}"),
+            Value::Interp(interps) => {
+                panic!("Unresolved interpolation {}", interp_to_string(interps))
+            }
+            Value::Array(items) => {
+                let new_items = items.into_iter().map(|it| it.into()).collect();
+                toml::Value::Array(new_items)
+            }
+            Value::Table(kv) => {
+                let new_kv = kv.into_iter().map(|(k, v)| (k, v.into())).collect();
+                toml::Value::Table(new_kv)
+            }
+            Value::Boolean(x) => toml::Value::Boolean(x),
+            Value::Float(x) => toml::Value::Float(x),
+            Value::Integer(x) => toml::Value::Integer(x as i64),
+            Value::String(x) => toml::Value::String(x),
+        };
     }
 }
 
@@ -62,8 +434,8 @@ impl From<Value> for Dynamic {
                 map.into()
             }
             // the from here results in an opaque custom type
-            Value::Expression(x) => Dynamic::from(x),
-            Value::Interp(x) => Dynamic::from(x),
+            val @ Value::Exp(_) => Dynamic::from(val),
+            val @ Value::Interp(..) => Dynamic::from(val),
         };
     }
 }
@@ -87,7 +459,7 @@ impl TryFrom<Dynamic> for Value {
                 .clone()
                 .into_iter()
                 .map(|(k, v)| Ok((k.as_str().to_string(), Value::try_from(v.to_owned())?)))
-                .collect::<Result<BTreeMap<_, _>>>()?;
+                .collect::<Result<HashMap<_, _>>>()?;
             return Ok(Value::Table(values));
         } else if value.is_bool() {
             return Ok(Value::Boolean(value.as_bool().expect("boolean")));
@@ -109,91 +481,13 @@ impl TryFrom<Dynamic> for Value {
     }
 }
 
-lazy_static! {
-    pub static ref EXPRESSION: Regex = Regex::new(r"\{\{(.*?)\}\}").unwrap();
-}
+//
+// ---------------- Value: Traits ----------------
+//
 
-impl TryFrom<toml::Value> for Value {
-    type Error = ErrorSet;
-    fn try_from(value: toml::Value) -> ResultVec<Self> {
-        return Ok(match value {
-            toml::Value::Boolean(x) => Value::Boolean(x),
-            toml::Value::Float(x) => Value::Float(x),
-            toml::Value::Integer(x) => Value::Integer({
-                if x > (std::f64::MAX as i64) || x < (std::f64::MIN as i64) {
-                    return Err(err!(
-                        "{x} cannot be expressed as a 64-bit floating point number.",
-                    ))?;
-                } else {
-                    x.clone() as i32
-                }
-            }),
-            toml::Value::Datetime(x) => Value::String(x.to_string()),
-            toml::Value::String(x) => string_to_expression(x),
-            toml::Value::Array(toml_values) => {
-                let values = flatten_errors(toml_values.into_iter().map(|x| {
-                    return Ok(x.try_into::<Value>()?);
-                }))?;
-                Value::Array(values)
-            }
-            toml::Value::Table(toml_kv) => {
-                let kv = flatten_errors(
-                    toml_kv
-                        .into_iter()
-                        .map(|(k, v)| Ok((k, v.try_into::<Value>()?))),
-                )?;
-                Value::Table(kv.into_iter().collect())
-            }
-        });
-    }
-}
-
-fn string_to_expression(x: String) -> Value {
-    let exprs = EXPRESSION.captures_iter(&x);
-    // there are multiple expressions interpolated into the string
-    let mut interps = Vec::new();
-    let mut last_match = 0..0;
-    // push rest
-    for expr in exprs {
-        let r = expr.get(0).expect("full match").range();
-        if r.len() == x.len() {
-            return Value::Expression(expr.get(1).expect("variable name").as_str().into());
-        }
-        if last_match.end < r.start {
-            interps.push(Value::String(x[last_match.end..r.start].into()));
-        }
-        last_match = r;
-
-        let var_str = expr.get(1).expect("variable name").as_str();
-        interps.push(Value::Expression(var_str.into()));
-    }
-    if last_match.start == 0 && last_match.end == 0 {
-        return Value::String(x);
-    }
-    if last_match.end < x.len() {
-        interps.push(Value::String(x[last_match.end..].into()));
-    }
-    return Value::Interp(interps);
-}
-
-impl From<Value> for toml::Value {
-    fn from(value: Value) -> toml::Value {
-        return match value {
-            Value::Expression(x) => panic!("Unresolved expression {x}"),
-            Value::Interp(interps) => panic!("Unresolved interpolation {interps:?}"),
-            Value::Array(items) => {
-                let new_items = items.into_iter().map(|it| it.into()).collect();
-                toml::Value::Array(new_items)
-            }
-            Value::Table(kv) => {
-                let new_kv = kv.into_iter().map(|(k, v)| (k, v.into())).collect();
-                toml::Value::Table(new_kv)
-            }
-            Value::Boolean(x) => toml::Value::Boolean(x),
-            Value::Float(x) => toml::Value::Float(x),
-            Value::Integer(x) => toml::Value::Integer(x as i64),
-            Value::String(x) => toml::Value::String(x),
-        };
+impl Default for Value {
+    fn default() -> Self {
+        return Value::Table(HashMap::new());
     }
 }
 
@@ -237,6 +531,8 @@ impl Resolving<Value> for Value {
 
 impl Resolving<toml::Value> for Value {
     fn resolve(self, name: &'static str) -> ResultVec<toml::Value> {
+        // TODO: this is where we will eventually evaluate expressions
+        // *wihtin* their scope
         self.require_constant()
             .with_message("for ")
             .with_message(name)?;
@@ -245,7 +541,7 @@ impl Resolving<toml::Value> for Value {
 }
 
 //
-// ---------------- `Expanding` trait ----------------
+// ================ `Expanding` trait ================
 //
 
 /// The `Expanding` trait is used to expand expressions contained within an object
@@ -260,7 +556,7 @@ pub trait Expanding {
     fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
     where
         Self: Sized,
-        F: FnMut(String) -> Result<Value>;
+        F: FnMut(Expression) -> Result<Value>;
 
     /// returns true if there are no `Value::Expression` enum variants in any contained
     /// `Value`
@@ -277,13 +573,30 @@ pub trait Expanding {
     }
 }
 
-impl<T: Expanding + std::fmt::Debug> Expanding for BTreeMap<String, T> {
+impl<T: Expanding + std::fmt::Debug> Expanding for HashMap<String, T> {
     fn is_constant(&self) -> bool {
         self.values().all(|v| v.is_constant())
     }
     fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
     where
-        F: FnMut(String) -> Result<Value>,
+        F: FnMut(Expression) -> Result<Value>,
+    {
+        return Ok(flatten_errors(
+            self.into_iter()
+                .map(|(k, v)| Ok((k, v.map_expressions(f)?))),
+        )?
+        .into_iter()
+        .collect());
+    }
+}
+
+impl<T: Expanding + std::fmt::Debug> Expanding for IndexMap<String, T> {
+    fn is_constant(&self) -> bool {
+        self.values().all(|v| v.is_constant())
+    }
+    fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
+    where
+        F: FnMut(Expression) -> Result<Value>,
     {
         return Ok(flatten_errors(
             self.into_iter()
@@ -297,7 +610,7 @@ impl<T: Expanding + std::fmt::Debug> Expanding for BTreeMap<String, T> {
 impl Expanding for Value {
     fn is_constant(&self) -> bool {
         match self {
-            Value::Expression(_) => false,
+            Value::Exp(Expression { .. }) => false,
             Value::Interp(_) => false,
             Value::Array(items) => items.iter().all(|it| it.is_constant()),
             Value::Table(kv) => kv.values().all(|it| it.is_constant()),
@@ -306,11 +619,10 @@ impl Expanding for Value {
     }
     fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
     where
-        F: FnMut(String) -> Result<Value>,
+        F: FnMut(Expression) -> Result<Value>,
     {
-        // XXX: we could optimize by pruning constant branches
         return Ok(match self {
-            Value::Expression(x) => f(x)?,
+            Value::Exp(x) => f(x)?,
             Value::Interp(interps) => {
                 let value: Vec<Value> = interps.map_expressions(f)?.into();
                 if value.is_constant() {
@@ -345,7 +657,7 @@ impl<T: Expanding> Expanding for Spanned<T> {
     }
     fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
     where
-        F: FnMut(String) -> Result<Value>,
+        F: FnMut(Expression) -> Result<Value>,
     {
         let span = self.span();
         Ok(Spanned::new(
@@ -361,7 +673,7 @@ impl<T: Expanding + std::fmt::Debug> Expanding for Vec<T> {
     }
     fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
     where
-        F: FnMut(String) -> Result<Value>,
+        F: FnMut(Expression) -> Result<Value>,
     {
         Ok(flatten_errors(
             self.into_iter().map(|x| x.map_expressions(f)),
@@ -375,7 +687,7 @@ impl<T: Expanding + std::fmt::Debug + Clone> Expanding for Plural<T> {
     }
     fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
     where
-        F: FnMut(String) -> Result<Value>,
+        F: FnMut(Expression) -> Result<Value>,
     {
         return Ok(Plural(self.0.map_expressions(f)?));
     }
@@ -390,7 +702,7 @@ impl<T: Expanding + std::fmt::Debug> Expanding for Required<T> {
     }
     fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
     where
-        F: FnMut(String) -> Result<Value>,
+        F: FnMut(Expression) -> Result<Value>,
     {
         return Ok(match self {
             Required::DefaultValue => self,
@@ -408,7 +720,7 @@ impl<T: Expanding> Expanding for Option<T> {
     }
     fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
     where
-        F: FnMut(String) -> Result<Value>,
+        F: FnMut(Expression) -> Result<Value>,
     {
         return Ok(match self {
             Option::None => self,
@@ -418,7 +730,7 @@ impl<T: Expanding> Expanding for Option<T> {
 }
 
 //
-// ---------------- `TypedValue` objects ----------------
+// ================ `TypedValue` objects ================
 //
 
 /// A `TypedValue` wraps `Value`, requiring it to evaluate to an object that can be
@@ -448,7 +760,7 @@ where
 {
     type Error = ErrorSet;
     fn try_from(value: toml::Value) -> ResultVec<TypedValue<T>> {
-        io::stdout().flush().unwrap();
+        std::io::stdout().flush().unwrap();
 
         let val: Value = value.try_into()?;
         return Ok(val.try_into()?);
@@ -461,7 +773,7 @@ where
 {
     type Error = ErrorSet;
     fn try_from(value: Value) -> ResultVec<TypedValue<T>> {
-        io::stdout().flush().unwrap();
+        std::io::stdout().flush().unwrap();
         return match value.require_constant() {
             Err(_) => Ok(TypedValue::Variable(value)),
             Ok(_) => {
@@ -485,7 +797,7 @@ where
     }
     fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
     where
-        F: FnMut(String) -> Result<Value>,
+        F: FnMut(Expression) -> Result<Value>,
     {
         return Ok(match self {
             TypedValue::Variable(v) => {
@@ -614,5 +926,18 @@ impl<T: Serialize + std::fmt::Debug> Merging for TypedValue<T> {
 
     fn merge(self, new: Self) -> Self {
         return new;
+    }
+}
+
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_datetime() {
+        let data = r#"
+        joe = 1979-05-27T07:32:00Z
+        "#;
+        let value: std::result::Result<Value, _> = toml::from_str(data);
+        assert!(value.is_ok());
     }
 }

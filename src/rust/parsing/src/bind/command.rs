@@ -2,7 +2,7 @@
 use log::info;
 
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 use toml::Spanned;
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
@@ -10,8 +10,10 @@ use crate::{
     bind::{BindingInput, UNKNOWN_RANGE},
     err,
     error::{ErrorContext, Result, ResultVec, err},
-    expression::Scope,
-    expression::value::{Expanding, TypedValue, Value},
+    expression::{
+        Scope,
+        value::{Expanding, Expression, TypedValue, Value},
+    },
     resolve,
     util::{Required, Resolving},
 };
@@ -62,7 +64,7 @@ impl Expanding for CommandInput {
     }
     fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
     where
-        F: FnMut(String) -> Result<Value>,
+        F: FnMut(Expression) -> Result<Value>,
     {
         let mut errors = Vec::new();
         let result = CommandInput {
@@ -101,7 +103,7 @@ impl CommandInput {
 
 impl From<CommandInput> for Value {
     fn from(value: CommandInput) -> Self {
-        let mut entries = BTreeMap::new();
+        let mut entries = HashMap::new();
         let command = value.command.into_inner();
         if let Required::Value(command_value) = command {
             entries.insert("command".to_string(), command_value.into());
@@ -119,7 +121,7 @@ pub(crate) fn regularize_commands(input: &BindingInput) -> ResultVec<Vec<Command
         let commands = vec![Command {
             command,
             args: match &input.args {
-                None => Value::Table(BTreeMap::new()),
+                None => Value::Table(HashMap::new()),
                 Some(spanned) => spanned.as_ref().clone(),
             },
             skipWhen: TypedValue::Constant(false),
@@ -155,7 +157,7 @@ pub(crate) fn regularize_commands(input: &BindingInput) -> ResultVec<Vec<Command
             let (command, args, skipWhen) = match command {
                 Value::String(str) => (
                     str.to_owned(),
-                    Value::Table(BTreeMap::new()),
+                    Value::Table(HashMap::new()),
                     TypedValue::default(),
                 ),
                 Value::Table(kv) => {
@@ -170,7 +172,7 @@ pub(crate) fn regularize_commands(input: &BindingInput) -> ResultVec<Vec<Command
                         }
                     };
                     let result = match kv.get("args") {
-                        None => &Value::Table(BTreeMap::new()),
+                        None => &Value::Table(HashMap::new()),
                         Some(x) => x,
                     };
                     let args = match result {
@@ -238,7 +240,7 @@ impl Command {
             command: resolve!(input, command)?,
             args: match input.args {
                 Some(x) => x.into_inner(),
-                None => Value::Table(BTreeMap::new()),
+                None => Value::Table(HashMap::new()),
             },
             skipWhen: resolve!(input, skipWhen)?,
         });
@@ -277,10 +279,10 @@ mod tests {
         assert_eq!(commands[1].command, "b");
         assert_eq!(commands[2].command, "c");
 
-        assert_eq!(commands[0].args, Value::Table(BTreeMap::new()));
+        assert_eq!(commands[0].args, Value::Table(HashMap::new()));
         assert_eq!(
             commands[1].args,
-            Value::Table(BTreeMap::from([
+            Value::Table(HashMap::from([
                 ("foo".to_string(), Value::Integer(1)),
                 ("bar".to_string(), Value::Integer(2)),
             ]))
@@ -294,7 +296,11 @@ mod tests {
         assert_eq!(commands[1].skipWhen, TypedValue::Constant(false));
         assert_eq!(
             commands[2].skipWhen,
-            TypedValue::Variable(Value::Expression("count > 2".to_string()))
+            TypedValue::Variable(Value::Exp(Expression {
+                content: "count > 2".to_string(),
+                span: UNKNOWN_RANGE,
+                scope: smallvec::SmallVec::new(),
+            }))
         );
     }
 

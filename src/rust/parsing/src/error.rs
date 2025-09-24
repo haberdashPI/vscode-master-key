@@ -1,4 +1,5 @@
-use crate::bind::UNKNOWN_RANGE;
+#[allow(unused_imports)]
+use log::info;
 
 use core::ops::Range;
 use rhai::{self, EvalAltResult};
@@ -8,6 +9,8 @@ use string_offsets::{Pos, StringOffsets};
 use thiserror::Error;
 use toml::Spanned;
 use wasm_bindgen::prelude::*;
+
+use crate::bind::UNKNOWN_RANGE;
 
 //
 // ---------------- Error Generation ----------------
@@ -52,13 +55,8 @@ pub struct Error {
 
 #[derive(Debug, Clone)]
 pub enum Context {
-    Dynamic(&'static str),        // additional message content to include
-    Range(Range<usize>),          // the location of an error in a file
-    RhaiPosition(rhai::Position), // the location of an error within an expression
-
-    // TODO: use this context once when/if expressions have a known span
-    #[allow(dead_code)]
-    ExpressionRange(Range<usize>), // the location of an expression in a file
+    Message(String),     // additional message content to include
+    Range(Range<usize>), // the location of an error in a file
 }
 
 /// A `Spannable` can be interpreted as a range of byte offsets
@@ -94,8 +92,8 @@ where
     type Error;
     /// `with_context` accepts a `Context` which the object should store
     fn with_context(self, context: Context) -> std::result::Result<T, Self::Error>;
-    fn with_message(self, context: &'static str) -> std::result::Result<T, Self::Error> {
-        return self.with_context(Context::Dynamic(context));
+    fn with_message(self, context: impl ToString) -> std::result::Result<T, Self::Error> {
+        return self.with_context(Context::Message(context.to_string()));
     }
     fn with_range(self, context: &impl Spannable) -> std::result::Result<T, Self::Error> {
         if let Some(range) = context.range() {
@@ -103,23 +101,6 @@ where
         } else {
             return self.with_context(Context::Range(UNKNOWN_RANGE));
         }
-    }
-    // TODO: use this once we have ranges for expressions
-    #[allow(dead_code)]
-    fn with_expression_range(
-        self,
-        context: &impl Spannable,
-    ) -> std::result::Result<T, Self::Error> {
-        if let Some(range) = context.range() {
-            return self.with_context(Context::ExpressionRange(range));
-        } else {
-            return self.with_context(Context::ExpressionRange(UNKNOWN_RANGE));
-        }
-    }
-    // TODO: use this once we have ranges for expressions
-    #[allow(dead_code)]
-    fn with_pos(self, context: rhai::Position) -> std::result::Result<T, Self::Error> {
-        return self.with_context(Context::RhaiPosition(context));
     }
 }
 
@@ -152,10 +133,7 @@ impl<E: Into<RawError>> From<E> for Error {
 
 impl From<Box<EvalAltResult>> for Error {
     fn from(value: Box<EvalAltResult>) -> Error {
-        let error = RawError::Dynamic(value.to_string()).into();
-        let mut contexts = SmallVec::new();
-        contexts.push(Context::RhaiPosition(value.position()));
-        return Error { error, contexts };
+        return RawError::Dynamic(value.to_string()).into();
     }
 }
 
@@ -257,17 +235,11 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> std::result::Result<(), fmt::Error> {
         for context in &self.contexts {
             match context {
-                Context::Dynamic(str) => {
+                Context::Message(str) => {
                     write!(f, "{}\n", str)?;
                 }
                 Context::Range(range) => {
                     write!(f, "byte range {:?}\n", range)?;
-                }
-                Context::ExpressionRange(range) => {
-                    write!(f, "byte range of expression {:?}\n", range)?;
-                }
-                Context::RhaiPosition(pos) => {
-                    write!(f, "expression pos: {:?}\n", pos)?;
                 }
             }
         }
@@ -290,21 +262,21 @@ fn range_to_pos(range: &Range<usize>, offsets: &StringOffsets) -> CharRange {
 }
 
 fn resolve_rhai_pos_from_expression_range(
-    rhai_pos: Option<rhai::Position>,
-    char_line_range: Option<CharRange>,
-) -> Option<CharRange> {
-    if let (Some(rpos), Some(cl_range)) = (rhai_pos, &char_line_range) {
-        if let Some(line) = rpos.line() {
-            if line > 1 {
-                let char_line_start = Pos {
-                    line: cl_range.start.line + line - 1,
-                    col: cl_range.start.col + rpos.position().unwrap_or_default(),
-                };
-                return Some(CharRange {
-                    start: char_line_start,
-                    end: char_line_start,
-                });
-            }
+    rhai_pos: rhai::Position,
+    char_line_range: CharRange,
+) -> CharRange {
+    if let Some(line) = rhai_pos.line() {
+        info!("rhai line: {line}");
+        info!("rhai char: {}", rhai_pos.position().unwrap_or_default());
+        if line >= 1 {
+            let char_line_start = Pos {
+                line: char_line_range.start.line + line - 1,
+                col: char_line_range.start.col + rhai_pos.position().unwrap_or_default(),
+            };
+            return CharRange {
+                start: char_line_start,
+                end: char_line_start,
+            };
         }
     }
     return char_line_range;
@@ -325,39 +297,34 @@ impl Error {
                 message_buf.push_str(toml.message());
                 char_line_range = toml.span().map(|r| range_to_pos(&r, &offsets));
             }
+            RawError::ExpressionParsing(rhai) => {
+                rhai_pos = Some(rhai.position());
+                message_buf.push_str(&self.error.to_string());
+            }
             _ => message_buf.push_str(&self.error.to_string()),
         };
         for context in &self.contexts {
             match context {
-                Context::Dynamic(str) => message_buf.push_str(str),
+                Context::Message(str) => message_buf.push_str(str),
                 Context::Range(new_range) => {
-                    // usually the new range is the one we want to use *but* the old range
-                    // is strictly more specific than the new one, we keep the old range
-                    if !(range.len() < new_range.len()
-                        && (new_range.contains(&range.start) || new_range.contains(&range.end)))
-                    {
+                    // usually the old range is the one we want to use *but* if the new
+                    // range is strictly more specific than the new one, we use the new
+                    // range
+                    info!("consolidating range: {new_range:?}");
+                    if range.contains(&new_range.start) && range.contains(&new_range.end) {
                         range = new_range.clone();
-                        let range_pos = range_to_pos(&range, &offsets);
-                        char_line_range = Some(CharRange {
-                            start: range_pos.start,
-                            end: range_pos.end,
-                        });
+                        let new_char_line_range = range_to_pos(&new_range, &offsets);
+                        if let Some(pos) = rhai_pos {
+                            char_line_range = Some(resolve_rhai_pos_from_expression_range(
+                                pos,
+                                new_char_line_range,
+                            ));
+                            rhai_pos = None;
+                        } else {
+                            char_line_range = Some(new_char_line_range);
+                        }
+                        info!("new range: {:?}", char_line_range)
                     }
-                }
-                Context::ExpressionRange(new_range) => {
-                    // we can now resolve the `Context::RhaiPosition`, which is relative to
-                    // the start of an expression, to a specific file location, because we
-                    // have the range of the full expression.
-                    char_line_range = Some(range_to_pos(&new_range, &offsets));
-                    char_line_range =
-                        resolve_rhai_pos_from_expression_range(rhai_pos, char_line_range);
-                }
-                Context::RhaiPosition(pos) => {
-                    // when we see a rhai range all we know is where, relative to the start
-                    // of the expression the error was raised. We have to wait until a
-                    // future iteration of this `for` loop when we find a specific file
-                    // location where the expression begins.
-                    rhai_pos = Some(pos.clone());
                 }
             };
         }

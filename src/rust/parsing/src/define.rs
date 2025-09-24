@@ -1,11 +1,11 @@
 #[allow(unused_imports)]
 use log::info;
 
+use indexmap::IndexMap;
 use lazy_static::lazy_static;
 use regex::Regex;
 use rhai::Dynamic;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
 use std::collections::{HashMap, hash_map};
 use toml::Spanned;
 
@@ -15,7 +15,7 @@ use crate::bind::validation::BindingReference;
 use crate::err;
 use crate::error::{Error, ErrorContext, ResultVec, err};
 use crate::expression::Scope;
-use crate::expression::value::{Expanding, Value};
+use crate::expression::value::{Expanding, Expression, Value};
 use crate::util::{Merging, Resolving};
 
 /// @bindingField define
@@ -86,7 +86,7 @@ pub struct DefineInput {
     /// args.after = "{{braces[captured].?after ?? captured}}"
     /// args.followCursor = true
     /// ```
-    pub val: Option<Vec<BTreeMap<String, Spanned<Value>>>>,
+    pub val: Option<Vec<IndexMap<String, Spanned<Value>>>>,
     /// @forBindingField define
     ///
     /// ## Command Definitions
@@ -287,8 +287,8 @@ impl Define {
             binding
         };
 
-        return binding.map_expressions(&mut |exp: String| {
-            let command = COMMAND_REF.captures(&exp);
+        return binding.map_expressions(&mut |exp: Expression| {
+            let command = COMMAND_REF.captures(&exp.content);
             if let Some(captures) = command {
                 let name = captures.get(1).expect("variable name").as_str();
                 return Ok(self
@@ -298,12 +298,12 @@ impl Define {
                     .without_id()
                     .into());
             }
-            if BIND_REF.is_match(&exp) {
+            if BIND_REF.is_match(&exp.content) {
                 return Err(err(
                     "unexpected `bind.` reference; only valid inside `bind.default`",
                 ))?;
             }
-            return Ok(Value::Expression(exp));
+            return Ok(Value::Exp(exp));
         });
     }
 }
@@ -343,7 +343,7 @@ mod tests {
         let args = foo.args.as_ref().unwrap().clone().into_inner();
         assert_eq!(
             args,
-            Value::Table(BTreeMap::from([
+            Value::Table(HashMap::from([
                 ("k".into(), Value::Integer(1)),
                 ("h".into(), Value::Integer(2))
             ]))
@@ -355,7 +355,7 @@ mod tests {
         let commands = foobar.args.as_ref().unwrap().clone().into_inner();
         assert_eq!(
             commands,
-            Value::Table(BTreeMap::from([(
+            Value::Table(HashMap::from([(
                 "commands".into(),
                 Value::Array(vec![
                     Value::String("foo".into()),
