@@ -266,8 +266,6 @@ fn resolve_rhai_pos_from_expression_range(
     char_line_range: CharRange,
 ) -> CharRange {
     if let Some(line) = rhai_pos.line() {
-        info!("rhai line: {line}");
-        info!("rhai char: {}", rhai_pos.position().unwrap_or_default());
         if line >= 1 {
             let char_line_start = Pos {
                 line: char_line_range.start.line + line - 1,
@@ -310,7 +308,6 @@ impl Error {
                     // usually the old range is the one we want to use *but* if the new
                     // range is strictly more specific than the new one, we use the new
                     // range
-                    info!("consolidating range: {new_range:?}");
                     if range.contains(&new_range.start) && range.contains(&new_range.end) {
                         range = new_range.clone();
                         let new_char_line_range = range_to_pos(&new_range, &offsets);
@@ -323,7 +320,6 @@ impl Error {
                         } else {
                             char_line_range = Some(new_char_line_range);
                         }
-                        info!("new range: {:?}", char_line_range)
                     }
                 }
             };

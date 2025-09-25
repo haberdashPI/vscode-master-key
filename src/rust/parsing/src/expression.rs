@@ -149,6 +149,9 @@ impl Scope {
 
     pub(crate) fn parse_asts(&mut self, x: &(impl Expanding + Clone)) -> ResultVec<()> {
         x.clone().map_expressions(&mut |expr| {
+            if let Some(e) = expr.error {
+                return Err(e)?;
+            }
             let ast = self
                 .engine
                 .compile_expression(expr.content.clone())
@@ -233,7 +236,6 @@ mod tests {
         joe = "{{(1 + 3}}"
         "#;
         let value: Value = toml::from_str(data).unwrap();
-        info!("{value:?}");
 
         let mut scope = Scope::new();
         let err = scope.parse_asts(&value).unwrap_err();
@@ -252,7 +254,6 @@ mod tests {
         joe = "{{(1 # 3}}"
         "#;
         let value: Value = toml::from_str(data).unwrap();
-        info!("{value:?}");
 
         let mut scope = Scope::new();
         let err = scope.parse_asts(&value).unwrap_err();
@@ -268,20 +269,68 @@ mod tests {
     #[test]
     fn expression_bracket_error() {
         let data = r#"
-        joe = "{{joe bob {{ bill}}"
+        joe = "{{joe.bob {{ bill}}"
         "#;
-        let value: std::result::Result<Value, _> = toml::from_str(data);
-        let err = value.unwrap_err();
-        info!("err: {err:?}")
+        let value: Value = toml::from_str(data).unwrap();
+        let mut scope = Scope::new();
+        let err = scope.parse_asts(&value).unwrap_err();
+
+        let report = err.report(data.as_bytes());
+        let message = report.first().unwrap().message.clone();
+        let range = report.first().unwrap().range.clone();
+        let val: String = data[(range.start.col)..=(range.end.col)].to_string();
+        assert_eq!("{{joe.bob {{ bill", val);
+        assert!(message.contains("unexpected `{{`"));
     }
 
     #[test]
     fn expression_bracket_error_2() {
         let data = r#"
-        joe = "{{joe bob bill}} bob fob}}"
+        joe = "{{joe.bob.bill}} bob.fob}}"
         "#;
-        let value: std::result::Result<Value, _> = toml::from_str(data);
-        let err = value.unwrap_err();
-        info!("err: {err:?}")
+        let value: Value = toml::from_str(data).unwrap();
+        let mut scope = Scope::new();
+        let err = scope.parse_asts(&value).unwrap_err();
+
+        let report = err.report(data.as_bytes());
+        let message = report.first().unwrap().message.clone();
+        let range = report.first().unwrap().range.clone();
+        let val: String = data[(range.start.col)..=(range.end.col)].to_string();
+        assert_eq!(r#" "{{joe.bob.bill}} bob.fob}}""#, val);
+        assert!(message.contains("unexpected `}}`"));
+    }
+
+    #[test]
+    fn expression_bracket_error_3() {
+        let data = r#"
+        joe = "joe.bob.bill bob.fob}}"
+        "#;
+        let value: Value = toml::from_str(data).unwrap();
+        let mut scope = Scope::new();
+        let err = scope.parse_asts(&value).unwrap_err();
+
+        let report = err.report(data.as_bytes());
+        let message = report.first().unwrap().message.clone();
+        let range = report.first().unwrap().range.clone();
+        let val: String = data[(range.start.col)..=(range.end.col)].to_string();
+        assert_eq!(r#" "joe.bob.bill bob.fob}}""#, val);
+        assert!(message.contains("unexpected `}}`"));
+    }
+
+    #[test]
+    fn expression_bracket_error_4() {
+        let data = r#"
+        joe = "{{joe.bob.{{bill bob}}.fob}}"
+        "#;
+        let value: Value = toml::from_str(data).unwrap();
+        let mut scope = Scope::new();
+        let err = scope.parse_asts(&value).unwrap_err();
+
+        let report = err.report(data.as_bytes());
+        let message = report.first().unwrap().message.clone();
+        let range = report.first().unwrap().range.clone();
+        let val: String = data[(range.start.col)..=(range.end.col)].to_string();
+        assert_eq!(r#"{{joe.bob.{{bill bob"#, val);
+        assert!(message.contains("unexpected `"));
     }
 }

@@ -299,6 +299,7 @@ mod tests {
             TypedValue::Variable(Value::Exp(Expression {
                 content: "count > 2".to_string(),
                 span: UNKNOWN_RANGE,
+                error: None,
                 scope: smallvec::SmallVec::new(),
             }))
         );

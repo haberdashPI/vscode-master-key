@@ -8,13 +8,14 @@ use regex::Regex;
 use rhai::Dynamic;
 use serde::{Deserialize, Serialize};
 use smallvec::SmallVec;
+use smallvec::smallvec;
 use std::collections::HashMap;
 use std::io::Write;
 use toml::Spanned;
 
 use crate::bind::UNKNOWN_RANGE;
 use crate::err;
-use crate::error::{ErrorContext, ErrorSet, RawError, Result, ResultVec, flatten_errors};
+use crate::error::{Error, ErrorContext, ErrorSet, RawError, Result, ResultVec, flatten_errors};
 use crate::util::{LeafValue, Merging, Plural, Required, Resolving};
 
 //
@@ -49,6 +50,8 @@ pub enum Value {
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Expression {
     pub content: String,
+    #[serde(skip)]
+    pub error: Option<Error>, // parsing-time error that we want to report after deserializing
     pub span: Range<usize>,
     pub scope: SmallVec<[(String, BareValue); 8]>,
 }
@@ -265,27 +268,64 @@ impl Value {
 fn match_to_expression(maybe_parent_span: &Option<Range<usize>>, m: regex::Match) -> Result<Value> {
     if let Some(parent_span) = maybe_parent_span {
         let r = m.range();
-        let exp_span = (parent_span.start + r.start)..(parent_span.start + r.end);
+        let exp_span = (parent_span.start + r.start)..(parent_span.start + r.end + 1);
         let content: String = m.as_str().into();
+        let mut error = None;
         if content.contains("{{") {
-            return Err(RawError::Static("unexpected `{{`")).with_range(&exp_span)?;
+            error = Some(Error {
+                error: RawError::Static("unexpected `{{`"),
+                contexts: smallvec![crate::error::Context::Range(exp_span.clone())],
+            });
         }
         return Ok(Value::Exp(Expression {
             content,
             span: exp_span,
+            error,
             scope: SmallVec::new(),
         }));
     } else {
         let content: String = m.as_str().into();
+        let mut error = None;
         if content.contains("{{") {
-            return Err(RawError::Static("unexpected `{{`"))?;
+            error = Some(Error {
+                error: RawError::Static("unexpected `{{`"),
+                contexts: smallvec![],
+            });
         }
         return Ok(Value::Exp(Expression {
             content,
             span: UNKNOWN_RANGE,
+            error,
             scope: SmallVec::new(),
         }));
     }
+}
+
+fn check_unmatched_braces(x: String, span: Option<Range<usize>>) -> Value {
+    if x.contains("{{") {
+        let mut error: Error = RawError::Static("unexpected `{{`").into();
+        if let Some(r) = span.clone() {
+            error.contexts.push(crate::error::Context::Range(r));
+        };
+        return Value::Exp(Expression {
+            content: x,
+            error: Some(error),
+            span: span.unwrap_or_else(|| UNKNOWN_RANGE),
+            scope: SmallVec::new(),
+        });
+    } else if x.contains("}}") {
+        let mut error: Error = RawError::Static("unexpected `}}`").into();
+        if let Some(r) = span.clone() {
+            error.contexts.push(crate::error::Context::Range(r.clone()));
+        };
+        return Value::Exp(Expression {
+            content: x,
+            span: span.unwrap_or_else(|| UNKNOWN_RANGE),
+            error: Some(error),
+            scope: SmallVec::new(),
+        });
+    }
+    return Value::String(x);
 }
 
 fn string_to_expression(x: String, span: Option<Range<usize>>) -> Result<Value> {
@@ -311,25 +351,10 @@ fn string_to_expression(x: String, span: Option<Range<usize>>) -> Result<Value> 
         )?);
     }
     if last_match.start == 0 && last_match.end == 0 {
-        if x.contains("{{") {
-            let result = Err(RawError::Static("unexpected `{{`"));
-            if let Some(r) = span {
-                return result.with_range(&r);
-            } else {
-                result?;
-            }
-        } else if x.contains("}}") {
-            let result = Err(RawError::Static("unexpected `}}`"));
-            if let Some(r) = span {
-                return result.with_range(&r);
-            } else {
-                result?;
-            }
-        }
-        return Ok(Value::String(x));
+        return Ok(check_unmatched_braces(x, span));
     }
     if last_match.end < x.len() {
-        interps.push(Value::String(x[last_match.end..].into()));
+        interps.push(check_unmatched_braces(x[last_match.end..].into(), span));
     }
     return Ok(Value::Interp(interps));
 }

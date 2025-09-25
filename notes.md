@@ -160,7 +160,7 @@ Integration test debugging:
         - [X] implement support for tags on `bind` (for filter them)
         - [X] implement support for `skipWhen` in `command`
         - [ ] improve expression evaluation
-            - [ ] improve error reporting in expressions
+            - [X] improve error reporting in expressions
                 - [X] support spans for expressions
                     - [X] create a `RawValue` that tracks spans
                         - [X] try to implement with just the Span for expressions tracked
@@ -178,9 +178,9 @@ Integration test debugging:
                 - [X] inject expression spans and rhai positions into error contexts
                     - [X] implementation
                     - [X] test that expressions spans properly resolve
-                - [ ] check for unmatched `{{` and `}}` in strings
+                - [X] check for unmatched `{{` and `}}` in strings
                     - [X] implementation
-                    - [~] test that unmatched mustaches raise an error
+                    - [X] test that unmatched mustaches raise an error
                         - need to defer these errors until we run parse_asts
                           so that we can get proper span information without
                           having to pass errors through a deserialization object

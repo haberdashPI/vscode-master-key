@@ -283,6 +283,7 @@ mod tests {
                     Value::Exp(Expression {
                         content: "val.foo_string".into(),
                         span: UNKNOWN_RANGE,
+                        error: None,
                         scope: SmallVec::new(),
                     })
                 ),
@@ -331,6 +332,7 @@ mod tests {
                     Value::Exp(Expression {
                         content: "val.foo_string".into(),
                         span: UNKNOWN_RANGE,
+                        error: None,
                         scope: SmallVec::new(),
                     })
                 ),
