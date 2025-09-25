@@ -8,6 +8,7 @@ use toml::{Spanned, Value};
 
 use crate::err;
 use crate::error::{Error, ErrorContext, Result, ResultVec, flatten_errors};
+use crate::expression::Scope;
 
 //
 // ---------------- Merging ----------------
@@ -63,10 +64,12 @@ impl<T: Merging + Clone> Merging for IndexMap<String, T> {
     fn merge(self, new: Self) -> Self {
         let (mut to_merge, to_append): (IndexMap<_, _>, IndexMap<_, _>) =
             new.into_iter().partition(|(k, _)| self.get(k).is_some());
-        let pairs = self.into_iter().map(|(k, v)| match to_merge.remove(&k) {
-            Some(new_v) => (k, v.merge(new_v)),
-            Option::None => (k, v),
-        });
+        let pairs = self
+            .into_iter()
+            .map(|(k, v)| match to_merge.shift_remove(&k) {
+                Some(new_v) => (k, v.merge(new_v)),
+                Option::None => (k, v),
+            });
         return pairs.chain(to_append.into_iter()).collect();
     }
 }
@@ -206,8 +209,8 @@ impl Merging for toml::Value {
 
 #[macro_export]
 macro_rules! resolve {
-    ($x:expr, $field:ident) => {
-        crate::util::Resolving::resolve(($x).$field, stringify!($field))
+    ($x:expr, $field:ident, $scope:expr) => {
+        crate::util::Resolving::resolve(($x).$field, stringify!($field), $scope)
     };
 }
 
@@ -216,7 +219,7 @@ macro_rules! resolve {
 /// representation useful for downstream operations that don't care about these
 /// book-keeping objects.
 pub trait Resolving<R> {
-    fn resolve(self, name: &'static str) -> ResultVec<R>;
+    fn resolve(self, name: &'static str, scope: &mut Scope) -> ResultVec<R>;
 }
 
 pub(crate) trait LeafValue {}
@@ -232,9 +235,9 @@ impl<T, U> Resolving<U> for Spanned<T>
 where
     T: Resolving<U>,
 {
-    fn resolve(self, name: &'static str) -> ResultVec<U> {
+    fn resolve(self, name: &'static str, scope: &mut Scope) -> ResultVec<U> {
         let span = self.span();
-        Ok(self.into_inner().resolve(name).with_range(&span)?)
+        Ok(self.into_inner().resolve(name, scope).with_range(&span)?)
     }
 }
 
@@ -242,7 +245,7 @@ impl<T> Resolving<T> for T
 where
     T: LeafValue,
 {
-    fn resolve(self, _name: &'static str) -> ResultVec<T> {
+    fn resolve(self, _name: &'static str, _scope: &mut Scope) -> ResultVec<T> {
         return Ok(self);
     }
 }
@@ -252,9 +255,9 @@ where
     T: Resolving<U>,
     U: Default + LeafValue,
 {
-    fn resolve(self, name: &'static str) -> ResultVec<U> {
+    fn resolve(self, name: &'static str, scope: &mut Scope) -> ResultVec<U> {
         match self {
-            Some(x) => x.resolve(name),
+            Some(x) => x.resolve(name, scope),
             Option::None => Ok(U::default()),
         }
     }
@@ -264,9 +267,9 @@ impl<T, U> Resolving<Option<U>> for Option<T>
 where
     T: Resolving<U>,
 {
-    fn resolve(self, name: &'static str) -> ResultVec<Option<U>> {
+    fn resolve(self, name: &'static str, scope: &mut Scope) -> ResultVec<Option<U>> {
         match self {
-            Some(x) => Ok(Some(x.resolve(name)?)),
+            Some(x) => Ok(Some(x.resolve(name, scope)?)),
             Option::None => Ok(None),
         }
     }
@@ -303,10 +306,10 @@ impl<T, U> Resolving<U> for Required<T>
 where
     T: Resolving<U>,
 {
-    fn resolve(self, name: &'static str) -> ResultVec<U> {
+    fn resolve(self, name: &'static str, scope: &mut Scope) -> ResultVec<U> {
         match self {
             Required::DefaultValue => Err(err!("`{name}` field is required"))?,
-            Required::Value(x) => x.resolve(name),
+            Required::Value(x) => x.resolve(name, scope),
         }
     }
 }
@@ -402,7 +405,9 @@ where
     T: Clone + Resolving<U> + std::fmt::Debug,
     U: std::fmt::Debug,
 {
-    fn resolve(self, name: &'static str) -> ResultVec<Vec<U>> {
-        Ok(flatten_errors(self.0.into_iter().map(|x| x.resolve(name)))?)
+    fn resolve(self, name: &'static str, scope: &mut Scope) -> ResultVec<Vec<U>> {
+        Ok(flatten_errors(
+            self.0.into_iter().map(|x| x.resolve(name, scope)),
+        )?)
     }
 }

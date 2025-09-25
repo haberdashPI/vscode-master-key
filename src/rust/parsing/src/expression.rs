@@ -12,8 +12,8 @@ use serde::Serialize;
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
 use crate::{
-    bind::command::Command, err, error::ErrorContext, error::Result, error::ResultVec,
-    expression::value::Expanding, expression::value::Value,
+    bind::command::Command, bind::foreach::expression_fn__keys, err, error::ErrorContext,
+    error::Result, error::ResultVec, expression::value::Expanding, expression::value::Value,
 };
 
 /// @file expressions/index.md
@@ -140,7 +140,14 @@ impl Scope {
         }
         return Ok(obj.clone().map_expressions(&mut |expr| {
             let ast = &self.asts[&expr.content];
+
+            let rewind_to = self.state.len();
+            for (k, v) in &expr.scope {
+                let val: Dynamic = From::<Value>::from(Value::new(v.clone(), None)?);
+                self.state.push_dynamic(k, val);
+            }
             let dynamic: rhai::Dynamic = self.engine.eval_ast_with_scope(&mut self.state, ast)?;
+            self.state.rewind(rewind_to);
             let result_value: std::result::Result<Value, _> = dynamic.clone().try_into();
             let value = result_value.with_message(format!(" while evaluating:\n{expr}"))?;
             return Ok(value);
@@ -167,6 +174,7 @@ impl Scope {
         let mut engine = rhai::Engine::new();
         engine.set_allow_looping(false);
         engine.set_allow_statement_expression(false);
+        engine.register_fn("keys", expression_fn__keys);
 
         return Scope {
             asts: HashMap::new(),
@@ -227,6 +235,7 @@ impl Scope {
 }
 
 mod tests {
+    #[allow(unused_imports)]
     use super::*;
     use test_log::test;
 

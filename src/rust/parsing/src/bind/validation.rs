@@ -6,6 +6,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 use crate::error::{ErrorSet, Result, ResultVec, err};
+use crate::expression::Scope;
 use crate::expression::value::{EXPRESSION, Expanding, Expression, TypedValue, Value};
 use crate::util::{Merging, Resolving};
 
@@ -136,7 +137,8 @@ impl TryFrom<String> for KeyBinding {
 }
 
 impl Resolving<String> for KeyBinding {
-    fn resolve(self, _name: &'static str) -> ResultVec<String> {
+    fn resolve(mut self, _name: &'static str, scope: &mut Scope) -> ResultVec<String> {
+        self = scope.expand(&self)?;
         self.require_constant()?;
         Ok(self.into())
     }

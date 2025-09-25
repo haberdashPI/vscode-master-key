@@ -184,11 +184,15 @@ Integration test debugging:
                         - need to defer these errors until we run parse_asts
                           so that we can get proper span information without
                           having to pass errors through a deserialization object
-            - [ ] support expressions in `foreach` resolution
-                - [ ] add foreach variables to a local scope object
-                - [ ] add this local scope when the expression is `resolve!`ed
-            - [ ] allow for `var` evaluation in parse-time expressions
+            - [X] support expressions in `foreach` resolution
+                - [X] add foreach variables to a local scope object
+                - [X] expand expressions prior to resolving
+                - [X] unit tests
+            - [X] allow for `var` evaluation in parse-time expressions
+                - [X] implement
+                - [X] unit tests
             - [ ] implement support for `all` functions:
+                - [ ] implement lazy resolution of `all` values
                 - [ ] `{{all_prefixes()}}`
                 - [ ] `{{all_modes()}}`
                 - [ ] `{{all_modes_but(["not_me", "or_me"])}}`
@@ -219,6 +223,8 @@ Integration test debugging:
         - [ ] expand prefixes to prefixCode and move to when clause
         - [ ] move mode to when clause
         - [ ] re-implement master-key.do
+            - [ ] don't use `getter_with_clone` for `KeyFileResult` (it doesn't really make
+              sense)
             - [ ] move all bare variables in an expression to `key.` or `code.` object
             - [ ] transfer scope state from TS to rust Scope object
             - [ ] properly handle command queues (no controlled by rust)

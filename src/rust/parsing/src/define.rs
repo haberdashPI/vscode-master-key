@@ -185,7 +185,7 @@ lazy_static! {
 }
 
 impl Define {
-    pub fn new(input: DefineInput) -> ResultVec<Define> {
+    pub fn new(input: DefineInput, scope: &mut Scope) -> ResultVec<Define> {
         let mut resolved_bind = HashMap::<String, BindingInput>::new();
         let mut resolved_command = HashMap::<String, CommandInput>::new();
         let mut resolved_var = HashMap::<String, Value>::new();
@@ -193,7 +193,7 @@ impl Define {
 
         for def_block in input.val.into_iter().flatten() {
             for (val, value) in def_block.into_iter() {
-                match value.resolve("`{val}` definition") {
+                match value.resolve("`define.val`", scope) {
                     Ok(x) => {
                         resolved_var.insert(val, x);
                     }
@@ -211,7 +211,7 @@ impl Define {
                 .with_range(&def.span());
             match span {
                 Err(e) => errors.push(e.into()),
-                Ok(x) => match x.resolve("requires `id`") {
+                Ok(x) => match x.resolve("`id`", scope) {
                     Err(mut e) => {
                         errors.append(&mut e.errors);
                     }
@@ -229,7 +229,7 @@ impl Define {
                 .with_range(&def.span());
             match span {
                 Err(e) => errors.push(e.into()),
-                Ok(x) => match x.resolve("`id`") {
+                Ok(x) => match x.resolve("`id`", scope) {
                     Err(mut e) => {
                         errors.append(&mut e.errors);
                     }
@@ -311,6 +311,8 @@ impl Define {
 mod tests {
     #[allow(unused_imports)]
     use super::*;
+    #[allow(unused_imports)]
+    use crate::resolve;
 
     #[test]
     fn simple_parsing() {
@@ -334,7 +336,8 @@ mod tests {
 
         "#;
 
-        let result = Define::new(toml::from_str::<DefineInput>(data).unwrap()).unwrap();
+        let mut scope = Scope::new();
+        let result = Define::new(toml::from_str::<DefineInput>(data).unwrap(), &mut scope).unwrap();
 
         assert_eq!(result.val.get("y").unwrap(), &Value::String("bill".into()));
         assert_eq!(result.val.get("joe").unwrap(), &Value::String("bob".into()));
@@ -350,7 +353,7 @@ mod tests {
         );
 
         let foobar = result.command.get("foobar").unwrap();
-        let command: String = foobar.command.clone().resolve("`command`").unwrap();
+        let command: String = resolve!(foobar.clone(), command, &mut scope).unwrap();
         assert_eq!(command, "runCommands");
         let commands = foobar.args.as_ref().unwrap().clone().into_inner();
         assert_eq!(

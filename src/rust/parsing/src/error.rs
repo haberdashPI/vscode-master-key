@@ -20,6 +20,8 @@ use crate::bind::UNKNOWN_RANGE;
 
 #[derive(Debug, Error, Clone)]
 pub enum RawError {
+    #[error("conversion error: {0}")]
+    IntError(#[from] std::num::TryFromIntError),
     #[error("while parsing toml: {0}")]
     TomlParsing(#[from] toml::de::Error),
     #[error("while parsing expression: {0}")]

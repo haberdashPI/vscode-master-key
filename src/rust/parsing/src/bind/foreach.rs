@@ -35,15 +35,17 @@
 /// ```
 use crate::bind::BindingInput;
 
+use indexmap::IndexMap;
 use lazy_static::lazy_static;
 #[allow(unused_imports)]
 use log::info;
 use regex::Regex;
-use indexmap::IndexMap;
+use rhai::{EvalAltResult, ImmutableString};
 use toml::Spanned;
 
-use crate::error::{ErrorContext, Result, ResultVec};
-use crate::expression::value::{Expanding, Expression, Value};
+use crate::error::{ErrorContext, ResultVec, flatten_errors};
+use crate::expression::Scope;
+use crate::expression::value::{Expanding, Value};
 
 const ALL_KEYS: [&'static str; 192] = [
     "f0",
@@ -245,27 +247,30 @@ lazy_static! {
     // static ref KEY_PATTERN_REGEX: Regex = Regex::new(r"^\s*keys\(\s*`(.*)`\s*\)\s*$").unwrap();
 }
 
-fn expand_keys_str(val: Expression) -> Result<Value> {
-    let c = KEY_PATTERN_REGEX.captures(&val.content);
-    if let Some(caps) = c {
-        let key_regex = Regex::new(&caps[1])?;
-        let mut result = Vec::new();
-        for key in ALL_KEYS {
-            if key_regex.find(key).is_some_and(|m| m.len() == key.len()) {
-                result.push(Value::String(key.into()));
-            }
+pub fn expression_fn__keys(
+    val: ImmutableString,
+) -> std::result::Result<rhai::Array, Box<EvalAltResult>> {
+    let key_regex = match Regex::new(&val) {
+        Err(e) => {
+            return Err(e.to_string().into());
         }
-        return Ok(Value::Array(result));
-    } else {
-        return Ok(Value::Exp(val));
+        Ok(x) => x,
+    };
+    let mut result = rhai::Array::new();
+    for key in ALL_KEYS {
+        if key_regex.find(key).is_some_and(|m| m.len() == key.len()) {
+            result.push(ImmutableString::from(key).into())
+        }
     }
+    return Ok(result);
 }
 
 pub fn expand_keys(
     items: IndexMap<String, Vec<Spanned<Value>>>,
+    scope: &mut Scope,
 ) -> ResultVec<IndexMap<String, Vec<Value>>> {
     // expand any `{{key(`regex`)}}` expressions (these are arrays of possible keys)
-    let items = items.map_expressions(&mut expand_keys_str)?;
+    let items = scope.expand(&items)?;
 
     // flatten any arrays
     return Ok(items
@@ -291,27 +296,27 @@ impl BindingInput {
         return false;
     }
 
-    pub fn expand_foreach(self) -> ResultVec<Vec<BindingInput>> {
+    pub fn expand_foreach(self, scope: &mut Scope) -> ResultVec<Vec<BindingInput>> {
         if self.has_foreach() {
-            let foreach = expand_keys(self.foreach.clone().unwrap())?;
+            let foreach = expand_keys(self.foreach.clone().unwrap(), scope)?;
             foreach.require_constant().with_message(
                 "`foreach` values can only include expressions of the form {{keys(`regex`)}}",
             )?;
 
             let values = expand_foreach_values(foreach).into_iter().map(|values| {
-                // TODO: this is where we will eventually add the `for` variables
-                // to the expression scope instead of inserting the values directly
                 let mut result = self.clone();
                 result.foreach = None;
-                result
-                    .map_expressions(&mut |x| {
-                        Ok(values
-                            .get(&x.content)
-                            .map_or_else(|| Value::Exp(x), |ex| ex.clone()))
-                    })
-                    .expect("no errors") // since our mapping function has no errors
+                result.map_expressions(&mut |mut expr| {
+                    if let Some(e) = expr.error {
+                        return Err(e.into());
+                    }
+                    for (k, v) in values.clone() {
+                        expr.scope.push((k, v.into()));
+                    }
+                    Ok(Value::Exp(expr))
+                })
             });
-            return Ok(values.collect());
+            return Ok(flatten_errors(values)?);
         }
         return Ok(vec![self]);
     }

@@ -15,7 +15,7 @@ use crate::{
         value::{Expanding, Expression, TypedValue, Value},
     },
     resolve,
-    util::{Required, Resolving},
+    util::Required,
 };
 
 /// @forBindingField bind @order 15
@@ -115,8 +115,11 @@ impl From<CommandInput> for Value {
     }
 }
 
-pub(crate) fn regularize_commands(input: &BindingInput) -> ResultVec<Vec<Command>> {
-    let command: String = input.clone().command.resolve("`command`")?;
+pub(crate) fn regularize_commands(
+    input: &BindingInput,
+    scope: &mut Scope,
+) -> ResultVec<Vec<Command>> {
+    let command: String = resolve!(input.clone(), command, scope)?;
     if command != "runCommands" {
         let commands = vec![Command {
             command,
@@ -232,17 +235,17 @@ impl Command {
 }
 
 impl Command {
-    pub fn new(input: CommandInput) -> ResultVec<Self> {
+    pub fn new(input: CommandInput, scope: &mut Scope) -> ResultVec<Self> {
         if let Some(_) = input.id {
             return Err(err("`id` fields is reserved"))?;
         }
         return Ok(Command {
-            command: resolve!(input, command)?,
+            command: resolve!(input, command, scope)?,
             args: match input.args {
                 Some(x) => x.into_inner(),
                 None => Value::Table(HashMap::new()),
             },
-            skipWhen: resolve!(input, skipWhen)?,
+            skipWhen: resolve!(input, skipWhen, scope)?,
         });
     }
 }
@@ -272,8 +275,9 @@ mod tests {
         skipWhen = "{{count > 2}}"
         "#;
 
+        let mut scope = Scope::new();
         let bind = toml::from_str::<BindingInput>(data).unwrap();
-        let commands = regularize_commands(&bind).unwrap();
+        let commands = regularize_commands(&bind, &mut scope).unwrap();
 
         assert_eq!(commands[0].command, "a");
         assert_eq!(commands[1].command, "b");
@@ -318,7 +322,8 @@ mod tests {
         "#;
 
         let bind = toml::from_str::<BindingInput>(data).unwrap();
-        let commands = regularize_commands(&bind).unwrap_err();
+        let mut scope = Scope::new();
+        let commands = regularize_commands(&bind, &mut scope).unwrap_err();
         let msg = match commands.errors[0].error {
             crate::error::RawError::Static(x) => x,
             _ => {

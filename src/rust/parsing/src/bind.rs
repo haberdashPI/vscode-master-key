@@ -10,7 +10,7 @@ use toml::Spanned;
 use wasm_bindgen::prelude::*;
 
 pub mod command;
-mod foreach;
+pub mod foreach;
 pub mod validation;
 
 use crate::bind::command::{Command, regularize_commands};
@@ -509,9 +509,9 @@ impl Expanding for BindingDocInput {
 }
 
 impl Resolving<BindingDoc> for Option<BindingDocInput> {
-    fn resolve(self, _name: &'static str) -> ResultVec<BindingDoc> {
+    fn resolve(self, _name: &'static str, scope: &mut Scope) -> ResultVec<BindingDoc> {
         match self {
-            Some(doc) => Ok(BindingDoc::new(doc)?),
+            Some(doc) => Ok(BindingDoc::new(doc, scope)?),
             None => Ok(BindingDoc::default()),
         }
     }
@@ -540,10 +540,10 @@ pub struct Binding {
 #[wasm_bindgen]
 impl Binding {
     pub fn repeat(&mut self, scope: &mut Scope) -> ResultVec<i32> {
-        return scope.expand(&self.repeat)?.resolve("`repeat`");
+        return scope.expand(&self.repeat)?.resolve("`repeat`", scope);
     }
 
-    pub(crate) fn new(input: BindingInput) -> ResultVec<Self> {
+    pub(crate) fn new(input: BindingInput, scope: &mut Scope) -> ResultVec<Self> {
         if let Some(_) = input.id {
             return Err(err("`id` field is reserved"))?;
         }
@@ -551,21 +551,24 @@ impl Binding {
         if let Some(_) = input.foreach {
             return Err(err("`foreach` included unresolved variables"))?;
         }
-        let commands = regularize_commands(&input)?;
+        let commands = regularize_commands(&input, scope)?;
+
+        // TODO: this is where we need to expand any fields that
+        // have read-time expressions
 
         // TODO this is where we should validate that prefix has `finalKey == false`
 
         return Ok(Binding {
             commands: commands,
-            key: resolve!(input, key)?,
-            when: resolve!(input, when)?,
-            mode: resolve!(input, mode)?,
-            priority: resolve!(input, priority)?,
-            prefixes: resolve!(input, prefixes)?,
-            finalKey: resolve!(input, finalKey)?,
-            repeat: resolve!(input, repeat)?,
-            tags: resolve!(input, tags)?,
-            doc: resolve!(input, doc)?,
+            key: resolve!(input, key, scope)?,
+            when: resolve!(input, when, scope)?,
+            mode: resolve!(input, mode, scope)?,
+            priority: resolve!(input, priority, scope)?,
+            prefixes: resolve!(input, prefixes, scope)?,
+            finalKey: resolve!(input, finalKey, scope)?,
+            repeat: resolve!(input, repeat, scope)?,
+            tags: resolve!(input, tags, scope)?,
+            doc: resolve!(input, doc, scope)?,
         });
     }
 }
@@ -590,16 +593,16 @@ pub struct BindingDoc {
 
 #[wasm_bindgen]
 impl BindingDoc {
-    pub(crate) fn new(input: BindingDocInput) -> ResultVec<Self> {
+    pub(crate) fn new(input: BindingDocInput, scope: &mut Scope) -> ResultVec<Self> {
         return Ok(BindingDoc {
-            name: resolve!(input, name)?,
-            description: resolve!(input, description)?,
-            hideInPalette: resolve!(input, hideInPalette)?,
-            hideInDocs: resolve!(input, hideInDocs)?,
-            combinedName: resolve!(input, combinedName)?,
-            combinedKey: resolve!(input, combinedKey)?,
-            combinedDescription: resolve!(input, combinedDescription)?,
-            kind: resolve!(input, kind)?,
+            name: resolve!(input, name, scope)?,
+            description: resolve!(input, description, scope)?,
+            hideInPalette: resolve!(input, hideInPalette, scope)?,
+            hideInDocs: resolve!(input, hideInDocs, scope)?,
+            combinedName: resolve!(input, combinedName, scope)?,
+            combinedKey: resolve!(input, combinedKey, scope)?,
+            combinedDescription: resolve!(input, combinedDescription, scope)?,
+            kind: resolve!(input, kind, scope)?,
         });
     }
 }
@@ -642,6 +645,7 @@ mod tests {
         "#;
 
         let result = toml::from_str::<BindingInput>(data).unwrap();
+        let mut scope = Scope::new();
 
         assert_eq!(
             String::from(result.command.into_inner().unwrap()),
@@ -660,7 +664,7 @@ mod tests {
         assert_eq!(key, "a".to_string());
         let when: String = result.when.unwrap().into_inner().into();
         assert_eq!(when, "joe > 1".to_string());
-        let mode: Vec<String> = resolve!(result, mode).unwrap();
+        let mode: Vec<String> = resolve!(result, mode, &mut scope).unwrap();
 
         assert_eq!(mode, ["normal"]);
         let priority: f64 = result.priority.unwrap().into_inner().into();
@@ -678,41 +682,38 @@ mod tests {
         );
 
         assert_eq!(when, "joe > 1".to_string());
-        let prefixes: Vec<String> = resolve!(result, prefixes).unwrap();
+        let prefixes: Vec<String> = resolve!(result, prefixes, &mut scope).unwrap();
         assert_eq!(prefixes, ["c"]);
 
-        let finalKey: bool = resolve!(result, finalKey).unwrap();
+        let finalKey: bool = resolve!(result, finalKey, &mut scope).unwrap();
         assert_eq!(finalKey, true);
 
-        let tags: Vec<String> = resolve!(result, tags).unwrap();
+        let tags: Vec<String> = resolve!(result, tags, &mut scope).unwrap();
         assert_eq!(tags, ["foo".to_string(), "bar".to_string()]);
 
         let doc = result.doc.unwrap();
-        let name: String = resolve!(doc, name).unwrap();
+        let name: String = resolve!(doc, name, &mut scope).unwrap();
         assert_eq!(name, "foo");
 
-        let description: String = doc.description.resolve("`description`").unwrap();
+        let description: String = resolve!(doc, description, &mut scope).unwrap();
         assert_eq!(description, "foo bar bin");
 
-        let hideInDocs: bool = doc.hideInDocs.resolve("`hideInDocs`").unwrap();
+        let hideInDocs: bool = resolve!(doc, hideInDocs, &mut scope).unwrap();
         assert_eq!(hideInDocs, false);
 
-        let hideInPalette: bool = doc.hideInPalette.resolve("`hideInPalette`").unwrap();
+        let hideInPalette: bool = resolve!(doc, hideInPalette, &mut scope).unwrap();
         assert_eq!(hideInPalette, false);
 
-        let combinedName: String = doc.combinedName.resolve("`combinedName`").unwrap();
+        let combinedName: String = resolve!(doc, combinedName, &mut scope).unwrap();
         assert_eq!(combinedName, "Up/down");
 
-        let combinedKey: String = doc.combinedKey.resolve("`combinedKey`").unwrap();
+        let combinedKey: String = resolve!(doc, combinedKey, &mut scope).unwrap();
         assert_eq!(combinedKey, "A/B");
 
-        let combinedDescription: String = doc
-            .combinedDescription
-            .resolve("`combinedDescription`")
-            .unwrap();
+        let combinedDescription: String = resolve!(doc, combinedDescription, &mut scope).unwrap();
         assert_eq!(combinedDescription, "bla bla bla");
 
-        let kind: String = resolve!(doc, kind).unwrap();
+        let kind: String = resolve!(doc, kind, &mut scope).unwrap();
         assert_eq!(kind, "biz");
     }
 
@@ -725,6 +726,7 @@ mod tests {
         "#;
 
         let result = toml::from_str::<BindingInput>(data).unwrap();
+        let mut scope = Scope::new();
         assert_eq!(
             String::from(result.key.into_inner().unwrap()),
             "l".to_string()
@@ -738,9 +740,9 @@ mod tests {
             Value::Table(HashMap::from([("to".into(), Value::String("left".into()))]))
         );
 
-        let modes: Vec<String> = resolve!(result, mode).unwrap();
+        let modes: Vec<String> = resolve!(result, mode, &mut scope).unwrap();
         assert_eq!(modes.first().unwrap(), &"default".to_string());
-        let when: Option<String> = resolve!(result, when).unwrap();
+        let when: Option<String> = resolve!(result, when, &mut scope).unwrap();
         assert_eq!(when, None);
     }
 
@@ -760,11 +762,12 @@ mod tests {
         "#;
 
         let result = toml::from_str::<HashMap<String, Vec<BindingInput>>>(data).unwrap();
+        let mut scope = Scope::new();
         let default = result.get("bind").unwrap()[0].clone();
         let left = result.get("bind").unwrap()[1].clone();
         let left = default.merge(left);
 
-        let key: String = resolve!(left, key).unwrap();
+        let key: String = resolve!(left, key, &mut scope).unwrap();
         assert_eq!(key, "l".to_string());
         assert_eq!(
             String::from(left.command.into_inner().unwrap()),
@@ -776,13 +779,13 @@ mod tests {
             Value::Table(HashMap::from([("to".into(), Value::String("left".into()))]))
         );
 
-        let prefixes: Vec<String> = resolve!(left, prefixes).unwrap();
+        let prefixes: Vec<String> = resolve!(left, prefixes, &mut scope).unwrap();
         assert_eq!(prefixes, ["b".to_string(), "c".to_string()]);
 
         let doc = left.doc.unwrap();
-        let description: Option<String> = resolve!(doc, combinedDescription).unwrap();
+        let description: Option<String> = resolve!(doc, combinedDescription, &mut scope).unwrap();
         assert_eq!(description, None);
-        let name: Option<String> = resolve!(doc, combinedName).unwrap();
+        let name: Option<String> = resolve!(doc, combinedName, &mut scope).unwrap();
         assert_eq!(name, None);
     }
 
@@ -870,26 +873,28 @@ mod tests {
         let data = r#"
             foreach.a = [1, 2]
             foreach.b = ["x", "y"]
-            doc.name = "test {{a}}-{{b}}"
+            doc.name = 'test {{a+1}}-{{b + "z"}}'
             command = "run-{{a}}"
             args.value = "with-{{b}}"
         "#;
 
         let result = toml::from_str::<BindingInput>(data).unwrap();
-        let items = result.expand_foreach().unwrap();
+        let mut scope = Scope::new();
+        scope.parse_asts(&result).unwrap();
+        let items = result.expand_foreach(&mut scope).unwrap();
 
         let expected_command = vec!["run-1", "run-1", "run-2", "run-2"];
         let expected_value = vec!["with-x", "with-y", "with-x", "with-y"];
-        let expected_name = vec!["test 1-x", "test 1-y", "test 2-x", "test 2-y"];
+        let expected_name = vec!["test 2-xz", "test 2-yz", "test 3-xz", "test 3-yz"];
 
         for i in 0..4 {
             let item = items[i].clone();
-            let command: String = resolve!(item, command).unwrap();
+            let command: String = resolve!(item, command, &mut scope).unwrap();
             assert_eq!(command, expected_command[i]);
 
-            let name: String = resolve!(item.doc.unwrap(), name).unwrap();
+            let name: String = resolve!(item.doc.unwrap(), name, &mut scope).unwrap();
             assert_eq!(name, expected_name[i]);
-            let args: Option<toml::Value> = resolve!(item, args).unwrap();
+            let args: Option<toml::Value> = resolve!(item, args, &mut scope).unwrap();
             let mut expected_args = toml::Table::new();
             expected_args.insert(
                 "value".to_string(),
@@ -909,7 +914,9 @@ mod tests {
         "#;
 
         let result = toml::from_str::<BindingInput>(data).unwrap();
-        let items = result.expand_foreach().unwrap();
+        let mut scope = Scope::new();
+        scope.parse_asts(&result).unwrap();
+        let items = result.expand_foreach(&mut scope).unwrap();
 
         let expected_name: Vec<String> =
             (0..9).into_iter().map(|n| format!("update {n}")).collect();
@@ -917,9 +924,9 @@ mod tests {
 
         assert_eq!(items.len(), 10);
         for i in 0..9 {
-            let name: String = resolve!(items[i].doc.clone().unwrap(), name).unwrap();
+            let name: String = resolve!(items[i].doc.clone().unwrap(), name, &mut scope).unwrap();
             assert_eq!(name, expected_name[i]);
-            let value: Option<toml::Value> = resolve!(items[i].clone(), args).unwrap();
+            let value: Option<toml::Value> = resolve!(items[i].clone(), args, &mut scope).unwrap();
             let mut table = toml::Table::new();
             table.insert(
                 "value".to_string(),
@@ -942,7 +949,8 @@ mod tests {
         let input = toml::from_str::<BindingInput>(data).unwrap();
         let mut scope = Scope::new();
         scope.parse_asts(&input).unwrap();
-        let result = Binding::new(input).unwrap();
+        let result = Binding::new(input, &mut scope).unwrap();
+
         scope.state.set_or_push("joe", Dynamic::from("fiz"));
         let flat_args = result.commands[0].toml_args(&mut scope).unwrap();
 

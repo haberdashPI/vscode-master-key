@@ -102,19 +102,20 @@ struct KeyFileInput {
 }
 
 #[derive(Clone, Debug, Serialize)]
-#[allow(non_snake_case)]
-#[wasm_bindgen(getter_with_clone)]
+#[wasm_bindgen]
 pub struct KeyFile {
     define: Define,
-    pub bind: Vec<Binding>,
+    bind: Vec<Binding>,
 }
 
+// TODO: implement methods to access/store bindings
+
 impl KeyFile {
-    fn new(input: KeyFileInput) -> ResultVec<KeyFile> {
+    fn new(input: KeyFileInput, mut scope: &mut Scope) -> ResultVec<KeyFile> {
         // [[define]]
         let mut errors = Vec::new();
         let define_input = input.define.unwrap_or_default();
-        let mut define = match Define::new(define_input) {
+        let mut define = match Define::new(define_input, &mut scope) {
             Err(mut es) => {
                 errors.append(&mut es.errors);
                 Define::default()
@@ -137,7 +138,6 @@ impl KeyFile {
             Ok(x) => x,
         };
 
-        let mut scope = Scope::new();
         define.add_to_scope(&mut scope)?;
         let _ = scope
             .parse_asts(&bind_input)
@@ -147,7 +147,7 @@ impl KeyFile {
             .into_iter()
             .flat_map(|x| {
                 let span = x.span().clone();
-                match x.into_inner().expand_foreach() {
+                match x.into_inner().expand_foreach(&mut scope) {
                     Ok(replicates) => {
                         // we resolve the foreach elements originating from a single item
                         // here, rather than expanding and flattening all errors across
@@ -158,7 +158,7 @@ impl KeyFile {
                         // required `key` field` to show up three times
                         let items = replicates
                             .into_iter()
-                            .map(Binding::new)
+                            .map(|x| Binding::new(x, &mut scope))
                             .collect::<ResultVec<Vec<_>>>()
                             .with_range(&span);
                         match items {
@@ -185,6 +185,7 @@ impl KeyFile {
     }
 }
 
+// TODO: don't use clone on `file`
 #[wasm_bindgen(getter_with_clone)]
 pub struct KeyFileResult {
     pub file: Option<KeyFile>,
@@ -207,7 +208,8 @@ pub fn parse_keybinding_bytes(file_content: Box<[u8]>) -> KeyFileResult {
 
 fn parse_bytes_helper(file_content: &[u8]) -> ResultVec<KeyFile> {
     let parsed = toml::from_slice::<KeyFileInput>(file_content)?;
-    return KeyFile::new(parsed);
+    let mut scope = Scope::new(); // TODO: do something with this scope??
+    return KeyFile::new(parsed, &mut scope);
 }
 
 #[cfg(test)]
@@ -269,7 +271,9 @@ mod tests {
         key = "a"
         "#;
 
-        let result = KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap()).unwrap();
+        let mut scope = Scope::new();
+        let result =
+            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap();
 
         assert_eq!(result.bind[0].doc.name, "the whole shebang");
         assert_eq!(result.bind[0].key, "a");
@@ -318,7 +322,9 @@ mod tests {
         key = "a"
         "#;
 
-        let result = KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap()).unwrap();
+        let mut scope = Scope::new();
+        let result =
+            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap();
 
         assert_eq!(result.bind[0].doc.name, "the whole shebang");
         assert_eq!(result.bind[0].key, "a");
@@ -352,7 +358,9 @@ mod tests {
         args.value = "{{key}}"
         "#;
 
-        let result = KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap()).unwrap();
+        let mut scope = Scope::new();
+        let result =
+            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap();
 
         let expected_name: Vec<String> =
             (0..9).into_iter().map(|n| format!("update {n}")).collect();
@@ -362,11 +370,15 @@ mod tests {
         for i in 0..9 {
             assert_eq!(result.bind[i].doc.name, expected_name[i]);
             assert_eq!(
-                result.bind[i].commands[0].args,
-                Value::Table(HashMap::from([(
-                    "value".to_string(),
-                    Value::String(expected_value[i].clone())
-                ),]))
+                result.bind[i].commands[0].toml_args(&mut scope).unwrap(),
+                toml::Value::Table(
+                    [(
+                        "value".to_string(),
+                        toml::Value::String(expected_value[i].clone())
+                    )]
+                    .into_iter()
+                    .collect()
+                )
             );
         }
     }
@@ -382,11 +394,30 @@ mod tests {
         "#;
 
         // TODO: ensure that a proper span is shown here
-        let result = KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap());
+        let mut scope = Scope::new();
+        let result = KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope);
         let report = result.unwrap_err().report(data.as_bytes());
         assert_eq!(report[0].message, "`key` field is required".to_string());
         assert_eq!(report[0].range.start.line, 1);
         assert_eq!(report[0].range.end.line, 1);
+    }
+
+    #[test]
+    fn define_val_at_read() {
+        let data = r#"
+        [[define.val]]
+        foo = "bar"
+
+        [[bind]]
+        key = "x"
+        command = "{{foo}}"
+        args.val = 2
+        "#;
+
+        let mut scope = Scope::new();
+        let result =
+            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap();
+        assert_eq!(result.bind[0].commands[0].command, "bar");
     }
 
     // TODO: write a test for required field `key` and ensure the span

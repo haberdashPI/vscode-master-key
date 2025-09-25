@@ -16,6 +16,7 @@ use toml::Spanned;
 use crate::bind::UNKNOWN_RANGE;
 use crate::err;
 use crate::error::{Error, ErrorContext, ErrorSet, RawError, Result, ResultVec, flatten_errors};
+use crate::expression::Scope;
 use crate::util::{LeafValue, Merging, Plural, Required, Resolving};
 
 //
@@ -23,7 +24,7 @@ use crate::util::{LeafValue, Merging, Plural, Required, Resolving};
 //
 
 /// `Value` is an expressive type that can be used to represent any TOML / JSON object with
-/// one more expressions in them. Crucially, it implements the `Expanding` trait, which
+/// one or more expressions in them. Crucially, it implements the `Expanding` trait, which
 /// allows those expressions to be expanded into `Value`'s themselves. Values are used
 /// to represent parsed TOML data, expand the expressions in them, and translate
 /// those values to JSON and/or Rhai `Dynaamic` objects.
@@ -241,7 +242,7 @@ lazy_static! {
 }
 
 impl Value {
-    fn new(value: BareValue, range: Option<Range<usize>>) -> Result<Self> {
+    pub fn new(value: BareValue, range: Option<Range<usize>>) -> Result<Self> {
         return Ok(match value {
             BareValue::Boolean(x) => Value::Boolean(x),
             BareValue::Float(x) => Value::Float(x),
@@ -419,6 +420,32 @@ impl TryFrom<toml::Value> for BareValue {
     }
 }
 
+impl From<Value> for BareValue {
+    fn from(value: Value) -> BareValue {
+        return match value {
+            Value::Exp(Expression { content: x, .. }) => panic!("Unresolved expression {x}"),
+            Value::Interp(interps) => {
+                panic!("Unresolved interpolation {}", interp_to_string(interps))
+            }
+            Value::Array(items) => {
+                let new_items = items.into_iter().map(|it| it.into()).collect();
+                BareValue::Array(new_items)
+            }
+            Value::Table(kv) => {
+                let new_kv = kv
+                    .into_iter()
+                    .map(|(k, v)| (k, Spanned::new(UNKNOWN_RANGE, v.into())))
+                    .collect();
+                BareValue::Table(new_kv)
+            }
+            Value::Boolean(x) => BareValue::Boolean(x),
+            Value::Float(x) => BareValue::Float(x),
+            Value::Integer(x) => BareValue::Integer(x),
+            Value::String(x) => BareValue::String(x),
+        };
+    }
+}
+
 impl From<Value> for toml::Value {
     fn from(value: Value) -> toml::Value {
         return match value {
@@ -446,7 +473,7 @@ impl From<Value> for Dynamic {
     fn from(value: Value) -> Self {
         return match value {
             Value::Float(x) => Dynamic::from(x),
-            Value::Integer(x) => Dynamic::from(x),
+            Value::Integer(x) => Dynamic::from(x as i64),
             Value::Boolean(x) => Dynamic::from(x),
             Value::String(x) => Dynamic::from(x),
             Value::Array(x) => {
@@ -470,7 +497,9 @@ impl TryFrom<Dynamic> for Value {
     // TODO: this is currently almost certainly quite inefficient (we clone arrays and
     // maps), but we can worry about optimizing this later
     fn try_from(value: Dynamic) -> Result<Self> {
-        if value.is_array() {
+        if value.is::<Value>() {
+            return Ok(value.cast::<Value>());
+        } else if value.is_array() {
             let elements = value.as_array_ref().expect("array value");
             let values = elements
                 .clone()
@@ -491,7 +520,11 @@ impl TryFrom<Dynamic> for Value {
         } else if value.is_float() {
             return Ok(Value::Float(value.as_float().expect("float")));
         } else if value.is_int() {
-            return Ok(Value::Integer(value.as_int().expect("integer") as i32));
+            return Ok(Value::Integer(i32::try_from(
+                value.as_int().expect("integer"),
+            )?));
+        } else if value.is::<i32>() {
+            return Ok(Value::Integer(value.cast::<i32>()));
         } else if value.is_string() {
             return Ok(Value::String(
                 value
@@ -549,18 +582,16 @@ impl Merging for Value {
 }
 
 impl Resolving<Value> for Value {
-    fn resolve(self, _name: &'static str) -> ResultVec<Value> {
+    fn resolve(self, _name: &'static str, _scope: &mut Scope) -> ResultVec<Value> {
         Ok(self)
     }
 }
 
 impl Resolving<toml::Value> for Value {
-    fn resolve(self, name: &'static str) -> ResultVec<toml::Value> {
-        // TODO: this is where we will eventually evaluate expressions
-        // *wihtin* their scope
+    fn resolve(mut self, name: &'static str, scope: &mut Scope) -> ResultVec<toml::Value> {
+        self = scope.expand(&self)?;
         self.require_constant()
-            .with_message("for ")
-            .with_message(name)?;
+            .with_message(format!(" for {}", name))?;
         return Ok(self.into());
     }
 }
@@ -914,12 +945,12 @@ where
     T: Serialize + std::fmt::Debug + Resolving<U>,
     TypedValue<T>: Expanding + Clone + Into<T>,
 {
-    fn resolve(self, name: &'static str) -> ResultVec<U> {
+    fn resolve(mut self, name: &'static str, scope: &mut Scope) -> ResultVec<U> {
+        self = scope.expand(&self)?;
         self.require_constant()
-            .with_message("for ")
-            .with_message(name)?;
+            .with_message(format!("for `{name}`"))?;
         let constant = self.into();
-        return constant.resolve(name);
+        return constant.resolve(name, scope);
     }
 }
 
@@ -927,7 +958,7 @@ impl<T> Resolving<TypedValue<T>> for TypedValue<T>
 where
     T: LeafValue + Serialize + std::fmt::Debug,
 {
-    fn resolve(self, _name: &'static str) -> ResultVec<TypedValue<T>> {
+    fn resolve(self, _name: &'static str, _scope: &mut Scope) -> ResultVec<TypedValue<T>> {
         return Ok(self);
     }
 }
@@ -936,7 +967,7 @@ impl<T> Resolving<TypedValue<T>> for Option<Spanned<TypedValue<T>>>
 where
     T: Default + Serialize + std::fmt::Debug,
 {
-    fn resolve(self, _name: &'static str) -> ResultVec<TypedValue<T>> {
+    fn resolve(self, _name: &'static str, _scope: &mut Scope) -> ResultVec<TypedValue<T>> {
         return match self {
             Some(x) => Ok(x.into_inner()),
             Option::None => Ok(TypedValue::default()),
@@ -955,6 +986,7 @@ impl<T: Serialize + std::fmt::Debug> Merging for TypedValue<T> {
 }
 
 mod tests {
+    #[allow(unused_imports)]
     use super::*;
 
     #[test]
