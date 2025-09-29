@@ -1,17 +1,24 @@
 [tools]
-"cargo:wasm-pack" = "0.13.1"
 node = "20"
-"npm:pnpm" = "10.12.4"
 "npm:typescript" = "5.8.3"
 "npm:vsce" = "2.15"
-rust = { version = "1.87", targets = "wasm32-unknown-unknown" }
-watchexec = "2.3.2"
-"ubi:haberdashpi/simple-src-docs" = "0.6.0"
 "npm:c8" = "latest"
 "npm:http-server" = "14.1.1"
+"npm:pnpm" = "10.13.1"
+"ubi:haberdashpi/simple-src-docs" = "0.6.0"
+watchexec = "2.3.2"
+rust = { version = "1.89", targets = "wasm32-unknown-unknown", component = "lvm-tools" }
+"cargo:wasm-pack" = "0.13.1"
+"cargo:cargo-binutils" = "0.3.6"
+"cargo:rustfilt" = "latest"
+"cargo:nu" = "latest"
 
 [hooks]
-postinstall = ['pnpm install --frozen-lockfile', 'pnpm exec playwright install chromium']
+postinstall = [
+    'pnpm install --frozen-lockfile',
+    'pnpm exec playwright install chromium',
+    'rustup toolchain install nightly',
+]
 
 [tasks.lint]
 run = 'pnpm exec eslint src'
@@ -19,22 +26,56 @@ run = 'pnpm exec eslint src'
 [tasks.check-types]
 run = 'tsc --noEmit --project tsconfig.json'
 
-# [tasks.build-rust]
-# sources = ['src/rust/parsing/src/**/*.rs', 'src/rust/parsing/Cargo.toml']
-# outputs = ['out/**/*.wasm', 'src/rust/parsing/lib/*']
-# dir = 'src/rust/parsing'
-# run = [
-#     'wasm-pack build --target web --out-dir lib',
-#     'cp lib/parsing_bg.wasm ../../../out/parsing_bg.wasm',
-# ]
+# TODO: maybe consider using colons and figure out mise task hierarchies???
+[tasks.build-rust]
+dir = 'src/rust/parsing'
+sources = ['src/**/*.rs', 'Cargo.toml']
+outputs = ['lib/*']
+run = [
+    'wasm-pack build --target web --out-dir lib',
+    'mkdir -p ../../../out',
+    'cp lib/parsing_bg.wasm ../../../out/parsing_bg.wasm',
+]
+
+[vars]
+coverage_options = '''--ignore-filename-regex '/.cargo/registry' --ignore-filename-regex '.rustup/toolchains' --ignore-filename-regex 'rustc/' --compilation-dir src/rust/parsing --instr-profile coverage/parsing.profdata --Xdemangler rustfilt'''
+
+# TODO: generate an lcov report I can merge with the other coverage output
+[tasks.test-rust]
+dir = 'src/rust/parsing'
+shell = 'nu -c'
+env.RUST_BACKTRACE = "1"
+run = '''
+def main [...args] {
+    if ($env.COVERAGE? | default false | into bool) {
+        $env.RUSTFLAGS = '-C instrument-coverage'
+        $env.LLVM_PROFILE_FILE = 'coverage/parsing.profraw'
+
+        let object_files = cargo +nightly test --tests --no-run --message-format=json |
+            from json -o | where profile?.test |
+            get filenames.0 |
+            each { |f| $'--object=($in)' }
+
+        cargo +nightly test --target wasm32-unknown-unknown --tests ...$args -- --nocapture
+        cargo profdata -- merge -sparse coverage/parsing.profraw -o coverage/parsing.profdata
+        (cargo cov -- export {{vars.coverage_options}} --format=lcov ...($object_files) o>
+            ../../../coverage/rs_coverage.info)
+
+        cargo cov -- report --use-color {{vars.coverage_options}} ...($object_files)
+    } else {
+        cargo test ...$args -- --nocapture
+    }
+}
+main
+'''
 
 [tasks.build]
-depends = ['check-types', 'lint'] #, 'build-rust']
+depends = ['check-types', 'lint', 'build-rust']
 sources = ['src/**/*.ts']
-run = ['pwd', 'node esbuild.mjs']
+run = 'node esbuild.mjs'
 
 [tasks.package]
-depends = ['check-types', 'lint'] #, 'build-rust']
+depends = ['check-types', 'lint', 'build-rust']
 sources = ['src/**/*.ts']
 run = [
     'node esbuild.mjs --release',
@@ -50,15 +91,16 @@ run = 'tsc -p src/test --outDir out/test'
 
 [tasks.test]
 depends = ['build-tests']
-shell = 'bash -c'
+shell = 'nu -c'
 run = '''
-if $COVERAGE; then
-    pnpm exec vscode-test --config .vscode-test.mjs --extensionDevelopmentPath=. \
-        --version=insiders --coverage --coverage-output=coverage/unit \
-        --coverage-reporter=json
-else
-    pnpm exec vscode-test --config .vscode-test.mjs --extensionDevelopmentPath=. --version=insiders
-fi
+if ($env.COVERAGE? | default false | into bool) {
+    (pnpm exec vscode-test --config .vscode-test.mjs --extensionDevelopmentPath .
+        --version insiders --coverage --coverage-output coverage/unit
+        --coverage-reporter json)
+} else {
+    (pnpm exec vscode-test --config .vscode-test.mjs --extensionDevelopmentPath .
+        --version insiders)
+}
 '''
 
 [tasks.test-web]
@@ -72,38 +114,47 @@ depends = ['build --web']
 run = 'pnpm exec vscode-test-web --extensionDevelopmentPath=.'
 
 [tasks.assemble-coverage]
-run = [
-    'c8 --temp-directory coverage/integration/tmp/ report -r json -o coverage/integration/',
-    '''
-pnpm exec istanbul-merge --out coverage/merged/coverage-final.json \
-    coverage/integration/coverage-final.json coverage/unit/coverage-final.json
-''',
-    '''
-    pnpm exec nyc report -t coverage/merged --report-dir coverage -r lcov -r text \
-        --exclude node_modules --exclude out --exclude .vscode-test \
-        --exclude src/test
-    ''',
-]
+shell = 'nu -c'
+run = '''
+c8 --temp-directory coverage/integration/tmp/ report -r json -o coverage/integration/',
+(pnpm exec istanbul-merge --out coverage/merged/coverage-final.json
+    coverage/integration/coverage-final.json coverage/unit/coverage-final.json)
+(pnpm exec nyc report -t coverage/merged --report-dir coverage -r lcov
+    --exclude node_modules --exclude out --exclude .vscode-test
+    --exclude src/test)
+mv coverage/lcov.info coverage/ts_coverage.info'
+
+cat coverage/*_coverage.info o> coverage/lcov.info
+lcov-summary coverage/lcov.info
+'''
 
 [tasks.test-integration]
 depends = ['build', 'build-tests']
 run = 'pnpm exec playwright test'
 
 [tasks.extract-docs]
-sources = ['README.md', 'src/extension/**/*.ts', 'docs/templates/**/*.md']
-outputs = { auto = true }
-run = 'simple-src-docs -d docs src README.md docs/templates'
+sources = ['README.md', 'src/extension/**/*.ts', 'src/rust/**/*.rs', 'src/docs/**/*.md']
+outputs = ['docs/**/*.md']
+run = ['simple-src-docs -d docs src README.md', 'cp src/docs/index.md docs/']
+
+[tasks.dev-docs]
+depends = ['extract-docs']
+run = 'pnpm exec vitepress dev docs'
 
 [tasks.build-docs]
-sources = [
-    'docs/index.md',
-    'docs/guide.md',
-    'docs/bindings/**/*.md',
-    'docs/commands/**/*.md',
-]
+sources = ['docs/**/*.md']
 outputs = ['docs/.vitepress/dist/**/*']
 depends = ['extract-docs']
 run = 'pnpm exec vitepress build docs'
+
+[tasks.clean-docs]
+shell = 'nu -c'
+run = '''
+let to_remove = glob docs/**/*.md
+if not ($to_remove | is-empty) {
+    rm ...$to_remove
+}
+'''
 
 [tasks.report-coverage]
 depends = ['test --coverage', 'test-integration']

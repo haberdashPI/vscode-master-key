@@ -7,8 +7,9 @@ import { assertCursorMovesBy, cursorToPos, cursorToStart, editorWithText } from 
 suite('Search command', () => {
     let editor: vscode.TextEditor;
     setup(async () => {
+        let _;
         // eslint-disable-next-line @stylistic/max-len
-        editor = await editorWithText(`foobar bum POINT_A Officia voluptate ex point_a commodo esse laborum velit
+        [editor, _] = await editorWithText(`foobar bum POINT_A Officia voluptate ex point_a commodo esse laborum velit
 ipsum velit excepteur sunt cillum nulla adipisicing cupidatat. Laborum officia do mollit do
 labore elit occaecat cupidatat non POINT_B.`);
     });

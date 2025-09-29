@@ -35,7 +35,8 @@ async function stopRecording() {
 suite('Replay command', () => {
     let editor: vscode.TextEditor;
     setup(async () => {
-        editor = await editorWithText(`a b c d
+        let _;
+        [editor, _] = await editorWithText(`a b c d
 e f g h
 i j k l`);
     });

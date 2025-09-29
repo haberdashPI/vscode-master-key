@@ -1,0 +1,28 @@
+
+[[define.bind]]
+id = "my_defaults"
+command = "bar"
+
+[[bind]]
+default = "{{bind.my_defaults}}"
+args = { a = "2", b = 3, c = "{{x + 1}}" }
+when = "joe > 1"
+mode = "normal"
+priority = 1
+prefixes = "c"
+finalKey = true
+repeat = "{{2+c}}"
+name = "foo"
+description = "foo bar bin"
+hideInPalette = false
+hideInDocs = false
+combinedName = "foo/bar"
+combinedKey = "A/B"
+combinedDescription = "bla bla bla"
+kind = "biz"
+
+[[bind]]
+foreach.key = ["{{keys(`[0-9]`)}}"]
+key = "c {{key}}"
+command = "foobar"
+args.value = "{{key}}"
