@@ -1,5 +1,3 @@
-#![allow(non_snake_case)]
-
 #[allow(unused_imports)]
 use log::info;
 
@@ -15,20 +13,14 @@ pub mod validation;
 
 use crate::bind::command::{Command, regularize_commands};
 use crate::bind::validation::{BindingReference, KeyBinding};
-use crate::error::{Result, ResultVec, err};
+use crate::err;
+use crate::error::{ErrorContext, Result, ResultVec, err};
 use crate::expression::Scope;
 use crate::expression::value::{Expanding, Expression, TypedValue, Value};
 use crate::resolve;
 use crate::util::{Merging, Plural, Required, Resolving};
 
 pub const UNKNOWN_RANGE: core::ops::Range<usize> = usize::MIN..usize::MAX;
-
-fn default_mode() -> Spanned<TypedValue<Plural<String>>> {
-    return Spanned::new(
-        UNKNOWN_RANGE,
-        TypedValue::Constant(Plural(vec!["default".to_string()])),
-    );
-}
 
 fn span_required_default<T>() -> Spanned<Required<T>> {
     return Spanned::new(UNKNOWN_RANGE, Required::DefaultValue);
@@ -61,6 +53,7 @@ fn span_plural_default() -> Spanned<TypedValue<Plural<String>>> {
 ///
 /// ## Fields
 ///
+#[allow(non_snake_case)]
 #[derive(Deserialize, Clone, Debug)]
 pub struct BindingInput {
     // implementation detail of `BindingInput`: this field should only be `Some` when used
@@ -88,7 +81,6 @@ pub struct BindingInput {
     ///
     /// - ⚡ `args`: The arguments to directly pass to `command`. Args may include
     ///    runtime evaluated [expressions](/expressions/index).
-    #[serde(default)]
     pub args: Option<Spanned<Value>>,
 
     /// @forBindingField bind
@@ -105,21 +97,18 @@ pub struct BindingInput {
     ///   that will be evaluated while the bindings are being parsed. There are two
     ///   available functions of use here:
     ///   [`all_modes`](/expressions/functions#all_modes) and
-    ///   [`all_modes_but`](/expressions/functions#all_modes_but)
-    #[serde(default = "default_mode")]
-    pub mode: Spanned<TypedValue<Plural<String>>>,
+    ///   [`not_modes`](/expressions/functions#not_modes)
+    pub mode: Option<Spanned<TypedValue<Plural<String>>>>,
     /// @forBindingField bind
     ///
     /// - `priority`: The ordering of the keybinding relative to others; determines which
     ///   bindings take precedence. Defaults to 0.
-    #[serde(default)]
     pub priority: Option<Spanned<TypedValue<f64>>>,
     /// @forBindingField bind
     ///
     /// - `default`: the default values to use for fields, specified as
     ///    string of the form <span v-pre>`{{bind.[name]}}`</span>.
     ///    See [`define`](/bindings/define) for more details.
-    #[serde(default)]
     pub default: Option<Spanned<BindingReference>>,
     /// @forBindingField bind
     ///
@@ -147,7 +136,6 @@ pub struct BindingInput {
     /// - `finalKey`: (boolean, default=true) Whether this key should clear any transient
     ///   state associated with the pending keybinding prefix. See
     ///   [`master-key.prefix`](/commands/prefix) for details.
-    #[serde(default)]
     pub finalKey: Option<Spanned<TypedValue<bool>>>,
 
     /// @forBindingField bind
@@ -316,7 +304,7 @@ impl Expanding for BindingInput {
             }),
             mode: self.mode.map_expressions(f).unwrap_or_else(|mut e| {
                 errors.append(&mut e.errors);
-                Spanned::new(UNKNOWN_RANGE, TypedValue::default())
+                None
             }),
             priority: self.priority.map_expressions(f).unwrap_or_else(|mut e| {
                 errors.append(&mut e.errors);
@@ -359,6 +347,7 @@ impl Expanding for BindingInput {
 // ---------------- `bind.doc` parsing ----------------
 //
 
+#[allow(non_snake_case)]
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct BindingDocInput {
     /// @forBindingField bind
@@ -512,7 +501,7 @@ impl Resolving<BindingDoc> for Option<BindingDocInput> {
     fn resolve(self, _name: &'static str, scope: &mut Scope) -> ResultVec<BindingDoc> {
         match self {
             Some(doc) => Ok(BindingDoc::new(doc, scope)?),
-            None => Ok(BindingDoc::default()),
+            Option::None => Ok(BindingDoc::default()),
         }
     }
 }
@@ -553,23 +542,47 @@ impl Binding {
         }
         let commands = regularize_commands(&input, scope)?;
 
-        // TODO: this is where we need to expand any fields that
-        // have read-time expressions
-
         // TODO this is where we should validate that prefix has `finalKey == false`
 
-        return Ok(Binding {
+        let mode_span = match input.mode {
+            Some(ref mode) => mode.span().clone(),
+            Option::None => UNKNOWN_RANGE,
+        };
+
+        let result = Binding {
             commands: commands,
             key: resolve!(input, key, scope)?,
             when: resolve!(input, when, scope)?,
-            mode: resolve!(input, mode, scope)?,
+            mode: match input.mode {
+                Option::None => vec![scope.default_mode.clone()],
+                Some(mode) => mode.clone().resolve("mode", scope)?,
+            },
             priority: resolve!(input, priority, scope)?,
             prefixes: resolve!(input, prefixes, scope)?,
             finalKey: resolve!(input, finalKey, scope)?,
             repeat: resolve!(input, repeat, scope)?,
             tags: resolve!(input, tags, scope)?,
             doc: resolve!(input, doc, scope)?,
-        });
+        };
+
+        let undefined_modes: Vec<_> = result
+            .mode
+            .iter()
+            .filter(|x| !scope.modes.contains(x.as_str()))
+            .collect();
+        if undefined_modes.len() > 0 {
+            return Err(err!(
+                "Undefined mode(s): {}",
+                undefined_modes
+                    .iter()
+                    .map(|x| x.as_str())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ))
+            .with_range(&mode_span)?;
+        }
+
+        return Ok(result);
     }
 }
 
@@ -611,6 +624,7 @@ impl BindingDoc {
 // ================ Tests ================
 //
 
+#[allow(non_snake_case)]
 #[cfg(test)]
 mod tests {
     use test_log::test;
@@ -740,8 +754,6 @@ mod tests {
             Value::Table(HashMap::from([("to".into(), Value::String("left".into()))]))
         );
 
-        let modes: Vec<String> = resolve!(result, mode, &mut scope).unwrap();
-        assert_eq!(modes.first().unwrap(), &"default".to_string());
         let when: Option<String> = resolve!(result, when, &mut scope).unwrap();
         assert_eq!(when, None);
     }
@@ -961,6 +973,23 @@ mod tests {
         );
         args_expected.insert("number".to_string(), toml::Value::Integer(3));
         assert_eq!(flat_args, toml::Value::Table(args_expected));
+    }
+
+    #[test]
+    fn mode_validation() {
+        let data = r#"
+        key = "a"
+        command = "foo"
+        mode = "bar"
+        "#;
+
+        let input = toml::from_str::<BindingInput>(data).unwrap();
+        let mut scope = Scope::new();
+        let err = Binding::new(input, &mut scope).unwrap_err();
+        info!("err: {err}");
+        let report = err.report(data.as_bytes());
+        assert!(report[0].message.contains("Undefined mode"));
+        assert_eq!(report[0].range.start.line, 3);
     }
 
     // TODO: are there any edge cases / failure modes I want to look at in the tests

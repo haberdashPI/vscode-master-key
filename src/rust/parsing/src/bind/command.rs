@@ -15,10 +15,11 @@ use crate::{
         value::{Expanding, Expression, TypedValue, Value},
     },
     resolve,
-    util::Required,
+    util::{Required, Resolving},
 };
 
-/// @forBindingField bind @order 15
+/// @forBindingField bind
+/// @order 15
 ///
 /// ## Running Multiple Commands
 ///
@@ -33,6 +34,7 @@ use crate::{
 ///
 /// The object fields are defined as follows:
 ///
+#[allow(non_snake_case)]
 #[derive(Deserialize, Clone, Debug)]
 pub struct CommandInput {
     // should only be `Some` in context of `Define(Input)`
@@ -157,6 +159,7 @@ pub(crate) fn regularize_commands(
         let mut command_result = Vec::with_capacity(command_vec.len());
 
         for command in command_vec {
+            #[allow(non_snake_case)]
             let (command, args, skipWhen) = match command {
                 Value::String(str) => (
                     str.to_owned(),
@@ -175,7 +178,7 @@ pub(crate) fn regularize_commands(
                         }
                     };
                     let result = match kv.get("args") {
-                        None => &Value::Table(HashMap::new()),
+                        Option::None => &Value::Table(HashMap::new()),
                         Some(x) => x,
                     };
                     let args = match result {
@@ -187,7 +190,7 @@ pub(crate) fn regularize_commands(
                     };
 
                     let result = match kv.get("skipWhen") {
-                        None => Value::Boolean(false),
+                        Option::None => Value::Boolean(false),
                         Some(x) => x.clone(),
                     };
                     let skipWhen: TypedValue<bool> = result.try_into()?;
@@ -210,8 +213,9 @@ pub(crate) fn regularize_commands(
     }
 }
 
+#[allow(non_snake_case)]
 #[wasm_bindgen(getter_with_clone)]
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, PartialEq)]
 pub struct Command {
     pub command: String,
     pub(crate) args: Value,
@@ -237,16 +241,22 @@ impl Command {
 impl Command {
     pub fn new(input: CommandInput, scope: &mut Scope) -> ResultVec<Self> {
         if let Some(_) = input.id {
-            return Err(err("`id` fields is reserved"))?;
+            return Err(err("`id` field is reserved"))?;
         }
         return Ok(Command {
             command: resolve!(input, command, scope)?,
             args: match input.args {
                 Some(x) => x.into_inner(),
-                None => Value::Table(HashMap::new()),
+                Option::None => Value::Table(HashMap::new()),
             },
             skipWhen: resolve!(input, skipWhen, scope)?,
         });
+    }
+}
+
+impl Resolving<Command> for CommandInput {
+    fn resolve(self, _name: &'static str, scope: &mut Scope) -> ResultVec<Command> {
+        return Ok(Command::new(self, scope)?);
     }
 }
 

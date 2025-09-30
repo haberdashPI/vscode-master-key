@@ -15,7 +15,7 @@ use toml::Spanned;
 
 use crate::bind::UNKNOWN_RANGE;
 use crate::err;
-use crate::error::{Error, ErrorContext, ErrorSet, RawError, Result, ResultVec, flatten_errors};
+use crate::error::{Error, ErrorContext, ErrorSet, Result, ResultVec, err, flatten_errors};
 use crate::expression::Scope;
 use crate::util::{LeafValue, Merging, Plural, Required, Resolving};
 
@@ -274,7 +274,7 @@ fn match_to_expression(maybe_parent_span: &Option<Range<usize>>, m: regex::Match
         let mut error = None;
         if content.contains("{{") {
             error = Some(Error {
-                error: RawError::Static("unexpected `{{`"),
+                error: err("unexpected `{{`"),
                 contexts: smallvec![crate::error::Context::Range(exp_span.clone())],
             });
         }
@@ -289,7 +289,7 @@ fn match_to_expression(maybe_parent_span: &Option<Range<usize>>, m: regex::Match
         let mut error = None;
         if content.contains("{{") {
             error = Some(Error {
-                error: RawError::Static("unexpected `{{`"),
+                error: err("unexpected `{{`"),
                 contexts: smallvec![],
             });
         }
@@ -304,7 +304,7 @@ fn match_to_expression(maybe_parent_span: &Option<Range<usize>>, m: regex::Match
 
 fn check_unmatched_braces(x: String, span: Option<Range<usize>>) -> Value {
     if x.contains("{{") {
-        let mut error: Error = RawError::Static("unexpected `{{`").into();
+        let mut error: Error = err("unexpected `{{`").into();
         if let Some(r) = span.clone() {
             error.contexts.push(crate::error::Context::Range(r));
         };
@@ -315,7 +315,7 @@ fn check_unmatched_braces(x: String, span: Option<Range<usize>>) -> Value {
             scope: SmallVec::new(),
         });
     } else if x.contains("}}") {
-        let mut error: Error = RawError::Static("unexpected `}}`").into();
+        let mut error: Error = err("unexpected `}}`").into();
         if let Some(r) = span.clone() {
             error.contexts.push(crate::error::Context::Range(r.clone()));
         };
@@ -396,9 +396,7 @@ impl TryFrom<toml::Value> for BareValue {
                 if i32::try_from(x).is_ok() {
                     x as i32
                 } else {
-                    Err(RawError::Static(
-                        "i64 value was too large (must fit in i32)",
-                    ))?;
+                    Err(err("i64 value was too large (must fit in i32)"))?;
                     0
                 }
             }),

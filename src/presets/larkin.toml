@@ -42,21 +42,21 @@ requiredExtensions = [
 ]
 
 [[mode]]
-doc.name = "insert"
-recordEdits = true
+name = "insert"
+whenNoBinding = "insert"
 
 [[mode]]
-doc.name = "normal"
+name = "normal"
 default = true
 highlight = "Highlight"
 cursorShape = "Block"
 
 [[mode]]
-doc.name = "selectedit"
+name = "selectedit"
 highlight = "Highlight"
 cursorShape = "BlockOutline"
 
-[[define.var]]
+[[define.val]]
 select = false
 
 [[kind]]
@@ -115,9 +115,11 @@ doc.name = "suggest"
 finalKey = false
 doc.hideInPalette = true
 prefixes = "{{all_prefixes()}}"
-mode = '{{all_modes_but(["capture", "insert"]}}'
+mode = '{{not_modes(["capture", "insert"]}}'
 doc.description = """
-show command suggestions within the context of the current mode and keybinding prefix (if any). E.g. `TAB, ⇧;` in `normal` mode will show all `normal` command suggestions that start with `TAB`.
+show command suggestions within the context of the current mode and keybinding prefix
+(if any). E.g. `TAB, ⇧;` in `normal` mode will show all `normal` command suggestions that
+start with `TAB`.
 """
 command = "master-key.commandSuggestions"
 
@@ -189,7 +191,7 @@ foreach.modifier = ["shift+", ""]
 key = "{{modifier}}{{key}}"
 command = "master-key.ignore"
 prefixes = "{{all_prefixes()}}"
-mode = '{{all_modes_but(["normal", "selectedit"]}}'
+mode = '{{not_modes(["normal", "selectedit"]}}'
 when = "editorTextFocus"
 doc.hideInDocs = true
 doc.hideInPalette = true
@@ -222,7 +224,7 @@ id = "edit_motion_prim"
 default = "{{bind.edit_motion}}"
 command = "cursorMove"
 args.value = "{{count}}"
-args.select = "{{editorHasSelection || var.select}}"
+args.select = "{{editorHasSelection || val.select}}"
 
 [[bind]]
 default = "{{bind.edit_motion_prim}}"
@@ -327,7 +329,7 @@ command = "expandLineSelection"
 [[bind]]
 default = "{{bind.edit_motion_prim}}"
 key = "ctrl+d"
-mode = '{{all_modes_but(["normal", "insert"]}}'
+mode = '{{not_modes(["normal", "insert"]}}'
 doc.name = "pg ↓"
 doc.combinedName = "pg ↓/↑"
 doc.combinedKey = "ctrl+d/ctrl+u"
@@ -341,7 +343,7 @@ args.select = "{{mode == 'normal'}}"
 [[bind]]
 default = "{{bind.edit_motion_prim}}"
 key = "ctrl+u"
-mode = '{{all_modes_but(["normal", "insert"]}}'
+mode = '{{not_modes(["normal", "insert"]}}'
 doc.name = "pg ↑"
 doc.combinedName = "pg ↓/↑"
 doc.description = "move up, relative to page size"
@@ -476,7 +478,7 @@ reduce all selections to length zero
 command = "runCommands"
 args.commands = [
     "selection-utilities.shrinkToActive",
-    { command = "master-key.setFlag", args = { name = "var.select", value = false } },
+    { command = "master-key.setFlag", args = { name = "{{val.select}}", value = false } },
 ]
 
 [[bind]]
@@ -488,7 +490,7 @@ doc.description = """
 all motions extend the selection
 """
 command = "master-key.setFlag"
-args.doc.name = "var.select"
+args.doc.name = "{{val.select}}"
 args.value = true
 
 [[bind]]
@@ -547,7 +549,7 @@ doc.combinedName = "→/← sel"
 doc.description = "select *just* the character to the right"
 doc.combinedDescription = "select *just* the character to the right"
 doc.combinedKey = 'shift+\/\'
-mode = '{{all_modes_but(["normal", "selectedit"]}}'
+mode = '{{not_modes(["normal", "selectedit"]}}'
 command = "runCommands"
 
 [[bind.args.commands]]
@@ -563,7 +565,7 @@ key = 'shift+\'
 doc.name = "← sel"
 doc.combinedName = "→/← sel"
 doc.description = "select *just* the character to the left"
-mode = '{{all_modes_but(["normal", "selectedit"]}}'
+mode = '{{not_modes(["normal", "selectedit"]}}'
 command = "runCommands"
 
 [[bind.args.commands]]
@@ -637,7 +639,7 @@ doc.combinedName = "count 0-9"
 doc.combinedDescription = "Add digit 1-9 to count argument of a command"
 args.value = "{{num}}"
 finalKey = false
-mode = '{{all_modes_except(["insert", "capture"])}}'
+mode = '{{not_modes(["insert", "capture"])}}'
 doc.hideInDocs = true
 
 # There are several ways to repeat or undo previously entered commands, both actions and motions
@@ -1505,14 +1507,14 @@ doc.name = "insert"
 doc.description = "Switch to insert mode (right before character)"
 command = "runCommands"
 args.commands = ["selection-utilities.shrinkToActive", "master-key.enterInsert"]
-mode = '{{all_modes_but(["normal", "selectedit", "syminsert"]}}'
+mode = '{{not_modes(["normal", "selectedit", "syminsert"]}}'
 
 [[bind]]
 default = "{{bind.edit_action}}"
 key = "a"
 doc.name = "append"
 doc.description = "insert after cursor"
-mode = '{{all_modes_but(["normal", "selectedit", "syminsert"]}}'
+mode = '{{not_modes(["normal", "selectedit", "syminsert"]}}'
 command = "runCommands"
 args.commands = [
     "selection-utilities.shrinkToActive",
@@ -1524,7 +1526,7 @@ args.commands = [
 default = "{{bind.edit_action}}"
 key = "shift+i"
 doc.name = "insert start"
-mode = '{{all_modes_but(["normal", "selectedit", "syminsert"]}}'
+mode = '{{not_modes(["normal", "selectedit", "syminsert"]}}'
 command = "runCommands"
 args.commands = [
     { command = "cursorMove", args = { to = "wrappedLineFirstNonWhitespaceCharacter", select = false } },
@@ -1535,7 +1537,7 @@ args.commands = [
 default = "{{bind.edit_action}}"
 key = "shift+a"
 doc.name = "insert end"
-mode = '{{all_modes_but(["normal", "selectedit", "syminsert"]}}'
+mode = '{{not_modes(["normal", "selectedit", "syminsert"]}}'
 command = "runCommands"
 args.commands = [
     { command = "cursorMove", args = { to = "wrappedLineEnd", select = false } },
@@ -1604,7 +1606,7 @@ args.commands = [
 [[bind]]
 default = "{{bind.edit_action}}"
 key = "shift+c"
-mode = '{{all_modes_but(["normal", "selectedit"]}}'
+mode = '{{not_modes(["normal", "selectedit"]}}'
 when = "master-key.count > 1"
 command = "runCommands"
 args.commands = [
@@ -1637,7 +1639,7 @@ command = "master-key.replaceChar"
 default = "{{bind.edit_action}}"
 key = "ctrl+i"
 doc.name = "insert char"
-mode = '{{all_modes_but(["normal", "selectedit"]}}'
+mode = '{{not_modes(["normal", "selectedit"]}}'
 doc.description = "insert a character in front of the cursor"
 command = "master-key.insertChar"
 
@@ -1670,7 +1672,7 @@ args.commands = ["cursorRight", "editor.action.clipboardPasteAction"]
 default = "{{bind.edit_action}}"
 key = "ctrl+p"
 when = "!suggestWidgetVisible"
-mode = '{{all_modes_but(["normal", "insert"]}}'
+mode = '{{not_modes(["normal", "insert"]}}'
 doc.name = "paste in"
 doc.combinedName = "paste before/after/in"
 doc.description = "Paste clipboard at location"
@@ -1900,7 +1902,7 @@ command = "selection-utilities.decrementNumber"
 [[define.bind]]
 id = "edit_action_capitals"
 default = "{{bind.edit_action}}"
-mode = '{{all_modes_but(["normal", "selectedit"]}}'
+mode = '{{not_modes(["normal", "selectedit"]}}'
 
 [[bind]]
 default = "{{bind.edit_action_capitals}}"
@@ -2079,8 +2081,8 @@ args.acceptAfter = 1
 
 [[bind.args.commands]]
 command = "selection-utilities.insertAround"
-args.before = "{{var.braces[captured].before || captured}}"
-args.after = "{{var.braces[captured].after || captured}}"
+args.before = "{{val.braces[captured].before || captured}}"
+args.after = "{{val.braces[captured].after || captured}}"
 args.followCursor = true
 
 [[bind]]
@@ -2106,7 +2108,7 @@ doc.name = 'join'
 doc.combinedName = "wrap/join lines"
 doc.description = "Remove newline between current and next line"
 key = "space j"
-mode = '{{all_modes_but(["normal", "selectedit"]}}'
+mode = '{{not_modes(["normal", "selectedit"]}}'
 when = "!editorHasSelection"
 command = "runCommands"
 args.commands = ["{{command.selectLinesDown}}", 'editor.action.joinLines']
@@ -2116,7 +2118,7 @@ default = "{{bind.edit_action}}"
 doc.combinedName = "wrap/join lines"
 doc.name = 'join'
 doc.description = "Remove newline between current and next line"
-mode = '{{all_modes_but(["normal", "selectedit"]}}'
+mode = '{{not_modes(["normal", "selectedit"]}}'
 key = "space j"
 command = "editor.action.joinLines"
 
@@ -2546,14 +2548,14 @@ doc.combinedName = "mark ↓/↑"
 doc.combinedDescription = "move to next/previous bookmark"
 doc.combinedKey = "j/k"
 key = "tab m j"
-when = "!master-key.var.select && !editorHasSelection"
+when = "!master-key.val.select && !editorHasSelection"
 command = "vsc-labeled-bookmarks.navigateToNextBookmark"
 
 [[bind]]
 default = "{{bind.util}}"
 doc.combinedName = "mark ↓/↑"
 key = "tab m j"
-when = "master-key.var.select || editorHasSelection"
+when = "master-key.val.select || editorHasSelection"
 command = "vsc-labeled-bookmarks.expandSelectionToNextBookmark"
 
 [[bind]]
@@ -2562,7 +2564,7 @@ doc.name = "mark ↑"
 doc.combinedName = "mark ↓/↑"
 doc.description = "move to previous bookmark"
 key = "tab m k"
-when = "!master-key.var.select && !editorHasSelection"
+when = "!master-key.val.select && !editorHasSelection"
 command = "vsc-labeled-bookmarks.navigateToPreviousBookmark"
 
 [[bind]]
@@ -2571,7 +2573,7 @@ doc.name = "mark ↑"
 doc.combinedName = "mark ↓/↑"
 doc.description = "move to previous bookmark"
 key = "tab m k"
-when = "master-key.var.select || editorHasSelection"
+when = "master-key.val.select || editorHasSelection"
 command = "runCommands"
 args.commands = [
     "vsc-labeled-bookmarks.expandSelectionToPreviousBookmark",
@@ -2930,12 +2932,12 @@ doc.name = "del. cursors"
 doc.description = "Delete all selections and return to normal"
 command = "runCommands"
 args.commands = ["selection-utilities.cancelSelection", "master-key.enterNormal"]
-mode = '{{all_modes_but(["selectedit", "normal"]}}'
+mode = '{{not_modes(["selectedit", "normal"]}}'
 
 [[bind]]
 default = "{{bind.edit_select_edit}}"
 key = "ctrl+'"
-mode = '{{all_modes_but(["insert", "selectedit", "normal"]}}'
+mode = '{{not_modes(["insert", "selectedit", "normal"]}}'
 doc.name = "rm cursors"
 doc.combinedName = "rm cursors"
 doc.description = "Delete all selections and return to normal"
@@ -3251,7 +3253,7 @@ command = "selection-utilities.activeAtStart"
 
 # As a general rule, the letter keys issue commands of various sorts, and the other keys can be used to enter text (since we rarley want to surround a selection with an `a` but might want to surround it with `*` or `/`.
 
-[[define.var]]
+[[define.val]]
 
 "{".before = "{"
 "{".after = "}"
@@ -3274,14 +3276,14 @@ command = "selection-utilities.activeAtStart"
 ">".after = ">"
 
 [[mode]]
-doc.name = "syminsert"
+name = "syminsert"
 highlight = "Highlight"
 cursorShape = "BlockOutline"
 
-[[mode.onType]]
+[[mode.whenNoBinding.run]]
 command = "selection-utilities.insertAround"
-args.before = "{{var.braces[captured].before || captured}}"
-args.after = "{{var.braces[captured].after || captured}}"
+args.before = "{{val.braces[captured].?before ?? captured}}"
+args.after = "{{val.braces[captured].?after ?? captured}}"
 args.followCursor = true
 
 [[define.bind]]
@@ -3341,8 +3343,8 @@ args.acceptAfter = 1
 
 [[bind.args.commands]]
 command = "selection-utilities.insertAround"
-args.before = "{{'\\\\' + (var.braces[captured].before || captured)}}"
-args.after = "{{'\\\\' + (var.braces[captured].after || captured)}}"
+args.before = "{{'\\\\' + (val.braces[captured].?before ?? captured)}}"
+args.after = "{{'\\\\' + (val.braces[captured].?after ?? captured)}}"
 args.followCursor = true
 
 [[bind]]
@@ -3416,6 +3418,6 @@ reduce all selections to length zero and return to normal mode
 command = "runCommands"
 args.commands = [
     "selection-utilities.shrinkToActive",
-    { command = "master-key.setFlag", args = { name = "var.select", value = false } },
+    { command = "master-key.setFlag", args = { name = "val.select", value = false } },
     "master-key.enterNormal",
 ]

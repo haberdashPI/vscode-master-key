@@ -247,6 +247,7 @@ lazy_static! {
     // static ref KEY_PATTERN_REGEX: Regex = Regex::new(r"^\s*keys\(\s*`(.*)`\s*\)\s*$").unwrap();
 }
 
+#[allow(non_snake_case)]
 pub fn expression_fn__keys(
     val: ImmutableString,
 ) -> std::result::Result<rhai::Array, Box<EvalAltResult>> {

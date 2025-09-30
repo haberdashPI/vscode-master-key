@@ -159,7 +159,7 @@ Integration test debugging:
             - [X] remove all compile warnings
         - [X] implement support for tags on `bind` (for filter them)
         - [X] implement support for `skipWhen` in `command`
-        - [ ] improve expression evaluation
+        - [X] improve expression evaluation
             - [X] improve error reporting in expressions
                 - [X] support spans for expressions
                     - [X] create a `RawValue` that tracks spans
@@ -191,11 +191,17 @@ Integration test debugging:
             - [X] allow for `var` evaluation in parse-time expressions
                 - [X] implement
                 - [X] unit tests
-            - [ ] implement support for `all` functions:
-                - [ ] implement lazy resolution of `all` values
-                - [ ] `{{all_prefixes()}}`
-                - [ ] `{{all_modes()}}`
-                - [ ] `{{all_modes_but(["not_me", "or_me"])}}`
+        - [X] implement `[[mode]]`
+            - [X] implement
+            - [X] add to `KeyFile`
+            - [X] validate mode in `[[bind]]`
+            - [X] add documentation
+            - [X] use `Option<Plural<Mode>>` in BindingInput so we can
+                    properly resolve to the default mode instead of "default"
+            - [X] get existing unit tests working
+            - [X] write test cases for error paths
+            - [X] write tests for expressions to specify modes
+        - [ ] move `combinedName` and friends to `combined.name` and friends
         - [~] command normalization
             - [X] always `runCommand` with an array of objects with `command` field
             - [ ] flatten all nested `runCommands` calls
@@ -204,21 +210,34 @@ Integration test debugging:
             - [ ] validation that `master-key.prefix` uses `finalKey: false`
             - [ ] validation that keybindings with non modifier keybindings
               have a condition requiring textEditorFocus
-            - [ ] modes are all positive or negative
+                (or just insert it)
             - [ ] required keys are present
         - [ ] mode expansion: define a key binding per mode
         - [ ] key-sequence expansion and duplicate resolution:
               - [ ] create a binding per key in a sequence that requires a given prefix
               (depending on the prefix code of its prefix)
               - [ ] add any missing prefixes
+        - [ ] implement the `all` functions:
+            - [ ] `{{all_prefixes()}}`
+            - [ ] `{{all_prefixes_but()}}`
+            - [X] `{{all_modes()}}`
+            - [X] `{{all_modes_but(["not_me", "or_me"])}}`
         - [ ] documentation expandsion/validation across all `[[bind]]` values
               with the same key and mode
               e.g. merge all shared documentation across the shared names
         - [ ] find low hanging fruit for problems with using 1.0 files
-            - [ ] fields that exist in the old but not new (use #[serde(flatten)])
+            - [ ] fields that exist in the old but not new (use `#[serde(flatten)]`)
             - [ ] add hints for fields that don't exist anywhere as well (probably
                   as a hint or something)
+            - [ ] review strings for single `{}` braces and warn that `{{}}` are now required
             - [ ] others
+        - [ ] implement `[[kind]]`
+    - [ ] implement `[header]` section
+        - [ ] instead of using `.mk.toml`, look for a specific heading in the file
+    - [ ] remove spurious line/char positions from expression error messages
+        - NOTE: these come from the line and char position in the rhai expression
+          which has nothing to do with the line and char position in the parent
+          keybinding file
     - [ ] proper conversion to keybindings.json command
         - [ ] expand prefixes to prefixCode and move to when clause
         - [ ] move mode to when clause

@@ -6,6 +6,7 @@ mod util;
 // define file sections
 mod bind;
 mod define;
+mod mode;
 
 // top level parsing
 pub mod file;

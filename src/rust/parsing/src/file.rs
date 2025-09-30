@@ -85,10 +85,11 @@
 #[allow(unused_imports)]
 use log::info;
 
-use crate::bind::{Binding, BindingInput};
+use crate::bind::{Binding, BindingInput, UNKNOWN_RANGE};
 use crate::define::{Define, DefineInput};
 use crate::error::{ErrorContext, ErrorReport, ResultVec, flatten_errors};
 use crate::expression::Scope;
+use crate::mode::{ModeInput, Modes};
 
 use serde::{Deserialize, Serialize};
 use toml::Spanned;
@@ -98,6 +99,7 @@ use wasm_bindgen::prelude::*;
 #[derive(Deserialize, Clone, Debug)]
 struct KeyFileInput {
     define: Option<DefineInput>,
+    mode: Option<Vec<Spanned<ModeInput>>>,
     bind: Option<Vec<Spanned<BindingInput>>>,
 }
 
@@ -105,20 +107,36 @@ struct KeyFileInput {
 #[wasm_bindgen]
 pub struct KeyFile {
     define: Define,
+    modes: Modes,
     bind: Vec<Binding>,
 }
 
 // TODO: implement methods to access/store bindings
 
 impl KeyFile {
+    // TODO: refactor to have each section's processing in corresponding module
+    // for that section
     fn new(input: KeyFileInput, mut scope: &mut Scope) -> ResultVec<KeyFile> {
-        // [[define]]
         let mut errors = Vec::new();
+
+        // [[define]]
         let define_input = input.define.unwrap_or_default();
         let mut define = match Define::new(define_input, &mut scope) {
             Err(mut es) => {
                 errors.append(&mut es.errors);
                 Define::default()
+            }
+            Ok(x) => x,
+        };
+
+        // [[mode]]
+        let mode_input = input
+            .mode
+            .unwrap_or_else(|| vec![Spanned::new(UNKNOWN_RANGE, ModeInput::default())]);
+        let modes = match Modes::new(mode_input, &mut scope) {
+            Err(mut es) => {
+                errors.append(&mut es.errors);
+                Modes::default()
             }
             Ok(x) => x,
         };
@@ -178,7 +196,11 @@ impl KeyFile {
             .collect();
 
         if errors.len() == 0 {
-            return Ok(KeyFile { define, bind });
+            return Ok(KeyFile {
+                define,
+                bind,
+                modes,
+            });
         } else {
             return Err(errors.into());
         }
@@ -227,6 +249,10 @@ mod tests {
         let data = r#"
         [[define.val]]
         foo = "bar"
+
+        [[mode]]
+        name = "normal"
+        default = true
 
         [[bind]]
         key = "l"
@@ -418,6 +444,170 @@ mod tests {
         let result =
             KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap();
         assert_eq!(result.bind[0].commands[0].command, "bar");
+    }
+
+    #[test]
+    fn just_one_default_mode() {
+        let data = r#"
+        [[mode]]
+        name = "a"
+        default = true
+
+        [[mode]]
+        name = "b"
+        default = true
+        "#;
+
+        let mut scope = Scope::new();
+        let err =
+            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap_err();
+        let report = err.report(data.as_bytes());
+        assert!(report[0].message.contains("default mode already set"));
+        assert_eq!(report[0].range.start.line, 5)
+    }
+
+    #[test]
+    fn includes_default_mode() {
+        let data = r#"
+        [[mode]]
+        name = "a"
+
+        [[mode]]
+        name = "b"
+        "#;
+
+        let mut scope = Scope::new();
+        let err =
+            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap_err();
+        let report = err.report(data.as_bytes());
+        assert!(
+            report[0]
+                .message
+                .contains("exactly one mode must be the default")
+        );
+        assert_eq!(report[0].range.start.line, 0)
+    }
+
+    #[test]
+    fn unique_mode_name() {
+        let data = r#"
+        [[mode]]
+        name = "a"
+        default = true
+
+        [[mode]]
+        name = "a"
+        "#;
+
+        let mut scope = Scope::new();
+        let err =
+            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap_err();
+        let report = err.report(data.as_bytes());
+        assert!(report[0].message.contains("mode name is not unique"));
+        assert_eq!(report[0].range.start.line, 5)
+    }
+
+    #[test]
+    fn parse_use_mode() {
+        let data = r#"
+        [[mode]]
+        name = "a"
+        default = true
+
+        [[mode]]
+        name = "b"
+        whenNoBinding.useMode = "a"
+        "#;
+
+        let mut scope = Scope::new();
+        let result =
+            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap();
+        assert_eq!(
+            result.modes.get("b").unwrap().whenNoBinding,
+            crate::mode::WhenNoBinding::UseMode("a".to_string())
+        )
+    }
+
+    #[test]
+    fn validate_use_mode() {
+        let data = r#"
+        [[mode]]
+        name = "a"
+        default = true
+
+        [[mode]]
+        name = "b"
+        whenNoBinding.useMode = "c"
+        "#;
+
+        let mut scope = Scope::new();
+        let err =
+            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap_err();
+        let report = err.report(data.as_bytes());
+        assert!(report[0].message.contains("mode `c` is not defined"));
+        assert_eq!(report[0].range.start.line, 7)
+    }
+
+    #[test]
+    fn eval_mode_expressions() {
+        let data = r#"
+        [[mode]]
+        name = "a"
+        default = true
+
+        [[mode]]
+        name = "b"
+
+        [[mode]]
+        name = "c"
+
+        [[bind]]
+        key = "a"
+        command = "foo"
+        mode = '{{all_modes()}}'
+
+        [[bind]]
+        key = "b"
+        command = "bar"
+        mode = '{{not_modes(["c"])}}'
+        "#;
+
+        let mut scope = Scope::new();
+        let result =
+            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap();
+        assert!(result.bind[0].mode.iter().any(|x| x == "a"));
+        assert!(result.bind[0].mode.iter().any(|x| x == "b"));
+        assert!(result.bind[0].mode.iter().any(|x| x == "c"));
+        assert!(result.bind[1].mode.iter().any(|x| x == "a"));
+        assert!(result.bind[1].mode.iter().any(|x| x == "b"));
+        assert!(!result.bind[1].mode.iter().any(|x| x == "c"));
+    }
+
+    #[test]
+    fn validate_mode_expressions() {
+        let data = r#"
+        [[mode]]
+        name = "a"
+        default = true
+
+        [[mode]]
+        name = "b"
+
+        [[mode]]
+        name = "c"
+
+        [[bind]]
+        key = "b"
+        command = "bar"
+        mode = '{{not_modes(["d"])}}'
+        "#;
+
+        let mut scope = Scope::new();
+        let err =
+            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap_err();
+        let report = err.report(data.as_bytes());
+        assert!(report[0].message.contains("mode `d`"));
+        assert_eq!(report[0].range.start.line, 14)
     }
 
     // TODO: write a test for required field `key` and ensure the span

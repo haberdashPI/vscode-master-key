@@ -5,7 +5,7 @@ pub mod value;
 #[allow(unused_imports)]
 use log::info;
 
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 
 use rhai::Dynamic;
 use serde::Serialize;
@@ -81,7 +81,7 @@ use crate::{
 ///   the current set of keybindigs
 /// - `all_modes()`: returns an array of strings all keybinding modes defined by the current
 ///   keybinding set
-/// - `all_modes_but([exclusions])`: given an array of strings of excluded modes, returns
+/// - `not_modes([exclusions])`: given an array of strings of excluded modes, returns
 ///   all keybinding modes defined by the current keybinding set that are not among these
 ///   exclusions.
 ///
@@ -115,7 +115,9 @@ use crate::{
 #[wasm_bindgen]
 pub struct Scope {
     pub(crate) asts: HashMap<String, rhai::AST>,
-    engine: rhai::Engine,
+    pub(crate) engine: rhai::Engine,
+    pub(crate) modes: HashSet<String>,
+    pub(crate) default_mode: String,
     pub(crate) state: rhai::Scope<'static>,
     pub(crate) queues: HashMap<String, VecDeque<Command>>,
 }
@@ -180,6 +182,8 @@ impl Scope {
             asts: HashMap::new(),
             engine: engine,
             state: rhai::Scope::new(),
+            default_mode: "default".to_string(),
+            modes: HashSet::from(["default".to_string()]),
             queues: HashMap::new(),
         };
     }

@@ -204,6 +204,22 @@ impl Merging for toml::Value {
 }
 
 //
+// ---------------- ClosedSet ----------------
+//
+
+pub enum Subset<T> {
+    Some(Vec<T>),
+    AllBut(Vec<T>),
+    All,
+}
+
+impl<T> From<Vec<T>> for Subset<T> {
+    fn from(value: Vec<T>) -> Subset<T> {
+        return Subset::Some(value);
+    }
+}
+
+//
 // ---------------- Resolving ----------------
 //
 
