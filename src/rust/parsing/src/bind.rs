@@ -384,19 +384,15 @@ pub struct BindingDocInput {
     /// @forBindingField bind
     /// @order 10
     ///
-    /// - `combinedName/combinedKey/combinedDescription`: in the suggestion palette and
-    ///   textual documentation, keys that have the same `combinedName` will be
-    ///   represented as single entry, using the `combinedKey` and `combinedDescription`
-    ///   instead of `key` and `description`. The `combinedKey` for a multi-key sequence
-    ///   should only include the suffix key. You need only define `combinedKey` and
-    ///   `combinedDescription` once across keys that share the same `combinedName`
+    /// - `combined.name/combined.key/combined.description`: in the suggestion palette and
+    ///   textual documentation, keys that have the same `combined.name` will be
+    ///   represented as single entry, using the `combined.key` and `combined.description`
+    ///   instead of `key` and `description`. The `combined.key` for a multi-key sequence
+    ///   should only include the suffix key. You need only define `combined.key` and
+    ///   `combined.description` once across keys that share the same `combined.name`
     ///   entry.
     #[serde(default)]
-    pub combinedName: Option<Spanned<TypedValue<String>>>,
-    #[serde(default)]
-    pub combinedKey: Option<Spanned<TypedValue<String>>>,
-    #[serde(default)]
-    pub combinedDescription: Option<Spanned<TypedValue<String>>>,
+    pub combined: Option<CombinedBindingDocInput>,
 
     /// @forBindingField bind
     /// @order 10
@@ -406,6 +402,17 @@ pub struct BindingDocInput {
     ///   entry in the top-level `kind` array.
     #[serde(default)]
     pub kind: Option<Spanned<TypedValue<String>>>,
+}
+
+#[allow(non_snake_case)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub struct CombinedBindingDocInput {
+    #[serde(default)]
+    pub name: Option<Spanned<TypedValue<String>>>,
+    #[serde(default)]
+    pub key: Option<Spanned<TypedValue<String>>>,
+    #[serde(default)]
+    pub description: Option<Spanned<TypedValue<String>>>,
 }
 
 impl Merging for BindingDocInput {
@@ -418,28 +425,34 @@ impl Merging for BindingDocInput {
             description: self.description.coalesce(y.description),
             hideInPalette: self.hideInPalette.coalesce(y.hideInPalette),
             hideInDocs: self.hideInDocs.coalesce(y.hideInDocs),
-            combinedName: self.combinedName.coalesce(y.combinedName),
-            combinedKey: self.combinedKey.coalesce(y.combinedKey),
-            combinedDescription: self.combinedDescription.coalesce(y.combinedDescription),
+            combined: self.combined.merge(y.combined),
             kind: self.kind.coalesce(y.kind),
+        }
+    }
+}
+
+impl Merging for CombinedBindingDocInput {
+    fn coalesce(self, new: Self) -> Self {
+        return new;
+    }
+
+    fn merge(self, y: Self) -> Self {
+        CombinedBindingDocInput {
+            name: self.name.coalesce(y.name),
+            key: self.key.coalesce(y.key),
+            description: self.description.coalesce(y.description),
         }
     }
 }
 
 impl Expanding for BindingDocInput {
     fn is_constant(&self) -> bool {
-        [
-            self.name.is_constant(),
-            self.description.is_constant(),
-            self.hideInPalette.is_constant(),
-            self.hideInDocs.is_constant(),
-            self.combinedName.is_constant(),
-            self.combinedKey.is_constant(),
-            self.combinedDescription.is_constant(),
-            self.kind.is_constant(),
-        ]
-        .into_iter()
-        .all(identity)
+        return self.name.is_constant()
+            && self.description.is_constant()
+            && self.hideInPalette.is_constant()
+            && self.hideInDocs.is_constant()
+            && self.combined.is_constant()
+            && self.kind.is_constant();
     }
     fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
     where
@@ -467,24 +480,44 @@ impl Expanding for BindingDocInput {
                 errors.append(&mut e.errors);
                 None
             }),
-            combinedName: self
-                .combinedName
-                .map_expressions(f)
-                .unwrap_or_else(|mut e| {
-                    errors.append(&mut e.errors);
-                    None
-                }),
-            combinedKey: self.combinedKey.map_expressions(f).unwrap_or_else(|mut e| {
+            combined: self.combined.map_expressions(f).unwrap_or_else(|mut e| {
                 errors.append(&mut e.errors);
                 None
             }),
-            combinedDescription: self.combinedDescription.map_expressions(f).unwrap_or_else(
-                |mut e| {
-                    errors.append(&mut e.errors);
-                    None
-                },
-            ),
             kind: self.kind.map_expressions(f).unwrap_or_else(|mut e| {
+                errors.append(&mut e.errors);
+                None
+            }),
+        };
+        if errors.len() > 0 {
+            return Err(errors.into());
+        } else {
+            return Ok(result);
+        }
+    }
+}
+
+impl Expanding for CombinedBindingDocInput {
+    fn is_constant(&self) -> bool {
+        return self.name.is_constant() && self.key.is_constant() && self.description.is_constant();
+    }
+
+    fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
+    where
+        Self: Sized,
+        F: FnMut(Expression) -> Result<Value>,
+    {
+        let mut errors = Vec::new();
+        let result = CombinedBindingDocInput {
+            name: self.name.map_expressions(f).unwrap_or_else(|mut e| {
+                errors.append(&mut e.errors);
+                None
+            }),
+            key: self.key.map_expressions(f).unwrap_or_else(|mut e| {
+                errors.append(&mut e.errors);
+                None
+            }),
+            description: self.description.map_expressions(f).unwrap_or_else(|mut e| {
                 errors.append(&mut e.errors);
                 None
             }),
@@ -503,6 +536,19 @@ impl Resolving<BindingDoc> for Option<BindingDocInput> {
             Some(doc) => Ok(BindingDoc::new(doc, scope)?),
             Option::None => Ok(BindingDoc::default()),
         }
+    }
+}
+
+impl Resolving<Option<CombinedBindingDoc>> for Option<CombinedBindingDocInput> {
+    fn resolve(
+        self,
+        _name: &'static str,
+        scope: &mut Scope,
+    ) -> ResultVec<Option<CombinedBindingDoc>> {
+        return match self {
+            Some(doc) => Ok(Some(CombinedBindingDoc::new(doc, scope)?)),
+            Option::None => Ok(None),
+        };
     }
 }
 
@@ -598,10 +644,17 @@ pub struct BindingDoc {
     pub description: String,
     pub hideInPalette: bool,
     pub hideInDocs: bool,
-    pub combinedName: String,
-    pub combinedKey: String,
-    pub combinedDescription: String,
+    pub combined: Option<CombinedBindingDoc>,
     pub kind: String,
+}
+
+#[derive(Clone, Debug, Serialize, Default)]
+#[allow(non_snake_case)]
+#[wasm_bindgen(getter_with_clone)]
+pub struct CombinedBindingDoc {
+    name: String,
+    key: String,
+    description: String,
 }
 
 #[wasm_bindgen]
@@ -612,10 +665,19 @@ impl BindingDoc {
             description: resolve!(input, description, scope)?,
             hideInPalette: resolve!(input, hideInPalette, scope)?,
             hideInDocs: resolve!(input, hideInDocs, scope)?,
-            combinedName: resolve!(input, combinedName, scope)?,
-            combinedKey: resolve!(input, combinedKey, scope)?,
-            combinedDescription: resolve!(input, combinedDescription, scope)?,
+            combined: resolve!(input, combined, scope)?,
             kind: resolve!(input, kind, scope)?,
+        });
+    }
+}
+
+#[wasm_bindgen]
+impl CombinedBindingDoc {
+    pub(crate) fn new(input: CombinedBindingDocInput, scope: &mut Scope) -> ResultVec<Self> {
+        return Ok(CombinedBindingDoc {
+            name: resolve!(input, name, scope)?,
+            key: resolve!(input, key, scope)?,
+            description: resolve!(input, description, scope)?,
         });
     }
 }
@@ -652,9 +714,9 @@ mod tests {
         doc.description = "foo bar bin"
         doc.hideInPalette = false
         doc.hideInDocs = false
-        doc.combinedName = "Up/down"
-        doc.combinedKey = "A/B"
-        doc.combinedDescription = "bla bla bla"
+        doc.combined.name = "Up/down"
+        doc.combined.key = "A/B"
+        doc.combined.description = "bla bla bla"
         doc.kind = "biz"
         "#;
 
@@ -718,14 +780,10 @@ mod tests {
         let hideInPalette: bool = resolve!(doc, hideInPalette, &mut scope).unwrap();
         assert_eq!(hideInPalette, false);
 
-        let combinedName: String = resolve!(doc, combinedName, &mut scope).unwrap();
-        assert_eq!(combinedName, "Up/down");
-
-        let combinedKey: String = resolve!(doc, combinedKey, &mut scope).unwrap();
-        assert_eq!(combinedKey, "A/B");
-
-        let combinedDescription: String = resolve!(doc, combinedDescription, &mut scope).unwrap();
-        assert_eq!(combinedDescription, "bla bla bla");
+        let combined: CombinedBindingDoc = resolve!(doc, combined, &mut scope).unwrap().unwrap();
+        assert_eq!(combined.name, "Up/down");
+        assert_eq!(combined.key, "A/B");
+        assert_eq!(combined.description, "bla bla bla");
 
         let kind: String = resolve!(doc, kind, &mut scope).unwrap();
         assert_eq!(kind, "biz");
@@ -795,10 +853,8 @@ mod tests {
         assert_eq!(prefixes, ["b".to_string(), "c".to_string()]);
 
         let doc = left.doc.unwrap();
-        let description: Option<String> = resolve!(doc, combinedDescription, &mut scope).unwrap();
-        assert_eq!(description, None);
-        let name: Option<String> = resolve!(doc, combinedName, &mut scope).unwrap();
-        assert_eq!(name, None);
+        let combined: Option<CombinedBindingDoc> = resolve!(doc, combined, &mut scope).unwrap();
+        assert!(combined.is_none());
     }
 
     #[test]
@@ -986,7 +1042,6 @@ mod tests {
         let input = toml::from_str::<BindingInput>(data).unwrap();
         let mut scope = Scope::new();
         let err = Binding::new(input, &mut scope).unwrap_err();
-        info!("err: {err}");
         let report = err.report(data.as_bytes());
         assert!(report[0].message.contains("Undefined mode"));
         assert_eq!(report[0].range.start.line, 3);

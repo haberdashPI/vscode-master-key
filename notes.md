@@ -201,7 +201,7 @@ Integration test debugging:
             - [X] get existing unit tests working
             - [X] write test cases for error paths
             - [X] write tests for expressions to specify modes
-        - [ ] move `combinedName` and friends to `combined.name` and friends
+        - [X] move `combinedName` and friends to `combined.name` and friends
         - [~] command normalization
             - [X] always `runCommand` with an array of objects with `command` field
             - [ ] flatten all nested `runCommands` calls
