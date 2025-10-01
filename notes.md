@@ -202,44 +202,43 @@ Integration test debugging:
             - [X] write test cases for error paths
             - [X] write tests for expressions to specify modes
         - [X] move `combinedName` and friends to `combined.name` and friends
-        - [~] command normalization
-            - [X] always `runCommand` with an array of objects with `command` field
-            - [ ] flatten all nested `runCommands` calls
-                - [ ] `skipWhen` will have to be propagated/merged to children
+        - [X] command normalization
+            - [X] flatten all nested `runCommands` calls
+            - [X] flatten all `runCommands` at run-time
+                - [X] get existing unit tests working
+                - [X] add unit tests for recurisve `runCommands` called resolved at runtime
         - [ ] check constraints
             - [ ] validation that `master-key.prefix` uses `finalKey: false`
-            - [ ] validation that keybindings with non modifier keybindings
-              have a condition requiring textEditorFocus
-                (or just insert it)
-            - [ ] required keys are present
-        - [ ] mode expansion: define a key binding per mode
-        - [ ] key-sequence expansion and duplicate resolution:
-              - [ ] create a binding per key in a sequence that requires a given prefix
-              (depending on the prefix code of its prefix)
-              - [ ] add any missing prefixes
+            - [ ] no duplicate keybindings: hash each key prefix & mode & when-clause
+                - [ ] create a map of valid prefixes
+            - [ ] insert `editorTextFocus` (or palette context) for bare keys
+                  with no prefix
         - [ ] implement the `all` functions:
             - [ ] `{{all_prefixes()}}`
             - [ ] `{{all_prefixes_but()}}`
             - [X] `{{all_modes()}}`
             - [X] `{{all_modes_but(["not_me", "or_me"])}}`
-        - [ ] documentation expandsion/validation across all `[[bind]]` values
+        - [ ] documentation expansion/validation across all `[[bind]]` values
               with the same key and mode
               e.g. merge all shared documentation across the shared names
-        - [ ] find low hanging fruit for problems with using 1.0 files
+        - [ ] find low hanging fruit for problems with using 1.0 files / bad fields
+            - [ ] implement tooling to use different levels (warn/info)
+              in error reporting
             - [ ] fields that exist in the old but not new (use `#[serde(flatten)]`)
             - [ ] add hints for fields that don't exist anywhere as well (probably
                   as a hint or something)
             - [ ] review strings for single `{}` braces and warn that `{{}}` are now required
-            - [ ] others
-        - [ ] implement `[[kind]]`
+            - [ ] others?
+        - [ ] implement `[[kind]]` (or redesign)
+        - [ ] remove spurious line/char positions from expression error messages
+            - NOTE: these come from the line and char position in the rhai expression
+            which has nothing to do with the line and char position in the parent
+            keybinding file
     - [ ] implement `[header]` section
         - [ ] instead of using `.mk.toml`, look for a specific heading in the file
-    - [ ] remove spurious line/char positions from expression error messages
-        - NOTE: these come from the line and char position in the rhai expression
-          which has nothing to do with the line and char position in the parent
-          keybinding file
     - [ ] proper conversion to keybindings.json command
-        - [ ] expand prefixes to prefixCode and move to when clause
+        - [ ] expand per mode and prefix (e.g. each binding has one mode and one prefix)
+        - [ ] encode prefixes as prefixCode in when clause
         - [ ] move mode to when clause
         - [ ] re-implement master-key.do
             - [ ] don't use `getter_with_clone` for `KeyFileResult` (it doesn't really make

@@ -394,9 +394,13 @@ mod tests {
 
         assert_eq!(result.bind.len(), 10);
         for i in 0..9 {
+            let args: toml::Value = result.bind[i].commands(&mut scope).unwrap()[0]
+                .clone()
+                .args
+                .into();
             assert_eq!(result.bind[i].doc.name, expected_name[i]);
             assert_eq!(
-                result.bind[i].commands[0].toml_args(&mut scope).unwrap(),
+                args,
                 toml::Value::Table(
                     [(
                         "value".to_string(),
@@ -436,7 +440,7 @@ mod tests {
 
         [[bind]]
         key = "x"
-        command = "{{foo}}"
+        command = "{{val.foo}}"
         args.val = 2
         "#;
 
@@ -608,6 +612,49 @@ mod tests {
         let report = err.report(data.as_bytes());
         assert!(report[0].message.contains("mode `d`"));
         assert_eq!(report[0].range.start.line, 14)
+    }
+
+    #[test]
+    fn command_expansion() {
+        let data = r#"
+        [[define.val]]
+        flag = true
+        bar = "test"
+
+        [[define.command]]
+        id = "foo"
+        command = "runCommands"
+        args.commands = ["a", "b", "c"]
+
+        [[bind]]
+        key = "x"
+        command = "runCommands"
+
+        [[bind.args.commands]]
+        command = "x"
+        args.val = 1
+        args.name = "{{val.bar}}"
+
+        [[bind.args.commands]]
+        command = "y"
+        skipWhen = "{{val.flag}}"
+
+        [[bind.args.commands]]
+        command = "runCommands"
+        args.commands = ["j", "k", "{{command.foo}}"]
+        "#;
+
+        let mut scope = Scope::new();
+        let result =
+            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap();
+        let commands = result.bind[0].commands(&mut scope).unwrap();
+        assert_eq!(commands[0].command, "x");
+        assert_eq!(commands[1].command, "j");
+        assert_eq!(commands[2].command, "k");
+        assert_eq!(commands[3].command, "a");
+        assert_eq!(commands[4].command, "b");
+        assert_eq!(commands[5].command, "c");
+        assert_eq!(commands.len(), 6);
     }
 
     // TODO: write a test for required field `key` and ensure the span

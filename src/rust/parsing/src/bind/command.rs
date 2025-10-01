@@ -1,6 +1,7 @@
 #[allow(unused_imports)]
 use log::info;
 
+use core::ops::Range;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use toml::Spanned;
@@ -117,24 +118,73 @@ impl From<CommandInput> for Value {
     }
 }
 
+pub(crate) trait CommandInputLike {
+    fn command(&self, scope: &mut Scope) -> ResultVec<String>;
+    fn args(&self) -> Option<Spanned<Value>>;
+    #[allow(non_snake_case)]
+    fn skipWhen(&self) -> TypedValue<bool> {
+        return TypedValue::Constant(false);
+    }
+}
+
+struct CommandValue<'a> {
+    command: String,
+    args: Option<&'a Value>,
+    range: Range<usize>,
+}
+
+impl<'a> CommandInputLike for CommandValue<'a> {
+    fn command(&self, _scope: &mut Scope) -> ResultVec<String> {
+        return Ok(self.command.clone());
+    }
+    fn args(&self) -> Option<Spanned<Value>> {
+        match self.args {
+            Some(args) => Some(Spanned::new(self.range.clone(), args.clone())),
+            Option::None => None,
+        }
+    }
+}
+
+impl CommandInputLike for BindingInput {
+    fn command(&self, scope: &mut Scope) -> ResultVec<String> {
+        return Ok(self.command.clone().resolve("command", scope)?);
+    }
+
+    fn args(&self) -> Option<Spanned<Value>> {
+        return self.args.clone();
+    }
+}
+
+impl CommandInputLike for Command {
+    fn command(&self, _scope: &mut Scope) -> ResultVec<String> {
+        return Ok(self.command.clone());
+    }
+    fn args(&self) -> Option<Spanned<Value>> {
+        return Some(Spanned::new(UNKNOWN_RANGE, self.args.clone()));
+    }
+    fn skipWhen(&self) -> TypedValue<bool> {
+        return self.skipWhen.clone();
+    }
+}
+
 pub(crate) fn regularize_commands(
-    input: &BindingInput,
+    input: &impl CommandInputLike,
     scope: &mut Scope,
 ) -> ResultVec<Vec<Command>> {
-    let command: String = resolve!(input.clone(), command, scope)?;
+    let command: String = input.command(scope)?;
     if command != "runCommands" {
         let commands = vec![Command {
             command,
-            args: match &input.args {
+            args: match input.args() {
                 None => Value::Table(HashMap::new()),
                 Some(spanned) => spanned.as_ref().clone(),
             },
-            skipWhen: TypedValue::Constant(false),
+            skipWhen: input.skipWhen(),
         }];
         return Ok(commands);
     } else {
-        let spanned = input
-            .args
+        let args = input.args();
+        let spanned = args
             .as_ref()
             .ok_or_else(|| err("`runCommands` must have `args` field"))?;
         let args_pos = spanned.span();
@@ -177,24 +227,47 @@ pub(crate) fn regularize_commands(
                                 .with_range(&args_pos)?;
                         }
                     };
-                    let result = match kv.get("args") {
-                        Option::None => &Value::Table(HashMap::new()),
-                        Some(x) => x,
-                    };
-                    let args = match result {
-                        x @ Value::Table(_) => x,
-                        x @ Value::Array(_) => x,
-                        _ => {
-                            return Err(err("expected `args` to be a table or array"))?;
+                    // check for recursive `runCommands` call
+                    // and recursively regularize it if present
+                    if command_name == "runCommands" {
+                        if kv.get("skipWhen").is_some() {
+                            // TODO: support `skipWhen` by injecting
+                            // it into the children commands below
+                            Err(err(
+                                "`skipWhen` is not supported on a `runCommands` command",
+                            ))
+                            .with_range(&args_pos)?;
                         }
-                    };
+                        let mut commands = regularize_commands(
+                            &(CommandValue {
+                                command: command_name,
+                                args: kv.get("args"),
+                                range: args_pos.clone(),
+                            }),
+                            scope,
+                        )?;
+                        command_result.append(&mut commands);
+                        continue;
+                    } else {
+                        let result = match kv.get("args") {
+                            Option::None => &Value::Table(HashMap::new()),
+                            Some(x) => x,
+                        };
+                        let args = match result {
+                            x @ Value::Table(_) => x,
+                            x @ Value::Array(_) => x,
+                            _ => {
+                                return Err(err("expected `args` to be a table or array"))?;
+                            }
+                        };
 
-                    let result = match kv.get("skipWhen") {
-                        Option::None => Value::Boolean(false),
-                        Some(x) => x.clone(),
-                    };
-                    let skipWhen: TypedValue<bool> = result.try_into()?;
-                    (command_name, args.to_owned(), skipWhen)
+                        let result = match kv.get("skipWhen") {
+                            Option::None => Value::Boolean(false),
+                            Some(x) => x.clone(),
+                        };
+                        let skipWhen: TypedValue<bool> = result.try_into()?;
+                        (command_name, args.to_owned(), skipWhen)
+                    }
                 }
                 _ => {
                     return Err(err(
@@ -224,14 +297,10 @@ pub struct Command {
 
 #[wasm_bindgen]
 impl Command {
-    pub(crate) fn toml_args(&self, scope: &mut Scope) -> ResultVec<toml::Value> {
-        let flat_args = scope.expand(&self.args)?;
-        return Ok(toml::Value::from(flat_args));
-    }
-
-    pub fn args(&self, scope: &mut Scope) -> ResultVec<JsValue> {
+    pub fn args(&self) -> ResultVec<JsValue> {
         let to_json = serde_wasm_bindgen::Serializer::json_compatible();
-        return match self.toml_args(scope)?.serialize(&to_json) {
+        let toml: toml::Value = self.args.clone().into();
+        return match toml.serialize(&to_json) {
             Err(e) => Err(err!("object failed to serialize: {e}"))?,
             Ok(x) => Ok(x),
         };
@@ -257,6 +326,37 @@ impl Command {
 impl Resolving<Command> for CommandInput {
     fn resolve(self, _name: &'static str, scope: &mut Scope) -> ResultVec<Command> {
         return Ok(Command::new(self, scope)?);
+    }
+}
+
+impl Expanding for Command {
+    fn is_constant(&self) -> bool {
+        return self.skipWhen.is_constant() && self.args.is_constant();
+    }
+
+    fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
+    where
+        Self: Sized,
+        F: FnMut(Expression) -> Result<Value>,
+    {
+        let mut errors = Vec::new();
+        let result = Command {
+            command: self.command,
+            args: self.args.map_expressions(f).unwrap_or_else(|mut e| {
+                errors.append(&mut e.errors);
+                Value::Table(HashMap::new())
+            }),
+            skipWhen: self.skipWhen.map_expressions(f).unwrap_or_else(|mut e| {
+                errors.append(&mut e.errors);
+                TypedValue::Constant(false)
+            }),
+        };
+
+        if errors.len() > 0 {
+            return Err(errors.into());
+        } else {
+            return Ok(result);
+        }
     }
 }
 
@@ -346,5 +446,38 @@ mod tests {
             msg,
             "expected `args.commands.command` field for `runCommands`"
         );
+    }
+
+    #[test]
+    fn command_gets_flattened() {
+        let data = r#"
+        command = "runCommands"
+
+        [[args.commands]]
+        command = "a"
+
+        [[args.commands]]
+        command = "b"
+
+        [[args.commands]]
+        command = "runCommands"
+        args.commands = ["biz", "baz"]
+        "#;
+
+        let bind = toml::from_str::<BindingInput>(data).unwrap();
+        let mut scope = Scope::new();
+        let commands = regularize_commands(&bind, &mut scope).unwrap();
+        assert_eq!(
+            commands
+                .iter()
+                .map(|x| x.command.clone())
+                .collect::<Vec<_>>(),
+            [
+                "a".to_string(),
+                "b".to_string(),
+                "biz".to_string(),
+                "baz".to_string()
+            ]
+        )
     }
 }

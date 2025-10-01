@@ -561,7 +561,7 @@ impl Resolving<Option<CombinedBindingDoc>> for Option<CombinedBindingDocInput> {
 #[wasm_bindgen(getter_with_clone)]
 pub struct Binding {
     pub key: String,
-    pub commands: Vec<Command>,
+    pub(crate) commands: Vec<Command>,
     pub when: Option<String>,
     pub mode: Vec<String>,
     pub priority: f64,
@@ -576,6 +576,29 @@ pub struct Binding {
 impl Binding {
     pub fn repeat(&mut self, scope: &mut Scope) -> ResultVec<i32> {
         return scope.expand(&self.repeat)?.resolve("`repeat`", scope);
+    }
+
+    pub fn commands(&self, scope: &mut Scope) -> ResultVec<Vec<Command>> {
+        let mut commands = scope.expand(&self.commands)?;
+        for _ in 1..10 {
+            if commands.is_constant() {
+                break;
+            } else {
+                commands = scope.expand(&commands)?;
+            }
+        }
+        commands.require_constant()?;
+
+        let mut regular_commands = Vec::new();
+        for command in commands {
+            let mut sub_commands = regularize_commands(&command, scope)?;
+            regular_commands.append(&mut sub_commands)
+        }
+
+        return Ok(regular_commands
+            .into_iter()
+            .filter(|x| !bool::from(x.skipWhen.clone()))
+            .collect());
     }
 
     pub(crate) fn new(input: BindingInput, scope: &mut Scope) -> ResultVec<Self> {
@@ -1020,7 +1043,7 @@ mod tests {
         let result = Binding::new(input, &mut scope).unwrap();
 
         scope.state.set_or_push("joe", Dynamic::from("fiz"));
-        let flat_args = result.commands[0].toml_args(&mut scope).unwrap();
+        let flat_args: toml::Value = result.commands(&mut scope).unwrap()[0].clone().args.into();
 
         let mut args_expected = toml::map::Map::new();
         args_expected.insert(

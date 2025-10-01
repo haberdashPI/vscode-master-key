@@ -204,7 +204,7 @@ impl Merging for toml::Value {
 }
 
 //
-// ---------------- ClosedSet ----------------
+// ---------------- Subset ----------------
 //
 
 pub enum Subset<T> {

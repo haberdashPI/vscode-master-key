@@ -256,12 +256,13 @@ impl Define {
     }
 
     pub fn add_to_scope(&self, scope: &mut Scope) -> ResultVec<()> {
+        let mut val = rhai::Map::new();
         for (k, v) in self.val.iter() {
             v.require_constant()?;
-            let val: Dynamic = v.clone().into();
-            // TODO: add all of these to a `val.` value
-            scope.state.set_or_push(k, val);
+            let item: Dynamic = v.clone().into();
+            val.insert(k.into(), item);
         }
+        scope.state.set_or_push("val", val);
         return Ok(());
     }
 

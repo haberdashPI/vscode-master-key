@@ -9,7 +9,7 @@
         "src/rust/parsing/Cargo.toml"
     ],
     "window.title": "vscode-master-key",
-    "rust-analyzer.cargo.sysroot": "/Users/davidlittle/.rustup/toolchains/1.89.0-aarch64-apple-darwin",
+    "rust-analyzer.cargo.sysroot": "/Users/davidlittle/.rustup/toolchains/1.90.0-aarch64-apple-darwin",
     "rust-analyzer.checkOnSave": true,
     "rust-analyzer.cargo.allTargets": false,
     "rust-analyzer.cargo.buildScripts.rebuildOnSave": false,

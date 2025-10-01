@@ -7,7 +7,7 @@ node = "20"
 "npm:pnpm" = "10.13.1"
 "ubi:haberdashpi/simple-src-docs" = "0.6.0"
 watchexec = "2.3.2"
-rust = { version = "1.89", targets = "wasm32-unknown-unknown", component = "lvm-tools" }
+rust = { version = "1.90", targets = "wasm32-unknown-unknown", component = "llvm-tools-preview" }
 "cargo:wasm-pack" = "0.13.1"
 "cargo:cargo-binutils" = "0.3.6"
 "cargo:rustfilt" = "latest"
@@ -17,7 +17,8 @@ rust = { version = "1.89", targets = "wasm32-unknown-unknown", component = "lvm-
 postinstall = [
     'pnpm install --frozen-lockfile',
     'pnpm exec playwright install chromium',
-    'rustup toolchain install nightly',
+    'rustup toolchain install nightly -c llvm-tools-preview', # needed to compute test coverage
+    'rustup add target wasm32-unknown-unknown',               # mise doesn't seem to install this automatically
 ]
 
 [tasks.lint]
@@ -56,12 +57,12 @@ def main [...args] {
             get filenames.0 |
             each { |f| $'--object=($in)' }
 
-        cargo +nightly test --target wasm32-unknown-unknown --tests ...$args -- --nocapture
-        cargo profdata -- merge -sparse coverage/parsing.profraw -o coverage/parsing.profdata
-        (cargo cov -- export {{vars.coverage_options}} --format=lcov ...($object_files) o>
-            ../../../coverage/rs_coverage.info)
+        cargo +nightly test --tests ...$args -- --nocapture
+        cargo +nightly profdata -- merge -sparse coverage/parsing.profraw -o coverage/parsing.profdata
+        (cargo +nightly cov -- export {{vars.coverage_options}} --format=lcov ...($object_files) o>
+            coverage/parsing.info)
 
-        cargo cov -- report --use-color {{vars.coverage_options}} ...($object_files)
+        cargo +nightly cov -- report --use-color {{vars.coverage_options}} ...($object_files)
     } else {
         cargo test ...$args -- --nocapture
     }
