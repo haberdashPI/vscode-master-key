@@ -174,6 +174,12 @@ impl KeyFile {
                         // final error output (e.g. if we have [[bind]] item with
                         // foreach.key = [1,2,3] we don't want an error about a missing
                         // required `key` field` to show up three times
+
+                        // TODO: this is where we want to register each mode/prefix/when
+                        // pairing and validate that there are no duplicates
+                        // (we should map these pairings to spans where the
+                        // bindings were first defined so we can make good
+                        // error messages)
                         let items = replicates
                             .into_iter()
                             .map(|x| Binding::new(x, &mut scope))

@@ -602,40 +602,34 @@ impl Binding {
     }
 
     pub(crate) fn new(input: BindingInput, scope: &mut Scope) -> ResultVec<Self> {
+        let commands = regularize_commands(&input, scope)?;
+
+        // id validation
         if let Some(_) = input.id {
             return Err(err("`id` field is reserved"))?;
         }
 
+        // foreach validation
         if let Some(_) = input.foreach {
             return Err(err("`foreach` included unresolved variables"))?;
         }
-        let commands = regularize_commands(&input, scope)?;
 
-        // TODO this is where we should validate that prefix has `finalKey == false`
+        // finalKey validation
+        let has_prefix = commands.iter().any(|c| c.command == "master-key.prefix");
+        #[allow(non_snake_case)]
+        let finalKey: bool = resolve!(input, finalKey, scope)?;
+        if has_prefix && !finalKey {
+            return Err(err(
+                "`finalKey` must be `false` when `master-key.prefix` is run",
+            ))?;
+        }
 
-        let mode_span = match input.mode {
-            Some(ref mode) => mode.span().clone(),
-            Option::None => UNKNOWN_RANGE,
+        // mode validation
+        let (mode_span, mode) = match input.mode {
+            Some(ref mode) => (mode.span().clone(), mode.clone().resolve("mode", scope)?),
+            Option::None => (UNKNOWN_RANGE, vec![scope.default_mode.clone()]),
         };
-
-        let result = Binding {
-            commands: commands,
-            key: resolve!(input, key, scope)?,
-            when: resolve!(input, when, scope)?,
-            mode: match input.mode {
-                Option::None => vec![scope.default_mode.clone()],
-                Some(mode) => mode.clone().resolve("mode", scope)?,
-            },
-            priority: resolve!(input, priority, scope)?,
-            prefixes: resolve!(input, prefixes, scope)?,
-            finalKey: resolve!(input, finalKey, scope)?,
-            repeat: resolve!(input, repeat, scope)?,
-            tags: resolve!(input, tags, scope)?,
-            doc: resolve!(input, doc, scope)?,
-        };
-
-        let undefined_modes: Vec<_> = result
-            .mode
+        let undefined_modes: Vec<_> = mode
             .iter()
             .filter(|x| !scope.modes.contains(x.as_str()))
             .collect();
@@ -650,6 +644,20 @@ impl Binding {
             ))
             .with_range(&mode_span)?;
         }
+
+        // resolve all keys to appropriate types
+        let result = Binding {
+            commands: commands,
+            key: resolve!(input, key, scope)?,
+            when: resolve!(input, when, scope)?,
+            mode,
+            priority: resolve!(input, priority, scope)?,
+            prefixes: resolve!(input, prefixes, scope)?,
+            finalKey,
+            repeat: resolve!(input, repeat, scope)?,
+            tags: resolve!(input, tags, scope)?,
+            doc: resolve!(input, doc, scope)?,
+        };
 
         return Ok(result);
     }
@@ -1068,6 +1076,21 @@ mod tests {
         let report = err.report(data.as_bytes());
         assert!(report[0].message.contains("Undefined mode"));
         assert_eq!(report[0].range.start.line, 3);
+    }
+
+    #[test]
+    fn final_key_validation() {
+        let data = r#"
+        key = "a"
+        command = "runCommands"
+        args.commands = ["a", "master-key.prefix"]
+        "#;
+
+        let input = toml::from_str::<BindingInput>(data).unwrap();
+        let mut scope = Scope::new();
+        let err = Binding::new(input, &mut scope).unwrap_err();
+        let report = format!("{err}");
+        assert!(report.contains("`finalKey`"));
     }
 
     // TODO: are there any edge cases / failure modes I want to look at in the tests

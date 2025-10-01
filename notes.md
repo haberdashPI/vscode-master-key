@@ -208,16 +208,16 @@ Integration test debugging:
                 - [X] get existing unit tests working
                 - [X] add unit tests for recurisve `runCommands` called resolved at runtime
         - [ ] check constraints
-            - [ ] validation that `master-key.prefix` uses `finalKey: false`
+            - [X] validation that `master-key.prefix` uses `finalKey: false`
             - [ ] no duplicate keybindings: hash each key prefix & mode & when-clause
                 - [ ] create a map of valid prefixes
-            - [ ] insert `editorTextFocus` (or palette context) for bare keys
-                  with no prefix
+            - [ ] insert `editorTextFocus` for bare keys
+            - [ ] replace `editorTextFocus` with check for palette context
         - [ ] implement the `all` functions:
             - [ ] `{{all_prefixes()}}`
-            - [ ] `{{all_prefixes_but()}}`
+            - [ ] `{{not_prefixes()}}`
             - [X] `{{all_modes()}}`
-            - [X] `{{all_modes_but(["not_me", "or_me"])}}`
+            - [X] `{{not_modes(["not_me", "or_me"])}}`
         - [ ] documentation expansion/validation across all `[[bind]]` values
               with the same key and mode
               e.g. merge all shared documentation across the shared names

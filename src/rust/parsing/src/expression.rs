@@ -142,7 +142,6 @@ impl Scope {
         }
         return Ok(obj.clone().map_expressions(&mut |expr| {
             let ast = &self.asts[&expr.content];
-            info!("expression: {expr:?}");
 
             let rewind_to = self.state.len();
             for (k, v) in &expr.scope {
@@ -150,11 +149,9 @@ impl Scope {
                 self.state.push_dynamic(k, val);
             }
             let dynamic: rhai::Dynamic = self.engine.eval_ast_with_scope(&mut self.state, ast)?;
-            info!("expression value: {dynamic:?}");
             self.state.rewind(rewind_to);
             let result_value: std::result::Result<Value, _> = dynamic.clone().try_into();
             let value = result_value.with_message(format!(" while evaluating:\n{expr}"))?;
-            info!("value: {value:?}");
             return Ok(value);
         })?);
     }
