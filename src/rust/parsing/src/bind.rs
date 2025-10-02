@@ -2,6 +2,8 @@
 use log::info;
 
 use indexmap::IndexMap;
+use lazy_static::lazy_static;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::convert::identity;
 use toml::Spanned;
@@ -560,7 +562,7 @@ impl Resolving<Option<CombinedBindingDoc>> for Option<CombinedBindingDocInput> {
 #[allow(non_snake_case)]
 #[wasm_bindgen(getter_with_clone)]
 pub struct Binding {
-    pub key: String,
+    pub key: Vec<String>,
     pub(crate) commands: Vec<Command>,
     pub when: Option<String>,
     pub mode: Vec<String>,
@@ -570,6 +572,15 @@ pub struct Binding {
     pub(crate) repeat: TypedValue<i32>,
     pub tags: Vec<String>,
     pub doc: BindingDoc,
+}
+
+const BARE_KEY_CONTEXT: &str = "(editorTextFocus || master-key.keybindingPaletteOpen \
+                 && master-key.keybindingPaletteBindingMode)";
+
+lazy_static! {
+    static ref WHITESPACE: Regex = Regex::new(r"\s+").unwrap();
+    static ref NON_BARE_KEY: Regex = Regex::new(r"(?i)Ctrl|Alt|Cmd|Win|Meta").unwrap();
+    static ref EDITOR_TEXT_FOCUS: Regex = Regex::new(r"\beditorTextFocus\b").unwrap();
 }
 
 #[wasm_bindgen]
@@ -595,10 +606,21 @@ impl Binding {
             regular_commands.append(&mut sub_commands)
         }
 
-        return Ok(regular_commands
+        let commands: Vec<_> = regular_commands
             .into_iter()
             .filter(|x| !bool::from(x.skipWhen.clone()))
-            .collect());
+            .collect();
+
+        // finalKey validation
+        let has_prefix = commands.iter().any(|c| c.command == "master-key.prefix");
+        #[allow(non_snake_case)]
+        if has_prefix && !self.finalKey {
+            return Err(err(
+                "`finalKey` must be `false` when `master-key.prefix` is run",
+            ))?;
+        }
+
+        return Ok(commands);
     }
 
     pub(crate) fn new(input: BindingInput, scope: &mut Scope) -> ResultVec<Self> {
@@ -645,11 +667,30 @@ impl Binding {
             .with_range(&mode_span)?;
         }
 
+        // require that bare keybindings (those without a modifier key)
+        // be specific to `textEditorFocus` / `keybindingPaletteOpen` context
+        let key_string: String = resolve!(input, key, scope)?;
+        let key: Vec<_> = WHITESPACE.split(&key_string).map(String::from).collect();
+        let mut when: Option<String> = resolve!(input, when, scope)?;
+        when = if !NON_BARE_KEY.is_match(&key[0]) {
+            if let Some(w) = when {
+                Some(format!("({}) && {BARE_KEY_CONTEXT}", w))
+            } else {
+                Some(BARE_KEY_CONTEXT.to_string())
+            }
+        } else {
+            Some(
+                EDITOR_TEXT_FOCUS
+                    .replace_all(&(when.unwrap()), BARE_KEY_CONTEXT)
+                    .to_string(),
+            )
+        };
+
         // resolve all keys to appropriate types
         let result = Binding {
             commands: commands,
-            key: resolve!(input, key, scope)?,
-            when: resolve!(input, when, scope)?,
+            key,
+            when,
             mode,
             priority: resolve!(input, priority, scope)?,
             prefixes: resolve!(input, prefixes, scope)?,
@@ -662,7 +703,6 @@ impl Binding {
         return Ok(result);
     }
 }
-
 //
 // ---------------- `bind.doc` object ----------------
 //
@@ -1091,6 +1131,33 @@ mod tests {
         let err = Binding::new(input, &mut scope).unwrap_err();
         let report = format!("{err}");
         assert!(report.contains("`finalKey`"));
+    }
+
+    #[test]
+    fn bare_bindings_require_editor_focus() {
+        let data = r#"
+        key = "a"
+        command = "foobar"
+        "#;
+
+        let input = toml::from_str::<BindingInput>(data).unwrap();
+        let mut scope = Scope::new();
+        let result = Binding::new(input, &mut scope).unwrap();
+        assert!(result.when.unwrap().contains("editorTextFocus"))
+    }
+
+    #[test]
+    fn editor_focus_expands_to_palette_focus() {
+        let data = r#"
+        key = "a"
+        command = "foobar"
+        when = "editorTextFocus && bizbaz"
+        "#;
+
+        let input = toml::from_str::<BindingInput>(data).unwrap();
+        let mut scope = Scope::new();
+        let result = Binding::new(input, &mut scope).unwrap();
+        assert!(result.when.unwrap().contains("keybindingPaletteOpen"));
     }
 
     // TODO: are there any edge cases / failure modes I want to look at in the tests

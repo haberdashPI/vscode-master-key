@@ -209,10 +209,11 @@ Integration test debugging:
                 - [X] add unit tests for recurisve `runCommands` called resolved at runtime
         - [ ] check constraints
             - [X] validation that `master-key.prefix` uses `finalKey: false`
+            - [X] encode bindings as a vector of key sequences
+            - [X] insert `editorTextFocus` for bare keys
+            - [X] replace `editorTextFocus` with check for palette context
             - [ ] no duplicate keybindings: hash each key prefix & mode & when-clause
                 - [ ] create a map of valid prefixes
-            - [ ] insert `editorTextFocus` for bare keys
-            - [ ] replace `editorTextFocus` with check for palette context
         - [ ] implement the `all` functions:
             - [ ] `{{all_prefixes()}}`
             - [ ] `{{not_prefixes()}}`
@@ -236,6 +237,9 @@ Integration test debugging:
             keybinding file
     - [ ] implement `[header]` section
         - [ ] instead of using `.mk.toml`, look for a specific heading in the file
+    - [ ] error handling checks
+        - [ ] make sure a range is always provided
+        - [ ] test that all error messages show up when expected
     - [ ] proper conversion to keybindings.json command
         - [ ] expand per mode and prefix (e.g. each binding has one mode and one prefix)
         - [ ] encode prefixes as prefixCode in when clause

@@ -256,7 +256,9 @@ pub(crate) fn regularize_commands(
                         let args = match result {
                             x @ Value::Table(_) => x,
                             x @ Value::Array(_) => x,
-                            _ => {
+                            x @ Value::Exp(_) => x,
+                            x => {
+                                info!("x: {x:?}");
                                 return Err(err("expected `args` to be a table or array"))?;
                             }
                         };
@@ -269,6 +271,14 @@ pub(crate) fn regularize_commands(
                         (command_name, args.to_owned(), skipWhen)
                     }
                 }
+                x @ Value::Exp(_) => (
+                    "runCommands".to_string(),
+                    Value::Table(HashMap::from([(
+                        "commands".to_string(),
+                        Value::Array(vec![x]),
+                    )])),
+                    TypedValue::Constant(false),
+                ),
                 _ => {
                     return Err(err(
                         "`commands` to be an array that includes objects and strings only",

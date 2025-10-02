@@ -273,9 +273,9 @@ mod tests {
 
         let result = parse_bytes_helper(data.as_bytes()).unwrap();
 
-        assert_eq!(result.bind[0].key, "l");
+        assert_eq!(result.bind[0].key[0], "l");
         assert_eq!(result.bind[0].commands[0].command, "cursorRight");
-        assert_eq!(result.bind[1].key, "h");
+        assert_eq!(result.bind[1].key[0], "h");
         assert_eq!(result.bind[1].commands[0].command, "cursorLeft");
     }
 
@@ -308,7 +308,7 @@ mod tests {
             KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap();
 
         assert_eq!(result.bind[0].doc.name, "the whole shebang");
-        assert_eq!(result.bind[0].key, "a");
+        assert_eq!(result.bind[0].key[0], "a");
         assert_eq!(result.bind[0].commands[0].command, "shebang");
         assert_eq!(
             result.bind[0].commands[0].args,
@@ -359,7 +359,7 @@ mod tests {
             KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap();
 
         assert_eq!(result.bind[0].doc.name, "the whole shebang");
-        assert_eq!(result.bind[0].key, "a");
+        assert_eq!(result.bind[0].key[0], "a");
         assert_eq!(result.bind[0].commands[0].command, "shebang");
         assert_eq!(
             result.bind[0].commands[0].args,
@@ -661,6 +661,81 @@ mod tests {
         assert_eq!(commands[4].command, "b");
         assert_eq!(commands[5].command, "c");
         assert_eq!(commands.len(), 6);
+    }
+
+    #[test]
+    fn command_expansion_validates_final_key() {
+        let data = r#"
+        [[define.val]]
+        flag = true
+        bar = "test"
+
+        [[define.command]]
+        id = "foo"
+        command = "runCommands"
+        args.commands = ["a", "b", "master-key.prefix"]
+
+        [[bind]]
+        key = "x"
+        command = "runCommands"
+
+        [[bind.args.commands]]
+        command = "x"
+        args.val = 1
+        args.name = "{{val.bar}}"
+
+        [[bind.args.commands]]
+        command = "y"
+        skipWhen = "{{val.flag}}"
+
+        [[bind.args.commands]]
+        command = "runCommands"
+        args.commands = ["j", "k", "{{command.foo}}"]
+        "#;
+
+        let mut scope = Scope::new();
+        let err =
+            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap_err();
+        let report = err.report(data.as_bytes());
+        assert!(report[0].message.contains("`finalKey`"));
+        assert_eq!(report[0].range.start.line, 10);
+    }
+
+    #[test]
+    fn command_expansion_dynamically_validates_final_key() {
+        let data = r#"
+        [[define.val]]
+        flag = true
+        bar = "test"
+
+        [[define.command]]
+        id = "foo"
+        command = "runCommands"
+        args.commands = ["a", "b", '{{"master-key" + ".prefix"}}']
+
+        [[bind]]
+        key = "x"
+        command = "runCommands"
+
+        [[bind.args.commands]]
+        command = "x"
+        args.val = 1
+        args.name = "{{val.bar}}"
+
+        [[bind.args.commands]]
+        command = "y"
+        skipWhen = "{{val.flag}}"
+
+        [[bind.args.commands]]
+        command = "runCommands"
+        args.commands = ["j", "k", "{{command.foo}}"]
+        "#;
+
+        let mut scope = Scope::new();
+        let result =
+            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap();
+        let err = result.bind[0].commands(&mut scope).unwrap_err();
+        assert!(format!("{err}").contains("`finalKey`"))
     }
 
     // TODO: write a test for required field `key` and ensure the span
