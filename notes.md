@@ -253,15 +253,12 @@ Integration test debugging:
               something
         - [ ] unit tests for binding output generation
         - [ ] write `BindingOutput` to keybindings.json
-        - [ ] re-implement master-key.do
+        - [ ] re-implement master-key.do and master-key.prefix
             - [ ] don't use `getter_with_clone` for `KeyFileResult` (it doesn't really make
               sense)
             - [ ] move all bare variables in an expression to `key.` or `code.` object
-            - [ ] transfer scope state from TS to rust Scope object
-            - [ ] set a variable up to track the key code so that if `master-key.prefix` is
-              called it can use it to set the prefix (alternative you always set this
-              but we clear it when something isn't the final key)
-            - [ ] properly handle command queues (no controlled by rust)
+            - [ ] use rust scope instead of TS state object (update state.ts)
+            - [ ] properly handle command queues (now controlled by rust)
                 - [ ] guess: don't have special command queue field
                 - [ ] support accessing values by their path (`val.foo`, `key.count`)
                       from javascript
