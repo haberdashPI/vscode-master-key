@@ -207,15 +207,19 @@ Integration test debugging:
             - [X] flatten all `runCommands` at run-time
                 - [X] get existing unit tests working
                 - [X] add unit tests for recurisve `runCommands` called resolved at runtime
-        - [ ] check constraints
+        - [X] check constraints
             - [X] validation that `master-key.prefix` uses `finalKey: false`
             - [X] encode bindings as a vector of key sequences
             - [X] insert `editorTextFocus` for bare keys
             - [X] replace `editorTextFocus` with check for palette context
-            - [ ] no duplicate keybindings: hash each key prefix & mode & when-clause
-                - [ ] create a map of valid prefixes
+            - [X] no duplicate keybindings: hash each key prefix & mode & when-clause
+                - [X] create a map of valid prefixes
         - [ ] implement the `all` functions:
             - [ ] `{{all_prefixes()}}`
+                - [ ] implement method to get statically prefixes
+                - [ ] implement validation check to prevent the definition of *new*
+                      prefixes in an expression
+                - [ ] register a function for getting `all_prefixes`
             - [ ] `{{not_prefixes()}}`
             - [X] `{{all_modes()}}`
             - [X] `{{not_modes(["not_me", "or_me"])}}`
@@ -241,14 +245,22 @@ Integration test debugging:
         - [ ] make sure a range is always provided
         - [ ] test that all error messages show up when expected
     - [ ] proper conversion to keybindings.json command
-        - [ ] expand per mode and prefix (e.g. each binding has one mode and one prefix)
-        - [ ] encode prefixes as prefixCode in when clause
-        - [ ] move mode to when clause
+        - [X] expand per mode and prefix (e.g. each binding has one mode and one prefix)
+        - [X] encode prefixes as prefixCode in when clause
+        - [X] move mode to when clause
+        - [X] generate all binding outputs in file object
+        - [ ] review existing binding resolution logic to make sure we didn't miss
+              something
+        - [ ] unit tests for binding output generation
+        - [ ] write `BindingOutput` to keybindings.json
         - [ ] re-implement master-key.do
             - [ ] don't use `getter_with_clone` for `KeyFileResult` (it doesn't really make
               sense)
             - [ ] move all bare variables in an expression to `key.` or `code.` object
             - [ ] transfer scope state from TS to rust Scope object
+            - [ ] set a variable up to track the key code so that if `master-key.prefix` is
+              called it can use it to set the prefix (alternative you always set this
+              but we clear it when something isn't the final key)
             - [ ] properly handle command queues (no controlled by rust)
                 - [ ] guess: don't have special command queue field
                 - [ ] support accessing values by their path (`val.foo`, `key.count`)

@@ -1,11 +1,15 @@
 #[allow(unused_imports)]
 use log::info;
 
+use core::ops::Range;
 use indexmap::IndexMap;
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::collections::hash_map::{Entry, OccupiedEntry};
 use std::convert::identity;
+use std::iter::Iterator;
 use toml::Spanned;
 use wasm_bindgen::prelude::*;
 
@@ -15,12 +19,12 @@ pub mod validation;
 
 use crate::bind::command::{Command, regularize_commands};
 use crate::bind::validation::{BindingReference, KeyBinding};
-use crate::err;
 use crate::error::{ErrorContext, Result, ResultVec, err};
 use crate::expression::Scope;
 use crate::expression::value::{Expanding, Expression, TypedValue, Value};
 use crate::resolve;
 use crate::util::{Merging, Plural, Required, Resolving};
+use crate::{err, wrn};
 
 pub const UNKNOWN_RANGE: core::ops::Range<usize> = usize::MIN..usize::MAX;
 
@@ -28,8 +32,15 @@ fn span_required_default<T>() -> Spanned<Required<T>> {
     return Spanned::new(UNKNOWN_RANGE, Required::DefaultValue);
 }
 
-fn span_plural_default() -> Spanned<TypedValue<Plural<String>>> {
+fn span_plural_default<T>() -> Spanned<TypedValue<Plural<T>>>
+where
+    T: Serialize + std::fmt::Debug + Clone,
+{
     return Spanned::new(UNKNOWN_RANGE, TypedValue::default());
+}
+
+fn spanned_value_true() -> Spanned<TypedValue<bool>> {
+    return Spanned::new(UNKNOWN_RANGE, TypedValue::Constant(true));
 }
 
 //
@@ -104,7 +115,8 @@ pub struct BindingInput {
     /// @forBindingField bind
     ///
     /// - `priority`: The ordering of the keybinding relative to others; determines which
-    ///   bindings take precedence. Defaults to 0.
+    ///   bindings take precedence. Higher priorities take precedence over lower priorities.
+    ///   Defaults to 0.
     pub priority: Option<Spanned<TypedValue<f64>>>,
     /// @forBindingField bind
     ///
@@ -121,24 +133,24 @@ pub struct BindingInput {
 
     /// @forBindingField bind
     ///
-    /// - `prefixes`: array of strings or an expression of producing such an array.
-    ///   (see also [`all_prefixes`](expressions/functions#all_prefixes)).
-    ///   The prefixes determine one or more *unresolved* key
-    ///   sequences that can have occurred before typing this key. See
-    ///   [`master-key.prefix`](/commands/prefix) for details. Defaults to `""` (a.k.a.
-    ///   no prefix is allowed). Setting this to <code v-pre>{{all_prefixes}}</code>,
-    ///   will allow a key binding to work regardless of any unresolved key
-    ///   sequence that has been pressed: this is how `esc` is defined to work
-    ///   in Larkin.
+    /// - `prefixes`: string, array of strings or an expression producing such a value (e.g.
+    ///   [`all_prefixes`](expressions/functions#all_prefixes)). The prefixes determine one
+    ///   or more *unresolved* key sequences that can have been pressed before typing this
+    ///   key binding. See [`master-key.prefix`](/commands/prefix) for details. Defaults to
+    ///   an empty array, which indicates that no prior keys can have been pressed. Setting
+    ///   this to <code v-pre>'{{all_prefixes()}}'</code>, will allow a key binding to work
+    ///   regardless of any unresolved key sequence that has been pressed: this is how `esc`
+    ///   is defined to work in Larkin.
     #[serde(default = "span_plural_default")]
-    pub prefixes: Spanned<TypedValue<Plural<String>>>,
+    pub prefixes: Spanned<TypedValue<Plural<KeyBinding>>>,
 
     /// @forBindingField bind
     ///
     /// - `finalKey`: (boolean, default=true) Whether this key should clear any transient
     ///   state associated with the pending keybinding prefix. See
     ///   [`master-key.prefix`](/commands/prefix) for details.
-    pub finalKey: Option<Spanned<TypedValue<bool>>>,
+    #[serde(default = "spanned_value_true")]
+    pub finalKey: Spanned<TypedValue<bool>>,
 
     /// @forBindingField bind
     ///
@@ -322,7 +334,7 @@ impl Expanding for BindingInput {
             }),
             finalKey: self.finalKey.map_expressions(f).unwrap_or_else(|mut e| {
                 errors.append(&mut e.errors);
-                None
+                spanned_value_true()
             }),
             repeat: self.repeat.map_expressions(f).unwrap_or_else(|mut e| {
                 errors.append(&mut e.errors);
@@ -614,7 +626,7 @@ impl Binding {
         // finalKey validation
         let has_prefix = commands.iter().any(|c| c.command == "master-key.prefix");
         #[allow(non_snake_case)]
-        if has_prefix && !self.finalKey {
+        if has_prefix && self.finalKey {
             return Err(err(
                 "`finalKey` must be `false` when `master-key.prefix` is run",
             ))?;
@@ -640,7 +652,7 @@ impl Binding {
         let has_prefix = commands.iter().any(|c| c.command == "master-key.prefix");
         #[allow(non_snake_case)]
         let finalKey: bool = resolve!(input, finalKey, scope)?;
-        if has_prefix && !finalKey {
+        if has_prefix && finalKey {
             return Err(err(
                 "`finalKey` must be `false` when `master-key.prefix` is run",
             ))?;
@@ -754,6 +766,405 @@ impl CombinedBindingDoc {
 }
 
 //
+// ================ `[[bind]]` output to keybinding.json ================
+//
+
+// The `Binding` objects are serialized separately (in `settings.json`) and loaded into
+// memory when the extension loads. To associate each with a keybinding we serialize an
+// associated `KeyBinding` object that makes a call to `master-key.do`; `do` then looks
+// up the right `Binding` object based on the `id` field of `KeyBinding`
+
+// object is a valid JSON object to store in `keybinding.json`; extra metadata is
+// stored in the arguments of `master-key.do`
+#[derive(Clone, Debug, Serialize)]
+#[serde(tag = "command")]
+pub enum BindingOutput {
+    #[serde(rename = "master-key.do")]
+    Do {
+        key: String,
+        when: Option<String>,
+        args: BindingOutputArgs,
+    },
+    #[serde(rename = "master-key.prefix")]
+    Prefix {
+        key: String,
+        when: Option<String>,
+        args: PrefixArgs,
+    },
+}
+
+impl BindingOutput {
+    pub fn cmp_priority(&self, other: &Self) -> std::cmp::Ordering {
+        return match (self, other) {
+            (
+                Self::Do {
+                    args: BindingOutputArgs { priority: a, .. },
+                    ..
+                },
+                Self::Do {
+                    args: BindingOutputArgs { priority: b, .. },
+                    ..
+                },
+            ) => f64::total_cmp(a, b),
+            (
+                Self::Prefix {
+                    args: PrefixArgs { priority: a, .. },
+                    ..
+                },
+                Self::Prefix {
+                    args: PrefixArgs { priority: b, .. },
+                    ..
+                },
+            ) => f64::total_cmp(a, b),
+            (Self::Prefix { .. }, Self::Do { .. }) => std::cmp::Ordering::Less,
+            (Self::Do { .. }, Self::Prefix { .. }) => std::cmp::Ordering::Greater,
+        };
+    }
+}
+
+pub trait KeyId {
+    fn key_id(&self) -> i32;
+}
+
+impl KeyId for BindingOutputArgs {
+    fn key_id(&self) -> i32 {
+        return self.key_id;
+    }
+}
+
+impl KeyId for PrefixArgs {
+    fn key_id(&self) -> i32 {
+        return self.key_id;
+    }
+}
+
+impl KeyId for BindingOutput {
+    fn key_id(&self) -> i32 {
+        match self {
+            BindingOutput::Do { args, .. } => args.key_id(),
+            BindingOutput::Prefix { args, .. } => args.key_id(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct BindingOutputArgs {
+    // this uniquely identifies the key sequence used pressed for this binding
+    // (used by nested calls to `master-key.prefix`)
+    pub(crate) key_id: i32,
+    // this uniquely identifiers the command that runs after pressing a binding
+    // (which is retrieved by `maaster-key.do`)
+    pub(crate) command_id: i32,
+    // these fields help us track and order binding outputs, we don't need them serialized
+    #[serde(skip)]
+    pub(crate) priority: f64,
+    // these fields are used in tracking and help improve legibility of the output bindings
+    // in the keybindings.json file, and so they are stored
+    pub(crate) name: String,
+    pub(crate) description: String,
+    pub(crate) prefix: String,
+    pub(crate) mode: String,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct PrefixArgs {
+    // this uniquely identifies the key sequence used pressed for this binding
+    pub(crate) key_id: i32,
+    // human readable field displaying the prefix (there are other arguments to
+    // `master-key.prefix` but they are not used by automatically generated bindings, which
+    // is what this type is for)
+    pub(crate) prefix: String,
+    // these fields help us track and order binding outputs, we don't need them serialized
+    #[serde(skip)]
+    pub(crate) priority: f64,
+}
+
+// BindingId uniquely identifies a the triggers the distinguish different bindings
+// if these three fields are the same, there are conflicts in the keybinding file
+#[derive(Clone, Debug, PartialEq, Hash)]
+struct BindingId {
+    key: Vec<String>,
+    mode: String,
+    when: String,
+}
+impl Eq for BindingId {}
+
+// For each unique `BindingId`, we need to know a few things about it
+struct BindingProperties {
+    // the span where the binding was first defined; if we find a second
+    // definition our error message can point to the first definition
+    span: Range<usize>,
+    // the code tells us how to create `when` clauses that are conditioned
+    // on this keypress having already happened (as a prefix)
+    code: i32,
+    // whether this binding was defined implicitly as a prefix of an explicit binding, or if
+    // it was defined explicitly within a keybinding file; all implicit bindings imply the
+    // same exact command, so it's okay if they overlap.
+    implicit: bool,
+}
+
+// tracks all unique bindings
+pub(crate) struct BindingCodes {
+    codes: HashMap<BindingId, BindingProperties>,
+    // `count` is used to generate new, unique `id` fields
+    count: i32,
+}
+
+impl BindingCodes {
+    pub(crate) fn new() -> Self {
+        return BindingCodes {
+            codes: HashMap::new(),
+            count: 0,
+        };
+    }
+    pub(crate) fn key_code(
+        &mut self,
+        key: &Vec<impl ToString>,
+        mode: &str,
+        when: &Option<impl ToString>,
+        span: &Range<usize>,
+        implicit: bool,
+    ) -> ResultVec<(i32, bool)> {
+        let id = BindingId {
+            key: key.iter().map(ToString::to_string).collect(),
+            mode: mode.to_string(),
+            when: match when {
+                Some(x) => x.to_string(),
+                Option::None => "".to_string(),
+            },
+        };
+        if let Entry::Occupied(mut old @ OccupiedEntry { .. }) = self.codes.entry(id.clone()) {
+            // it's okay to overwrite implicit bindings, but we don't want two explicitly
+            // defined binding
+            if !old.get().implicit && !implicit {
+                let errors: Vec<Result<i32>> = vec![
+                    Err(wrn!(
+                        "Duplicate key sequence for mode `{mode}`. First instance is \
+                             defined at "
+                    ))
+                    .with_range(&span)
+                    .with_ref_range(&old.get().span),
+                    Err(wrn!(
+                        "Duplicate key sequence for mode `{mode}`. This sequence is \
+                             also defined later in the file at "
+                    ))
+                    .with_range(&old.get().span)
+                    .with_ref_range(&span),
+                ];
+                return Err(errors
+                    .into_iter()
+                    .map(Result::unwrap_err)
+                    .collect::<Vec<_>>())?;
+            } else if !implicit {
+                // if the new binding is explicit, overwrite the old one
+                old.insert(BindingProperties {
+                    span: span.clone(),
+                    code: old.get().code,
+                    implicit,
+                });
+                return Ok((old.get().code, true));
+            }
+            return Ok((old.get().code, false));
+        } else {
+            // create a new entry
+            self.count += 1;
+            self.codes.insert(
+                id,
+                BindingProperties {
+                    span: span.clone(),
+                    code: self.count,
+                    implicit,
+                },
+            );
+
+            return Ok((self.count, true));
+        }
+    }
+}
+
+fn join_when_vec(when: &Vec<String>) -> Option<String> {
+    if when.len() == 0 {
+        return None;
+    } else {
+        return Some(format!("({})", when.join(") && (")));
+    }
+}
+
+/// Creates all valid prefixes of a vector: e.g. `[a, b, c]`
+/// yields `[[a], [a, b], [a, b, c]]`.
+pub(crate) fn list_prefixes(seq: impl Iterator<Item = impl ToString>) -> Vec<Vec<String>> {
+    let mut all_prefixes = Vec::new();
+    let mut current_prefix = Vec::new();
+    for key in seq {
+        current_prefix.push(key);
+        all_prefixes.push(current_prefix.iter().map(ToString::to_string).collect())
+    }
+
+    return all_prefixes;
+}
+
+impl Binding {
+    // TODO: before this runs we need to extract all possible prefixes and use them to
+    // implement `all_prefixes` this should be a method of BindingInput we'll need to skip
+    // all values that aren't constant for `prefixes`
+
+    // when evaluating dynamic prefixes we'll need to verify that such expressions don't add
+    // new prefixes (should update the docs as well to be clear about this) trying to
+    // support this otherwise requires some very circular stuff that doesn't really seem
+    // worth it
+
+    // in many cases you can work around this because you could define a binding with
+    // `mater-key.prefix` as its command and this would introducing the binding even if the
+    // `key` filed of this binding had an expression in it... but this means that
+    // `all_prefixes` cannot be defined during resolution of `key` 🤔
+
+    /// Generates the `BindingOutput` items that will be stored in `keybindings.json`
+    ///
+    /// For each `Binding` item there are actually many implied `keybinding.json` entries.
+    /// We have to define duplicates for each `mode`, and each `prefix` element.
+    pub(crate) fn outputs(
+        &self,
+        command_id: i32,
+        scope: &Scope,
+        span: Range<usize>,
+        codes: &mut BindingCodes,
+    ) -> ResultVec<Vec<BindingOutput>> {
+        let mut result = Vec::new();
+
+        // create a distinct binding for each mode...
+        for mode in &self.mode {
+            let mut when_with_mode = match &self.when {
+                Some(when) => vec![when.clone()],
+                Option::None => vec![],
+            };
+            if mode != &scope.default_mode {
+                when_with_mode.push(format!("master-key.mode == '{mode}'"));
+            }
+            let prefixes = if self.prefixes.is_empty() {
+                vec!["".to_string()]
+            } else {
+                self.prefixes.clone()
+            };
+            // ...and a distinct binding for each `self.prefix`
+            for prefix in prefixes {
+                self.outputs_for_mode_and_prefix(
+                    command_id,
+                    &span,
+                    &mode,
+                    &prefix,
+                    &when_with_mode,
+                    codes,
+                    &mut result,
+                )?;
+            }
+        }
+
+        return Ok(result);
+    }
+
+    /// there are a few things going on with prefixes in this next function, which are worth
+    /// delineating between
+    ///
+    /// explicit prefixes: those prefixes specified in `[[bind]]`; they list one or more
+    /// sequences of keys that can occur before the defined keybinding.
+    ///
+    /// listed prefixes: this is the complete set of prefixes a given key sequence has,
+    /// including the explicit prefix (e.g. "a b c" has two prefixes: "a" and "a b")
+    ///
+    /// We need to define a separate binding to the actuall command to run (calling
+    /// `master-key.do`) per explicit prefix. In addition, we need to define a binding per
+    /// listed prefix because those each require a call to `master-key.prefix` to allow
+    /// documentation to update between each key-press of a multi-press binding and for user
+    /// specified keys to cancel a keybinding sequence (the same way escape cancels
+    /// keybindings in vim). It is also how we could eventually implement vim-like behavior
+    /// where one binding (e.g. `c` to change a line) could actually be a prefix of another
+    /// (e.g. `c c` to comment a line).
+    ///
+    /// Example:
+    ///
+    /// ```toml
+    /// [[bind]]
+    /// key = "a b"
+    /// prefixes = ["x y", "k h"]
+    /// ```
+    ///
+    /// there are two terminal bindings: one for the "x y" and one for the "k h" explicit
+    /// prefix. This leads to two iterations of the `for explicit_prefix` loop below, where
+    /// we generate BindingOutput::Prefix items as follows:
+    ///
+    /// - iteration 1 (prefix `"x y"`): `[["x"], ["x", "y"], ["x", "y", "a"]]`
+    /// - iteration 2 (prefix `"k h"`): `[["k"], ["k", "h"], ["k", "h", "a"]]`
+    fn outputs_for_mode_and_prefix(
+        &self,
+        command_id: i32,
+        span: &Range<usize>,
+        mode: &str,
+        explicit_prefix: &str,
+        when_with_mode: &Vec<String>,
+        codes: &mut BindingCodes,
+        result: &mut Vec<BindingOutput>,
+    ) -> ResultVec<()> {
+        // split the current explicit prefix into individual keys and then prepend
+        // it to the key sequence for this binding
+        let prefix_seq = WHITESPACE
+            .split(&explicit_prefix)
+            .filter(|x| !x.is_empty())
+            .chain(self.key.iter().map(String::as_str));
+        // generate a keybindings.json entry for each listed prefix of this Binding
+        let prefixes = list_prefixes(prefix_seq);
+        let mut old_prefix_code = 0; // 0 is never returned by `key_code` method
+        let mut old_prefix_str = "".to_string();
+        for prefix in prefixes[0..(prefixes.len() - 1)].iter() {
+            let mut when;
+            // TODO: key_code should signal when there is already a higher
+            // priority binding that's been added, and prevent
+            // us from inserting a new binding here
+            let (prefix_code, is_new_code) =
+                codes.key_code(&prefix, &mode, &self.when, span, true)?;
+            when = when_with_mode.clone();
+            when.push(format!("master-key.prefixCode == {old_prefix_code}"));
+            if is_new_code {
+                result.push(BindingOutput::Prefix {
+                    key: prefix.last().unwrap().clone(),
+                    when: join_when_vec(&when),
+                    args: PrefixArgs {
+                        priority: 0.0,
+                        key_id: prefix_code,
+                        prefix: old_prefix_str,
+                    },
+                });
+            }
+            old_prefix_code = prefix_code;
+            old_prefix_str = prefix.clone().join(" ");
+        }
+
+        // generate keybindings.json entry for this Binding's actual
+        // command
+        let mut when = when_with_mode.clone();
+        when.push(format!("master-key.prefixCode == {old_prefix_code}"));
+
+        // we can unwrap here because non-implicit bindings always
+        // throw an error if they already exist
+        let (code, _) =
+            codes.key_code(&prefixes.last().unwrap(), &mode, &self.when, span, false)?;
+
+        result.push(BindingOutput::Do {
+            key: self.key.last().unwrap().clone(),
+            when: join_when_vec(&when),
+            args: BindingOutputArgs {
+                command_id,
+                key_id: code,
+                mode: mode.to_string(),
+                priority: self.priority,
+                prefix: old_prefix_str,
+                name: self.doc.name.clone(),
+                description: self.doc.description.clone(),
+            },
+        });
+        return Ok(());
+    }
+}
+
 // ================ Tests ================
 //
 

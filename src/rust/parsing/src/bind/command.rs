@@ -258,7 +258,6 @@ pub(crate) fn regularize_commands(
                             x @ Value::Array(_) => x,
                             x @ Value::Exp(_) => x,
                             x => {
-                                info!("x: {x:?}");
                                 return Err(err("expected `args` to be a table or array"))?;
                             }
                         };

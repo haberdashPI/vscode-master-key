@@ -276,6 +276,7 @@ fn match_to_expression(maybe_parent_span: &Option<Range<usize>>, m: regex::Match
             error = Some(Error {
                 error: err("unexpected `{{`"),
                 contexts: smallvec![crate::error::Context::Range(exp_span.clone())],
+                level: crate::error::ErrorLevel::Error,
             });
         }
         return Ok(Value::Exp(Expression {
@@ -291,6 +292,7 @@ fn match_to_expression(maybe_parent_span: &Option<Range<usize>>, m: regex::Match
             error = Some(Error {
                 error: err("unexpected `{{`"),
                 contexts: smallvec![],
+                level: crate::error::ErrorLevel::Error,
             });
         }
         return Ok(Value::Exp(Expression {

@@ -10,6 +10,7 @@
     ],
     "window.title": "vscode-master-key",
     "rust-analyzer.cargo.sysroot": "/Users/davidlittle/.rustup/toolchains/1.90.0-aarch64-apple-darwin",
+    "rust-analyzer.cargo.sysrootSrc": "/Users/davidlittle/.rustup/toolchains/1.90.0-aarch64-apple-darwin/lib/rustlib/src/rust",
     "rust-analyzer.checkOnSave": true,
     "rust-analyzer.cargo.allTargets": false,
     "rust-analyzer.cargo.buildScripts.rebuildOnSave": false,

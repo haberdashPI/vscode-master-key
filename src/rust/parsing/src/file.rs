@@ -83,15 +83,16 @@
 /// args.value = "{{foo+1}}"
 /// ```
 #[allow(unused_imports)]
-use log::info;
+use log::{error, info};
 
-use crate::bind::{Binding, BindingInput, UNKNOWN_RANGE};
+use crate::bind::{Binding, BindingCodes, BindingInput, BindingOutput, KeyId, UNKNOWN_RANGE};
 use crate::define::{Define, DefineInput};
 use crate::error::{ErrorContext, ErrorReport, ResultVec, flatten_errors};
 use crate::expression::Scope;
 use crate::mode::{ModeInput, Modes};
 
 use serde::{Deserialize, Serialize};
+use std::collections::{HashSet, VecDeque};
 use toml::Spanned;
 use wasm_bindgen::prelude::*;
 
@@ -109,9 +110,8 @@ pub struct KeyFile {
     define: Define,
     modes: Modes,
     bind: Vec<Binding>,
+    key_bind: Vec<BindingOutput>,
 }
-
-// TODO: implement methods to access/store bindings
 
 impl KeyFile {
     // TODO: refactor to have each section's processing in corresponding module
@@ -161,7 +161,7 @@ impl KeyFile {
             .parse_asts(&bind_input)
             .map_err(|mut es| errors.append(&mut es.errors));
 
-        let bind: Vec<_> = bind_input
+        let bind_and_span: Vec<_> = bind_input
             .into_iter()
             .flat_map(|x| {
                 let span = x.span().clone();
@@ -175,14 +175,9 @@ impl KeyFile {
                         // foreach.key = [1,2,3] we don't want an error about a missing
                         // required `key` field` to show up three times
 
-                        // TODO: this is where we want to register each mode/prefix/when
-                        // pairing and validate that there are no duplicates
-                        // (we should map these pairings to spans where the
-                        // bindings were first defined so we can make good
-                        // error messages)
                         let items = replicates
                             .into_iter()
-                            .map(|x| Binding::new(x, &mut scope))
+                            .map(|x| Ok((Binding::new(x, &mut scope)?, span.clone())))
                             .collect::<ResultVec<Vec<_>>>()
                             .with_range(&span);
                         match items {
@@ -201,10 +196,31 @@ impl KeyFile {
             })
             .collect();
 
+        // TODO: store spans so we can do avoid serializing this data??
+        let mut key_bind = Vec::new();
+        let mut bind = Vec::new();
+        let mut codes = BindingCodes::new();
+        for (i, (bind_item, span)) in bind_and_span.into_iter().enumerate() {
+            key_bind.append(&mut bind_item.outputs(i as i32, &scope, span, &mut codes)?);
+            bind.push(bind_item);
+        }
+        key_bind.sort_by(BindingOutput::cmp_priority);
+        // remove key_bind values with the exact same `key_id`, keeping the one
+        // with the highest priority (last items)
+        let mut seen_codes = HashSet::new();
+        let mut final_key_bind = VecDeque::with_capacity(key_bind.len());
+        for key in key_bind.into_iter().rev() {
+            if !seen_codes.contains(&key.key_id()) {
+                seen_codes.insert(key.key_id());
+                final_key_bind.push_front(key);
+            }
+        }
+
         if errors.len() == 0 {
             return Ok(KeyFile {
                 define,
                 bind,
+                key_bind: final_key_bind.into(),
                 modes,
             });
         } else {
@@ -243,6 +259,7 @@ fn parse_bytes_helper(file_content: &[u8]) -> ResultVec<KeyFile> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::bind::BindingOutputArgs;
     use crate::bind::UNKNOWN_RANGE;
     use crate::expression::value::Expression;
     use crate::expression::value::Value;
@@ -737,6 +754,99 @@ mod tests {
         let err = result.bind[0].commands(&mut scope).unwrap_err();
         assert!(format!("{err}").contains("`finalKey`"))
     }
+
+    #[test]
+    fn output_bindings_overwrite_implicit_prefix() {
+        let data = r#"
+        [[bind]]
+        key = "a b"
+        command = "foo"
+
+        [[bind]]
+        key = "a"
+        finalKey = false
+        command = "master-key.prefix"
+        args.cursor = "Block"
+        doc.name = "explicit prefix"
+        "#;
+
+        let mut scope = Scope::new();
+        let result =
+            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap();
+        assert_eq!(result.key_bind.len(), 2);
+        if let BindingOutput::Do {
+            key,
+            args: BindingOutputArgs { prefix, .. },
+            ..
+        } = &result.key_bind[0]
+        {
+            assert_eq!(key, "b");
+            assert_eq!(prefix, "a");
+        } else {
+            error!("Unexpected binding {:#?}", result.key_bind[0]);
+            assert!(false);
+        }
+
+        if let BindingOutput::Do {
+            key,
+            args: BindingOutputArgs { prefix, name, .. },
+            ..
+        } = &result.key_bind[1]
+        {
+            assert_eq!(key, "a");
+            assert_eq!(prefix, "");
+            assert_eq!(name, "explicit prefix")
+        } else {
+            error!("Unexpected binding {:#?}", result.key_bind[0]);
+            assert!(false);
+        }
+    }
+
+    #[test]
+    fn output_bindings_identify_duplicates() {
+        let data = r#"
+        [[bind]]
+        key = "a k"
+        command = "bob"
+
+        [[bind]]
+        key = "a k"
+        command = "allowed conditional"
+        when = "master-key.count > 0"
+
+        [[bind]]
+        key = "a k"
+        command = "duplicate"
+        "#;
+
+        let mut scope = Scope::new();
+        let err =
+            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap_err();
+        let report = err.report(data.as_bytes());
+
+        assert!(report[0].message.contains("Duplicate key"));
+        assert_eq!(report[0].range.start.line, 10);
+        assert_eq!(report[1].range.start.line, 1);
+    }
+
+    #[test]
+    fn output_bindings_expand_prefixes() {
+        let data = r#"
+        [[bind]]
+        key = "a b"
+        command = "foo"
+        prefixes = ["x y", "h k"]
+        "#;
+
+        let mut scope = Scope::new();
+        let result =
+            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap();
+        assert_eq!(result.key_bind.len(), 8)
+    }
+
+    // TESTS to implement:
+    // - [ ] detect duplicate bindings
+    // - [ ] expand prefixes
 
     // TODO: write a test for required field `key` and ensure the span
     // is narrowed to the appropriate `[[bind]]` element; also should only error once

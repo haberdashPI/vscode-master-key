@@ -3,6 +3,7 @@ use log::info;
 
 use core::ops::Range;
 use rhai::{self, EvalAltResult};
+use serde::Serialize;
 use smallvec::SmallVec;
 use std::fmt;
 use string_offsets::{Pos, StringOffsets};
@@ -43,8 +44,46 @@ macro_rules! err {
     };
 }
 
+#[macro_export]
+macro_rules! wrn {
+    ( $($x:tt)* ) => {
+        crate::error::Error {
+            error: crate::error::RawError::Dynamic(format!($($x)*)),
+            contexts: smallvec::SmallVec::new(),
+            level: crate::error::ErrorLevel::Warn,
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! note {
+    ( $($x:tt)* ) => {
+        crate::error::Error {
+            error: crate::error::RawError::Dynamic(format!($($x)*))
+            contexts: smallvec::SmallVec::new(),
+            level: crate::error::ErrorLevel::Note
+        }
+    };
+}
+
 pub fn err(msg: &'static str) -> RawError {
     return RawError::Static(msg);
+}
+
+pub fn wrn(msg: &'static str) -> Error {
+    return Error {
+        error: RawError::Static(msg),
+        contexts: SmallVec::new(),
+        level: ErrorLevel::Warn,
+    };
+}
+
+pub fn note(msg: &'static str) -> Error {
+    return Error {
+        error: RawError::Static(msg),
+        contexts: SmallVec::new(),
+        level: ErrorLevel::Info,
+    };
 }
 
 #[wasm_bindgen]
@@ -53,12 +92,23 @@ pub struct Error {
     #[source]
     pub(crate) error: RawError,
     pub(crate) contexts: SmallVec<[Context; 8]>,
+    pub(crate) level: ErrorLevel,
+}
+
+#[wasm_bindgen]
+#[derive(Debug, Clone, Default, Serialize)]
+pub enum ErrorLevel {
+    #[default]
+    Error,
+    Warn,
+    Info,
 }
 
 #[derive(Debug, Clone)]
 pub enum Context {
-    Message(String),     // additional message content to include
-    Range(Range<usize>), // the location of an error in a file
+    Message(String),        // additional message content to include
+    Range(Range<usize>),    // the location of an error in a file
+    RefRange(Range<usize>), // another location mentioned in the error message
 }
 
 /// A `Spannable` can be interpreted as a range of byte offsets
@@ -85,6 +135,12 @@ impl Spannable for Range<usize> {
     }
 }
 
+impl Spannable for &Range<usize> {
+    fn range(&self) -> Option<Range<usize>> {
+        return Some(self.to_owned().clone());
+    }
+}
+
 /// An object implementing `ErrorContext` can store additional context
 /// about the error being returned.
 pub trait ErrorContext<T>
@@ -97,11 +153,20 @@ where
     fn with_message(self, context: impl ToString) -> std::result::Result<T, Self::Error> {
         return self.with_context(Context::Message(context.to_string()));
     }
+    // NOTE: we return UNKNOWN_RANGE here because we have to transform the value using
+    // `.with_context` to keep the return type uniform
     fn with_range(self, context: &impl Spannable) -> std::result::Result<T, Self::Error> {
         if let Some(range) = context.range() {
             return self.with_context(Context::Range(range));
         } else {
             return self.with_context(Context::Range(UNKNOWN_RANGE));
+        }
+    }
+    fn with_ref_range(self, context: &impl Spannable) -> std::result::Result<T, Self::Error> {
+        if let Some(range) = context.range() {
+            return self.with_context(Context::RefRange(range));
+        } else {
+            return self.with_context(Context::RefRange(UNKNOWN_RANGE));
         }
     }
 }
@@ -116,6 +181,7 @@ impl<T> ErrorContext<T> for Result<T> {
                 Err(Error {
                     error: e.error,
                     contexts: e.contexts,
+                    level: e.level,
                 })
             }
         };
@@ -129,6 +195,7 @@ impl<E: Into<RawError>> From<E> for Error {
         return Error {
             error: error.into(),
             contexts: SmallVec::new(),
+            level: ErrorLevel::default(),
         };
     }
 }
@@ -206,6 +273,7 @@ impl<T, E: Into<RawError>> ErrorContext<T> for std::result::Result<T, E> {
                 Err(Error {
                     error: e.into(),
                     contexts,
+                    level: ErrorLevel::default(),
                 })
             }
         };
@@ -242,6 +310,9 @@ impl fmt::Display for Error {
                 }
                 Context::Range(range) => {
                     write!(f, "byte range {:?}\n", range)?;
+                }
+                Context::RefRange(range) => {
+                    write!(f, "and byte range {:?}\n", range)?;
                 }
             }
         }
@@ -290,6 +361,7 @@ impl Error {
         let offsets: StringOffsets = StringOffsets::from_bytes(content);
         let mut message_buf = String::new();
         let mut range = UNKNOWN_RANGE;
+        let mut ref_range = UNKNOWN_RANGE;
         let mut char_line_range = None;
         let mut rhai_pos = None;
         match &self.error {
@@ -324,12 +396,22 @@ impl Error {
                         }
                     }
                 }
+                Context::RefRange(new_range) => {
+                    if new_range != &UNKNOWN_RANGE {
+                        ref_range = new_range.clone();
+                    }
+                }
             };
         }
         if let Some(cl_range) = char_line_range {
+            if ref_range != UNKNOWN_RANGE {
+                let pos = range_to_pos(&ref_range, &offsets);
+                message_buf.push_str(&format!("{pos}"));
+            };
             return ErrorReport {
                 message: message_buf,
                 range: cl_range,
+                level: self.level.clone(),
             };
         } else {
             return ErrorReport {
@@ -338,6 +420,7 @@ impl Error {
                     message_buf
                 ),
                 range: CharRange::default(),
+                level: ErrorLevel::Error,
             };
         }
     }
@@ -357,6 +440,25 @@ pub struct CharRange {
     pub end: Pos,
 }
 
+impl std::fmt::Display for CharRange {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        if self.start.line == self.end.line {
+            if self.start.col == self.end.col {
+                write!(fmt, "line {}, column {}", self.start.line, self.start.col)?;
+            } else {
+                write!(
+                    fmt,
+                    "line {}, columns {} - {}",
+                    self.start.line, self.start.col, self.end.col
+                )?;
+            }
+        } else {
+            write!(fmt, "lines {} - {}", self.start.line, self.end.line)?;
+        }
+        return Ok(());
+    }
+}
+
 impl Default for CharRange {
     fn default() -> Self {
         return CharRange {
@@ -371,6 +473,7 @@ impl Default for CharRange {
 pub struct ErrorReport {
     pub message: String,
     pub range: CharRange,
+    pub level: ErrorLevel,
 }
 
 #[wasm_bindgen]
@@ -380,6 +483,7 @@ impl ErrorReport {
         return ErrorReport {
             message: String::from(""),
             range: CharRange::default(),
+            level: ErrorLevel::default(),
         };
     }
 }
