@@ -5,9 +5,10 @@ use core::ops::Range;
 use indexmap::IndexMap;
 use lazy_static::lazy_static;
 use regex::Regex;
+use rhai::{EvalAltResult, ImmutableString};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::collections::hash_map::{Entry, OccupiedEntry};
+use std::collections::{HashMap, HashSet};
 use std::convert::identity;
 use std::iter::Iterator;
 use toml::Spanned;
@@ -242,6 +243,73 @@ impl BindingInput {
             tags: self.tags.clone(),
             doc: self.doc.clone(),
         };
+    }
+
+    pub(crate) fn add_to_scope(
+        inputs: &Vec<Spanned<BindingInput>>,
+        scope: &mut Scope,
+    ) -> ResultVec<()> {
+        let mut all_prefixes = HashSet::new();
+        for input in inputs {
+            if let TypedValue::Constant(prefixes) = input.as_ref().prefixes.as_ref() {
+                let explicit_prefixes: Vec<String> =
+                    prefixes.clone().resolve("prefixes", scope).unwrap();
+                let key_sequence: String = input.as_ref().key.clone().resolve("`key`", scope)?;
+                if explicit_prefixes.len() > 0 {
+                    for p in explicit_prefixes {
+                        let seq = WHITESPACE.split(&p).chain(WHITESPACE.split(&key_sequence));
+                        for s in list_prefixes(seq) {
+                            all_prefixes.insert(s.join(" "));
+                        }
+                    }
+                } else {
+                    let seq = WHITESPACE.split(&key_sequence);
+                    let prefixes = list_prefixes(seq);
+                    for s in prefixes[0..(prefixes.len() - 1)].iter() {
+                        all_prefixes.insert(s.join(" "));
+                    }
+                };
+            }
+        }
+
+        scope.prefixes = all_prefixes;
+        let all_prefixes_fn_data = scope.prefixes.clone();
+        scope.engine.register_fn("all_prefixes", move || {
+            all_prefixes_fn_data
+                .iter()
+                .map(|x| rhai::Dynamic::from(ImmutableString::from(x)))
+                .collect::<rhai::Array>()
+        });
+
+        let not_prefixes_fn_data = scope.prefixes.clone();
+        scope.engine.register_fn(
+            "not_prefixes",
+            move |x: rhai::Array| -> std::result::Result<rhai::Array, Box<EvalAltResult>> {
+                let not_prefixes = x
+                    .into_iter()
+                    .map(|xi| xi.into_immutable_string())
+                    .collect::<std::result::Result<Vec<_>, _>>()?;
+                let mut result = rhai::Array::new();
+                for prefix in &not_prefixes_fn_data {
+                    if not_prefixes.iter().all(|x| x != prefix) {
+                        result.push(rhai::Dynamic::from(ImmutableString::from(prefix)));
+                    }
+                }
+                if result.len() == (&not_prefixes_fn_data).len() {
+                    let mut bad_prefix = None;
+                    for prefix in not_prefixes {
+                        if (&not_prefixes_fn_data).iter().all(|x| x != prefix) {
+                            bad_prefix = Some(prefix);
+                            break;
+                        }
+                    }
+                    return Err(format!("prefix `{}` does not exist", bad_prefix.unwrap()).into());
+                }
+                return Ok(result);
+            },
+        );
+
+        return Ok(());
     }
 }
 
@@ -677,6 +745,26 @@ impl Binding {
                     .join(", ")
             ))
             .with_range(&mode_span)?;
+        }
+
+        // prefix validation
+        let prefixes_span = input.prefixes.span().clone();
+        let prefixes: Vec<String> = input.prefixes.clone().resolve("prefixes", scope)?;
+        let non_static_prefixes: Vec<_> = prefixes
+            .iter()
+            .filter(|x| !scope.prefixes.contains(x.as_str()))
+            .collect();
+        if non_static_prefixes.len() > 0 {
+            return Err(err!(
+                "Prefixes must be statically defined, but some prefixes \
+                 were only defined within expression blocks: `{}`",
+                non_static_prefixes
+                    .iter()
+                    .map(|x| x.as_str())
+                    .collect::<Vec<_>>()
+                    .join("`, `")
+            ))
+            .with_range(&prefixes_span)?;
         }
 
         // require that bare keybindings (those without a modifier key)

@@ -214,36 +214,37 @@ Integration test debugging:
             - [X] replace `editorTextFocus` with check for palette context
             - [X] no duplicate keybindings: hash each key prefix & mode & when-clause
                 - [X] create a map of valid prefixes
-        - [ ] implement the `all` functions:
-            - [ ] `{{all_prefixes()}}`
-                - [ ] implement method to get statically prefixes
-                - [ ] implement validation check to prevent the definition of *new*
+        - [X] implement the `all` functions:
+            - [X] `{{all_prefixes()}}/{{not_prefixes(["not_me"])}}`
+                - [X] implement method to get statically prefixes
+                - [X] implement validation check to prevent the definition of *new*
                       prefixes in an expression
-                - [ ] register a function for getting `all_prefixes`
-            - [ ] `{{not_prefixes()}}`
+                - [X] register a function for getting `all_prefixes` and `not_prefixes`
+                - [X] unit test
             - [X] `{{all_modes()}}`
             - [X] `{{not_modes(["not_me", "or_me"])}}`
-        - [ ] documentation expansion/validation across all `[[bind]]` values
-              with the same key and mode
-              e.g. merge all shared documentation across the shared names
+        - [ ] documentation expansion/validation
+            - across all `[[bind]]` values with the same key and mode
+            - across all combined bindings
         - [ ] find low hanging fruit for problems with using 1.0 files / bad fields
-            - [ ] implement tooling to use different levels (warn/info)
+            - [X] implement tooling to use different levels (warn/info)
               in error reporting
             - [ ] fields that exist in the old but not new (use `#[serde(flatten)]`)
             - [ ] add hints for fields that don't exist anywhere as well (probably
                   as a hint or something)
             - [ ] review strings for single `{}` braces and warn that `{{}}` are now required
             - [ ] others?
-        - [ ] implement `[[kind]]` (or redesign)
-        - [ ] remove spurious line/char positions from expression error messages
-            - NOTE: these come from the line and char position in the rhai expression
-            which has nothing to do with the line and char position in the parent
-            keybinding file
-    - [ ] implement `[header]` section
+    - [ ] implement `[[kind]]` (or redesign)
+     - [ ] implement `[header]` section
         - [ ] instead of using `.mk.toml`, look for a specific heading in the file
+  - [ ] remove spurious line/char positions from expression error messages
+        - NOTE: these come from the line and char position in the rhai expression
+        which has nothing to do with the line and char position in the parent
+        keybinding file
     - [ ] error handling checks
         - [ ] make sure a range is always provided
         - [ ] test that all error messages show up when expected
+    - [ ] refactor and cleanup rust code
     - [ ] proper conversion to keybindings.json command
         - [X] expand per mode and prefix (e.g. each binding has one mode and one prefix)
         - [X] encode prefixes as prefixCode in when clause

@@ -116,6 +116,7 @@ use crate::{
 pub struct Scope {
     pub(crate) asts: HashMap<String, rhai::AST>,
     pub(crate) engine: rhai::Engine,
+    pub(crate) prefixes: HashSet<String>,
     pub(crate) modes: HashSet<String>,
     pub(crate) default_mode: String,
     pub(crate) state: rhai::Scope<'static>,
@@ -183,6 +184,7 @@ impl Scope {
             engine: engine,
             state: rhai::Scope::new(),
             default_mode: "default".to_string(),
+            prefixes: HashSet::from(["".to_string()]),
             modes: HashSet::from(["default".to_string()]),
             queues: HashMap::new(),
         };

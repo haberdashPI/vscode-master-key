@@ -157,6 +157,7 @@ impl KeyFile {
         };
 
         define.add_to_scope(&mut scope)?;
+        BindingInput::add_to_scope(&bind_input, &mut scope)?;
         let _ = scope
             .parse_asts(&bind_input)
             .map_err(|mut es| errors.append(&mut es.errors));
@@ -638,6 +639,93 @@ mod tests {
     }
 
     #[test]
+    fn eval_prefix_expressions() {
+        let data = r#"
+        [[bind]]
+        key = "a b c"
+        command = "foo"
+
+        [[bind]]
+        key = "d e f"
+        command = "bar"
+
+        [[bind]]
+        key = "z"
+        command = "biz"
+        prefixes = '{{all_prefixes()}}'
+
+        [[bind]]
+        key = "w"
+        command = "baz"
+        prefixes = '{{not_prefixes(["d e"])}}'
+        "#;
+
+        let mut scope = Scope::new();
+        let result =
+            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap();
+        assert!(result.bind[2].prefixes.iter().any(|x| x == "a"));
+        assert!(result.bind[2].prefixes.iter().any(|x| x == "a b"));
+        assert!(result.bind[2].prefixes.iter().any(|x| x == "d"));
+        assert!(result.bind[2].prefixes.iter().any(|x| x == "d e"));
+        assert_eq!(result.bind[2].prefixes.len(), 4);
+        assert!(result.bind[3].prefixes.iter().any(|x| x == "a"));
+        assert!(result.bind[3].prefixes.iter().any(|x| x == "a b"));
+        assert!(result.bind[3].prefixes.iter().any(|x| x == "d"));
+        assert_eq!(result.bind[3].prefixes.len(), 3);
+    }
+
+    #[test]
+    fn validate_prefix_expressions() {
+        let data = r#"
+        [[bind]]
+        key = "a b c"
+        command = "foo"
+
+        [[bind]]
+        key = "d e f"
+        command = "bar"
+
+        [[bind]]
+        key = "w"
+        command = "baz"
+        prefixes = '{{not_prefixes(["d k"])}}'
+        "#;
+
+        let mut scope = Scope::new();
+        let err =
+            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap_err();
+        let report = err.report(data.as_bytes());
+        assert!(report[0].message.contains("prefix `d k`"));
+        assert_eq!(report[0].range.start.line, 12)
+    }
+
+    #[test]
+    fn validate_prefixes_are_static() {
+        let data = r#"
+        [[bind]]
+        key = "a b c"
+        command = "foo"
+
+        [[bind]]
+        key = "d e f"
+        command = "bar"
+
+        [[bind]]
+        key = "w"
+        command = "baz"
+        prefixes = '{{["d e", "g h"]}}'
+        "#;
+
+        let mut scope = Scope::new();
+        let err =
+            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap_err();
+        let report = err.report(data.as_bytes());
+        info!("report: {report:#?}");
+        assert!(report[0].message.contains("statically defined"));
+        assert_eq!(report[0].range.start.line, 12)
+    }
+
+    #[test]
     fn command_expansion() {
         let data = r#"
         [[define.val]]
@@ -843,10 +931,6 @@ mod tests {
             KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap();
         assert_eq!(result.key_bind.len(), 8)
     }
-
-    // TESTS to implement:
-    // - [ ] detect duplicate bindings
-    // - [ ] expand prefixes
 
     // TODO: write a test for required field `key` and ensure the span
     // is narrowed to the appropriate `[[bind]]` element; also should only error once
