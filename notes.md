@@ -223,21 +223,16 @@ Integration test debugging:
                 - [X] unit test
             - [X] `{{all_modes()}}`
             - [X] `{{not_modes(["not_me", "or_me"])}}`
-        - [ ] documentation expansion/validation
-            - across all `[[bind]]` values with the same key and mode
-            - across all combined bindings
         - [ ] find low hanging fruit for problems with using 1.0 files / bad fields
             - [X] implement tooling to use different levels (warn/info)
               in error reporting
-            - [ ] fields that exist in the old but not new (use `#[serde(flatten)]`)
-            - [ ] add hints for fields that don't exist anywhere as well (probably
-                  as a hint or something)
+            - [~] fields that exist in the old but not new (use `#[serde(flatten)]`)
             - [ ] review strings for single `{}` braces and warn that `{{}}` are now required
             - [ ] others?
     - [ ] implement `[[kind]]` (or redesign)
-     - [ ] implement `[header]` section
+    - [ ] implement `[header]` section
         - [ ] instead of using `.mk.toml`, look for a specific heading in the file
-  - [ ] remove spurious line/char positions from expression error messages
+    - [ ] remove spurious line/char positions from expression error messages
         - NOTE: these come from the line and char position in the rhai expression
         which has nothing to do with the line and char position in the parent
         keybinding file
@@ -267,13 +262,16 @@ Integration test debugging:
         - [ ] integration tests
     - [ ] implement `replay`: use the new rust command queues instead of the old
           state management
-    - [ ] extraction of visual docs
     - [ ] extraction of markdown docs
+        - [ ] documentation expansion/validation
+            - across all `[[bind]]` values with the same key and mode
+            - across all combined bindings
         - [ ] extract all comment regions (exclude `#-`)
         - [ ] replace `[[bind]]` regions:
             - [ ] identify each non-comment region, and look for parsed elements
                   whose span overlaps
             - [ ] convert any bind elements in this overlap into markdown table
+    - [ ] extraction of visual docs
     - [ ] serialization of bindings to settings.json
     - [ ] create data types to generate warnings/hints for old/unused fields
         - [ ] test this on the old version of larkin.toml

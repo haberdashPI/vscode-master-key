@@ -5,6 +5,7 @@
 /// # Master Keybindings
 ///
 /// This defines version 2.0 of the master keybinding file format.
+/// Breaking changes from version 1.0 are [described below](#breaking-changes)
 ///
 /// Master keybindings are [TOML](https://toml.io/en/) files composed of the following
 /// top-level fields:
@@ -82,15 +83,54 @@
 /// args.to = "right"
 /// args.value = "{{foo+1}}"
 /// ```
+/// ## Breaking Changes
+///
+/// The following changes were made from version 1.0 of the file format.
+///
+/// - `header.version` is now 2.0
+/// - [`[[define]]`](/bindings/define) now has several sub fields. Definitions
+///   previously under `[[define]]` should now usually go under `[[define.val]]`, but
+///   also see `[[define.command]]`.
+/// - generalized [expressions](/expressions/index) which then changed or replaced several
+///   other features:
+///   - `bind.computedArgs` no longer exists: instead place expressions inside of `args`
+///   - [`bind.foreach`](/bindings/bind#foreach-clause) have changed
+///     - `{key: [regex]}` is now <span v-pre><code>{{keys(&grave;[regex]&grave;)}}</code></span>
+///     - foreach variables are interpolated as expressions (<span v-pre>`{{symbol}}`</span>
+///       instead of `{symbol}`).
+///   - `bind.path` and `[[path]]`: A similar, but more explicit approach
+///      is possible using `default` and [`define.bind`](/bindings/define#binding-definitions)
+///   - replaced `mode = []` with <span v-pre>`mode = '{{all_modes()}}'`</span>
+///   - replaced <code>"&lt;all-prefixes&gt;"</code> with <span v-pre>`'{{all_prefixes()}}'`</span> **TODO**
+///   - replaced `mode = ["!insert", "!capture"]` with
+///     <span v-pre>`mode = '{{not_modes(["insert", "capture"])}}'`</span>
+/// - renamed several fields:
+///   - `name`, `description`, `hideInPalette` and `hideInDocs` moved to
+///     `doc.name`, `doc.description`, `doc.hideInPalette` and `doc.hideInDocs`
+///   - `combinedName`, `combinedDescription` and `combinedKey` moved to
+///     `doc.combined.name`, `doc.combined.description` and `doc.combined.key`.
+///   - `resetTransient` is now [`finalKey`](/bindings/bind)
+///   - `bind.if` is renamed to [`bind.skipWhen`](/bindings/bind)
+///   - `name` renamed to `register` in [`(re)storeNamed`](/commands/storeNamed) command
+///   - Rename replay-related command fields:
+///     - `at` to `whereIndexIs`
+///     - `range` to `whereRangeIs`
+///     - the variable `i` renamed to `index`
 #[allow(unused_imports)]
 use log::{error, info};
 
-use crate::bind::{Binding, BindingCodes, BindingInput, BindingOutput, KeyId, UNKNOWN_RANGE};
+use crate::bind::{
+    Binding, BindingCodes, BindingInput, BindingOutput, KeyId, LegacyBindingInput, UNKNOWN_RANGE,
+};
 use crate::define::{Define, DefineInput};
-use crate::error::{ErrorContext, ErrorReport, ResultVec, flatten_errors};
+use crate::error::{ErrorContext, ErrorReport, ErrorSet, Result, ResultVec, flatten_errors};
 use crate::expression::Scope;
+use crate::expression::value::{Expanding, Expression, Value};
 use crate::mode::{ModeInput, Modes};
+use crate::wrn;
 
+use lazy_static::lazy_static;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashSet, VecDeque};
 use toml::Spanned;
@@ -240,7 +280,7 @@ pub struct KeyFileResult {
 #[wasm_bindgen]
 pub fn parse_keybinding_bytes(file_content: Box<[u8]>) -> KeyFileResult {
     return match parse_bytes_helper(&file_content) {
-        Ok(result) => KeyFileResult {
+        Ok((result, warnings)) => KeyFileResult {
             file: Some(result),
             errors: None,
         },
@@ -251,10 +291,89 @@ pub fn parse_keybinding_bytes(file_content: Box<[u8]>) -> KeyFileResult {
     };
 }
 
-fn parse_bytes_helper(file_content: &[u8]) -> ResultVec<KeyFile> {
+fn parse_bytes_helper(file_content: &[u8]) -> ResultVec<(KeyFile, ErrorSet)> {
     let parsed = toml::from_slice::<KeyFileInput>(file_content)?;
     let mut scope = Scope::new(); // TODO: do something with this scope??
-    return KeyFile::new(parsed, &mut scope);
+    let bind = parsed.bind.clone();
+    let result = KeyFile::new(parsed, &mut scope);
+
+    let legacy_check = bind.map_expressions(&mut |ex @ Expression { .. }| {
+        if OLD_EXPRESSION.is_match(&ex.content) {
+            Err(wrn!(
+                "In format 2.0, expressions must now be surrounded in double curly\
+                        braces, not single.",
+            ))
+            .with_range(&ex.span.clone())?;
+        }
+        return Ok(Value::Exp(ex));
+    });
+    let mut warnings = match legacy_check {
+        Err(e) => e,
+        Ok(_) => vec![].into(),
+    };
+    match result {
+        Ok(key_file) => Ok((key_file, warnings)),
+        Err(mut e) => Err({
+            e.errors.append(&mut warnings.errors);
+            e
+        }),
+    }
+}
+
+//
+// ---------------- Legacy Keybinding warnings ----------------
+//
+
+#[derive(Deserialize, Clone, Debug)]
+struct LegacyKeyFileInput {
+    bind: Vec<Spanned<LegacyBindingInput>>,
+    path: Option<Vec<Spanned<toml::Value>>>,
+}
+
+lazy_static! {
+    static ref OLD_EXPRESSION: Regex = Regex::new(r"\{\w+\}").unwrap();
+}
+
+impl LegacyKeyFileInput {
+    fn check(&self) -> ErrorSet {
+        let mut errors = Vec::new();
+        for bind in &self.bind {
+            match bind.as_ref().check() {
+                Ok(()) => (),
+                Err(mut e) => errors.append(&mut e.errors),
+            }
+        }
+
+        let empty = vec![];
+        for path in self.path.as_ref().unwrap_or(&empty) {
+            let err: Result<()> = Err(wrn!(
+                "`[[path]]` section is not supported in the 2.0 format; replace `path` \
+                with `[[define.bind]]` and review more details in documentation"
+            ))
+            .with_range(&path.span());
+            errors.push(err.unwrap_err());
+        }
+
+        return errors.into();
+    }
+}
+
+pub fn identify_legacy_warnings_helper(file_content: &[u8]) -> ResultVec<()> {
+    let warnings = toml::from_slice::<LegacyKeyFileInput>(&file_content)?;
+    return Err(warnings.check());
+}
+
+pub fn identify_legacy_warnings(file_content: Box<[u8]>) -> KeyFileResult {
+    return match identify_legacy_warnings_helper(&file_content) {
+        Ok(()) => KeyFileResult {
+            file: None,
+            errors: None,
+        },
+        Err(e) => KeyFileResult {
+            file: None,
+            errors: Some(e.errors.iter().map(|x| x.report(&file_content)).collect()),
+        },
+    };
 }
 
 #[cfg(test)]
@@ -289,7 +408,7 @@ mod tests {
         command = "cursorLeft"
         "#;
 
-        let result = parse_bytes_helper(data.as_bytes()).unwrap();
+        let (result, _) = parse_bytes_helper(data.as_bytes()).unwrap();
 
         assert_eq!(result.bind[0].key[0], "l");
         assert_eq!(result.bind[0].commands[0].command, "cursorRight");
@@ -930,6 +1049,35 @@ mod tests {
         let result =
             KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap();
         assert_eq!(result.key_bind.len(), 8)
+    }
+
+    #[test]
+    fn raises_legacy_warnings() {
+        let data = r#"
+        [[path]]
+        id = "modes"
+        description = "foo bar"
+
+        [[bind]]
+        path = "modes"
+        name = "normal"
+        description = "All the legacy features!"
+        foreach.key = ["escape", "ctrl+[", "{key: [0-9]}"]
+        combinedKey = "a/b"
+        combinedName = "all"
+        combinedDescription = "all the things"
+        key = "{key}"
+        mode = []
+        hideInPalette = true
+        hideInDocs = false
+        command = "master-key.enterNormal"
+        computedArgs = "a+1"
+        when = "!findWidgetVisible"
+        prefixes = "<all-prefixes>"
+        "#;
+
+        let warnings = identify_legacy_warnings_helper(data.as_bytes()).unwrap_err();
+        assert_eq!(warnings.errors.len(), 12);
     }
 
     // TODO: write a test for required field `key` and ensure the span

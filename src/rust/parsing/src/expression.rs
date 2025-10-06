@@ -21,8 +21,8 @@ use crate::{
 /// # Expressions
 ///
 /// You can use expressions in a number of places inside a [bind](/bindings/bind)
-/// definition. An expression is a snippet of code surrounded by double curly braces <code
-/// v-pre>{{like + this}}</code> that occurs within a TOML string.
+/// definition. An expression is a snippet of code surrounded by double curly braces
+/// <code v-pre>{{like + this}}</code> that occurs within a TOML string.
 ///
 /// When the string is comprised entirely of a single expression, it can evaluate to any
 /// valid TOML object.
@@ -79,6 +79,8 @@ use crate::{
 ///   string
 /// - `all_prefixes()`: returns an array of strings of all keybinding prefixes defined by
 ///   the current set of keybindigs
+/// - `not_prefixes([exclusions])`: given an array of strings of prefixes not to use,
+///   returns all prefixes defined by the current set of keybindings.
 /// - `all_modes()`: returns an array of strings all keybinding modes defined by the current
 ///   keybinding set
 /// - `not_modes([exclusions])`: given an array of strings of excluded modes, returns

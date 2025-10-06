@@ -141,7 +141,10 @@ pub struct BindingInput {
     ///   an empty array, which indicates that no prior keys can have been pressed. Setting
     ///   this to <code v-pre>'{{all_prefixes()}}'</code>, will allow a key binding to work
     ///   regardless of any unresolved key sequence that has been pressed: this is how `esc`
-    ///   is defined to work in Larkin.
+    ///   is defined to work in Larkin. (See also [`not_prefixes(...)`](/expressions/index)).
+    ///   Note that if `prefixes` is an expression, it *cannot* produce a novel prefix
+    ///   not defined elsewhere. This is to avoid circular computation when
+    ///   resolving the return value of `all_prefixes`.
     #[serde(default = "span_plural_default")]
     pub prefixes: Spanned<TypedValue<Plural<KeyBinding>>>,
 
@@ -631,6 +634,166 @@ impl Resolving<Option<CombinedBindingDoc>> for Option<CombinedBindingDocInput> {
             Some(doc) => Ok(Some(CombinedBindingDoc::new(doc, scope)?)),
             Option::None => Ok(None),
         };
+    }
+}
+
+//
+// ================ Legacy `[[bind]]` warnings ================
+//
+
+// tracks fields that used to exist in [[bind]] in file format 1.0
+// so that we can generate warnings
+#[allow(non_snake_case)]
+#[derive(Deserialize, Clone, Debug)]
+pub struct LegacyBindingInput {
+    computedArgs: Option<Spanned<toml::Value>>,
+    path: Option<Spanned<toml::Value>>,
+    mode: Option<Spanned<Plural<String>>>, // to check for `!` prefixed mode names etc...
+    prefixes: Option<Spanned<Plural<String>>>, // to check for `<all-prefixes>`.
+    name: Option<Spanned<toml::Value>>,
+    description: Option<Spanned<toml::Value>>,
+    hideInPalette: Option<Spanned<toml::Value>>,
+    hideInDocs: Option<Spanned<toml::Value>>,
+    combinedName: Option<Spanned<toml::Value>>,
+    combinedDescription: Option<Spanned<toml::Value>>,
+    combinedKey: Option<Spanned<toml::Value>>,
+    resetTransient: Option<Spanned<toml::Value>>,
+}
+
+impl LegacyBindingInput {
+    pub(crate) fn check(&self) -> ResultVec<()> {
+        let mut errors = Vec::new();
+        if let Some(spanned) = &self.computedArgs {
+            let err: Result<()> = Err(wrn!(
+                "`computedArgs` is no longer used in the 2.0 format; replace \
+                  `computedArgs.f = \"x+1\"` with `args.f = '{}'`",
+                "{{x+1}}"
+            ))
+            .with_range(&spanned.span());
+            errors.push(err.unwrap_err());
+        }
+
+        if let Some(spanned) = &self.path {
+            let err: Result<()> = Err(wrn!(
+                "`path` no longer exists in the 2.0 format; replace \
+                `path` with `default` and review changes in documentation",
+            ))
+            .with_range(&spanned.span());
+            errors.push(err.unwrap_err())
+        }
+
+        if let Some(spanned) = &self.mode {
+            let span = spanned.span().clone();
+            if let Plural(modes) = spanned.as_ref().clone() {
+                if modes.iter().any(|s| s.starts_with("!")) {
+                    let err: Result<()> = Err(wrn!(
+                        "file format 2.0 does not support excluding modes using \
+                        `!mode_name`, use an expression like `{}` instead",
+                        "{{not_modes([\"mode_name\"])}}"
+                    ))
+                    .with_range(&span);
+                    errors.push(err.unwrap_err())
+                }
+
+                if modes.len() == 0 {
+                    let err: Result<()> = Err(wrn!(
+                        "2.0 no longer supports expression all modes using an empty array\
+                        use the expression `{}` instead",
+                        "{{all_modes()}}"
+                    ))
+                    .with_range(&span);
+                    errors.push(err.unwrap_err())
+                }
+            }
+        }
+
+        if let Some(spanned) = &self.prefixes {
+            let span = spanned.span().clone();
+            if let Plural(prefixes) = spanned.as_ref().clone() {
+                if prefixes.iter().any(|s| s == "<all-prefixes>") {
+                    let err: Result<()> = Err(wrn!(
+                        "file format 2.0 does not support `<all-prefixes>`, use `{}` \
+                        instead",
+                        "{{all_prefixes()}}"
+                    ))
+                    .with_range(&span);
+                    errors.push(err.unwrap_err())
+                }
+            }
+        }
+
+        if let Some(spanned) = &self.name {
+            let err: Result<()> = Err(wrn!(
+                "`name` no longer exists in the 2.0 format; replace \
+                `name` with `doc.name`",
+            ))
+            .with_range(&spanned.span());
+            errors.push(err.unwrap_err())
+        }
+        if let Some(spanned) = &self.description {
+            let err: Result<()> = Err(wrn!(
+                "`description` no longer exists in the 2.0 format; replace \
+                `description` with `doc.description`",
+            ))
+            .with_range(&spanned.span());
+            errors.push(err.unwrap_err())
+        }
+        if let Some(spanned) = &self.hideInPalette {
+            let err: Result<()> = Err(wrn!(
+                "`hideInPalette` no longer exists in the 2.0 format; replace \
+                `hideInPalette` with `doc.hideInPalette`",
+            ))
+            .with_range(&spanned.span());
+            errors.push(err.unwrap_err())
+        }
+        if let Some(spanned) = &self.hideInDocs {
+            let err: Result<()> = Err(wrn!(
+                "`hideInDocs` no longer exists in the 2.0 format; replace \
+                `hideInDocs` with `doc.hideInDocs`",
+            ))
+            .with_range(&spanned.span());
+            errors.push(err.unwrap_err())
+        }
+
+        if let Some(spanned) = &self.combinedName {
+            let err: Result<()> = Err(wrn!(
+                "`combinedName` no longer exists in the 2.0 format; replace \
+                `combinedName` with `doc.combeind.name`",
+            ))
+            .with_range(&spanned.span());
+            errors.push(err.unwrap_err())
+        }
+        if let Some(spanned) = &self.combinedDescription {
+            let err: Result<()> = Err(wrn!(
+                "`combinedDescription` no longer exists in the 2.0 format; replace \
+                `combinedDescription` with `doc.combeind.description`",
+            ))
+            .with_range(&spanned.span());
+            errors.push(err.unwrap_err())
+        }
+        if let Some(spanned) = &self.combinedKey {
+            let err: Result<()> = Err(wrn!(
+                "`combinedKey` no longer exists in the 2.0 format; replace \
+                `combinedKey` with `doc.combeind.key`",
+            ))
+            .with_range(&spanned.span());
+            errors.push(err.unwrap_err())
+        }
+
+        if let Some(spanned) = &self.resetTransient {
+            let err: Result<()> = Err(wrn!(
+                "`resetTransient` no longer exists in the 2.0 format; replace \
+                `resetTransient` with `finalKey`",
+            ))
+            .with_range(&spanned.span());
+            errors.push(err.unwrap_err())
+        }
+
+        if errors.len() > 0 {
+            return Err(errors.into());
+        } else {
+            return Ok(());
+        }
     }
 }
 
