@@ -120,6 +120,7 @@ pub struct Scope {
     pub(crate) engine: rhai::Engine,
     pub(crate) prefixes: HashSet<String>,
     pub(crate) modes: HashSet<String>,
+    pub(crate) kinds: HashSet<String>,
     pub(crate) default_mode: String,
     pub(crate) state: rhai::Scope<'static>,
     pub(crate) queues: HashMap<String, VecDeque<Command>>,
@@ -188,6 +189,7 @@ impl Scope {
             default_mode: "default".to_string(),
             prefixes: HashSet::from(["".to_string()]),
             modes: HashSet::from(["default".to_string()]),
+            kinds: HashSet::new(),
             queues: HashMap::new(),
         };
     }

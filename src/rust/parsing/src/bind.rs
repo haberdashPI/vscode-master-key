@@ -652,6 +652,7 @@ pub struct LegacyBindingInput {
     prefixes: Option<Spanned<Plural<String>>>, // to check for `<all-prefixes>`.
     name: Option<Spanned<toml::Value>>,
     description: Option<Spanned<toml::Value>>,
+    kind: Option<Spanned<toml::Value>>,
     hideInPalette: Option<Spanned<toml::Value>>,
     hideInDocs: Option<Spanned<toml::Value>>,
     combinedName: Option<Spanned<toml::Value>>,
@@ -684,41 +685,39 @@ impl LegacyBindingInput {
 
         if let Some(spanned) = &self.mode {
             let span = spanned.span().clone();
-            if let Plural(modes) = spanned.as_ref().clone() {
-                if modes.iter().any(|s| s.starts_with("!")) {
-                    let err: Result<()> = Err(wrn!(
-                        "file format 2.0 does not support excluding modes using \
-                        `!mode_name`, use an expression like `{}` instead",
-                        "{{not_modes([\"mode_name\"])}}"
-                    ))
-                    .with_range(&span);
-                    errors.push(err.unwrap_err())
-                }
+            let Plural(modes) = spanned.as_ref().clone();
+            if modes.iter().any(|s| s.starts_with("!")) {
+                let err: Result<()> = Err(wrn!(
+                    "file format 2.0 does not support excluding modes using \
+                    `!mode_name`, use an expression like `{}` instead",
+                    "{{not_modes([\"mode_name\"])}}"
+                ))
+                .with_range(&span);
+                errors.push(err.unwrap_err())
+            }
 
-                if modes.len() == 0 {
-                    let err: Result<()> = Err(wrn!(
-                        "2.0 no longer supports expression all modes using an empty array\
-                        use the expression `{}` instead",
-                        "{{all_modes()}}"
-                    ))
-                    .with_range(&span);
-                    errors.push(err.unwrap_err())
-                }
+            if modes.len() == 0 {
+                let err: Result<()> = Err(wrn!(
+                    "2.0 no longer supports expressions; all modes using an empty array\
+                    use the expression `{}` instead",
+                    "{{all_modes()}}"
+                ))
+                .with_range(&span);
+                errors.push(err.unwrap_err())
             }
         }
 
         if let Some(spanned) = &self.prefixes {
             let span = spanned.span().clone();
-            if let Plural(prefixes) = spanned.as_ref().clone() {
-                if prefixes.iter().any(|s| s == "<all-prefixes>") {
-                    let err: Result<()> = Err(wrn!(
-                        "file format 2.0 does not support `<all-prefixes>`, use `{}` \
-                        instead",
-                        "{{all_prefixes()}}"
-                    ))
-                    .with_range(&span);
-                    errors.push(err.unwrap_err())
-                }
+            let Plural(prefixes) = spanned.as_ref().clone();
+            if prefixes.iter().any(|s| s == "<all-prefixes>") {
+                let err: Result<()> = Err(wrn!(
+                    "file format 2.0 does not support `<all-prefixes>`, use `{}` \
+                    instead",
+                    "{{all_prefixes()}}"
+                ))
+                .with_range(&span);
+                errors.push(err.unwrap_err())
             }
         }
 
@@ -734,6 +733,14 @@ impl LegacyBindingInput {
             let err: Result<()> = Err(wrn!(
                 "`description` no longer exists in the 2.0 format; replace \
                 `description` with `doc.description`",
+            ))
+            .with_range(&spanned.span());
+            errors.push(err.unwrap_err())
+        }
+        if let Some(spanned) = &self.kind {
+            let err: Result<()> = Err(wrn!(
+                "`kind` no longer exists in the 2.0 format; replace \
+                `kind` with `doc.kind`",
             ))
             .with_range(&spanned.span());
             errors.push(err.unwrap_err())
@@ -979,7 +986,7 @@ pub struct BindingDoc {
     pub hideInPalette: bool,
     pub hideInDocs: bool,
     pub combined: Option<CombinedBindingDoc>,
-    pub kind: String,
+    pub kind: Option<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Default)]
@@ -994,13 +1001,22 @@ pub struct CombinedBindingDoc {
 #[wasm_bindgen]
 impl BindingDoc {
     pub(crate) fn new(input: BindingDocInput, scope: &mut Scope) -> ResultVec<Self> {
+        // kind validation
+        let kind_span = input.kind.as_ref().map(|x| x.span());
+        let kind: Option<String> = resolve!(input, kind, scope)?;
+        if let Some(k) = &kind {
+            if !scope.kinds.contains(k) {
+                return Err(err!("Undefined kind `{}`", k)).with_range(&kind_span.unwrap())?;
+            }
+        };
+
         return Ok(BindingDoc {
             name: resolve!(input, name, scope)?,
             description: resolve!(input, description, scope)?,
             hideInPalette: resolve!(input, hideInPalette, scope)?,
             hideInDocs: resolve!(input, hideInDocs, scope)?,
             combined: resolve!(input, combined, scope)?,
-            kind: resolve!(input, kind, scope)?,
+            kind,
         });
     }
 }

@@ -80,7 +80,7 @@ Integration test debugging:
         - [X] foreach expansion (unit tests remain)
         - [X] expand keys in `foreach` lists
         - [x] include `Spanned` in fields of `BindInput`
-    - [ ] pipeline for `[[bind]]` entries
+    - [X] pipeline for `[[bind]]` entries
         - [X] basic pipeline
         - [X] implement parsing of vscode file with rust command (and generate problems)
             - [X] we need to detect that the file should be parsed
@@ -223,15 +223,16 @@ Integration test debugging:
                 - [X] unit test
             - [X] `{{all_modes()}}`
             - [X] `{{not_modes(["not_me", "or_me"])}}`
-        - [ ] find low hanging fruit for problems with using 1.0 files / bad fields
+        - [X] find low hanging fruit for problems with using 1.0 files / bad fields
             - [X] implement tooling to use different levels (warn/info)
               in error reporting
-            - [~] fields that exist in the old but not new (use `#[serde(flatten)]`)
-            - [ ] review strings for single `{}` braces and warn that `{{}}` are now required
-            - [ ] others?
-    - [ ] implement `[[kind]]` (or redesign)
+            - [X] fields that exist in the old but not new (use `#[serde(flatten)]`)
+            - [X] review strings for single `{}` braces and warn that `{{}}` are now required
+            - [X] others?
+    - [X] implement `[[kind]]` (or redesign)
+        - [X] add legacy check for kind (since its also in the docs)
     - [ ] implement `[header]` section
-        - [ ] instead of using `.mk.toml`, look for a specific heading in the file
+        - [ ] instead of using `.mk.toml`, look for a specific heading comment in the file
     - [ ] remove spurious line/char positions from expression error messages
         - NOTE: these come from the line and char position in the rhai expression
         which has nothing to do with the line and char position in the parent
@@ -239,19 +240,21 @@ Integration test debugging:
     - [ ] error handling checks
         - [ ] make sure a range is always provided
         - [ ] test that all error messages show up when expected
+        - [ ] review coverage to verify there aren't additional checks we're missing
     - [ ] refactor and cleanup rust code
     - [ ] proper conversion to keybindings.json command
         - [X] expand per mode and prefix (e.g. each binding has one mode and one prefix)
         - [X] encode prefixes as prefixCode in when clause
         - [X] move mode to when clause
         - [X] generate all binding outputs in file object
+        - [X] unit tests for binding output generation
         - [ ] review existing binding resolution logic to make sure we didn't miss
-              something
-        - [ ] unit tests for binding output generation
-        - [ ] write `BindingOutput` to keybindings.json
+              something (particularly around prioritizing/ordering bindings)
+        - [ ] incorporate a write `BindingOutput` to keybindings.json into ts workflow
         - [ ] re-implement master-key.do and master-key.prefix
             - [ ] don't use `getter_with_clone` for `KeyFileResult` (it doesn't really make
               sense)
+            - [ ] figure out how to handle ts/rust statement management
             - [ ] move all bare variables in an expression to `key.` or `code.` object
             - [ ] use rust scope instead of TS state object (update state.ts)
             - [ ] properly handle command queues (now controlled by rust)

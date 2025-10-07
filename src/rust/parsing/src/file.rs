@@ -126,13 +126,14 @@ use crate::define::{Define, DefineInput};
 use crate::error::{ErrorContext, ErrorReport, ErrorSet, Result, ResultVec, flatten_errors};
 use crate::expression::Scope;
 use crate::expression::value::{Expanding, Expression, Value};
+use crate::kind::Kind;
 use crate::mode::{ModeInput, Modes};
 use crate::wrn;
 
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use std::collections::{HashSet, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 use toml::Spanned;
 use wasm_bindgen::prelude::*;
 
@@ -142,14 +143,16 @@ struct KeyFileInput {
     define: Option<DefineInput>,
     mode: Option<Vec<Spanned<ModeInput>>>,
     bind: Option<Vec<Spanned<BindingInput>>>,
+    kind: Option<Vec<Spanned<Kind>>>,
 }
 
 #[derive(Clone, Debug, Serialize)]
 #[wasm_bindgen]
 pub struct KeyFile {
     define: Define,
-    modes: Modes,
+    mode: Modes,
     bind: Vec<Binding>,
+    kind: HashMap<String, String>,
     key_bind: Vec<BindingOutput>,
 }
 
@@ -180,6 +183,9 @@ impl KeyFile {
             }
             Ok(x) => x,
         };
+
+        // [[kind]]
+        let kind = Kind::process(&input.kind, &mut scope)?;
 
         // [[bind]]
         let input_iter = input
@@ -261,8 +267,9 @@ impl KeyFile {
             return Ok(KeyFile {
                 define,
                 bind,
+                mode: modes,
+                kind,
                 key_bind: final_key_bind.into(),
-                modes,
             });
         } else {
             return Err(errors.into());
@@ -670,7 +677,7 @@ mod tests {
         let result =
             KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap();
         assert_eq!(
-            result.modes.get("b").unwrap().whenNoBinding,
+            result.mode.get("b").unwrap().whenNoBinding,
             crate::mode::WhenNoBinding::UseMode("a".to_string())
         )
     }
@@ -839,7 +846,6 @@ mod tests {
         let err =
             KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap_err();
         let report = err.report(data.as_bytes());
-        info!("report: {report:#?}");
         assert!(report[0].message.contains("statically defined"));
         assert_eq!(report[0].range.start.line, 12)
     }
@@ -1062,6 +1068,7 @@ mod tests {
         path = "modes"
         name = "normal"
         description = "All the legacy features!"
+        kind = "foo"
         foreach.key = ["escape", "ctrl+[", "{key: [0-9]}"]
         combinedKey = "a/b"
         combinedName = "all"
@@ -1077,7 +1084,34 @@ mod tests {
         "#;
 
         let warnings = identify_legacy_warnings_helper(data.as_bytes()).unwrap_err();
-        assert_eq!(warnings.errors.len(), 12);
+        assert_eq!(warnings.errors.len(), 13);
+    }
+
+    #[test]
+    fn validate_kind() {
+        let data = r#"
+        [[kind]]
+        name = "foo"
+        description = "biz baz buz"
+
+        [[bind]]
+        key = "a"
+        command = "bar"
+        doc.kind = "foo"
+
+        [[bind]]
+        key = "b"
+        command = "boop"
+        doc.kind = "bleep"
+        "#;
+
+        let mut scope = Scope::new();
+        let err =
+            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap_err();
+        let report = err.report(data.as_bytes());
+
+        assert!(report[0].message.contains("`bleep`"));
+        assert_eq!(report[0].range.start.line, 13);
     }
 
     // TODO: write a test for required field `key` and ensure the span
