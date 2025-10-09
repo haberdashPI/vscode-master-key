@@ -13,7 +13,7 @@ use crate::bind::BindingInput;
 use crate::bind::command::CommandInput;
 use crate::bind::validation::BindingReference;
 use crate::err;
-use crate::error::{Error, ErrorContext, ResultVec, err};
+use crate::error::{ErrorContext, ParseError, ResultVec, err};
 use crate::expression::Scope;
 use crate::expression::value::{Expanding, Expression, Value};
 use crate::util::{Merging, Resolving};
@@ -189,7 +189,7 @@ impl Define {
         let mut resolved_bind = HashMap::<String, BindingInput>::new();
         let mut resolved_command = HashMap::<String, CommandInput>::new();
         let mut resolved_var = HashMap::<String, Value>::new();
-        let mut errors: Vec<Error> = Vec::new();
+        let mut errors: Vec<ParseError> = Vec::new();
 
         for def_block in input.val.into_iter().flatten() {
             for (val, value) in def_block.into_iter() {

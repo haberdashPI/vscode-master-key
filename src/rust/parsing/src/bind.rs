@@ -257,7 +257,13 @@ impl BindingInput {
             if let TypedValue::Constant(prefixes) = input.as_ref().prefixes.as_ref() {
                 let explicit_prefixes: Vec<String> =
                     prefixes.clone().resolve("prefixes", scope).unwrap();
-                let key_sequence: String = input.as_ref().key.clone().resolve("`key`", scope)?;
+                let span = input.span().clone();
+                let key_sequence: String = input
+                    .as_ref()
+                    .key
+                    .clone()
+                    .resolve("key", scope)
+                    .with_range(&span)?;
                 if explicit_prefixes.len() > 0 {
                     for p in explicit_prefixes {
                         let seq = WHITESPACE.split(&p).chain(WHITESPACE.split(&key_sequence));

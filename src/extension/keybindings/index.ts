@@ -26,7 +26,7 @@ import JSONC from 'jsonc-simple-parser';
 import TOML from 'smol-toml';
 
 // run `mise build-rust` to create this auto generated source fileu
-import initParsing, { parse_keybinding_bytes } from '../../rust/parsing/lib';
+import initParsing, { ErrorLevel, parse_keybinding_bytes } from '../../rust/parsing/lib';
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 // Keybinding Generation
@@ -640,36 +640,48 @@ async function loadPresets(allDirs: vscode.Uri[]) {
 
 let extensionPresetsDir: vscode.Uri;
 
-async function validateKeybindings(file: vscode.Uri, fileData?: Uint8Array) {
-    if (file.toString().endsWith('.mk.toml')) {
-        if (fileData === undefined) {
-            fileData = await vscode.workspace.fs.readFile(file);
-        }
-        const parsed = parse_keybinding_bytes(fileData!);
-        if (parsed.errors) {
-            const diagnosticItems: vscode.Diagnostic[] = [];
-            for (const error of parsed.errors) {
-                diagnosticItems.push(
-                    new vscode.Diagnostic(
-                        new vscode.Range(
-                            new vscode.Position(
-                                error.range.start.line,
-                                error.range.start.col,
-                            ),
-                            new vscode.Position(
-                                error.range.end.line,
-                                error.range.end.col,
-                            ),
+async function validateKeybindings(
+    file: vscode.Uri,
+    fileData?: Uint8Array,
+    implicit: boolean = true,
+) {
+    if (fileData === undefined) {
+        fileData = await vscode.workspace.fs.readFile(file);
+    }
+    const parsed = parse_keybinding_bytes(fileData!);
+    if (implicit &&
+        parsed.errors &&
+        parsed.errors[0]?.message &&
+        /#:master-keybindings/.test(parsed.errors[0].message)) {
+        return diagnostics.delete(file);
+    }
+    if (parsed.errors) {
+        const diagnosticItems: vscode.Diagnostic[] = [];
+        for (const error of parsed.errors) {
+            diagnosticItems.push(
+                new vscode.Diagnostic(
+                    new vscode.Range(
+                        new vscode.Position(
+                            error.range.start.line,
+                            error.range.start.col,
                         ),
-                        error.message,
-                        vscode.DiagnosticSeverity.Error,
+                        new vscode.Position(
+                            error.range.end.line,
+                            error.range.end.col,
+                        ),
                     ),
-                );
-            }
-            diagnostics.set(file, diagnosticItems);
-        } else {
-            diagnostics.delete(file);
+                    error.message,
+                    error.level == ErrorLevel.Error ?
+                        vscode.DiagnosticSeverity.Error :
+                        error.level == ErrorLevel.Warn ?
+                            vscode.DiagnosticSeverity.Warning :
+                            vscode.DiagnosticSeverity.Hint,
+                ),
+            );
         }
+        diagnostics.set(file, diagnosticItems);
+    } else {
+        diagnostics.delete(file);
     }
 }
 
@@ -683,18 +695,24 @@ export async function activate(context: vscode.ExtensionContext) {
 
     const encoder = new TextEncoder();
     vscode.workspace.onDidChangeTextDocument(async (e) => {
-        debounce(() => {
-            const text = e.document.getText();
-            const bytes = encoder.encode(text);
-            validateKeybindings(e.document.uri, bytes);
-        }, 1000)();
+        if (e.document.languageId == 'toml') {
+            debounce(() => {
+                const text = e.document.getText();
+                const bytes = encoder.encode(text);
+                validateKeybindings(e.document.uri, bytes);
+            }, 1000)();
+        }
     });
 
     vscode.workspace.onDidSaveTextDocument(async (e) => {
-        await validateKeybindings(e.uri);
+        if (e.languageId == 'toml') {
+            await validateKeybindings(e.uri);
+        }
     });
     vscode.workspace.onDidOpenTextDocument(async (e) => {
-        await validateKeybindings(e.uri);
+        if (e.languageId == 'toml') {
+            await validateKeybindings(e.uri);
+        }
     });
 
     // initialize rust WASM module for parsing keybinding files

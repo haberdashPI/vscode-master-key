@@ -47,7 +47,7 @@ macro_rules! err {
 #[macro_export]
 macro_rules! wrn {
     ( $($x:tt)* ) => {
-        crate::error::Error {
+        crate::error::ParseError {
             error: crate::error::RawError::Dynamic(format!($($x)*)),
             contexts: smallvec::SmallVec::new(),
             level: crate::error::ErrorLevel::Warn,
@@ -58,7 +58,7 @@ macro_rules! wrn {
 #[macro_export]
 macro_rules! note {
     ( $($x:tt)* ) => {
-        crate::error::Error {
+        crate::error::ParseError {
             error: crate::error::RawError::Dynamic(format!($($x)*))
             contexts: smallvec::SmallVec::new(),
             level: crate::error::ErrorLevel::Note
@@ -70,16 +70,16 @@ pub fn err(msg: &'static str) -> RawError {
     return RawError::Static(msg);
 }
 
-pub fn wrn(msg: &'static str) -> Error {
-    return Error {
+pub fn wrn(msg: &'static str) -> ParseError {
+    return ParseError {
         error: RawError::Static(msg),
         contexts: SmallVec::new(),
         level: ErrorLevel::Warn,
     };
 }
 
-pub fn note(msg: &'static str) -> Error {
-    return Error {
+pub fn note(msg: &'static str) -> ParseError {
+    return ParseError {
         error: RawError::Static(msg),
         contexts: SmallVec::new(),
         level: ErrorLevel::Info,
@@ -88,7 +88,7 @@ pub fn note(msg: &'static str) -> Error {
 
 #[wasm_bindgen]
 #[derive(Debug, Error, Clone)]
-pub struct Error {
+pub struct ParseError {
     #[source]
     pub(crate) error: RawError,
     pub(crate) contexts: SmallVec<[Context; 8]>,
@@ -172,13 +172,13 @@ where
 }
 
 impl<T> ErrorContext<T> for Result<T> {
-    type Error = Error;
+    type Error = ParseError;
     fn with_context(self, context: Context) -> Result<T> {
         return match self {
             Ok(x) => Ok(x),
             Err(mut e) => {
                 e.contexts.push(context);
-                Err(Error {
+                Err(ParseError {
                     error: e.error,
                     contexts: e.contexts,
                     level: e.level,
@@ -188,11 +188,11 @@ impl<T> ErrorContext<T> for Result<T> {
     }
 }
 
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T> = std::result::Result<T, ParseError>;
 
-impl<E: Into<RawError>> From<E> for Error {
+impl<E: Into<RawError>> From<E> for ParseError {
     fn from(error: E) -> Self {
-        return Error {
+        return ParseError {
             error: error.into(),
             contexts: SmallVec::new(),
             level: ErrorLevel::default(),
@@ -200,8 +200,8 @@ impl<E: Into<RawError>> From<E> for Error {
     }
 }
 
-impl From<Box<EvalAltResult>> for Error {
-    fn from(value: Box<EvalAltResult>) -> Error {
+impl From<Box<EvalAltResult>> for ParseError {
+    fn from(value: Box<EvalAltResult>) -> ParseError {
         return RawError::Dynamic(value.to_string()).into();
     }
 }
@@ -219,11 +219,11 @@ pub type ResultVec<T> = std::result::Result<T, ErrorSet>;
 #[derive(Debug, Clone, Error)]
 #[error("first error: {}", .errors[0])]
 pub struct ErrorSet {
-    pub(crate) errors: Vec<Error>,
+    pub(crate) errors: Vec<ParseError>,
 }
 
-impl From<Error> for ErrorSet {
-    fn from(value: Error) -> Self {
+impl From<ParseError> for ErrorSet {
+    fn from(value: ParseError) -> Self {
         return ErrorSet {
             errors: vec![value],
         };
@@ -239,7 +239,7 @@ where
     let flat_errs = errors
         .into_iter()
         .flat_map(|x| x.unwrap_err().errors.into_iter())
-        .collect::<Vec<Error>>();
+        .collect::<Vec<ParseError>>();
 
     if flat_errs.len() > 0 {
         return Err(flat_errs.into());
@@ -251,26 +251,26 @@ where
 impl<E: Into<RawError>> From<E> for ErrorSet {
     fn from(error: E) -> Self {
         let error: RawError = error.into();
-        let error: Error = error.into();
+        let error: ParseError = error.into();
         return error.into();
     }
 }
 
-impl From<Vec<Error>> for ErrorSet {
-    fn from(value: Vec<Error>) -> Self {
+impl From<Vec<ParseError>> for ErrorSet {
+    fn from(value: Vec<ParseError>) -> Self {
         return ErrorSet { errors: value };
     }
 }
 
 impl<T, E: Into<RawError>> ErrorContext<T> for std::result::Result<T, E> {
-    type Error = Error;
+    type Error = ParseError;
     fn with_context(self, context: Context) -> Result<T> {
         return match self {
             Ok(x) => Ok(x),
             Err(e) => {
                 let mut contexts = SmallVec::new();
                 contexts.push(context);
-                Err(Error {
+                Err(ParseError {
                     error: e.into(),
                     contexts,
                     level: ErrorLevel::default(),
@@ -301,7 +301,7 @@ impl<T> ErrorContext<T> for ResultVec<T> {
 
 // While this trait might be useful for debugging it is not the main API through which
 // errors are reported. It has to be implemented for `derive(Error)` to work
-impl fmt::Display for Error {
+impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> std::result::Result<(), fmt::Error> {
         for context in &self.contexts {
             match context {
@@ -354,7 +354,7 @@ fn resolve_rhai_pos_from_expression_range(
 }
 
 #[wasm_bindgen]
-impl Error {
+impl ParseError {
     /// `report` is how we generate legible annotations
     /// of *.mk.toml file errors in typescript
     pub fn report(&self, content: &[u8]) -> ErrorReport {

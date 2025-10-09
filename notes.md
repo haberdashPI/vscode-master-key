@@ -231,13 +231,28 @@ Integration test debugging:
             - [X] others?
     - [X] implement `[[kind]]` (or redesign)
         - [X] add legacy check for kind (since its also in the docs)
-    - [ ] implement `[header]` section
-        - [ ] instead of using `.mk.toml`, look for a specific heading comment in the file
-    - [ ] remove spurious line/char positions from expression error messages
-        - NOTE: these come from the line and char position in the rhai expression
-        which has nothing to do with the line and char position in the parent
-        keybinding file
+    - [X] implement `[header]` section
+        - [X] instead of using `.mk.toml`, look for a specific heading comment in the file
+        - [X] debug error processing in `keybindings/index.ts`
+    - [ ] BUG: prefides defined via `master-key.prefix` are not included in
+          `all_prefixes`
+          - [ ] get rid of the `prefixes` field design and instead allow
+                a way to express "prefix is X" "prefix isn't X" etc...
+                more directly. since this wouldn't be an expression
+                it could be during a phase of file resolution that
+                already knows about the available prefixes. Like this:
+                ```toml
+                prefix.anyOf = ["a", "b", "c"]
+                prefix.notAnyOf = ["x", "y"]
+                # defaults to
+                prefix.anyOf = [""]
+                ```
+                - [ ] validate that the excludes don't contain new prefixes
     - [ ] error handling checks
+        - [ ] remove spurious line/char positions from expression error messages
+            - NOTE: these come from the line and char position in the rhai expression
+            which has nothing to do with the line and char position in the parent
+            keybinding file
         - [ ] make sure a range is always provided
         - [ ] test that all error messages show up when expected
         - [ ] review coverage to verify there aren't additional checks we're missing
@@ -255,8 +270,13 @@ Integration test debugging:
             - [ ] don't use `getter_with_clone` for `KeyFileResult` (it doesn't really make
               sense)
             - [ ] figure out how to handle ts/rust statement management
-            - [ ] move all bare variables in an expression to `key.` or `code.` object
-            - [ ] use rust scope instead of TS state object (update state.ts)
+                - [ ] keep command queue in rust
+                - [ ] probably copy simple state data to rust, duplicate
+                      in ts for now (avoid churn)
+                    - [ ] alternatively reimplement state.ts in rust
+                - [ ] move all bare variables in an expression to `key.` or `code.` object
+                - [ ] maybe handle state passing between commands with rust scope
+                      object??
             - [ ] properly handle command queues (now controlled by rust)
                 - [ ] guess: don't have special command queue field
                 - [ ] support accessing values by their path (`val.foo`, `key.count`)

@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use toml::{Spanned, Value};
 
 use crate::err;
-use crate::error::{Error, ErrorContext, Result, ResultVec, flatten_errors};
+use crate::error::{ErrorContext, ParseError, Result, ResultVec, flatten_errors};
 use crate::expression::Scope;
 
 //
@@ -309,7 +309,7 @@ impl<'de, T> TryFrom<Option<toml::Value>> for Required<T>
 where
     T: Deserialize<'de>,
 {
-    type Error = Error;
+    type Error = ParseError;
     fn try_from(value: Option<toml::Value>) -> Result<Self> {
         match value {
             Option::None => Ok(Required::DefaultValue),

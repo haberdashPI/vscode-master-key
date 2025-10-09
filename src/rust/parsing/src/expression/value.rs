@@ -15,7 +15,7 @@ use toml::Spanned;
 
 use crate::bind::UNKNOWN_RANGE;
 use crate::err;
-use crate::error::{Error, ErrorContext, ErrorSet, Result, ResultVec, err, flatten_errors};
+use crate::error::{ErrorContext, ErrorSet, ParseError, Result, ResultVec, err, flatten_errors};
 use crate::expression::Scope;
 use crate::util::{LeafValue, Merging, Plural, Required, Resolving};
 
@@ -52,7 +52,7 @@ pub enum Value {
 pub struct Expression {
     pub content: String,
     #[serde(skip)]
-    pub error: Option<Error>, // parsing-time error that we want to report after deserializing
+    pub error: Option<ParseError>, // parsing-time error that we want to report after deserializing
     pub span: Range<usize>,
     pub scope: SmallVec<[(String, BareValue); 8]>,
 }
@@ -273,7 +273,7 @@ fn match_to_expression(maybe_parent_span: &Option<Range<usize>>, m: regex::Match
         let content: String = m.as_str().into();
         let mut error = None;
         if content.contains("{{") {
-            error = Some(Error {
+            error = Some(ParseError {
                 error: err("unexpected `{{`"),
                 contexts: smallvec![crate::error::Context::Range(exp_span.clone())],
                 level: crate::error::ErrorLevel::Error,
@@ -289,7 +289,7 @@ fn match_to_expression(maybe_parent_span: &Option<Range<usize>>, m: regex::Match
         let content: String = m.as_str().into();
         let mut error = None;
         if content.contains("{{") {
-            error = Some(Error {
+            error = Some(ParseError {
                 error: err("unexpected `{{`"),
                 contexts: smallvec![],
                 level: crate::error::ErrorLevel::Error,
@@ -306,7 +306,7 @@ fn match_to_expression(maybe_parent_span: &Option<Range<usize>>, m: regex::Match
 
 fn check_unmatched_braces(x: String, span: Option<Range<usize>>) -> Value {
     if x.contains("{{") {
-        let mut error: Error = err("unexpected `{{`").into();
+        let mut error: ParseError = err("unexpected `{{`").into();
         if let Some(r) = span.clone() {
             error.contexts.push(crate::error::Context::Range(r));
         };
@@ -317,7 +317,7 @@ fn check_unmatched_braces(x: String, span: Option<Range<usize>>) -> Value {
             scope: SmallVec::new(),
         });
     } else if x.contains("}}") {
-        let mut error: Error = err("unexpected `}}`").into();
+        let mut error: ParseError = err("unexpected `}}`").into();
         if let Some(r) = span.clone() {
             error.contexts.push(crate::error::Context::Range(r.clone()));
         };
@@ -493,7 +493,7 @@ impl From<Value> for Dynamic {
 }
 
 impl TryFrom<Dynamic> for Value {
-    type Error = crate::error::Error;
+    type Error = crate::error::ParseError;
     // TODO: this is currently almost certainly quite inefficient (we clone arrays and
     // maps), but we can worry about optimizing this later
     fn try_from(value: Dynamic) -> Result<Self> {

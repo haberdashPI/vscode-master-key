@@ -214,7 +214,7 @@ impl Modes {
         let mut default_mode = None;
         let mut first_mode_span = UNKNOWN_RANGE;
         for mode in &input {
-            if first_mode_span != UNKNOWN_RANGE {
+            if first_mode_span == UNKNOWN_RANGE {
                 first_mode_span = mode.span().clone();
             }
             let mode_name = mode.as_ref().name.clone();

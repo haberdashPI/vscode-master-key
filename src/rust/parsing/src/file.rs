@@ -23,7 +23,7 @@
 /// ```toml
 /// [header]
 /// # this denotes the file-format version, it must be semver compatible with 2.0
-/// version = "2.0"
+/// version = "2.0.0"
 /// name = "My Bindings"
 ///
 /// [[mode]]
@@ -128,10 +128,11 @@ use crate::expression::Scope;
 use crate::expression::value::{Expanding, Expression, Value};
 use crate::kind::Kind;
 use crate::mode::{ModeInput, Modes};
-use crate::wrn;
+use crate::{err, wrn};
 
 use lazy_static::lazy_static;
 use regex::Regex;
+use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet, VecDeque};
 use toml::Spanned;
@@ -140,10 +141,16 @@ use wasm_bindgen::prelude::*;
 // TODO: copy over docs from typescript
 #[derive(Deserialize, Clone, Debug)]
 struct KeyFileInput {
+    header: Header,
     define: Option<DefineInput>,
     mode: Option<Vec<Spanned<ModeInput>>>,
     bind: Option<Vec<Spanned<BindingInput>>>,
     kind: Option<Vec<Spanned<Kind>>>,
+}
+
+#[derive(Deserialize, Clone, Debug)]
+struct Header {
+    version: Spanned<Version>,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -161,6 +168,16 @@ impl KeyFile {
     // for that section
     fn new(input: KeyFileInput, mut scope: &mut Scope) -> ResultVec<KeyFile> {
         let mut errors = Vec::new();
+
+        // [header]
+        let version = input.header.version.as_ref();
+        if !VersionReq::parse("2.0").unwrap().matches(version) {
+            let r: Result<()> = Err(wrn!(
+                "This version of master key is only compatible with the 2.0 file format."
+            ))
+            .with_range(&input.header.version.span());
+            errors.push(r.unwrap_err().into());
+        }
 
         // [[define]]
         let define_input = input.define.unwrap_or_default();
@@ -289,7 +306,13 @@ pub fn parse_keybinding_bytes(file_content: Box<[u8]>) -> KeyFileResult {
     return match parse_bytes_helper(&file_content) {
         Ok((result, warnings)) => KeyFileResult {
             file: Some(result),
-            errors: None,
+            errors: Some(
+                warnings
+                    .errors
+                    .iter()
+                    .map(|e| e.report(&file_content))
+                    .collect(),
+            ),
         },
         Err(err) => KeyFileResult {
             file: None,
@@ -299,7 +322,39 @@ pub fn parse_keybinding_bytes(file_content: Box<[u8]>) -> KeyFileResult {
 }
 
 fn parse_bytes_helper(file_content: &[u8]) -> ResultVec<(KeyFile, ErrorSet)> {
+    // ensure there's a directive
+    // we know that the content was converted from a string on the typescript side
+    // so we're cool with an unchecked conversion
+    // TODO: maybe we implement this check in typescript??
+    let has_directive: bool = {
+        let mut result: bool = false;
+        let skip_line = Regex::new(r"\s*(#.*)?").unwrap();
+        let lines = unsafe { str::from_utf8_unchecked(file_content).lines() };
+        for line in lines {
+            if !skip_line.is_match(line) {
+                break;
+            }
+            if Regex::new(r"^\s*#:master-keybindings\s*$")
+                .unwrap()
+                .is_match(line)
+            {
+                result = true;
+                break;
+            }
+        }
+        result
+    };
+    if !has_directive {
+        Err(err!(
+            "To be treated as a master keybindings file, the TOML document must \
+             include the directive `#:master-keybindings` on a line by itself
+             before any TOML data."
+        ))
+        .with_range(&(0..0))?;
+    }
+
     let parsed = toml::from_slice::<KeyFileInput>(file_content)?;
+
     let mut scope = Scope::new(); // TODO: do something with this scope??
     let bind = parsed.bind.clone();
     let result = KeyFile::new(parsed, &mut scope);
@@ -397,6 +452,11 @@ mod tests {
     #[test]
     fn parse_example() {
         let data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.0.0"
+
         [[define.val]]
         foo = "bar"
 
@@ -424,8 +484,47 @@ mod tests {
     }
 
     #[test]
+    fn validate_version() {
+        let data = r#"
+        [header]
+        version = "1.0.0"
+
+        [[bind]]
+        key = "a"
+        command = "foo"
+        "#;
+
+        let mut scope = Scope::new();
+        let err =
+            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap_err();
+        let report = err.report(data.as_bytes());
+        assert!(report[0].message.contains("version"));
+        assert_eq!(report[0].range.start.line, 2);
+    }
+
+    #[test]
+    fn validate_comment_directive() {
+        let data = r#"
+        [header]
+        version = "2.0.0"
+
+        [[bind]]
+        key = "a"
+        command = "b"
+        "#;
+
+        let err = parse_bytes_helper(data.as_bytes()).unwrap_err();
+        let report = err.report(data.as_bytes());
+        assert!(report[0].message.contains("directive"));
+        assert_eq!(report[0].range.start.line, 0);
+    }
+
+    #[test]
     fn resolve_bind_and_command() {
         let data = r#"
+        [header]
+        version = "2.0.0"
+
 
         [[define.val]]
         foo_string = "bizbaz"
@@ -475,6 +574,9 @@ mod tests {
     #[test]
     fn resolve_nested_command() {
         let data = r#"
+        [header]
+        version = "2.0.0"
+
 
         [[define.command]]
         id = "run_shebang"
@@ -526,6 +628,9 @@ mod tests {
     #[test]
     fn expand_foreach() {
         let data = r#"
+        [header]
+        version = "2.0.0"
+
         [[bind]]
         foreach.key = ["{{keys(`[0-9]`)}}"]
         key = "c {{key}}"
@@ -566,6 +671,9 @@ mod tests {
     #[test]
     fn foreach_error() {
         let data = r#"
+        [header]
+        version = "2.0.0"
+
         [[bind]]
         foreach.key = ["{{keys(`[0-9]`)}}"]
         doc.name = "update {{key}}"
@@ -578,13 +686,16 @@ mod tests {
         let result = KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope);
         let report = result.unwrap_err().report(data.as_bytes());
         assert_eq!(report[0].message, "`key` field is required".to_string());
-        assert_eq!(report[0].range.start.line, 1);
-        assert_eq!(report[0].range.end.line, 1);
+        assert_eq!(report[0].range.start.line, 4);
+        assert_eq!(report[0].range.end.line, 4);
     }
 
     #[test]
     fn define_val_at_read() {
         let data = r#"
+        [header]
+        version = "2.0.0"
+
         [[define.val]]
         foo = "bar"
 
@@ -603,6 +714,9 @@ mod tests {
     #[test]
     fn just_one_default_mode() {
         let data = r#"
+        [header]
+        version = "2.0.0"
+
         [[mode]]
         name = "a"
         default = true
@@ -617,12 +731,15 @@ mod tests {
             KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap_err();
         let report = err.report(data.as_bytes());
         assert!(report[0].message.contains("default mode already set"));
-        assert_eq!(report[0].range.start.line, 5)
+        assert_eq!(report[0].range.start.line, 8)
     }
 
     #[test]
     fn includes_default_mode() {
         let data = r#"
+        [header]
+        version = "2.0.0"
+
         [[mode]]
         name = "a"
 
@@ -639,12 +756,15 @@ mod tests {
                 .message
                 .contains("exactly one mode must be the default")
         );
-        assert_eq!(report[0].range.start.line, 0)
+        assert_eq!(report[0].range.start.line, 4)
     }
 
     #[test]
     fn unique_mode_name() {
         let data = r#"
+        [header]
+        version = "2.0.0"
+
         [[mode]]
         name = "a"
         default = true
@@ -658,12 +778,15 @@ mod tests {
             KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap_err();
         let report = err.report(data.as_bytes());
         assert!(report[0].message.contains("mode name is not unique"));
-        assert_eq!(report[0].range.start.line, 5)
+        assert_eq!(report[0].range.start.line, 8)
     }
 
     #[test]
     fn parse_use_mode() {
         let data = r#"
+        [header]
+        version = "2.0.0"
+
         [[mode]]
         name = "a"
         default = true
@@ -685,6 +808,9 @@ mod tests {
     #[test]
     fn validate_use_mode() {
         let data = r#"
+        [header]
+        version = "2.0.0"
+
         [[mode]]
         name = "a"
         default = true
@@ -699,12 +825,15 @@ mod tests {
             KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap_err();
         let report = err.report(data.as_bytes());
         assert!(report[0].message.contains("mode `c` is not defined"));
-        assert_eq!(report[0].range.start.line, 7)
+        assert_eq!(report[0].range.start.line, 10)
     }
 
     #[test]
     fn eval_mode_expressions() {
         let data = r#"
+        [header]
+        version = "2.0.0"
+
         [[mode]]
         name = "a"
         default = true
@@ -740,6 +869,9 @@ mod tests {
     #[test]
     fn validate_mode_expressions() {
         let data = r#"
+        [header]
+        version = "2.0.0"
+
         [[mode]]
         name = "a"
         default = true
@@ -761,12 +893,15 @@ mod tests {
             KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap_err();
         let report = err.report(data.as_bytes());
         assert!(report[0].message.contains("mode `d`"));
-        assert_eq!(report[0].range.start.line, 14)
+        assert_eq!(report[0].range.start.line, 17)
     }
 
     #[test]
     fn eval_prefix_expressions() {
         let data = r#"
+        [header]
+        version = "2.0.0"
+
         [[bind]]
         key = "a b c"
         command = "foo"
@@ -803,6 +938,9 @@ mod tests {
     #[test]
     fn validate_prefix_expressions() {
         let data = r#"
+        [header]
+        version = "2.0.0"
+
         [[bind]]
         key = "a b c"
         command = "foo"
@@ -822,12 +960,15 @@ mod tests {
             KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap_err();
         let report = err.report(data.as_bytes());
         assert!(report[0].message.contains("prefix `d k`"));
-        assert_eq!(report[0].range.start.line, 12)
+        assert_eq!(report[0].range.start.line, 15)
     }
 
     #[test]
     fn validate_prefixes_are_static() {
         let data = r#"
+        [header]
+        version = "2.0.0"
+
         [[bind]]
         key = "a b c"
         command = "foo"
@@ -847,12 +988,15 @@ mod tests {
             KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap_err();
         let report = err.report(data.as_bytes());
         assert!(report[0].message.contains("statically defined"));
-        assert_eq!(report[0].range.start.line, 12)
+        assert_eq!(report[0].range.start.line, 15)
     }
 
     #[test]
     fn command_expansion() {
         let data = r#"
+        [header]
+        version = "2.0.0"
+
         [[define.val]]
         flag = true
         bar = "test"
@@ -896,6 +1040,9 @@ mod tests {
     #[test]
     fn command_expansion_validates_final_key() {
         let data = r#"
+        [header]
+        version = "2.0.0"
+
         [[define.val]]
         flag = true
         bar = "test"
@@ -928,12 +1075,15 @@ mod tests {
             KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap_err();
         let report = err.report(data.as_bytes());
         assert!(report[0].message.contains("`finalKey`"));
-        assert_eq!(report[0].range.start.line, 10);
+        assert_eq!(report[0].range.start.line, 13);
     }
 
     #[test]
     fn command_expansion_dynamically_validates_final_key() {
         let data = r#"
+        [header]
+        version = "2.0.0"
+
         [[define.val]]
         flag = true
         bar = "test"
@@ -971,6 +1121,9 @@ mod tests {
     #[test]
     fn output_bindings_overwrite_implicit_prefix() {
         let data = r#"
+        [header]
+        version = "2.0.0"
+
         [[bind]]
         key = "a b"
         command = "foo"
@@ -1018,6 +1171,9 @@ mod tests {
     #[test]
     fn output_bindings_identify_duplicates() {
         let data = r#"
+        [header]
+        version = "2.0.0"
+
         [[bind]]
         key = "a k"
         command = "bob"
@@ -1038,13 +1194,16 @@ mod tests {
         let report = err.report(data.as_bytes());
 
         assert!(report[0].message.contains("Duplicate key"));
-        assert_eq!(report[0].range.start.line, 10);
-        assert_eq!(report[1].range.start.line, 1);
+        assert_eq!(report[0].range.start.line, 13);
+        assert_eq!(report[1].range.start.line, 4);
     }
 
     #[test]
     fn output_bindings_expand_prefixes() {
         let data = r#"
+        [header]
+        version = "2.0.0"
+
         [[bind]]
         key = "a b"
         command = "foo"
@@ -1060,6 +1219,9 @@ mod tests {
     #[test]
     fn raises_legacy_warnings() {
         let data = r#"
+        [header]
+        version = "2.0.0"
+
         [[path]]
         id = "modes"
         description = "foo bar"
@@ -1090,6 +1252,9 @@ mod tests {
     #[test]
     fn validate_kind() {
         let data = r#"
+        [header]
+        version = "2.0.0"
+
         [[kind]]
         name = "foo"
         description = "biz baz buz"
@@ -1111,7 +1276,7 @@ mod tests {
         let report = err.report(data.as_bytes());
 
         assert!(report[0].message.contains("`bleep`"));
-        assert_eq!(report[0].range.start.line, 13);
+        assert_eq!(report[0].range.start.line, 16);
     }
 
     // TODO: write a test for required field `key` and ensure the span

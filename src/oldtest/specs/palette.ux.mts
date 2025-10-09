@@ -19,7 +19,7 @@ describe('Palette', () => {
     before(async () => {
         await setBindings(`
             [header]
-            version = "2.0"
+            version = "2.0.0"
 
             [[mode]]
             name = "insert"
@@ -166,7 +166,7 @@ describe('Palette', () => {
         await sleep(1000);
         await setBindings(`
             [header]
-            version = "2.0"
+            version = "2.0.0"
 
             [[mode]]
             name = "insert"
