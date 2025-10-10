@@ -28,15 +28,15 @@ name = "Larkin"
 version = "1.0"
 
 requiredExtensions = [
-      "dbankier.vscode-quick-select",
-      "haberdashPI.vscode-select-by-indent",
-      "haberdashPI.selection-utilities",
-      "pustelto.bracketeer",
-      "wmaurer.change-case",
-      "pkief.markdown-checkbox",
-      "jack89ita.open-file-from-path",
-      "koalamer.labeled-bookmarks",
-      "dnut.rewrap-revived",
+    "dbankier.vscode-quick-select",
+    "haberdashPI.vscode-select-by-indent",
+    "haberdashPI.selection-utilities",
+    "pustelto.bracketeer",
+    "wmaurer.change-case",
+    "pkief.markdown-checkbox",
+    "jack89ita.open-file-from-path",
+    "koalamer.labeled-bookmarks",
+    "dnut.rewrap-revived",
 ]
 
 [[mode]]
@@ -169,7 +169,7 @@ mode = []
 hideInPalette = true
 hideInDocs = false
 command = "master-key.enterNormal"
-when = "!findWidgetVisible"
+when = "!findWidgetVisible && (editorTextFocus || master-key.prefix != '')"
 prefixes = "<all-prefixes>"
 
 [[bind]]
@@ -190,7 +190,10 @@ prefixes = "<all-prefixes>"
 path = "modes"
 name = "ignore"
 description = "this key does nothing"
-foreach.key = ['{key: .}', 'shift+{key: .}'] #- all keys whose bindings are described by a single character
+foreach.key = [
+    '{key: .}',
+    'shift+{key: .}',
+] #- all keys whose bindings are described by a single character
 key = "{key}"
 command = "master-key.ignore"
 prefixes = "<all-prefixes>"
@@ -489,8 +492,8 @@ reduce all selections to length zero
 """
 command = "runCommands"
 args.commands = [
-      "selection-utilities.shrinkToActive",
-      { command = "master-key.setFlag", args = { name = "select_on", value = false } },
+    "selection-utilities.shrinkToActive",
+    { command = "master-key.setFlag", args = { name = "select_on", value = false } },
 ]
 
 [[bind]]
@@ -535,7 +538,7 @@ description = "without selection: open a line above current line and enter inser
 key = "shift+o"
 when = "!editorHasSelection"
 command = "runCommands"
-args.commands = [ "editor.action.insertLineBefore", "master-key.enterInsert" ]
+args.commands = ["editor.action.insertLineBefore", "master-key.enterInsert"]
 
 [[bind]]
 path = "edit.action.open_lines"
@@ -1140,7 +1143,7 @@ key = "g c"
 name = "cell →"
 combinedName = "cell →/←"
 command = "runCommands"
-args.commands = [ "jupyter.gotoNextCellInFile", "jupyter.selectCell" ]
+args.commands = ["jupyter.gotoNextCellInFile", "jupyter.selectCell"]
 description = "previous jupyter notebook cell"
 
 [[bind]]
@@ -1580,9 +1583,9 @@ description = "insert after cursor"
 mode = ["normal", "selectedit", "syminsert"]
 command = "runCommands"
 args.commands = [
-      "selection-utilities.shrinkToActive",
-      "cursorRight",
-      "master-key.enterInsert",
+    "selection-utilities.shrinkToActive",
+    "cursorRight",
+    "master-key.enterInsert",
 ]
 
 [[bind]]
@@ -1592,8 +1595,8 @@ name = "insert start"
 mode = ["normal", "selectedit", "syminsert"]
 command = "runCommands"
 args.commands = [
-      { command = "cursorMove", args = { to = "wrappedLineFirstNonWhitespaceCharacter", select = false } },
-      "master-key.enterInsert",
+    { command = "cursorMove", args = { to = "wrappedLineFirstNonWhitespaceCharacter", select = false } },
+    "master-key.enterInsert",
 ]
 
 [[bind]]
@@ -1603,8 +1606,8 @@ name = "insert end"
 mode = ["normal", "selectedit", "syminsert"]
 command = "runCommands"
 args.commands = [
-      { command = "cursorMove", args = { to = "wrappedLineEnd", select = false } },
-      "master-key.enterInsert",
+    { command = "cursorMove", args = { to = "wrappedLineEnd", select = false } },
+    "master-key.enterInsert",
 ]
 
 [[bind]]
@@ -1632,10 +1635,10 @@ key = "c"
 when = "!editorHasSelection && master-key.count <= 1"
 command = "runCommands"
 args.commands = [
-      "expandLineSelection",
-      "deleteRight",
-      "editor.action.insertLineBefore",
-      "master-key.enterInsert",
+    "expandLineSelection",
+    "deleteRight",
+    "editor.action.insertLineBefore",
+    "master-key.enterInsert",
 ]
 
 [[bind]]
@@ -1644,10 +1647,10 @@ key = "c"
 when = "!editorHasSelection && master-key.count > 1"
 command = "runCommands"
 args.commands = [
-      { defined = "selectLinesDown" },
-      "deleteRight",
-      "editor.action.insertLineBefore",
-      "master-key.enterInsert",
+    { defined = "selectLinesDown" },
+    "deleteRight",
+    "editor.action.insertLineBefore",
+    "master-key.enterInsert",
 ]
 
 [[bind]]
@@ -1661,9 +1664,9 @@ mode = "normal"
 when = "master-key.count <= 1"
 command = "runCommands"
 args.commands = [
-      "selection-utilities.shrinkToActive",
-      "deleteAllRight",
-      "master-key.enterInsert",
+    "selection-utilities.shrinkToActive",
+    "deleteAllRight",
+    "master-key.enterInsert",
 ]
 
 [[bind]]
@@ -1673,10 +1676,10 @@ mode = ["normal", "selectedit"]
 when = "master-key.count > 1"
 command = "runCommands"
 args.commands = [
-      { defined = "selectLinesUp" },
-      "deleteRight",
-      "editor.action.insertLineBefore",
-      "master-key.enterInsert",
+    { defined = "selectLinesUp" },
+    "deleteRight",
+    "editor.action.insertLineBefore",
+    "master-key.enterInsert",
 ]
 
 [[bind]]
@@ -1686,9 +1689,9 @@ mode = "normal"
 name = "delete char"
 command = "runCommands"
 args.commands = [
-      "selection-utilities.shrinkToActive",
-      { command = "cursorMove", args = { to = "right", select = true }, computedArgs = { value = "count" } },
-     "editor.action.clipboardCutAction"
+    "selection-utilities.shrinkToActive",
+    { command = "cursorMove", args = { to = "right", select = true }, computedArgs = { value = "count" } },
+    "editor.action.clipboardCutAction",
 ]
 
 [[bind]]
@@ -1721,7 +1724,11 @@ combinedDescription = "Paste clipboard before/after/at the cursor/selection"
 combinedKey = "p/shift+p/ctrl+p"
 when = "editorHasSelection"
 command = "runCommands"
-args.commands = ["selection-utilities.activeAtEnd", "selection-utilities.shrinkToActive", "editor.action.clipboardPasteAction"]
+args.commands = [
+    "selection-utilities.activeAtEnd",
+    "selection-utilities.shrinkToActive",
+    "editor.action.clipboardPasteAction",
+]
 
 [[bind]]
 path = "edit.action.clipboard"
@@ -1750,7 +1757,11 @@ combinedName = "paste before/after"
 description = "Paste before the cursor/selection"
 when = "editorHasSelection"
 command = "runCommands"
-args.commands = ["selection-utilities.activeAtStart", "selection-utilities.shrinkToActive", "editor.action.clipboardPasteAction"]
+args.commands = [
+    "selection-utilities.activeAtStart",
+    "selection-utilities.shrinkToActive",
+    "editor.action.clipboardPasteAction",
+]
 
 [[bind]]
 path = "edit.action.clipboard"
@@ -1789,14 +1800,14 @@ path = "edit.action.history"
 name = "undo"
 key = "u"
 command = "runCommands"
-args.commands = [ "undo", "selection-utilities.shrinkToActive" ]
+args.commands = ["undo", "selection-utilities.shrinkToActive"]
 
 [[bind]]
 path = "edit.action.history"
 name = "redo"
 key = "shift+u"
 command = "runCommands"
-args.commands = [ "redo", "selection-utilities.shrinkToActive" ]
+args.commands = ["redo", "selection-utilities.shrinkToActive"]
 
 [[bind]]
 path = "edit.action.basic"
@@ -1816,9 +1827,9 @@ count, delete up to the next `count` lines and store to clipboard.
 when = "!editorHasSelection"
 command = "runCommands"
 args.commands = [
-      { defined = "selectLinesDown" },
-      "editor.action.clipboardCutAction",
-      { command = "master-key.setMode", args = { value = "normal" } },
+    { defined = "selectLinesDown" },
+    "editor.action.clipboardCutAction",
+    { command = "master-key.setMode", args = { value = "normal" } },
 ]
 
 [[bind]]
@@ -1827,8 +1838,8 @@ key = "d"
 when = "editorHasSelection"
 command = "runCommands"
 args.commands = [
-      "editor.action.clipboardCutAction",
-      { command = "master-key.setMode", args = { value = "normal" } },
+    "editor.action.clipboardCutAction",
+    { command = "master-key.setMode", args = { value = "normal" } },
 ]
 
 [[bind]]
@@ -1838,9 +1849,9 @@ mode = "normal"
 name = "without count: Delete from cursor to end of line; with count: Delete from current line up `count` number of keys."
 command = "runCommands"
 args.commands = [
-      "selection-utilities.shrinkToActive",
-      { command = "cursorMove", args = { to = "wrappedLineEnd", select = true} },
-      "editor.action.clipboardCutAction"
+    "selection-utilities.shrinkToActive",
+    { command = "cursorMove", args = { to = "wrappedLineEnd", select = true } },
+    "editor.action.clipboardCutAction",
 ]
 
 [[bind]]
@@ -1865,9 +1876,9 @@ key = "y"
 when = "master-key.count > 1"
 command = "runCommands"
 args.commands = [
-      { defined = "selectLinesDown" },
-      "editor.action.clipboardCopyAction",
-      "selection-utilities.shrinkToActive"
+    { defined = "selectLinesDown" },
+    "editor.action.clipboardCopyAction",
+    "selection-utilities.shrinkToActive",
 ]
 
 [[bind]]
@@ -1878,10 +1889,10 @@ description = "without a count: copy to end of line; with a count: copy this and
 when = "master-key.count <= 1"
 command = "runCommands"
 args.commands = [
-      "selection-utilities.shrinkToActive",
-      { command = "cursorMove", args = { to = "wrappedLineEnd", select = true} },
-      "editor.action.clipboardCopyAction",
-      "selection-utilities.shrinkToActive"
+    "selection-utilities.shrinkToActive",
+    { command = "cursorMove", args = { to = "wrappedLineEnd", select = true } },
+    "editor.action.clipboardCopyAction",
+    "selection-utilities.shrinkToActive",
 ]
 
 [[bind]]
@@ -1890,9 +1901,9 @@ key = "shift+y"
 when = "master-key.count > 1"
 command = "runCommands"
 args.commands = [
-      { defined = "selectLinesUp" },
-      "editor.action.clipboardCopyAction",
-      "selection-utilities.shrinkToActive"
+    { defined = "selectLinesUp" },
+    "editor.action.clipboardCopyAction",
+    "selection-utilities.shrinkToActive",
 ]
 
 [[path]]
@@ -1923,10 +1934,7 @@ name = "indent"
 description = "Indent lines"
 when = "master-key.count >= 1"
 command = "runCommands"
-args.commands = [
-      { defined = "selectLinesDown" },
-      "editor.action.indentLines"
-]
+args.commands = [{ defined = "selectLinesDown" }, "editor.action.indentLines"]
 
 [[bind]]
 path = "edit.action.indent"
@@ -1944,9 +1952,9 @@ when = "master-key.count >= 1"
 description = "Deindent lines"
 command = "runCommands"
 args.commands = [
-      { defined = "selectLinesDown" },
-      "editor.action.outdentLines",
-      "selection-utilities.shrinkToActive"
+    { defined = "selectLinesDown" },
+    "editor.action.outdentLines",
+    "selection-utilities.shrinkToActive",
 ]
 
 [[path]]
@@ -2112,10 +2120,10 @@ priority = 2
 key = "space p"
 command = "runCommands"
 args.commands = [
-      "expandLineSelection",
-      "selection-utilities.activeAtEnd",
-      "selection-utilities.shrinkToActive",
-      "editor.action.clipboardPasteAction",
+    "expandLineSelection",
+    "selection-utilities.activeAtEnd",
+    "selection-utilities.shrinkToActive",
+    "editor.action.clipboardPasteAction",
 ]
 
 [[bind]]
@@ -2127,10 +2135,10 @@ description = "Paste text before current line"
 key = "space shift+p"
 command = "runCommands"
 args.commands = [
-      "expandLineSelection",
-      "selection-utilities.activeAtStart",
-      "selection-utilities.shrinkToActive",
-      "editor.action.clipboardPasteAction",
+    "expandLineSelection",
+    "selection-utilities.activeAtStart",
+    "selection-utilities.shrinkToActive",
+    "editor.action.clipboardPasteAction",
 ]
 
 [[bind]]
@@ -2200,7 +2208,7 @@ key = "space j"
 mode = ["normal", "selectedit"]
 when = "!editorHasSelection"
 command = "runCommands"
-args.commands = [ { defined = "selectLinesDown" }, 'editor.action.joinLines' ]
+args.commands = [{ defined = "selectLinesDown" }, 'editor.action.joinLines']
 
 [[bind]]
 path = "edit.action.basic"
@@ -2230,9 +2238,9 @@ description = "Format sel"
 when = "master-key.count >= 1"
 command = "runCommands"
 args.commands = [
-      { defined = "selectLinesDown" },
-      "editor.action.formatSelection",
-      "selection-utilities.shrinkToActive"
+    { defined = "selectLinesDown" },
+    "editor.action.formatSelection",
+    "selection-utilities.shrinkToActive",
 ]
 
 [[bind]]
@@ -2313,10 +2321,7 @@ combinedKey = "(shift+)/"
 description = "select next comment"
 when = "master-key.count >= 1"
 command = "runCommands"
-args.commands = [
-      { defined = "selectLinesDown" },
-      "editor.action.commentLine",
-]
+args.commands = [{ defined = "selectLinesDown" }, "editor.action.commentLine"]
 
 [[bind]]
 path = "edit.action.do"
@@ -2334,9 +2339,9 @@ description = "select previous comment"
 when = "master-key.count >= 1"
 command = "runCommands"
 args.commands = [
-      { defined = "selectLinesDown" },
-      "editor.action.blockComment",
-      "selection-utilities.shrinkToActive",
+    { defined = "selectLinesDown" },
+    "editor.action.blockComment",
+    "selection-utilities.shrinkToActive",
 ]
 
 [[bind]]
@@ -2590,7 +2595,7 @@ command = "gitlens.gitCommands"
 
 [[path]]
 id = "util"
-name = "assorted misecellaneous commands"
+name = "assorted miscellaneous commands"
 default.kind = "util"
 when = "editorTextFocus && !findWidgetVisible"
 
@@ -2681,8 +2686,10 @@ description = "move to previous bookmark"
 key = "tab m k"
 when = "master-key.select_on || editorHasSelection"
 command = "runCommands"
-args.commands = ["vsc-labeled-bookmarks.expandSelectionToPreviousBookmark",
-      "selection-utilities.activeAtStart"]
+args.commands = [
+    "vsc-labeled-bookmarks.expandSelectionToPreviousBookmark",
+    "selection-utilities.activeAtStart",
+]
 
 [[bind]]
 path = "util"
@@ -3194,8 +3201,9 @@ Use a count to specify an alternate register
 key = "c"
 command = "runCommands"
 args.commands = [
-      { command = "selection-utilities.appendToMemory", computedArgs = { register = "count || 'default'" } },
-      "selection-utilities.shrinkToActive", "master-key.enterNormal"
+    { command = "selection-utilities.appendToMemory", computedArgs = { register = "count || 'default'" } },
+    "selection-utilities.shrinkToActive",
+    "master-key.enterNormal",
 ]
 
 [[bind]]
@@ -3208,7 +3216,7 @@ Use a count to specify an alternate register
 key = "v"
 command = "runCommands"
 args.commands = [
-      { command = "selection-utilities.restoreAndClear", computedArgs = { register = "count || 'default'" } },
+    { command = "selection-utilities.restoreAndClear", computedArgs = { register = "count || 'default'" } },
 ]
 
 [[bind]]
@@ -3220,8 +3228,8 @@ exchange selections: with no saved selection, saves the selection, with saved se
 key = "x"
 command = "runCommands"
 args.commands = [
-      { command = "selection-utilities.swapWithMemory", computedArgs = {register = "count || 'default'"} },
-      "master-key.enterNormal"
+    { command = "selection-utilities.swapWithMemory", computedArgs = { register = "count || 'default'" } },
+    "master-key.enterNormal",
 ]
 
 [[bind]]
@@ -3233,8 +3241,8 @@ remove the most recently saved selection from the list of saved selections
 command = "runCommands"
 key = "n"
 args.commands = [
-      { command = "selection-utilities.deleteLastSaved", computedArgs = {register = "count || 'default'"} },
-      "master-key.enterNormal"
+    { command = "selection-utilities.deleteLastSaved", computedArgs = { register = "count || 'default'" } },
+    "master-key.enterNormal",
 ]
 
 [[bind]]
@@ -3528,7 +3536,7 @@ reduce all selections to length zero and return to normal mode
 """
 command = "runCommands"
 args.commands = [
-      "selection-utilities.shrinkToActive",
-      { command = "master-key.setFlag", args = { name = "select_on", value = false } },
-      "master-key.enterNormal"
+    "selection-utilities.shrinkToActive",
+    { command = "master-key.setFlag", args = { name = "select_on", value = false } },
+    "master-key.enterNormal",
 ]
