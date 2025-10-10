@@ -16,11 +16,13 @@ use wasm_bindgen::prelude::*;
 
 pub mod command;
 pub mod foreach;
+pub mod prefix;
 pub mod validation;
 
 use crate::bind::command::{Command, regularize_commands};
+use crate::bind::prefix::{Prefix, PrefixInput};
 use crate::bind::validation::{BindingReference, KeyBinding};
-use crate::error::{ErrorContext, Result, ResultVec, err};
+use crate::error::{ErrorContext, Result, ResultVec, err, wrn};
 use crate::expression::Scope;
 use crate::expression::value::{Expanding, Expression, TypedValue, Value};
 use crate::resolve;
@@ -145,8 +147,7 @@ pub struct BindingInput {
     ///   Note that if `prefixes` is an expression, it *cannot* produce a novel prefix
     ///   not defined elsewhere. This is to avoid circular computation when
     ///   resolving the return value of `all_prefixes`.
-    #[serde(default = "span_plural_default")]
-    pub prefixes: Spanned<TypedValue<Plural<KeyBinding>>>,
+    pub prefixes: Option<Spanned<PrefixInput>>,
 
     /// @forBindingField bind
     ///
@@ -247,79 +248,6 @@ impl BindingInput {
             doc: self.doc.clone(),
         };
     }
-
-    pub(crate) fn add_to_scope(
-        inputs: &Vec<Spanned<BindingInput>>,
-        scope: &mut Scope,
-    ) -> ResultVec<()> {
-        let mut all_prefixes = HashSet::new();
-        for input in inputs {
-            if let TypedValue::Constant(prefixes) = input.as_ref().prefixes.as_ref() {
-                let explicit_prefixes: Vec<String> =
-                    prefixes.clone().resolve("prefixes", scope).unwrap();
-                let span = input.span().clone();
-                let key_sequence: String = input
-                    .as_ref()
-                    .key
-                    .clone()
-                    .resolve("key", scope)
-                    .with_range(&span)?;
-                if explicit_prefixes.len() > 0 {
-                    for p in explicit_prefixes {
-                        let seq = WHITESPACE.split(&p).chain(WHITESPACE.split(&key_sequence));
-                        for s in list_prefixes(seq) {
-                            all_prefixes.insert(s.join(" "));
-                        }
-                    }
-                } else {
-                    let seq = WHITESPACE.split(&key_sequence);
-                    let prefixes = list_prefixes(seq);
-                    for s in prefixes[0..(prefixes.len() - 1)].iter() {
-                        all_prefixes.insert(s.join(" "));
-                    }
-                };
-            }
-        }
-
-        scope.prefixes = all_prefixes;
-        let all_prefixes_fn_data = scope.prefixes.clone();
-        scope.engine.register_fn("all_prefixes", move || {
-            all_prefixes_fn_data
-                .iter()
-                .map(|x| rhai::Dynamic::from(ImmutableString::from(x)))
-                .collect::<rhai::Array>()
-        });
-
-        let not_prefixes_fn_data = scope.prefixes.clone();
-        scope.engine.register_fn(
-            "not_prefixes",
-            move |x: rhai::Array| -> std::result::Result<rhai::Array, Box<EvalAltResult>> {
-                let not_prefixes = x
-                    .into_iter()
-                    .map(|xi| xi.into_immutable_string())
-                    .collect::<std::result::Result<Vec<_>, _>>()?;
-                let mut result = rhai::Array::new();
-                for prefix in &not_prefixes_fn_data {
-                    if not_prefixes.iter().all(|x| x != prefix) {
-                        result.push(rhai::Dynamic::from(ImmutableString::from(prefix)));
-                    }
-                }
-                if result.len() == (&not_prefixes_fn_data).len() {
-                    let mut bad_prefix = None;
-                    for prefix in not_prefixes {
-                        if (&not_prefixes_fn_data).iter().all(|x| x != prefix) {
-                            bad_prefix = Some(prefix);
-                            break;
-                        }
-                    }
-                    return Err(format!("prefix `{}` does not exist", bad_prefix.unwrap()).into());
-                }
-                return Ok(result);
-            },
-        );
-
-        return Ok(());
-    }
 }
 
 impl Merging for BindingInput {
@@ -407,7 +335,7 @@ impl Expanding for BindingInput {
             }),
             prefixes: self.prefixes.map_expressions(f).unwrap_or_else(|mut e| {
                 errors.append(&mut e.errors);
-                Spanned::new(UNKNOWN_RANGE, TypedValue::default())
+                None
             }),
             finalKey: self.finalKey.map_expressions(f).unwrap_or_else(|mut e| {
                 errors.append(&mut e.errors);
@@ -655,7 +583,6 @@ pub struct LegacyBindingInput {
     computedArgs: Option<Spanned<toml::Value>>,
     path: Option<Spanned<toml::Value>>,
     mode: Option<Spanned<Plural<String>>>, // to check for `!` prefixed mode names etc...
-    prefixes: Option<Spanned<Plural<String>>>, // to check for `<all-prefixes>`.
     name: Option<Spanned<toml::Value>>,
     description: Option<Spanned<toml::Value>>,
     kind: Option<Spanned<toml::Value>>,
@@ -707,20 +634,6 @@ impl LegacyBindingInput {
                     "2.0 no longer supports expressions; all modes using an empty array\
                     use the expression `{}` instead",
                     "{{all_modes()}}"
-                ))
-                .with_range(&span);
-                errors.push(err.unwrap_err())
-            }
-        }
-
-        if let Some(spanned) = &self.prefixes {
-            let span = spanned.span().clone();
-            let Plural(prefixes) = spanned.as_ref().clone();
-            if prefixes.iter().any(|s| s == "<all-prefixes>") {
-                let err: Result<()> = Err(wrn!(
-                    "file format 2.0 does not support `<all-prefixes>`, use `{}` \
-                    instead",
-                    "{{all_prefixes()}}"
                 ))
                 .with_range(&span);
                 errors.push(err.unwrap_err())
@@ -823,7 +736,7 @@ pub struct Binding {
     pub when: Option<String>,
     pub mode: Vec<String>,
     pub priority: f64,
-    pub prefixes: Vec<String>,
+    pub(crate) prefixes: Prefix,
     pub finalKey: bool,
     pub(crate) repeat: TypedValue<i32>,
     pub tags: Vec<String>,
@@ -923,26 +836,6 @@ impl Binding {
             .with_range(&mode_span)?;
         }
 
-        // prefix validation
-        let prefixes_span = input.prefixes.span().clone();
-        let prefixes: Vec<String> = input.prefixes.clone().resolve("prefixes", scope)?;
-        let non_static_prefixes: Vec<_> = prefixes
-            .iter()
-            .filter(|x| !scope.prefixes.contains(x.as_str()))
-            .collect();
-        if non_static_prefixes.len() > 0 {
-            return Err(err!(
-                "Prefixes must be statically defined, but some prefixes \
-                 were only defined within expression blocks: `{}`",
-                non_static_prefixes
-                    .iter()
-                    .map(|x| x.as_str())
-                    .collect::<Vec<_>>()
-                    .join("`, `")
-            ))
-            .with_range(&prefixes_span)?;
-        }
-
         // require that bare keybindings (those without a modifier key)
         // be specific to `textEditorFocus` / `keybindingPaletteOpen` context
         let key_string: String = resolve!(input, key, scope)?;
@@ -977,6 +870,66 @@ impl Binding {
         };
 
         return Ok(result);
+    }
+
+    pub(crate) fn resolve_prefixes(
+        mut binds: Vec<Binding>,
+        spans: &Vec<Range<usize>>,
+    ) -> ResultVec<Vec<Binding>> {
+        let mut all_prefixes = HashSet::new();
+        let empty_vec = vec![];
+        for bind in &binds {
+            let explicit_prefixes = match &bind.prefixes {
+                Prefix::Any(false) => &empty_vec,
+                Prefix::AnyOf(x) => x,
+                _ => continue, // these types don't define new prefixes, they reference what already exists
+            };
+            if explicit_prefixes.len() > 0 {
+                for p in explicit_prefixes {
+                    let seq = WHITESPACE
+                        .split(&p)
+                        .chain(bind.key.iter().map(String::as_str));
+                    for s in list_prefixes(seq) {
+                        all_prefixes.insert(s.join(" "));
+                    }
+                }
+            } else {
+                let prefixes = list_prefixes(bind.key.iter().map(String::as_str));
+                for s in prefixes[0..(prefixes.len() - 1)].iter() {
+                    all_prefixes.insert(s.join(" "));
+                }
+            };
+        }
+
+        let mut errors = Vec::new();
+        for (bind, span) in binds.iter_mut().zip(spans.iter()) {
+            bind.prefixes = match &bind.prefixes {
+                Prefix::Any(true) => Prefix::AnyOf(all_prefixes.iter().map(String::from).collect()),
+                Prefix::Any(false) => Prefix::AnyOf(vec!["".to_string()]),
+                Prefix::AllBut(x) => {
+                    let x_set: HashSet<_> = x.iter().map(String::from).collect();
+                    let selected = all_prefixes.difference(&x_set);
+                    let undefined = x_set.difference(&all_prefixes);
+                    let undefined_str = undefined
+                        .map(|x| format!("`{x}`"))
+                        .collect::<Vec<_>>()
+                        .join(", ");
+                    if undefined_str.len() > 0 {
+                        let error: Result<()> =
+                            Err(err!("Prefix(es) undefined: {undefined_str}")).with_range(span);
+
+                        errors.push(error.unwrap_err());
+                    }
+                    Prefix::AnyOf(selected.map(|x| x.to_owned()).collect())
+                }
+                other @ _ => other.clone(),
+            }
+        }
+        if errors.len() > 0 {
+            return Err(errors.into());
+        } else {
+            return Ok(binds);
+        }
     }
 }
 //
@@ -1313,10 +1266,9 @@ impl Binding {
             if mode != &scope.default_mode {
                 when_with_mode.push(format!("master-key.mode == '{mode}'"));
             }
-            let prefixes = if self.prefixes.is_empty() {
-                vec!["".to_string()]
-            } else {
-                self.prefixes.clone()
+            let prefixes = match &self.prefixes {
+                Prefix::AnyOf(x) => x,
+                x @ _ => panic!("Unexpected, unresolved prefix: {x:?}"),
             };
             // ...and a distinct binding for each `self.prefix`
             for prefix in prefixes {
@@ -1461,7 +1413,7 @@ mod tests {
         priority = 1
         default = "{{bind.foo_bar}}"
         foreach.index = [1,2,3]
-        prefixes = "c"
+        prefixes.anyOf = "c"
         finalKey = true
         repeat = "{{2+c}}"
         tags = ["foo", "bar"]
@@ -1513,8 +1465,12 @@ mod tests {
         );
 
         assert_eq!(when, "joe > 1".to_string());
-        let prefixes: Vec<String> = resolve!(result, prefixes, &mut scope).unwrap();
-        assert_eq!(prefixes, ["c"]);
+        let prefixes: Prefix = resolve!(result, prefixes, &mut scope).unwrap();
+        let prefix_strs = match prefixes {
+            Prefix::AnyOf(x) => x,
+            _ => panic!("unexpected"),
+        };
+        assert_eq!(prefix_strs, ["c"]);
 
         let finalKey: bool = resolve!(result, finalKey, &mut scope).unwrap();
         assert_eq!(finalKey, true);
@@ -1577,13 +1533,13 @@ mod tests {
         [[bind]]
         doc.name = "default"
         command = "cursorMove"
-        prefixes = ["a"]
+        prefixes.anyOf = ["a"]
 
         [[bind]]
         key = "l"
         doc.name = "←"
         args.to = "left"
-        prefixes = ["b", "c"]
+        prefixes.anyOf = ["b", "c"]
         "#;
 
         let result = toml::from_str::<HashMap<String, Vec<BindingInput>>>(data).unwrap();
@@ -1604,8 +1560,12 @@ mod tests {
             Value::Table(HashMap::from([("to".into(), Value::String("left".into()))]))
         );
 
-        let prefixes: Vec<String> = resolve!(left, prefixes, &mut scope).unwrap();
-        assert_eq!(prefixes, ["b".to_string(), "c".to_string()]);
+        let prefixes: Prefix = resolve!(left, prefixes, &mut scope).unwrap();
+        let prefix_strs = match prefixes {
+            Prefix::AnyOf(x) => x,
+            _ => panic!("unexpected"),
+        };
+        assert_eq!(prefix_strs, ["b".to_string(), "c".to_string()]);
 
         let doc = left.doc.unwrap();
         let combined: Option<CombinedBindingDoc> = resolve!(doc, combined, &mut scope).unwrap();

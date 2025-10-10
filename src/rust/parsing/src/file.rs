@@ -220,12 +220,11 @@ impl KeyFile {
         };
 
         define.add_to_scope(&mut scope)?;
-        BindingInput::add_to_scope(&bind_input, &mut scope)?;
         let _ = scope
             .parse_asts(&bind_input)
             .map_err(|mut es| errors.append(&mut es.errors));
 
-        let bind_and_span: Vec<_> = bind_input
+        let (mut bind, bind_span): (Vec<_>, Vec<_>) = bind_input
             .into_iter()
             .flat_map(|x| {
                 let span = x.span().clone();
@@ -258,15 +257,15 @@ impl KeyFile {
                     }
                 }
             })
-            .collect();
+            .unzip();
+        bind = Binding::resolve_prefixes(bind, &bind_span)?;
 
         // TODO: store spans so we can do avoid serializing this data??
         let mut key_bind = Vec::new();
-        let mut bind = Vec::new();
         let mut codes = BindingCodes::new();
-        for (i, (bind_item, span)) in bind_and_span.into_iter().enumerate() {
+        // TODO: call `resolve_prefixes` first
+        for (i, (bind_item, span)) in bind.iter_mut().zip(bind_span.into_iter()).enumerate() {
             key_bind.append(&mut bind_item.outputs(i as i32, &scope, span, &mut codes)?);
-            bind.push(bind_item);
         }
         key_bind.sort_by(BindingOutput::cmp_priority);
         // remove key_bind values with the exact same `key_id`, keeping the one
@@ -443,6 +442,7 @@ mod tests {
     use super::*;
     use crate::bind::BindingOutputArgs;
     use crate::bind::UNKNOWN_RANGE;
+    use crate::bind::prefix::Prefix;
     use crate::expression::value::Expression;
     use crate::expression::value::Value;
     use smallvec::SmallVec;
@@ -896,6 +896,13 @@ mod tests {
         assert_eq!(report[0].range.start.line, 17)
     }
 
+    fn unwrap_prefixes(prefix: &Prefix) -> &Vec<String> {
+        return match prefix {
+            Prefix::AnyOf(x) => x,
+            x @ _ => panic!("Unexpected, unresolved prefix: {x:?}"),
+        };
+    }
+
     #[test]
     fn eval_prefix_expressions() {
         let data = r#"
@@ -913,26 +920,54 @@ mod tests {
         [[bind]]
         key = "z"
         command = "biz"
-        prefixes = '{{all_prefixes()}}'
+        prefixes.any = true
 
         [[bind]]
         key = "w"
         command = "baz"
-        prefixes = '{{not_prefixes(["d e"])}}'
+        prefixes.allBut = ["d e"]
         "#;
 
         let mut scope = Scope::new();
         let result =
             KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap();
-        assert!(result.bind[2].prefixes.iter().any(|x| x == "a"));
-        assert!(result.bind[2].prefixes.iter().any(|x| x == "a b"));
-        assert!(result.bind[2].prefixes.iter().any(|x| x == "d"));
-        assert!(result.bind[2].prefixes.iter().any(|x| x == "d e"));
-        assert_eq!(result.bind[2].prefixes.len(), 4);
-        assert!(result.bind[3].prefixes.iter().any(|x| x == "a"));
-        assert!(result.bind[3].prefixes.iter().any(|x| x == "a b"));
-        assert!(result.bind[3].prefixes.iter().any(|x| x == "d"));
-        assert_eq!(result.bind[3].prefixes.len(), 3);
+        assert!(
+            unwrap_prefixes(&result.bind[2].prefixes)
+                .iter()
+                .any(|x| x == "a")
+        );
+        assert!(
+            unwrap_prefixes(&result.bind[2].prefixes)
+                .iter()
+                .any(|x| x == "a b")
+        );
+        assert!(
+            unwrap_prefixes(&result.bind[2].prefixes)
+                .iter()
+                .any(|x| x == "d")
+        );
+        assert!(
+            unwrap_prefixes(&result.bind[2].prefixes)
+                .iter()
+                .any(|x| x == "d e")
+        );
+        assert_eq!(unwrap_prefixes(&result.bind[2].prefixes).len(), 4);
+        assert!(
+            unwrap_prefixes(&result.bind[3].prefixes)
+                .iter()
+                .any(|x| x == "a")
+        );
+        assert!(
+            unwrap_prefixes(&result.bind[3].prefixes)
+                .iter()
+                .any(|x| x == "a b")
+        );
+        assert!(
+            unwrap_prefixes(&result.bind[3].prefixes)
+                .iter()
+                .any(|x| x == "d")
+        );
+        assert_eq!(unwrap_prefixes(&result.bind[3].prefixes).len(), 3);
     }
 
     #[test]
@@ -952,43 +987,16 @@ mod tests {
         [[bind]]
         key = "w"
         command = "baz"
-        prefixes = '{{not_prefixes(["d k"])}}'
+        prefixes.allBut = ["d k"]
         "#;
 
         let mut scope = Scope::new();
         let err =
             KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap_err();
         let report = err.report(data.as_bytes());
-        assert!(report[0].message.contains("prefix `d k`"));
-        assert_eq!(report[0].range.start.line, 15)
-    }
+        assert!(report[0].message.contains("undefined: `d k`"));
 
-    #[test]
-    fn validate_prefixes_are_static() {
-        let data = r#"
-        [header]
-        version = "2.0.0"
-
-        [[bind]]
-        key = "a b c"
-        command = "foo"
-
-        [[bind]]
-        key = "d e f"
-        command = "bar"
-
-        [[bind]]
-        key = "w"
-        command = "baz"
-        prefixes = '{{["d e", "g h"]}}'
-        "#;
-
-        let mut scope = Scope::new();
-        let err =
-            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap_err();
-        let report = err.report(data.as_bytes());
-        assert!(report[0].message.contains("statically defined"));
-        assert_eq!(report[0].range.start.line, 15)
+        assert_eq!(report[0].range.start.line, 12)
     }
 
     #[test]
@@ -1207,7 +1215,7 @@ mod tests {
         [[bind]]
         key = "a b"
         command = "foo"
-        prefixes = ["x y", "h k"]
+        prefixes.anyOf = ["x y", "h k"]
         "#;
 
         let mut scope = Scope::new();
@@ -1242,11 +1250,10 @@ mod tests {
         command = "master-key.enterNormal"
         computedArgs = "a+1"
         when = "!findWidgetVisible"
-        prefixes = "<all-prefixes>"
         "#;
 
         let warnings = identify_legacy_warnings_helper(data.as_bytes()).unwrap_err();
-        assert_eq!(warnings.errors.len(), 13);
+        assert_eq!(warnings.errors.len(), 12);
     }
 
     #[test]

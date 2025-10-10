@@ -236,18 +236,21 @@ Integration test debugging:
         - [X] debug error processing in `keybindings/index.ts`
     - [ ] BUG: prefides defined via `master-key.prefix` are not included in
           `all_prefixes`
-          - [ ] get rid of the `prefixes` field design and instead allow
+          - [X] get rid of the `prefixes` field design and instead allow
                 a way to express "prefix is X" "prefix isn't X" etc...
                 more directly. since this wouldn't be an expression
                 it could be during a phase of file resolution that
                 already knows about the available prefixes. Like this:
                 ```toml
                 prefix.anyOf = ["a", "b", "c"]
-                prefix.notAnyOf = ["x", "y"]
+                prefix.allBut = ["x", "y"]
+                prefix.any = true
                 # defaults to
-                prefix.anyOf = [""]
+                prefix.any = false
                 ```
-                - [ ] validate that the excludes don't contain new prefixes
+        - [X] validate that the excludes don't contain new prefixes
+        - [ ] unit tests
+        - [ ] documentation
     - [ ] error handling checks
         - [ ] remove spurious line/char positions from expression error messages
             - NOTE: these come from the line and char position in the rhai expression
@@ -256,6 +259,7 @@ Integration test debugging:
         - [ ] make sure a range is always provided
         - [ ] test that all error messages show up when expected
         - [ ] review coverage to verify there aren't additional checks we're missing
+        - [ ] integration test for both warnings and errors in type script setup
     - [ ] refactor and cleanup rust code
     - [ ] proper conversion to keybindings.json command
         - [X] expand per mode and prefix (e.g. each binding has one mode and one prefix)
