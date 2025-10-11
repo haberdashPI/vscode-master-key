@@ -77,10 +77,6 @@ use crate::{
 /// - Variables defined by [`foreach`](/bindings/bind#foreach-clauses)
 /// - `keys([regex]):` returns all keys matching the regular expression defined by the given
 ///   string
-/// - `all_prefixes()`: returns an array of strings of all keybinding prefixes defined by
-///   the current set of keybindigs
-/// - `not_prefixes([exclusions])`: given an array of strings of prefixes not to use,
-///   returns all prefixes defined by the current set of keybindings.
 /// - `all_modes()`: returns an array of strings all keybinding modes defined by the current
 ///   keybinding set
 /// - `not_modes([exclusions])`: given an array of strings of excluded modes, returns
@@ -118,7 +114,6 @@ use crate::{
 pub struct Scope {
     pub(crate) asts: HashMap<String, rhai::AST>,
     pub(crate) engine: rhai::Engine,
-    pub(crate) prefixes: HashSet<String>,
     pub(crate) modes: HashSet<String>,
     pub(crate) kinds: HashSet<String>,
     pub(crate) default_mode: String,
@@ -187,7 +182,6 @@ impl Scope {
             engine: engine,
             state: rhai::Scope::new(),
             default_mode: "default".to_string(),
-            prefixes: HashSet::from(["".to_string()]),
             modes: HashSet::from(["default".to_string()]),
             kinds: HashSet::new(),
             queues: HashMap::new(),

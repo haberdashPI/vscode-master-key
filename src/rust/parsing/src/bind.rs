@@ -136,26 +136,24 @@ pub struct BindingInput {
 
     /// @forBindingField bind
     ///
-    /// - `prefixes`: string, array of strings or an expression producing such a value (e.g.
-    ///   [`all_prefixes`](expressions/functions#all_prefixes)). The prefixes determine one
-    ///   or more *unresolved* key sequences that can have been pressed before typing this
-    ///   key binding. See [`master-key.prefix`](/commands/prefix) for details. Defaults to
-    ///   an empty array, which indicates that no prior keys can have been pressed. Setting
-    ///   this to <code v-pre>'{{all_prefixes()}}'</code>, will allow a key binding to work
-    ///   regardless of any unresolved key sequence that has been pressed: this is how `esc`
-    ///   is defined to work in Larkin. (See also [`not_prefixes(...)`](/expressions/index)).
-    ///   Note that if `prefixes` is an expression, it *cannot* produce a novel prefix
-    ///   not defined elsewhere. This is to avoid circular computation when
-    ///   resolving the return value of `all_prefixes`.
+    /// - `prefixes`: expresses the allowed key sequences that occur *before* this
+    /// keybinding using a call to [`master-key.prefix`](/commands/prefix). This is an object
+    /// with one of three possible keys:
+    ///   - `any`: when `true` any prefix is allowed before the binding, `false`
+    ///   means no sequence can occur prior to this binding (this is the default behavior).
+    ///   - `anyOf`: A single string or an array of strings, each an allowed prefix
+    ///   - `allBut`: A single string or an array of strings; all prefixes *except*
+    ///   those specified here are valid
     pub prefixes: Option<Spanned<PrefixInput>>,
 
     /// @forBindingField bind
     ///
-    /// - `finalKey`: (boolean, default=true) Whether this key should clear any transient
-    ///   state associated with the pending keybinding prefix. See
-    ///   [`master-key.prefix`](/commands/prefix) for details.
-    #[serde(default = "spanned_value_true")]
-    pub finalKey: Spanned<TypedValue<bool>>,
+    /// - `finalKey`: (boolean, default=true unless `master-key.prefix` is a command)
+    ///   Whether this key should clear any transient state associated with the pending
+    ///   keybinding prefix. See [`master-key.prefix`](/commands/prefix) for details. When
+    ///   `master-key.prefix` is one of the commands in this binding, this field defaults to
+    ///   `false`.
+    pub finalKey: Option<Spanned<TypedValue<bool>>>,
 
     /// @forBindingField bind
     ///
@@ -339,7 +337,7 @@ impl Expanding for BindingInput {
             }),
             finalKey: self.finalKey.map_expressions(f).unwrap_or_else(|mut e| {
                 errors.append(&mut e.errors);
-                spanned_value_true()
+                None
             }),
             repeat: self.repeat.map_expressions(f).unwrap_or_else(|mut e| {
                 errors.append(&mut e.errors);
@@ -807,8 +805,9 @@ impl Binding {
 
         // finalKey validation
         let has_prefix = commands.iter().any(|c| c.command == "master-key.prefix");
+        let final_key_result: Option<bool> = resolve!(input, finalKey, scope)?;
         #[allow(non_snake_case)]
-        let finalKey: bool = resolve!(input, finalKey, scope)?;
+        let finalKey = final_key_result.unwrap_or(!has_prefix);
         if has_prefix && finalKey {
             return Err(err(
                 "`finalKey` must be `false` when `master-key.prefix` is run",
@@ -895,7 +894,16 @@ impl Binding {
                 }
             } else {
                 let prefixes = list_prefixes(bind.key.iter().map(String::as_str));
-                for s in prefixes[0..(prefixes.len() - 1)].iter() {
+                let offset = if bind
+                    .commands
+                    .iter()
+                    .any(|c| c.command == "master-key.prefix")
+                {
+                    0
+                } else {
+                    1
+                };
+                for s in prefixes[0..(prefixes.len() - offset)].iter() {
                     all_prefixes.insert(s.join(" "));
                 }
             };
@@ -1230,20 +1238,6 @@ pub(crate) fn list_prefixes(seq: impl Iterator<Item = impl ToString>) -> Vec<Vec
 }
 
 impl Binding {
-    // TODO: before this runs we need to extract all possible prefixes and use them to
-    // implement `all_prefixes` this should be a method of BindingInput we'll need to skip
-    // all values that aren't constant for `prefixes`
-
-    // when evaluating dynamic prefixes we'll need to verify that such expressions don't add
-    // new prefixes (should update the docs as well to be clear about this) trying to
-    // support this otherwise requires some very circular stuff that doesn't really seem
-    // worth it
-
-    // in many cases you can work around this because you could define a binding with
-    // `mater-key.prefix` as its command and this would introducing the binding even if the
-    // `key` filed of this binding had an expression in it... but this means that
-    // `all_prefixes` cannot be defined during resolution of `key` 🤔
-
     /// Generates the `BindingOutput` items that will be stored in `keybindings.json`
     ///
     /// For each `Binding` item there are actually many implied `keybinding.json` entries.
@@ -1294,16 +1288,8 @@ impl Binding {
     /// sequences of keys that can occur before the defined keybinding.
     ///
     /// listed prefixes: this is the complete set of prefixes a given key sequence has,
-    /// including the explicit prefix (e.g. "a b c" has two prefixes: "a" and "a b")
-    ///
-    /// We need to define a separate binding to the actuall command to run (calling
-    /// `master-key.do`) per explicit prefix. In addition, we need to define a binding per
-    /// listed prefix because those each require a call to `master-key.prefix` to allow
-    /// documentation to update between each key-press of a multi-press binding and for user
-    /// specified keys to cancel a keybinding sequence (the same way escape cancels
-    /// keybindings in vim). It is also how we could eventually implement vim-like behavior
-    /// where one binding (e.g. `c` to change a line) could actually be a prefix of another
-    /// (e.g. `c c` to comment a line).
+    /// including the explicit prefix that gets prepended to the binding (e.g. "a b c" has
+    /// two prefixes: "a" and "a b")
     ///
     /// Example:
     ///
@@ -1319,6 +1305,16 @@ impl Binding {
     ///
     /// - iteration 1 (prefix `"x y"`): `[["x"], ["x", "y"], ["x", "y", "a"]]`
     /// - iteration 2 (prefix `"k h"`): `[["k"], ["k", "h"], ["k", "h", "a"]]`
+    ///
+    /// We need to define a binding in `keybindings.json` per listed prefix because those each
+    /// require a call to `master-key.prefix` to allow documentation to update between each
+    /// key-press of a multi-press binding. This also allows for user specified keys to
+    /// cancel a keybinding sequence (the same way escape cancels keybindings in vim). It is
+    /// also how we could eventually implement vim-like behavior where one binding (e.g. `c`
+    /// to change a line) could actually be a prefix of another (e.g. `c c` to comment a
+    /// line).
+    ///
+
     fn outputs_for_mode_and_prefix(
         &self,
         command_id: i32,
@@ -1767,6 +1763,7 @@ mod tests {
         let data = r#"
         key = "a"
         command = "runCommands"
+        finalKey = true
         args.commands = ["a", "master-key.prefix"]
         "#;
 

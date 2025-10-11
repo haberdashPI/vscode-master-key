@@ -79,7 +79,7 @@ export function prefixCodes(state: CommandState): [CommandState, PrefixCodes] {
  * ```
  *
  * These prefixes may be explicitly specified in this way so they can be documented. When
- * users do not provide an explicit prefix, Master key explicitly creates these bindings by
+ * users do not provide an explicit prefix, Master key implicitly creates these bindings by
  * itself, but without documentation. As such, all of the bindings written in a
  * `keybinding.json` file have just a single key press, with some conditioned on the
  * specific prefix that must occur beforehand. This is so that master key can explicitly
@@ -87,7 +87,7 @@ export function prefixCodes(state: CommandState): [CommandState, PrefixCodes] {
  *
  * ## Prefix Format
  *
- * The prefix state is stored under `prefix` (when evaluating an
+ * The prefix state is stored under `key.prefix` (when evaluating an
  * [expression](/expressions/index)) and under `master-key.prefix` in a `when` clause
  * (though it should rarely be necessary to access the prefix explicitly in a `when`
  * clause). It is stored as a space delimited sequence of keybindings in the same form that
@@ -98,7 +98,7 @@ export function prefixCodes(state: CommandState): [CommandState, PrefixCodes] {
  *
  * A binding that includes a `prefix` command has `finalKey` set to `false`. Whereas,
  * without a `prefix` command present, the default is `true`. When `finalKey` is `false`
- * master key not reset any previously set transient state (e.g. from previous calls to
+ * master key does not reset any previously set transient state (e.g. from previous calls to
  * `prefix` or transient [`setFlag`](/commands/setFlag)). When `finalKey` is `true` any
  * transient state is returned to a default, unset state.
  *
@@ -111,12 +111,12 @@ export function prefixCodes(state: CommandState): [CommandState, PrefixCodes] {
  * ```toml
  * [[bind]]
  * key = "shift+;"
- * name = "suggest"
+ * doc.name = "suggest"
  * finalKey = false
- * hideInPalette = true
- * prefixes = "{{all_prefixes}}"
- * mode = ["!capture", "!insert"]
- * description = """
+ * doc.hideInPalette = true
+ * prefixes.any = true
+ * mode = '{{not_modes(["capture", "insert"])}}'
+ * doc.description = """
  * show command suggestions within the context of the current mode and keybinding prefix
  * (if any). E.g. `TAB, ⇧;` in `normal` mode will show all `normal` command suggestions
  * that start with `TAB`.
@@ -126,8 +126,7 @@ export function prefixCodes(state: CommandState): [CommandState, PrefixCodes] {
  *
  * A few things are going on here:
  *
- * 1. The binding applies regardless of the current prefix (`prefixes =
- *    "&#123;&#123;all_prefixes&#125;&#125;").
+ * 1. The binding applies regardless of the current prefix (`prefixes.any = true`).
  * 2. This calls a command that lists possible keys that can be pressed given the current
  *    prefix (`command = "master-key.commandSuggestions"`). `master-key.prefix` is not
  *    called, so the press of `shift+;` will not update to the current sequence of keys that
@@ -136,7 +135,8 @@ export function prefixCodes(state: CommandState): [CommandState, PrefixCodes] {
  *    will continue to wait for additional key presses that can occur for the given
  *    keybinding prefix.
  *
- * In this way the user can ask for help regarding which keys they can press next.
+ * In this way the user can ask for help regarding which keys they can press next,
+ * without resetting the state.
  */
 
 let oldPrefixCursor: boolean = false;

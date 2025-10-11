@@ -234,7 +234,7 @@ Integration test debugging:
     - [X] implement `[header]` section
         - [X] instead of using `.mk.toml`, look for a specific heading comment in the file
         - [X] debug error processing in `keybindings/index.ts`
-    - [ ] BUG: prefides defined via `master-key.prefix` are not included in
+    - [X] BUG: prefides defined via `master-key.prefix` are not included in
           `all_prefixes`
           - [X] get rid of the `prefixes` field design and instead allow
                 a way to express "prefix is X" "prefix isn't X" etc...
@@ -249,8 +249,11 @@ Integration test debugging:
                 prefix.any = false
                 ```
         - [X] validate that the excludes don't contain new prefixes
-        - [ ] unit tests
-        - [ ] documentation
+        - [X] unit tests
+        - [X] handle `master-key.prefix` (in this case we need to include
+               the last key as a valid prefix)
+            - [X] unit tests
+        - [X] documentation
     - [ ] error handling checks
         - [ ] remove spurious line/char positions from expression error messages
             - NOTE: these come from the line and char position in the rhai expression

@@ -101,21 +101,22 @@
 ///   - `bind.path` and `[[path]]`: A similar, but more explicit approach
 ///      is possible using `default` and [`define.bind`](/bindings/define#binding-definitions)
 ///   - replaced `mode = []` with <span v-pre>`mode = '{{all_modes()}}'`</span>
-///   - replaced <code>"&lt;all-prefixes&gt;"</code> with <span v-pre>`'{{all_prefixes()}}'`</span> **TODO**
 ///   - replaced `mode = ["!insert", "!capture"]` with
 ///     <span v-pre>`mode = '{{not_modes(["insert", "capture"])}}'`</span>
-/// - renamed several fields:
+/// - revised several fields:
+///   - replaced `prefixes = ["a", "b", ...]` with `prefixes.anyOf = ["a", "b", ...]`
+///   - replaced <code>prefixes = "&lt;all-prefixes&gt;"</code> with `prefixes.any = true`
 ///   - `name`, `description`, `hideInPalette` and `hideInDocs` moved to
 ///     `doc.name`, `doc.description`, `doc.hideInPalette` and `doc.hideInDocs`
 ///   - `combinedName`, `combinedDescription` and `combinedKey` moved to
 ///     `doc.combined.name`, `doc.combined.description` and `doc.combined.key`.
 ///   - `resetTransient` is now [`finalKey`](/bindings/bind)
-///   - `bind.if` is renamed to [`bind.skipWhen`](/bindings/bind)
+///   - `bind.if` replaced with [`bind.skipWhen`](/bindings/bind)
 ///   - `name` renamed to `register` in [`(re)storeNamed`](/commands/storeNamed) command
 ///   - Rename replay-related command fields:
 ///     - `at` to `whereIndexIs`
 ///     - `range` to `whereRangeIs`
-///     - the variable `i` renamed to `index`
+///     - the variable `i` renamed to `index` in expressions of these fields
 #[allow(unused_imports)]
 use log::{error, info};
 
@@ -926,6 +927,11 @@ mod tests {
         key = "w"
         command = "baz"
         prefixes.allBut = ["d e"]
+
+        [[bind]]
+        key = "q"
+        command = "master-key.prefix"
+        finalKey = false
         "#;
 
         let mut scope = Scope::new();
@@ -951,7 +957,12 @@ mod tests {
                 .iter()
                 .any(|x| x == "d e")
         );
-        assert_eq!(unwrap_prefixes(&result.bind[2].prefixes).len(), 4);
+        assert!(
+            unwrap_prefixes(&result.bind[2].prefixes)
+                .iter()
+                .any(|x| x == "q")
+        );
+        assert_eq!(unwrap_prefixes(&result.bind[2].prefixes).len(), 5);
         assert!(
             unwrap_prefixes(&result.bind[3].prefixes)
                 .iter()
@@ -967,7 +978,12 @@ mod tests {
                 .iter()
                 .any(|x| x == "d")
         );
-        assert_eq!(unwrap_prefixes(&result.bind[3].prefixes).len(), 3);
+        assert!(
+            unwrap_prefixes(&result.bind[3].prefixes)
+                .iter()
+                .any(|x| x == "q")
+        );
+        assert_eq!(unwrap_prefixes(&result.bind[3].prefixes).len(), 4);
     }
 
     #[test]
@@ -1063,6 +1079,7 @@ mod tests {
         [[bind]]
         key = "x"
         command = "runCommands"
+        finalKey = true
 
         [[bind.args.commands]]
         command = "x"

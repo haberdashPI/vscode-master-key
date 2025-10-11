@@ -21,7 +21,7 @@
 /// Furthermore, if the expression <code v-pre>{{keys([quoted-regex])}}</code> is included
 /// in a `foreach` value, it is expanded to all keybindings that match the given regular
 /// expression and spliced into the array of values. For example, the following definition
-/// is used in `Larkin` to allow the numeric keys to be used as count prefix for motions.
+/// is used in `Larkin` to allow the numeric keys to be used as a count prefix for motions.
 ///
 /// ```toml
 /// [[bind]]
