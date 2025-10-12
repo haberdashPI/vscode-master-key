@@ -42,10 +42,6 @@ where
     return Spanned::new(UNKNOWN_RANGE, TypedValue::default());
 }
 
-fn spanned_value_true() -> Spanned<TypedValue<bool>> {
-    return Spanned::new(UNKNOWN_RANGE, TypedValue::Constant(true));
-}
-
 //
 // ================ `[[bind]]` parsing ================
 //
@@ -741,7 +737,7 @@ pub struct Binding {
     pub doc: BindingDoc,
 }
 
-const BARE_KEY_CONTEXT: &str = "(editorTextFocus || master-key.keybindingPaletteOpen \
+const TEXT_FOCUS_CONDITION: &str = "(editorTextFocus || master-key.keybindingPaletteOpen \
                  && master-key.keybindingPaletteBindingMode)";
 
 lazy_static! {
@@ -842,14 +838,14 @@ impl Binding {
         let mut when: Option<String> = resolve!(input, when, scope)?;
         when = if !NON_BARE_KEY.is_match(&key[0]) {
             if let Some(w) = when {
-                Some(format!("({}) && {BARE_KEY_CONTEXT}", w))
+                Some(format!("({}) && {TEXT_FOCUS_CONDITION}", w))
             } else {
-                Some(BARE_KEY_CONTEXT.to_string())
+                Some(TEXT_FOCUS_CONDITION.to_string())
             }
         } else {
             Some(
                 EDITOR_TEXT_FOCUS
-                    .replace_all(&(when.unwrap()), BARE_KEY_CONTEXT)
+                    .replace_all(&(when.unwrap()), TEXT_FOCUS_CONDITION)
                     .to_string(),
             )
         };
