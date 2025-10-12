@@ -1252,6 +1252,11 @@ mod tests {
         description = "foo bar"
 
         [[bind]]
+        key = "a"
+        command = "foo"
+        mode = ["!capture"]
+
+        [[bind]]
         path = "modes"
         name = "normal"
         description = "All the legacy features!"
@@ -1262,6 +1267,7 @@ mod tests {
         combinedDescription = "all the things"
         key = "{key}"
         mode = []
+        resetTransient = false
         hideInPalette = true
         hideInDocs = false
         command = "master-key.enterNormal"
@@ -1270,7 +1276,7 @@ mod tests {
         "#;
 
         let warnings = identify_legacy_warnings_helper(data.as_bytes()).unwrap_err();
-        assert_eq!(warnings.errors.len(), 12);
+        assert_eq!(warnings.errors.len(), 14);
     }
 
     #[test]
