@@ -346,4 +346,17 @@ mod tests {
         assert_eq!(r#"{{joe.bob.{{bill bob"#, val);
         assert!(message.contains("unexpected `"));
     }
+
+    #[test]
+    fn clean_expression_error_locations() {
+        let data = r#"
+        bob = "{{x # y}}"
+        "#;
+
+        let value: Value = toml::from_str(data).unwrap();
+        let mut scope = Scope::new();
+        let err = scope.parse_asts(&value).unwrap_err();
+        let report = err.report(data.as_bytes());
+        assert!(!report[0].message.contains("(line"))
+    }
 }

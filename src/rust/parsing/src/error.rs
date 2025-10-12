@@ -2,6 +2,8 @@
 use log::info;
 
 use core::ops::Range;
+use lazy_static::lazy_static;
+use regex::Regex;
 use rhai::{self, EvalAltResult};
 use serde::Serialize;
 use smallvec::SmallVec;
@@ -353,6 +355,10 @@ fn resolve_rhai_pos_from_expression_range(
     return char_line_range;
 }
 
+lazy_static! {
+    static ref LINE_MESSAGE: Regex = Regex::new(r"\(line [0-9]+, position [0-9]+\)").unwrap();
+}
+
 #[wasm_bindgen]
 impl ParseError {
     /// `report` is how we generate legible annotations
@@ -371,7 +377,9 @@ impl ParseError {
             }
             RawError::ExpressionParsing(rhai) => {
                 rhai_pos = Some(rhai.position());
-                message_buf.push_str(&self.error.to_string());
+                let raw_msg = self.error.to_string();
+                let msg = LINE_MESSAGE.replace_all(&raw_msg, "");
+                message_buf.push_str(&msg);
             }
             _ => message_buf.push_str(&self.error.to_string()),
         };
