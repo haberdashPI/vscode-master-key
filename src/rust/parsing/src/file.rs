@@ -301,6 +301,8 @@ pub struct KeyFileResult {
     pub errors: Option<Vec<ErrorReport>>,
 }
 
+// LCOV_EXCL_START
+// These lines are tested during integration tests with the typescript code
 #[wasm_bindgen]
 pub fn parse_keybinding_bytes(file_content: Box<[u8]>) -> KeyFileResult {
     return match parse_bytes_helper(&file_content) {
@@ -320,6 +322,7 @@ pub fn parse_keybinding_bytes(file_content: Box<[u8]>) -> KeyFileResult {
         },
     };
 }
+// LCOV_EXCL_STOP
 
 fn parse_bytes_helper(file_content: &[u8]) -> ResultVec<(KeyFile, ErrorSet)> {
     // ensure there's a directive
@@ -439,7 +442,7 @@ pub fn identify_legacy_warnings(file_content: Box<[u8]>) -> KeyFileResult {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use crate::bind::BindingOutputArgs;
     use crate::bind::UNKNOWN_RANGE;
@@ -449,6 +452,13 @@ mod tests {
     use smallvec::SmallVec;
     use std::collections::HashMap;
     use test_log::test;
+
+    pub(crate) fn unwrap_table(x: &Value) -> HashMap<String, Value> {
+        match x {
+            Value::Table(x, _) => x.clone(),
+            _ => panic!("Expected a table!"),
+        }
+    }
 
     #[test]
     fn parse_example() {
@@ -472,7 +482,7 @@ mod tests {
 
         [[bind]]
         key = "h"
-        model = "normal"
+        mode = "normal"
         command = "cursorLeft"
         "#;
 
@@ -555,8 +565,8 @@ mod tests {
         assert_eq!(result.bind[0].key[0], "a");
         assert_eq!(result.bind[0].commands[0].command, "shebang");
         assert_eq!(
-            result.bind[0].commands[0].args,
-            Value::Table(HashMap::from([
+            unwrap_table(&result.bind[0].commands[0].args),
+            HashMap::from([
                 ("a".into(), Value::Integer(1)),
                 (
                     "b".into(),
@@ -567,7 +577,7 @@ mod tests {
                         scope: SmallVec::new(),
                     })
                 ),
-            ]))
+            ])
         );
         assert_eq!(result.bind[0].commands[1].command, "bar");
     }
@@ -609,8 +619,8 @@ mod tests {
         assert_eq!(result.bind[0].key[0], "a");
         assert_eq!(result.bind[0].commands[0].command, "shebang");
         assert_eq!(
-            result.bind[0].commands[0].args,
-            Value::Table(HashMap::from([
+            unwrap_table(&result.bind[0].commands[0].args),
+            HashMap::from([
                 ("a".into(), Value::Integer(1)),
                 (
                     "b".into(),
@@ -621,7 +631,7 @@ mod tests {
                         scope: SmallVec::new(),
                     })
                 ),
-            ]))
+            ])
         );
         assert_eq!(result.bind[0].commands[1].command, "bar");
     }
@@ -1307,6 +1317,52 @@ mod tests {
 
         assert!(report[0].message.contains("`bleep`"));
         assert_eq!(report[0].range.start.line, 16);
+    }
+
+    #[test]
+    fn expression_error_resolves_to_field_in_array() {
+        let data = r#"
+        [header]
+        version = "2.0.0"
+
+        [[bind]]
+        key = "a"
+        command = "foobar"
+        args.names = ["{{1+2}}", "{{(1+2}}"]
+        "#;
+
+        let mut scope = Scope::new();
+        let err =
+            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap_err();
+        let report = err.report(data.as_bytes());
+        assert!(report[0].message.contains("Expecting ')'"));
+        assert_eq!(report[0].range.start.line, 7);
+        assert_eq!(report[0].range.end.line, 7);
+        assert_eq!(report[0].range.start.col, 21);
+        assert_eq!(report[0].range.end.col, 44);
+    }
+
+    #[test]
+    fn unmatched_bracket_error_resolves_to_field_in_array() {
+        let data = r#"
+        [header]
+        version = "2.0.0"
+
+        [[bind]]
+        key = "a"
+        command = "foobar"
+        args.names = ["{{1+2}}", "{{1+2"]
+        "#;
+
+        let mut scope = Scope::new();
+        let err =
+            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap_err();
+        let report = err.report(data.as_bytes());
+        assert!(report[0].message.contains("unexpected `{{`"));
+        assert_eq!(report[0].range.start.line, 7);
+        assert_eq!(report[0].range.end.line, 7);
+        assert_eq!(report[0].range.start.col, 21);
+        assert_eq!(report[0].range.end.col, 41);
     }
 
     // TODO: write a test for required field `key` and ensure the span

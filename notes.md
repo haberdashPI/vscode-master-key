@@ -255,13 +255,47 @@ Integration test debugging:
             - [X] unit tests
         - [X] documentation
     - [ ] error handling checks
-        - [ ] remove spurious line/char positions from expression error messages
+        - [X] remove spurious line/char positions from expression error messages
             - NOTE: these come from the line and char position in the rhai expression
             which has nothing to do with the line and char position in the parent
             keybinding file
-        - [ ] make sure a range is always provided
-        - [ ] test that all error messages show up when expected
+        - [ ] list of errors to check on
+            - [X] parsing a number that's too large
+            - [X] duplicate toml key
+            - [X] unmatched `{{` when there are other matches braces before it
+            - [X] expression error for expression in an array
+            - [X] unmatched `{{` when child of array
+            - [X] unresolved expression (and interpolation) in conversion of Value -> BareValue
+            - [ ] warn about unexpected fields in `[[bind]]` (and others)
+            - [ ] invalid regex for `keys` function
+            - [ ] invalid keybinding strings (modifier and key)
+            - [ ] layout invariant binding works
+            - [ ] expression evaluating to non-string value for `key` fieldd
+            - [ ] unresolved expressions when converting from Value -> toml::Value
+            - [ ] errors in an expression of a `[[bind]]` field point to the field
+                - [ ] for top-level
+                - [ ] for docs
+                - [ ] for combined docs
+            - [ ] id field is reserved
+            - [ ] foreach with unresolved variables
+            - [ ] error in expression of `define.val/command/bind`
+            - [ ] allow expression interpolations to be keybindings
+            - [ ] an expression that isn't `{{bind.[id]}}` for a `default` field
+            - [ ] undefined `{{bind.[id]}}` reference in `default` field
+            - [ ] misplaced reference to `{{bind.[id]}}`
+            - [ ] TOML parsing errors
+            - [ ] error for use of legacy expression ()
+            - [ ] unique kind names
+            - [ ] args set to non-table value when `command = "runCommands"`
+            - [ ] `args.commands` being a non-array value when `command = "runCommands"`
+            - [ ] non string value for `command` inside of `args.commands`
+            - [ ] `skipWhen` present for `command = "runCommands"` for an element
+                  of `args.commands`.
+            - [ ] args is a non array or table value for a sub command of `runCommands`
+            - [ ] non table or string value for an array element of `runCommands`
         - [ ] review coverage to verify there aren't additional checks we're missing
+        - [ ] test that all error messages show up when expected
+        - [ ] make sure a range is always provided
         - [ ] integration test for both warnings and errors in type script setup
     - [ ] refactor and cleanup rust code
     - [ ] proper conversion to keybindings.json command

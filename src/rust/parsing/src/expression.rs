@@ -147,10 +147,15 @@ impl Scope {
                 let val: Dynamic = From::<Value>::from(Value::new(v.clone(), None)?);
                 self.state.push_dynamic(k, val);
             }
-            let dynamic: rhai::Dynamic = self.engine.eval_ast_with_scope(&mut self.state, ast)?;
+            let dynamic: Dynamic = self
+                .engine
+                .eval_ast_with_scope(&mut self.state, ast)
+                .with_exp_range(&expr.span)?;
             self.state.rewind(rewind_to);
             let result_value: std::result::Result<Value, _> = dynamic.clone().try_into();
-            let value = result_value.with_message(format!(" while evaluating:\n{expr}"))?;
+            let value = result_value
+                .with_message(format!(" while evaluating:\n{expr}"))
+                .with_exp_range(&expr.span)?;
             return Ok(value);
         })?);
     }
@@ -163,7 +168,7 @@ impl Scope {
             let ast = self
                 .engine
                 .compile_expression(expr.content.clone())
-                .with_range(&expr.span)?;
+                .with_exp_range(&expr.span)?;
             self.asts.insert(expr.content.clone(), ast);
             return Ok(Value::Exp(expr));
         })?;
@@ -345,6 +350,40 @@ mod tests {
         let val: String = data[(range.start.col)..=(range.end.col)].to_string();
         assert_eq!(r#"{{joe.bob.{{bill bob"#, val);
         assert!(message.contains("unexpected `"));
+    }
+
+    #[test]
+    fn expression_bracket_error_5() {
+        let data = r#"
+        joe = "{{joe.bob}}.{{bill.bob}}.fob{{"
+        "#;
+        let value: Value = toml::from_str(data).unwrap();
+        let mut scope = Scope::new();
+        let err = scope.parse_asts(&value).unwrap_err();
+
+        let report = err.report(data.as_bytes());
+        let message = report.first().unwrap().message.clone();
+        let range = report.first().unwrap().range.clone();
+        let val: String = data[(range.start.col)..=(range.end.col)].to_string();
+        info!("report: {report:#?}");
+        assert!(message.contains("unexpected `{{`"));
+    }
+
+    #[test]
+    fn expression_bracket_error_6() {
+        let data = r#"
+        joe = "{{joe.bob}}.{{bill.bob}}.fob{{"
+        "#;
+        let value: Value = toml::from_str(data).unwrap();
+        let mut scope = Scope::new();
+        let err = scope.parse_asts(&value).unwrap_err();
+
+        let report = err.report(data.as_bytes());
+        let message = report.first().unwrap().message.clone();
+        let range = report.first().unwrap().range.clone();
+        let val: String = data[(range.start.col)..=(range.end.col)].to_string();
+        info!("report: {report:#?}");
+        assert!(message.contains("unexpected `{{`"));
     }
 
     #[test]

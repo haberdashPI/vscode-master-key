@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use toml::{Spanned, Value};
 
+use crate::bind::UNKNOWN_RANGE;
 use crate::err;
 use crate::error::{ErrorContext, ParseError, Result, ResultVec, flatten_errors};
 use crate::expression::Scope;
@@ -80,6 +81,23 @@ impl<T: Merging> Merging for Spanned<T> {
     }
     fn coalesce(self, new: Self) -> Self {
         return Spanned::new(self.span(), self.into_inner().coalesce(new.into_inner()));
+    }
+}
+
+impl Merging for core::ops::Range<usize> {
+    fn merge(self, new: Self) -> Self {
+        if new != UNKNOWN_RANGE {
+            return new;
+        } else {
+            return self;
+        }
+    }
+    fn coalesce(self, new: Self) -> Self {
+        if new != UNKNOWN_RANGE {
+            return new;
+        } else {
+            return self;
+        }
     }
 }
 
@@ -335,33 +353,6 @@ impl<T> Required<T> {
         return match self {
             Required::Value(x) => x,
             Required::DefaultValue => panic!("Required value missing"),
-        };
-    }
-
-    pub fn as_ref(&self) -> Required<&T> {
-        match *self {
-            Required::Value(ref x) => Required::Value(x),
-            Required::DefaultValue => Required::DefaultValue,
-        }
-    }
-
-    pub fn map<F, R>(self, f: F) -> Required<R>
-    where
-        F: Fn(T) -> R,
-    {
-        match self {
-            Required::DefaultValue => Required::DefaultValue,
-            Required::Value(x) => Required::Value(f(x)),
-        }
-    }
-
-    pub fn or(self, new: Self) -> Self {
-        return match new {
-            Required::Value(new_val) => match self {
-                Required::DefaultValue => Required::Value(new_val),
-                _ => self,
-            },
-            Required::DefaultValue => self,
         };
     }
 }

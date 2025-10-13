@@ -55,43 +55,43 @@ pub struct CommandInput {
     pub skipWhen: Option<Spanned<TypedValue<bool>>>,
 }
 
-impl Expanding for CommandInput {
-    fn is_constant(&self) -> bool {
-        if self.command.is_constant() {
-            return false;
-        }
-        if self.args.is_constant() {
-            return false;
-        }
-        return true;
-    }
-    fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
-    where
-        F: FnMut(Expression) -> Result<Value>,
-    {
-        let mut errors = Vec::new();
-        let result = CommandInput {
-            id: self.id,
-            command: self.command.map_expressions(f).unwrap_or_else(|mut e| {
-                errors.append(&mut e.errors);
-                Spanned::new(UNKNOWN_RANGE, Required::DefaultValue)
-            }),
-            args: self.args.map_expressions(f).unwrap_or_else(|mut e| {
-                errors.append(&mut e.errors);
-                None
-            }),
-            skipWhen: self.skipWhen.map_expressions(f).unwrap_or_else(|mut e| {
-                errors.append(&mut e.errors);
-                None
-            }),
-        };
-        if errors.len() > 0 {
-            return Err(errors.into());
-        } else {
-            return Ok(result);
-        }
-    }
-}
+// impl Expanding for CommandInput {
+//     fn is_constant(&self) -> bool {
+//         if self.command.is_constant() {
+//             return false;
+//         }
+//         if self.args.is_constant() {
+//             return false;
+//         }
+//         return true;
+//     }
+//     fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
+//     where
+//         F: FnMut(Expression) -> Result<Value>,
+//     {
+//         let mut errors = Vec::new();
+//         let result = CommandInput {
+//             id: self.id,
+//             command: self.command.map_expressions(f).unwrap_or_else(|mut e| {
+//                 errors.append(&mut e.errors);
+//                 Spanned::new(UNKNOWN_RANGE, Required::DefaultValue)
+//             }),
+//             args: self.args.map_expressions(f).unwrap_or_else(|mut e| {
+//                 errors.append(&mut e.errors);
+//                 None
+//             }),
+//             skipWhen: self.skipWhen.map_expressions(f).unwrap_or_else(|mut e| {
+//                 errors.append(&mut e.errors);
+//                 None
+//             }),
+//         };
+//         if errors.len() > 0 {
+//             return Err(errors.into());
+//         } else {
+//             return Ok(result);
+//         }
+//     }
+// }
 
 impl CommandInput {
     pub(crate) fn without_id(&self) -> Self {
@@ -114,7 +114,7 @@ impl From<CommandInput> for Value {
         if let Some(arg_value) = value.args {
             entries.insert("args".to_string(), arg_value.into_inner());
         }
-        return Value::Table(entries);
+        return Value::Table(entries, None);
     }
 }
 
@@ -176,7 +176,7 @@ pub(crate) fn regularize_commands(
         let commands = vec![Command {
             command,
             args: match input.args() {
-                None => Value::Table(HashMap::new()),
+                None => Value::Table(HashMap::new(), None),
                 Some(spanned) => spanned.as_ref().clone(),
             },
             skipWhen: input.skipWhen(),
@@ -189,11 +189,15 @@ pub(crate) fn regularize_commands(
             .ok_or_else(|| err("`runCommands` must have `args` field"))?;
         let args_pos = spanned.span();
         let args = spanned.as_ref().to_owned();
-        let commands = match args {
-            Value::Table(kv) => kv
-                .get("commands")
-                .ok_or_else(|| err("`runCommands` must have `args.commands` field"))?
-                .clone(),
+        let (commands, commands_span) = match args {
+            Value::Table(kv, span) => {
+                let commands = kv
+                    .get("commands")
+                    .ok_or_else(|| err("`runCommands` must have `args.commands` field"))?
+                    .clone();
+                let span = span.map(|sp| sp["commands"].clone());
+                (commands, span)
+            }
             _ => {
                 return Err(err("Expected `args` to be an object with `commands` field"))?;
             }
@@ -202,7 +206,8 @@ pub(crate) fn regularize_commands(
             Value::Array(items) => items,
             _ => {
                 return Err(err("Expected `args.commands` of `runCommands` to \
-                    be a vector of commands to run."))?;
+                    be a vector of commands to run."))
+                .with_range(&commands_span)?;
             }
         };
 
@@ -213,13 +218,16 @@ pub(crate) fn regularize_commands(
             let (command, args, skipWhen) = match command {
                 Value::String(str) => (
                     str.to_owned(),
-                    Value::Table(HashMap::new()),
+                    Value::Table(HashMap::new(), None),
                     TypedValue::default(),
                 ),
-                Value::Table(kv) => {
-                    let result = kv.get("command").ok_or_else(|| {
-                        err("expected `args.commands.command` field for `runCommands`")
-                    })?;
+                Value::Table(kv, spans) => {
+                    let result = kv
+                        .get("command")
+                        .ok_or_else(|| {
+                            err("expected `args.commands.command` field for `runCommands`")
+                        })
+                        .with_range(&commands_span)?;
                     let command_name = match result {
                         Value::String(x) => x.to_owned(),
                         _ => {
@@ -250,11 +258,11 @@ pub(crate) fn regularize_commands(
                         continue;
                     } else {
                         let result = match kv.get("args") {
-                            Option::None => &Value::Table(HashMap::new()),
+                            Option::None => &Value::Table(HashMap::new(), None),
                             Some(x) => x,
                         };
                         let args = match result {
-                            x @ Value::Table(_) => x,
+                            x @ Value::Table(_, _) => x,
                             x @ Value::Array(_) => x,
                             x @ Value::Exp(_) => x,
                             x => {
@@ -272,10 +280,10 @@ pub(crate) fn regularize_commands(
                 }
                 x @ Value::Exp(_) => (
                     "runCommands".to_string(),
-                    Value::Table(HashMap::from([(
-                        "commands".to_string(),
-                        Value::Array(vec![x]),
-                    )])),
+                    Value::Table(
+                        HashMap::from([("commands".to_string(), Value::Array(vec![x]))]),
+                        None,
+                    ),
                     TypedValue::Constant(false),
                 ),
                 _ => {
@@ -325,7 +333,7 @@ impl Command {
             command: resolve!(input, command, scope)?,
             args: match input.args {
                 Some(x) => x.into_inner(),
-                Option::None => Value::Table(HashMap::new()),
+                Option::None => Value::Table(HashMap::new(), None),
             },
             skipWhen: resolve!(input, skipWhen, scope)?,
         });
@@ -353,7 +361,7 @@ impl Expanding for Command {
             command: self.command,
             args: self.args.map_expressions(f).unwrap_or_else(|mut e| {
                 errors.append(&mut e.errors);
-                Value::Table(HashMap::new())
+                Value::Table(HashMap::new(), None)
             }),
             skipWhen: self.skipWhen.map_expressions(f).unwrap_or_else(|mut e| {
                 errors.append(&mut e.errors);
@@ -372,6 +380,7 @@ impl Expanding for Command {
 #[cfg(test)]
 mod tests {
     use crate::bind::command::regularize_commands;
+    use crate::file::tests::unwrap_table;
     use test_log::test;
 
     use super::*;
@@ -402,13 +411,13 @@ mod tests {
         assert_eq!(commands[1].command, "b");
         assert_eq!(commands[2].command, "c");
 
-        assert_eq!(commands[0].args, Value::Table(HashMap::new()));
+        assert_eq!(commands[0].args, Value::Table(HashMap::new(), None));
         assert_eq!(
-            commands[1].args,
-            Value::Table(HashMap::from([
+            unwrap_table(&commands[1].args),
+            HashMap::from([
                 ("foo".to_string(), Value::Integer(1)),
                 ("bar".to_string(), Value::Integer(2)),
-            ]))
+            ])
         );
         assert_eq!(
             commands[2].args,

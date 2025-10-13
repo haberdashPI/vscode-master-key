@@ -36,7 +36,10 @@ pub enum Value {
     String(String),
     Boolean(bool),
     Array(Vec<Value>),
-    Table(HashMap<String, Value>),
+    Table(
+        HashMap<String, Value>,
+        Option<HashMap<String, Range<usize>>>,
+    ),
     Interp(Vec<Value>),
     Exp(Expression),
 }
@@ -256,11 +259,15 @@ impl Value {
                 Value::Array(values.collect::<Result<_>>()?)
             }
             BareValue::Table(toml_kv) => {
+                let k_span = toml_kv
+                    .iter()
+                    .map(|(k, v)| (k.clone(), v.span().clone()))
+                    .collect();
                 let kv = toml_kv.into_iter().map(|(k, v)| {
                     let span = v.span();
                     return Ok((k, Value::new(v.into_inner(), Some(span))?));
                 });
-                Value::Table(kv.collect::<Result<_>>()?)
+                Value::Table(kv.collect::<Result<_>>()?, Some(k_span))
             }
         });
     }
@@ -431,7 +438,17 @@ impl From<Value> for BareValue {
                 let new_items = items.into_iter().map(|it| it.into()).collect();
                 BareValue::Array(new_items)
             }
-            Value::Table(kv) => {
+            Value::Table(kv, Some(k_spans)) => {
+                let new_kv = kv
+                    .into_iter()
+                    .map(|(k, v)| {
+                        let span = k_spans[&k].clone();
+                        return (k, Spanned::new(span, v.into()));
+                    })
+                    .collect();
+                BareValue::Table(new_kv)
+            }
+            Value::Table(kv, Option::None) => {
                 let new_kv = kv
                     .into_iter()
                     .map(|(k, v)| (k, Spanned::new(UNKNOWN_RANGE, v.into())))
@@ -457,7 +474,7 @@ impl From<Value> for toml::Value {
                 let new_items = items.into_iter().map(|it| it.into()).collect();
                 toml::Value::Array(new_items)
             }
-            Value::Table(kv) => {
+            Value::Table(kv, _) => {
                 let new_kv = kv.into_iter().map(|(k, v)| (k, v.into())).collect();
                 toml::Value::Table(new_kv)
             }
@@ -480,7 +497,7 @@ impl From<Value> for Dynamic {
                 let elements: Vec<Dynamic> = x.into_iter().map(|x| Dynamic::from(x)).collect();
                 elements.into()
             }
-            Value::Table(x) => {
+            Value::Table(x, _) => {
                 let map: std::collections::HashMap<String, Dynamic> =
                     x.into_iter().map(|(k, v)| (k, v.into())).collect();
                 map.into()
@@ -514,7 +531,7 @@ impl TryFrom<Dynamic> for Value {
                 .into_iter()
                 .map(|(k, v)| Ok((k.as_str().to_string(), Value::try_from(v.to_owned())?)))
                 .collect::<Result<HashMap<_, _>>>()?;
-            return Ok(Value::Table(values));
+            return Ok(Value::Table(values, None));
         } else if value.is_bool() {
             return Ok(Value::Boolean(value.as_bool().expect("boolean")));
         } else if value.is_float() {
@@ -545,7 +562,7 @@ impl TryFrom<Dynamic> for Value {
 
 impl Default for Value {
     fn default() -> Self {
-        return Value::Table(HashMap::new());
+        return Value::Table(HashMap::new(), None);
     }
 }
 
@@ -572,9 +589,11 @@ impl Merging for Value {
                 }
                 _ => Value::Array(new_values),
             },
-            Value::Table(new_kv) => match self {
-                Value::Table(old_kv) => Value::Table(old_kv.merge(new_kv)),
-                _ => Value::Table(new_kv),
+            Value::Table(new_kv, new_spans) => match self {
+                Value::Table(old_kv, old_spans) => {
+                    Value::Table(old_kv.merge(new_kv), old_spans.merge(new_spans))
+                }
+                _ => Value::Table(new_kv, new_spans),
             },
             _ => new,
         }
@@ -669,7 +688,7 @@ impl Expanding for Value {
             Value::Exp(Expression { .. }) => false,
             Value::Interp(_) => false,
             Value::Array(items) => items.iter().all(|it| it.is_constant()),
-            Value::Table(kv) => kv.values().all(|it| it.is_constant()),
+            Value::Table(kv, _) => kv.values().all(|it| it.is_constant()),
             Value::Boolean(_) | Value::Float(_) | Value::Integer(_) | Value::String(_) => true,
         }
     }
@@ -697,7 +716,16 @@ impl Expanding for Value {
                 }
             }
             Value::Array(items) => Value::Array(items.map_expressions(f)?),
-            Value::Table(kv) => Value::Table(kv.map_expressions(f)?),
+            Value::Table(kv, Some(spans)) => {
+                let kv = flatten_errors(kv.into_iter().map(|(k, v)| {
+                    let span = spans[&k].clone();
+                    return Ok((k, v.map_expressions(f).with_range(&span)?));
+                }))?
+                .into_iter()
+                .collect();
+                Value::Table(kv, Some(spans))
+            }
+            Value::Table(kv, Option::None) => Value::Table(kv.map_expressions(f)?, None),
             literal @ (Value::Boolean(_)
             | Value::Float(_)
             | Value::Integer(_)
@@ -986,6 +1014,8 @@ impl<T: Serialize + std::fmt::Debug> Merging for TypedValue<T> {
 }
 
 mod tests {
+    use test_log::test;
+
     #[allow(unused_imports)]
     use super::*;
 
@@ -996,5 +1026,55 @@ mod tests {
         "#;
         let value: std::result::Result<Value, _> = toml::from_str(data);
         assert!(value.is_ok());
+    }
+
+    #[test]
+    fn parse_large_number() {
+        let data = r#"
+        number = 5_000_000_000
+        "#;
+        let err: std::result::Result<Value, _> = toml::from_str(data);
+        assert!(
+            err.unwrap_err()
+                .to_string()
+                .contains("i64 value was too large")
+        );
+    }
+
+    #[test]
+    fn parse_duplicate_key() {
+        let data = r#"
+        a = 1
+        b = 2
+        a = 3
+        "#;
+        let err: std::result::Result<Value, _> = toml::from_str(data);
+        assert!(err.unwrap_err().to_string().contains("duplicate key"));
+    }
+
+    #[test]
+    #[should_panic]
+    fn unresolved_expression_panics() {
+        let data = r#"
+        value = '{{1+2}}'
+        "#;
+        let value: std::result::Result<Value, _> = toml::from_str(data);
+        match value {
+            Ok(x) => BareValue::from(x),
+            Err(_) => return,
+        };
+    }
+
+    #[test]
+    #[should_panic]
+    fn unresolved_interp_panics() {
+        let data = r#"
+        value = 'joe {{1+2}} bob'
+        "#;
+        let value: std::result::Result<Value, _> = toml::from_str(data);
+        match value {
+            Ok(x) => BareValue::from(x),
+            Err(_) => return,
+        };
     }
 }

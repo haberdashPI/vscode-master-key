@@ -310,10 +310,20 @@ impl Define {
 }
 
 mod tests {
+    use test_log::test;
+
     #[allow(unused_imports)]
     use super::*;
     #[allow(unused_imports)]
     use crate::resolve;
+
+    #[allow(dead_code)]
+    fn unwrap_table(x: &Value) -> HashMap<String, Value> {
+        match x {
+            Value::Table(x, _) => x.clone(),
+            _ => panic!("Expected a table!"),
+        }
+    }
 
     #[test]
     fn simple_parsing() {
@@ -346,11 +356,11 @@ mod tests {
         assert_eq!(foo.key.as_ref().to_owned().unwrap().unwrap(), "x");
         let args = foo.args.as_ref().unwrap().clone().into_inner();
         assert_eq!(
-            args,
-            Value::Table(HashMap::from([
+            unwrap_table(&args),
+            HashMap::from([
                 ("k".into(), Value::Integer(1)),
                 ("h".into(), Value::Integer(2))
-            ]))
+            ])
         );
 
         let foobar = result.command.get("foobar").unwrap();
@@ -358,14 +368,14 @@ mod tests {
         assert_eq!(command, "runCommands");
         let commands = foobar.args.as_ref().unwrap().clone().into_inner();
         assert_eq!(
-            commands,
-            Value::Table(HashMap::from([(
+            unwrap_table(&commands),
+            HashMap::from([(
                 "commands".into(),
                 Value::Array(vec![
                     Value::String("foo".into()),
                     Value::String("bar".into())
                 ])
-            )]))
+            )])
         );
     }
 }

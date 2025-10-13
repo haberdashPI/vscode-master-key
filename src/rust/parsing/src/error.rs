@@ -110,6 +110,7 @@ pub enum ErrorLevel {
 pub enum Context {
     Message(String),        // additional message content to include
     Range(Range<usize>),    // the location of an error in a file
+    ExpRange(Range<usize>), // location of expression being evaluated (can be merged with a rhai::Position)
     RefRange(Range<usize>), // another location mentioned in the error message
 }
 
@@ -137,6 +138,12 @@ impl Spannable for Range<usize> {
     }
 }
 
+impl Spannable for Option<Range<usize>> {
+    fn range(&self) -> Option<Range<usize>> {
+        return self.clone();
+    }
+}
+
 impl Spannable for &Range<usize> {
     fn range(&self) -> Option<Range<usize>> {
         return Some(self.to_owned().clone());
@@ -160,6 +167,13 @@ where
     fn with_range(self, context: &impl Spannable) -> std::result::Result<T, Self::Error> {
         if let Some(range) = context.range() {
             return self.with_context(Context::Range(range));
+        } else {
+            return self.with_context(Context::Range(UNKNOWN_RANGE));
+        }
+    }
+    fn with_exp_range(self, context: &impl Spannable) -> std::result::Result<T, Self::Error> {
+        if let Some(range) = context.range() {
+            return self.with_context(Context::ExpRange(range));
         } else {
             return self.with_context(Context::Range(UNKNOWN_RANGE));
         }
@@ -202,9 +216,9 @@ impl<E: Into<RawError>> From<E> for ParseError {
     }
 }
 
-impl From<Box<EvalAltResult>> for ParseError {
-    fn from(value: Box<EvalAltResult>) -> ParseError {
-        return RawError::Dynamic(value.to_string()).into();
+impl From<Box<EvalAltResult>> for RawError {
+    fn from(value: Box<EvalAltResult>) -> RawError {
+        return RawError::Dynamic(value.to_string());
     }
 }
 
@@ -313,6 +327,9 @@ impl fmt::Display for ParseError {
                 Context::Range(range) => {
                     write!(f, "byte range {:?}\n", range)?;
                 }
+                Context::ExpRange(range) => {
+                    write!(f, "byte range {:?}\n", range)?;
+                }
                 Context::RefRange(range) => {
                     write!(f, "and byte range {:?}\n", range)?;
                 }
@@ -392,16 +409,23 @@ impl ParseError {
                     // range
                     if range.contains(&new_range.start) && range.contains(&new_range.end) {
                         range = new_range.clone();
-                        let new_char_line_range = range_to_pos(&new_range, &offsets);
-                        if let Some(pos) = rhai_pos {
-                            char_line_range = Some(resolve_rhai_pos_from_expression_range(
-                                pos,
-                                new_char_line_range,
-                            ));
-                            rhai_pos = None;
-                        } else {
-                            char_line_range = Some(new_char_line_range);
-                        }
+                        char_line_range = Some(range_to_pos(&new_range, &offsets));
+                    }
+                }
+                Context::ExpRange(new_range) => {
+                    // a range reported via ExpRange is one that specifically matches the
+                    // span of an expression, and so we know its safe to merge it with the
+                    // position reported by a rhai position
+                    range = new_range.clone();
+                    let new_char_line_range = range_to_pos(&new_range, &offsets);
+                    if let Some(pos) = rhai_pos {
+                        char_line_range = Some(resolve_rhai_pos_from_expression_range(
+                            pos,
+                            new_char_line_range,
+                        ));
+                        rhai_pos = None;
+                    } else {
+                        char_line_range = Some(new_char_line_range);
                     }
                 }
                 Context::RefRange(new_range) => {

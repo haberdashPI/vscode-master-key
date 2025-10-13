@@ -174,6 +174,9 @@ pub struct BindingInput {
     ///   impact the behavior of the keybinding, only the interactive documentation
     ///   features describing keybindings.
     doc: Option<BindingDocInput>,
+
+    #[serde(flatten)]
+    other_fields: HashMap<String, Spanned<toml::Value>>,
 }
 
 /// @forBindingField bind
@@ -240,6 +243,7 @@ impl BindingInput {
             repeat: self.repeat.clone(),
             tags: self.tags.clone(),
             doc: self.doc.clone(),
+            other_fields: self.other_fields.clone(),
         };
     }
 }
@@ -264,6 +268,7 @@ impl Merging for BindingInput {
             repeat: self.repeat.coalesce(y.repeat),
             tags: self.tags.coalesce(y.tags),
             doc: self.doc.merge(y.doc),
+            other_fields: y.other_fields,
         }
     }
 }
@@ -347,6 +352,7 @@ impl Expanding for BindingInput {
                 errors.append(&mut e.errors);
                 None
             }),
+            other_fields: self.other_fields,
         };
         if errors.len() > 0 {
             return Err(errors.into());
@@ -415,6 +421,9 @@ pub struct BindingDocInput {
     ///   entry in the top-level `kind` array.
     #[serde(default)]
     pub kind: Option<Spanned<TypedValue<String>>>,
+
+    #[serde(flatten)]
+    other_fields: HashMap<String, Spanned<toml::Value>>,
 }
 
 #[allow(non_snake_case)]
@@ -426,6 +435,9 @@ pub struct CombinedBindingDocInput {
     pub key: Option<Spanned<TypedValue<String>>>,
     #[serde(default)]
     pub description: Option<Spanned<TypedValue<String>>>,
+
+    #[serde(flatten)]
+    other_fields: HashMap<String, Spanned<toml::Value>>,
 }
 
 impl Merging for BindingDocInput {
@@ -440,6 +452,7 @@ impl Merging for BindingDocInput {
             hideInDocs: self.hideInDocs.coalesce(y.hideInDocs),
             combined: self.combined.merge(y.combined),
             kind: self.kind.coalesce(y.kind),
+            other_fields: y.other_fields,
         }
     }
 }
@@ -454,6 +467,7 @@ impl Merging for CombinedBindingDocInput {
             name: self.name.coalesce(y.name),
             key: self.key.coalesce(y.key),
             description: self.description.coalesce(y.description),
+            other_fields: y.other_fields,
         }
     }
 }
@@ -501,6 +515,7 @@ impl Expanding for BindingDocInput {
                 errors.append(&mut e.errors);
                 None
             }),
+            other_fields: self.other_fields,
         };
         if errors.len() > 0 {
             return Err(errors.into());
@@ -534,6 +549,7 @@ impl Expanding for CombinedBindingDocInput {
                 errors.append(&mut e.errors);
                 None
             }),
+            other_fields: self.other_fields,
         };
         if errors.len() > 0 {
             return Err(errors.into());
@@ -1393,6 +1409,8 @@ mod tests {
     use rhai::Dynamic;
     use std::collections::HashMap;
 
+    use crate::file::tests::unwrap_table;
+
     use super::*;
     #[test]
     fn complete_parsing() {
@@ -1429,11 +1447,11 @@ mod tests {
 
         let args = result.args.unwrap().into_inner();
         assert_eq!(
-            args,
-            Value::Table(HashMap::from([
+            unwrap_table(&args),
+            HashMap::from([
                 ("a".into(), Value::String("2".into())),
                 ("b".into(), Value::Integer(3))
-            ]))
+            ])
         );
         let key: String = result.key.into_inner().unwrap().into();
         assert_eq!(key, "a".to_string());
@@ -1511,8 +1529,8 @@ mod tests {
             "cursorMove"
         );
         assert_eq!(
-            result.args.unwrap().into_inner(),
-            Value::Table(HashMap::from([("to".into(), Value::String("left".into()))]))
+            unwrap_table(&result.args.unwrap().into_inner()),
+            HashMap::from([("to".into(), Value::String("left".into()))])
         );
 
         let when: Option<String> = resolve!(result, when, &mut scope).unwrap();
@@ -1548,8 +1566,8 @@ mod tests {
         );
 
         assert_eq!(
-            left.args.unwrap().into_inner(),
-            Value::Table(HashMap::from([("to".into(), Value::String("left".into()))]))
+            unwrap_table(&left.args.unwrap().into_inner()),
+            HashMap::from([("to".into(), Value::String("left".into()))])
         );
 
         let prefixes: Prefix = resolve!(left, prefixes, &mut scope).unwrap();

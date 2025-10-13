@@ -300,9 +300,7 @@ impl BindingInput {
     pub fn expand_foreach(self, scope: &mut Scope) -> ResultVec<Vec<BindingInput>> {
         if self.has_foreach() {
             let foreach = expand_keys(self.foreach.clone().unwrap(), scope)?;
-            foreach.require_constant().with_message(
-                "`foreach` values can only include expressions of the form {{keys(`regex`)}}",
-            )?;
+            foreach.require_constant()?;
 
             let values = expand_foreach_values(foreach).into_iter().map(|values| {
                 let mut result = self.clone();
