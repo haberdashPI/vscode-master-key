@@ -279,9 +279,9 @@ Integration test debugging:
                             or maybe we should create an object that contains scope
                             and pass that to resolve because the name is starting to be misleading
             - [X] invalid regex for `keys` function
-            - [ ] invalid keybinding strings (modifier and key)
-            - [ ] layout invariant binding works
-            - [ ] expression evaluating to non-string value for `key` field
+            - [X] invalid keybinding strings (modifier and key)
+            - [X] layout invariant binding works
+            - [X] expression evaluating to non-string value for `key` field
             - [ ] unresolved expressions when converting from Value -> toml::Value
             - [ ] errors in an expression of a `[[bind]]` field point to the field
                 - [ ] for top-level

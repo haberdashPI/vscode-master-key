@@ -1583,6 +1583,97 @@ pub(crate) mod tests {
         assert_eq!(report[0].range.end.col, 41);
     }
 
+    #[test]
+    fn invalid_key_modifier_error() {
+        let data = r#"
+        [header]
+        version = "2.0.0"
+
+        [[bind]]
+        command = "bar"
+        key = "crd+x"
+        "#;
+
+        let err = toml::from_str::<KeyFileInput>(data).unwrap_err();
+        let err: ParseError = err.into();
+        let report = err.report(data.as_bytes());
+        assert!(report.message.contains("invalid modifier"));
+        assert_eq!(report.range.start.line, 6);
+        assert_eq!(report.range.end.line, 6);
+        assert_eq!(report.range.start.col, 14);
+        assert_eq!(report.range.end.col, 21);
+    }
+
+    #[test]
+    fn invalid_key_name_error() {
+        let data = r#"
+        [header]
+        version = "2.0.0"
+
+        [[bind]]
+        command = "foo"
+        key = "xyz"
+        "#;
+
+        let err = toml::from_str::<KeyFileInput>(data).unwrap_err();
+        let err: ParseError = err.into();
+        let report = err.report(data.as_bytes());
+        assert!(report.message.contains("invalid key"));
+        assert_eq!(report.range.start.line, 6);
+        assert_eq!(report.range.end.line, 6);
+        assert_eq!(report.range.start.col, 14);
+        assert_eq!(report.range.end.col, 19);
+    }
+
+    #[test]
+    fn invariant_key_name_parses() {
+        let data = r#"
+        [header]
+        version = "2.0.0"
+
+        [[bind]]
+        command = "foo"
+        key = "[KeyX]"
+        "#;
+
+        let mut scope = Scope::new();
+        let mut warnings = Vec::new();
+        let result = KeyFile::new(
+            toml::from_str::<KeyFileInput>(data).unwrap(),
+            &mut scope,
+            &mut warnings,
+        );
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn non_string_key_eval_errors() {
+        let data = r#"
+        [header]
+        version = "2.0.0"
+
+        [[bind]]
+        command = "foo"
+        key = "{{1+2}}"
+        "#;
+
+        let mut scope = Scope::new();
+        let mut warnings = Vec::new();
+        let err = KeyFile::new(
+            toml::from_str::<KeyFileInput>(data).unwrap(),
+            &mut scope,
+            &mut warnings,
+        )
+        .unwrap_err();
+
+        let report = err.report(data.as_bytes());
+        assert!(report[0].message.contains("expected a string"));
+        assert_eq!(report[0].range.start.line, 6);
+        assert_eq!(report[0].range.end.line, 6);
+        assert_eq!(report[0].range.start.col, 14);
+        assert_eq!(report[0].range.end.col, 23);
+    }
+
     // TODO: write a test for required field `key` and ensure the span
     // is narrowed to the appropriate `[[bind]]` element; also should only error once
     // (right now we're erroring on the expanded value)

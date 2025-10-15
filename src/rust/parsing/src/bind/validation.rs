@@ -5,6 +5,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
+use crate::err;
 use crate::error::{ErrorSet, Result, ResultVec, err};
 use crate::expression::Scope;
 use crate::expression::value::{EXPRESSION, Expanding, Expression, TypedValue, Value};
@@ -99,18 +100,27 @@ lazy_static! {
     ];
 }
 
+fn is_exact_match(x: &Regex, val: &str) -> bool {
+    if let Some(m) = x.find(val) {
+        return m.range().len() == val.len();
+    } else {
+        return false;
+    }
+}
+
 fn valid_key_binding_str(str: &str) -> Result<()> {
     for press in Regex::new(r"\s+").unwrap().split(str) {
         let mut first = true;
         for part in press.split('+').rev() {
             if first {
                 first = false;
-                if !KEY_REGEXS.iter().any(|r| r.is_match(part)) {
-                    return Err(err("`{part}` is an invalid key"))?;
+                // TODO: don't use is_match (use something to check that the full string matches)
+                if !KEY_REGEXS.iter().any(|r| is_exact_match(&r, part)) {
+                    return Err(err!("`{part}` is an invalid key"))?;
                 }
             } else {
-                if !MODIFIER_REGEX.is_match(part) {
-                    return Err(err("`{part}` is an invalid modiier key"))?;
+                if !is_exact_match(&MODIFIER_REGEX, part) {
+                    return Err(err!("`{part}` is an invalid modifier key"))?;
                 }
             }
         }
@@ -174,7 +184,7 @@ impl Expanding for KeyBinding {
                             result.push_str(&format!("{toml:?}"));
                         }
                     };
-                    return Err(err("expected a string, found `{result}`"))?;
+                    return Err(err!("expected a string, found `{result}`"))?;
                 }
             },
         })

@@ -15,7 +15,7 @@
     "rust-analyzer.cargo.sysrootSrc": "${userHome}/.rustup/toolchains/1.90.0-aarch64-apple-darwin/lib/rustlib/src/rust",
     "rust-analyzer.checkOnSave": true,
     "rust-analyzer.cargo.allTargets": false,
-    "rust-analyzer.cargo.buildScripts.rebuildOnSave": false,
+    "rust-analyzer.cargo.buildScripts.rebuildOnSave": true,
     "workbench.colorCustomizations": {
         "iLoveWorkSpaceColors": false,
         "iLoveWorkSpaceRandom": false,
