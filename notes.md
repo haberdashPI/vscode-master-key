@@ -259,18 +259,29 @@ Integration test debugging:
             - NOTE: these come from the line and char position in the rhai expression
             which has nothing to do with the line and char position in the parent
             keybinding file
-        - [ ] list of errors to check on
+        - [ ] list of individual errors to check on
             - [X] parsing a number that's too large
             - [X] duplicate toml key
             - [X] unmatched `{{` when there are other matches braces before it
             - [X] expression error for expression in an array
             - [X] unmatched `{{` when child of array
             - [X] unresolved expression (and interpolation) in conversion of Value -> BareValue
-            - [ ] warn about unexpected fields in `[[bind]]` (and others)
-            - [ ] invalid regex for `keys` function
+            - [X] warn about unexpected fields in `[[bind]]` (and others)
+                - [X] fix failing tests
+                - [X] for `[[bind]]`
+                - [X] for `[[kind]]`
+                - [X] for `[[mode]]`
+                - [X] for `[[define]]`
+                - [X] setup a system for passing warnings up through call stacks
+                      while still returning a result
+                      - [X] using `warnings` args
+                      - [X] how do we handle `resolve`? place in `&mut Scope`?
+                            or maybe we should create an object that contains scope
+                            and pass that to resolve because the name is starting to be misleading
+            - [X] invalid regex for `keys` function
             - [ ] invalid keybinding strings (modifier and key)
             - [ ] layout invariant binding works
-            - [ ] expression evaluating to non-string value for `key` fieldd
+            - [ ] expression evaluating to non-string value for `key` field
             - [ ] unresolved expressions when converting from Value -> toml::Value
             - [ ] errors in an expression of a `[[bind]]` field point to the field
                 - [ ] for top-level
@@ -297,6 +308,7 @@ Integration test debugging:
         - [ ] test that all error messages show up when expected
         - [ ] make sure a range is always provided
         - [ ] integration test for both warnings and errors in type script setup
+    - [ ] validate modes to ensure that at least one allows the user to type 😬
     - [ ] refactor and cleanup rust code
     - [ ] proper conversion to keybindings.json command
         - [X] expand per mode and prefix (e.g. each binding has one mode and one prefix)

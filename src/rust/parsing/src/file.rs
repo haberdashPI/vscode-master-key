@@ -124,7 +124,9 @@ use crate::bind::{
     Binding, BindingCodes, BindingInput, BindingOutput, KeyId, LegacyBindingInput, UNKNOWN_RANGE,
 };
 use crate::define::{Define, DefineInput};
-use crate::error::{ErrorContext, ErrorReport, ErrorSet, Result, ResultVec, flatten_errors};
+use crate::error::{
+    Context, ErrorContext, ErrorReport, ErrorSet, ParseError, Result, ResultVec, flatten_errors,
+};
 use crate::expression::Scope;
 use crate::expression::value::{Expanding, Expression, Value};
 use crate::kind::Kind;
@@ -161,13 +163,18 @@ pub struct KeyFile {
     mode: Modes,
     bind: Vec<Binding>,
     kind: HashMap<String, String>,
+    // TODO: avoid storing `key_bind` to make serialization smaller
     key_bind: Vec<BindingOutput>,
 }
 
 impl KeyFile {
     // TODO: refactor to have each section's processing in corresponding module
     // for that section
-    fn new(input: KeyFileInput, mut scope: &mut Scope) -> ResultVec<KeyFile> {
+    fn new(
+        input: KeyFileInput,
+        mut scope: &mut Scope,
+        warnings: &mut Vec<ParseError>,
+    ) -> ResultVec<KeyFile> {
         let mut errors = Vec::new();
 
         // [header]
@@ -182,7 +189,7 @@ impl KeyFile {
 
         // [[define]]
         let define_input = input.define.unwrap_or_default();
-        let mut define = match Define::new(define_input, &mut scope) {
+        let mut define = match Define::new(define_input, &mut scope, warnings) {
             Err(mut es) => {
                 errors.append(&mut es.errors);
                 Define::default()
@@ -194,7 +201,7 @@ impl KeyFile {
         let mode_input = input
             .mode
             .unwrap_or_else(|| vec![Spanned::new(UNKNOWN_RANGE, ModeInput::default())]);
-        let modes = match Modes::new(mode_input, &mut scope) {
+        let modes = match Modes::new(mode_input, &mut scope, warnings) {
             Err(mut es) => {
                 errors.append(&mut es.errors);
                 Modes::default()
@@ -203,7 +210,7 @@ impl KeyFile {
         };
 
         // [[kind]]
-        let kind = Kind::process(&input.kind, &mut scope)?;
+        let kind = Kind::process(&input.kind, &mut scope, warnings)?;
 
         // [[bind]]
         let input_iter = input
@@ -241,7 +248,15 @@ impl KeyFile {
 
                         let items = replicates
                             .into_iter()
-                            .map(|x| Ok((Binding::new(x, &mut scope)?, span.clone())))
+                            .map(|x| {
+                                let mut bind_warnings = Vec::new();
+                                let bind = Binding::new(x, &mut scope, &mut bind_warnings)?;
+                                bind_warnings
+                                    .iter_mut()
+                                    .for_each(|w| w.contexts.push(Context::Range(span.clone())));
+                                warnings.append(&mut bind_warnings);
+                                Ok((bind, span.clone()))
+                            })
                             .collect::<ResultVec<Vec<_>>>()
                             .with_range(&span);
                         match items {
@@ -259,6 +274,7 @@ impl KeyFile {
                 }
             })
             .unzip();
+
         bind = Binding::resolve_prefixes(bind, &bind_span)?;
 
         // TODO: store spans so we can do avoid serializing this data??
@@ -305,26 +321,28 @@ pub struct KeyFileResult {
 // These lines are tested during integration tests with the typescript code
 #[wasm_bindgen]
 pub fn parse_keybinding_bytes(file_content: Box<[u8]>) -> KeyFileResult {
-    return match parse_bytes_helper(&file_content) {
-        Ok((result, warnings)) => KeyFileResult {
+    let mut warnings = Vec::new();
+    let result = parse_bytes_helper(&file_content, &mut warnings);
+    return match result {
+        Ok(result) => KeyFileResult {
             file: Some(result),
-            errors: Some(
-                warnings
-                    .errors
-                    .iter()
-                    .map(|e| e.report(&file_content))
-                    .collect(),
-            ),
+            errors: Some(warnings.iter().map(|e| e.report(&file_content)).collect()),
         },
         Err(err) => KeyFileResult {
             file: None,
-            errors: Some(err.errors.iter().map(|e| e.report(&file_content)).collect()),
+            errors: Some(
+                err.errors
+                    .iter()
+                    .chain(warnings.iter())
+                    .map(|e| e.report(&file_content))
+                    .collect(),
+            ),
         },
     };
 }
 // LCOV_EXCL_STOP
 
-fn parse_bytes_helper(file_content: &[u8]) -> ResultVec<(KeyFile, ErrorSet)> {
+fn parse_bytes_helper(file_content: &[u8], warnings: &mut Vec<ParseError>) -> ResultVec<KeyFile> {
     // ensure there's a directive
     // we know that the content was converted from a string on the typescript side
     // so we're cool with an unchecked conversion
@@ -360,7 +378,7 @@ fn parse_bytes_helper(file_content: &[u8]) -> ResultVec<(KeyFile, ErrorSet)> {
 
     let mut scope = Scope::new(); // TODO: do something with this scope??
     let bind = parsed.bind.clone();
-    let result = KeyFile::new(parsed, &mut scope);
+    let result = KeyFile::new(parsed, &mut scope, warnings);
 
     let legacy_check = bind.map_expressions(&mut |ex @ Expression { .. }| {
         if OLD_EXPRESSION.is_match(&ex.content) {
@@ -372,17 +390,11 @@ fn parse_bytes_helper(file_content: &[u8]) -> ResultVec<(KeyFile, ErrorSet)> {
         }
         return Ok(Value::Exp(ex));
     });
-    let mut warnings = match legacy_check {
-        Err(e) => e,
-        Ok(_) => vec![].into(),
+    match legacy_check {
+        Err(mut e) => warnings.append(&mut e.errors),
+        Ok(_) => (),
     };
-    match result {
-        Ok(key_file) => Ok((key_file, warnings)),
-        Err(mut e) => Err({
-            e.errors.append(&mut warnings.errors);
-            e
-        }),
-    }
+    return result;
 }
 
 //
@@ -486,7 +498,8 @@ pub(crate) mod tests {
         command = "cursorLeft"
         "#;
 
-        let (result, _) = parse_bytes_helper(data.as_bytes()).unwrap();
+        let mut warnings = Vec::new();
+        let result = parse_bytes_helper(data.as_bytes(), &mut warnings).unwrap();
 
         assert_eq!(result.bind[0].key[0], "l");
         assert_eq!(result.bind[0].commands[0].command, "cursorRight");
@@ -506,8 +519,13 @@ pub(crate) mod tests {
         "#;
 
         let mut scope = Scope::new();
-        let err =
-            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap_err();
+        let mut warnings = Vec::new();
+        let err = KeyFile::new(
+            toml::from_str::<KeyFileInput>(data).unwrap(),
+            &mut scope,
+            &mut warnings,
+        )
+        .unwrap_err();
         let report = err.report(data.as_bytes());
         assert!(report[0].message.contains("version"));
         assert_eq!(report[0].range.start.line, 2);
@@ -524,7 +542,8 @@ pub(crate) mod tests {
         command = "b"
         "#;
 
-        let err = parse_bytes_helper(data.as_bytes()).unwrap_err();
+        let mut warnings = Vec::new();
+        let err = parse_bytes_helper(data.as_bytes(), &mut warnings).unwrap_err();
         let report = err.report(data.as_bytes());
         assert!(report[0].message.contains("directive"));
         assert_eq!(report[0].range.start.line, 0);
@@ -558,8 +577,13 @@ pub(crate) mod tests {
         "#;
 
         let mut scope = Scope::new();
-        let result =
-            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap();
+        let mut warnings = Vec::new();
+        let result = KeyFile::new(
+            toml::from_str::<KeyFileInput>(data).unwrap(),
+            &mut scope,
+            &mut warnings,
+        )
+        .unwrap();
 
         assert_eq!(result.bind[0].doc.name, "the whole shebang");
         assert_eq!(result.bind[0].key[0], "a");
@@ -612,8 +636,13 @@ pub(crate) mod tests {
         "#;
 
         let mut scope = Scope::new();
-        let result =
-            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap();
+        let mut warnings = Vec::new();
+        let result = KeyFile::new(
+            toml::from_str::<KeyFileInput>(data).unwrap(),
+            &mut scope,
+            &mut warnings,
+        )
+        .unwrap();
 
         assert_eq!(result.bind[0].doc.name, "the whole shebang");
         assert_eq!(result.bind[0].key[0], "a");
@@ -651,8 +680,13 @@ pub(crate) mod tests {
         "#;
 
         let mut scope = Scope::new();
-        let result =
-            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap();
+        let mut warnings = Vec::new();
+        let result = KeyFile::new(
+            toml::from_str::<KeyFileInput>(data).unwrap(),
+            &mut scope,
+            &mut warnings,
+        )
+        .unwrap();
 
         let expected_name: Vec<String> =
             (0..9).into_iter().map(|n| format!("update {n}")).collect();
@@ -694,11 +728,46 @@ pub(crate) mod tests {
 
         // TODO: ensure that a proper span is shown here
         let mut scope = Scope::new();
-        let result = KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope);
+        let mut warnings = Vec::new();
+        let result = KeyFile::new(
+            toml::from_str::<KeyFileInput>(data).unwrap(),
+            &mut scope,
+            &mut warnings,
+        );
         let report = result.unwrap_err().report(data.as_bytes());
         assert_eq!(report[0].message, "`key` field is required".to_string());
         assert_eq!(report[0].range.start.line, 4);
         assert_eq!(report[0].range.end.line, 4);
+    }
+
+    #[test]
+    fn foreach_regex_error() {
+        let data = r#"
+        [header]
+        version = "2.0.0"
+
+        [[bind]]
+        foreach.key = ["{{keys(`[0-9`)}}"]
+        key = "c {{key}}"
+        doc.name = "update {{key}}"
+        command = "foo"
+        args.value = "{{key}}"
+        "#;
+
+        // TODO: ensure that a proper span is shown here
+        let mut scope = Scope::new();
+        let mut warnings = Vec::new();
+        let result = KeyFile::new(
+            toml::from_str::<KeyFileInput>(data).unwrap(),
+            &mut scope,
+            &mut warnings,
+        );
+        let report = result.unwrap_err().report(data.as_bytes());
+        info!("reprot: {report:#?}");
+        assert!(report[0].message.contains("regex parse error"));
+        assert!(!report[0].message.contains("(line"));
+        assert_eq!(report[0].range.start.line, 5);
+        assert_eq!(report[0].range.end.line, 5);
     }
 
     #[test]
@@ -717,8 +786,13 @@ pub(crate) mod tests {
         "#;
 
         let mut scope = Scope::new();
-        let result =
-            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap();
+        let mut warnings = Vec::new();
+        let result = KeyFile::new(
+            toml::from_str::<KeyFileInput>(data).unwrap(),
+            &mut scope,
+            &mut warnings,
+        )
+        .unwrap();
         assert_eq!(result.bind[0].commands[0].command, "bar");
     }
 
@@ -738,8 +812,13 @@ pub(crate) mod tests {
         "#;
 
         let mut scope = Scope::new();
-        let err =
-            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap_err();
+        let mut warnings = Vec::new();
+        let err = KeyFile::new(
+            toml::from_str::<KeyFileInput>(data).unwrap(),
+            &mut scope,
+            &mut warnings,
+        )
+        .unwrap_err();
         let report = err.report(data.as_bytes());
         assert!(report[0].message.contains("default mode already set"));
         assert_eq!(report[0].range.start.line, 8)
@@ -759,8 +838,13 @@ pub(crate) mod tests {
         "#;
 
         let mut scope = Scope::new();
-        let err =
-            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap_err();
+        let mut warnings = Vec::new();
+        let err = KeyFile::new(
+            toml::from_str::<KeyFileInput>(data).unwrap(),
+            &mut scope,
+            &mut warnings,
+        )
+        .unwrap_err();
         let report = err.report(data.as_bytes());
         assert!(
             report[0]
@@ -785,8 +869,13 @@ pub(crate) mod tests {
         "#;
 
         let mut scope = Scope::new();
-        let err =
-            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap_err();
+        let mut warnings = Vec::new();
+        let err = KeyFile::new(
+            toml::from_str::<KeyFileInput>(data).unwrap(),
+            &mut scope,
+            &mut warnings,
+        )
+        .unwrap_err();
         let report = err.report(data.as_bytes());
         assert!(report[0].message.contains("mode name is not unique"));
         assert_eq!(report[0].range.start.line, 8)
@@ -808,8 +897,13 @@ pub(crate) mod tests {
         "#;
 
         let mut scope = Scope::new();
-        let result =
-            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap();
+        let mut warnings = Vec::new();
+        let result = KeyFile::new(
+            toml::from_str::<KeyFileInput>(data).unwrap(),
+            &mut scope,
+            &mut warnings,
+        )
+        .unwrap();
         assert_eq!(
             result.mode.get("b").unwrap().whenNoBinding,
             crate::mode::WhenNoBinding::UseMode("a".to_string())
@@ -832,8 +926,13 @@ pub(crate) mod tests {
         "#;
 
         let mut scope = Scope::new();
-        let err =
-            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap_err();
+        let mut warnings = Vec::new();
+        let err = KeyFile::new(
+            toml::from_str::<KeyFileInput>(data).unwrap(),
+            &mut scope,
+            &mut warnings,
+        )
+        .unwrap_err();
         let report = err.report(data.as_bytes());
         assert!(report[0].message.contains("mode `c` is not defined"));
         assert_eq!(report[0].range.start.line, 10)
@@ -867,8 +966,13 @@ pub(crate) mod tests {
         "#;
 
         let mut scope = Scope::new();
-        let result =
-            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap();
+        let mut warnings = Vec::new();
+        let result = KeyFile::new(
+            toml::from_str::<KeyFileInput>(data).unwrap(),
+            &mut scope,
+            &mut warnings,
+        )
+        .unwrap();
         assert!(result.bind[0].mode.iter().any(|x| x == "a"));
         assert!(result.bind[0].mode.iter().any(|x| x == "b"));
         assert!(result.bind[0].mode.iter().any(|x| x == "c"));
@@ -900,8 +1004,13 @@ pub(crate) mod tests {
         "#;
 
         let mut scope = Scope::new();
-        let err =
-            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap_err();
+        let mut warnings = Vec::new();
+        let err = KeyFile::new(
+            toml::from_str::<KeyFileInput>(data).unwrap(),
+            &mut scope,
+            &mut warnings,
+        )
+        .unwrap_err();
         let report = err.report(data.as_bytes());
         assert!(report[0].message.contains("mode `d`"));
         assert_eq!(report[0].range.start.line, 17)
@@ -945,8 +1054,13 @@ pub(crate) mod tests {
         "#;
 
         let mut scope = Scope::new();
-        let result =
-            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap();
+        let mut warnings = Vec::new();
+        let result = KeyFile::new(
+            toml::from_str::<KeyFileInput>(data).unwrap(),
+            &mut scope,
+            &mut warnings,
+        )
+        .unwrap();
         assert!(
             unwrap_prefixes(&result.bind[2].prefixes)
                 .iter()
@@ -1017,8 +1131,13 @@ pub(crate) mod tests {
         "#;
 
         let mut scope = Scope::new();
-        let err =
-            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap_err();
+        let mut warnings = Vec::new();
+        let err = KeyFile::new(
+            toml::from_str::<KeyFileInput>(data).unwrap(),
+            &mut scope,
+            &mut warnings,
+        )
+        .unwrap_err();
         let report = err.report(data.as_bytes());
         assert!(report[0].message.contains("undefined: `d k`"));
 
@@ -1059,8 +1178,13 @@ pub(crate) mod tests {
         "#;
 
         let mut scope = Scope::new();
-        let result =
-            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap();
+        let mut warnings = Vec::new();
+        let result = KeyFile::new(
+            toml::from_str::<KeyFileInput>(data).unwrap(),
+            &mut scope,
+            &mut warnings,
+        )
+        .unwrap();
         let commands = result.bind[0].commands(&mut scope).unwrap();
         assert_eq!(commands[0].command, "x");
         assert_eq!(commands[1].command, "j");
@@ -1106,8 +1230,13 @@ pub(crate) mod tests {
         "#;
 
         let mut scope = Scope::new();
-        let err =
-            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap_err();
+        let mut warnings = Vec::new();
+        let err = KeyFile::new(
+            toml::from_str::<KeyFileInput>(data).unwrap(),
+            &mut scope,
+            &mut warnings,
+        )
+        .unwrap_err();
         let report = err.report(data.as_bytes());
         assert!(report[0].message.contains("`finalKey`"));
         assert_eq!(report[0].range.start.line, 13);
@@ -1147,8 +1276,13 @@ pub(crate) mod tests {
         "#;
 
         let mut scope = Scope::new();
-        let result =
-            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap();
+        let mut warnings = Vec::new();
+        let result = KeyFile::new(
+            toml::from_str::<KeyFileInput>(data).unwrap(),
+            &mut scope,
+            &mut warnings,
+        )
+        .unwrap();
         let err = result.bind[0].commands(&mut scope).unwrap_err();
         assert!(format!("{err}").contains("`finalKey`"))
     }
@@ -1172,8 +1306,13 @@ pub(crate) mod tests {
         "#;
 
         let mut scope = Scope::new();
-        let result =
-            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap();
+        let mut warnings = Vec::new();
+        let result = KeyFile::new(
+            toml::from_str::<KeyFileInput>(data).unwrap(),
+            &mut scope,
+            &mut warnings,
+        )
+        .unwrap();
         assert_eq!(result.key_bind.len(), 2);
         if let BindingOutput::Do {
             key,
@@ -1224,8 +1363,13 @@ pub(crate) mod tests {
         "#;
 
         let mut scope = Scope::new();
-        let err =
-            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap_err();
+        let mut warnings = Vec::new();
+        let err = KeyFile::new(
+            toml::from_str::<KeyFileInput>(data).unwrap(),
+            &mut scope,
+            &mut warnings,
+        )
+        .unwrap_err();
         let report = err.report(data.as_bytes());
 
         assert!(report[0].message.contains("Duplicate key"));
@@ -1246,9 +1390,60 @@ pub(crate) mod tests {
         "#;
 
         let mut scope = Scope::new();
-        let result =
-            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap();
+        let mut warnings = Vec::new();
+        let result = KeyFile::new(
+            toml::from_str::<KeyFileInput>(data).unwrap(),
+            &mut scope,
+            &mut warnings,
+        )
+        .unwrap();
         assert_eq!(result.key_bind.len(), 8)
+    }
+
+    #[test]
+    fn raises_unknown_key_warning() {
+        let data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.0.0"
+
+        [[bind]]
+        key = "a"
+        command = "foo"
+        comand = "bar"
+        doc.blat = 1
+        doc.combined.bar = 2
+
+        [[kind]]
+        name = "biz"
+        description = "buzz"
+        descriptn = "baz"
+
+        [[mode]]
+        name = "normal"
+        default = true
+        nme = "beep"
+
+        [[define.google]]
+        bob = "x"
+        "#;
+
+        let mut warnings = Vec::new();
+        let _result = parse_bytes_helper(data.as_bytes(), &mut warnings);
+        let warnings: ErrorSet = warnings.into();
+        let report = warnings.report(data.as_bytes());
+        let unrecognized: Vec<_> = report
+            .iter()
+            .filter(|x| x.message.contains("is unrecognized"))
+            .collect();
+        assert_eq!(unrecognized[0].range.start.line, 0);
+        assert_eq!(unrecognized[1].range.start.line, 18);
+        assert_eq!(unrecognized[2].range.start.line, 13);
+        assert_eq!(unrecognized[3].range.start.line, 6);
+        assert_eq!(unrecognized[4].range.start.line, 6);
+        assert_eq!(unrecognized[5].range.start.line, 6);
+        assert_eq!(unrecognized.len(), 6);
     }
 
     #[test]
@@ -1286,7 +1481,15 @@ pub(crate) mod tests {
         "#;
 
         let warnings = identify_legacy_warnings_helper(data.as_bytes()).unwrap_err();
-        assert_eq!(warnings.errors.len(), 14);
+        assert_eq!(
+            warnings
+                .errors
+                .iter()
+                .filter(|x| x.error.to_string().contains("2.0"))
+                .collect::<Vec<_>>()
+                .len(),
+            14
+        );
     }
 
     #[test]
@@ -1311,8 +1514,13 @@ pub(crate) mod tests {
         "#;
 
         let mut scope = Scope::new();
-        let err =
-            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap_err();
+        let mut warnings = Vec::new();
+        let err = KeyFile::new(
+            toml::from_str::<KeyFileInput>(data).unwrap(),
+            &mut scope,
+            &mut warnings,
+        )
+        .unwrap_err();
         let report = err.report(data.as_bytes());
 
         assert!(report[0].message.contains("`bleep`"));
@@ -1332,8 +1540,13 @@ pub(crate) mod tests {
         "#;
 
         let mut scope = Scope::new();
-        let err =
-            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap_err();
+        let mut warnings = Vec::new();
+        let err = KeyFile::new(
+            toml::from_str::<KeyFileInput>(data).unwrap(),
+            &mut scope,
+            &mut warnings,
+        )
+        .unwrap_err();
         let report = err.report(data.as_bytes());
         assert!(report[0].message.contains("Expecting ')'"));
         assert_eq!(report[0].range.start.line, 7);
@@ -1355,8 +1568,13 @@ pub(crate) mod tests {
         "#;
 
         let mut scope = Scope::new();
-        let err =
-            KeyFile::new(toml::from_str::<KeyFileInput>(data).unwrap(), &mut scope).unwrap_err();
+        let mut warnings = Vec::new();
+        let err = KeyFile::new(
+            toml::from_str::<KeyFileInput>(data).unwrap(),
+            &mut scope,
+            &mut warnings,
+        )
+        .unwrap_err();
         let report = err.report(data.as_bytes());
         assert!(report[0].message.contains("unexpected `{{`"));
         assert_eq!(report[0].range.start.line, 7);

@@ -398,7 +398,11 @@ impl ParseError {
                 let msg = LINE_MESSAGE.replace_all(&raw_msg, "");
                 message_buf.push_str(&msg);
             }
-            _ => message_buf.push_str(&self.error.to_string()),
+            _ => {
+                let raw_msg = &self.error.to_string();
+                let msg = LINE_MESSAGE.replace_all(&raw_msg, "");
+                message_buf.push_str(&msg);
+            }
         };
         for context in &self.contexts {
             match context {

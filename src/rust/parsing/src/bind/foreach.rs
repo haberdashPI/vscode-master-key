@@ -36,7 +36,6 @@
 use crate::bind::BindingInput;
 
 use indexmap::IndexMap;
-use lazy_static::lazy_static;
 #[allow(unused_imports)]
 use log::info;
 use regex::Regex;
@@ -241,11 +240,6 @@ const ALL_KEYS: [&'static str; 192] = [
     "[NumpadDecimal]",
     "[NumpadDivide]",
 ];
-
-lazy_static! {
-    static ref KEY_PATTERN_REGEX: Regex = Regex::new(r"^\s*keys\(\s*`(.*)`\s*\)\s*$").unwrap();
-    // static ref KEY_PATTERN_REGEX: Regex = Regex::new(r"^\s*keys\(\s*`(.*)`\s*\)\s*$").unwrap();
-}
 
 #[allow(non_snake_case)]
 pub fn expression_fn__keys(

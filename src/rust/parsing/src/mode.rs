@@ -9,11 +9,11 @@ use wasm_bindgen::prelude::*;
 
 use crate::bind::UNKNOWN_RANGE;
 use crate::bind::command::{Command, CommandInput};
-use crate::err;
-use crate::error::{ErrorContext, ResultVec, err};
+use crate::error::{Context, ErrorContext, ParseError, Result, ResultVec, err};
 use crate::expression::Scope;
 use crate::resolve;
 use crate::util::{LeafValue, Plural, Resolving};
+use crate::{err, wrn};
 
 /// @bindingField mode
 /// @description array describing behavior of keybinding modes
@@ -99,6 +99,9 @@ pub struct ModeInput {
     ///     when [running multiple commands](#running-multiple-commands) in `[[bind]]`.
     #[serde(default)]
     whenNoBinding: Option<Spanned<WhenNoBindingInput>>,
+
+    #[serde(flatten)]
+    other_fields: HashMap<String, toml::Value>,
 }
 
 impl Default for ModeInput {
@@ -109,6 +112,7 @@ impl Default for ModeInput {
             highlight: None,
             cursorShape: None,
             whenNoBinding: Some(Spanned::new(UNKNOWN_RANGE, WhenNoBindingInput::Insert)),
+            other_fields: HashMap::new(),
         };
     }
 }
@@ -181,7 +185,11 @@ impl Resolving<WhenNoBinding> for WhenNoBindingInput {
 
 #[wasm_bindgen]
 impl Mode {
-    pub(crate) fn new(input: ModeInput, scope: &mut Scope) -> ResultVec<Self> {
+    pub(crate) fn new(
+        input: ModeInput,
+        scope: &mut Scope,
+        warnings: &mut Vec<ParseError>,
+    ) -> ResultVec<Self> {
         if let Some(ref x) = input.whenNoBinding {
             let span = x.span().clone();
             if let WhenNoBindingInput::UseMode(mode) = x.as_ref() {
@@ -190,6 +198,16 @@ impl Mode {
                 }
             }
         }
+
+        // warning about unknown fields
+        for (key, _) in &input.other_fields {
+            let err: Result<()> = Err(wrn!(
+                "The field `{}` is unrecognized and will be ignored",
+                key,
+            ));
+            warnings.push(err.unwrap_err());
+        }
+
         return Ok(Mode {
             name: resolve!(input, name, scope)?,
             default: resolve!(input, default, scope)?,
@@ -208,7 +226,11 @@ pub struct Modes {
 }
 
 impl Modes {
-    pub(crate) fn new(input: Vec<Spanned<ModeInput>>, scope: &mut Scope) -> ResultVec<Self> {
+    pub(crate) fn new(
+        input: Vec<Spanned<ModeInput>>,
+        scope: &mut Scope,
+        warnings: &mut Vec<ParseError>,
+    ) -> ResultVec<Self> {
         // define the set of available modes
         let mut all_mode_names = HashSet::new();
         let mut default_mode = None;
@@ -279,10 +301,15 @@ impl Modes {
         let mut modes = HashMap::new();
         for mode in input {
             let span = mode.span().clone();
+            let mut mode_warnings = Vec::new();
             modes.insert(
                 mode.as_ref().name.clone(),
-                Mode::new(mode.into_inner(), scope).with_range(&span)?,
+                Mode::new(mode.into_inner(), scope, &mut mode_warnings).with_range(&span)?,
             );
+            mode_warnings
+                .iter_mut()
+                .for_each(|w| w.contexts.push(Context::Range(span.clone())));
+            warnings.append(&mut mode_warnings)
         }
 
         return Ok(Modes {
@@ -302,11 +329,5 @@ impl Default for Modes {
             map: HashMap::new(),
             default: "default".to_string(),
         };
-    }
-}
-
-impl Resolving<Mode> for ModeInput {
-    fn resolve(self, _name: &'static str, scope: &mut Scope) -> ResultVec<Mode> {
-        return Ok(Mode::new(self, scope)?);
     }
 }

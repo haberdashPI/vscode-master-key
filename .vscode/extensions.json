@@ -7,5 +7,6 @@
         "ms-vscode.extension-test-runner",
         "ms-playwright.playwright",
         "rust-lang.rust-analyzer",
+        "hverlin.mise-vscode",
     ]
 }

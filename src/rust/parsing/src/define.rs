@@ -12,11 +12,11 @@ use toml::Spanned;
 use crate::bind::BindingInput;
 use crate::bind::command::CommandInput;
 use crate::bind::validation::BindingReference;
-use crate::err;
-use crate::error::{ErrorContext, ParseError, ResultVec, err};
+use crate::error::{ErrorContext, ParseError, Result, ResultVec, err};
 use crate::expression::Scope;
 use crate::expression::value::{Expanding, Expression, Value};
 use crate::util::{Merging, Resolving};
+use crate::{err, wrn};
 
 /// @bindingField define
 /// @description object of arbitrary fields which can be used in
@@ -168,6 +168,9 @@ pub struct DefineInput {
     /// defaults, allowing for a hierarchy of defaults if so desired.
     ///
     pub bind: Option<Vec<Spanned<BindingInput>>>,
+
+    #[serde(flatten)]
+    other_fields: HashMap<String, toml::Value>,
 }
 
 #[derive(Clone, Debug, Default, Serialize)]
@@ -185,7 +188,11 @@ lazy_static! {
 }
 
 impl Define {
-    pub fn new(input: DefineInput, scope: &mut Scope) -> ResultVec<Define> {
+    pub fn new(
+        input: DefineInput,
+        scope: &mut Scope,
+        warnings: &mut Vec<ParseError>,
+    ) -> ResultVec<Define> {
         let mut resolved_bind = HashMap::<String, BindingInput>::new();
         let mut resolved_command = HashMap::<String, CommandInput>::new();
         let mut resolved_var = HashMap::<String, Value>::new();
@@ -238,6 +245,20 @@ impl Define {
                     }
                 },
             }
+        }
+
+        // warning about unknown fields
+        for (key, _) in &input.other_fields {
+            // XXX:: we have no good way of detecting the byte range of these items using
+            // TOML without radically change the `DefineInput` data structure. We fallback
+            // to showing an error at the top of the file (UNKNOWN_RANGE values are expected
+            // to be resolved by the time we print out an error, so we can't use that)
+            let err: Result<()> = Err(wrn!(
+                "The `define.{}` section in this file is unrecognized and will be ignored",
+                key,
+            ))
+            .with_range(&(0..1));
+            warnings.push(err.unwrap_err());
         }
 
         if errors.len() > 0 {
@@ -348,7 +369,13 @@ mod tests {
         "#;
 
         let mut scope = Scope::new();
-        let result = Define::new(toml::from_str::<DefineInput>(data).unwrap(), &mut scope).unwrap();
+        let mut warnings = Vec::new();
+        let result = Define::new(
+            toml::from_str::<DefineInput>(data).unwrap(),
+            &mut scope,
+            &mut warnings,
+        )
+        .unwrap();
 
         assert_eq!(result.val.get("y").unwrap(), &Value::String("bill".into()));
         assert_eq!(result.val.get("joe").unwrap(), &Value::String("bob".into()));

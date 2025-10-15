@@ -150,11 +150,12 @@ impl Scope {
             let dynamic: Dynamic = self
                 .engine
                 .eval_ast_with_scope(&mut self.state, ast)
+                .with_message(format!(" while evaluating {expr}"))
                 .with_exp_range(&expr.span)?;
             self.state.rewind(rewind_to);
             let result_value: std::result::Result<Value, _> = dynamic.clone().try_into();
             let value = result_value
-                .with_message(format!(" while evaluating:\n{expr}"))
+                .with_message(format!(" while evaluating {expr}"))
                 .with_exp_range(&expr.span)?;
             return Ok(value);
         })?);
@@ -365,7 +366,6 @@ mod tests {
         let message = report.first().unwrap().message.clone();
         let range = report.first().unwrap().range.clone();
         let val: String = data[(range.start.col)..=(range.end.col)].to_string();
-        info!("report: {report:#?}");
         assert!(message.contains("unexpected `{{`"));
     }
 
@@ -382,7 +382,6 @@ mod tests {
         let message = report.first().unwrap().message.clone();
         let range = report.first().unwrap().range.clone();
         let val: String = data[(range.start.col)..=(range.end.col)].to_string();
-        info!("report: {report:#?}");
         assert!(message.contains("unexpected `{{`"));
     }
 

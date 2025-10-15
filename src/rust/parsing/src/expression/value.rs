@@ -29,7 +29,7 @@ use crate::util::{LeafValue, Merging, Plural, Required, Resolving};
 /// to represent parsed TOML data, expand the expressions in them, and translate
 /// those values to JSON and/or Rhai `Dynaamic` objects.
 
-#[derive(Serialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Debug, Clone)]
 pub enum Value {
     Integer(i32),
     Float(f64),
@@ -42,6 +42,22 @@ pub enum Value {
     ),
     Interp(Vec<Value>),
     Exp(Expression),
+}
+
+impl PartialEq for Value {
+    fn eq(&self, other: &Self) -> bool {
+        return match (self, other) {
+            (Value::Integer(x), Value::Integer(y)) => x == y,
+            (Value::Float(x), Value::Float(y)) => x == y,
+            (Value::String(x), Value::String(y)) => x == y,
+            (Value::Boolean(x), Value::Boolean(y)) => x == y,
+            (Value::Array(x), Value::Array(y)) => x == y,
+            (Value::Table(x, _), Value::Table(y, _)) => x == y,
+            (Value::Interp(x), Value::Interp(y)) => x == y,
+            (Value::Exp(x), Value::Exp(y)) => x == y,
+            _ => false,
+        };
+    }
 }
 
 //

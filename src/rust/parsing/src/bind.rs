@@ -22,7 +22,7 @@ pub mod validation;
 use crate::bind::command::{Command, regularize_commands};
 use crate::bind::prefix::{Prefix, PrefixInput};
 use crate::bind::validation::{BindingReference, KeyBinding};
-use crate::error::{ErrorContext, Result, ResultVec, err, wrn};
+use crate::error::{ErrorContext, ParseError, Result, ResultVec, err, wrn};
 use crate::expression::Scope;
 use crate::expression::value::{Expanding, Expression, TypedValue, Value};
 use crate::resolve;
@@ -176,7 +176,7 @@ pub struct BindingInput {
     doc: Option<BindingDocInput>,
 
     #[serde(flatten)]
-    other_fields: HashMap<String, Spanned<toml::Value>>,
+    other_fields: HashMap<String, toml::Value>,
 }
 
 /// @forBindingField bind
@@ -423,7 +423,7 @@ pub struct BindingDocInput {
     pub kind: Option<Spanned<TypedValue<String>>>,
 
     #[serde(flatten)]
-    other_fields: HashMap<String, Spanned<toml::Value>>,
+    other_fields: HashMap<String, toml::Value>,
 }
 
 #[allow(non_snake_case)]
@@ -437,7 +437,7 @@ pub struct CombinedBindingDocInput {
     pub description: Option<Spanned<TypedValue<String>>>,
 
     #[serde(flatten)]
-    other_fields: HashMap<String, Spanned<toml::Value>>,
+    other_fields: HashMap<String, toml::Value>,
 }
 
 impl Merging for BindingDocInput {
@@ -559,28 +559,6 @@ impl Expanding for CombinedBindingDocInput {
     }
 }
 
-impl Resolving<BindingDoc> for Option<BindingDocInput> {
-    fn resolve(self, _name: &'static str, scope: &mut Scope) -> ResultVec<BindingDoc> {
-        match self {
-            Some(doc) => Ok(BindingDoc::new(doc, scope)?),
-            Option::None => Ok(BindingDoc::default()),
-        }
-    }
-}
-
-impl Resolving<Option<CombinedBindingDoc>> for Option<CombinedBindingDocInput> {
-    fn resolve(
-        self,
-        _name: &'static str,
-        scope: &mut Scope,
-    ) -> ResultVec<Option<CombinedBindingDoc>> {
-        return match self {
-            Some(doc) => Ok(Some(CombinedBindingDoc::new(doc, scope)?)),
-            Option::None => Ok(None),
-        };
-    }
-}
-
 //
 // ================ Legacy `[[bind]]` warnings ================
 //
@@ -641,8 +619,8 @@ impl LegacyBindingInput {
 
             if modes.len() == 0 {
                 let err: Result<()> = Err(wrn!(
-                    "2.0 no longer supports expressions; all modes using an empty array\
-                    use the expression `{}` instead",
+                    "2.0 does not use an empty array to indicate all modes are valid for \
+                    a keybinding; use the expression `{}` instead",
                     "{{all_modes()}}"
                 ))
                 .with_range(&span);
@@ -802,7 +780,11 @@ impl Binding {
         return Ok(commands);
     }
 
-    pub(crate) fn new(input: BindingInput, scope: &mut Scope) -> ResultVec<Self> {
+    pub(crate) fn new(
+        input: BindingInput,
+        scope: &mut Scope,
+        warnings: &mut Vec<ParseError>,
+    ) -> ResultVec<Self> {
         let commands = regularize_commands(&input, scope)?;
 
         // id validation
@@ -866,6 +848,15 @@ impl Binding {
             )
         };
 
+        // warning about unknown fields
+        for (key, _) in input.other_fields {
+            let err: Result<()> = Err(wrn!(
+                "The field `{}` is unrecognized and will be ignored",
+                key,
+            ));
+            warnings.push(err.unwrap_err());
+        }
+
         // resolve all keys to appropriate types
         let result = Binding {
             commands: commands,
@@ -877,7 +868,10 @@ impl Binding {
             finalKey,
             repeat: resolve!(input, repeat, scope)?,
             tags: resolve!(input, tags, scope)?,
-            doc: resolve!(input, doc, scope)?,
+            doc: match input.doc {
+                Some(x) => BindingDoc::new(x, scope, warnings)?,
+                Option::None => BindingDoc::default(),
+            },
         };
 
         return Ok(result);
@@ -979,7 +973,11 @@ pub struct CombinedBindingDoc {
 
 #[wasm_bindgen]
 impl BindingDoc {
-    pub(crate) fn new(input: BindingDocInput, scope: &mut Scope) -> ResultVec<Self> {
+    pub(crate) fn new(
+        input: BindingDocInput,
+        scope: &mut Scope,
+        warnings: &mut Vec<ParseError>,
+    ) -> ResultVec<Self> {
         // kind validation
         let kind_span = input.kind.as_ref().map(|x| x.span());
         let kind: Option<String> = resolve!(input, kind, scope)?;
@@ -989,12 +987,25 @@ impl BindingDoc {
             }
         };
 
+        // warning about unknown fields
+        for (key, _) in input.other_fields {
+            let err: Result<()> = Err(wrn!(
+                "The field `{}` is unrecognized and will be ignored",
+                key,
+            ));
+            warnings.push(err.unwrap_err());
+        }
+
         return Ok(BindingDoc {
             name: resolve!(input, name, scope)?,
             description: resolve!(input, description, scope)?,
             hideInPalette: resolve!(input, hideInPalette, scope)?,
             hideInDocs: resolve!(input, hideInDocs, scope)?,
-            combined: resolve!(input, combined, scope)?,
+            combined: match input.combined {
+                Some(x) => Some(CombinedBindingDoc::new(x, scope, warnings)?),
+                Option::None => None,
+            },
+
             kind,
         });
     }
@@ -1002,7 +1013,20 @@ impl BindingDoc {
 
 #[wasm_bindgen]
 impl CombinedBindingDoc {
-    pub(crate) fn new(input: CombinedBindingDocInput, scope: &mut Scope) -> ResultVec<Self> {
+    pub(crate) fn new(
+        input: CombinedBindingDocInput,
+        scope: &mut Scope,
+        warnings: &mut Vec<ParseError>,
+    ) -> ResultVec<Self> {
+        // warning about unknown fields
+        for (key, _) in input.other_fields {
+            let err: Result<()> = Err(wrn!(
+                "The field `{}` is unrecognized and will be ignored",
+                key,
+            ));
+            warnings.push(err.unwrap_err());
+        }
+
         return Ok(CombinedBindingDoc {
             name: resolve!(input, name, scope)?,
             key: resolve!(input, key, scope)?,
@@ -1501,7 +1525,9 @@ mod tests {
         let hideInPalette: bool = resolve!(doc, hideInPalette, &mut scope).unwrap();
         assert_eq!(hideInPalette, false);
 
-        let combined: CombinedBindingDoc = resolve!(doc, combined, &mut scope).unwrap().unwrap();
+        let mut _warnings = Vec::new();
+        let combined: CombinedBindingDoc =
+            CombinedBindingDoc::new(doc.combined.unwrap(), &mut scope, &mut _warnings).unwrap();
         assert_eq!(combined.name, "Up/down");
         assert_eq!(combined.key, "A/B");
         assert_eq!(combined.description, "bla bla bla");
@@ -1578,8 +1604,7 @@ mod tests {
         assert_eq!(prefix_strs, ["b".to_string(), "c".to_string()]);
 
         let doc = left.doc.unwrap();
-        let combined: Option<CombinedBindingDoc> = resolve!(doc, combined, &mut scope).unwrap();
-        assert!(combined.is_none());
+        assert!(doc.combined.is_none());
     }
 
     #[test]
@@ -1607,7 +1632,10 @@ mod tests {
         let expected = result.get("bind").unwrap()[2].clone();
         let left = default.merge(left);
 
-        assert_eq!(left.args, expected.args);
+        assert_eq!(
+            left.args.unwrap().into_inner(),
+            expected.args.unwrap().into_inner()
+        );
     }
 
     #[test]
@@ -1742,7 +1770,8 @@ mod tests {
         let input = toml::from_str::<BindingInput>(data).unwrap();
         let mut scope = Scope::new();
         scope.parse_asts(&input).unwrap();
-        let result = Binding::new(input, &mut scope).unwrap();
+        let mut warnings = Vec::new();
+        let result = Binding::new(input, &mut scope, &mut warnings).unwrap();
 
         scope.state.set_or_push("joe", Dynamic::from("fiz"));
         let flat_args: toml::Value = result.commands(&mut scope).unwrap()[0].clone().args.into();
@@ -1766,7 +1795,8 @@ mod tests {
 
         let input = toml::from_str::<BindingInput>(data).unwrap();
         let mut scope = Scope::new();
-        let err = Binding::new(input, &mut scope).unwrap_err();
+        let mut warnings = Vec::new();
+        let err = Binding::new(input, &mut scope, &mut warnings).unwrap_err();
         let report = err.report(data.as_bytes());
         assert!(report[0].message.contains("Undefined mode"));
         assert_eq!(report[0].range.start.line, 3);
@@ -1783,7 +1813,8 @@ mod tests {
 
         let input = toml::from_str::<BindingInput>(data).unwrap();
         let mut scope = Scope::new();
-        let err = Binding::new(input, &mut scope).unwrap_err();
+        let mut warnings = Vec::new();
+        let err = Binding::new(input, &mut scope, &mut warnings).unwrap_err();
         let report = format!("{err}");
         assert!(report.contains("`finalKey`"));
     }
@@ -1797,7 +1828,8 @@ mod tests {
 
         let input = toml::from_str::<BindingInput>(data).unwrap();
         let mut scope = Scope::new();
-        let result = Binding::new(input, &mut scope).unwrap();
+        let mut warnings = Vec::new();
+        let result = Binding::new(input, &mut scope, &mut warnings).unwrap();
         assert!(result.when.unwrap().contains("editorTextFocus"))
     }
 
@@ -1811,7 +1843,8 @@ mod tests {
 
         let input = toml::from_str::<BindingInput>(data).unwrap();
         let mut scope = Scope::new();
-        let result = Binding::new(input, &mut scope).unwrap();
+        let mut warnings = Vec::new();
+        let result = Binding::new(input, &mut scope, &mut warnings).unwrap();
         assert!(result.when.unwrap().contains("keybindingPaletteOpen"));
     }
 
