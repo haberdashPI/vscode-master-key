@@ -22,9 +22,9 @@
     ],
     "exclude": [
         "src/test/**/*.ts",
-        "src/oldtest/**/*.mts",
         "out/**/*.js",
         "src/oldtest/**",
+        "src/oldparsing/**",
         "src/rust/parsing/lib/**/*.{js,d.ts}",
     ]
 }
