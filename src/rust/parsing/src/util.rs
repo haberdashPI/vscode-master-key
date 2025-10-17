@@ -27,21 +27,21 @@ pub trait Merging {
     fn merge(self, new: Self) -> Self;
 }
 
-impl Merging for toml::Table {
-    fn coalesce(self, new: Self) -> Self {
-        return new;
-    }
-    // BUG!!!: we need to add the new keys that aren't in self to `pairs`
-    fn merge(self, new: Self) -> Self {
-        let (mut to_merge, to_append): (toml::Table, toml::Table) =
-            new.into_iter().partition(|(k, _)| self.get(k).is_some());
-        let pairs = self.into_iter().map(|(k, v)| match to_merge.remove(&k) {
-            Some(new_v) => (k, v.merge(new_v)),
-            Option::None => (k, v),
-        });
-        return pairs.chain(to_append.into_iter()).collect();
-    }
-}
+// impl Merging for toml::Table {
+//     fn coalesce(self, new: Self) -> Self {
+//         return new;
+//     }
+//     // BUG!!!: we need to add the new keys that aren't in self to `pairs`
+//     fn merge(self, new: Self) -> Self {
+//         let (mut to_merge, to_append): (toml::Table, toml::Table) =
+//             new.into_iter().partition(|(k, _)| self.get(k).is_some());
+//         let pairs = self.into_iter().map(|(k, v)| match to_merge.remove(&k) {
+//             Some(new_v) => (k, v.merge(new_v)),
+//             Option::None => (k, v),
+//         });
+//         return pairs.chain(to_append.into_iter()).collect();
+//     }
+// }
 
 impl<T: Merging + Clone> Merging for HashMap<String, T> {
     fn coalesce(self, new: Self) -> Self {
@@ -182,44 +182,44 @@ impl Merging for String {
     }
 }
 
-impl Merging for toml::Value {
-    fn coalesce(self, new: Self) -> Self {
-        return new;
-    }
-    fn merge(self, new: Self) -> Self {
-        match new {
-            Value::Array(new_values) => match self {
-                Value::Array(old_values) => {
-                    let mut result = Vec::with_capacity(new_values.len().max(old_values.len()));
-                    let mut new_iter = new_values.iter();
-                    let mut old_iter = old_values.iter();
-                    loop {
-                        let new_item = new_iter.next();
-                        let old_item = old_iter.next();
-                        if let Some(new_val) = new_item {
-                            if let Some(old_val) = old_item {
-                                result.push(old_val.clone().merge(new_val.clone()));
-                            } else {
-                                result.push(new_val.clone());
-                            }
-                        } else if let Some(old_val) = old_item {
-                            result.push(old_val.clone());
-                        } else {
-                            break;
-                        }
-                    }
-                    Value::Array(result)
-                }
-                _ => Value::Array(new_values),
-            },
-            Value::Table(new_kv) => match self {
-                Value::Table(old_kv) => Value::Table(old_kv.merge(new_kv)),
-                _ => Value::Table(new_kv),
-            },
-            _ => new,
-        }
-    }
-}
+// impl Merging for toml::Value {
+//     fn coalesce(self, new: Self) -> Self {
+//         return new;
+//     }
+//     fn merge(self, new: Self) -> Self {
+//         match new {
+//             Value::Array(new_values) => match self {
+//                 Value::Array(old_values) => {
+//                     let mut result = Vec::with_capacity(new_values.len().max(old_values.len()));
+//                     let mut new_iter = new_values.iter();
+//                     let mut old_iter = old_values.iter();
+//                     loop {
+//                         let new_item = new_iter.next();
+//                         let old_item = old_iter.next();
+//                         if let Some(new_val) = new_item {
+//                             if let Some(old_val) = old_item {
+//                                 result.push(old_val.clone().merge(new_val.clone()));
+//                             } else {
+//                                 result.push(new_val.clone());
+//                             }
+//                         } else if let Some(old_val) = old_item {
+//                             result.push(old_val.clone());
+//                         } else {
+//                             break;
+//                         }
+//                     }
+//                     Value::Array(result)
+//                 }
+//                 _ => Value::Array(new_values),
+//             },
+//             Value::Table(new_kv) => match self {
+//                 Value::Table(old_kv) => Value::Table(old_kv.merge(new_kv)),
+//                 _ => Value::Table(new_kv),
+//             },
+//             _ => new,
+//         }
+//     }
+// }
 
 //
 // ---------------- Subset ----------------

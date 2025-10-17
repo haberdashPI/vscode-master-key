@@ -5,15 +5,17 @@ pub mod value;
 #[allow(unused_imports)]
 use log::info;
 
-use std::collections::{HashMap, HashSet, VecDeque};
-
+use log::error;
 use rhai::Dynamic;
 use serde::Serialize;
+use std::collections::{HashMap, HashSet, VecDeque};
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
 use crate::{
-    bind::command::Command, bind::foreach::expression_fn__keys, err, error::ErrorContext,
-    error::Result, error::ResultVec, expression::value::Expanding, expression::value::Value,
+    bind::{command::Command, foreach::expression_fn__keys},
+    err,
+    error::{ErrorContext, RawError, Result, ResultVec},
+    expression::value::{Expanding, Value},
 };
 
 /// @file expressions/index.md
@@ -140,24 +142,35 @@ impl Scope {
             self.state.set_or_push(k, v.clone());
         }
         return Ok(obj.clone().map_expressions(&mut |expr| {
-            let ast = &self.asts[&expr.content];
-
-            let rewind_to = self.state.len();
-            for (k, v) in &expr.scope {
-                let val: Dynamic = From::<Value>::from(Value::new(v.clone(), None)?);
-                self.state.push_dynamic(k, val);
+            if let Some(_) = expr.error {
+                // errors stored int he expression are raised in `parse_asts` which must be
+                // run before `expand`, so we can safely call this a repeat error
+                return Err(RawError::RepeatError.into());
             }
-            let dynamic: Dynamic = self
-                .engine
-                .eval_ast_with_scope(&mut self.state, ast)
-                .with_message(format!(" while evaluating {expr}"))
-                .with_exp_range(&expr.span)?;
-            self.state.rewind(rewind_to);
-            let result_value: std::result::Result<Value, _> = dynamic.clone().try_into();
-            let value = result_value
-                .with_message(format!(" while evaluating {expr}"))
-                .with_exp_range(&expr.span)?;
-            return Ok(value);
+            if let Some(ast) = self.asts.get(&expr.content) {
+                let rewind_to = self.state.len();
+                for (k, v) in &expr.scope {
+                    let val: Dynamic = From::<Value>::from(Value::new(v.clone(), None)?);
+                    self.state.push_dynamic(k, val);
+                }
+                let dynamic: Dynamic = self
+                    .engine
+                    .eval_ast_with_scope(&mut self.state, ast)
+                    .with_message(format!(" while evaluating {expr}"))
+                    .with_exp_range(&expr.span)?;
+                self.state.rewind(rewind_to);
+                let result_value: std::result::Result<Value, _> = dynamic.clone().try_into();
+                let value = result_value
+                    .with_message(format!(" while evaluating {expr}"))
+                    .with_exp_range(&expr.span)?;
+                return Ok(value);
+            } else {
+                // if the ast element doesn't exist this is *probably* because it failed to
+                // compile. If so, we've already generated an error. If not, it's a bug. So
+                // we log the problem, but do not report the issue through error handling.
+                error!("No ast defined for expression: {}", expr);
+                return Err(RawError::RepeatError.into());
+            }
         })?);
     }
 

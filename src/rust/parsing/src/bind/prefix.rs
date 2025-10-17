@@ -15,11 +15,11 @@ pub enum PrefixInput {
     Any(TypedValue<bool>),
 }
 
-impl Default for PrefixInput {
-    fn default() -> Self {
-        return PrefixInput::Any(TypedValue::Constant(false));
-    }
-}
+// impl Default for PrefixInput {
+//     fn default() -> Self {
+//         return PrefixInput::Any(TypedValue::Constant(false));
+//     }
+// }
 
 #[derive(Serialize, Clone, Debug)]
 pub enum Prefix {

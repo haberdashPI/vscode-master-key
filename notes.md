@@ -282,33 +282,33 @@ Integration test debugging:
             - [X] invalid keybinding strings (modifier and key)
             - [X] layout invariant binding works
             - [X] expression evaluating to non-string value for `key` field
-            - [ ] unresolved expressions when converting from Value -> toml::Value
-            - [ ] errors in an expression of a `[[bind]]` field point to the field
-                - [ ] for top-level
-                - [ ] for docs
-                - [ ] for combined docs
-            - [ ] id field is reserved
-            - [ ] foreach with unresolved variables
-            - [ ] error in expression of `define.val/command/bind`
-            - [ ] allow expression interpolations to be keybindings
-            - [ ] an expression that isn't `{{bind.[id]}}` for a `default` field
-            - [ ] undefined `{{bind.[id]}}` reference in `default` field
-            - [ ] misplaced reference to `{{bind.[id]}}`
-            - [ ] TOML parsing errors
-            - [ ] error for use of legacy expression ()
-            - [ ] unique kind names
-            - [ ] args set to non-table value when `command = "runCommands"`
-            - [ ] `args.commands` being a non-array value when `command = "runCommands"`
-            - [ ] non string value for `command` inside of `args.commands`
-            - [ ] `skipWhen` present for `command = "runCommands"` for an element
+            - [X] unresolved expressions when converting from Value -> toml::Value
+            - [X] id field is reserved
+            - [X] error in expression of `define.val/command/bind`
+                - [X] expression errors in `define.val` show up
+                - [X] `command` errors show up
+                - [X] `bind` errors show up
+            - [X] an expression that isn't `{{bind.[id]}}` for a `default` field
+            - [X] undefined `{{bind.[id]}}` reference in `default` field
+            - [X] errors in an expression of a `[[bind]]` field point to the field
+                - [X] for top-level
+                - [X] for docs
+                - [X] for combined docs
+            - [X] misplaced reference to `{{bind.[id]}}`
+            - [X] TOML parsing errors
+            - [X] unique kind names
+            - [X] args set to non-table value when `command = "runCommands"`
+            - [X] `args.commands` being a non-array value when `command = "runCommands"`
+            - [X] non string value for `command` inside of `args.commands`
+            - [X] `skipWhen` present for `command = "runCommands"` for an element
                   of `args.commands`.
-            - [ ] args is a non array or table value for a sub command of `runCommands`
-            - [ ] non table or string value for an array element of `runCommands`
+            - [X] args is a non array or table value for a sub command of `runCommands`
+            - [X] non table or string value for an array element of `runCommands`
         - [ ] review coverage to verify there aren't additional checks we're missing
-        - [ ] test that all error messages show up when expected
-        - [ ] make sure a range is always provided
+        - [X] test that all error messages show up when expected
+        - [X] make sure a range is always provided
         - [ ] integration test for both warnings and errors in type script setup
-    - [ ] validate modes to ensure that at least one allows the user to type 😬
+    - [ ] validate modes to ensure that at least one of them allows the user to type 😬
     - [ ] refactor and cleanup rust code
     - [ ] proper conversion to keybindings.json command
         - [X] expand per mode and prefix (e.g. each binding has one mode and one prefix)

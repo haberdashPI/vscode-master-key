@@ -794,7 +794,9 @@ impl Binding {
 
         // foreach validation
         if let Some(_) = input.foreach {
-            return Err(err("`foreach` included unresolved variables"))?;
+            // we do not expect this to ever happen, `expand_foreach`
+            // should always be executed before `new`
+            panic!("`foreach` included unresolved variables"); // LCOV_EXCL_LINE
         }
 
         // finalKey validation
@@ -1564,6 +1566,22 @@ mod tests {
     }
 
     #[test]
+    fn reserved_id_field() {
+        let data = r#"
+        id = "biz"
+        key = "a"
+        command = "foo"
+        "#;
+
+        let input = toml::from_str::<BindingInput>(data).unwrap();
+        let mut scope = Scope::new();
+        let mut warnings = Vec::new();
+        let err = Binding::new(input, &mut scope, &mut warnings).unwrap_err();
+        let report = err.report(data.as_bytes());
+        assert!(report[0].message.contains("`id` field"));
+    }
+
+    #[test]
     fn simple_command_merging() {
         let data = r#"
         [[bind]]
@@ -1846,6 +1864,18 @@ mod tests {
         let mut warnings = Vec::new();
         let result = Binding::new(input, &mut scope, &mut warnings).unwrap();
         assert!(result.when.unwrap().contains("keybindingPaletteOpen"));
+    }
+
+    #[test]
+    fn default_is_wrong_type() {
+        let data = r#"
+        key = "a"
+        command = "foo"
+        default = "{{1+2}}"
+        "#;
+
+        let err = toml::from_str::<BindingInput>(data).unwrap_err();
+        assert!(err.to_string().contains("default must"));
     }
 
     // TODO: are there any edge cases / failure modes I want to look at in the tests

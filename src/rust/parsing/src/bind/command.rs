@@ -167,6 +167,15 @@ impl CommandInputLike for Command {
     }
 }
 
+fn maybe_span(spans: Option<HashMap<String, Range<usize>>>, key: &str) -> Option<Range<usize>> {
+    if let Some(spans) = spans {
+        if let Some(span) = spans.get(key) {
+            return Some(span.clone());
+        }
+    }
+    return None;
+}
+
 pub(crate) fn regularize_commands(
     input: &impl CommandInputLike,
     scope: &mut Scope,
@@ -231,8 +240,9 @@ pub(crate) fn regularize_commands(
                     let command_name = match result {
                         Value::String(x) => x.to_owned(),
                         _ => {
-                            return Err(err("expected `command` to be a string"))
-                                .with_range(&args_pos)?;
+                            return Err(err("expected `command` to be a string")).with_range(
+                                &maybe_span(spans, "command").unwrap_or(args_pos.clone()),
+                            )?;
                         }
                     };
                     // check for recursive `runCommands` call
@@ -244,7 +254,9 @@ pub(crate) fn regularize_commands(
                             Err(err(
                                 "`skipWhen` is not supported on a `runCommands` command",
                             ))
-                            .with_range(&args_pos)?;
+                            .with_range(
+                                &maybe_span(spans, "skipWhen").unwrap_or(args_pos.clone()),
+                            )?;
                         }
                         let mut commands = regularize_commands(
                             &(CommandValue {
@@ -265,8 +277,11 @@ pub(crate) fn regularize_commands(
                             x @ Value::Table(_, _) => x,
                             x @ Value::Array(_) => x,
                             x @ Value::Exp(_) => x,
-                            x => {
-                                return Err(err("expected `args` to be a table or array"))?;
+                            _x => {
+                                return Err(err("expected `args` to be a table or array"))
+                                    .with_range(
+                                        &maybe_span(spans, "args").unwrap_or(args_pos.clone()),
+                                    )?;
                             }
                         };
 
@@ -289,7 +304,8 @@ pub(crate) fn regularize_commands(
                 _ => {
                     return Err(err(
                         "`commands` to be an array that includes objects and strings only",
-                    ))?;
+                    ))
+                    .with_range(&commands_span)?;
                 }
             };
             command_result.push(Command {

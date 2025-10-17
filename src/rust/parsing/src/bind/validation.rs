@@ -245,12 +245,12 @@ impl TryFrom<String> for BindingReference {
                     ))
                 } else {
                     Err(err(
-                        "binding reference (must be of the form `{{bind.[identifier]}}`".into(),
+                        "default must be of the form `{{bind.[identifier]}}`".into()
                     ))?
                 }
             }
             _ => Err(err(
-                "binding reference (must be of the form `{{bind.[identifier]}}`".into(),
+                "default must be of the form `{{bind.[identifier]}}`".into()
             ))?,
         }
     }

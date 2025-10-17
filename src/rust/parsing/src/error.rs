@@ -23,6 +23,8 @@ use crate::bind::UNKNOWN_RANGE;
 
 #[derive(Debug, Error, Clone)]
 pub enum RawError {
+    #[error("previously reported error")]
+    RepeatError,
     #[error("conversion error: {0}")]
     IntError(#[from] std::num::TryFromIntError),
     #[error("while parsing toml: {0}")]
@@ -380,7 +382,7 @@ lazy_static! {
 impl ParseError {
     /// `report` is how we generate legible annotations
     /// of *.mk.toml file errors in typescript
-    pub fn report(&self, content: &[u8]) -> ErrorReport {
+    pub fn report(&self, content: &[u8]) -> Option<ErrorReport> {
         let offsets: StringOffsets = StringOffsets::from_bytes(content);
         let mut message_buf = String::new();
         let mut range = UNKNOWN_RANGE;
@@ -398,6 +400,7 @@ impl ParseError {
                 let msg = LINE_MESSAGE.replace_all(&raw_msg, "");
                 message_buf.push_str(&msg);
             }
+            RawError::RepeatError => return None,
             _ => {
                 let raw_msg = &self.error.to_string();
                 let msg = LINE_MESSAGE.replace_all(&raw_msg, "");
@@ -444,20 +447,20 @@ impl ParseError {
                 let pos = range_to_pos(&ref_range, &offsets);
                 message_buf.push_str(&format!("{pos}"));
             };
-            return ErrorReport {
+            return Some(ErrorReport {
                 message: message_buf,
                 range: cl_range,
                 level: self.level.clone(),
-            };
+            });
         } else {
-            return ErrorReport {
+            return Some(ErrorReport {
                 message: format!(
                     "Failed to find range location for the message {}",
                     message_buf
                 ),
                 range: CharRange::default(),
                 level: ErrorLevel::Error,
-            };
+            });
         }
     }
 }
@@ -465,7 +468,13 @@ impl ParseError {
 #[wasm_bindgen]
 impl ErrorSet {
     pub fn report(&self, content: &[u8]) -> Vec<ErrorReport> {
-        return self.errors.iter().map(|e| e.report(content)).collect();
+        return self
+            .errors
+            .iter()
+            .map(|e| e.report(content))
+            .filter(Option::is_some)
+            .map(Option::unwrap)
+            .collect();
     }
 }
 

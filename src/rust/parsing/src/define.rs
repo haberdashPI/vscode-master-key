@@ -43,6 +43,10 @@ pub struct DefineInput {
     /// [expressions](/expressions/index)
     /// evaluated at runtime and in [when clauses](/bindings/bind#available-when-contexts).
     ///
+    /// Expressions can occur within the values, and these will be evaluated at read-time.
+    /// No `val.` fields are in scope within these expressions (i.e. you cannot refer to
+    /// one `define.val` key within the expression of a second `define.val` key).
+    ///
     /// ### Example
     ///
     /// A common command pattern in Larkin is to allow multiple lines to be selected using a
@@ -200,9 +204,21 @@ impl Define {
 
         for def_block in input.val.into_iter().flatten() {
             for (val, value) in def_block.into_iter() {
+                let span = value.span().clone();
                 match value.resolve("`define.val`", scope) {
-                    Ok(x) => {
-                        resolved_var.insert(val, x);
+                    Ok::<Value, _>(x) => {
+                        match x.require_constant().with_range(&span) {
+                            Ok(()) => {
+                                resolved_var.insert(val, x);
+                            }
+                            Err(_) => {
+                                // if the value wasn't constant at this point it is
+                                // because we failed to evaluate the expression,
+                                // (in a call to `scope.expand`), so we avoid registering
+                                // the error twice
+                                ()
+                            }
+                        };
                     }
                     Err(mut e) => {
                         errors.append(&mut e.errors);
@@ -279,7 +295,6 @@ impl Define {
     pub fn add_to_scope(&self, scope: &mut Scope) -> ResultVec<()> {
         let mut val = rhai::Map::new();
         for (k, v) in self.val.iter() {
-            v.require_constant()?;
             let item: Dynamic = v.clone().into();
             val.insert(k.into(), item);
         }
@@ -293,7 +308,7 @@ impl Define {
             let BindingReference(name) = default.as_ref();
             let entry = self.bind.entry(name.clone());
             let occupied_entry = match entry {
-                hash_map::Entry::Vacant(_) => Err(err!("{name}"))?,
+                hash_map::Entry::Vacant(_) => Err(err!("undefined value `bind.{name}`"))?,
                 hash_map::Entry::Occupied(entry) => entry,
             };
             let mut default_value;

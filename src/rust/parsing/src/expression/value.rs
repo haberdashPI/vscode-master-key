@@ -359,7 +359,6 @@ fn string_to_expression(x: String, span: Option<Range<usize>>) -> Result<Value> 
     // there are multiple expressions interpolated into the string
     let mut interps = Vec::new();
     let mut last_match = 0..0;
-    // TODO: check for unmatched `{{` or `}}`
     // push rest
     for expr in exprs {
         let r = expr.get(0).expect("full match").range();
@@ -411,37 +410,37 @@ fn interp_to_string(interps: Vec<Value>) -> String {
 // ---------------- Value: Conversion ----------------
 //
 
-impl TryFrom<toml::Value> for BareValue {
-    type Error = ErrorSet;
-    fn try_from(value: toml::Value) -> ResultVec<Self> {
-        return Ok(match value {
-            toml::Value::Boolean(x) => BareValue::Boolean(x),
-            toml::Value::Float(x) => BareValue::Float(x),
-            toml::Value::Integer(x) => BareValue::Integer({
-                if i32::try_from(x).is_ok() {
-                    x as i32
-                } else {
-                    Err(err("i64 value was too large (must fit in i32)"))?;
-                    0
-                }
-            }),
-            toml::Value::Datetime(x) => BareValue::String(x.to_string()),
-            toml::Value::String(x) => BareValue::String(x),
-            toml::Value::Array(toml_values) => {
-                let values = flatten_errors(toml_values.into_iter().map(|x| {
-                    return Ok(x.try_into::<BareValue>()?);
-                }))?;
-                BareValue::Array(values)
-            }
-            toml::Value::Table(toml_kv) => {
-                let kv = flatten_errors(toml_kv.into_iter().map(|(k, v)| {
-                    Ok((k, Spanned::new(UNKNOWN_RANGE, v.try_into::<BareValue>()?)))
-                }))?;
-                BareValue::Table(kv.into_iter().collect())
-            }
-        });
-    }
-}
+// impl TryFrom<toml::Value> for BareValue {
+//     type Error = ErrorSet;
+//     fn try_from(value: toml::Value) -> ResultVec<Self> {
+//         return Ok(match value {
+//             toml::Value::Boolean(x) => BareValue::Boolean(x),
+//             toml::Value::Float(x) => BareValue::Float(x),
+//             toml::Value::Integer(x) => BareValue::Integer({
+//                 if i32::try_from(x).is_ok() {
+//                     x as i32
+//                 } else {
+//                     Err(err("i64 value was too large (must fit in i32)"))?;
+//                     0
+//                 }
+//             }),
+//             toml::Value::Datetime(x) => BareValue::String(x.to_string()),
+//             toml::Value::String(x) => BareValue::String(x),
+//             toml::Value::Array(toml_values) => {
+//                 let values = flatten_errors(toml_values.into_iter().map(|x| {
+//                     return Ok(x.try_into::<BareValue>()?);
+//                 }))?;
+//                 BareValue::Array(values)
+//             }
+//             toml::Value::Table(toml_kv) => {
+//                 let kv = flatten_errors(toml_kv.into_iter().map(|(k, v)| {
+//                     Ok((k, Spanned::new(UNKNOWN_RANGE, v.try_into::<BareValue>()?)))
+//                 }))?;
+//                 BareValue::Table(kv.into_iter().collect())
+//             }
+//         });
+//     }
+// }
 
 impl From<Value> for BareValue {
     fn from(value: Value) -> BareValue {
@@ -658,8 +657,9 @@ pub trait Expanding {
     where
         Self: Sized + Clone,
     {
-        self.clone()
-            .map_expressions(&mut |e| Err(err!("Unresolved expression {e}"))?)?;
+        self.clone().map_expressions(&mut |e| {
+            Err(err!("Unresolved expression {e}")).with_range(&e.span)?
+        })?;
         return Ok(());
     }
 }
@@ -1090,6 +1090,32 @@ mod tests {
         let value: std::result::Result<Value, _> = toml::from_str(data);
         match value {
             Ok(x) => BareValue::from(x),
+            Err(_) => return,
+        };
+    }
+
+    #[test]
+    #[should_panic]
+    fn unresolved_expression_to_toml_panics() {
+        let data = r#"
+        value = '{{1+2}}'
+        "#;
+        let value: std::result::Result<Value, _> = toml::from_str(data);
+        match value {
+            Ok(x) => toml::Value::from(x),
+            Err(_) => return,
+        };
+    }
+
+    #[test]
+    #[should_panic]
+    fn unresolved_interp_to_toml_panics() {
+        let data = r#"
+        value = 'joe {{1+2}} bob'
+        "#;
+        let value: std::result::Result<Value, _> = toml::from_str(data);
+        match value {
+            Ok(x) => toml::Value::from(x),
             Err(_) => return,
         };
     }

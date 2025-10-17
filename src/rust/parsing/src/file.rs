@@ -188,13 +188,30 @@ impl KeyFile {
         }
 
         // [[define]]
-        let define_input = input.define.unwrap_or_default();
-        let mut define = match Define::new(define_input, &mut scope, warnings) {
-            Err(mut es) => {
-                errors.append(&mut es.errors);
-                Define::default()
+        let mut define_input = input.define.unwrap_or_default();
+        let mut skip_define = false;
+        let _ = scope
+            .parse_asts(&define_input.val)
+            .map_err(|mut es| errors.append(&mut es.errors));
+        match scope.expand(&define_input.val) {
+            Ok(x) => {
+                define_input.val = x;
             }
-            Ok(x) => x,
+            Err(mut es) => {
+                skip_define = true;
+                errors.append(&mut es.errors);
+            }
+        };
+        let mut define = if !skip_define {
+            match Define::new(define_input, &mut scope, warnings) {
+                Err(mut es) => {
+                    errors.append(&mut es.errors);
+                    Define::default()
+                }
+                Ok(x) => x,
+            }
+        } else {
+            Define::default()
         };
 
         // [[mode]]
@@ -213,11 +230,13 @@ impl KeyFile {
         let kind = Kind::process(&input.kind, &mut scope, warnings)?;
 
         // [[bind]]
-        let input_iter = input
-            .bind
-            .into_iter()
-            .flatten()
-            .map(|x| Ok(Spanned::new(x.span(), define.expand(x.into_inner())?)));
+        let input_iter = input.bind.into_iter().flatten().map(|x| {
+            let span = x.span().clone();
+            return Ok(Spanned::new(
+                span.clone(),
+                define.expand(x.into_inner()).with_range(&span)?,
+            ));
+        });
 
         let bind_input = match flatten_errors(input_iter) {
             Err(mut es) => {
@@ -326,7 +345,14 @@ pub fn parse_keybinding_bytes(file_content: Box<[u8]>) -> KeyFileResult {
     return match result {
         Ok(result) => KeyFileResult {
             file: Some(result),
-            errors: Some(warnings.iter().map(|e| e.report(&file_content)).collect()),
+            errors: Some(
+                warnings
+                    .iter()
+                    .map(|e| e.report(&file_content))
+                    .filter(Option::is_some)
+                    .map(Option::unwrap)
+                    .collect(),
+            ),
         },
         Err(err) => KeyFileResult {
             file: None,
@@ -335,6 +361,8 @@ pub fn parse_keybinding_bytes(file_content: Box<[u8]>) -> KeyFileResult {
                     .iter()
                     .chain(warnings.iter())
                     .map(|e| e.report(&file_content))
+                    .filter(Option::is_some)
+                    .map(Option::unwrap)
                     .collect(),
             ),
         },
@@ -376,24 +404,9 @@ fn parse_bytes_helper(file_content: &[u8], warnings: &mut Vec<ParseError>) -> Re
 
     let parsed = toml::from_slice::<KeyFileInput>(file_content)?;
 
-    let mut scope = Scope::new(); // TODO: do something with this scope??
-    let bind = parsed.bind.clone();
+    let mut scope = Scope::new(); // TODO: do something with this scope?? (don't we need this state somewhere?)
     let result = KeyFile::new(parsed, &mut scope, warnings);
 
-    let legacy_check = bind.map_expressions(&mut |ex @ Expression { .. }| {
-        if OLD_EXPRESSION.is_match(&ex.content) {
-            Err(wrn!(
-                "In format 2.0, expressions must now be surrounded in double curly\
-                        braces, not single.",
-            ))
-            .with_range(&ex.span.clone())?;
-        }
-        return Ok(Value::Exp(ex));
-    });
-    match legacy_check {
-        Err(mut e) => warnings.append(&mut e.errors),
-        Ok(_) => (),
-    };
     return result;
 }
 
@@ -448,7 +461,14 @@ pub fn identify_legacy_warnings(file_content: Box<[u8]>) -> KeyFileResult {
         },
         Err(e) => KeyFileResult {
             file: None,
-            errors: Some(e.errors.iter().map(|x| x.report(&file_content)).collect()),
+            errors: Some(
+                e.errors
+                    .iter()
+                    .map(|x| x.report(&file_content))
+                    .filter(Option::is_some)
+                    .map(Option::unwrap)
+                    .collect(),
+            ),
         },
     };
 }
@@ -508,6 +528,25 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn bad_toml_raises_error() {
+        let data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.0.0"
+
+        [[define.val
+        "#;
+
+        let mut warnings = Vec::new();
+        let result = parse_bytes_helper(data.as_bytes(), &mut warnings).unwrap_err();
+        let report = result.report(data.as_bytes());
+        assert!(report[0].message.contains("expected `]]`"));
+        assert_eq!(report[0].range.start.line, 6);
+        assert_eq!(report[0].range.end.line, 6);
+    }
+
+    #[test]
     fn validate_version() {
         let data = r#"
         [header]
@@ -547,6 +586,26 @@ pub(crate) mod tests {
         let report = err.report(data.as_bytes());
         assert!(report[0].message.contains("directive"));
         assert_eq!(report[0].range.start.line, 0);
+    }
+
+    #[test]
+    fn legacy_expression_warning() {
+        let data = r#"
+        #:master-keybindings
+        [header]
+        version = "2.0.0"
+
+        [[bind]]
+        foreach.key = ['{key: [0-9]}']
+        key = "a"
+        command = "foo{key}"
+        "#;
+
+        let mut warnings = Vec::new();
+        let result = parse_bytes_helper(data.as_bytes(), &mut warnings);
+        // let report = err.report(data.as_bytes());
+        info!("warnings: {warnings:#?}");
+        info!("result: {result:#?}");
     }
 
     #[test]
@@ -763,7 +822,6 @@ pub(crate) mod tests {
             &mut warnings,
         );
         let report = result.unwrap_err().report(data.as_bytes());
-        info!("reprot: {report:#?}");
         assert!(report[0].message.contains("regex parse error"));
         assert!(!report[0].message.contains("(line"));
         assert_eq!(report[0].range.start.line, 5);
@@ -778,6 +836,7 @@ pub(crate) mod tests {
 
         [[define.val]]
         foo = "bar"
+        biz = '{{"baz" + "_biz"}}'
 
         [[bind]]
         key = "x"
@@ -794,6 +853,10 @@ pub(crate) mod tests {
         )
         .unwrap();
         assert_eq!(result.bind[0].commands[0].command, "bar");
+        assert_eq!(
+            result.define.val["biz"],
+            Value::String("baz_biz".to_string())
+        )
     }
 
     #[test]
@@ -1596,7 +1659,7 @@ pub(crate) mod tests {
 
         let err = toml::from_str::<KeyFileInput>(data).unwrap_err();
         let err: ParseError = err.into();
-        let report = err.report(data.as_bytes());
+        let report = err.report(data.as_bytes()).unwrap();
         assert!(report.message.contains("invalid modifier"));
         assert_eq!(report.range.start.line, 6);
         assert_eq!(report.range.end.line, 6);
@@ -1617,7 +1680,7 @@ pub(crate) mod tests {
 
         let err = toml::from_str::<KeyFileInput>(data).unwrap_err();
         let err: ParseError = err.into();
-        let report = err.report(data.as_bytes());
+        let report = err.report(data.as_bytes()).unwrap();
         assert!(report.message.contains("invalid key"));
         assert_eq!(report.range.start.line, 6);
         assert_eq!(report.range.end.line, 6);
@@ -1672,6 +1735,329 @@ pub(crate) mod tests {
         assert_eq!(report[0].range.end.line, 6);
         assert_eq!(report[0].range.start.col, 14);
         assert_eq!(report[0].range.end.col, 23);
+    }
+
+    // TODO: something is up with how this is being parsed... 🤔
+
+    #[test]
+    fn expression_error_val() {
+        let data = r#"
+        [header]
+        version = "2.0.0"
+
+        [[define.val]]
+        x = "1+2}}"
+        "#;
+
+        let mut scope = Scope::new();
+        let mut warnings = Vec::new();
+        let err = KeyFile::new(
+            toml::from_str::<KeyFileInput>(data).unwrap(),
+            &mut scope,
+            &mut warnings,
+        )
+        .unwrap_err();
+
+        let report = err.report(data.as_bytes());
+        assert_eq!(report[0].message, "unexpected `}}`");
+        assert_eq!(report[0].range.start.line, 5);
+        assert_eq!(report[0].range.end.line, 5);
+        assert_eq!(report[0].range.start.col, 12);
+        assert_eq!(report[0].range.end.col, 19);
+    }
+
+    #[test]
+    fn define_command_error() {
+        let data = r#"
+        [header]
+        version = "2.0.0"
+
+        [[define.command]]
+        args.value = 2
+        "#;
+
+        let err = toml::from_str::<KeyFileInput>(data).unwrap_err();
+        let err: ParseError = err.into();
+        let report = err.report(data.as_bytes()).unwrap();
+        assert_eq!(report.range.start.line, 4);
+        assert_eq!(report.range.end.line, 4);
+    }
+
+    #[test]
+    fn define_bind_error() {
+        let data = r#"
+        [header]
+        version = "2.0.0"
+
+        [[define.bind]]
+        key = "xyz"
+        "#;
+
+        let err = toml::from_str::<KeyFileInput>(data).unwrap_err();
+        let err: ParseError = err.into();
+        let report = err.report(data.as_bytes()).unwrap();
+        assert_eq!(report.range.start.line, 5);
+        assert_eq!(report.range.end.line, 5);
+    }
+
+    #[test]
+    fn default_is_undefined() {
+        let data = r#"
+        [header]
+        version = "2.0.0"
+
+        [[bind]]
+        key = "a"
+        command = "foo"
+        default = "{{bind.foo}}"
+        "#;
+
+        let mut scope = Scope::new();
+        let mut warnings = Vec::new();
+        let err = KeyFile::new(
+            toml::from_str::<KeyFileInput>(data).unwrap(),
+            &mut scope,
+            &mut warnings,
+        )
+        .unwrap_err();
+
+        let report = err.report(data.as_bytes());
+        assert!(report[0].message.contains("undefined value"));
+        assert_eq!(report[0].range.start.line, 4);
+        assert_eq!(report[0].range.end.line, 4);
+    }
+
+    #[test]
+    fn bind_reference_misplaced() {
+        let data = r#"
+        [header]
+        version = "2.0.0"
+
+        [[define.bind]]
+        id = "foo"
+        doc.name = "foo"
+
+        [[bind]]
+        key = "{{bind.foo}}"
+        command = "bar"
+        "#;
+
+        let mut scope = Scope::new();
+        let mut warnings = Vec::new();
+        let err = KeyFile::new(
+            toml::from_str::<KeyFileInput>(data).unwrap(),
+            &mut scope,
+            &mut warnings,
+        )
+        .unwrap_err();
+
+        let report = err.report(data.as_bytes());
+
+        assert!(report[0].message.contains("unexpected `bind.`"));
+        assert_eq!(report[0].range.start.line, 9);
+        assert_eq!(report[0].range.end.line, 9);
+    }
+
+    #[test]
+    fn expression_error_points_to_line() {
+        let data = r#"
+        [header]
+        version = "2.0.0"
+
+        [[bind]]
+        key = "a"
+        command = "foo"
+        finalKey = "{{(1+2}}"
+        doc.name = "{{(2+3}}"
+        doc.combined.name = "{{(3+4}}"
+        "#;
+
+        let mut scope = Scope::new();
+        let mut warnings = Vec::new();
+        let err = KeyFile::new(
+            toml::from_str::<KeyFileInput>(data).unwrap(),
+            &mut scope,
+            &mut warnings,
+        )
+        .unwrap_err();
+
+        let report = err.report(data.as_bytes());
+
+        assert!(report[0].message.contains("Expecting ')'"));
+        assert_eq!(report[0].range.start.line, 7);
+        assert_eq!(report[0].range.end.line, 7);
+        assert!(report[1].message.contains("Expecting ')'"));
+        assert_eq!(report[1].range.start.line, 8);
+        assert_eq!(report[1].range.end.line, 8);
+        assert!(report[2].message.contains("Expecting ')'"));
+        assert_eq!(report[2].range.start.line, 9);
+        assert_eq!(report[2].range.end.line, 9);
+    }
+
+    #[test]
+    fn require_unique_kind_names() {
+        let data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.0.0"
+
+        [[kind]]
+        name = "biz"
+        description = "buzz"
+
+        [[kind]]
+        name = "biz"
+        description = "beep"
+        "#;
+
+        let mut warnings = Vec::new();
+        let result = parse_bytes_helper(data.as_bytes(), &mut warnings);
+        let report = result.unwrap_err().report(data.as_bytes());
+        assert!(report[0].message.contains("`name` must be unique"));
+        assert_eq!(report[0].range.start.line, 10);
+        assert_eq!(report[0].range.end.line, 10);
+    }
+
+    #[test]
+    fn run_commands_needs_table() {
+        let data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.0.0"
+
+        [[bind]]
+        key = "a"
+        command = "runCommands"
+        args = [1,2,3]
+        "#;
+
+        let mut warnings = Vec::new();
+        let result = parse_bytes_helper(data.as_bytes(), &mut warnings);
+        let report = result.unwrap_err().report(data.as_bytes());
+        assert!(report[0].message.contains("`args`"));
+        assert_eq!(report[0].range.start.line, 6);
+        assert_eq!(report[0].range.end.line, 6);
+    }
+
+    #[test]
+    fn run_commands_needs_commands_array() {
+        let data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.0.0"
+
+        [[bind]]
+        key = "a"
+        command = "runCommands"
+        args.commands.x = 1
+        "#;
+
+        let mut warnings = Vec::new();
+        let result = parse_bytes_helper(data.as_bytes(), &mut warnings);
+        let report = result.unwrap_err().report(data.as_bytes());
+        assert!(report[0].message.contains("`args.commands`"));
+        assert_eq!(report[0].range.start.line, 9);
+        assert_eq!(report[0].range.end.line, 9);
+    }
+
+    #[test]
+    fn run_commands_needs_string_command() {
+        let data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.0.0"
+
+        [[bind]]
+        key = "a"
+        command = "runCommands"
+
+        [[bind.args.commands]]
+        command = 2
+        "#;
+
+        let mut warnings = Vec::new();
+        let result = parse_bytes_helper(data.as_bytes(), &mut warnings);
+        let report = result.unwrap_err().report(data.as_bytes());
+        assert!(report[0].message.contains("`command`"));
+        assert_eq!(report[0].range.start.line, 11);
+        assert_eq!(report[0].range.end.line, 11);
+    }
+
+    #[test]
+    fn run_commands_no_nested_in_skipwhen() {
+        let data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.0.0"
+
+        [[bind]]
+        key = "a"
+        command = "runCommands"
+
+        [[bind.args.commands]]
+        command = "runCommands"
+        skipWhen = '{key.mode == "normal"}'
+        args.commands = ["a", "b"]
+        "#;
+
+        let mut warnings = Vec::new();
+        let result = parse_bytes_helper(data.as_bytes(), &mut warnings);
+        let report = result.unwrap_err().report(data.as_bytes());
+        assert!(report[0].message.contains("`skipWhen`"));
+        assert_eq!(report[0].range.start.line, 12);
+        assert_eq!(report[0].range.end.line, 12);
+    }
+
+    #[test]
+    fn run_commands_args_table_or_array() {
+        let data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.0.0"
+
+        [[bind]]
+        key = "a"
+        command = "runCommands"
+
+        [[bind.args.commands]]
+        command = "foo"
+        args = 2
+        "#;
+
+        let mut warnings = Vec::new();
+        let result = parse_bytes_helper(data.as_bytes(), &mut warnings);
+        let report = result.unwrap_err().report(data.as_bytes());
+        assert!(report[0].message.contains("`args`"));
+        assert_eq!(report[0].range.start.line, 12);
+        assert_eq!(report[0].range.end.line, 12);
+    }
+
+    #[test]
+    fn run_commands_commands_args_has_objects_and_strings_only() {
+        let data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.0.0"
+
+        [[bind]]
+        key = "a"
+        command = "runCommands"
+        args.commands = ["a", 1]
+        "#;
+
+        let mut warnings = Vec::new();
+        let result = parse_bytes_helper(data.as_bytes(), &mut warnings);
+        let report = result.unwrap_err().report(data.as_bytes());
+        assert!(report[0].message.contains("`commands`"));
+        assert_eq!(report[0].range.start.line, 9);
+        assert_eq!(report[0].range.end.line, 9);
     }
 
     // TODO: write a test for required field `key` and ensure the span
