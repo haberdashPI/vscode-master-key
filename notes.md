@@ -304,10 +304,13 @@ Integration test debugging:
                   of `args.commands`.
             - [X] args is a non array or table value for a sub command of `runCommands`
             - [X] non table or string value for an array element of `runCommands`
-        - [ ] review coverage to verify there aren't additional checks we're missing
+        - [X] review coverage to verify there aren't additional checks we're missing
         - [X] test that all error messages show up when expected
         - [X] make sure a range is always provided
-        - [ ] integration test for both warnings and errors in type script setup
+        - [X] integration test for both warnings and errors in type script setup
+            - [X] get it working in debug
+            - [X] update tests
+            - [X] debug unreliable test outcomes
     - [ ] validate modes to ensure that at least one of them allows the user to type 😬
     - [ ] refactor and cleanup rust code
     - [ ] proper conversion to keybindings.json command
@@ -338,6 +341,7 @@ Integration test debugging:
         - [ ] integration tests
     - [ ] implement `replay`: use the new rust command queues instead of the old
           state management
+    - [ ] properly handle user keybindings (have the main keybinding file in memory)
     - [ ] extraction of markdown docs
         - [ ] documentation expansion/validation
             - across all `[[bind]]` values with the same key and mode
@@ -351,8 +355,7 @@ Integration test debugging:
     - [ ] serialization of bindings to settings.json
     - [ ] create data types to generate warnings/hints for old/unused fields
         - [ ] test this on the old version of larkin.toml
-    - [ ] actually replace javascript behavior with rust functions (replace `dod`)
-    - [ ] replace `setFlag` with `updateDefine` (or something like that)
+    - [ ] replace `setFlag` with `updateValue` (or something like that)
     - [ ] CI
         - [x] setup CI unit tests for rust
         - [x] setup rust coverage

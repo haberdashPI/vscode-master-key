@@ -695,7 +695,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     const encoder = new TextEncoder();
     vscode.workspace.onDidChangeTextDocument(async (e) => {
-        if (e.document.languageId == 'toml') {
+        if (e.document.languageId == 'toml' || e.document.uri.fsPath.endsWith('.toml')) {
             debounce(() => {
                 const text = e.document.getText();
                 const bytes = encoder.encode(text);
@@ -705,12 +705,12 @@ export async function activate(context: vscode.ExtensionContext) {
     });
 
     vscode.workspace.onDidSaveTextDocument(async (e) => {
-        if (e.languageId == 'toml') {
+        if (e.languageId == 'toml' || e.uri.fsPath.endsWith('.toml')) {
             await validateKeybindings(e.uri);
         }
     });
     vscode.workspace.onDidOpenTextDocument(async (e) => {
-        if (e.languageId == 'toml') {
+        if (e.languageId == 'toml' || e.uri.fsPath.endsWith('.toml')) {
             await validateKeybindings(e.uri);
         }
     });

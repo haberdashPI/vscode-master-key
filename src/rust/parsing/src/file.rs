@@ -342,6 +342,7 @@ pub struct KeyFileResult {
 pub fn parse_keybinding_bytes(file_content: Box<[u8]>) -> KeyFileResult {
     let mut warnings = Vec::new();
     let result = parse_bytes_helper(&file_content, &mut warnings);
+    warnings.append(&mut identify_legacy_warnings(&file_content));
     return match result {
         Ok(result) => KeyFileResult {
             file: Some(result),
@@ -448,28 +449,11 @@ impl LegacyKeyFileInput {
     }
 }
 
-pub fn identify_legacy_warnings_helper(file_content: &[u8]) -> ResultVec<()> {
-    let warnings = toml::from_slice::<LegacyKeyFileInput>(&file_content)?;
-    return Err(warnings.check());
-}
-
-pub fn identify_legacy_warnings(file_content: Box<[u8]>) -> KeyFileResult {
-    return match identify_legacy_warnings_helper(&file_content) {
-        Ok(()) => KeyFileResult {
-            file: None,
-            errors: None,
-        },
-        Err(e) => KeyFileResult {
-            file: None,
-            errors: Some(
-                e.errors
-                    .iter()
-                    .map(|x| x.report(&file_content))
-                    .filter(Option::is_some)
-                    .map(Option::unwrap)
-                    .collect(),
-            ),
-        },
+pub fn identify_legacy_warnings(file_content: &[u8]) -> Vec<ParseError> {
+    let warnings = toml::from_slice::<LegacyKeyFileInput>(&file_content);
+    return match warnings {
+        Ok(x) => x.check().errors,
+        Err(_) => Vec::new(),
     };
 }
 
@@ -1543,10 +1527,9 @@ pub(crate) mod tests {
         when = "!findWidgetVisible"
         "#;
 
-        let warnings = identify_legacy_warnings_helper(data.as_bytes()).unwrap_err();
+        let warnings = identify_legacy_warnings(data.as_bytes());
         assert_eq!(
             warnings
-                .errors
                 .iter()
                 .filter(|x| x.error.to_string().contains("2.0"))
                 .collect::<Vec<_>>()

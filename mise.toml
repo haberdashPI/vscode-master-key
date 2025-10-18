@@ -99,7 +99,7 @@ if ($env.COVERAGE? | default false | into bool) {
         --coverage-reporter json)
 } else {
     (pnpm exec vscode-test --config .vscode-test.mjs --extensionDevelopmentPath .
-        --version insiders)
+        --version=insiders)
 }
 '''
 
