@@ -128,7 +128,6 @@ use crate::error::{
     Context, ErrorContext, ErrorReport, ErrorSet, ParseError, Result, ResultVec, flatten_errors,
 };
 use crate::expression::Scope;
-use crate::expression::value::{Expanding, Expression, Value};
 use crate::kind::Kind;
 use crate::mode::{ModeInput, Modes};
 use crate::{err, wrn};
@@ -465,6 +464,7 @@ pub(crate) mod tests {
     use crate::bind::prefix::Prefix;
     use crate::expression::value::Expression;
     use crate::expression::value::Value;
+    use crate::mode::WhenNoBinding;
     use smallvec::SmallVec;
     use std::collections::HashMap;
     use test_log::test;
@@ -486,6 +486,10 @@ pub(crate) mod tests {
 
         [[define.val]]
         foo = "bar"
+
+        [[mode]]
+        name = "insert"
+        whenNoBinding = "insert"
 
         [[mode]]
         name = "normal"
@@ -570,26 +574,6 @@ pub(crate) mod tests {
         let report = err.report(data.as_bytes());
         assert!(report[0].message.contains("directive"));
         assert_eq!(report[0].range.start.line, 0);
-    }
-
-    #[test]
-    fn legacy_expression_warning() {
-        let data = r#"
-        #:master-keybindings
-        [header]
-        version = "2.0.0"
-
-        [[bind]]
-        foreach.key = ['{key: [0-9]}']
-        key = "a"
-        command = "foo{key}"
-        "#;
-
-        let mut warnings = Vec::new();
-        let result = parse_bytes_helper(data.as_bytes(), &mut warnings);
-        // let report = err.report(data.as_bytes());
-        info!("warnings: {warnings:#?}");
-        info!("result: {result:#?}");
     }
 
     #[test]
@@ -852,6 +836,7 @@ pub(crate) mod tests {
         [[mode]]
         name = "a"
         default = true
+        whenNoBinding = 'insert'
 
         [[mode]]
         name = "b"
@@ -868,7 +853,7 @@ pub(crate) mod tests {
         .unwrap_err();
         let report = err.report(data.as_bytes());
         assert!(report[0].message.contains("default mode already set"));
-        assert_eq!(report[0].range.start.line, 8)
+        assert_eq!(report[0].range.start.line, 9)
     }
 
     #[test]
@@ -879,6 +864,7 @@ pub(crate) mod tests {
 
         [[mode]]
         name = "a"
+        whenNoBinding = 'insert'
 
         [[mode]]
         name = "b"
@@ -935,6 +921,10 @@ pub(crate) mod tests {
         version = "2.0.0"
 
         [[mode]]
+        name = "insert"
+        whenNoBinding = 'insert'
+
+        [[mode]]
         name = "a"
         default = true
 
@@ -966,6 +956,7 @@ pub(crate) mod tests {
         [[mode]]
         name = "a"
         default = true
+        whenNoBinding = 'insert'
 
         [[mode]]
         name = "b"
@@ -982,7 +973,7 @@ pub(crate) mod tests {
         .unwrap_err();
         let report = err.report(data.as_bytes());
         assert!(report[0].message.contains("mode `c` is not defined"));
-        assert_eq!(report[0].range.start.line, 10)
+        assert_eq!(report[0].range.start.line, 11)
     }
 
     #[test]
@@ -994,6 +985,7 @@ pub(crate) mod tests {
         [[mode]]
         name = "a"
         default = true
+        whenNoBinding = 'insert'
 
         [[mode]]
         name = "b"
@@ -1037,6 +1029,7 @@ pub(crate) mod tests {
         [[mode]]
         name = "a"
         default = true
+        whenNoBinding = 'insert'
 
         [[mode]]
         name = "b"
@@ -1060,7 +1053,7 @@ pub(crate) mod tests {
         .unwrap_err();
         let report = err.report(data.as_bytes());
         assert!(report[0].message.contains("mode `d`"));
-        assert_eq!(report[0].range.start.line, 17)
+        assert_eq!(report[0].range.start.line, 18)
     }
 
     fn unwrap_prefixes(prefix: &Prefix) -> &Vec<String> {
@@ -1471,6 +1464,7 @@ pub(crate) mod tests {
         name = "normal"
         default = true
         nme = "beep"
+        whenNoBinding = 'insert'
 
         [[define.google]]
         bob = "x"
@@ -2041,6 +2035,186 @@ pub(crate) mod tests {
         assert!(report[0].message.contains("`commands`"));
         assert_eq!(report[0].range.start.line, 9);
         assert_eq!(report[0].range.end.line, 9);
+    }
+
+    #[test]
+    fn one_mode_must_insert() {
+        let data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.0.0"
+
+        [[mode]]
+        name = "normal"
+        default = true
+        "#;
+
+        let mut warnings = Vec::new();
+        let result = parse_bytes_helper(data.as_bytes(), &mut warnings);
+        let report = result.unwrap_err().report(data.as_bytes());
+        assert!(report[0].message.contains("`whenNoBinding='insert'`"));
+        assert_eq!(report[0].range.start.line, 6);
+        assert_eq!(report[0].range.end.line, 6);
+    }
+
+    #[test]
+    fn mode_with_command_fallback() {
+        let data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.0.0"
+
+        [[mode]]
+        name = "insert"
+        default = true
+        whenNoBinding = 'insert'
+
+        [[mode]]
+        name = "syminsert"
+        highlight = "Highlight"
+        cursorShape = "BlockOutline"
+
+        [[mode.whenNoBinding.run]]
+        command = "selection-utilities.insertAround"
+        args.before = "{{val.braces[captured].?before ?? captured}}"
+        args.after = "{{val.braces[captured].?after ?? captured}}"
+        args.followCursor = true
+        "#;
+
+        let mut warnings = Vec::new();
+        let result = parse_bytes_helper(data.as_bytes(), &mut warnings).unwrap();
+        let run_commands = result.mode.map["syminsert"].whenNoBinding.clone();
+        if let WhenNoBinding::Run(commands) = run_commands {
+            assert_eq!(commands.len(), 1);
+        } else {
+            assert!(false);
+        }
+    }
+
+    #[test]
+    fn mode_with_command_has_clear_error() {
+        let data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.0.0"
+
+        [[mode]]
+        name = "insert"
+        default = true
+        whenNoBinding = 'insert'
+
+        [[mode]]
+        name = "syminsert"
+        highlight = "Highlight"
+        cursorShape = "BlockOutline"
+
+        [[mode.whenNoBinding.run]]
+        args.before = "{{val.braces[captured].?before ?? captured}}"
+        args.after = "{{val.braces[captured].?after ?? captured}}"
+        args.followCursor = true
+        "#;
+
+        let mut warnings = Vec::new();
+        let err = parse_bytes_helper(data.as_bytes(), &mut warnings).unwrap_err();
+        let report = err.report(data.as_bytes());
+        assert!(report[0].message.contains("missing field"));
+        assert_eq!(report[0].range.start.line, 16);
+        assert_eq!(report[0].range.end.line, 16);
+    }
+
+    #[test]
+    fn mode_with_wrong_object_has_clear_error() {
+        let data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.0.0"
+
+        [[mode]]
+        name = "insert"
+        default = true
+        whenNoBinding = 'insert'
+
+        [[mode]]
+        name = "syminsert"
+        highlight = "Highlight"
+        cursorShape = "BlockOutline"
+
+        [[mode.whenNoBinding.rub]]
+        args.before = "{{val.braces[captured].?before ?? captured}}"
+        args.after = "{{val.braces[captured].?after ?? captured}}"
+        args.followCursor = true
+        "#;
+
+        let mut warnings = Vec::new();
+        let err = parse_bytes_helper(data.as_bytes(), &mut warnings).unwrap_err();
+        let report = err.report(data.as_bytes());
+
+        assert!(report[0].message.contains("`rub`"));
+        assert_eq!(report[0].range.start.line, 16);
+        assert_eq!(report[0].range.end.line, 16);
+    }
+
+    #[test]
+    fn mode_with_wrong_when_binding_string_has_clear_error() {
+        let data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.0.0"
+
+        [[mode]]
+        name = "insert"
+        default = true
+        whenNoBinding = 'insert'
+
+        [[mode]]
+        name = "syminsert"
+        highlight = "Highlight"
+        cursorShape = "BlockOutline"
+        whenNoBinding = 'insrt'
+        "#;
+
+        let mut warnings = Vec::new();
+        let err = parse_bytes_helper(data.as_bytes(), &mut warnings).unwrap_err();
+        let report = err.report(data.as_bytes());
+
+        assert!(report[0].message.contains("insrt"));
+        assert_eq!(report[0].range.start.line, 15);
+        assert_eq!(report[0].range.end.line, 15);
+    }
+
+    #[test]
+    fn mode_with_extra_when_binding_key_fails() {
+        let data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.0.0"
+
+        [[mode]]
+        name = "insert"
+        default = true
+        whenNoBinding = 'insert'
+
+        [[mode]]
+        name = "syminsert"
+        highlight = "Highlight"
+        cursorShape = "BlockOutline"
+        whenNoBinding.useMode = "insert"
+        whenNoBinding.x = "foo"
+        "#;
+
+        let mut warnings = Vec::new();
+        let err = parse_bytes_helper(data.as_bytes(), &mut warnings).unwrap_err();
+        let report = err.report(data.as_bytes());
+
+        assert!(report[0].message.contains("`x`"));
+        assert_eq!(report[0].range.start.line, 15);
+        assert_eq!(report[0].range.end.line, 15);
     }
 
     // TODO: write a test for required field `key` and ensure the span

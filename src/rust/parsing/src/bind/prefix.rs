@@ -4,7 +4,6 @@ use crate::expression::value::{Expanding, Expression, TypedValue, Value};
 use crate::util::{LeafValue, Merging, Plural, Resolving};
 
 use serde::{Deserialize, Serialize};
-use wasm_bindgen::prelude::*;
 
 // TODO: we could improve error messages here by implementing Deserialize ourselves
 #[derive(Deserialize, Clone, Debug)]

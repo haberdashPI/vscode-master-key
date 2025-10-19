@@ -93,9 +93,9 @@ pub struct ModeInput {
     ///      explicitly define a mode
     ///   - `"insert"`: The keys should insert text. This is true for the implicitly defined
     ///      "default" mode.
-    ///   - `"useMode": "[mode]"`: fallback to the keybindings defined for another mode
-    ///   - `"run": <command> | [<commands>]`: set `key.capture` to a string representing
-    ///     the key pressed and run the given command or commands, as per the fields allowed
+    ///   - `{"useMode": "[mode]"}`: fallback to the keybindings defined for another mode
+    ///   - `{"run": [<commands>]}`: set `key.capture` to a string representing
+    ///     the key pressed and run the given commands, as per the fields allowed
     ///     when [running multiple commands](#running-multiple-commands) in `[[bind]]`.
     #[serde(default)]
     whenNoBinding: Option<Spanned<WhenNoBindingInput>>,
@@ -117,14 +117,93 @@ impl Default for ModeInput {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Default)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Debug, Default)]
 pub enum WhenNoBindingInput {
     #[default]
     Ignore,
     Insert,
     UseMode(String),
-    Run(Plural<CommandInput>),
+    Run(Vec<CommandInput>),
+}
+
+impl<'de> serde::de::Deserialize<'de> for WhenNoBindingInput {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        // Define a visitor struct
+        struct WhenNoBindingInputVisitor;
+
+        impl<'de> serde::de::Visitor<'de> for WhenNoBindingInputVisitor {
+            type Value = WhenNoBindingInput;
+
+            // This is our main custom error message!
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str(
+                    "a string ('ignore' or 'insert') or a single-key object ('useMode: <string>' or 'run: [<commands>]')",
+                )
+            }
+
+            // Handles the unit variants: "ignore" and "insert"
+            fn visit_str<E>(self, v: &str) -> std::result::Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                match v {
+                    "ignore" => Ok(WhenNoBindingInput::Ignore),
+                    "insert" => Ok(WhenNoBindingInput::Insert),
+                    other => Err(serde::de::Error::custom(format_args!(
+                        "unexpected string value '{}', expected 'ignore' or 'insert'",
+                        other
+                    ))),
+                }
+            }
+
+            // Handles the newtype variants: UseMode(String) and Run(...)
+            fn visit_map<A>(self, mut map: A) -> std::result::Result<Self::Value, A::Error>
+            where
+                A: serde::de::MapAccess<'de>,
+            {
+                // We expect exactly one key
+                let key: String = match map.next_key()? {
+                    Some(key) => key,
+                    Option::None => {
+                        return Err(serde::de::Error::custom(
+                            "expected object with one key ('useMode' or 'run'), but got empty object",
+                        ));
+                    }
+                };
+
+                // Deserialize the value based on the key
+                let result = match key.as_str() {
+                    "useMode" => {
+                        let val = map.next_value::<String>()?;
+                        Ok(WhenNoBindingInput::UseMode(val))
+                    }
+                    "run" => {
+                        let val = map.next_value::<Vec<CommandInput>>()?;
+                        Ok(WhenNoBindingInput::Run(val))
+                    }
+                    other => Err(serde::de::Error::custom(format_args!(
+                        "unknown key `{other}`, expected 'useMode' or 'run'",
+                    ))),
+                }?;
+
+                // Check for any extra keys, which is an error
+                if let Some(next_key) = map.next_key::<String>()? {
+                    return Err(serde::de::Error::custom(format_args!(
+                        "expected object with only one key but found extra key `{next_key}`",
+                    )));
+                }
+
+                Ok(result)
+            }
+        }
+
+        // Tell Serde we can deserialize from *either* a string or a map.
+        // `deserialize_any` will call the appropriate visitor method.
+        deserializer.deserialize_any(WhenNoBindingInputVisitor)
+    }
 }
 
 impl LeafValue for WhenNoBindingInput {}
@@ -221,7 +300,7 @@ impl Mode {
 #[derive(Serialize, Clone, Debug)]
 #[wasm_bindgen(getter_with_clone)]
 pub struct Modes {
-    map: HashMap<String, Mode>,
+    pub(crate) map: HashMap<String, Mode>,
     pub default: String,
 }
 
@@ -310,6 +389,18 @@ impl Modes {
                 .iter_mut()
                 .for_each(|w| w.contexts.push(Context::Range(span.clone())));
             warnings.append(&mut mode_warnings)
+        }
+
+        // validate that at least one mode allows the user to type keys
+        if !modes
+            .iter()
+            .any(|(_, m)| m.whenNoBinding == WhenNoBinding::Insert)
+        {
+            Err(err(
+                "`whenNoBinding='insert'` must be set for at least one mode; \
+                 otherwise the user cannot type",
+            ))
+            .with_range(&first_mode_span)?
         }
 
         return Ok(Modes {

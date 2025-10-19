@@ -10,7 +10,7 @@ use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 use crate::{
     bind::{BindingInput, UNKNOWN_RANGE},
     err,
-    error::{ErrorContext, Result, ResultVec, err},
+    error::{ErrorContext, Result, ResultVec, err, flatten_errors},
     expression::{
         Scope,
         value::{Expanding, Expression, TypedValue, Value},
@@ -390,6 +390,14 @@ impl Expanding for Command {
         } else {
             return Ok(result);
         }
+    }
+}
+
+impl Resolving<Vec<Command>> for Vec<CommandInput> {
+    fn resolve(self, name: &'static str, scope: &mut Scope) -> ResultVec<Vec<Command>> {
+        Ok(flatten_errors(
+            self.into_iter().map(|x| x.resolve(name, scope)),
+        )?)
     }
 }
 

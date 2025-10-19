@@ -4,7 +4,7 @@ use log::info;
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use toml::{Spanned, Value};
+use toml::Spanned;
 
 use crate::bind::UNKNOWN_RANGE;
 use crate::err;
@@ -220,22 +220,6 @@ impl Merging for String {
 //         }
 //     }
 // }
-
-//
-// ---------------- Subset ----------------
-//
-
-pub enum Subset<T> {
-    Some(Vec<T>),
-    AllBut(Vec<T>),
-    All,
-}
-
-impl<T> From<Vec<T>> for Subset<T> {
-    fn from(value: Vec<T>) -> Subset<T> {
-        return Subset::Some(value);
-    }
-}
 
 //
 // ---------------- Resolving ----------------

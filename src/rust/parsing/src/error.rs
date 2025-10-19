@@ -74,21 +74,21 @@ pub fn err(msg: &'static str) -> RawError {
     return RawError::Static(msg);
 }
 
-pub fn wrn(msg: &'static str) -> ParseError {
-    return ParseError {
-        error: RawError::Static(msg),
-        contexts: SmallVec::new(),
-        level: ErrorLevel::Warn,
-    };
-}
+// pub fn wrn(msg: &'static str) -> ParseError {
+//     return ParseError {
+//         error: RawError::Static(msg),
+//         contexts: SmallVec::new(),
+//         level: ErrorLevel::Warn,
+//     };
+// }
 
-pub fn note(msg: &'static str) -> ParseError {
-    return ParseError {
-        error: RawError::Static(msg),
-        contexts: SmallVec::new(),
-        level: ErrorLevel::Info,
-    };
-}
+// pub fn note(msg: &'static str) -> ParseError {
+//     return ParseError {
+//         error: RawError::Static(msg),
+//         contexts: SmallVec::new(),
+//         level: ErrorLevel::Info,
+//     };
+// }
 
 #[wasm_bindgen]
 #[derive(Debug, Error, Clone)]
@@ -519,16 +519,4 @@ pub struct ErrorReport {
     pub message: String,
     pub range: CharRange,
     pub level: ErrorLevel,
-}
-
-#[wasm_bindgen]
-impl ErrorReport {
-    #[wasm_bindgen(constructor)]
-    pub fn new() -> Self {
-        return ErrorReport {
-            message: String::from(""),
-            range: CharRange::default(),
-            level: ErrorLevel::default(),
-        };
-    }
 }

@@ -254,7 +254,7 @@ Integration test debugging:
                the last key as a valid prefix)
             - [X] unit tests
         - [X] documentation
-    - [ ] error handling checks
+    - [X] error handling checks
         - [X] remove spurious line/char positions from expression error messages
             - NOTE: these come from the line and char position in the rhai expression
             which has nothing to do with the line and char position in the parent
@@ -311,7 +311,7 @@ Integration test debugging:
             - [X] get it working in debug
             - [X] update tests
             - [X] debug unreliable test outcomes
-    - [ ] validate modes to ensure that at least one of them allows the user to type 😬
+    - [X] validate modes to ensure that at least one of them allows the user to type 😬
     - [ ] refactor and cleanup rust code
     - [ ] proper conversion to keybindings.json command
         - [X] expand per mode and prefix (e.g. each binding has one mode and one prefix)

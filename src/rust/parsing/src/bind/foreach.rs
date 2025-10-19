@@ -42,7 +42,7 @@ use regex::Regex;
 use rhai::{EvalAltResult, ImmutableString};
 use toml::Spanned;
 
-use crate::error::{ErrorContext, ResultVec, flatten_errors};
+use crate::error::{ResultVec, flatten_errors};
 use crate::expression::Scope;
 use crate::expression::value::{Expanding, Value};
 
