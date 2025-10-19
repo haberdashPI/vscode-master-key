@@ -312,18 +312,25 @@ Integration test debugging:
             - [X] update tests
             - [X] debug unreliable test outcomes
     - [X] validate modes to ensure that at least one of them allows the user to type 😬
-    - [ ] refactor and cleanup rust code
+    - [X] refactor and cleanup rust code
     - [ ] proper conversion to keybindings.json command
         - [X] expand per mode and prefix (e.g. each binding has one mode and one prefix)
         - [X] encode prefixes as prefixCode in when clause
         - [X] move mode to when clause
         - [X] generate all binding outputs in file object
         - [X] unit tests for binding output generation
+        - [ ] copy over remaining documentation from parsing.ts and delete parsing.ts
         - [ ] review existing binding resolution logic to make sure we didn't miss
               something (particularly around prioritizing/ordering bindings)
         - [ ] incorporate a write `BindingOutput` to keybindings.json into ts workflow
-        - [ ] re-implement master-key.do and master-key.prefix
+            - [X] implement `requiredExtensions` field
+            - [ ] handle implicit bindings for mode definition
+                - [ ] the bindings for `whenNoBinding = 'ignore'`
+                - [ ] the bindings for `whenNoBinding.useMode`
+            - [ ] implement `items` to output the actual bindings
             - [ ] don't use `getter_with_clone` for `KeyFileResult` (it doesn't really make
+        - [ ] add warnings for unknown fields in `[[define.bind]]` and `[[define.command]]`
+        - [ ] re-implement master-key.do and master-key.prefix
               sense)
             - [ ] figure out how to handle ts/rust statement management
                 - [ ] keep command queue in rust
@@ -341,6 +348,7 @@ Integration test debugging:
         - [ ] integration tests
     - [ ] implement `replay`: use the new rust command queues instead of the old
           state management
+    - [ ] start using the latest version to catch performances issues and bugs
     - [ ] properly handle user keybindings (have the main keybinding file in memory)
     - [ ] extraction of markdown docs
         - [ ] documentation expansion/validation

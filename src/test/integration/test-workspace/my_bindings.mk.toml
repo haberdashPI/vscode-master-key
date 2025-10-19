@@ -1,13 +1,14 @@
-            #:master-keybindings
+#:master-keybindings
 
-            [header]
-            version = "2.0.0"
+[header]
+version = "2.0.0"
 
-            [[bind]]
-            doc.name = "default"
-            command = "foobar"
+[[bind]]
+doc.name = "default"
+key = "cmd+x"
+command = "foobar"
 
-            [[bind]]
-            doc.name = "run_merged"
-            key = "k"
-            command = "bizbaz"
+[[bind]]
+doc.name = "run_merged"
+key = "cmd+k"
+command = "bizbaz"

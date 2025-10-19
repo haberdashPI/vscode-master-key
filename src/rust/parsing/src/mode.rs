@@ -12,7 +12,7 @@ use crate::bind::command::{Command, CommandInput};
 use crate::error::{Context, ErrorContext, ParseError, Result, ResultVec, err};
 use crate::expression::Scope;
 use crate::resolve;
-use crate::util::{LeafValue, Plural, Resolving};
+use crate::util::{LeafValue, Resolving};
 use crate::{err, wrn};
 
 /// @bindingField mode
@@ -208,6 +208,7 @@ impl<'de> serde::de::Deserialize<'de> for WhenNoBindingInput {
 
 impl LeafValue for WhenNoBindingInput {}
 
+#[wasm_bindgen]
 #[derive(Deserialize, Serialize, Clone, Debug, Default)]
 pub enum ModeHighlight {
     #[default]
@@ -217,6 +218,7 @@ pub enum ModeHighlight {
 }
 impl LeafValue for ModeHighlight {}
 
+#[wasm_bindgen]
 #[derive(Deserialize, Serialize, Clone, Debug, Default)]
 pub enum CursorShape {
     #[default]
@@ -232,12 +234,34 @@ impl LeafValue for CursorShape {}
 // TODO: get wasm interface worked out
 #[derive(Clone, Debug, Serialize)]
 #[allow(non_snake_case)]
+#[wasm_bindgen(getter_with_clone)]
 pub struct Mode {
     pub name: String,
     pub default: bool,
     pub highlight: ModeHighlight,
     pub cursorShape: CursorShape,
-    pub whenNoBinding: WhenNoBinding,
+    pub(crate) whenNoBinding: WhenNoBinding,
+}
+
+#[wasm_bindgen]
+impl Mode {
+    #[allow(non_snake_case)]
+    pub fn whenNoBinding(&self) -> WhenNoBindingHeader {
+        return match &self.whenNoBinding {
+            WhenNoBinding::Ignore => WhenNoBindingHeader::Ignore,
+            WhenNoBinding::Insert => WhenNoBindingHeader::Insert,
+            WhenNoBinding::UseMode(_) => WhenNoBindingHeader::UseMode,
+            WhenNoBinding::Run(_) => WhenNoBindingHeader::Run,
+        };
+    }
+
+    #[allow(non_snake_case)]
+    pub fn runWhenNoBinding(&self) -> Vec<Command> {
+        return match &self.whenNoBinding {
+            WhenNoBinding::Run(x) => x.clone(),
+            _ => Vec::new(),
+        };
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Default, PartialEq)]
@@ -248,6 +272,16 @@ pub enum WhenNoBinding {
     UseMode(String),
     Run(Vec<Command>),
 }
+
+#[wasm_bindgen]
+pub enum WhenNoBindingHeader {
+    Ignore,
+    Insert,
+    UseMode,
+    Run,
+}
+
+// TODO: figure out type script interface to WhenNoBinding
 
 impl LeafValue for WhenNoBinding {}
 

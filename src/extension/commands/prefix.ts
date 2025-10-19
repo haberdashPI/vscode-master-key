@@ -1,8 +1,7 @@
 import * as vscode from 'vscode';
 import z from 'zod';
 import {
-    CURSOR_SHAPES,
-    CursorShape,
+    STRING_TO_CURSOR,
     updateCursorAppearance,
     validateInput,
 } from '../utils';
@@ -13,8 +12,15 @@ import { restoreModesCursorState } from './mode';
 const prefixArgs = z.
     object({
         code: z.number(),
-        flag: z.string().min(1).endsWith('_on').optional(),
-        cursor: z.enum(CURSOR_SHAPES).optional(),
+        flag: z.string().min(1).optional(),
+        cursor: z.enum([
+            'Line',
+            'Block',
+            'Underline',
+            'LineThin',
+            'BlockOutline',
+            'UnderlineThin',
+        ]).optional(),
         // `automated` is used during keybinding preprocessing and is not normally used
         // otherwise
         automated: z.boolean().optional(),
@@ -156,7 +162,7 @@ async function prefix(args_: unknown): Promise<CommandResult> {
                     state.set(a.flag, { transient: { reset: false }, public: true }, true);
                 }
                 if (a.cursor) {
-                    const cursorShape = <CursorShape>a.cursor;
+                    const cursorShape = STRING_TO_CURSOR[a.cursor];
                     state.set(PREFIX_CURSOR, { transient: { reset: false } }, true);
                     oldPrefixCursor = true;
                     updateCursorAppearance(vscode.window.activeTextEditor, cursorShape);

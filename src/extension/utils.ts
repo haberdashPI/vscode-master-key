@@ -3,6 +3,7 @@ import z from 'zod';
 import { showParseError } from './keybindings/parsing';
 import replaceAll from 'string.prototype.replaceall';
 import { DoArgs } from './keybindings/parsing';
+import { CursorShape } from '../rust/parsing/lib/parsing';
 
 // function validateInput(command: string, args_: unknown,
 //     using: z.ZodUn);
@@ -92,30 +93,22 @@ export function get<T extends object, K extends keyof T>(x: T, key: K, def: T[K]
 }
 
 export const CURSOR_STYLES = {
-    Line: vscode.TextEditorCursorStyle.Line,
-    Block: vscode.TextEditorCursorStyle.Block,
-    Underline: vscode.TextEditorCursorStyle.Underline,
-    LineThin: vscode.TextEditorCursorStyle.LineThin,
-    BlockOutline: vscode.TextEditorCursorStyle.BlockOutline,
-    UnderlineThin: vscode.TextEditorCursorStyle.UnderlineThin,
+    [CursorShape.Line]: vscode.TextEditorCursorStyle.Line,
+    [CursorShape.Block]: vscode.TextEditorCursorStyle.Block,
+    [CursorShape.Underline]: vscode.TextEditorCursorStyle.Underline,
+    [CursorShape.LineThin]: vscode.TextEditorCursorStyle.LineThin,
+    [CursorShape.BlockOutline]: vscode.TextEditorCursorStyle.BlockOutline,
+    [CursorShape.UnderlineThin]: vscode.TextEditorCursorStyle.UnderlineThin,
 };
 
-export const CURSOR_SHAPES: [string, ...string[]] = [
-    'Line',
-    'Block',
-    'Underline',
-    'LineThin',
-    'BlockOutline',
-    'UnderlineThin',
-];
-
-export type CursorShape =
-    | 'Line' |
-    'Block' |
-    'Underline' |
-    'LineThin' |
-    'BlockOutline' |
-    'UnderlineThin';
+export const STRING_TO_CURSOR: Record<string, CursorShape> = {
+    Line: CursorShape.Line,
+    Block: CursorShape.Block,
+    Underline: CursorShape.Underline,
+    LineThin: CursorShape.LineThin,
+    BlockOutline: CursorShape.BlockOutline,
+    UnderlineThin: CursorShape.UnderlineThin,
+};
 
 export function updateCursorAppearance(
     editor: vscode.TextEditor | undefined,

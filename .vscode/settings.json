@@ -31,4 +31,8 @@
         "out/**": true,
     },
     "python.defaultInterpreterPath": "${userHome}/.local/share/mise/installs/python/3.10.4/bin/python",
+    "eslint.workingDirectories": [
+        "src"
+    ],
+    "eslint.useESLintClass": false,
 }

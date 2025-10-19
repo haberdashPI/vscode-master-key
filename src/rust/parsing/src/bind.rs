@@ -735,7 +735,7 @@ const TEXT_FOCUS_CONDITION: &str = "(editorTextFocus || master-key.keybindingPal
 
 lazy_static! {
     static ref WHITESPACE: Regex = Regex::new(r"\s+").unwrap();
-    static ref NON_BARE_KEY: Regex = Regex::new(r"(?i)Ctrl|Alt|Cmd|Win|Meta").unwrap();
+    static ref KEY_WITH_MODIFIER: Regex = Regex::new(r"(?i)Ctrl|Alt|Cmd|Win|Meta").unwrap();
     static ref EDITOR_TEXT_FOCUS: Regex = Regex::new(r"\beditorTextFocus\b").unwrap();
 }
 
@@ -835,18 +835,23 @@ impl Binding {
         let key_string: String = resolve!(input, key, scope)?;
         let key: Vec<_> = WHITESPACE.split(&key_string).map(String::from).collect();
         let mut when: Option<String> = resolve!(input, when, scope)?;
-        when = if !NON_BARE_KEY.is_match(&key[0]) {
+        let has_modifier = KEY_WITH_MODIFIER.is_match(&key[0]);
+        when = if has_modifier {
+            if let Some(w) = when {
+                Some(
+                    EDITOR_TEXT_FOCUS
+                        .replace_all(&w, TEXT_FOCUS_CONDITION)
+                        .to_string(),
+                )
+            } else {
+                Option::None
+            }
+        } else {
             if let Some(w) = when {
                 Some(format!("({}) && {TEXT_FOCUS_CONDITION}", w))
             } else {
                 Some(TEXT_FOCUS_CONDITION.to_string())
             }
-        } else {
-            Some(
-                EDITOR_TEXT_FOCUS
-                    .replace_all(&(when.unwrap()), TEXT_FOCUS_CONDITION)
-                    .to_string(),
-            )
         };
 
         // warning about unknown fields

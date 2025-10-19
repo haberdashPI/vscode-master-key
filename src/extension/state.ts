@@ -3,7 +3,7 @@ import z from 'zod';
 import { validateInput } from './utils';
 import { Map, List, RecordOf, Record as IRecord } from 'immutable';
 import { onChangeBindings } from './keybindings/config';
-import { Bindings } from './keybindings/processing';
+import { KeyFileResult } from '../rust/parsing/lib/parsing';
 
 export type Listener = (states: Map<string, unknown>) => boolean;
 
@@ -274,18 +274,15 @@ export function recordedCommand<T extends Array<E>, E>(fn: CommandFn<T, E>) {
 
 function addDefinitions(
     state: CommandState,
-    definitions: Record<string, unknown> | undefined,
+    definitions: unknown,
 ) {
     return state.withMutations((state) => {
-        for (const [k, v] of Object.entries(definitions || {})) {
-            state.set(k, { public: true }, v);
-        }
+        state.set('val', { public: true }, definitions);
     });
 }
 
-async function updateDefinitions(bindings: Bindings | undefined) {
-    // TODO: ideally we clear the old definitions here
-    await withState(async state => addDefinitions(state, bindings?.define));
+async function updateDefinitions(bindings: KeyFileResult) {
+    await withState(async state => addDefinitions(state, bindings.values()));
 }
 
 const setFlagArgs = z.

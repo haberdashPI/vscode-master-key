@@ -129,8 +129,8 @@ use crate::error::{
 };
 use crate::expression::Scope;
 use crate::kind::Kind;
-use crate::mode::{ModeInput, Modes};
-use crate::{err, wrn};
+use crate::mode::{Mode, ModeInput, Modes};
+use crate::{err, resolve, wrn};
 
 use lazy_static::lazy_static;
 use regex::Regex;
@@ -150,14 +150,53 @@ struct KeyFileInput {
     kind: Option<Vec<Spanned<Kind>>>,
 }
 
+/// @bindingField header
+/// @description top-level properties of the binding file
+///
+/// **Example**
+///
+/// ```toml
+/// [header]
+/// version = 2.0
+/// name = "My Bindings"
+/// requiredExtensions = ["Vue.volar"]
+/// ```
+///
+/// ## Required Fields
+///
+/// - `version`: Must be version 2.0.x (typically 2.0.0); only version 2.0.0 currently exists,
+///   but any future versions of 2.0 can be parsed by this version of master key,
+///   as this version follows [semantic versioning](https://semver.org/).
+/// - `name`: The name of this keybinding set; shows up in menus to select keybinding presets
+/// - `requiredExtensions`: An array of string identifiers for all extensions used by this
+///   binding set.
+///
+/// In general if you use the commands from an extension in your keybinding file, it is good
+/// to include them in `requiredExtensions` so that others can use your keybindings without
+/// running into errors due to a missing extension.
+///
+/// ## Finding Extension Identifiers
+///
+/// You can find an extension's identifier as follows:
+///
+/// 1. Open the extension in VSCode's extension marketplace
+/// 2. Click on the gear (⚙︎) symbol
+/// 3. Click "Copy Extension ID"; you now have the identifier in your system clipboard
+///
 #[derive(Deserialize, Clone, Debug)]
+#[allow(non_snake_case)]
 struct Header {
+    name: Option<Spanned<String>>,
     version: Spanned<Version>,
+    requiredExtensions: Option<Vec<String>>,
 }
 
 #[derive(Clone, Debug, Serialize)]
-#[wasm_bindgen]
+#[wasm_bindgen(getter_with_clone)]
+#[allow(non_snake_case)]
 pub struct KeyFile {
+    pub name: Option<String>,
+    pub requiredExtensions: Vec<String>,
     define: Define,
     mode: Modes,
     bind: Vec<Binding>,
@@ -185,6 +224,20 @@ impl KeyFile {
             .with_range(&input.header.version.span());
             errors.push(r.unwrap_err().into());
         }
+        let name: Option<String> = match resolve!(input.header, name, scope) {
+            Err(mut x) => {
+                errors.append(&mut x.errors);
+                Option::None
+            }
+            Ok(x) => x,
+        };
+        #[allow(non_snake_case)]
+        let requiredExtensions: Vec<String> = input
+            .header
+            .requiredExtensions
+            .into_iter()
+            .flatten()
+            .collect();
 
         // [[define]]
         let mut define_input = input.define.unwrap_or_default();
@@ -316,6 +369,8 @@ impl KeyFile {
 
         if errors.len() == 0 {
             return Ok(KeyFile {
+                name,
+                requiredExtensions,
                 define,
                 bind,
                 mode: modes,
@@ -329,10 +384,108 @@ impl KeyFile {
 }
 
 // TODO: don't use clone on `file`
+#[derive(Default)]
 #[wasm_bindgen(getter_with_clone)]
 pub struct KeyFileResult {
-    pub file: Option<KeyFile>,
-    pub errors: Option<Vec<ErrorReport>>,
+    file: Option<KeyFile>,
+    errors: Option<Vec<ErrorReport>>,
+}
+
+#[wasm_bindgen]
+impl KeyFileResult {
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> Self {
+        return KeyFileResult::default();
+    }
+    pub fn name(&self) -> String {
+        match &self.file {
+            Some(KeyFile { name: Some(x), .. }) => x.clone(),
+            _ => "".to_string(),
+        }
+    }
+
+    #[allow(non_snake_case)]
+    pub fn requiredExtensions(&self) -> Vec<String> {
+        match &self.file {
+            Some(KeyFile {
+                requiredExtensions, ..
+            }) => requiredExtensions.clone(),
+            _ => Vec::new(),
+        }
+    }
+
+    pub fn n_errors(&self) -> usize {
+        return match &self.errors {
+            Some(x) => x.len(),
+            Option::None => 0,
+        };
+    }
+
+    pub fn error(&self, i: usize) -> ErrorReport {
+        return self.errors.as_ref().unwrap()[i].clone();
+    }
+
+    pub fn n_bindings(&self) -> usize {
+        return match &self.file {
+            Some(x) => x.key_bind.len(),
+            Option::None => 0,
+        };
+    }
+
+    pub fn binding(&self, i: usize) -> JsValue {
+        return serde_wasm_bindgen::to_value(&self.file.as_ref().unwrap().key_bind[i])
+            .expect("keybinding object");
+    }
+
+    pub fn has_layout_independent_bindings(&self) -> bool {
+        return match &self.file {
+            Some(KeyFile { bind, .. }) => bind
+                .iter()
+                .any(|b| b.key.iter().any(|k| LAYOUT_INDEPENDENT_KEY.is_match(k))),
+            _ => false,
+        };
+    }
+
+    pub fn modes(&self) -> Vec<String> {
+        return match &self.file {
+            Some(KeyFile { mode, .. }) => mode.map.keys().map(String::from).collect(),
+            Option::None => Modes::default().map.keys().map(String::from).collect(),
+        };
+    }
+    pub fn mode(&self, name: &str) -> Option<Mode> {
+        return match &self.file {
+            Some(KeyFile { mode, .. }) => mode.get(name).map(Mode::clone),
+            Option::None => None,
+        };
+    }
+    pub fn default_mode(&self) -> String {
+        return match &self.file {
+            Some(KeyFile { mode, .. }) => mode.default.clone(),
+            Option::None => Modes::default().default,
+        };
+    }
+
+    pub fn values(&self) -> std::result::Result<JsValue, JsValue> {
+        match &self.file {
+            Some(KeyFile { define, .. }) => {
+                let result = js_sys::Object::new();
+                for (key, val) in &define.val {
+                    let toml_val: toml::Value = val.clone().into();
+                    let to_json = serde_wasm_bindgen::Serializer::json_compatible();
+                    let js_val = toml_val.serialize(&to_json)?;
+                    js_sys::Reflect::set(&result, &key.into(), &js_val)?;
+                }
+                return Ok(result.into());
+            }
+            Option::None => {
+                return Ok(js_sys::Object::new().into());
+            }
+        };
+    }
+}
+
+lazy_static! {
+    static ref LAYOUT_INDEPENDENT_KEY: Regex = Regex::new(r"\[[^\]]+\]").unwrap();
 }
 
 // LCOV_EXCL_START
@@ -341,7 +494,6 @@ pub struct KeyFileResult {
 pub fn parse_keybinding_bytes(file_content: Box<[u8]>) -> KeyFileResult {
     let mut warnings = Vec::new();
     let result = parse_bytes_helper(&file_content, &mut warnings);
-    warnings.append(&mut identify_legacy_warnings(&file_content));
     return match result {
         Ok(result) => KeyFileResult {
             file: Some(result),
@@ -396,7 +548,7 @@ fn parse_bytes_helper(file_content: &[u8], warnings: &mut Vec<ParseError>) -> Re
     if !has_directive {
         Err(err!(
             "To be treated as a master keybindings file, the TOML document must \
-             include the directive `#:master-keybindings` on a line by itself
+             include the directive `#:master-keybindings` on a line by itself \
              before any TOML data."
         ))
         .with_range(&(0..0))?;
@@ -406,6 +558,7 @@ fn parse_bytes_helper(file_content: &[u8], warnings: &mut Vec<ParseError>) -> Re
 
     let mut scope = Scope::new(); // TODO: do something with this scope?? (don't we need this state somewhere?)
     let result = KeyFile::new(parsed, &mut scope, warnings);
+    warnings.append(&mut identify_legacy_warnings(file_content));
 
     return result;
 }
@@ -513,6 +666,30 @@ pub(crate) mod tests {
         assert_eq!(result.bind[0].commands[0].command, "cursorRight");
         assert_eq!(result.bind[1].key[0], "h");
         assert_eq!(result.bind[1].commands[0].command, "cursorLeft");
+    }
+
+    #[test]
+    fn parse_with_modifiers() {
+        let data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.0.0"
+
+        [[bind]]
+        doc.name = "default"
+        key = "cmd+x"
+        command = "foobar"
+
+        [[bind]]
+        doc.name = "run_merged"
+        key = "cmd+k"
+        command = "bizbaz"
+        "#;
+
+        let mut warnings = Vec::new();
+        let result = parse_bytes_helper(data.as_bytes(), &mut warnings);
+        assert_eq!(result.unwrap().bind.len(), 2)
     }
 
     #[test]
