@@ -312,35 +312,47 @@ Integration test debugging:
             - [X] update tests
             - [X] debug unreliable test outcomes
     - [X] validate modes to ensure that at least one of them allows the user to type 😬
-    - [ ] refactor and cleanup rust code
+    - [X] refactor and cleanup rust code
     - [ ] proper conversion to keybindings.json command
         - [X] expand per mode and prefix (e.g. each binding has one mode and one prefix)
         - [X] encode prefixes as prefixCode in when clause
         - [X] move mode to when clause
         - [X] generate all binding outputs in file object
         - [X] unit tests for binding output generation
-        - [ ] review existing binding resolution logic to make sure we didn't miss
+        - [X] copy over remaining documentation from parsing.ts and delete parsing.ts
+        - [X] review existing binding resolution logic to make sure we didn't miss
               something (particularly around prioritizing/ordering bindings)
-        - [ ] incorporate a write `BindingOutput` to keybindings.json into ts workflow
+        - [X] incorporate a write `BindingOutput` to keybindings.json into ts workflow
+            - [X] implement `requiredExtensions` field
+            - [X] handle implicit bindings for mode definition
+                - [X] the bindings for `whenNoBinding = 'ignoreLetters'`
+                - [X] the bindings for `whenNoBinding.useMode`
+                - [X] unit tests for ignore letters
+                - [X] unit tests for useMode
+            - [X] implement `items` to output the actual bindings
+            - [X] don't use `getter_with_clone` for `KeyFileResult` (it doesn't really make
+        - [X] add warnings for unknown fields in `[[define.bind]]` and `[[define.command]]`
+        - [X] check for extra fields in `runCommands` arguments
         - [ ] re-implement master-key.do and master-key.prefix
-            - [ ] don't use `getter_with_clone` for `KeyFileResult` (it doesn't really make
               sense)
             - [ ] figure out how to handle ts/rust statement management
                 - [ ] keep command queue in rust
                 - [ ] probably copy simple state data to rust, duplicate
                       in ts for now (avoid churn)
-                    - [ ] alternatively reimplement state.ts in rust
                 - [ ] move all bare variables in an expression to `key.` or `code.` object
                 - [ ] maybe handle state passing between commands with rust scope
                       object??
             - [ ] properly handle command queues (now controlled by rust)
                 - [ ] guess: don't have special command queue field
-                - [ ] support accessing values by their path (`val.foo`, `key.count`)
-                      from javascript
-        - [ ] unit tests
-        - [ ] integration tests
+        - [ ] update unit tests
+        - [ ] update integration tests
+        - [ ] new unit tests?
+        - [ ] new integration tests?
     - [ ] implement `replay`: use the new rust command queues instead of the old
           state management
+    - [ ] replace `setFlag` with `updateValue` (or something like that)
+    - [ ] reimplement other currently commented out files
+    - [ ] start using the latest version to catch performances issues and bugs
     - [ ] properly handle user keybindings (have the main keybinding file in memory)
     - [ ] extraction of markdown docs
         - [ ] documentation expansion/validation
@@ -352,10 +364,6 @@ Integration test debugging:
                   whose span overlaps
             - [ ] convert any bind elements in this overlap into markdown table
     - [ ] extraction of visual docs
-    - [ ] serialization of bindings to settings.json
-    - [ ] create data types to generate warnings/hints for old/unused fields
-        - [ ] test this on the old version of larkin.toml
-    - [ ] replace `setFlag` with `updateValue` (or something like that)
     - [ ] CI
         - [x] setup CI unit tests for rust
         - [x] setup rust coverage
@@ -371,7 +379,7 @@ Integration test debugging:
     - [ ] add CI tests informted by palette.ux.mts
 5. Translate the lower priority tests
     - [ ] low impact on stability and coverage, but high effort changes
-        - save these for after the PR migrating to new test/coverage setup
+        - save these for after the PR migrating for rust refactoring is merged
         - [ ] searchMotions.ux.mts integration tests
             - [ ] `acceptAfter`
             - [ ] `acceptAfter` with delete char
@@ -388,16 +396,6 @@ Integration test debugging:
 6. Review documentation
 7. Release version 0.4
 8. Migration of selection utilities to the same build and test setup
-9. Generate detailed error reports for keybinding files and get them to show
-   up in VSCode's problem window / linting underlines
-    - [ ] we need to let TOML language server know about the schema...
-        - [ ] https://github.com/GREsau/schemars to export schema
-        - [ ] insert '$schema' key into file
-    - [ ] use `document.positionAt` to convert spans byte offsets to char and line
-    - [ ] https://code.visualstudio.com/api/references/vscode-api#languages
-        look for `createDiagnosticsCollection` to create new linting hints
-10. Translate selection utility tests to new build setup
-11. Get CI working for all tests in selection utilities
-12. continue the quest for better test coverage
-
-\u001b[32m✔\u001b[39m Found existing install in /home/runner/work/vscode-master-key/vscode-master-key/.vscode-test/vscode-linux-x64-insiders\n
+9. Translate selection utility tests to new build setup
+10. Get CI working for all tests in selection utilities
+11. continue the quest for better test coverage if necessary

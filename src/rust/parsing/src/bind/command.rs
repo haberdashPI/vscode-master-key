@@ -10,13 +10,14 @@ use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 use crate::{
     bind::{BindingInput, UNKNOWN_RANGE},
     err,
-    error::{ErrorContext, Result, ResultVec, err, flatten_errors},
+    error::{ErrorContext, ParseError, Result, ResultVec, err, flatten_errors},
     expression::{
         Scope,
         value::{Expanding, Expression, TypedValue, Value},
     },
     resolve,
     util::{Required, Resolving},
+    wrn,
 };
 
 /// @forBindingField bind
@@ -53,6 +54,9 @@ pub struct CommandInput {
     /// - ⚡ `skipWhen`: an [expression](/expressions/index) that, when evaluated to false, will
     ///    cause the command to *not* be run.
     pub skipWhen: Option<Spanned<TypedValue<bool>>>,
+
+    #[serde(flatten)]
+    other_fields: HashMap<String, toml::Value>,
 }
 
 // impl Expanding for CommandInput {
@@ -100,7 +104,19 @@ impl CommandInput {
             command: self.command.clone(),
             args: self.args.clone(),
             skipWhen: self.skipWhen.clone(),
+            other_fields: self.other_fields.clone(),
         };
+    }
+
+    pub(crate) fn check_other_fields(&self, warnings: &mut Vec<ParseError>) {
+        // warning about unknown fields
+        for (key, _) in &self.other_fields {
+            let err: Result<()> = Err(wrn!(
+                "The field `{}` is unrecognized and will be ignored",
+                key,
+            ));
+            warnings.push(err.unwrap_err());
+        }
     }
 }
 
@@ -179,6 +195,7 @@ fn maybe_span(spans: Option<HashMap<String, Range<usize>>>, key: &str) -> Option
 pub(crate) fn regularize_commands(
     input: &impl CommandInputLike,
     scope: &mut Scope,
+    warnings: &mut Vec<ParseError>,
 ) -> ResultVec<Vec<Command>> {
     let command: String = input.command(scope)?;
     if command != "runCommands" {
@@ -231,6 +248,18 @@ pub(crate) fn regularize_commands(
                     TypedValue::default(),
                 ),
                 Value::Table(kv, spans) => {
+                    for (k, _) in &kv {
+                        if k != "command" && k != "args" && k != "skipWhen" {
+                            let err: Result<()> =
+                                Err(wrn!("The field `{k}` is unrecognized and will be ignored",))
+                                    .with_range(&match &spans {
+                                        Some(s) => Some(s[k].clone()),
+                                        None => None,
+                                    });
+                            warnings.push(err.unwrap_err());
+                        }
+                    }
+
                     let result = kv
                         .get("command")
                         .ok_or_else(|| {
@@ -265,6 +294,7 @@ pub(crate) fn regularize_commands(
                                 range: args_pos.clone(),
                             }),
                             scope,
+                            warnings,
                         )?;
                         command_result.append(&mut commands);
                         continue;
@@ -429,7 +459,8 @@ mod tests {
 
         let mut scope = Scope::new();
         let bind = toml::from_str::<BindingInput>(data).unwrap();
-        let commands = regularize_commands(&bind, &mut scope).unwrap();
+        let mut warnings = Vec::new();
+        let commands = regularize_commands(&bind, &mut scope, &mut warnings).unwrap();
 
         assert_eq!(commands[0].command, "a");
         assert_eq!(commands[1].command, "b");
@@ -475,7 +506,8 @@ mod tests {
 
         let bind = toml::from_str::<BindingInput>(data).unwrap();
         let mut scope = Scope::new();
-        let commands = regularize_commands(&bind, &mut scope).unwrap_err();
+        let mut warnings = Vec::new();
+        let commands = regularize_commands(&bind, &mut scope, &mut warnings).unwrap_err();
         let msg = match commands.errors[0].error {
             crate::error::RawError::Static(x) => x,
             _ => {
@@ -508,7 +540,8 @@ mod tests {
 
         let bind = toml::from_str::<BindingInput>(data).unwrap();
         let mut scope = Scope::new();
-        let commands = regularize_commands(&bind, &mut scope).unwrap();
+        let mut warnings = Vec::new();
+        let commands = regularize_commands(&bind, &mut scope, &mut warnings).unwrap();
         assert_eq!(
             commands
                 .iter()

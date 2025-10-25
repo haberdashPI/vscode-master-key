@@ -43,7 +43,7 @@ requiredExtensions = [
 
 [[mode]]
 name = "insert"
-whenNoBinding = "insert"
+whenNoBinding = "insertLetters"
 
 [[mode]]
 name = "normal"

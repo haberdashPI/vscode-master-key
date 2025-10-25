@@ -12,7 +12,7 @@ use toml::Spanned;
 use crate::bind::BindingInput;
 use crate::bind::command::CommandInput;
 use crate::bind::validation::BindingReference;
-use crate::error::{ErrorContext, ParseError, Result, ResultVec, err};
+use crate::error::{Context, ErrorContext, ParseError, Result, ResultVec, err};
 use crate::expression::Scope;
 use crate::expression::value::{Expanding, Expression, Value};
 use crate::util::{Merging, Resolving};
@@ -239,6 +239,12 @@ impl Define {
                         errors.append(&mut e.errors);
                     }
                     Ok(id) => {
+                        let mut command_warnings = Vec::new();
+                        def.as_ref().check_other_fields(&mut command_warnings);
+                        command_warnings
+                            .iter_mut()
+                            .for_each(|w| w.contexts.push(Context::Range(def.span())));
+                        warnings.append(&mut command_warnings);
                         resolved_command.insert(id, def.into_inner());
                     }
                 },
@@ -257,6 +263,12 @@ impl Define {
                         errors.append(&mut e.errors);
                     }
                     Ok(x) => {
+                        let mut bind_warnings = Vec::new();
+                        def.as_ref().check_other_fields(&mut bind_warnings);
+                        bind_warnings
+                            .iter_mut()
+                            .for_each(|w| w.contexts.push(Context::Range(def.span())));
+                        warnings.append(&mut bind_warnings);
                         resolved_bind.insert(x, def.into_inner());
                     }
                 },

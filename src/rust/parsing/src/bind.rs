@@ -245,6 +245,19 @@ impl BindingInput {
             other_fields: self.other_fields.clone(),
         };
     }
+
+    pub(crate) fn check_other_fields(&self, warnings: &mut Vec<ParseError>) {
+        // warning about unknown fields
+        for (key, _) in &self.other_fields {
+            let err: Result<()> = Err(wrn!(
+                "The field `{}` is unrecognized and will be ignored",
+                key,
+            ));
+            warnings.push(err.unwrap_err());
+        }
+
+        self.doc.as_ref().map(|d| d.check_other_fields(warnings));
+    }
 }
 
 impl Merging for BindingInput {
@@ -437,6 +450,36 @@ pub struct CombinedBindingDocInput {
 
     #[serde(flatten)]
     other_fields: HashMap<String, toml::Value>,
+}
+
+impl BindingDocInput {
+    pub(crate) fn check_other_fields(&self, warnings: &mut Vec<ParseError>) {
+        // warning about unknown fields
+        for (key, _) in &self.other_fields {
+            let err: Result<()> = Err(wrn!(
+                "The field `{}` is unrecognized and will be ignored",
+                key,
+            ));
+            warnings.push(err.unwrap_err());
+        }
+
+        self.combined
+            .as_ref()
+            .map(|c| c.check_other_fields(warnings));
+    }
+}
+
+impl CombinedBindingDocInput {
+    pub(crate) fn check_other_fields(&self, warnings: &mut Vec<ParseError>) {
+        // warning about unknown fields
+        for (key, _) in &self.other_fields {
+            let err: Result<()> = Err(wrn!(
+                "The field `{}` is unrecognized and will be ignored",
+                key,
+            ));
+            warnings.push(err.unwrap_err());
+        }
+    }
 }
 
 impl Merging for BindingDocInput {
@@ -728,14 +771,15 @@ pub struct Binding {
     pub(crate) repeat: TypedValue<i32>,
     pub tags: Vec<String>,
     pub doc: BindingDoc,
+    pub(crate) implicit: bool,
 }
 
-const TEXT_FOCUS_CONDITION: &str = "(editorTextFocus || master-key.keybindingPaletteOpen \
+pub const TEXT_FOCUS_CONDITION: &str = "(editorTextFocus || master-key.keybindingPaletteOpen \
                  && master-key.keybindingPaletteBindingMode)";
 
 lazy_static! {
     static ref WHITESPACE: Regex = Regex::new(r"\s+").unwrap();
-    static ref NON_BARE_KEY: Regex = Regex::new(r"(?i)Ctrl|Alt|Cmd|Win|Meta").unwrap();
+    static ref KEY_WITH_MODIFIER: Regex = Regex::new(r"(?i)Ctrl|Alt|Cmd|Win|Meta").unwrap();
     static ref EDITOR_TEXT_FOCUS: Regex = Regex::new(r"\beditorTextFocus\b").unwrap();
 }
 
@@ -758,7 +802,8 @@ impl Binding {
 
         let mut regular_commands = Vec::new();
         for command in commands {
-            let mut sub_commands = regularize_commands(&command, scope)?;
+            let mut warnings = Vec::new();
+            let mut sub_commands = regularize_commands(&command, scope, &mut warnings)?;
             regular_commands.append(&mut sub_commands)
         }
 
@@ -784,7 +829,9 @@ impl Binding {
         scope: &mut Scope,
         warnings: &mut Vec<ParseError>,
     ) -> ResultVec<Self> {
-        let commands = regularize_commands(&input, scope)?;
+        let commands = regularize_commands(&input, scope, warnings)?;
+
+        input.check_other_fields(warnings);
 
         // id validation
         if let Some(_) = input.id {
@@ -835,28 +882,24 @@ impl Binding {
         let key_string: String = resolve!(input, key, scope)?;
         let key: Vec<_> = WHITESPACE.split(&key_string).map(String::from).collect();
         let mut when: Option<String> = resolve!(input, when, scope)?;
-        when = if !NON_BARE_KEY.is_match(&key[0]) {
+        let has_modifier = KEY_WITH_MODIFIER.is_match(&key[0]);
+        when = if has_modifier {
+            if let Some(w) = when {
+                Some(
+                    EDITOR_TEXT_FOCUS
+                        .replace_all(&w, TEXT_FOCUS_CONDITION)
+                        .to_string(),
+                )
+            } else {
+                Option::None
+            }
+        } else {
             if let Some(w) = when {
                 Some(format!("({}) && {TEXT_FOCUS_CONDITION}", w))
             } else {
                 Some(TEXT_FOCUS_CONDITION.to_string())
             }
-        } else {
-            Some(
-                EDITOR_TEXT_FOCUS
-                    .replace_all(&(when.unwrap()), TEXT_FOCUS_CONDITION)
-                    .to_string(),
-            )
         };
-
-        // warning about unknown fields
-        for (key, _) in input.other_fields {
-            let err: Result<()> = Err(wrn!(
-                "The field `{}` is unrecognized and will be ignored",
-                key,
-            ));
-            warnings.push(err.unwrap_err());
-        }
 
         // resolve all keys to appropriate types
         let result = Binding {
@@ -867,6 +910,7 @@ impl Binding {
             priority: resolve!(input, priority, scope)?,
             prefixes: resolve!(input, prefixes, scope)?,
             finalKey,
+            implicit: false,
             repeat: resolve!(input, repeat, scope)?,
             tags: resolve!(input, tags, scope)?,
             doc: match input.doc {
@@ -988,15 +1032,6 @@ impl BindingDoc {
             }
         };
 
-        // warning about unknown fields
-        for (key, _) in input.other_fields {
-            let err: Result<()> = Err(wrn!(
-                "The field `{}` is unrecognized and will be ignored",
-                key,
-            ));
-            warnings.push(err.unwrap_err());
-        }
-
         return Ok(BindingDoc {
             name: resolve!(input, name, scope)?,
             description: resolve!(input, description, scope)?,
@@ -1019,15 +1054,6 @@ impl CombinedBindingDoc {
         scope: &mut Scope,
         warnings: &mut Vec<ParseError>,
     ) -> ResultVec<Self> {
-        // warning about unknown fields
-        for (key, _) in input.other_fields {
-            let err: Result<()> = Err(wrn!(
-                "The field `{}` is unrecognized and will be ignored",
-                key,
-            ));
-            warnings.push(err.unwrap_err());
-        }
-
         return Ok(CombinedBindingDoc {
             name: resolve!(input, name, scope)?,
             key: resolve!(input, key, scope)?,
@@ -1062,6 +1088,8 @@ pub enum BindingOutput {
         when: Option<String>,
         args: PrefixArgs,
     },
+    #[serde(rename = "master-key.ignore")]
+    Ignore { key: String, when: Option<String> },
 }
 
 impl BindingOutput {
@@ -1069,14 +1097,31 @@ impl BindingOutput {
         return match (self, other) {
             (
                 Self::Do {
-                    args: BindingOutputArgs { priority: a, .. },
+                    args:
+                        BindingOutputArgs {
+                            priority: a,
+                            implicit: implicit_a,
+                            ..
+                        },
                     ..
                 },
                 Self::Do {
-                    args: BindingOutputArgs { priority: b, .. },
+                    args:
+                        BindingOutputArgs {
+                            priority: b,
+                            implicit: implicit_b,
+                            ..
+                        },
                     ..
                 },
-            ) => f64::total_cmp(a, b),
+            ) => {
+                // implicit bindings always coming lower in priority than explicit bindings
+                if implicit_a == implicit_b {
+                    f64::total_cmp(a, b)
+                } else {
+                    implicit_b.cmp(implicit_a)
+                }
+            }
             (
                 Self::Prefix {
                     args: PrefixArgs { priority: a, .. },
@@ -1087,8 +1132,11 @@ impl BindingOutput {
                     ..
                 },
             ) => f64::total_cmp(a, b),
+            (Self::Ignore { .. }, Self::Ignore { .. }) => std::cmp::Ordering::Equal,
             (Self::Prefix { .. }, Self::Do { .. }) => std::cmp::Ordering::Less,
             (Self::Do { .. }, Self::Prefix { .. }) => std::cmp::Ordering::Greater,
+            (Self::Ignore { .. }, _) => std::cmp::Ordering::Less,
+            (_, Self::Ignore { .. }) => std::cmp::Ordering::Greater,
         };
     }
 }
@@ -1114,6 +1162,7 @@ impl KeyId for BindingOutput {
         match self {
             BindingOutput::Do { args, .. } => args.key_id(),
             BindingOutput::Prefix { args, .. } => args.key_id(),
+            BindingOutput::Ignore { .. } => -1,
         }
     }
 }
@@ -1129,6 +1178,8 @@ pub struct BindingOutputArgs {
     // these fields help us track and order binding outputs, we don't need them serialized
     #[serde(skip)]
     pub(crate) priority: f64,
+    // bindings defined implicitly via `mode` are flagged here
+    pub(crate) implicit: bool,
     // these fields are used in tracking and help improve legibility of the output bindings
     // in the keybindings.json file, and so they are stored
     pub(crate) name: String,
@@ -1164,7 +1215,7 @@ impl Eq for BindingId {}
 struct BindingProperties {
     // the span where the binding was first defined; if we find a second
     // definition our error message can point to the first definition
-    span: Range<usize>,
+    span: Option<Range<usize>>,
     // the code tells us how to create `when` clauses that are conditioned
     // on this keypress having already happened (as a prefix)
     code: i32,
@@ -1193,7 +1244,7 @@ impl BindingCodes {
         key: &Vec<impl ToString>,
         mode: &str,
         when: &Option<impl ToString>,
-        span: &Range<usize>,
+        span: &Option<Range<usize>>,
         implicit: bool,
     ) -> ResultVec<(i32, bool)> {
         let id = BindingId {
@@ -1213,14 +1264,14 @@ impl BindingCodes {
                         "Duplicate key sequence for mode `{mode}`. First instance is \
                              defined at "
                     ))
-                    .with_range(&span)
+                    .with_range(span)
                     .with_ref_range(&old.get().span),
                     Err(wrn!(
                         "Duplicate key sequence for mode `{mode}`. This sequence is \
                              also defined later in the file at "
                     ))
                     .with_range(&old.get().span)
-                    .with_ref_range(&span),
+                    .with_ref_range(span),
                 ];
                 return Err(errors
                     .into_iter()
@@ -1283,7 +1334,7 @@ impl Binding {
         &self,
         command_id: i32,
         scope: &Scope,
-        span: Range<usize>,
+        span: Option<Range<usize>>,
         codes: &mut BindingCodes,
     ) -> ResultVec<Vec<BindingOutput>> {
         let mut result = Vec::new();
@@ -1355,7 +1406,7 @@ impl Binding {
     fn outputs_for_mode_and_prefix(
         &self,
         command_id: i32,
-        span: &Range<usize>,
+        span: &Option<Range<usize>>,
         mode: &str,
         explicit_prefix: &str,
         when_with_mode: &Vec<String>,
@@ -1416,6 +1467,7 @@ impl Binding {
                 priority: self.priority,
                 prefix: old_prefix_str,
                 name: self.doc.name.clone(),
+                implicit: self.implicit,
                 description: self.doc.description.clone(),
             },
         });

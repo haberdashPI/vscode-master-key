@@ -7,12 +7,13 @@ use std::collections::{HashMap, HashSet};
 use toml::Spanned;
 use wasm_bindgen::prelude::*;
 
-use crate::bind::UNKNOWN_RANGE;
 use crate::bind::command::{Command, CommandInput};
+use crate::bind::foreach::all_characters;
+use crate::bind::{Binding, BindingCodes, BindingOutput, TEXT_FOCUS_CONDITION, UNKNOWN_RANGE};
 use crate::error::{Context, ErrorContext, ParseError, Result, ResultVec, err};
 use crate::expression::Scope;
 use crate::resolve;
-use crate::util::{LeafValue, Plural, Resolving};
+use crate::util::{LeafValue, Resolving};
 use crate::{err, wrn};
 
 /// @bindingField mode
@@ -31,10 +32,10 @@ use crate::{err, wrn};
 /// highlight = "Highlight"
 ///
 /// [[mode]]
-/// name = "insert"
+/// name = "insertCharacters"
 /// cursorShape = "Line"
 /// highlight = "NoHighlight"
-/// whenNoBinding = "insert"
+/// whenNoBinding = "insertCharacters"
 /// ```
 ///
 /// If no keybinding modes are defined, an implicit mode is defined as follows:
@@ -45,7 +46,7 @@ use crate::{err, wrn};
 /// default = true
 /// cursorShape = "Line"
 /// highlight = "NoHighlight"
-/// whenNoBinding = "insert"
+/// whenNoBinding = "insertCharacters"
 /// ```
 ///
 /// ## Fields
@@ -87,16 +88,22 @@ pub struct ModeInput {
     cursorShape: Option<CursorShape>,
     /// @forBindingField mode
     ///
-    /// - `whenNoBinding`: How to respond to keys when there is no key binding in this mode.
-    /// The options are
-    ///   - `"ignore"`: Prevent the key from doing anything. This is the default when you
-    ///      explicitly define a mode
-    ///   - `"insert"`: The keys should insert text. This is true for the implicitly defined
-    ///      "default" mode.
-    ///   - `{"useMode": "[mode]"}`: fallback to the keybindings defined for another mode
-    ///   - `{"run": [<commands>]}`: set `key.capture` to a string representing
-    ///     the key pressed and run the given commands, as per the fields allowed
-    ///     when [running multiple commands](#running-multiple-commands) in `[[bind]]`.
+    /// - `whenNoBinding`: How to respond to keys when there is no binding for them in this
+    /// mode. The options are:
+    ///   - `"ignoreChacaters"`: The mode will introduce implicit bindings that cause any
+    ///     characters that are typed to be ignored. This is the default behavior when you
+    ///     explicitly define a mode in your file.
+    ///   - `"insertCharacters"`: The mode defines no implicit bindings. Pressing characters
+    ///     will cause text to be inserted into a file, as usual. This is the default
+    ///     behavior for the implicitly defined "default" mode. If you define modes
+    ///     explicitly at least one of them must be set to `'insertCharacters'``; otherwise the
+    ///     user could not type.
+    ///   - `{"useMode": "[mode]"}`: fallback to the keybindings and behavior defined in
+    ///     another mode.
+    ///   - `{"run": [<commands>]}`: captures characters in the variable `key.capture`, a
+    ///     string representing the key pressed. Then run the given commands, as per the
+    ///     fields allowed when [running multiple commands](#running-multiple-commands) in
+    ///     `[[bind]]`.
     #[serde(default)]
     whenNoBinding: Option<Spanned<WhenNoBindingInput>>,
 
@@ -111,7 +118,10 @@ impl Default for ModeInput {
             default: Some(true),
             highlight: None,
             cursorShape: None,
-            whenNoBinding: Some(Spanned::new(UNKNOWN_RANGE, WhenNoBindingInput::Insert)),
+            whenNoBinding: Some(Spanned::new(
+                UNKNOWN_RANGE,
+                WhenNoBindingInput::InsertCharacters,
+            )),
             other_fields: HashMap::new(),
         };
     }
@@ -120,8 +130,8 @@ impl Default for ModeInput {
 #[derive(Clone, Debug, Default)]
 pub enum WhenNoBindingInput {
     #[default]
-    Ignore,
-    Insert,
+    IgnoreCharacters,
+    InsertCharacters,
     UseMode(String),
     Run(Vec<CommandInput>),
 }
@@ -140,7 +150,7 @@ impl<'de> serde::de::Deserialize<'de> for WhenNoBindingInput {
             // This is our main custom error message!
             fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
                 formatter.write_str(
-                    "a string ('ignore' or 'insert') or a single-key object ('useMode: <string>' or 'run: [<commands>]')",
+                    "a string ('ignoreCharacters' or 'insertCharacters') or a single-key object ('useMode: <string>' or 'run: [<commands>]')",
                 )
             }
 
@@ -150,10 +160,10 @@ impl<'de> serde::de::Deserialize<'de> for WhenNoBindingInput {
                 E: serde::de::Error,
             {
                 match v {
-                    "ignore" => Ok(WhenNoBindingInput::Ignore),
-                    "insert" => Ok(WhenNoBindingInput::Insert),
+                    "ignoreCharacters" => Ok(WhenNoBindingInput::IgnoreCharacters),
+                    "insertCharacters" => Ok(WhenNoBindingInput::InsertCharacters),
                     other => Err(serde::de::Error::custom(format_args!(
-                        "unexpected string value '{}', expected 'ignore' or 'insert'",
+                        "unexpected string value '{}', expected 'ignoreCharacters' or 'insertCharacters'",
                         other
                     ))),
                 }
@@ -208,6 +218,7 @@ impl<'de> serde::de::Deserialize<'de> for WhenNoBindingInput {
 
 impl LeafValue for WhenNoBindingInput {}
 
+#[wasm_bindgen]
 #[derive(Deserialize, Serialize, Clone, Debug, Default)]
 pub enum ModeHighlight {
     #[default]
@@ -217,6 +228,7 @@ pub enum ModeHighlight {
 }
 impl LeafValue for ModeHighlight {}
 
+#[wasm_bindgen]
 #[derive(Deserialize, Serialize, Clone, Debug, Default)]
 pub enum CursorShape {
     #[default]
@@ -232,30 +244,62 @@ impl LeafValue for CursorShape {}
 // TODO: get wasm interface worked out
 #[derive(Clone, Debug, Serialize)]
 #[allow(non_snake_case)]
+#[wasm_bindgen(getter_with_clone)]
 pub struct Mode {
     pub name: String,
     pub default: bool,
     pub highlight: ModeHighlight,
     pub cursorShape: CursorShape,
-    pub whenNoBinding: WhenNoBinding,
+    pub(crate) whenNoBinding: WhenNoBinding,
+}
+
+#[wasm_bindgen]
+impl Mode {
+    #[allow(non_snake_case)]
+    pub fn whenNoBinding(&self) -> WhenNoBindingHeader {
+        return match &self.whenNoBinding {
+            WhenNoBinding::IgnoreCharacters => WhenNoBindingHeader::IgnoreCharacters,
+            WhenNoBinding::InsertCharacters => WhenNoBindingHeader::InsertCharacters,
+            WhenNoBinding::UseMode(_) => WhenNoBindingHeader::UseMode,
+            WhenNoBinding::Run(_) => WhenNoBindingHeader::Run,
+        };
+    }
+
+    #[allow(non_snake_case)]
+    pub fn runWhenNoBinding(&self) -> Vec<Command> {
+        return match &self.whenNoBinding {
+            WhenNoBinding::Run(x) => x.clone(),
+            _ => Vec::new(),
+        };
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Default, PartialEq)]
 pub enum WhenNoBinding {
     #[default]
-    Ignore,
-    Insert,
+    IgnoreCharacters,
+    InsertCharacters,
     UseMode(String),
     Run(Vec<Command>),
 }
+
+#[wasm_bindgen]
+pub enum WhenNoBindingHeader {
+    IgnoreCharacters,
+    InsertCharacters,
+    UseMode,
+    Run,
+}
+
+// TODO: figure out type script interface to WhenNoBinding
 
 impl LeafValue for WhenNoBinding {}
 
 impl Resolving<WhenNoBinding> for WhenNoBindingInput {
     fn resolve(self, name: &'static str, scope: &mut Scope) -> ResultVec<WhenNoBinding> {
         return Ok(match self {
-            WhenNoBindingInput::Ignore => WhenNoBinding::Ignore,
-            WhenNoBindingInput::Insert => WhenNoBinding::Insert,
+            WhenNoBindingInput::IgnoreCharacters => WhenNoBinding::IgnoreCharacters,
+            WhenNoBindingInput::InsertCharacters => WhenNoBinding::InsertCharacters,
             WhenNoBindingInput::UseMode(mode) => WhenNoBinding::UseMode(mode.resolve(name, scope)?),
             WhenNoBindingInput::Run(commands) => WhenNoBinding::Run(commands.resolve(name, scope)?),
         });
@@ -294,6 +338,21 @@ impl Mode {
             cursorShape: resolve!(input, cursorShape, scope)?,
             whenNoBinding: resolve!(input, whenNoBinding, scope)?,
         });
+    }
+
+    fn create_ignore_characters(name: &str, scope: &Scope, result: &mut Vec<BindingOutput>) {
+        for k in all_characters() {
+            let when: String;
+            if name != &scope.default_mode {
+                when = format!("master-key.mode == '{}' && {TEXT_FOCUS_CONDITION}", name)
+            } else {
+                when = TEXT_FOCUS_CONDITION.to_string();
+            }
+            result.push(BindingOutput::Ignore {
+                key: k,
+                when: Some(when),
+            });
+        }
     }
 }
 
@@ -394,7 +453,7 @@ impl Modes {
         // validate that at least one mode allows the user to type keys
         if !modes
             .iter()
-            .any(|(_, m)| m.whenNoBinding == WhenNoBinding::Insert)
+            .any(|(_, m)| m.whenNoBinding == WhenNoBinding::InsertCharacters)
         {
             Err(err(
                 "`whenNoBinding='insert'` must be set for at least one mode; \
@@ -411,6 +470,63 @@ impl Modes {
 
     pub fn get(&self, x: &str) -> Option<&Mode> {
         return self.map.get(x);
+    }
+
+    fn ignore_character_bindings_helper(
+        &self,
+        mode: &str,        // the mode whose whenNoBinding we're looking up
+        parent_mode: &str, // the mode we're writing bindings for (could be different because of the `UseMode` option)
+        scope: &Scope,     // we need this to know what the default mode is
+        result: &mut Vec<BindingOutput>,
+    ) {
+        return match &self.map[mode].whenNoBinding {
+            WhenNoBinding::IgnoreCharacters => {
+                Mode::create_ignore_characters(parent_mode, scope, result)
+            }
+            WhenNoBinding::InsertCharacters => (),
+            WhenNoBinding::Run(_) => (),
+            WhenNoBinding::UseMode(fallback) => {
+                Modes::ignore_character_bindings_helper(self, fallback, parent_mode, scope, result)
+            }
+        };
+    }
+
+    pub(crate) fn ignore_character_bindings(&self, scope: &Scope) -> Vec<BindingOutput> {
+        let mut result = Vec::new();
+        for mode in self.map.keys() {
+            Modes::ignore_character_bindings_helper(self, mode, mode, scope, &mut result);
+        }
+        return result;
+    }
+
+    pub(crate) fn insert_implicit_mode_bindings(
+        &self,
+        bindings: &Vec<Binding>,
+        scope: &Scope,
+        codes: &mut BindingCodes,
+        key_bind: &mut Vec<BindingOutput>,
+    ) {
+        // and keybindings to ignore characters if the mode (or its fallback) requests it
+        key_bind.append(&mut self.ignore_character_bindings(scope)); // fallback bindings: these are the
+
+        // and implicit keybindings for any fallback mode (ala `useMode`).
+        for (id, bind) in bindings.iter().enumerate() {
+            let mut implicit_modes = Vec::new();
+            for mode in &bind.mode {
+                if let WhenNoBinding::UseMode(to_add) = &self.map[mode].whenNoBinding {
+                    implicit_modes.push(to_add.clone())
+                }
+            }
+            let mut implicit_bind = bind.clone();
+            implicit_bind.mode = implicit_modes;
+            implicit_bind.implicit = true;
+            let mut output = match implicit_bind.outputs(id as i32, &scope, None, codes) {
+                Ok(x) => x,
+                // silently ignore errors; these will be reported for the explicit bindings
+                Err(_) => Vec::new(),
+            };
+            key_bind.append(&mut output);
+        }
     }
 }
 

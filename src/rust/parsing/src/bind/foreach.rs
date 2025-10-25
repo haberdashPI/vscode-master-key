@@ -260,6 +260,22 @@ pub fn expression_fn__keys(
     return Ok(result);
 }
 
+pub fn all_characters() -> Vec<String> {
+    let mut result = Vec::new();
+    let character = Regex::new(r"^([a-z0-9]|`-=\[\];',\./\\)$").unwrap();
+    for key in ALL_KEYS {
+        if character.is_match(key) {
+            result.push(key.to_string());
+        }
+    }
+    let mut capitals = Vec::new();
+    for key in &result {
+        capitals.push(format!("shift+{key}"))
+    }
+    result.append(&mut capitals);
+    return result;
+}
+
 pub fn expand_keys(
     items: IndexMap<String, Vec<Spanned<Value>>>,
     scope: &mut Scope,

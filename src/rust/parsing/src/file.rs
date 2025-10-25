@@ -129,8 +129,8 @@ use crate::error::{
 };
 use crate::expression::Scope;
 use crate::kind::Kind;
-use crate::mode::{ModeInput, Modes};
-use crate::{err, wrn};
+use crate::mode::{Mode, ModeInput, Modes};
+use crate::{err, resolve, wrn};
 
 use lazy_static::lazy_static;
 use regex::Regex;
@@ -150,14 +150,53 @@ struct KeyFileInput {
     kind: Option<Vec<Spanned<Kind>>>,
 }
 
+/// @bindingField header
+/// @description top-level properties of the binding file
+///
+/// **Example**
+///
+/// ```toml
+/// [header]
+/// version = 2.0
+/// name = "My Bindings"
+/// requiredExtensions = ["Vue.volar"]
+/// ```
+///
+/// ## Required Fields
+///
+/// - `version`: Must be version 2.0.x (typically 2.0.0); only version 2.0.0 currently exists,
+///   but any future versions of 2.0 can be parsed by this version of master key,
+///   as this version follows [semantic versioning](https://semver.org/).
+/// - `name`: The name of this keybinding set; shows up in menus to select keybinding presets
+/// - `requiredExtensions`: An array of string identifiers for all extensions used by this
+///   binding set.
+///
+/// In general if you use the commands from an extension in your keybinding file, it is good
+/// to include them in `requiredExtensions` so that others can use your keybindings without
+/// running into errors due to a missing extension.
+///
+/// ## Finding Extension Identifiers
+///
+/// You can find an extension's identifier as follows:
+///
+/// 1. Open the extension in VSCode's extension marketplace
+/// 2. Click on the gear (⚙︎) symbol
+/// 3. Click "Copy Extension ID"; you now have the identifier in your system clipboard
+///
 #[derive(Deserialize, Clone, Debug)]
+#[allow(non_snake_case)]
 struct Header {
+    name: Option<Spanned<String>>,
     version: Spanned<Version>,
+    requiredExtensions: Option<Vec<String>>,
 }
 
 #[derive(Clone, Debug, Serialize)]
-#[wasm_bindgen]
+#[wasm_bindgen(getter_with_clone)]
+#[allow(non_snake_case)]
 pub struct KeyFile {
+    pub name: Option<String>,
+    pub requiredExtensions: Vec<String>,
     define: Define,
     mode: Modes,
     bind: Vec<Binding>,
@@ -185,6 +224,20 @@ impl KeyFile {
             .with_range(&input.header.version.span());
             errors.push(r.unwrap_err().into());
         }
+        let name: Option<String> = match resolve!(input.header, name, scope) {
+            Err(mut x) => {
+                errors.append(&mut x.errors);
+                Option::None
+            }
+            Ok(x) => x,
+        };
+        #[allow(non_snake_case)]
+        let requiredExtensions: Vec<String> = input
+            .header
+            .requiredExtensions
+            .into_iter()
+            .flatten()
+            .collect();
 
         // [[define]]
         let mut define_input = input.define.unwrap_or_default();
@@ -293,22 +346,32 @@ impl KeyFile {
             })
             .unzip();
 
-        bind = Binding::resolve_prefixes(bind, &bind_span)?;
-
-        // TODO: store spans so we can do avoid serializing this data??
+        // create outputs to store in `keybindings.json`
+        // TODO: store spans so we can do avoid serializing `key_bind`?
         let mut key_bind = Vec::new();
+        bind = Binding::resolve_prefixes(bind, &bind_span)?;
         let mut codes = BindingCodes::new();
-        // TODO: call `resolve_prefixes` first
         for (i, (bind_item, span)) in bind.iter_mut().zip(bind_span.into_iter()).enumerate() {
-            key_bind.append(&mut bind_item.outputs(i as i32, &scope, span, &mut codes)?);
+            key_bind.append(&mut bind_item.outputs(i as i32, &scope, Some(span), &mut codes)?);
         }
+        modes.insert_implicit_mode_bindings(&bind, &scope, &mut codes, &mut key_bind);
+
+        // sort all bindings by their priority
         key_bind.sort_by(BindingOutput::cmp_priority);
-        // remove key_bind values with the exact same `key_id`, keeping the one
-        // with the highest priority (last items)
+
+        // remove key_bind values with the exact same `key_id`, keeping the one with the
+        // highest priority (last items); such collisions should only happen between
+        // implicit keybindings, because we check and error on collisions between any two
+        // explicitly defined bindings with the same implied id (same when clause, key and
+        // mode)
         let mut seen_codes = HashSet::new();
         let mut final_key_bind = VecDeque::with_capacity(key_bind.len());
         for key in key_bind.into_iter().rev() {
-            if !seen_codes.contains(&key.key_id()) {
+            if key.key_id() == -1 {
+                // the -1 id is special, and used in all bindings added by
+                // `Modes::ignore_letter_bindings`
+                final_key_bind.push_front(key)
+            } else if !seen_codes.contains(&key.key_id()) {
                 seen_codes.insert(key.key_id());
                 final_key_bind.push_front(key);
             }
@@ -316,6 +379,8 @@ impl KeyFile {
 
         if errors.len() == 0 {
             return Ok(KeyFile {
+                name,
+                requiredExtensions,
                 define,
                 bind,
                 mode: modes,
@@ -329,10 +394,108 @@ impl KeyFile {
 }
 
 // TODO: don't use clone on `file`
+#[derive(Default)]
 #[wasm_bindgen(getter_with_clone)]
 pub struct KeyFileResult {
-    pub file: Option<KeyFile>,
-    pub errors: Option<Vec<ErrorReport>>,
+    file: Option<KeyFile>,
+    errors: Option<Vec<ErrorReport>>,
+}
+
+#[wasm_bindgen]
+impl KeyFileResult {
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> Self {
+        return KeyFileResult::default();
+    }
+    pub fn name(&self) -> String {
+        match &self.file {
+            Some(KeyFile { name: Some(x), .. }) => x.clone(),
+            _ => "".to_string(),
+        }
+    }
+
+    #[allow(non_snake_case)]
+    pub fn requiredExtensions(&self) -> Vec<String> {
+        match &self.file {
+            Some(KeyFile {
+                requiredExtensions, ..
+            }) => requiredExtensions.clone(),
+            _ => Vec::new(),
+        }
+    }
+
+    pub fn n_errors(&self) -> usize {
+        return match &self.errors {
+            Some(x) => x.len(),
+            Option::None => 0,
+        };
+    }
+
+    pub fn error(&self, i: usize) -> ErrorReport {
+        return self.errors.as_ref().unwrap()[i].clone();
+    }
+
+    pub fn n_bindings(&self) -> usize {
+        return match &self.file {
+            Some(x) => x.key_bind.len(),
+            Option::None => 0,
+        };
+    }
+
+    pub fn binding(&self, i: usize) -> JsValue {
+        return serde_wasm_bindgen::to_value(&self.file.as_ref().unwrap().key_bind[i])
+            .expect("keybinding object");
+    }
+
+    pub fn has_layout_independent_bindings(&self) -> bool {
+        return match &self.file {
+            Some(KeyFile { bind, .. }) => bind
+                .iter()
+                .any(|b| b.key.iter().any(|k| LAYOUT_INDEPENDENT_KEY.is_match(k))),
+            _ => false,
+        };
+    }
+
+    pub fn modes(&self) -> Vec<String> {
+        return match &self.file {
+            Some(KeyFile { mode, .. }) => mode.map.keys().map(String::from).collect(),
+            Option::None => Modes::default().map.keys().map(String::from).collect(),
+        };
+    }
+    pub fn mode(&self, name: &str) -> Option<Mode> {
+        return match &self.file {
+            Some(KeyFile { mode, .. }) => mode.get(name).map(Mode::clone),
+            Option::None => None,
+        };
+    }
+    pub fn default_mode(&self) -> String {
+        return match &self.file {
+            Some(KeyFile { mode, .. }) => mode.default.clone(),
+            Option::None => Modes::default().default,
+        };
+    }
+
+    pub fn values(&self) -> std::result::Result<JsValue, JsValue> {
+        match &self.file {
+            Some(KeyFile { define, .. }) => {
+                let result = js_sys::Object::new();
+                for (key, val) in &define.val {
+                    let toml_val: toml::Value = val.clone().into();
+                    let to_json = serde_wasm_bindgen::Serializer::json_compatible();
+                    let js_val = toml_val.serialize(&to_json)?;
+                    js_sys::Reflect::set(&result, &key.into(), &js_val)?;
+                }
+                return Ok(result.into());
+            }
+            Option::None => {
+                return Ok(js_sys::Object::new().into());
+            }
+        };
+    }
+}
+
+lazy_static! {
+    static ref LAYOUT_INDEPENDENT_KEY: Regex = Regex::new(r"\[[^\]]+\]").unwrap();
 }
 
 // LCOV_EXCL_START
@@ -341,7 +504,6 @@ pub struct KeyFileResult {
 pub fn parse_keybinding_bytes(file_content: Box<[u8]>) -> KeyFileResult {
     let mut warnings = Vec::new();
     let result = parse_bytes_helper(&file_content, &mut warnings);
-    warnings.append(&mut identify_legacy_warnings(&file_content));
     return match result {
         Ok(result) => KeyFileResult {
             file: Some(result),
@@ -396,7 +558,7 @@ fn parse_bytes_helper(file_content: &[u8], warnings: &mut Vec<ParseError>) -> Re
     if !has_directive {
         Err(err!(
             "To be treated as a master keybindings file, the TOML document must \
-             include the directive `#:master-keybindings` on a line by itself
+             include the directive `#:master-keybindings` on a line by itself \
              before any TOML data."
         ))
         .with_range(&(0..0))?;
@@ -406,6 +568,7 @@ fn parse_bytes_helper(file_content: &[u8], warnings: &mut Vec<ParseError>) -> Re
 
     let mut scope = Scope::new(); // TODO: do something with this scope?? (don't we need this state somewhere?)
     let result = KeyFile::new(parsed, &mut scope, warnings);
+    warnings.append(&mut identify_legacy_warnings(file_content));
 
     return result;
 }
@@ -459,9 +622,9 @@ pub fn identify_legacy_warnings(file_content: &[u8]) -> Vec<ParseError> {
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
-    use crate::bind::BindingOutputArgs;
-    use crate::bind::UNKNOWN_RANGE;
+    use crate::bind::foreach::all_characters;
     use crate::bind::prefix::Prefix;
+    use crate::bind::{BindingOutput, BindingOutputArgs, UNKNOWN_RANGE};
     use crate::expression::value::Expression;
     use crate::expression::value::Value;
     use crate::mode::WhenNoBinding;
@@ -489,7 +652,7 @@ pub(crate) mod tests {
 
         [[mode]]
         name = "insert"
-        whenNoBinding = "insert"
+        whenNoBinding = "insertCharacters"
 
         [[mode]]
         name = "normal"
@@ -513,6 +676,30 @@ pub(crate) mod tests {
         assert_eq!(result.bind[0].commands[0].command, "cursorRight");
         assert_eq!(result.bind[1].key[0], "h");
         assert_eq!(result.bind[1].commands[0].command, "cursorLeft");
+    }
+
+    #[test]
+    fn parse_with_modifiers() {
+        let data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.0.0"
+
+        [[bind]]
+        doc.name = "default"
+        key = "cmd+x"
+        command = "foobar"
+
+        [[bind]]
+        doc.name = "run_merged"
+        key = "cmd+k"
+        command = "bizbaz"
+        "#;
+
+        let mut warnings = Vec::new();
+        let result = parse_bytes_helper(data.as_bytes(), &mut warnings);
+        assert_eq!(result.unwrap().bind.len(), 2)
     }
 
     #[test]
@@ -836,7 +1023,7 @@ pub(crate) mod tests {
         [[mode]]
         name = "a"
         default = true
-        whenNoBinding = 'insert'
+        whenNoBinding = 'insertCharacters'
 
         [[mode]]
         name = "b"
@@ -864,7 +1051,7 @@ pub(crate) mod tests {
 
         [[mode]]
         name = "a"
-        whenNoBinding = 'insert'
+        whenNoBinding = 'insertCharacters'
 
         [[mode]]
         name = "b"
@@ -922,7 +1109,7 @@ pub(crate) mod tests {
 
         [[mode]]
         name = "insert"
-        whenNoBinding = 'insert'
+        whenNoBinding = 'insertCharacters'
 
         [[mode]]
         name = "a"
@@ -956,7 +1143,7 @@ pub(crate) mod tests {
         [[mode]]
         name = "a"
         default = true
-        whenNoBinding = 'insert'
+        whenNoBinding = 'insertCharacters'
 
         [[mode]]
         name = "b"
@@ -985,7 +1172,7 @@ pub(crate) mod tests {
         [[mode]]
         name = "a"
         default = true
-        whenNoBinding = 'insert'
+        whenNoBinding = 'insertCharacters'
 
         [[mode]]
         name = "b"
@@ -1029,7 +1216,7 @@ pub(crate) mod tests {
         [[mode]]
         name = "a"
         default = true
-        whenNoBinding = 'insert'
+        whenNoBinding = 'insertCharacters'
 
         [[mode]]
         name = "b"
@@ -1464,10 +1651,18 @@ pub(crate) mod tests {
         name = "normal"
         default = true
         nme = "beep"
-        whenNoBinding = 'insert'
+        whenNoBinding = 'insertCharacters'
 
         [[define.google]]
         bob = "x"
+
+        [[bind]]
+        key = "b"
+        command = "runCommands"
+
+        [[bind.args.commands]]
+        command = "a"
+        ags.value = "k"
         "#;
 
         let mut warnings = Vec::new();
@@ -1484,7 +1679,40 @@ pub(crate) mod tests {
         assert_eq!(unrecognized[3].range.start.line, 6);
         assert_eq!(unrecognized[4].range.start.line, 6);
         assert_eq!(unrecognized[5].range.start.line, 6);
-        assert_eq!(unrecognized.len(), 6);
+        assert_eq!(unrecognized[6].range.start.line, 33);
+
+        assert_eq!(unrecognized.len(), 7);
+    }
+
+    #[test]
+    fn raise_unknown_key_in_define() {
+        let data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.0.0"
+
+        [[define.command]]
+        id = "foo"
+        command = "foo"
+        ags = "bob"
+
+        [[define.bind]]
+        id = "beep"
+        key = "x"
+        cmd = "beep"
+        "#;
+
+        let mut warnings = Vec::new();
+        let _result = parse_bytes_helper(data.as_bytes(), &mut warnings);
+        let warnings: ErrorSet = warnings.into();
+        let report = warnings.report(data.as_bytes());
+        assert!(report[0].message.contains("The field `ags`"));
+        assert_eq!(report[0].range.start.line, 6);
+        assert_eq!(report[0].range.end.line, 6);
+        assert!(report[1].message.contains("The field `cmd`"));
+        assert_eq!(report[1].range.start.line, 11);
+        assert_eq!(report[1].range.end.line, 11);
     }
 
     #[test]
@@ -2069,7 +2297,7 @@ pub(crate) mod tests {
         [[mode]]
         name = "insert"
         default = true
-        whenNoBinding = 'insert'
+        whenNoBinding = 'insertCharacters'
 
         [[mode]]
         name = "syminsert"
@@ -2104,7 +2332,7 @@ pub(crate) mod tests {
         [[mode]]
         name = "insert"
         default = true
-        whenNoBinding = 'insert'
+        whenNoBinding = 'insertCharacters'
 
         [[mode]]
         name = "syminsert"
@@ -2136,7 +2364,7 @@ pub(crate) mod tests {
         [[mode]]
         name = "insert"
         default = true
-        whenNoBinding = 'insert'
+        whenNoBinding = 'insertCharacters'
 
         [[mode]]
         name = "syminsert"
@@ -2169,7 +2397,7 @@ pub(crate) mod tests {
         [[mode]]
         name = "insert"
         default = true
-        whenNoBinding = 'insert'
+        whenNoBinding = 'insertCharacters'
 
         [[mode]]
         name = "syminsert"
@@ -2198,7 +2426,7 @@ pub(crate) mod tests {
         [[mode]]
         name = "insert"
         default = true
-        whenNoBinding = 'insert'
+        whenNoBinding = 'insertCharacters'
 
         [[mode]]
         name = "syminsert"
@@ -2215,6 +2443,92 @@ pub(crate) mod tests {
         assert!(report[0].message.contains("`x`"));
         assert_eq!(report[0].range.start.line, 15);
         assert_eq!(report[0].range.end.line, 15);
+    }
+
+    #[test]
+    fn mode_generates_implicit_bindings() {
+        let data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.0.0"
+
+        [[mode]]
+        name = "normal"
+        default = true
+        whenNoBinding = 'ignoreCharacters'
+
+        [[mode]]
+        name = "insert"
+        whenNoBinding = 'insertCharacters'
+
+        [[mode]]
+        name = "special"
+        whenNoBinding.useMode = 'normal'
+
+        [[bind]]
+        foreach.key = ['a', 's', 'd', 'f']
+        key = "{{key}}"
+        command = "foo"
+        args.value = "action-{{key}}"
+
+        [[bind]]
+        foreach.key = ['j','k','l']
+        key = "{{key}}"
+        command = "special"
+        args.value = "action-{{key}}"
+        mode = 'special'
+        "#;
+
+        let mut warnings = Vec::new();
+        let result = parse_bytes_helper(data.as_bytes(), &mut warnings).unwrap();
+
+        // verify that all ignore bindings are present
+        let ignore_bindings = result.key_bind.iter().filter(|x| match x {
+            BindingOutput::Ignore { .. } => true,
+            _ => false,
+        });
+        assert_eq!(
+            ignore_bindings.clone().collect::<Vec<_>>().len(),
+            all_characters().len() * 2
+        );
+        assert_eq!(
+            ignore_bindings
+                .clone()
+                .filter(|x| match x {
+                    BindingOutput::Ignore { when: Some(w), .. } => {
+                        !w.contains("special") && !w.contains("insert")
+                    }
+                    _ => false,
+                })
+                .collect::<Vec<_>>()
+                .len(),
+            all_characters().len()
+        );
+        assert_eq!(
+            ignore_bindings
+                .clone()
+                .filter(|x| match x {
+                    BindingOutput::Ignore { when: Some(w), .. } => w.contains("special"),
+                    _ => false,
+                })
+                .collect::<Vec<_>>()
+                .len(),
+            all_characters().len()
+        );
+
+        // verify that fallback bindings are present
+        let normal_fallback = result.key_bind.iter().filter(|x| match x {
+            BindingOutput::Do {
+                key, when: Some(w), ..
+            } => {
+                !w.contains("special")
+                    && !w.contains("insert")
+                    && (key == "j" || key == "k" || key == "l")
+            }
+            _ => false,
+        });
+        assert_eq!(normal_fallback.collect::<Vec<_>>().len(), 3);
     }
 
     // TODO: write a test for required field `key` and ensure the span
