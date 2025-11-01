@@ -17,7 +17,9 @@
         "Keymaps"
     ],
     "activationEvents": [
-        "*"
+        "onCommand:master-key.do",
+        "onCommand:master-key.prefix",
+        "onCommand:master-key.ignore"
     ],
     "main": "./out/node/index.js",
     "browser": "./out/browser/index.js",

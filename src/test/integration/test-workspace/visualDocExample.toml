@@ -1,3 +1,5 @@
+#:master-keybindings
+
 # # Test Documentation
 #- IGNORED COMMENT
 [header]
@@ -26,7 +28,7 @@ description = "more rightward keys"
 name = "normal mode"
 key = "escape"
 command = "master-key.enterNormal"
-prefixes = "{{all_prefixes}}"
+prefixes.any = true
 hideInPalette = true
 
 [[default]]

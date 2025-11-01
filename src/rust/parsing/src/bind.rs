@@ -783,10 +783,11 @@ lazy_static! {
     static ref EDITOR_TEXT_FOCUS: Regex = Regex::new(r"\beditorTextFocus\b").unwrap();
 }
 
-#[wasm_bindgen]
 impl Binding {
-    pub fn repeat(&mut self, scope: &mut Scope) -> ResultVec<i32> {
-        return scope.expand(&self.repeat)?.resolve("`repeat`", scope);
+    pub fn repeat(&self, scope: &mut Scope) -> ResultVec<i32> {
+        return scope
+            .expand(&self.repeat.clone())?
+            .resolve("`repeat`", scope);
     }
 
     pub fn commands(&self, scope: &mut Scope) -> ResultVec<Vec<Command>> {
@@ -914,7 +915,7 @@ impl Binding {
             repeat: resolve!(input, repeat, scope)?,
             tags: resolve!(input, tags, scope)?,
             doc: match input.doc {
-                Some(x) => BindingDoc::new(x, scope, warnings)?,
+                Some(x) => BindingDoc::new(x, scope)?,
                 Option::None => BindingDoc::default(),
             },
         };
@@ -1018,11 +1019,7 @@ pub struct CombinedBindingDoc {
 
 #[wasm_bindgen]
 impl BindingDoc {
-    pub(crate) fn new(
-        input: BindingDocInput,
-        scope: &mut Scope,
-        warnings: &mut Vec<ParseError>,
-    ) -> ResultVec<Self> {
+    pub(crate) fn new(input: BindingDocInput, scope: &mut Scope) -> ResultVec<Self> {
         // kind validation
         let kind_span = input.kind.as_ref().map(|x| x.span());
         let kind: Option<String> = resolve!(input, kind, scope)?;
@@ -1038,7 +1035,7 @@ impl BindingDoc {
             hideInPalette: resolve!(input, hideInPalette, scope)?,
             hideInDocs: resolve!(input, hideInDocs, scope)?,
             combined: match input.combined {
-                Some(x) => Some(CombinedBindingDoc::new(x, scope, warnings)?),
+                Some(x) => Some(CombinedBindingDoc::new(x, scope)?),
                 Option::None => None,
             },
 
@@ -1049,11 +1046,7 @@ impl BindingDoc {
 
 #[wasm_bindgen]
 impl CombinedBindingDoc {
-    pub(crate) fn new(
-        input: CombinedBindingDocInput,
-        scope: &mut Scope,
-        warnings: &mut Vec<ParseError>,
-    ) -> ResultVec<Self> {
+    pub(crate) fn new(input: CombinedBindingDocInput, scope: &mut Scope) -> ResultVec<Self> {
         return Ok(CombinedBindingDoc {
             name: resolve!(input, name, scope)?,
             key: resolve!(input, key, scope)?,
@@ -1192,13 +1185,13 @@ pub struct BindingOutputArgs {
 pub struct PrefixArgs {
     // this uniquely identifies the key sequence used pressed for this binding
     pub(crate) key_id: i32,
-    // human readable field displaying the prefix (there are other arguments to
-    // `master-key.prefix` but they are not used by automatically generated bindings, which
-    // is what this type is for)
+    // human readable field displaying the prefix
     pub(crate) prefix: String,
     // these fields help us track and order binding outputs, we don't need them serialized
     #[serde(skip)]
     pub(crate) priority: f64,
+    // NOTE: there are other arguments to `master-key.prefix` but they are not used by
+    // automatically generated bindings, which is what this type is for
 }
 
 // BindingId uniquely identifies a the triggers the distinguish different bindings
@@ -1347,6 +1340,8 @@ impl Binding {
             };
             if mode != &scope.default_mode {
                 when_with_mode.push(format!("master-key.mode == '{mode}'"));
+            } else {
+                when_with_mode.push(format!("!master-key.mode || master-key.mode == '{mode}'"))
             }
             let prefixes = match &self.prefixes {
                 Prefix::AnyOf(x) => x,
@@ -1431,10 +1426,17 @@ impl Binding {
             let (prefix_code, is_new_code) =
                 codes.key_code(&prefix, &mode, &self.when, span, true)?;
             when = when_with_mode.clone();
-            when.push(format!("master-key.prefixCode == {old_prefix_code}"));
+            if old_prefix_code == 0 {
+                // we check for a falsey rather than a 0 value, so that the keybindings
+                // without a prefix trigger when the extension isn't activated
+                when.push(String::from("!master-key.prefixCode"));
+            } else {
+                when.push(format!("master-key.prefixCode == {old_prefix_code}"));
+            }
             if is_new_code {
+                let key = prefix.last().unwrap().clone();
                 result.push(BindingOutput::Prefix {
-                    key: prefix.last().unwrap().clone(),
+                    key: key.clone(),
                     when: join_when_vec(&when),
                     args: PrefixArgs {
                         priority: 0.0,
@@ -1450,15 +1452,22 @@ impl Binding {
         // generate keybindings.json entry for this Binding's actual
         // command
         let mut when = when_with_mode.clone();
-        when.push(format!("master-key.prefixCode == {old_prefix_code}"));
+        if old_prefix_code == 0 {
+            // we check for a falsey rather than a 0 value, so that the keybindings
+            // without a prefix trigger when the extension isn't activated
+            when.push(String::from("!master-key.prefixCode"));
+        } else {
+            when.push(format!("master-key.prefixCode == {old_prefix_code}"));
+        }
 
         // we can unwrap here because non-implicit bindings always
         // throw an error if they already exist
         let (code, _) =
             codes.key_code(&prefixes.last().unwrap(), &mode, &self.when, span, false)?;
 
+        let key = self.key.last().unwrap().clone();
         result.push(BindingOutput::Do {
-            key: self.key.last().unwrap().clone(),
+            key: key.clone(),
             when: join_when_vec(&when),
             args: BindingOutputArgs {
                 command_id,
@@ -1578,9 +1587,8 @@ mod tests {
         let hideInPalette: bool = resolve!(doc, hideInPalette, &mut scope).unwrap();
         assert_eq!(hideInPalette, false);
 
-        let mut _warnings = Vec::new();
         let combined: CombinedBindingDoc =
-            CombinedBindingDoc::new(doc.combined.unwrap(), &mut scope, &mut _warnings).unwrap();
+            CombinedBindingDoc::new(doc.combined.unwrap(), &mut scope).unwrap();
         assert_eq!(combined.name, "Up/down");
         assert_eq!(combined.key, "A/B");
         assert_eq!(combined.description, "bla bla bla");

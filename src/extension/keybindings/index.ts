@@ -500,8 +500,8 @@ export class KeyFileData {
         if (!this._bindings) {
             const data = await this.data();
             // DEBUG:
-            const decoder = new TextDecoder();
-            console.log('File contents: \n' + decoder.decode(data));
+            // const decoder = new TextDecoder();
+            // console.log('File contents: \n' + decoder.decode(data));
             // END_DEBUG
             const result = parse_keybinding_bytes(data);
             return result;

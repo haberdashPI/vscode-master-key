@@ -983,7 +983,6 @@ priority = 1
 doc.name = "doc start"
 doc.description = "select to start of document"
 command = "cursorTopSelect"
-when = "master-key.count <= 1"
 
 [[bind]]
 default = "{{bind.edit_motion_obj}}"
@@ -1577,7 +1576,6 @@ doc.description = """Without a count: change from current char to end of line. W
 change the previous `count` lines.
 """
 mode = "normal"
-when = "master-key.count <= 1"
 command = "runCommands"
 args.commands = [
     "selection-utilities.shrinkToActive",
@@ -1797,7 +1795,6 @@ default = "{{bind.edit_action}}"
 key = "shift+y"
 doc.name = "copy (eol/up)"
 doc.description = "without a count: copy to end of line; with a count: copy this and the previous N lines"
-when = "master-key.count <= 1"
 command = "runCommands"
 args.commands = [
     "selection-utilities.shrinkToActive",
@@ -1837,7 +1834,6 @@ command = "runCommands"
 default = "{{bind.edit_action}}"
 key = "shift+,"
 doc.name = "deindent"
-when = "master-key.count < 1"
 doc.description = "De-indent lines"
 command = "editor.action.outdentLines"
 
@@ -2109,7 +2105,6 @@ default = "{{bind.edit_action}}"
 key = "space f"
 doc.name = "format"
 doc.combined.name = "format / format document"
-when = "master-key.count < 1"
 command = "editor.action.formatSelection"
 
 [[bind]]
@@ -2181,7 +2176,6 @@ command = "bracketeer.swapQuotes"
 default = "{{bind.edit_action}}"
 key = "space /"
 doc.combined.name = "(block) comment"
-when = "master-key.count < 1"
 command = "editor.action.commentLine"
 
 [[bind]]
@@ -2199,7 +2193,6 @@ command = "runCommands"
 [[bind]]
 default = "{{bind.edit_action}}"
 key = "space shift+/"
-when = "master-key.count < 1"
 doc.combined.name = "(block) comment"
 command = "editor.action.blockComment"
 

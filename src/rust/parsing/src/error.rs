@@ -321,23 +321,11 @@ impl<T> ErrorContext<T> for ResultVec<T> {
 // errors are reported. It has to be implemented for `derive(Error)` to work
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> std::result::Result<(), fmt::Error> {
-        for context in &self.contexts {
-            match context {
-                Context::Message(str) => {
-                    write!(f, "{}\n", str)?;
-                }
-                Context::Range(range) => {
-                    write!(f, "byte range {:?}\n", range)?;
-                }
-                Context::ExpRange(range) => {
-                    write!(f, "byte range {:?}\n", range)?;
-                }
-                Context::RefRange(range) => {
-                    write!(f, "and byte range {:?}\n", range)?;
-                }
-            }
+        if let Some(report) = self.report_helper(None) {
+            write!(f, "{}", report.message)?;
+        } else {
+            write!(f, "[no error]")?;
         }
-        self.error.fmt(f)?;
         return Ok(());
     }
 }
@@ -380,10 +368,16 @@ lazy_static! {
 
 #[wasm_bindgen]
 impl ParseError {
+    pub fn report_string(&self) -> String {
+        return format!("{self}");
+    }
     /// `report` is how we generate legible annotations
     /// of *.mk.toml file errors in typescript
     pub fn report(&self, content: &[u8]) -> Option<ErrorReport> {
-        let offsets: StringOffsets = StringOffsets::from_bytes(content);
+        return self.report_helper(Some(content));
+    }
+    fn report_helper(&self, content: Option<&[u8]>) -> Option<ErrorReport> {
+        let offsets: Option<StringOffsets> = content.map(|c| StringOffsets::from_bytes(c));
         let mut message_buf = String::new();
         let mut range = UNKNOWN_RANGE;
         let mut ref_range = UNKNOWN_RANGE;
@@ -392,7 +386,9 @@ impl ParseError {
         match &self.error {
             RawError::TomlParsing(toml) => {
                 message_buf.push_str(toml.message());
-                char_line_range = toml.span().map(|r| range_to_pos(&r, &offsets));
+                if let Some(off) = &offsets {
+                    char_line_range = toml.span().map(|r| range_to_pos(&r, &off));
+                }
             }
             RawError::ExpressionParsing(rhai) => {
                 rhai_pos = Some(rhai.position());
@@ -411,28 +407,32 @@ impl ParseError {
             match context {
                 Context::Message(str) => message_buf.push_str(str),
                 Context::Range(new_range) => {
-                    // usually the old range is the one we want to use *but* if the new
-                    // range is strictly more specific than the new one, we use the new
-                    // range
-                    if range.contains(&new_range.start) && range.contains(&new_range.end) {
-                        range = new_range.clone();
-                        char_line_range = Some(range_to_pos(&new_range, &offsets));
+                    if let Some(off) = &offsets {
+                        // usually the old range is the one we want to use *but* if the new
+                        // range is strictly more specific than the new one, we use the new
+                        // range
+                        if range.contains(&new_range.start) && range.contains(&new_range.end) {
+                            range = new_range.clone();
+                            char_line_range = Some(range_to_pos(&new_range, &off));
+                        }
                     }
                 }
                 Context::ExpRange(new_range) => {
-                    // a range reported via ExpRange is one that specifically matches the
-                    // span of an expression, and so we know its safe to merge it with the
-                    // position reported by a rhai position
-                    range = new_range.clone();
-                    let new_char_line_range = range_to_pos(&new_range, &offsets);
-                    if let Some(pos) = rhai_pos {
-                        char_line_range = Some(resolve_rhai_pos_from_expression_range(
-                            pos,
-                            new_char_line_range,
-                        ));
-                        rhai_pos = None;
-                    } else {
-                        char_line_range = Some(new_char_line_range);
+                    if let Some(off) = &offsets {
+                        // a range reported via ExpRange is one that specifically matches the
+                        // span of an expression, and so we know its safe to merge it with the
+                        // position reported by a rhai position
+                        range = new_range.clone();
+                        let new_char_line_range = range_to_pos(&new_range, &off);
+                        if let Some(pos) = rhai_pos {
+                            char_line_range = Some(resolve_rhai_pos_from_expression_range(
+                                pos,
+                                new_char_line_range,
+                            ));
+                            rhai_pos = None;
+                        } else {
+                            char_line_range = Some(new_char_line_range);
+                        }
                     }
                 }
                 Context::RefRange(new_range) => {
@@ -442,14 +442,20 @@ impl ParseError {
                 }
             };
         }
-        if let Some(cl_range) = char_line_range {
+        if let (Some(cl_range), Some(off)) = (char_line_range, &offsets) {
             if ref_range != UNKNOWN_RANGE {
-                let pos = range_to_pos(&ref_range, &offsets);
+                let pos = range_to_pos(&ref_range, &off);
                 message_buf.push_str(&format!("{pos}"));
             };
             return Some(ErrorReport {
                 message: message_buf,
                 range: cl_range,
+                level: self.level.clone(),
+            });
+        } else if offsets.is_none() {
+            return Some(ErrorReport {
+                message: message_buf,
+                range: CharRange::default(),
                 level: self.level.clone(),
             });
         } else {

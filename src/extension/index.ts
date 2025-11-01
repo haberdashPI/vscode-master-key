@@ -12,6 +12,8 @@ export async function activate(context: vscode.ExtensionContext) {
     await state.activate(context);
     await commands.activate(context);
     await status.activate(context);
+
+    await config.updateBindings();
 }
 
 // This method is called when your extension is deactivated

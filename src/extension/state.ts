@@ -2,8 +2,8 @@ import * as vscode from 'vscode';
 import z from 'zod';
 import { validateInput } from './utils';
 import { Map, List, RecordOf, Record as IRecord } from 'immutable';
-import { onChangeBindings } from './keybindings/config';
-import { KeyFileResult } from '../rust/parsing/lib/parsing';
+import { bindings, onChangeBindings } from './keybindings/config';
+import { KeyFileResult, ParseError } from '../rust/parsing/lib/parsing';
 
 export type Listener = (states: Map<string, unknown>) => boolean;
 
@@ -75,8 +75,22 @@ export class CommandState {
     }
 
     private setHelper_(key: string, opt: ISetOptions, values: Map<string, unknown>) {
+        // console.log(`key: ${key}, values: ${JSON.stringify(values, null, 4)}`);
         let listeners = this.record.options.get(key, StateOptions()).listeners;
         listeners = listeners.filter(listener => listener(values));
+        for (const key of values.keys()) {
+            const value = values.get(key);
+            try {
+                bindings.set_value(key, value);
+            } catch (e) {
+                if ((<ParseError>e).report_string) {
+                    const msg = (<ParseError>e).report_string();
+                    vscode.window.showErrorMessage(
+                        `While setting '${key}' to '${value}' ${msg}.`,
+                    );
+                }
+            }
+        }
 
         const options = this.record.options.set(
             key,
@@ -164,9 +178,12 @@ export class CommandState {
 
         const record = this.record.set('options', options).set('values', values);
         if (record.wasAltered()) {
+            syncStateWithBindings(this);
             return this;
         } else {
-            return new CommandState(record);
+            const result = new CommandState(record);
+            syncStateWithBindings(result);
+            return result;
         }
     }
 
@@ -278,7 +295,14 @@ function addDefinitions(
 ) {
     return state.withMutations((state) => {
         state.set('val', { public: true }, definitions);
+        syncStateWithBindings(state);
     });
+}
+
+function syncStateWithBindings(state: CommandState) {
+    for (const [key, value] of Object.entries(state.values)) {
+        bindings.set_value(key, value);
+    }
 }
 
 async function updateDefinitions(bindings: KeyFileResult) {
@@ -349,7 +373,11 @@ export async function activate(context: vscode.ExtensionContext) {
                 let firstSelectionOrWord: string;
                 if (e.selections[0].isEmpty) {
                     const wordRange = doc.getWordRangeAtPosition(e.selections[0].start);
-                    firstSelectionOrWord = doc.getText(wordRange);
+                    if (wordRange) {
+                        firstSelectionOrWord = doc.getText(wordRange);
+                    } else {
+                        firstSelectionOrWord = '';
+                    }
                 } else {
                     firstSelectionOrWord = doc.getText(e.selections[0]);
                 }

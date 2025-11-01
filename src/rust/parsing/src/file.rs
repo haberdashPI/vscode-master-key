@@ -120,6 +120,7 @@
 #[allow(unused_imports)]
 use log::{error, info};
 
+use crate::bind::command::CommandOutput;
 use crate::bind::{
     Binding, BindingCodes, BindingInput, BindingOutput, KeyId, LegacyBindingInput, UNKNOWN_RANGE,
 };
@@ -399,6 +400,7 @@ impl KeyFile {
 pub struct KeyFileResult {
     file: Option<KeyFile>,
     errors: Option<Vec<ErrorReport>>,
+    scope: Scope,
 }
 
 #[wasm_bindgen]
@@ -475,6 +477,28 @@ impl KeyFileResult {
         };
     }
 
+    pub fn resolve_commands(&mut self, id: i32) -> CommandOutput {
+        if id == -1 {
+            return CommandOutput::noop();
+        } else {
+            if let Some(KeyFile { bind, .. }) = &self.file {
+                if id < 0 || id as usize >= bind.len() {
+                    return CommandOutput::noop();
+                } else {
+                    let binding = &bind[id as usize];
+                    info!("Binding: {binding:#?}");
+                    return CommandOutput::new(id, &binding, &mut self.scope);
+                }
+            } else {
+                return CommandOutput::noop();
+            }
+        }
+    }
+
+    pub fn set_value(&mut self, name: &str, value: JsValue) -> Result<()> {
+        return self.scope.set(name, value);
+    }
+
     pub fn values(&self) -> std::result::Result<JsValue, JsValue> {
         match &self.file {
             Some(KeyFile { define, .. }) => {
@@ -503,9 +527,11 @@ lazy_static! {
 #[wasm_bindgen]
 pub fn parse_keybinding_bytes(file_content: Box<[u8]>) -> KeyFileResult {
     let mut warnings = Vec::new();
-    let result = parse_bytes_helper(&file_content, &mut warnings);
+    let mut scope = Scope::new();
+    let result = parse_bytes_helper(&file_content, &mut warnings, &mut scope);
     return match result {
         Ok(result) => KeyFileResult {
+            scope,
             file: Some(result),
             errors: Some(
                 warnings
@@ -517,6 +543,7 @@ pub fn parse_keybinding_bytes(file_content: Box<[u8]>) -> KeyFileResult {
             ),
         },
         Err(err) => KeyFileResult {
+            scope,
             file: None,
             errors: Some(
                 err.errors
@@ -532,7 +559,11 @@ pub fn parse_keybinding_bytes(file_content: Box<[u8]>) -> KeyFileResult {
 }
 // LCOV_EXCL_STOP
 
-fn parse_bytes_helper(file_content: &[u8], warnings: &mut Vec<ParseError>) -> ResultVec<KeyFile> {
+fn parse_bytes_helper(
+    file_content: &[u8],
+    warnings: &mut Vec<ParseError>,
+    scope: &mut Scope,
+) -> ResultVec<KeyFile> {
     // ensure there's a directive
     // we know that the content was converted from a string on the typescript side
     // so we're cool with an unchecked conversion
@@ -566,8 +597,7 @@ fn parse_bytes_helper(file_content: &[u8], warnings: &mut Vec<ParseError>) -> Re
 
     let parsed = toml::from_slice::<KeyFileInput>(file_content)?;
 
-    let mut scope = Scope::new(); // TODO: do something with this scope?? (don't we need this state somewhere?)
-    let result = KeyFile::new(parsed, &mut scope, warnings);
+    let result = KeyFile::new(parsed, scope, warnings);
     warnings.append(&mut identify_legacy_warnings(file_content));
 
     return result;
@@ -628,6 +658,7 @@ pub(crate) mod tests {
     use crate::expression::value::Expression;
     use crate::expression::value::Value;
     use crate::mode::WhenNoBinding;
+    use rhai::Dynamic;
     use smallvec::SmallVec;
     use std::collections::HashMap;
     use test_log::test;
@@ -670,7 +701,8 @@ pub(crate) mod tests {
         "#;
 
         let mut warnings = Vec::new();
-        let result = parse_bytes_helper(data.as_bytes(), &mut warnings).unwrap();
+        let mut scope = Scope::new();
+        let result = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope).unwrap();
 
         assert_eq!(result.bind[0].key[0], "l");
         assert_eq!(result.bind[0].commands[0].command, "cursorRight");
@@ -698,7 +730,8 @@ pub(crate) mod tests {
         "#;
 
         let mut warnings = Vec::new();
-        let result = parse_bytes_helper(data.as_bytes(), &mut warnings);
+        let mut scope = Scope::new();
+        let result = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope);
         assert_eq!(result.unwrap().bind.len(), 2)
     }
 
@@ -714,7 +747,8 @@ pub(crate) mod tests {
         "#;
 
         let mut warnings = Vec::new();
-        let result = parse_bytes_helper(data.as_bytes(), &mut warnings).unwrap_err();
+        let mut scope = Scope::new();
+        let result = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope).unwrap_err();
         let report = result.report(data.as_bytes());
         assert!(report[0].message.contains("expected `]]`"));
         assert_eq!(report[0].range.start.line, 6);
@@ -757,7 +791,8 @@ pub(crate) mod tests {
         "#;
 
         let mut warnings = Vec::new();
-        let err = parse_bytes_helper(data.as_bytes(), &mut warnings).unwrap_err();
+        let mut scope = Scope::new();
+        let err = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope).unwrap_err();
         let report = err.report(data.as_bytes());
         assert!(report[0].message.contains("directive"));
         assert_eq!(report[0].range.start.line, 0);
@@ -1028,6 +1063,10 @@ pub(crate) mod tests {
         [[mode]]
         name = "b"
         default = true
+
+        [[bind]]
+        key = "a"
+        command = "foo"
         "#;
 
         let mut scope = Scope::new();
@@ -1055,6 +1094,10 @@ pub(crate) mod tests {
 
         [[mode]]
         name = "b"
+
+        [[bind]]
+        key = "a"
+        command = "foo"
         "#;
 
         let mut scope = Scope::new();
@@ -1086,6 +1129,10 @@ pub(crate) mod tests {
 
         [[mode]]
         name = "a"
+
+        [[bind]]
+        key = "a"
+        command = "foo"
         "#;
 
         let mut scope = Scope::new();
@@ -1666,7 +1713,8 @@ pub(crate) mod tests {
         "#;
 
         let mut warnings = Vec::new();
-        let _result = parse_bytes_helper(data.as_bytes(), &mut warnings);
+        let mut scope = Scope::new();
+        let _result = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope);
         let warnings: ErrorSet = warnings.into();
         let report = warnings.report(data.as_bytes());
         let unrecognized: Vec<_> = report
@@ -1704,7 +1752,8 @@ pub(crate) mod tests {
         "#;
 
         let mut warnings = Vec::new();
-        let _result = parse_bytes_helper(data.as_bytes(), &mut warnings);
+        let mut scope = Scope::new();
+        let _result = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope);
         let warnings: ErrorSet = warnings.into();
         let report = warnings.report(data.as_bytes());
         assert!(report[0].message.contains("The field `ags`"));
@@ -2117,7 +2166,8 @@ pub(crate) mod tests {
         "#;
 
         let mut warnings = Vec::new();
-        let result = parse_bytes_helper(data.as_bytes(), &mut warnings);
+        let mut scope = Scope::new();
+        let result = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope);
         let report = result.unwrap_err().report(data.as_bytes());
         assert!(report[0].message.contains("`name` must be unique"));
         assert_eq!(report[0].range.start.line, 10);
@@ -2139,7 +2189,8 @@ pub(crate) mod tests {
         "#;
 
         let mut warnings = Vec::new();
-        let result = parse_bytes_helper(data.as_bytes(), &mut warnings);
+        let mut scope = Scope::new();
+        let result = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope);
         let report = result.unwrap_err().report(data.as_bytes());
         assert!(report[0].message.contains("`args`"));
         assert_eq!(report[0].range.start.line, 6);
@@ -2161,7 +2212,8 @@ pub(crate) mod tests {
         "#;
 
         let mut warnings = Vec::new();
-        let result = parse_bytes_helper(data.as_bytes(), &mut warnings);
+        let mut scope = Scope::new();
+        let result = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope);
         let report = result.unwrap_err().report(data.as_bytes());
         assert!(report[0].message.contains("`args.commands`"));
         assert_eq!(report[0].range.start.line, 9);
@@ -2185,7 +2237,8 @@ pub(crate) mod tests {
         "#;
 
         let mut warnings = Vec::new();
-        let result = parse_bytes_helper(data.as_bytes(), &mut warnings);
+        let mut scope = Scope::new();
+        let result = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope);
         let report = result.unwrap_err().report(data.as_bytes());
         assert!(report[0].message.contains("`command`"));
         assert_eq!(report[0].range.start.line, 11);
@@ -2211,7 +2264,8 @@ pub(crate) mod tests {
         "#;
 
         let mut warnings = Vec::new();
-        let result = parse_bytes_helper(data.as_bytes(), &mut warnings);
+        let mut scope = Scope::new();
+        let result = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope);
         let report = result.unwrap_err().report(data.as_bytes());
         assert!(report[0].message.contains("`skipWhen`"));
         assert_eq!(report[0].range.start.line, 12);
@@ -2236,7 +2290,8 @@ pub(crate) mod tests {
         "#;
 
         let mut warnings = Vec::new();
-        let result = parse_bytes_helper(data.as_bytes(), &mut warnings);
+        let mut scope = Scope::new();
+        let result = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope);
         let report = result.unwrap_err().report(data.as_bytes());
         assert!(report[0].message.contains("`args`"));
         assert_eq!(report[0].range.start.line, 12);
@@ -2258,7 +2313,8 @@ pub(crate) mod tests {
         "#;
 
         let mut warnings = Vec::new();
-        let result = parse_bytes_helper(data.as_bytes(), &mut warnings);
+        let mut scope = Scope::new();
+        let result = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope);
         let report = result.unwrap_err().report(data.as_bytes());
         assert!(report[0].message.contains("`commands`"));
         assert_eq!(report[0].range.start.line, 9);
@@ -2279,7 +2335,8 @@ pub(crate) mod tests {
         "#;
 
         let mut warnings = Vec::new();
-        let result = parse_bytes_helper(data.as_bytes(), &mut warnings);
+        let mut scope = Scope::new();
+        let result = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope);
         let report = result.unwrap_err().report(data.as_bytes());
         assert!(report[0].message.contains("`whenNoBinding='insert'`"));
         assert_eq!(report[0].range.start.line, 6);
@@ -2312,7 +2369,8 @@ pub(crate) mod tests {
         "#;
 
         let mut warnings = Vec::new();
-        let result = parse_bytes_helper(data.as_bytes(), &mut warnings).unwrap();
+        let mut scope = Scope::new();
+        let result = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope).unwrap();
         let run_commands = result.mode.map["syminsert"].whenNoBinding.clone();
         if let WhenNoBinding::Run(commands) = run_commands {
             assert_eq!(commands.len(), 1);
@@ -2346,7 +2404,8 @@ pub(crate) mod tests {
         "#;
 
         let mut warnings = Vec::new();
-        let err = parse_bytes_helper(data.as_bytes(), &mut warnings).unwrap_err();
+        let mut scope = Scope::new();
+        let err = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope).unwrap_err();
         let report = err.report(data.as_bytes());
         assert!(report[0].message.contains("missing field"));
         assert_eq!(report[0].range.start.line, 16);
@@ -2378,7 +2437,8 @@ pub(crate) mod tests {
         "#;
 
         let mut warnings = Vec::new();
-        let err = parse_bytes_helper(data.as_bytes(), &mut warnings).unwrap_err();
+        let mut scope = Scope::new();
+        let err = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope).unwrap_err();
         let report = err.report(data.as_bytes());
 
         assert!(report[0].message.contains("`rub`"));
@@ -2407,7 +2467,8 @@ pub(crate) mod tests {
         "#;
 
         let mut warnings = Vec::new();
-        let err = parse_bytes_helper(data.as_bytes(), &mut warnings).unwrap_err();
+        let mut scope = Scope::new();
+        let err = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope).unwrap_err();
         let report = err.report(data.as_bytes());
 
         assert!(report[0].message.contains("insrt"));
@@ -2437,7 +2498,8 @@ pub(crate) mod tests {
         "#;
 
         let mut warnings = Vec::new();
-        let err = parse_bytes_helper(data.as_bytes(), &mut warnings).unwrap_err();
+        let mut scope = Scope::new();
+        let err = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope).unwrap_err();
         let report = err.report(data.as_bytes());
 
         assert!(report[0].message.contains("`x`"));
@@ -2481,7 +2543,8 @@ pub(crate) mod tests {
         "#;
 
         let mut warnings = Vec::new();
-        let result = parse_bytes_helper(data.as_bytes(), &mut warnings).unwrap();
+        let mut scope = Scope::new();
+        let result = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope).unwrap();
 
         // verify that all ignore bindings are present
         let ignore_bindings = result.key_bind.iter().filter(|x| match x {
@@ -2530,6 +2593,198 @@ pub(crate) mod tests {
         });
         assert_eq!(normal_fallback.collect::<Vec<_>>().len(), 3);
     }
+
+    #[test]
+    fn indexing_binding_resolution() {
+        let data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.0.0"
+
+        [[mode]]
+        name = "insert"
+        whenNoBinding = "insertCharacters"
+
+        [[mode]]
+        name = "normal"
+        default = true
+        whenNoBinding = "ignoreCharacters"
+
+        [[bind]]
+        key = "h"
+        command = "left"
+        "#;
+
+        let mut warnings = Vec::new();
+        let mut scope = Scope::new();
+        let result = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope).unwrap();
+        info!("result: {result:#?}");
+        if let BindingOutput::Do {
+            args: BindingOutputArgs { command_id, .. },
+            ..
+        } = result.key_bind.last().unwrap()
+        {
+            assert_eq!(command_id, &0);
+        } else {
+            assert!(false);
+        }
+    }
+
+    // #[test]
+    // fn playground_test_for_simple_motions() {
+    //     let data = r#"
+    //     #:master-keybindings
+
+    //     [header]
+    //     version = "2.0.0"
+    //     name = "Simple Motions"
+
+    //     [[mode]]
+    //     name = "insert"
+    //     whenNoBinding = "insertCharacters"
+
+    //     [[mode]]
+    //     name = "normal"
+    //     default = true
+    //     highlight = "Highlight"
+    //     cursorShape = "Block"
+    //     whenNoBinding = "ignoreCharacters"
+
+    //     [[bind]]
+    //     doc.name = "normal mode"
+    //     key = "escape"
+    //     command = "master-key.enterNormal"
+    //     prefixes.any = true
+
+    //     [[define.bind]]
+    //     id = "motion"
+    //     command = "cursorMove"
+    //     mode = "normal"
+    //     args.value = "{{count}}"
+
+    //     [[bind]]
+    //     default = "{{bind.motion}}"
+    //     doc.name = "left"
+    //     key = "h"
+    //     args.to = "left"
+
+    //     [[bind]]
+    //     default = "{{bind.motion}}"
+    //     doc.name = "right"
+    //     key = "l"
+    //     args.to = "right"
+
+    //     [[bind]]
+    //     default = "{{bind.motion}}"
+    //     doc.name = "down"
+    //     key = "j"
+    //     args.to = "down"
+
+    //     [[bind]]
+    //     default = "{{bind.motion}}"
+    //     doc.name = "up"
+    //     key = "k"
+    //     args.to = "up"
+
+    //     [[bind]]
+    //     doc.name = "insert mode"
+    //     key = "i"
+    //     command = "master-key.enterInsert"
+    //     mode = "normal"
+    //     when = "editorTextFocus"
+
+    //     [[bind]]
+    //     doc.name = "ignore"
+    //     key = "u"
+    //     command = "master-key.ignore"
+    //     mode = "normal"
+    //     when = "editorTextFocus"
+
+    //     [[bind]]
+    //     doc.name = "delete"
+    //     key = "d"
+    //     mode = "normal"
+    //     command = "runCommands"
+    //     when = "editorTextFocus"
+
+    //     [[bind.args.commands]]
+    //     command = "master-key.prefix"
+    //     args.cursor = "Underline"
+
+    //     [[bind.args.commands]]
+    //     command = "master-key.storeCommand"
+    //     args.command = "deleteRight"
+    //     args.register = "operation"
+
+    //     [[bind]]
+    //     doc.name = "word operation"
+    //     key = "w"
+    //     mode = "normal"
+    //     #- to qualify from word *motion*
+    //     prefixes.anyOf = ["d"]
+    //     command = "runCommands"
+    //     when = "editorTextFocus"
+
+    //     [[bind.args.commands]]
+    //     command = "cursorWordEndRightSelect"
+
+    //     [[bind.args.commands]]
+    //     command = "master-key.executeStoredCommand"
+    //     args.register = "operation"
+
+    //     [[bind]]
+    //     foreach.num = ["{{keys(`[0-3]`)}}"]
+    //     key = "{{num}}"
+    //     mode = "normal"
+    //     doc.name = "count {{num}}"
+    //     command = "master-key.updateCount"
+    //     args.value = "{{num}}"
+    //     finalKey = false
+    //     when = "editorTextFocus"
+
+    //     [[bind]]
+    //     key = "shift+g"
+    //     mode = "normal"
+    //     doc.name = "normal-left mode"
+    //     command = "master-key.setMode"
+    //     args.value = "normal-left"
+    //     when = "editorTextFocus"
+
+    //     [[mode]]
+    //     name = "normal-left"
+    //     whenNoBinding.useMode = "normal"
+
+    //     [[bind]]
+    //     default = "{{bind.motion}}"
+    //     key = "shift+h"
+    //     mode = "normal-left"
+    //     doc.name = "left"
+    //     when = "editorTextFocus"
+    //     command = "cursorMove"
+    //     args.to = "left"
+
+    //     [[bind]]
+    //     default = "{{bind.motion}}"
+    //     doc.name = "double left"
+    //     mode = "normal-left"
+    //     key = "shift+l"
+    //     args.to = "left"
+    //     args.value = "{{2}}"
+    //     "#;
+
+    //     let mut warnings = Vec::new();
+    //     let mut scope = Scope::new();
+    //     let file = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope).unwrap();
+    //     scope.state.set_or_push("count", Dynamic::from_float(1.0));
+    //     let mut result = KeyFileResult {
+    //         scope,
+    //         file: Some(file),
+    //         errors: None,
+    //     };
+    //     let command = result.resolve_commands(1);
+    //     info!("command: {}", command.commands[0].command);
+    // }
 
     // TODO: write a test for required field `key` and ensure the span
     // is narrowed to the appropriate `[[bind]]` element; also should only error once

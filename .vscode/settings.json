@@ -35,4 +35,5 @@
         "src"
     ],
     "eslint.useESLintClass": false,
+    "git.enabled": false,
 }

@@ -10,7 +10,7 @@ let configState: vscode.Memento | undefined = undefined;
 export type ConfigListener = (x: KeyFileResult) => Promise<void>;
 const listeners: ConfigListener[] = [];
 
-async function updateBindings(event?: vscode.ConfigurationChangeEvent) {
+export async function updateBindings(event?: vscode.ConfigurationChangeEvent) {
     if (!event || event.affectsConfiguration('master-key.storage')) {
         useBindings();
     }
@@ -111,8 +111,17 @@ export async function createBindings(
         storage.data = compressed;
         storage.file = newBindings.uri.toString();
         config.update('storage', storage, vscode.ConfigurationTarget.Global);
+
+        bindings = await newBindings.bindings();
+        for (const fn of listeners || []) {
+            await fn(bindings);
+        }
     } else {
         config.update('storage', {}, vscode.ConfigurationTarget.Global);
+        bindings = new KeyFileResult();
+        for (const fn of listeners || []) {
+            await fn(bindings);
+        }
         return undefined;
     }
 }
@@ -144,18 +153,17 @@ async function useBindings() {
     if (newBindings) {
         const parsed = await newBindings.bindings();
         if (await validateKeybindings(newBindings, { explicit: true })) {
+            bindings = parsed;
             for (const fn of listeners || []) {
                 await fn(parsed);
             }
-            bindings = parsed;
             return;
         }
     }
-    const clearedBindings = new KeyFileResult();
+    bindings = new KeyFileResult();
     for (const fn of listeners || []) {
-        await fn(clearedBindings);
+        await fn(bindings);
     }
-    bindings = clearedBindings;
 }
 
 // Config state are global properties of the current keybindings maintained by master key

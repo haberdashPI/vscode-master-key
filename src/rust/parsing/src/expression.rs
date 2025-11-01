@@ -9,7 +9,7 @@ use log::error;
 use rhai::Dynamic;
 use serde::Serialize;
 use std::collections::{HashMap, HashSet, VecDeque};
-use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
+use wasm_bindgen::JsValue;
 
 use crate::{
     bind::{command::Command, foreach::expression_fn__keys},
@@ -112,7 +112,6 @@ use crate::{
 ///   to the number configured by Master Key's "Command History Maximum" (defaults to 1024).
 ///   Commands are stored from least recent (smallest index) to most recent (largest index).
 
-#[wasm_bindgen]
 pub struct Scope {
     pub(crate) asts: HashMap<String, rhai::AST>,
     pub(crate) engine: rhai::Engine,
@@ -124,7 +123,6 @@ pub struct Scope {
 }
 
 // TODO: we'll need to define `CustomType` on `Value` and `Command`
-#[wasm_bindgen]
 impl Scope {
     // TODO: incorporate command queues
     pub(crate) fn expand<T>(&mut self, obj: &T) -> ResultVec<T>
@@ -189,7 +187,6 @@ impl Scope {
         return Ok(());
     }
 
-    #[wasm_bindgen(constructor)]
     pub fn new() -> Scope {
         let mut engine = rhai::Engine::new();
         engine.set_allow_looping(false);
@@ -207,28 +204,28 @@ impl Scope {
         };
     }
 
-    pub fn set(&mut self, name: String, value: JsValue) -> Result<()> {
+    pub fn set(&mut self, name: &str, value: JsValue) -> Result<()> {
         let toml: toml::Value = match serde_wasm_bindgen::from_value(value) {
             Err(e) => Err(err!("{}", e))?,
             Ok(x) => x,
         };
         let val: Value = toml.try_into()?;
         let val: Dynamic = val.into();
-        self.state.set_or_push(&name, val);
+        self.state.set_or_push(name, val);
         return Ok(());
     }
 
-    pub fn unset(&mut self, name: String) -> Result<()> {
+    pub fn unset(&mut self, name: &str) -> Result<()> {
         return Ok(self
             .state
-            .remove(&name)
+            .remove(name)
             .ok_or_else(|| err!("`{name}` is undefined"))?);
     }
 
-    pub fn get(&self, name: String) -> Result<JsValue> {
+    pub fn get(&self, name: &str) -> Result<JsValue> {
         let x: &rhai::Dynamic = self
             .state
-            .get(&name)
+            .get(name)
             .ok_or_else(|| err!("`{name}` is undefined"))?;
         let x: Value = match x.clone().try_cast_result() {
             Err(e) => Err(err!("{x} is not a valid JSON value: {e}"))?,
@@ -255,6 +252,12 @@ impl Scope {
 
     // TODO: function to evaluate args of replay and return a range of expressions
     // to replay in type script
+}
+
+impl Default for Scope {
+    fn default() -> Scope {
+        return Scope::new();
+    }
 }
 
 mod tests {

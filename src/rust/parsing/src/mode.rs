@@ -346,7 +346,10 @@ impl Mode {
             if name != &scope.default_mode {
                 when = format!("master-key.mode == '{}' && {TEXT_FOCUS_CONDITION}", name)
             } else {
-                when = TEXT_FOCUS_CONDITION.to_string();
+                when = format!(
+                    "(!master-key.mode || master-key.mode == '{}') && {TEXT_FOCUS_CONDITION}",
+                    name
+                )
             }
             result.push(BindingOutput::Ignore {
                 key: k,
@@ -533,7 +536,16 @@ impl Modes {
 impl Default for Modes {
     fn default() -> Self {
         return Modes {
-            map: HashMap::new(),
+            map: HashMap::from([(
+                "default".to_string(),
+                Mode {
+                    name: "default".to_string(),
+                    default: true,
+                    highlight: ModeHighlight::default(),
+                    cursorShape: CursorShape::default(),
+                    whenNoBinding: WhenNoBinding::InsertCharacters,
+                },
+            )]),
             default: "default".to_string(),
         };
     }

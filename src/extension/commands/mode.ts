@@ -40,7 +40,9 @@ async function setMode(args_: unknown): Promise<CommandResult> {
 }
 async function updateModes(bindings: KeyFileResult) {
     await withState(async (state) => {
-        return state.set(MODE, { public: true }, bindings.default_mode()).resolve();
+        const newDefault = bindings.default_mode();
+        console.log(`newDefault: ${newDefault}`);
+        return state.set(MODE, { public: true }, newDefault).resolve();
     });
 }
 export function restoreModesCursorState() {

@@ -259,7 +259,7 @@ Integration test debugging:
             - NOTE: these come from the line and char position in the rhai expression
             which has nothing to do with the line and char position in the parent
             keybinding file
-        - [ ] list of individual errors to check on
+        - [X] list of individual errors to check on
             - [X] parsing a number that's too large
             - [X] duplicate toml key
             - [X] unmatched `{{` when there are other matches braces before it
@@ -336,23 +336,52 @@ Integration test debugging:
         - [ ] re-implement master-key.do and master-key.prefix
               sense)
             - [ ] figure out how to handle ts/rust statement management
-                - [ ] keep command queue in rust
-                - [ ] probably copy simple state data to rust, duplicate
-                      in ts for now (avoid churn)
-                - [ ] move all bare variables in an expression to `key.` or `code.` object
-                - [ ] maybe handle state passing between commands with rust scope
-                      object??
-            - [ ] properly handle command queues (now controlled by rust)
-                - [ ] guess: don't have special command queue field
-        - [ ] update unit tests
-        - [ ] update integration tests
+                - [X] methods to produce literal commands (and repeat) in rust
+                - [X] re-implement `prefix.ts`
+                    - [X] pass the key_id from `do` command on to the
+                          call to prefix
+                - [X] remove key string in arguments to do / prefix and use
+                      the other data already available in memory (rather than re-parsing)
+                - [X] simple `do` implementation using above features
+                - [X] get activation events / default mode conditions working properly
+                - [ ] figure out why the mode sticks to `default` when the true default is `normal`
+                    - [X] after activating bindings
+                    - [X] when first activating the extension
+                        - [X] is this just that debug sessions have a unique config?? NO
+                        - [X] it was an issue with workspace settings overwriting global
+                              (all storage of config now goes to global, and we've
+                              deleted the old state)
+                - [X] fix bug where the `bindings` global variable is not up-to-date
+                      with the activated keybindings
+                - [X] fix bug where count doesn't exist
+                - [X] fix bug where count is not reset until after
+                      the end of the subsequent command (hit 3 and move left
+                      twice and you will move left 3+3 spaces instead of 3+1 spaces)
+                - [X] fix bug where motion doesn't happen on very first key press
+                    - [X] this is because `prefixCode` is off
+                          (I think checks for prefixCode == 0 can just be changed to check for !prefixCode since 0 is falsey)
+                - [ ] integration tests (some of these exist already)
+                    - [ ] basic commands with no prefix can be run
+                    - [ ] commands with implicit prefix
+                    - [ ] commands with explicit prefix
+                    - [ ] commands that store state
+                - [ ] copy simple state data to rust
+                    - [X] call `set_value` inside state updates
+                    - [ ] move all bare variables in an expression to `key.` or `code.` object
+                    - [ ] unit tests for these variables
+                - [ ] handle command history
+                    - [ ] keep command queue in rust
+                    - [ ] guess: don't have special command queue field
+                    - [ ] update history in `do` implementation
+        - [ ] update unit tests for running commands
+        - [ ] update integration tests for running commands
         - [ ] new unit tests?
         - [ ] new integration tests?
     - [ ] implement `replay`: use the new rust command queues instead of the old
           state management
     - [ ] replace `setFlag` with `updateValue` (or something like that)
     - [ ] reimplement other currently commented out files
-    - [ ] start using the latest version to catch performances issues and bugs
+    - [ ] start dog-fooding the latest version to catch performances issues and bugs
     - [ ] properly handle user keybindings (have the main keybinding file in memory)
     - [ ] extraction of markdown docs
         - [ ] documentation expansion/validation

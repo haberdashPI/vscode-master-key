@@ -8,7 +8,7 @@ use toml::Spanned;
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
 use crate::{
-    bind::{BindingInput, UNKNOWN_RANGE},
+    bind::{Binding, BindingInput, UNKNOWN_RANGE},
     err,
     error::{ErrorContext, ParseError, Result, ResultVec, err, flatten_errors},
     expression::{
@@ -358,7 +358,6 @@ pub struct Command {
     pub(crate) skipWhen: TypedValue<bool>,
 }
 
-#[wasm_bindgen]
 impl Command {
     pub fn args(&self) -> ResultVec<JsValue> {
         let to_json = serde_wasm_bindgen::Serializer::json_compatible();
@@ -368,9 +367,6 @@ impl Command {
             Ok(x) => Ok(x),
         };
     }
-}
-
-impl Command {
     pub fn new(input: CommandInput, scope: &mut Scope) -> ResultVec<Self> {
         if let Some(_) = input.id {
             return Err(err("`id` field is reserved"))?;
@@ -428,6 +424,89 @@ impl Resolving<Vec<Command>> for Vec<CommandInput> {
         Ok(flatten_errors(
             self.into_iter().map(|x| x.resolve(name, scope)),
         )?)
+    }
+}
+
+#[allow(non_snake_case)]
+#[wasm_bindgen(getter_with_clone)]
+#[derive(Clone, Debug)]
+pub struct CommandOutput {
+    pub error: Option<Vec<String>>,
+    pub finalKey: bool,
+    pub key: String,
+    pub key_id: i32,
+    pub repeat: i32,
+    pub commands: Vec<CommandOutputItem>,
+}
+
+#[wasm_bindgen(getter_with_clone)]
+#[derive(Clone, Debug)]
+pub struct CommandOutputItem {
+    pub command: String,
+    pub args: JsValue,
+}
+
+impl CommandOutput {
+    pub fn new(id: i32, binding: &Binding, scope: &mut Scope) -> CommandOutput {
+        let repeat = match binding.repeat(scope) {
+            Ok(x) => x,
+            Err(e) => {
+                let mut result = CommandOutput::noop();
+                result.error = Some(e.errors.iter().map(|er| format!("{er}")).collect());
+                return result;
+            }
+        };
+
+        let commands: std::result::Result<Vec<_>, _> = binding
+            .commands
+            .iter()
+            .map(|command| CommandOutput::new_helper(command, scope))
+            .collect();
+        return match commands {
+            Ok(x) => CommandOutput {
+                error: None,
+                key: binding.key.join(" "),
+                key_id: id,
+                finalKey: binding.finalKey,
+                repeat,
+                commands: x,
+            },
+            Err(e) => CommandOutput {
+                error: Some(e.errors.iter().map(|er| format!("{er}")).collect()),
+                key: binding.key.join(" "),
+                key_id: id,
+                repeat: 0,
+                finalKey: binding.finalKey,
+                commands: Vec::new(),
+            },
+        };
+    }
+    fn new_helper(command: &Command, scope: &mut Scope) -> ResultVec<CommandOutputItem> {
+        let expanded = scope.expand(command)?;
+        info!("skipWhen: {:#?}", expanded.skipWhen);
+
+        if expanded.skipWhen.clone().resolve("skipWhen", scope)? {
+            info!("skipped!");
+            return Ok(CommandOutputItem {
+                command: "master-key.ignore".to_string(),
+                args: JsValue::null(),
+            });
+        }
+        return Ok(CommandOutputItem {
+            command: expanded.command.clone(),
+            args: expanded.args()?,
+        });
+    }
+
+    pub fn noop() -> Self {
+        return CommandOutput {
+            error: None,
+            key_id: -1,
+            key: "".to_string(),
+            repeat: 0,
+            finalKey: true,
+            commands: Vec::new(),
+        };
     }
 }
 
