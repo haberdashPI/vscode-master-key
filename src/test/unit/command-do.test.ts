@@ -7,8 +7,9 @@ import { assertCursorMovesBy, cursorToStart, editorWithText } from './utils';
 suite('Do command', () => {
     let editor: vscode.TextEditor;
     suiteSetup(async () => {
+        let _;
         // eslint-disable-next-line @stylistic/max-len
-        editor = await editorWithText(`Anim reprehenderit voluptate magna excepteur dolore aliqua minim labore est
+        [editor, _] = await editorWithText(`Anim reprehenderit voluptate magna excepteur dolore aliqua minim labore est
 consectetur ullamco ullamco aliqua ex. Pariatur officia nostrud pariatur ex
 dolor magna. Consequat cupidatat amet nostrud proident occaecat ex.
 Ex cillum duis anim dolor cupidatat non nostrud non et sint ullamco.

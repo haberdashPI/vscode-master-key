@@ -1,0 +1,183 @@
+#:master-keybindings
+
+[header]
+version = "2.0.0"
+
+[[mode]]
+name = "insert"
+whenNoBinding = 'insertCharacters'
+
+[[mode]]
+name = "normal"
+default = true
+whenNoBinding = 'ignoreCharacters'
+
+[[bind]]
+mode = '{{all_modes() + ["capture"]}}'
+doc.description = "Enter normal mode"
+key = "escape"
+command = "master-key.enterNormal"
+prefixes.any = true
+
+[[define.bind]]
+id = "motion"
+doc.name = "basic motions"
+command = "cursorMove"
+when = "editorTextFocus"
+args.value = "{{max(1, key.count)}}"
+
+[[bind]]
+default = "{{bind.motion}}"
+doc.name = "left"
+key = "h"
+args.to = "left"
+
+[[bind]]
+default = "{{bind.motion}}"
+doc.name = "right"
+key = "l"
+args.to = "right"
+
+[[bind]]
+default = "{{bind.motion}}"
+doc.name = "down"
+key = "j"
+args.to = "down"
+
+[[bind]]
+default = "{{bind.motion}}"
+doc.name = "up"
+key = "k"
+args.to = "up"
+
+[[bind]]
+doc.name = "left (maybe down)"
+key = "shift+l"
+command = "runCommands"
+
+[[bind.args.commands]]
+command = "cursorMove"
+args.value = "{{max(1, key.count)}}"
+args.to = "right"
+
+[[bind.args.commands]]
+command = "cursorMove"
+args.to = "down"
+skipWhen = "{{key.count > 1}}"
+
+[[define.bind]]
+doc.name = "action"
+id = "action"
+
+[[bind]]
+foreach.num = ["{{keys(`[0-3]`)}}"]
+key = "shift+{{num}}"
+doc.name = "count {{num}}"
+command = "master-key.updateCount"
+args.value = "{{num}}"
+finalKey = false
+
+[[bind]]
+doc.name = "insert"
+key = "i"
+command = "master-key.enterInsert"
+
+[[bind]]
+doc.name = "1"
+key = "s"
+command = "runCommands"
+
+[[bind.args.commands]]
+command = "master-key.captureKeys"
+args.acceptAfter = 2
+
+[[bind.args.commands]]
+command = "master-key.search"
+args.text = "{{key.captured}}"
+
+[[bind]]
+doc.name = "replace"
+key = "r"
+command = "master-key.replaceChar"
+
+[[bind]]
+doc.name = "insert"
+key = "ctrl+i"
+command = "master-key.insertChar"
+
+[[bind]]
+doc.name = "search"
+key = "/"
+command = "master-key.search"
+
+[[bind]]
+doc.name = "to letter"
+key = "t"
+command = "master-key.search"
+args.acceptAfter = 1
+
+[[bind]]
+doc.name = "record"
+key = "shift+q"
+when = "!master-key.record"
+command = "master-key.record"
+args.on = true
+
+[[bind]]
+doc.name = "record"
+key = "shift+q"
+when = "master-key.record"
+command = "runCommands"
+
+[[bind.args.commands]]
+command = "master-key.record"
+args.on = false
+
+[[bind.args.commands]]
+command = "master-key.pushHistoryToStack"
+args.range.from = '{{last_history_index(|i| history[i-1]?.doc.name == "record")}}'
+args.range.to = "{{history.len()-1}}"
+
+[[bind]]
+doc.name = "replay"
+key = "q q"
+command = "master-key.replayFromStack"
+args.index = "{{key.count}}"
+
+[[bind]]
+doc.name = "replay repeat"
+key = "q c"
+command = "master-key.replayFromStack"
+repeat = "{{key.count}}"
+
+[[bind]]
+doc.name = "replay last"
+key = "q l"
+command = "master-key.replayFromHistory"
+args.index = "{{history.len()-1}}"
+
+[[bind]]
+doc.name = "store macro"
+key = "q s"
+command = "master-key.storeNamed"
+args.description = "Save Macro"
+args.name = "macro"
+args.contents = "{{macro[macro.len()-key.count-1]}}"
+
+[[bind]]
+doc.name = "replay stored"
+key = "q r"
+command = "runCommands"
+
+[[bind.args.commands]]
+command = "master-key.restoreNamed"
+args.description = "Replay Macro"
+args.name = "macro"
+
+[[bind.args.commands]]
+command = "master-key.pushHistoryToStack"
+args.value = "{{key.captured}}"
+
+[[bind.args.commands]]
+command = "master-key.replayFromStack"
+args.index = 0

@@ -1,5 +1,5 @@
 import replaceAll from 'string.prototype.replaceall';
-import { IConfigKeyBinding } from '../keybindings/parsing';
+import { Binding } from '../../rust/parsing/lib/parsing';
 
 // linting disabled for legibility of an unusual constant
 /* eslint-disable */
@@ -72,13 +72,13 @@ export const KEY_TO_LI_KEY = {
 /* eslint-enable */
 
 export function normalizeLayoutIndependentBindings(
-    curBindings: IConfigKeyBinding[],
+    curBindings: Binding[],
     opts: { noBrackets: boolean } = { noBrackets: false },
-): IConfigKeyBinding[] {
-    return curBindings.map((b) => {
-        const key = normalizeLayoutIndependentString(b.args.key, opts);
-        return { ...b, args: { ...b.args, key } };
-    });
+): Binding[] {
+    for (const bind of curBindings) {
+        bind.key = bind.key.map(key => normalizeLayoutIndependentString(key, opts));
+    }
+    return curBindings;
 }
 
 export function toLayoutIndependentString(key: string) {

@@ -1,15 +1,22 @@
+!.vscode/settings.json
+
 # build output
 out
 *.vsix
 src/rust/parsing/target/**
+target/**
 
 # dependencies
 node_modules
 
 # code coverage
 .nyc_output/**
+*.info
+*.profdata
 coverage/**
 coverage.json
+*.profraw
+*.lcov
 
 # unit testing
 test/temp/**
