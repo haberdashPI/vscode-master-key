@@ -3,13 +3,14 @@ import * as capture from './capture';
 import * as count from './count';
 import * as doCommand from './do';
 import * as mode from './mode';
-import * as namedStore from './namedStore';
+// TODO: reimplement
+// import * as namedStore from './namedStore';
 import * as replay from './replay';
 import * as search from './search';
 import * as prefix from './prefix';
-import * as palette from './palette';
-import * as visualKeyDoc from './visualKeyDoc';
-import * as textKeyDoc from './textDocs';
+// import * as palette from './palette';
+// import * as visualKeyDoc from './visualKeyDoc';
+// import * as textKeyDoc from './textDocs';
 
 /**
  * @file commands/index.md
@@ -27,13 +28,14 @@ export async function activate(context: vscode.ExtensionContext) {
     await count.activate(context);
     await doCommand.activate(context);
     await mode.activate(context);
-    await namedStore.activate(context);
+    // TODO: reimplement
+    // await namedStore.activate(context);
     await replay.activate(context);
     await search.activate(context);
     await prefix.activate(context);
-    await palette.activate(context);
-    await visualKeyDoc.activate(context);
-    await textKeyDoc.activate(context);
+    // await palette.activate(context);
+    // await visualKeyDoc.activate(context);
+    // await textKeyDoc.activate(context);
 
     /**
      * @command ignore
@@ -68,6 +70,9 @@ export async function activate(context: vscode.ExtensionContext) {
      * ```
      */
     context.subscriptions.push(
-        vscode.commands.registerCommand('master-key.ignore', () => undefined),
+        vscode.commands.registerCommand('master-key.ignore', () => {
+            console.log('ignore!');
+            return;
+        }),
     );
 }

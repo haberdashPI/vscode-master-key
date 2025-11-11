@@ -1,7 +1,4 @@
 .vitepress/commands.mjs
-commands/*
 .vitepress/bindings.mjs
-bindings/*
-expressions/*
-guide.md
 .vitepress/dist/**
+**/*.md

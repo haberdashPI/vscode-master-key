@@ -1,0 +1,60 @@
+{
+    "eslint.validate": [
+        "javascript",
+        "javascriptreact",
+        "yaml",
+        "github-actions-workflow" // for GitHub Actions workflow files
+    ],
+    "rust-analyzer.linkedProjects": [
+        "src/rust/parsing/Cargo.toml"
+    ],
+    "window.title": "vscode-master-key",
+    // NOTE: if we update the version of rust used in `mise.toml.` these
+    // paths also need to be updated
+    "rust-analyzer.server.extraEnv": {
+        "RUSTUP_TOOLCHAIN": "1.90.0"
+    },
+    "rust-analyzer.cargo.sysroot": "${userHome}/.rustup/toolchains/1.90.0-aarch64-apple-darwin",
+    "rust-analyzer.cargo.sysrootSrc": "${userHome}/.rustup/toolchains/1.90.0-aarch64-apple-darwin/lib/rustlib/src/rust",
+    "rust-analyzer.checkOnSave": true,
+    "rust-analyzer.cargo.allTargets": false,
+    "rust-analyzer.cargo.buildScripts.rebuildOnSave": true,
+    "workbench.colorCustomizations": {
+        "editorBracketHighlight.foreground1": "#1b9e77",
+        "editorBracketHighlight.foreground2": "#d95f02",
+        "editorBracketHighlight.foreground3": "#7570b3",
+        "editorBracketHighlight.foreground4": "#e7298a",
+        "editorBracketHighlight.foreground5": "#66a61e",
+        "editorBracketHighlight.foreground6": "#e6ab02",
+        "editorBracketHighlight.unexpectedBracket.foreground": "#ff0000",
+        "iLoveWorkSpaceColors": true,
+        "iLoveWorkSpaceRandom": false,
+        "titleBar.activeBackground": "#dd8416",
+        "titleBar.activeForeground": "#FFFFFF",
+        "titleBar.inactiveBackground": "#dd8416",
+        "titleBar.inactiveForeground": "#FFFFFF",
+        "titleBar.border": "#dd8416",
+        "activityBar.background": "#dd8416",
+        "activityBar.foreground": "#FFFFFF",
+        "statusBar.background": "#dd8416",
+        "statusBar.foreground": "#FFFFFF",
+        "statusBar.debuggingBackground": "#dd8416",
+        "statusBar.debuggingForeground": "#FFFFFF",
+        "tab.activeBorder": "#dd8416"
+    },
+    "debug.javascript.defaultRuntimeExecutable": {
+        "pwa-node": "/Users/davidlittle/.local/share/mise/shims/node"
+    },
+    "files.watcherExclude": {
+        "**/.git/**": true,
+        "**/.jj/**": true,
+        "**/target/**": true,
+        "out/**": true,
+    },
+    "python.defaultInterpreterPath": "${userHome}/.local/share/mise/installs/python/3.10.4/bin/python",
+    "eslint.workingDirectories": [
+        "src"
+    ],
+    "eslint.useESLintClass": false,
+    "git.enabled": false,
+}

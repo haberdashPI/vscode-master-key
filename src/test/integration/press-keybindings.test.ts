@@ -46,7 +46,8 @@ test.describe('Basic keypresses', () => {
             // the keys aren't responding as such without pressing 'Escape' above
 
             const cursor = workbox.locator('div[role="presentation"].cursors-layer');
-            await expect(cursor).toHaveClass(/cursor-block-style/);
+            // await workbox.pause();
+            await expect(cursor.first()).toHaveClass(/cursor-block-style/);
             let statusBarMode = workbox.locator(
                 'div[aria-label="Keybinding Mode: normal"]',
             );
@@ -60,17 +61,17 @@ test.describe('Basic keypresses', () => {
             // check that the keypress did nothing
             await expect(pos).toHaveText('Ln 1, Col 1');
 
-            await editor.press('n');
-            await expect(pos).toHaveText('Ln 1, Col 2');
+            await editor.press('j');
+            await expect(pos).toHaveText('Ln 2, Col 1');
 
             // changing mode changes the effect of key presses
             await editor.press('i');
-            await expect(cursor).not.toHaveClass(/cursor-block-style/);
+            await expect(cursor.first()).not.toHaveClass(/cursor-block-style/);
             statusBarMode = workbox.locator('div[aria-label="Keybinding Mode: insert"]');
             await expect(statusBarMode).not.toHaveClass(/warning-kind/);
 
             await editor.press('j');
-            await expect(pos).toHaveText('Ln 1, Col 3');
+            await expect(pos).toHaveText('Ln 2, Col 2');
         });
 
         test('Can change cursor shape when using a delayed action' + label,
@@ -97,6 +98,20 @@ test.describe('Basic keypresses', () => {
             await expect(pos).toHaveText('Ln 1, Col 4');
         });
     }
+
+    test('Can use implicit prefixes', async ({ workbox }) => {
+        const { editor, pos } = await setup(workbox, 'simpleMotions.toml');
+        await editor.press('g');
+        await editor.press('g');
+        await expect(pos).toHaveText('Ln 3, Col 1');
+    });
+
+    test('Updates `capture` variable', async ({ workbox }) => {
+        const { editor, pos } = await setup(workbox, 'simpleMotions.toml');
+        await editor.press('t');
+        await editor.press('f');
+        await expect(pos).toHaveText('Ln 1, Col 8');
+    });
 
     test('Can leverage fallback bindings', async ({ workbox }) => {
         const { editor, pos } = await setup(workbox, 'simpleMotions.toml');
