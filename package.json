@@ -17,12 +17,26 @@
         "Keymaps"
     ],
     "activationEvents": [
-        "*"
+        "onCommand:master-key.do",
+        "onCommand:master-key.prefix",
+        "onCommand:master-key.ignore",
+        "onCommand:master-key.search",
+        "onCommand:master-key.setValue"
     ],
     "main": "./out/node/index.js",
     "browser": "./out/browser/index.js",
     "contributes": {
         "commands": [
+            {
+                "command": "master-key.internal-testCommand",
+                "title": "Test Command (Internal Debugging)",
+                "enablement": "master-key.val.internal__debug__flag"
+            },
+            {
+                "command": "master-key.togglePaletteDisplay",
+                "category": "Master Key",
+                "title": "Toggle automatic display of quick-pick menu for multi-key keybindings"
+            },
             {
                 "command": "master-key.activateBindings",
                 "category": "Master Key",
@@ -42,6 +56,11 @@
                 "command": "master-key.commandSuggestions",
                 "category": "Master Key",
                 "title": "Key Suggestions..."
+            },
+            {
+                "command": "master-key.toggleSuggestions",
+                "category": "Master Key",
+                "title": "Toggle Key Suggestions"
             },
             {
                 "command": "master-key.showVisualDoc",
@@ -95,30 +114,44 @@
             }
         ],
         "views": {
+            "masterKeyBindingList": [
+                {
+                    "id": "masterKeySidePanel",
+                    "name": "Key Suggestions",
+                    "icon": "logo.png"
+                }
+            ],
             "masterKeyVisualDoc": [
                 {
                     "type": "webview",
                     "id": "masterkey.visualDoc",
                     "name": "Master Key Bindings",
                     "contextualTitle": "Keys",
-                    "icon": "icon.svg",
+                    "icon": "logo.png",
                     "visibility": "visible"
                 }
             ]
         },
         "viewsContainers": {
+            "activitybar": [
+                {
+                    "id": "masterKeyBindingList",
+                    "title": "Master Key",
+                    "icon": "logo.png"
+                }
+            ],
             "panel": [
                 {
                     "id": "masterKeyVisualDoc",
                     "title": "Master Key Bindings",
-                    "icon": "icon.svg"
+                    "icon": "logo.png"
                 }
             ]
         },
         "keybindings": [
             {
                 "key": "ctrl+shift+;",
-                "command": "master-key.commandSuggestions"
+                "command": "master-key.toggleSuggestions"
             },
             {
                 "key": "ctrl+.",
@@ -133,12 +166,6 @@
                     "type": "boolean",
                     "description": "When enabled, bindings do not match the keys on your keyboard, instead matching the keys on the default US layout.",
                     "default": false
-                },
-                "master-key.storage": {
-                    "title": "Internal Storage of Master Key Configuration",
-                    "type": "object",
-                    "description": "A set of key-value pairs used to store master key configuration.",
-                    "default": {}
                 },
                 "master-key.presetDirectories": {
                     "title": "Directory to search for Master Key presets",
@@ -217,6 +244,7 @@
         "@vscode/test-electron": "^2.5.2",
         "@vscode/test-web": "^0.0.70",
         "assert": "^2.1.0",
+        "async-mutex": "^0.5.0",
         "esbuild": "^0.25.5",
         "eslint": "^9.30.1",
         "fastestsmallesttextencoderdecoder": "^1.0.22",
@@ -226,6 +254,7 @@
         "istanbul-merge": "^2.0.0",
         "jsonc-simple-parser": "^3.0.0",
         "lodash": "^4.17.21",
+        "marked": "^17.0.1",
         "mocha": "^11.7.1",
         "nyc": "^17.1.0",
         "object-hash": "^3.0.0",
@@ -237,7 +266,7 @@
         "type-fest": "^4.41.0",
         "typescript": "^5.8.3",
         "typescript-eslint": "^8.35.1",
-        "vitepress": "^1.6.3",
+        "vitepress": "^1.6.4",
         "vscode-uri": "^3.1.0",
         "zod": "^3.25.67",
         "zod-validation-error": "^3.5.2"

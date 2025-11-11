@@ -2,15 +2,17 @@ import { CommandState } from '../state';
 import { withState } from '../state';
 import * as vscode from 'vscode';
 import { MODE } from './mode';
-import { IConfigKeyBinding } from '../keybindings/parsing';
-import { Bindings } from '../keybindings/processing';
-import { normalizeLayoutIndependentBindings } from '../keybindings/layout';
-import { filterBindingFn } from '../keybindings';
-import { bindings, onChangeBindings } from '../keybindings/config';
+import { normalizeLayoutIndependentString } from '../keybindings/layout';
+import { onChangeBindings } from '../keybindings/config';
 import { PREFIX_CODE } from './prefix';
-import { reverse, uniqBy } from 'lodash';
-import { modifierKey, prettifyPrefix } from '../utils';
+import {
+    getRequiredMode,
+    getRequiredPrefixCode,
+    modifierKey,
+    prettifyPrefix,
+} from '../utils';
 import { Map } from 'immutable';
+import { KeyFileResult } from '../../rust/parsing/lib/parsing';
 
 // TODO: use KeyboardLayoutMap to improve behavior
 // across different layouts
@@ -29,8 +31,6 @@ interface IKeyRow {
     length?: string;
     height?: string;
 }
-
-const KEY_ABBREV: Record<string, string> = {};
 
 const keyRowsTemplate: IKeyTemplate[][] = [
     [
@@ -161,17 +161,25 @@ interface KindDocEl {
     index: number;
 }
 
+interface IVisualKeyBinding {
+    name?: string;
+    description?: string;
+    label?: string;
+    kind?: string;
+}
+
 // generates the webview for a provider
 export class DocViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'masterkey.visualDoc';
     _view?: vscode.WebviewView;
-    _bindingMap: Record<string, IConfigKeyBinding> = {};
-    _keymap?: ((IConfigKeyBinding & { label: string }) | { empty: true })[] = [];
+    _bindingMap: Record<string, Record<string, IVisualKeyBinding>> = {};
+    _currentBindingKey: string = '0:';
+    _keymap?: (IVisualKeyBinding | { empty: true })[] = [];
     _kinds?: Record<string, KindDocEl> = {};
-    _topModifier: readonly string[] = ['⇧'];
-    _bottomModifier: readonly string[] = [];
-    _oldBindings: IConfigKeyBinding[] = [];
+    _modifierIndex: number = 0;
+    _oldBindings: IVisualKeyBinding[] = [];
     _modifierSetIndex: number = -1;
+    _modifierOrderMap: Record<string, string[][]> = {};
     _modifierOrder: string[][] = [];
 
     constructor(private readonly _extensionUri: vscode.Uri) {}
@@ -187,119 +195,148 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
     }
 
     public get topModifier(): readonly string[] {
-        return this._topModifier;
+        // get modifiers for current context
+        const modifiers = this._modifierOrder || [[''], ['⇧']];
+        const aModifiers = modifiers[this._modifierIndex % modifiers.length];
+        const bModifiers = modifiers[(this._modifierIndex + 1) % modifiers.length];
+        const aLength = aModifiers.map(x => x.length).reduce((x, y) => x + y);
+        const bLength = bModifiers.map(x => x.length).reduce((x, y) => x + y);
+        if (aLength > bLength) {
+            return aModifiers;
+        } else {
+            return bModifiers;
+        }
     }
 
     public get bottomModifier(): readonly string[] {
-        return this._bottomModifier;
-    }
-
-    public set topModifier(strs: string[]) {
-        this._topModifier = strs.sort();
-        this._modifierSetIndex = -1;
-        this.updateKeyHelper();
-        this.refresh();
-    }
-
-    public set bottomModifier(strs: string[]) {
-        this._bottomModifier = strs.sort();
-        this._modifierSetIndex = -1;
-        this.updateKeyHelper();
-        this.refresh();
+        // get modifiers for current context
+        const modifiers = this._modifierOrder || [[''], ['⇧']];
+        const aModifiers = modifiers[this._modifierIndex % modifiers.length];
+        const bModifiers = modifiers[(this._modifierIndex + 1) % modifiers.length];
+        const aLength = aModifiers.map(x => x.length).reduce((x, y) => x + y);
+        const bLength = bModifiers.map(x => x.length).reduce((x, y) => x + y);
+        if (aLength > bLength) {
+            return bModifiers;
+        } else {
+            return aModifiers;
+        }
     }
 
     public toggleModifier() {
-        if (this._modifierSetIndex + 1 >= this._modifierOrder.length) {
-            this._modifierSetIndex = 0;
-        } else {
-            if (this._modifierSetIndex + 2 >= this._modifierOrder.length) {
-                this._modifierSetIndex++;
-            } else {
-                this._modifierSetIndex += 2;
-            }
-        }
-        const a = this._modifierOrder[this._modifierSetIndex];
-        const b = this._modifierOrder[(this._modifierSetIndex + 1) %
-            this._modifierOrder.length];
-        const aLength = a.map(x => x.length).reduce((x, y) => x + y);
-        const bLength = b.map(x => x.length).reduce((x, y) => x + y);
-        if (aLength > bLength) {
-            this._topModifier = a;
-            this._bottomModifier = b;
-        } else {
-            this._topModifier = b;
-            this._bottomModifier = a;
-        }
+        this._modifierIndex = (this._modifierIndex + 2) % this._modifierOrder.length;
 
+        // if there are an odd number of available modifiers the top / bottom will show both
+        // the last key and the first key. So when we wrap around again we want to reset
+        // back to the start (otherwise there will be a redundant odd parity cycle through
+        // all modifiers)
+        if (this._modifierIndex % 2 == 1) {
+            this._modifierIndex = 0;
+        }
         this.updateKeyHelper();
         this.refresh();
     }
 
-    private updateKeys(values: CommandState | Map<string, unknown>) {
-        const allBindings = bindings?.bind || [];
-        if (this._oldBindings !== allBindings) {
-            this._modifierSetIndex = 0;
-            const modifierCounts: Record<string, number> = {};
-            for (const binding of allBindings) {
-                const key = modifierKey(binding.args.key).sort().join('.');
-                modifierCounts[key] = get(modifierCounts, key, 0) + 1;
+    private updateKeys(bindings: KeyFileResult) {
+        this._modifierSetIndex = 0;
+        const modifierCounts: Record<string, Record<string, number>> = {};
+        for (let i = 0; i < bindings.n_bindings(); i++) {
+            const binding = bindings.binding(i);
+            if (binding?.command == 'master-key.ignore') {
+                continue;
             }
+            const mode = getRequiredMode(binding.when);
+            const prefixCode = getRequiredPrefixCode(binding.when);
+            const key = modifierKey(binding.key).sort().join('.');
+            const countKey = `${prefixCode}:${mode}`;
+            const countsForContext =
+                modifierCounts[countKey] || { '': 0, '⇧': 0 };
+            countsForContext[key] = get(countsForContext, key, 0) + 1;
+            modifierCounts[countKey] = countsForContext;
+        }
+        this._modifierOrderMap = {};
+        for (const [key, counts] of Object.entries(modifierCounts)) {
+            let modifiers = Object.keys(counts);
+            modifiers.sort((x, y) => counts[y] - counts[x]);
+            if (modifiers.length > 2) {
+                const front = modifiers.slice(0, 2);
+                const back = modifiers.slice(2).filter(k => counts[k] > 0);
+                modifiers = front.concat(back);
+            }
+            this._modifierOrderMap[key] = modifiers.map(x => x.split('.'));
+        }
+        this._modifierIndex = 0;
 
-            // handle cases where there are fewer than 2 modifier keys in the
-            // binding set
-            if (Object.keys(modifierCounts).length < 1) {
-                modifierCounts[''] =
-                    modifierCounts[''] === undefined ? 0 : modifierCounts[''];
+        const bindingMap: Record<string, Record<string, IVisualKeyBinding>> = {};
+        for (let i = 0; i < bindings.n_bindings(); i++) {
+            const binding = bindings.binding(i);
+            if (binding.command === 'master-key.ignore') {
+                continue;
             }
-            if (Object.keys(modifierCounts).length < 2) {
-                const modifier = Object.keys(modifierCounts)[0];
-                if (modifierCounts[modifier + '⇧'] === undefined) {
-                    modifierCounts[modifier] = 0;
-                } else {
-                    modifierCounts[modifier] = modifierCounts[modifier + '⇧'];
-                }
+            let label = prettifyPrefix(binding.key);
+            label = normalizeLayoutIndependentString(label, { noBrackets: true });
+            const prefixCode = getRequiredPrefixCode(binding.when);
+            const mode = getRequiredMode(binding.when);
+            const key = `${prefixCode}:${mode}`;
+            const mapping = bindingMap[key] || {};
+            const oldKey = mapping[label] || {};
+            if (binding.command === 'master-key.do') {
+                mapping[label] = {
+                    name: binding.args.name || oldKey.name || '',
+                    description: binding.args.description || oldKey.description || '',
+                    kind: binding.args.kind || oldKey.kind || '',
+                };
+            } else if (binding.command === 'master-key.prefix') {
+                mapping[label] = {
+                    name: oldKey.name || 'prefix',
+                    description: oldKey.description || '',
+                    kind: oldKey.kind || '',
+                };
             }
-
-            const modifiers = Object.keys(modifierCounts);
-            modifiers.sort((x, y) => modifierCounts[y] - modifierCounts[x]);
-            this._modifierOrder = modifiers.map(x => x.split('.'));
-            this._bottomModifier = this._modifierOrder[0];
-            this._topModifier = this._modifierOrder[(0 + 1) % this._modifierOrder.length];
+            bindingMap[key] = mapping;
         }
 
-        let curBindings = allBindings.filter(
-            filterBindingFn(<string>values.get(MODE),
-            <number>values.get(PREFIX_CODE), true),
-        );
-        curBindings = normalizeLayoutIndependentBindings(curBindings, { noBrackets: true });
-        curBindings = reverse(uniqBy(reverse(curBindings), b => b.args.key));
-        this._bindingMap = {};
-        for (const binding of curBindings) {
-            this._bindingMap[prettifyPrefix(binding.args.key)] = binding;
-        }
+        this._bindingMap = bindingMap;
+    }
 
-        this.updateKeyHelper();
+    private updateState(state: CommandState | Map<string, unknown>) {
+        this._modifierIndex = 0;
+        const prefixCode = state.get(PREFIX_CODE);
+        const mode = state.get(MODE);
+        const key = `${prefixCode}:${mode}`;
+        this._currentBindingKey = key;
+        this._modifierOrder = this._modifierOrderMap[key];
+        this._modifierIndex = 0;
+        this.updateKeyHelper(this._bindingMap[key]);
         this.refresh();
     }
 
-    private updateKeyHelper() {
+    private updateKeyHelper(
+        bindingMap: Record<string, IVisualKeyBinding> =
+            this._bindingMap[this._currentBindingKey],
+    ) {
         let i = 0;
         this._keymap = [];
-        for (const row of keyRows(this._topModifier, this._bottomModifier)) {
+        const topModifier = this.topModifier;
+        const bottomModifier = this.bottomModifier;
+        for (const row of keyRows(topModifier, bottomModifier)) {
             for (const key of row) {
-                if (key.top) {
+                if (key.top && bindingMap && bindingMap[key.top]) {
                     this._keymap[i++] = {
                         label: key.top,
-                        ...this._bindingMap[get(KEY_ABBREV, key.top, key.top)],
+                        ...bindingMap[key.top],
                     };
+                } else if (key.top) {
+                    this._keymap[i++] = { label: key.top };
                 } else {
                     this._keymap[i++] = { empty: true };
                 }
-                if (key.bottom) {
+                if (key.bottom && bindingMap && bindingMap[key.bottom]) {
                     this._keymap[i++] = {
                         label: key.bottom,
-                        ...this._bindingMap[get(KEY_ABBREV, key.bottom, key.bottom)],
+                        ...bindingMap[key.bottom],
                     };
+                } else if (key.bottom) {
+                    this._keymap[i++] = { label: key.bottom };
                 } else {
                     this._keymap[i++] = { empty: true };
                 }
@@ -307,37 +344,36 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
         }
     }
 
-    private updateKinds(bindings: Bindings) {
+    private updateKinds(bindings: KeyFileResult) {
         this._kinds = {};
         let index = 0;
-        for (const kind of bindings.kind) {
-            this._kinds[kind.name] = { ...kind, index };
+        for (const kind of bindings.kinds()) {
+            this._kinds[kind.name] = {
+                name: kind.name,
+                description: kind.description,
+                index,
+            };
             index++;
         }
         this.refresh();
     }
 
     public async attach(state: CommandState) {
-        this.updateKeys(state);
+        onChangeBindings(async (x) => {
+            this.updateKinds(x);
+            this.updateKeys(x);
+            await withState(async (state) => {
+                this.updateState(state);
+                return state;
+            });
+        });
         state = state.onSet(MODE, (vals) => {
-            this.updateKeys(vals);
+            this.updateState(vals);
             return true;
         });
         state = state.onSet(PREFIX_CODE, (vals) => {
-            this.updateKeys(vals);
+            this.updateState(vals);
             return true;
-        });
-        if (bindings) {
-            this.updateKinds(bindings);
-        }
-        onChangeBindings(async (x) => {
-            if (x) {
-                this.updateKinds(x);
-                await withState(async (state) => {
-                    this.updateKeys(state);
-                    return state;
-                });
-            }
         });
         return state;
     }
@@ -446,18 +482,28 @@ async function showVisualDoc() {
     return;
 }
 
+let docProvider: DocViewProvider | undefined;
 export async function activate(context: vscode.ExtensionContext) {
+    docProvider = new DocViewProvider(context.extensionUri);
+    await withState(async (state) => {
+        if (docProvider) {
+            return await docProvider.attach(state);
+        } else {
+            console.error(
+                'Master key visual documentation `docProvider` is unexpectedly `undefined',
+            );
+            return state;
+        }
+    });
+    vscode.window.registerWebviewViewProvider(DocViewProvider.viewType, docProvider);
+    // TODO: only show `command` in os x
+    // TODO: make a meta key for linux (and windows for windows)
+}
+
+export async function defineCommands(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.showVisualDoc', showVisualDoc),
     );
-    const docProvider = new DocViewProvider(context.extensionUri);
-    await withState(async (state) => {
-        return await docProvider.attach(state);
-    });
-    vscode.window.registerWebviewViewProvider(DocViewProvider.viewType, docProvider);
-    // TODO: only show command in os x
-    // TODO: make a meta key for linux (and windows for windows)
-    // TODO: the modifiers need to be able to be combined...
     /**
      * @userCommand toggleVisualDocModifiers
      * @name Toggle Visual Doc Modifier by frequency
@@ -467,7 +513,7 @@ export async function activate(context: vscode.ExtensionContext) {
      */
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.toggleVisualDocModifiers', _args =>
-            docProvider.toggleModifier(),
+            docProvider?.toggleModifier(),
         ),
     );
 }
