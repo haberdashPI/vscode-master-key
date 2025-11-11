@@ -1,11 +1,15 @@
 import * as vscode from 'vscode';
 import z from 'zod';
 import { validateInput } from '../utils';
-import { CommandResult } from '../state';
-import { MODE, defaultMode } from './mode';
+import { commandArgs, CommandResult, WrappedCommandResult } from '../state';
+import { MODE } from './mode';
 import { withState, recordedCommand } from '../state';
-import { DoArgs } from '../keybindings/parsing';
-import { doCommandsCmd } from './do';
+// TODO: implement
+// import { doCommandsCmd } from './do';
+import { Mode, WhenNoBindingHeader } from '../../rust/parsing/lib/parsing';
+
+import { bindings } from '../keybindings/config';
+import { maxHistory, showExpressionErrors, showExpressionMessages } from './do';
 
 let typeSubscription: vscode.Disposable | undefined;
 let onTypeFn: (text: string) => void = async function (_text: string) {
@@ -15,7 +19,7 @@ async function onType(event: { text: string }) {
     return await onTypeFn(event.text);
 }
 
-const CAPTURE = 'captured';
+export const CAPTURE = 'captured';
 
 function clearTypeSubscription() {
     if (typeSubscription) {
@@ -24,11 +28,11 @@ function clearTypeSubscription() {
     }
 }
 
-export async function runCommandOnKeys(doArgs: DoArgs | undefined, mode: string) {
-    if (mode !== 'capture') {
+export async function runCommandsForMode(mode: Mode) {
+    if (mode.name !== 'capture') {
         clearTypeSubscription();
     }
-    if (doArgs) {
+    if (mode.whenNoBinding() === WhenNoBindingHeader.Run) {
         // we await on state to avoid race conditions here (rather than
         // to change or read anything about the state)
         if (!typeSubscription) {
@@ -45,7 +49,30 @@ export async function runCommandOnKeys(doArgs: DoArgs | undefined, mode: string)
             await withState(async state =>
                 state.set(CAPTURE, { transient: { reset: '' } }, typed),
             );
-            await doCommandsCmd({ do: doArgs });
+            const binding = mode.run_commands(bindings);
+            if (!showExpressionErrors(binding)) {
+                for (let i = 0; i < binding.n_commands(); i++) {
+                    const resolved_command = binding.resolve_command(i, bindings);
+                    showExpressionMessages(resolved_command);
+                    showExpressionErrors(resolved_command);
+                    if (resolved_command.command !== 'master-key.ignore') {
+                        const result = await vscode.commands.
+                            executeCommand<WrappedCommandResult | void>(
+                                resolved_command.command,
+                                resolved_command.args,
+                            );
+                        const resolvedArgs = commandArgs(result);
+                        if (resolvedArgs === 'cancel') {
+                            return 'cancel';
+                        }
+                        if (resolvedArgs) {
+                            resolved_command.args = resolvedArgs;
+                        }
+                        binding.store_command(i, resolved_command);
+                    }
+                }
+                bindings.store_binding(binding, maxHistory);
+            }
         };
     }
 }
@@ -78,7 +105,7 @@ export async function captureKeys(onUpdate: UpdateFn) {
 
     await withState(async (state) => {
         return state.onSet(MODE, (state) => {
-            if (state.get(MODE, defaultMode) !== 'capture') {
+            if (state.get(MODE, bindings.default_mode()) !== 'capture') {
                 clearTypeSubscription();
                 if (!isResolved) {
                     isResolved = true;
@@ -122,13 +149,14 @@ const captureKeysArgs = z.object({
  * @order 110
  *
  * Awaits user input for a fixed number of key presses, and then stores the resulting
- * characters as a string in the variable `captured`, accessible in any subsequent
+ * characters as a string in the variable `key.captured`, accessible in any subsequent
  * [expression](/expressions/index).
  *
  * **Arguments**
  * - `acceptAfter`: The number of keys to capture
  *
- * > [!NOTE] The command also accepts a second, optional argument called `text`, which can
+ * > [!NOTE] Implementation detail
+ * > The command also accepts a second, optional argument called `text`, which can
  * > directly express what keys to store in `captured` instead of requesting input from the
  * > user. This is not really useful when writing a `[[bind]]` entry, but is defined to make
  * > it easy to replay previously executed versions of this command (e.g. in a keyboard
@@ -155,6 +183,9 @@ async function captureKeysCmd(args_: unknown): Promise<CommandResult> {
                 }
                 return [result, stop];
             });
+        }
+        if (!text) {
+            return 'cancel';
         }
         await withState(async (state) => {
             return state.set(CAPTURE, { transient: { reset: '' } }, text);

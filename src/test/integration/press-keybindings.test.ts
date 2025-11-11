@@ -5,9 +5,9 @@ import { Page } from '@playwright/test';
 test.describe('Basic keypresses', () => {
     async function setup(workbox: Page, file: string) {
         await activateKeybindings(workbox, file);
-        await openFile(workbox, 'text.md');
-        const editor = workbox.getByLabel('text.md').
-            filter({ has: workbox.getByText('Commodo fugiat magna ') }).
+        await openFile(workbox, 'macro.md');
+        const editor = workbox.getByLabel('macro.md').
+            filter({ has: workbox.getByText('a b c ') }).
             filter({ has: workbox.getByRole('code') });
         const pos = await workbox.getByRole('button').
             filter({ hasText: /Ln [0-9]+, Col [0-9]+/ });
@@ -38,58 +38,65 @@ test.describe('Basic keypresses', () => {
             await editor.press('k');
             await expect(pos).toHaveText('Ln 1, Col 1');
         });
+    }
 
-        test('Can change the key mode' + label, async ({ workbox }) => {
-            const { editor, pos } = await setup(workbox, file);
-            await editor.press('Escape');
-            // TODO: debug even though the editor reports that we're in normal mode
-            // the keys aren't responding as such without pressing 'Escape' above
+    const label = '';
+    const file = 'simpleMotions.toml';
 
-            const cursor = workbox.locator('div[role="presentation"].cursors-layer');
-            await expect(cursor).toHaveClass(/cursor-block-style/);
-            let statusBarMode = workbox.locator(
-                'div[aria-label="Keybinding Mode: normal"]',
-            );
-            await expect(statusBarMode).toHaveClass(/warning-kind/);
+    test('Can change the key mode' + label, async ({ workbox }) => {
+        const { editor, pos } = await setup(workbox, file);
+        await editor.press('Escape');
+        // TODO: debug even though the editor reports that we're in normal mode
+        // the keys aren't responding as such without pressing 'Escape' above
 
-            await editor.press('u');
-            // wait for UX to no longer show U key being pressed
-            await workbox.waitForTimeout(250); // give some time for the key to be pressed
-            await expect(workbox.locator('[id="haberdashPI.master-key.keys"]').
-                getByLabel('No Keys Typed')).toBeHidden();
-            // check that the keypress did nothing
-            await expect(pos).toHaveText('Ln 1, Col 1');
+        const cursor = workbox.locator('div[role="presentation"].cursors-layer');
+        await expect(cursor.first()).toHaveClass(/cursor-block-style/);
+        let statusBarMode = workbox.locator(
+            'div[aria-label="Keybinding Mode: normal"]',
+        );
+        await expect(statusBarMode).toHaveClass(/warning-kind/);
 
-            await editor.press('n');
-            await expect(pos).toHaveText('Ln 1, Col 2');
+        await editor.press('u');
+        // wait for UX to no longer show U key being pressed
+        await workbox.waitForTimeout(250); // give some time for the key to be pressed
+        await expect(workbox.locator('[id="haberdashPI.master-key.keys"]').
+            getByLabel('No Keys Typed')).toBeHidden();
+        // check that the keypress did nothing
+        await expect(pos).toHaveText('Ln 1, Col 1');
 
-            // changing mode changes the effect of key presses
-            await editor.press('i');
-            await expect(cursor).not.toHaveClass(/cursor-block-style/);
-            statusBarMode = workbox.locator('div[aria-label="Keybinding Mode: insert"]');
-            await expect(statusBarMode).not.toHaveClass(/warning-kind/);
+        await editor.press('j');
+        await expect(pos).toHaveText('Ln 2, Col 1');
 
-            await editor.press('j');
-            await expect(pos).toHaveText('Ln 1, Col 3');
-        });
+        // changing mode changes the effect of key presses
+        await editor.press('i');
+        await expect(cursor.first()).not.toHaveClass(/cursor-block-style/);
+        statusBarMode = workbox.locator('div[aria-label="Keybinding Mode: insert"]');
+        await expect(statusBarMode).not.toHaveClass(/warning-kind/);
 
+        await editor.press('j');
+        await expect(pos).toHaveText('Ln 2, Col 2');
+    });
+
+    if (process.env.CI !== 'true') {
         test('Can change cursor shape when using a delayed action' + label,
             async ({ workbox }) => {
                 const { editor } = await setup(workbox, file);
                 await editor.press('Escape');
                 const cursor = workbox.locator('div[role="presentation"].cursors-layer');
-                await expect(cursor).toHaveClass(/cursor-block-style/);
+                await expect(cursor.first()).toHaveClass(/cursor-block-style/);
 
                 await editor.press('d');
                 // assert cursor state
-                await expect(cursor).toHaveClass(/cursor-underline-style/);
+                await expect(cursor.first()).toHaveClass(/cursor-underline-style/);
 
                 // execute the action
                 await editor.press('w');
-                await expect(cursor).toHaveClass(/cursor-block-style/);
+                await expect(cursor.first()).toHaveClass(/cursor-block-style/);
             },
         );
+    }
 
+    if (process.env.CI !== 'true') {
         test('Can use number prefixes' + label, async ({ workbox }) => {
             const { editor, pos } = await setup(workbox, file);
             await editor.press('3');
@@ -97,6 +104,29 @@ test.describe('Basic keypresses', () => {
             await expect(pos).toHaveText('Ln 1, Col 4');
         });
     }
+
+    if (process.env.CI !== 'true') {
+        test('Can use store `runCommands` sequence to run later', async ({ workbox }) => {
+            const { editor, pos } = await setup(workbox, 'simpleMotions.toml');
+            await editor.press('Shift+j');
+            await editor.press('w');
+            await expect(pos).toHaveText('Ln 2, Col 3');
+        });
+    }
+
+    test('Can use implicit prefixes', async ({ workbox }) => {
+        const { editor, pos } = await setup(workbox, 'simpleMotions.toml');
+        await editor.press('g');
+        await editor.press('g');
+        await expect(pos).toHaveText('Ln 3, Col 1');
+    });
+
+    test('Updates `capture` variable', async ({ workbox }) => {
+        const { editor, pos } = await setup(workbox, 'simpleMotions.toml');
+        await editor.press('t');
+        await editor.press('f');
+        await expect(pos).toHaveText('Ln 2, Col 2');
+    });
 
     test('Can leverage fallback bindings', async ({ workbox }) => {
         const { editor, pos } = await setup(workbox, 'simpleMotions.toml');

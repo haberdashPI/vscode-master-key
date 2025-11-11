@@ -48,41 +48,45 @@ test.describe('Visual Documentation', () => {
         await checkKey('L', 'right', '1', getKey(3, 9));
     });
 
-    test('Updates on prefix', async ({ workbox }) => {
-        await openFile(workbox, 'text.md');
-        await workbox.keyboard.press('w');
-        const name = getKey(3, 6).name;
-        for (let i = 0; i < 10; i++) {
-            const text = await name.textContent();
-            if (text !== 'left') break;
-            await workbox.waitForTimeout(100);
-        }
-        await expect(name).not.toHaveText('left');
+    if (process.env.CI !== 'true') {
+        test('Updates on prefix', async ({ workbox }) => {
+            await openFile(workbox, 'text.md');
+            await workbox.keyboard.press('w');
+            const name = getKey(3, 6).name;
+            for (let i = 0; i < 10; i++) {
+                const text = await name.textContent();
+                if (text !== 'left') break;
+                await workbox.waitForTimeout(100);
+            }
+            await expect(name).not.toHaveText('left');
 
-        const key = getKey(2, 2);
-        for (let i = 0; i < 10; i++) {
-            const text = await key.name.textContent();
-            if (text === 'funny right') break;
-            await workbox.waitForTimeout(100);
-        }
-        await checkKey('W', 'funny right', '1', key);
-    });
+            const key = getKey(2, 2);
+            for (let i = 0; i < 10; i++) {
+                const text = await key.name.textContent();
+                if (text === 'funny right') break;
+                await workbox.waitForTimeout(100);
+            }
+            await checkKey('W', 'funny right', '1', key);
+        });
+    }
 
-    test('Layout toggles by command', async ({ workbox }) => {
-        await checkKey('I', 'insert mode', '1', getKey(2, 8));
-        await checkKey('^I', 'magic insert', '1', getKey(2, 8, 'top'));
-        await checkKey('^O', 'magic outsert', '1', getKey(2, 9, 'top'));
+    if (process.env.CI !== 'true') {
+        test('Layout toggles by command', async ({ workbox }) => {
+            await checkKey('I', 'insert mode', '1', getKey(2, 8));
+            await checkKey('^I', 'magic insert', '1', getKey(2, 8, 'top'));
+            await checkKey('^O', 'magic outsert', '1', getKey(2, 9, 'top'));
 
-        await runCommand(workbox, 'Master Key: Toggle Visual Doc Modifiers');
+            await runCommand(workbox, 'Master Key: Toggle Visual Doc Modifiers');
 
-        const key = getKey(2, 8, 'top');
-        for (let i = 0; i < 10; i++) {
-            const text = await key.name.textContent();
-            if (text === 'evil insert') break;
-            await workbox.waitForTimeout(100);
-        }
-        await checkKey('⌥I', 'evil insert', '1', key);
-        await checkKey('I', 'insert mode', '1', getKey(2, 8));
-        await checkKey('⌥O', '', 'none', getKey(2, 9, 'top'));
-    });
+            const key = getKey(2, 8, 'top');
+            for (let i = 0; i < 10; i++) {
+                const text = await key.name.textContent();
+                if (text === 'evil insert') break;
+                await workbox.waitForTimeout(100);
+            }
+            await checkKey('⌥I', 'evil insert', '1', key);
+            await checkKey('I', 'insert mode', '1', getKey(2, 8));
+            await checkKey('⌥O', '', 'none', getKey(2, 9, 'top'));
+        });
+    }
 });

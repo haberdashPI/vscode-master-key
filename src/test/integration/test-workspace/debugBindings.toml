@@ -1,0 +1,25 @@
+#:master-keybindings
+
+[header]
+version = "2.0.0"
+
+[[mode]]
+name = "insert"
+whenNoBinding = "insertCharacters"
+
+[[mode]]
+name = "normal"
+default = true
+whenNoBinding = "insertCharacters"
+
+[[bind]]
+key = '{{show("string: ", "a")}}'
+command = "cursorMove"
+args.to = "right"
+args.value = '{{show("sum: ", 1+2)}}'
+
+[[bind]]
+key = 'b'
+command = "cursorMove"
+args.to = "right"
+args.value = '{{show("result: ", "joe")}}'
