@@ -1,11 +1,14 @@
+#:master-keybindings
+
 # # Test Documentation
 #- IGNORED COMMENT
 [header]
-version = "2.0"
+version = "2.0.0"
 
 [[mode]]
 name = "insert"
 default = true
+whenNoBinding = "insertCharacters"
 
 [[mode]]
 name = "normal"
@@ -23,48 +26,48 @@ description = "more rightward keys"
 # Cillum adipisicing consequat aliquip Lorem adipisicing minim culpa officia aliquip reprehenderit.
 
 [[bind]]
-name = "normal mode"
+doc.name = "normal mode"
 key = "escape"
 command = "master-key.enterNormal"
-prefixes = "{{all_prefixes}}"
-hideInPalette = true
+prefixes.any = true
+doc.hideInPalette = true
 
-[[default]]
+[[define.bind]]
 id = "motion"
-default.command = "cursorMove"
-default.mode = "normal"
-default.when = "editorTextFocus"
-default.computedArgs.value = "count"
+command = "cursorMove"
+mode = "normal"
+when = "editorTextFocus"
+args.value = "{{key.count}}"
 
 [[bind]]
-defaults = "motion"
-name = "left"
+default = "{{bind.motion}}"
+doc.name = "left"
 key = "h"
 args.to = "left"
-kind = "left"
+doc.kind = "left"
 
 [[bind]]
-defaults = "motion"
-name = "right"
+default = "{{bind.motion}}"
+doc.name = "right"
 key = "l"
 args.to = "right"
-kind = "right"
+doc.kind = "right"
 
 [[bind]]
-defaults = "motion"
-name = "down"
+default = "{{bind.motion}}"
+doc.name = "down"
 key = "j"
 args.to = "down"
-kind = "left"
+doc.kind = "left"
 
 #- verify that including lots of ignored keys doesn't mess up display
 [[bind]]
-name = "ignore"
-foreach.key = ['{{key: .}}']
+doc.name = "ignore"
+foreach.key = ['{{keys(`.`)}}']
 key = "{{key}}"
 command = "master-key.ignore"
-hideInDocs = true
-hideInPalette = true
+doc.hideInDocs = true
+doc.hideInPalette = true
 priority = -10
 when = "editorTextFocus"
 mode = "normal"
@@ -74,25 +77,25 @@ mode = "normal"
 # Aliquip ipsum enim cupidatat aute occaecat magna nostrud qui labore.
 
 [[bind]]
-defaults = "motion"
-name = "up"
+default = "{{bind.motion}}"
+doc.name = "up"
 key = "k"
 args.to = "up"
-kind = "right"
+doc.kind = "right"
 
 [[bind]]
-defaults = "motion"
-name = "funny right"
+default = "{{bind.motion}}"
+doc.name = "funny right"
 key = "w w"
 mode = "normal"
 args.to = "right"
-kind = "right"
+doc.kind = "right"
 
 [[bind]]
-name = "insert mode"
+doc.name = "insert mode"
 key = "i"
 command = "master-key.enterInsert"
 mode = "normal"
-kind = "right"
+doc.kind = "right"
 
 # Final paragraph shows up.

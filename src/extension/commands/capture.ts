@@ -2,10 +2,13 @@ import * as vscode from 'vscode';
 import z from 'zod';
 import { validateInput } from '../utils';
 import { CommandResult } from '../state';
-import { MODE, defaultMode } from './mode';
+import { MODE } from './mode';
 import { withState, recordedCommand } from '../state';
-import { DoArgs } from '../keybindings/parsing';
-import { doCommandsCmd } from './do';
+// TODO: implement
+// import { doCommandsCmd } from './do';
+import { Command } from '../../rust/parsing/lib/parsing';
+
+import { bindings } from '../keybindings/config';
 
 let typeSubscription: vscode.Disposable | undefined;
 let onTypeFn: (text: string) => void = async function (_text: string) {
@@ -24,11 +27,11 @@ function clearTypeSubscription() {
     }
 }
 
-export async function runCommandOnKeys(doArgs: DoArgs | undefined, mode: string) {
+export async function runCommandOnKeys(commands: Command[], mode: string) {
     if (mode !== 'capture') {
         clearTypeSubscription();
     }
-    if (doArgs) {
+    if (commands.length > 0) {
         // we await on state to avoid race conditions here (rather than
         // to change or read anything about the state)
         if (!typeSubscription) {
@@ -45,7 +48,6 @@ export async function runCommandOnKeys(doArgs: DoArgs | undefined, mode: string)
             await withState(async state =>
                 state.set(CAPTURE, { transient: { reset: '' } }, typed),
             );
-            await doCommandsCmd({ do: doArgs });
         };
     }
 }
@@ -78,7 +80,7 @@ export async function captureKeys(onUpdate: UpdateFn) {
 
     await withState(async (state) => {
         return state.onSet(MODE, (state) => {
-            if (state.get(MODE, defaultMode) !== 'capture') {
+            if (state.get(MODE, bindings.default_mode()) !== 'capture') {
                 clearTypeSubscription();
                 if (!isResolved) {
                     isResolved = true;
@@ -155,6 +157,9 @@ async function captureKeysCmd(args_: unknown): Promise<CommandResult> {
                 }
                 return [result, stop];
             });
+        }
+        if (!text) {
+            return 'cancel';
         }
         await withState(async (state) => {
             return state.set(CAPTURE, { transient: { reset: '' } }, text);

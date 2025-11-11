@@ -2,8 +2,8 @@ import * as vscode from 'vscode';
 import z from 'zod';
 import { validateInput } from './utils';
 import { Map, List, RecordOf, Record as IRecord } from 'immutable';
-import { onChangeBindings } from './keybindings/config';
-import { Bindings } from './keybindings/processing';
+import { bindings, onChangeBindings } from './keybindings/config';
+import { KeyFileResult, ParseError } from '../rust/parsing/lib/parsing';
 
 export type Listener = (states: Map<string, unknown>) => boolean;
 
@@ -75,8 +75,29 @@ export class CommandState {
     }
 
     private setHelper_(key: string, opt: ISetOptions, values: Map<string, unknown>) {
+        // console.log(`key: ${key}, values: ${JSON.stringify(values, null, 4)}`);
         let listeners = this.record.options.get(key, StateOptions()).listeners;
         listeners = listeners.filter(listener => listener(values));
+
+        const jsValues: Record<string, unknown> = {};
+        for (const k of values.keys()) {
+            // NOTE: expressions already know about `val` entries, and they don't need to be
+            // added here again
+            if (k != 'val') {
+                jsValues[k] = values.get(k);
+            }
+        }
+
+        try {
+            bindings.set_value('key', jsValues);
+        } catch (e) {
+            if ((<ParseError>e).report_string) {
+                const msg = (<ParseError>e).report_string();
+                vscode.window.showErrorMessage(
+                    `While setting 'key' to '${JSON.stringify(jsValues, null, 4)}' ${msg}.`,
+                );
+            }
+        }
 
         const options = this.record.options.set(
             key,
@@ -164,9 +185,12 @@ export class CommandState {
 
         const record = this.record.set('options', options).set('values', values);
         if (record.wasAltered()) {
+            syncStateWithBindings(this);
             return this;
         } else {
-            return new CommandState(record);
+            const result = new CommandState(record);
+            syncStateWithBindings(result);
+            return result;
         }
     }
 
@@ -274,18 +298,40 @@ export function recordedCommand<T extends Array<E>, E>(fn: CommandFn<T, E>) {
 
 function addDefinitions(
     state: CommandState,
-    definitions: Record<string, unknown> | undefined,
+    definitions: unknown,
 ) {
     return state.withMutations((state) => {
-        for (const [k, v] of Object.entries(definitions || {})) {
-            state.set(k, { public: true }, v);
-        }
+        state.set('val', { public: true }, definitions);
+        syncStateWithBindings(state);
     });
 }
 
-async function updateDefinitions(bindings: Bindings | undefined) {
-    // TODO: ideally we clear the old definitions here
-    await withState(async state => addDefinitions(state, bindings?.define));
+function syncStateWithBindings(state: CommandState) {
+    const jsValues: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(state.values)) {
+        // NOTE: expressions already know about `val` entries, and they don't need to be
+        // added here again
+        if (k != 'val') {
+            jsValues[k] = v;
+        }
+    }
+    try {
+        bindings.set_value('key', jsValues);
+        bindings.set_value('code', codeState);
+    } catch (e) {
+        if ((<ParseError>e).report_string) {
+            const msg = (<ParseError>e).report_string();
+            vscode.window.showErrorMessage(
+                `While setting 'key' to '${JSON.stringify(jsValues, null, 4)}'
+                 \nand setting 'code' to '${JSON.stringify(codeState, null, 4)}'
+                 \nerror: ${msg}.`,
+            );
+        }
+    }
+}
+
+async function updateDefinitions(bindings: KeyFileResult) {
+    await withState(async state => addDefinitions(state, bindings.values()));
 }
 
 const setFlagArgs = z.
@@ -326,15 +372,27 @@ async function setFlag(args_: unknown): Promise<CommandResult> {
     return;
 }
 
-export async function activate(context: vscode.ExtensionContext) {
-    onChangeBindings(updateDefinitions);
+interface ICodeState {
+    editorHasSelection: boolean;
+    editorHasMultipleSelections: boolean;
+    editorLangId: string;
+    firstSelectionOrWord: string;
+}
 
-    context.subscriptions.push(
-        vscode.commands.registerCommand('master-key.setFlag', recordedCommand(setFlag)),
-    );
+let codeState: ICodeState = {
+    editorHasSelection: false,
+    editorHasMultipleSelections: false,
+    editorLangId: '',
+    firstSelectionOrWord: '',
+};
 
-    vscode.window.onDidChangeTextEditorSelection(async (e) => {
-        let selCount = 0;
+function updateCodeVariables(
+    e: { textEditor?: vscode.TextEditor;
+        selections?: readonly vscode.Selection[]; },
+) {
+    const doc = e.textEditor?.document;
+    let selCount = 0;
+    if (e.selections) {
         for (const sel of e.selections) {
             if (!sel.isEmpty) {
                 selCount += 1;
@@ -343,27 +401,51 @@ export async function activate(context: vscode.ExtensionContext) {
                 break;
             }
         }
-        await withState(async (state) => {
-            return state.withMutations((state) => {
-                state.set('editorHasSelection', selCount > 0);
-                state.set('editorHasMultipleSelections', selCount > 1);
-                const doc = e.textEditor.document;
+    }
 
-                let firstSelectionOrWord: string;
-                if (e.selections[0].isEmpty) {
-                    const wordRange = doc.getWordRangeAtPosition(e.selections[0].start);
-                    firstSelectionOrWord = doc.getText(wordRange);
-                } else {
-                    firstSelectionOrWord = doc.getText(e.selections[0]);
-                }
-                state.set('firstSelectionOrWord', { public: true }, firstSelectionOrWord);
-            });
-        });
-    });
+    let firstSelectionOrWord: string;
+    if (doc && e.selections && e.selections[0].isEmpty) {
+        const wordRange = doc.getWordRangeAtPosition(e.selections[0].start);
+        if (wordRange) {
+            firstSelectionOrWord = doc.getText(wordRange);
+        } else {
+            firstSelectionOrWord = '';
+        }
+    } else if (doc && e.selections) {
+        firstSelectionOrWord = doc.getText(e.selections[0]);
+    } else {
+        firstSelectionOrWord = '';
+    }
 
-    vscode.window.onDidChangeActiveTextEditor(async (e) => {
-        await withState(async state =>
-            state.set('editorLangId', e?.document?.languageId || ''),
-        );
-    });
+    let editorLangId: string | undefined = '';
+    if (doc) {
+        editorLangId = e?.textEditor?.document?.languageId;
+    }
+    codeState = {
+        editorHasSelection: selCount > 0,
+        editorHasMultipleSelections: selCount > 1,
+        editorLangId: editorLangId || '',
+        firstSelectionOrWord,
+    };
+    try {
+        bindings.set_value('code', codeState);
+    } catch (e) {
+        if ((<ParseError>e).report_string) {
+            const msg = (<ParseError>e).report_string();
+            vscode.window.showErrorMessage(
+                `While setting 'code' to '${JSON.stringify(codeState, null, 4)}' ${msg}.`,
+            );
+        }
+    }
+}
+
+export async function activate(context: vscode.ExtensionContext) {
+    onChangeBindings(updateDefinitions);
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('master-key.setFlag', recordedCommand(setFlag)),
+    );
+
+    vscode.window.onDidChangeTextEditorSelection(updateCodeVariables);
+    vscode.window.onDidChangeActiveTextEditor(e => updateCodeVariables({ textEditor: e }));
 }
