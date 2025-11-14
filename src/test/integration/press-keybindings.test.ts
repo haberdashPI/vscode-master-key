@@ -79,15 +79,15 @@ test.describe('Basic keypresses', () => {
                 const { editor } = await setup(workbox, file);
                 await editor.press('Escape');
                 const cursor = workbox.locator('div[role="presentation"].cursors-layer');
-                await expect(cursor).toHaveClass(/cursor-block-style/);
+                await expect(cursor.first()).toHaveClass(/cursor-block-style/);
 
                 await editor.press('d');
                 // assert cursor state
-                await expect(cursor).toHaveClass(/cursor-underline-style/);
+                await expect(cursor.first()).toHaveClass(/cursor-underline-style/);
 
                 // execute the action
                 await editor.press('w');
-                await expect(cursor).toHaveClass(/cursor-block-style/);
+                await expect(cursor.first()).toHaveClass(/cursor-block-style/);
             },
         );
 
@@ -98,6 +98,13 @@ test.describe('Basic keypresses', () => {
             await expect(pos).toHaveText('Ln 1, Col 4');
         });
     }
+
+    test('Can use store `runCommands` sequence to run later', async ({ workbox }) => {
+        const { editor, pos } = await setup(workbox, 'simpleMotions.toml');
+        await editor.press('Shift+j');
+        await editor.press('w');
+        await expect(pos).toHaveText('Ln 2, Col 7');
+    });
 
     test('Can use implicit prefixes', async ({ workbox }) => {
         const { editor, pos } = await setup(workbox, 'simpleMotions.toml');

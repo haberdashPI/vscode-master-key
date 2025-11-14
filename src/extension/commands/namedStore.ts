@@ -1,17 +1,16 @@
+import * as vscode from 'vscode';
+import z from 'zod';
+import { validateInput } from '../utils';
+import {
+    commandArgs,
+    CommandResult,
+    recordedCommand,
+    WrappedCommandResult,
+} from '../state';
+import { merge } from 'lodash';
+import { bindings } from '../keybindings/config';
+
 /* eslint-disable */
-
-// TODO: reimplement
-
-// import * as vscode from 'vscode';
-// import z from 'zod';
-// import { validateInput } from '../utils';
-// import { CommandResult, recordedCommand } from '../state';
-// import { evalContext } from '../expressions';
-// import { withState } from '../state';
-// import { doCommand } from './do';
-// import { merge, omit } from 'lodash';
-// import { bindingCommand } from '../keybindings/parsing';
-
 // /**
 //  * @command storeNamed
 //  * @order 105
@@ -128,108 +127,133 @@
 //     }
 //     return;
 // }
+/* eslint-enable */
 
-// /**
-//  * @command storeCommand
-//  * @order 105
-//  *
-//  * Stores a command (or part of one) to run later using
-//  * [`executeStoredCommand`](/commands/executeStoredCommand).
-//  *
-//  * **Arguments**
-//  * - `command`: (optional) the name of the command to store
-//  * - `args`: (optional) The arguments to directly pass to the `command`, these are static
-//  *   values.
-//  * - `computedArgs`: (optional) Like `args` except that each value is a string that is
-//  *   evaluated as an [expression](/expressions/index).
-//  * - `register`: a unique name where the command and its arguments will be stored
-//  */
-// const storeCommandArgs = z.object({
-//     register: z.string(),
-//     command: z.string().optional(),
-//     args: z.any().optional(),
-//     computedArgs: z.object({}).passthrough().optional(),
-// });
-// type StoreCommandArgs = z.infer<typeof storeCommandArgs>;
+/**
+ * @command storeCommand
+ * @order 105
+ *
+ * Stores a command (or part of one) to run later using
+ * [`executeStoredCommand`](/commands/executeStoredCommand).
+ *
+ * **Arguments**
+ * - `command`: (optional) the name of the command to store
+ * - `args`: (optional) The arguments to pass to the `command`
+ * - `register`: a unique name where the command and its arguments will be stored
+ */
+const storeCommandArgs = z.object({
+    register: z.string(),
+    command: z.string().optional(),
+    args: z.any().optional(),
+});
+type StoreCommandArgs = z.infer<typeof storeCommandArgs>;
 
-// const storedCommands: Record<string, StoreCommandArgs> = {};
+const storedCommands: Record<string, StoreCommandArgs> = {};
 
-// async function storeCommand(args_: unknown): Promise<CommandResult> {
-//     const args = validateInput('master-key.storeCommand', args_, storeCommandArgs);
-//     if (args) {
-//         storedCommands[args.register] = args;
-//     }
-//     return undefined;
-// }
+async function storeCommand(args_: unknown): Promise<CommandResult> {
+    const args = validateInput('master-key.storeCommand', args_, storeCommandArgs);
+    if (args) {
+        storedCommands[args.register] = args;
+    }
+    return undefined;
+}
 
-// /**
-//  * @command executeStoredCommand
-//  * @order 105
-//  *
-//  * Runs a command previously stored with [`storeCommand`](/commands/storeCommand).
-//  * The arguments passed to `storeCommand` are merged with those passed here before
-//  * running the command.
-//  *
-//  * **Arguments**
-//  * - `command`: (optional) the name of the command to run
-//  * - `args`: (optional) The arguments to directly pass to the `command`, these are static
-//  *   values.
-//  * - `computedArgs`: (optional) Like `args` except that each value is a string that is
-//  *   evaluated as an [expression](/expressions/index).
-//  * - `register`: a unique name where the command and its arguments will be stored
-//  */
+/**
+ * @command executeStoredCommand
+ * @order 105
+ *
+ * Runs a command previously stored with [`storeCommand`](/commands/storeCommand).
+ * The arguments passed to `storeCommand` are merged with those passed here before
+ * running the command.
+ *
+ * **Arguments**
+ * - `command`: (optional) the name of the command to run
+ * - `args`: (optional) The arguments to pass to the `command`.
+ * - `register`: a unique name where the command and its arguments will be stored
+ */
 
-// const executeStoredCommandArgs = z.object({
-//     register: z.string(),
-//     command: z.string().optional(),
-//     args: z.any().optional(),
-//     computedArgs: z.object({}).passthrough().optional(),
-// });
+const executeStoredCommandArgs = z.object({
+    register: z.string(),
+    command: z.string().optional(),
+    args: z.any().optional(),
+});
 
-// async function executedStoredCommand(args_: unknown): Promise<CommandResult> {
-//     const args = validateInput(
-//         'master-key.executeStoredCommand',
-//         args_,
-//         executeStoredCommandArgs,
-//     );
-//     if (args) {
-//         const command_ = merge(storedCommands[args.register], args);
-//         const command = validateInput(
-//             'master-key.executeStoredCommand',
-//             omit(command_, 'register'),
-//             bindingCommand,
-//         );
-//         if (command !== undefined) {
-//             await doCommand(command);
-//         }
-//         return merge(args, command);
-//     }
-//     return undefined;
-// }
+async function executedStoredCommand(args_: unknown): Promise<CommandResult> {
+    const args = validateInput(
+        'master-key.executeStoredCommand',
+        args_,
+        executeStoredCommandArgs,
+    );
+    if (args) {
+        const command = merge(storedCommands[args.register], args);
+        const reified = bindings.do_stored_command(command);
+        if ((reified.error?.length || 0) > 0) {
+            let count = 0;
+            for (const e of (reified.error || [])) {
+                count++;
+                if (count > 3) {
+                    break;
+                }
+                vscode.window.showErrorMessage(e);
+            }
+        } else {
+            for (let i = 0; i < reified.n_commands(); i++) {
+                const command = reified.resolve_command(i, bindings);
+                if (command.command === 'master-key.ignore') {
+                    let count = 0;
+                    for (const error of (command.errors || [])) {
+                        count++;
+                        if (count >= 3) {
+                            vscode.window.showErrorMessage(
+                                'There were additional errors when running a \
+                                key binding; they have been ignored to maintain \
+                                a reasonable number of notifications ',
+                            );
+                        } else {
+                            vscode.window.showErrorMessage(error);
+                        }
+                    }
+                } else {
+                    const result = await vscode.commands.
+                        executeCommand<WrappedCommandResult | void>(
+                            command.command,
+                            command.args,
+                        );
+                    const resolvedArgs = commandArgs(result);
+                    if (resolvedArgs === 'cancel') {
+                        return 'cancel';
+                    }
+                }
+            }
+        }
+        return args;
+    }
+    return undefined;
+}
 
-// export function activate(context: vscode.ExtensionContext) {
-//     context.subscriptions.push(
-//         vscode.commands.registerCommand(
-//             'master-key.storeNamed',
-//             recordedCommand(storeNamed),
-//         ),
-//     );
-//     context.subscriptions.push(
-//         vscode.commands.registerCommand(
-//             'master-key.restoreNamed',
-//             recordedCommand(restoreNamed),
-//         ),
-//     );
-//     context.subscriptions.push(
-//         vscode.commands.registerCommand(
-//             'master-key.storeCommand',
-//             recordedCommand(storeCommand),
-//         ),
-//     );
-//     context.subscriptions.push(
-//         vscode.commands.registerCommand(
-//             'master-key.executeStoredCommand',
-//             recordedCommand(executedStoredCommand),
-//         ),
-//     );
-// }
+export function activate(context: vscode.ExtensionContext) {
+    // context.subscriptions.push(
+    //     vscode.commands.registerCommand(
+    //         'master-key.storeNamed',
+    //         recordedCommand(storeNamed),
+    //     ),
+    // );
+    // context.subscriptions.push(
+    //     vscode.commands.registerCommand(
+    //         'master-key.restoreNamed',
+    //         recordedCommand(restoreNamed),
+    //     ),
+    // );
+    context.subscriptions.push(
+        vscode.commands.registerCommand(
+            'master-key.storeCommand',
+            recordedCommand(storeCommand),
+        ),
+    );
+    context.subscriptions.push(
+        vscode.commands.registerCommand(
+            'master-key.executeStoredCommand',
+            recordedCommand(executedStoredCommand),
+        ),
+    );
+}

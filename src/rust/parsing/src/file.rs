@@ -1,3 +1,5 @@
+#![cfg_attr(coverage_nightly, feature(coverage_attribute))]
+
 ///
 /// @file bindings/index.md
 /// @order -10
@@ -11,10 +13,9 @@
 /// top-level fields:
 ///
 ///
-
 // NOTE: .simple-src-docs.config.toml is setup to insert a list of
 // bindings here, between the above text and the below example
-
+use indexmap::map::serde_seq::deserialize;
 /// @file bindings/index.md
 /// @order 50
 ///
@@ -119,7 +120,10 @@
 ///     - the variable `i` renamed to `index` in expressions of these fields
 #[allow(unused_imports)]
 use log::{error, info};
+use toml::de::ValueDeserializer;
+use toml::ser::ValueSerializer;
 
+use crate::bind::command::Command;
 use crate::bind::{
     Binding, BindingCodes, BindingInput, BindingOutput, KeyId, LegacyBindingInput, ReifiedBinding,
     UNKNOWN_RANGE,
@@ -414,9 +418,9 @@ pub struct KeyFileResult {
     pub(crate) scope: Scope,
 }
 
-// LCOV_EXCL_START
 // These lines are tested during integration tests with the typescript code
 #[wasm_bindgen]
+#[cfg_attr(coverage_nightly, coverage(off))]
 impl KeyFileResult {
     #[wasm_bindgen(constructor)]
     pub fn new() -> Self {
@@ -499,12 +503,44 @@ impl KeyFileResult {
                     return ReifiedBinding::noop(&mut self.scope);
                 } else {
                     let binding = &bind[id as usize];
-                    return ReifiedBinding::new(id, &binding, &mut self.scope);
+                    return ReifiedBinding::new(&binding, &mut self.scope);
                 }
             } else {
                 return ReifiedBinding::noop(&mut self.scope);
             }
         }
+    }
+
+    fn do_stored_command_helper(&mut self, value: JsValue) -> ResultVec<ReifiedBinding> {
+        let value: toml::Value = match serde_wasm_bindgen::from_value(value) {
+            Err(e) => Err(err!("{e} while serializing command"))?,
+            Ok(x) => x,
+        };
+        // because we make use of Spanned values in `Command` (via `Value`) we first need to
+        // round trip the serialized value from a string (we could re-write a lot of
+        // functionality to avoid this somewhat awkward situation, but that seems like
+        // premature optimization)
+        let content = value.to_string();
+        let deserializer = match ValueDeserializer::parse(&content) {
+            Err(e) => return Err(err!("{e} for string {content}"))?,
+            Ok(x) => x,
+        };
+        let command = match Command::deserialize(deserializer) {
+            Err(e) => return Err(err!("{e} for string {content}"))?,
+            Ok(x) => x,
+        };
+        return Ok(ReifiedBinding::from_commands(vec![command], &self.scope));
+    }
+
+    pub fn do_stored_command(&mut self, value: JsValue) -> ReifiedBinding {
+        return match self.do_stored_command_helper(value) {
+            Ok(x) => x,
+            Err(e) => {
+                let mut result = ReifiedBinding::noop(&self.scope);
+                result.error = Some(e.errors.iter().map(|er| format!("{er}")).collect());
+                result
+            }
+        };
     }
 
     pub fn store_binding(
@@ -626,15 +662,14 @@ impl KeyFileResult {
         };
     }
 }
-// LCOV_EXCL_STOP
 
 lazy_static! {
     static ref LAYOUT_INDEPENDENT_KEY: Regex = Regex::new(r"\[[^\]]+\]").unwrap();
 }
 
-// LCOV_EXCL_START
 // These lines are tested during integration tests with the typescript code
 #[wasm_bindgen]
+#[cfg_attr(coverage_nightly, coverage(off))]
 pub fn parse_keybinding_bytes(file_content: Box<[u8]>) -> KeyFileResult {
     let mut warnings = Vec::new();
     let mut scope = Scope::new();
@@ -660,7 +695,6 @@ pub fn parse_keybinding_bytes(file_content: Box<[u8]>) -> KeyFileResult {
         },
     };
 }
-// LCOV_EXCL_STOP
 
 fn parse_bytes_helper(
     file_content: &[u8],
@@ -1485,6 +1519,7 @@ pub(crate) mod tests {
             &mut warnings,
         )
         .unwrap();
+
         assert!(
             unwrap_prefixes(&result.bind[2].prefixes)
                 .iter()
@@ -1510,7 +1545,10 @@ pub(crate) mod tests {
                 .iter()
                 .any(|x| x == "q")
         );
-        assert_eq!(unwrap_prefixes(&result.bind[2].prefixes).len(), 5);
+        unwrap_prefixes(&result.bind[2].prefixes)
+            .iter()
+            .any(|x| x == "");
+        assert_eq!(unwrap_prefixes(&result.bind[2].prefixes).len(), 6);
         assert!(
             unwrap_prefixes(&result.bind[3].prefixes)
                 .iter()
@@ -1531,7 +1569,12 @@ pub(crate) mod tests {
                 .iter()
                 .any(|x| x == "q")
         );
-        assert_eq!(unwrap_prefixes(&result.bind[3].prefixes).len(), 4);
+        assert!(
+            unwrap_prefixes(&result.bind[3].prefixes)
+                .iter()
+                .any(|x| x == "")
+        );
+        assert_eq!(unwrap_prefixes(&result.bind[3].prefixes).len(), 5);
     }
 
     #[test]
@@ -1718,15 +1761,19 @@ pub(crate) mod tests {
         version = "2.0.0"
 
         [[bind]]
-        key = "a b"
-        command = "foo"
-
-        [[bind]]
         key = "a"
         finalKey = false
         command = "master-key.prefix"
         args.cursor = "Block"
         doc.name = "explicit prefix"
+
+        [[bind]]
+        key = "a b"
+        command = "foo"
+
+        [[bind]]
+        key = "a c"
+        command = "bar"
         "#;
 
         let mut scope = Scope::new();
@@ -1737,15 +1784,16 @@ pub(crate) mod tests {
             &mut warnings,
         )
         .unwrap();
-        assert_eq!(result.key_bind.len(), 2);
+        assert_eq!(result.key_bind.len(), 3);
         if let BindingOutput::Do {
             key,
-            args: BindingOutputArgs { prefix, .. },
+            args: BindingOutputArgs { prefix, name, .. },
             ..
         } = &result.key_bind[0]
         {
-            assert_eq!(key, "b");
-            assert_eq!(prefix, "a");
+            assert_eq!(key, "a");
+            assert_eq!(prefix, "");
+            assert_eq!(name, "explicit prefix")
         } else {
             error!("Unexpected binding {:#?}", result.key_bind[0]);
             assert!(false);
@@ -1753,13 +1801,24 @@ pub(crate) mod tests {
 
         if let BindingOutput::Do {
             key,
-            args: BindingOutputArgs { prefix, name, .. },
+            args: BindingOutputArgs { prefix, .. },
             ..
         } = &result.key_bind[1]
         {
-            assert_eq!(key, "a");
-            assert_eq!(prefix, "");
-            assert_eq!(name, "explicit prefix")
+            assert_eq!(key, "b");
+            assert_eq!(prefix, "a");
+        } else {
+            error!("Unexpected binding {:#?}", result.key_bind[0]);
+            assert!(false);
+        }
+        if let BindingOutput::Do {
+            key,
+            args: BindingOutputArgs { prefix, .. },
+            ..
+        } = &result.key_bind[2]
+        {
+            assert_eq!(key, "c");
+            assert_eq!(prefix, "a");
         } else {
             error!("Unexpected binding {:#?}", result.key_bind[0]);
             assert!(false);
@@ -2778,6 +2837,199 @@ pub(crate) mod tests {
         } else {
             assert!(false);
         }
+    }
+
+    /*
+        #:master-keybindings
+
+       [header]
+       version = "2.0.0"
+
+       [[mode]]
+       name = "insert"
+       whenNoBinding = "insertCharacters"
+
+       [[mode]]
+       name = "normal"
+       default = true
+       whenNoBinding = "ignoreCharacters"
+
+       [[bind]]
+       key = "a"
+       command = "runCommands"
+
+       [[bind.args.commands]]
+       command = "master-key.prefix"
+
+       [[bind.args.commands]]
+       command = "foo"
+
+       [[bind]]
+       key = "b"
+       command = "runCommands"
+    */
+
+    #[test]
+    fn explicit_prefix_code_handling() {
+        let data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.0.0"
+
+        [[mode]]
+        name = "insert"
+        whenNoBinding = "insertCharacters"
+
+        [[mode]]
+        name = "normal"
+        default = true
+        whenNoBinding = "insertCharacters"
+
+        [[bind]]
+        key = "a"
+        command = "runCommands"
+
+        [[bind.args.commands]]
+        command = "master-key.prefix"
+
+        [[bind.args.commands]]
+        command = "foo"
+
+        [[bind]]
+        key = "a c"
+        command = "bar"
+        when = "editorTextFocus" # this line is crucial to what we're testing here
+        "#;
+
+        let mut warnings = Vec::new();
+        let mut scope = Scope::new();
+        let result = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope).unwrap();
+
+        let a_bind_id = result
+            .key_bind
+            .iter()
+            .filter_map(|k| match k {
+                BindingOutput::Do {
+                    key,
+                    args: crate::bind::BindingOutputArgs { key_id, .. },
+                    ..
+                } if key == "a" => Some(key_id),
+                _ => None,
+            })
+            .next()
+            .unwrap();
+        let c_bind_when = result
+            .key_bind
+            .iter()
+            .filter_map(|k| match k {
+                BindingOutput::Do {
+                    key,
+                    when: Some(w_str),
+                    ..
+                } if key == "c" => Some(w_str),
+                _ => None,
+            })
+            .next()
+            .unwrap();
+
+        assert!(c_bind_when.contains(&format!("prefixCode == {a_bind_id}")));
+    }
+
+    #[test]
+    fn scratch_test() {
+        let data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.0.0"
+        name = "Simple Motions"
+
+        [[mode]]
+        name = "insert"
+        whenNoBinding = "insertCharacters"
+
+        [[mode]]
+        name = "normal"
+        default = true
+        highlight = "Highlight"
+        cursorShape = "Block"
+        whenNoBinding = "ignoreCharacters"
+
+        [[bind]]
+        doc.name = "normal mode"
+        key = "escape"
+        command = "master-key.enterNormal"
+        prefixes.any = true
+
+        [[bind]]
+        doc.name = "delete"
+        key = "d"
+        mode = "normal"
+        command = "runCommands"
+        when = "editorTextFocus"
+
+        [[bind.args.commands]]
+        command = "master-key.prefix"
+        args.cursor = "Underline"
+
+        [[bind.args.commands]]
+        command = "master-key.storeCommand"
+        args.command = "deleteRight"
+        args.register = "operation"
+
+        [[bind]]
+        doc.name = "complex stored command"
+        key = "shift+j"
+        mode = "normal"
+        command = "runCommands"
+
+        [[bind.args.commands]]
+        command = "master-key.prefix"
+        args.cursor = "Underline"
+
+        [[bind.args.commands]]
+        command = "master-key.storeCommand"
+        args.command = "runCommands"
+        args.register = "operation"
+        args.args.commands = ["cursorDown", "cursorDown", "deleteRight"]
+
+        [[bind]]
+        doc.name = "word operation"
+        key = "w"
+        mode = "normal"
+        prefixes.anyOf = ["d", "shift+j"]
+        command = "runCommands"
+        when = "editorTextFocus"
+
+        [[bind.args.commands]]
+        command = "cursorWordEndRightSelect"
+
+        [[bind.args.commands]]
+        command = "master-key.executeStoredCommand"
+        args.register = "operation"
+        "#;
+
+        let mut warnings = Vec::new();
+        let mut scope = Scope::new();
+        let result = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope).unwrap();
+
+        // result.key_bind.iter().for_each(|k| match k {
+        //     weird @ BindingOutput::Prefix {
+        //         key,
+        //         args:
+        //             crate::bind::PrefixArgs {
+        //                 key: prefix_key, ..
+        //             },
+        //         ..
+        //     } if key == "w" && prefix_key == "d w" => {
+        //         info!("Weird key still there: {weird:#?}");
+        //         assert!(false)
+        //     }
+        //     _ => (),
+        // });
+
+        info!("result: {result:#?}");
     }
 
     // TODO: delete

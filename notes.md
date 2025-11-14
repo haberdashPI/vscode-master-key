@@ -441,15 +441,57 @@ Integration test debugging:
                 - [X] canceled
             - [X] repeat replay w/ count
             - [X] nested replay
+    - [X] debug prefix setting
+        - [x] e.g. for manual "d w" the prefix is set to 7 but no bindings are defined
+          for the id 7 (this is probably about automated version of bindings having
+          different ids, and we're referencing those, even though we only keep the non-automated bindings)
+          - while the output looks reasonable in the binding file, even though the
+            id there is 14, we get an id of 7 in `toRun`
+          - interestingly 7 *is* the command id, so I'm guess there's a bug there somehow
+          - [X] properly get the id
+    - [ ] debug excess prefix definitions
+        - [ ] e.g. in simple motions we are getting a prefix definition for "d w"
+              (should only get "d")
+              - [X] write a test for this and bisect the file contents
+                - AH HA!: this comes from using `prefixes.any`: we need to avoid
+                  any prefixes that are actually finalKey presses
+              - [ ] write a test
+                - it should demonstrate that when use have `prefixes.any`
+                  only `finalKey = false` bindings show up
+              - [ ] get the test to pass
+    - [X] debug multiple explicit prefixes
+        - seems like it isn't quite setting up the right bindings in this case
+        - [x] test a simpler case: prefixes.anyOf = ["a", "b"] where "a" and "b" are
+          path explicitly defined
+            - the problem seems to be that the fallback prefix rather than the
+              specific explicit binding is used; it's not clear I should merge them
+              in all cases (e.g. the when clause could be different); but
+              how do we handle this?
+              (the bug may be specific to the case where we have `when` defined as a
+               non default value)
+            - but actually there are some interesting interactions here, because
+              a more MWE doesn't reproduce the issue (this is somehow interacting with
+              the problem I'm seeing above with excess prefix definitions)
+            - okay, I've found my MWE
+        - [X] propagate usage of prefix code vs. key code through out codebase
+        - [X] review outputs in debug to understand what is still going wrong with prefix for "shift+j"
+    - [ ] probably remove some cases where we store `key_id`: it isn't
+            needed post binding output generation anymore (just `prefix_id`)
+
     - [ ] reimplement stored commands (to handle vim bindings)
+         - [X] implementation
+         - [X] unit tests
+         - [X] test with `runCommands`
+            - [X] debug error when using `runCommands`
+         - [ ] test replay of stored commands
     - [ ] replace `setFlag` with `updateValue` (or something like that)
-        - [ ] write a test
-    - [ ] get all tests (except unimplemented features) working again
+        - [ ] implementation
+        - [ ] write tests
+    - [ ] parse and try out larkin
+    - [ ] get existing tests (except unimplemented features) working again
         - [ ] update unit tests for running commands
             - [ ] remove replay unit tests (they are become integration tests)
             - [ ] move the missing do unit tests to integration
-        - [ ] new unit tests?
-        - [ ] new integration tests?
     - [ ] start dog-fooding the latest version to catch performances issues and bugs
     - [ ] properly handle user keybindings (have the main keybinding file in memory)
     - [ ] reimlement storeNamed? (or make it more specific to macros; I'm not

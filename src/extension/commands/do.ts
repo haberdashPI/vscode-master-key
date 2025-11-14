@@ -19,7 +19,7 @@ export const COMMAND_HISTORY = 'history';
 let maxHistory = 0;
 
 const masterBinding = z.object({
-    key_id: z.number().int().min(0),
+    prefix_id: z.number().int().min(-1),
     command_id: z.number().int().min(0).default(-1),
 });
 
@@ -61,6 +61,7 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
                 }
                 vscode.window.showErrorMessage(e);
             }
+            return;
         }
 
         try {
@@ -73,10 +74,7 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
                     canceled = false;
                     const command = toRun.resolve_command(i, bindings);
                     // pass key codes down into the arguments to prefix
-                    if (command.command == 'master-key.prefix') {
-                        command.args.key_id = toRun.key_id;
-                        command.args.key = toRun.key;
-                    } else if (command.command == 'master-key.ignore') {
+                    if (command.command == 'master-key.ignore') {
                         if (command.errors) {
                             let count = 0;
                             for (const error of command.errors) {
@@ -92,6 +90,10 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
                             }
                         }
                     } else {
+                        if (command.command == 'master-key.prefix') {
+                            command.args.prefix_id = args.prefix_id;
+                            command.args.key = toRun.key;
+                        }
                         const result =
                             await vscode.commands.
                                 executeCommand<WrappedCommandResult | void>(
@@ -168,7 +170,7 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
             }
         }
     }
-    // TODO: think about whether it is cool to nest `do` commands
+
     return args;
 }
 

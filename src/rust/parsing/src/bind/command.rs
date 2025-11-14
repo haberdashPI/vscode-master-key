@@ -353,10 +353,12 @@ pub(crate) fn regularize_commands(
 
 #[allow(non_snake_case)]
 #[wasm_bindgen(getter_with_clone)]
-#[derive(Clone, Debug, Serialize, PartialEq, CustomType)]
+#[derive(Clone, Deserialize, Debug, Serialize, PartialEq, CustomType)]
 pub struct Command {
     pub command: String,
+    #[serde(default)]
     pub(crate) args: Value,
+    #[serde(default)]
     pub(crate) skipWhen: TypedValue<bool>,
 }
 

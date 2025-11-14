@@ -34,3 +34,6 @@ crate-type = ["cdylib"]
 
 [target.'cfg(target_arch="wasm")'.dependencies]
 rhai = { version = "1.22.2", features = ["wasm-bindgen"] }
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(coverage_nightly)'] }

@@ -82,26 +82,11 @@ args.command = "deleteRight"
 args.register = "operation"
 
 [[bind]]
-doc.name = "complex stored command"
-key = "shift+j"
-mode = "normal"
-command = "runCommands"
-
-[[bind.args.commands]]
-command = "master-key.prefix"
-args.cursor = "Underline"
-
-[[bind.args.commands]]
-command = "master-key.storeCommand"
-args.command = "runCommands"
-args.register = "operation"
-args.args.commands = ["cursorDown", "cursorLeft"]
-
-[[bind]]
 doc.name = "word operation"
 key = "w"
 mode = "normal"
-prefixes.anyOf = ["d", "shift+j"]
+#- to qualify from word *motion*
+prefixes.anyOf = ["d"]
 command = "runCommands"
 when = "editorTextFocus"
 
@@ -123,14 +108,6 @@ finalKey = false
 when = "editorTextFocus"
 
 [[bind]]
-key = "shift+g"
-mode = "normal"
-doc.name = "normal-left mode"
-command = "master-key.setMode"
-args.value = "normal-left"
-when = "editorTextFocus"
-
-[[bind]]
 key = "g g"
 command = "cursorMove"
 mode = "normal"
@@ -148,24 +125,3 @@ args.acceptAfter = 1
 [[bind.args.commands]]
 command = "master-key.search"
 args.text = "{{key.captured}}"
-
-[[mode]]
-name = "normal-left"
-whenNoBinding.useMode = "normal"
-
-[[bind]]
-default = "{{bind.motion}}"
-key = "shift+h"
-mode = "normal-left"
-doc.name = "left"
-when = "editorTextFocus"
-command = "cursorMove"
-args.to = "left"
-
-[[bind]]
-default = "{{bind.motion}}"
-doc.name = "double left"
-mode = "normal-left"
-key = "shift+l"
-args.to = "left"
-args.value = "{{2}}"

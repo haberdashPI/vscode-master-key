@@ -4,7 +4,7 @@ import * as count from './count';
 import * as doCommand from './do';
 import * as mode from './mode';
 // TODO: reimplement
-// import * as namedStore from './namedStore';
+import * as namedStore from './namedStore';
 import * as replay from './replay';
 import * as search from './search';
 import * as prefix from './prefix';
@@ -29,7 +29,7 @@ export async function activate(context: vscode.ExtensionContext) {
     await doCommand.activate(context);
     await mode.activate(context);
     // TODO: reimplement
-    // await namedStore.activate(context);
+    await namedStore.activate(context);
     await replay.activate(context);
     await search.activate(context);
     await prefix.activate(context);

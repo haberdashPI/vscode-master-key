@@ -10,7 +10,7 @@ import { restoreModesCursorState } from './mode';
 
 const prefixArgs = z.
     object({
-        key_id: z.number(),
+        prefix_id: z.number(),
         key: z.string(),
         cursor: z.enum([
             'Line',
@@ -129,7 +129,11 @@ async function prefix(args_: unknown): Promise<CommandResult> {
         await withState(async (state) => {
             return state.withMutations((state) => {
                 const prefix = a.key;
-                state.set(PREFIX_CODE, { transient: { reset: 0 }, public: true }, a.key_id);
+                state.set(
+                    PREFIX_CODE,
+                    { transient: { reset: 0 }, public: true },
+                    a.prefix_id,
+                );
                 state.set(PREFIX, { transient: { reset: '' }, public: true }, prefix);
 
                 if (a.cursor) {

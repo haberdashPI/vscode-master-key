@@ -66,7 +66,7 @@ function cleanupEdit(edit: vscode.TextDocumentChangeEvent) {
 
 const REPLAY_DELAY = 50;
 // TODO: does `commands` require the `RunCommandsArgs` type?
-async function runCommands(
+export async function runCommands(
     macro: ReifiedBinding[],
 ): Promise<void> {
     for (const binding of macro) {

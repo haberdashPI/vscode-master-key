@@ -1170,6 +1170,8 @@ pub struct BindingOutputArgs {
     // this uniquely identifies the key sequence used pressed for this binding
     // (used by nested calls to `master-key.prefix`)
     pub(crate) key_id: i32,
+    // this uniquely identified the key sequence / mode for this binding
+    pub(crate) prefix_id: i32,
     // this uniquely identifiers the command that runs after pressing a binding
     // (which is retrieved by `maaster-key.do`)
     pub(crate) command_id: i32,
@@ -1188,8 +1190,10 @@ pub struct BindingOutputArgs {
 
 #[derive(Clone, Debug, Serialize)]
 pub struct PrefixArgs {
-    // this uniquely identifies the key sequence used pressed for this binding
+    // this uniquely identifies the key sequence / mode / when clause for this binding
     pub(crate) key_id: i32,
+    // this uniquely identified the key sequence / mode for this binding
+    pub(crate) prefix_id: i32,
     // human readable field displaying the key sequence pressed to reach prefix command
     pub(crate) key: String,
     // these fields help us track and order binding outputs, we don't need them serialized
@@ -1225,6 +1229,8 @@ struct BindingProperties {
 
 // tracks all unique bindings
 pub(crate) struct BindingCodes {
+    prefixes: HashMap<BindingId, i32>,
+    prefix_count: i32,
     codes: HashMap<BindingId, BindingProperties>,
     // `count` is used to generate new, unique `id` fields
     count: i32,
@@ -1233,10 +1239,25 @@ pub(crate) struct BindingCodes {
 impl BindingCodes {
     pub(crate) fn new() -> Self {
         return BindingCodes {
+            prefixes: HashMap::new(),
+            prefix_count: 0,
             codes: HashMap::new(),
             count: 0,
         };
     }
+    pub(crate) fn prefix_code(&mut self, key: &Vec<impl ToString>, mode: &str) -> i32 {
+        let key = BindingId {
+            key: key.iter().map(ToString::to_string).collect(),
+            mode: mode.to_string(),
+            when: "".to_string(),
+        };
+        if !self.prefixes.contains_key(&key) {
+            self.prefix_count += 1;
+            self.prefixes.insert(key.clone(), self.prefix_count);
+        }
+        return self.prefixes[&key];
+    }
+
     pub(crate) fn key_code(
         &mut self,
         key: &Vec<impl ToString>,
@@ -1255,7 +1276,7 @@ impl BindingCodes {
         };
         if let Entry::Occupied(mut old @ OccupiedEntry { .. }) = self.codes.entry(id.clone()) {
             // it's okay to overwrite implicit bindings, but we don't want two explicitly
-            // defined binding
+            // defined binding with the same mode, key and when clause
             if !old.get().implicit && !implicit {
                 let errors: Vec<Result<i32>> = vec![
                     Err(wrn!(
@@ -1428,8 +1449,13 @@ impl Binding {
             // TODO: key_code should signal when there is already a higher
             // priority binding that's been added, and prevent
             // us from inserting a new binding here
-            let (prefix_code, is_new_code) =
-                codes.key_code(&prefix, &mode, &self.when, span, true)?;
+
+            // BUG: we need to distinguish between key_codes, which must be unique
+            // and prefix codes which are invariant to the `when` clause
+            // and do not need to be unique
+            let (key_code, is_new_code) = codes.key_code(&prefix, &mode, &self.when, span, true)?;
+            let prefix_code = codes.prefix_code(&prefix, &mode);
+
             when = when_with_mode.clone();
             if old_prefix_code == 0 {
                 // we check for a falsey rather than a 0 value, so that the keybindings
@@ -1446,7 +1472,8 @@ impl Binding {
                     when: join_when_vec(&when),
                     args: PrefixArgs {
                         priority: 0.0,
-                        key_id: prefix_code,
+                        key_id: key_code,
+                        prefix_id: prefix_code,
                         key: new_prefix_str.clone(),
                     },
                 });
@@ -1470,6 +1497,11 @@ impl Binding {
         // throw an error if they already exist
         let (code, _) =
             codes.key_code(&prefixes.last().unwrap(), &mode, &self.when, span, false)?;
+        let prefix_code = if !self.finalKey {
+            codes.prefix_code(&self.key, &mode)
+        } else {
+            -1
+        };
 
         let key = self.key.last().unwrap().clone();
         result.push(BindingOutput::Do {
@@ -1478,6 +1510,7 @@ impl Binding {
             args: BindingOutputArgs {
                 command_id,
                 key_id: code,
+                prefix_id: prefix_code,
                 mode: mode.to_string(),
                 priority: self.priority,
                 prefix: old_prefix_str,
@@ -1505,7 +1538,6 @@ pub struct ReifiedBinding {
     #[rhai_type(skip)]
     pub key: String,
     #[rhai_type(skip)]
-    pub key_id: i32,
     pub commands: Vec<CommandOutput>,
     pub mode: String,
     pub repeat: i32,
@@ -1526,7 +1558,6 @@ impl ReifiedBinding {
             raw_commands: Vec::new(),
             finalKey: self.finalKey,
             key: String::new(),
-            key_id: -1,
             commands: self.commands.clone(),
             mode: self.mode.clone(),
             repeat: self.repeat.clone(),
@@ -1537,7 +1568,7 @@ impl ReifiedBinding {
         };
     }
 
-    pub fn new(id: i32, binding: &Binding, scope: &mut Scope) -> ReifiedBinding {
+    pub fn new(binding: &Binding, scope: &mut Scope) -> ReifiedBinding {
         let repeat = match binding.repeat(scope) {
             Ok(x) => x,
             Err(e) => {
@@ -1559,12 +1590,35 @@ impl ReifiedBinding {
             doc: binding.doc.clone(),
             tags: binding.tags.clone(),
             key: binding.key.join(" "),
-            key_id: id,
             finalKey: binding.finalKey,
             mode,
             repeat,
             commands: Vec::new(),
             raw_commands: binding.commands.iter().map(Command::clone).collect(),
+            edit_text: String::new(),
+            edit_document_id: -1,
+        };
+    }
+
+    pub fn from_commands(commands: Vec<Command>, scope: &Scope) -> ReifiedBinding {
+        let mode = match scope.state.get("mode") {
+            Some(m) => match m.clone().into_immutable_string() {
+                Ok(m) => m.into_owned(),
+                Err(_) => scope.default_mode.clone(),
+            },
+            Option::None => scope.default_mode.clone(),
+        };
+
+        return ReifiedBinding {
+            error: None,
+            doc: BindingDoc::default(),
+            tags: vec![],
+            key: "".to_string(),
+            finalKey: true,
+            mode,
+            repeat: 0,
+            commands: Vec::new(),
+            raw_commands: commands,
             edit_text: String::new(),
             edit_document_id: -1,
         };
@@ -1584,7 +1638,6 @@ impl ReifiedBinding {
             tags: Vec::new(),
             doc: BindingDoc::default(),
             key: "".to_string(),
-            key_id: -1,
             finalKey: true,
             mode,
             repeat: 0,
