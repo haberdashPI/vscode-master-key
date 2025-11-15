@@ -332,6 +332,16 @@ async function makeQuickPicksFromPresets(
     return result;
 }
 
+function parseCurrentFile() {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+        vscode.window.showErrorMessage('There is no current file');
+    } else {
+        const uri = editor.document.uri;
+        return new KeyFileData(uri);
+    }
+}
+
 export async function queryPreset(): Promise<KeyFileData | undefined> {
     const options = await makeQuickPicksFromPresets(listPresets());
     options.push(
@@ -339,18 +349,7 @@ export async function queryPreset(): Promise<KeyFileData | undefined> {
     );
     const picked = await vscode.window.showQuickPick(options);
     if (picked?.command === 'current') {
-        const editor = vscode.window.activeTextEditor;
-        if (!editor) {
-            vscode.window.showErrorMessage('There is no current file');
-        } else {
-            const uri = editor.document.uri;
-            let langId: string | undefined = editor.document.languageId;
-            if (langId === 'plaintext') {
-                langId = undefined;
-            }
-
-            return new KeyFileData(uri);
-        }
+        return parseCurrentFile();
     } else {
         return picked?.preset;
     }
@@ -436,9 +435,12 @@ async function handleRequireExtensions(data?: KeyFileData) {
     }
 }
 
-async function activateBindings(data?: KeyFileData) {
+async function activateBindings(data?: KeyFileData | 'CurrentFile') {
     if (!data) {
         data = await queryPreset();
+    }
+    if (data === 'CurrentFile') {
+        data = parseCurrentFile();
     }
     if (data) {
         if (!(await validateKeybindings(data, { explicit: true }))) {

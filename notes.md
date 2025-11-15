@@ -484,17 +484,27 @@ Integration test debugging:
          - [X] test with `runCommands`
             - [X] debug error when using `runCommands`
          - [X] test replay of stored commands
-    - [ ] replace `setFlag` with `updateValue` (or something like that)
-        - [ ] implementation
+    - [X] replace `setFlag` with `updateValue` (or something like that)
+        - [X] implementation
             - [X] define function api
             - [X] implement tooling in rust to set a `define.val` that already exists
             - [X] implement setup to add `val.` variables to context
-        - [ ] write tests
-            - [ ] unit test that calls `setValue` and then uses `executeStored`
+        - [X] write tests
+            - [X] unit test that calls `setValue` and then uses `executeStored`
                   to evaluate the variable in real time
-    - [ ] document macro / history values for expressions
+            - [X] debug parsing of commands passed to `do_stored_command`;
+                  they don't seem to be picking up expressions as a thing
+                  (I guess this sort of makes sense, we probably need to
+                  specifically handle that conversion, since it isn't
+                  being deserialized from a string)
+                - very confused: seems like even when I have a good `BareValue`
+                  the expressions aren't picked up ???
+    - [X] document macro / history values for expressions
     - [ ] parse and try out larkin
-    - [ ] get existing tests (except unimplemented features) working again
+        - [ ] fix issue with missing foreach variables
+        - [ ] fix issue with unexpected `{{` in multiline strings
+        - NOTE: it's kind of incredible that there were so few errors here
+    - [ ] get any remaining, existing tests (except unimplemented features) working again
         - [ ] update unit tests for running commands
             - [ ] remove replay unit tests (they are become integration tests)
             - [ ] move the missing do unit tests to integration

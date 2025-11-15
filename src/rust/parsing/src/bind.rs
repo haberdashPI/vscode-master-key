@@ -1664,7 +1664,17 @@ impl ReifiedBinding {
             if self.commands.len() == 0 {
                 self.commands = vec![CommandOutput::noop(); self.raw_commands.len()];
             }
+            // let mut debug = CommandOutput::noop();
+            // let mut errors = Vec::new();
+            // errors.push(format!(
+            //     "Raw command pre-resolve: {:#?}",
+            //     self.raw_commands[i]
+            // ));
             let reified = self.raw_commands[i].resolve(result);
+            // errors.push(format!("Raw command post-resolve: {reified:#?}"));
+            // debug.errors = Some(errors);
+            // return debug;
+
             self.commands[i] = reified.clone();
             return reified;
         } else {

@@ -335,8 +335,8 @@ async function updateDefinitions(bindings: KeyFileResult) {
 
 const setFlagArgs = z.
     object({
-        name: z.string().endsWith('_on'),
-        value: z.boolean(),
+        name: z.string(),
+        value: z.any(),
         transient: z.boolean().default(false).optional(),
     }).
     strict();
@@ -360,7 +360,7 @@ const setFlagArgs = z.
 async function setValue(args_: unknown): Promise<CommandResult> {
     const args = validateInput('master-key.setValue', args_, setFlagArgs);
     if (args) {
-        let values = bindings.values();
+        const values = bindings.values();
         values[args.name] = args.value;
         bindings.set_value('val', values);
         await withState(async state => addDefinitions(state, bindings.values()));

@@ -115,12 +115,7 @@ export async function runCommands(
  *
  * With some limitations commands and textual edits are recorded, up until the the history
  * limit (defined by the `Command History Maximum`). When selecting command history to
- * replay, you use one or more [`expressions`](/expressions/index). An expression is
- * evaluated at each valid `index` of `history`. Evaluation occurs from most recent command
- * (largest index) to least recent command (smallest index), selecting the first index where
- * the expression evaluates to a truthy value. The structure of each command in `history` is
- * exactly the format used to represent the commands in a master keybinding file, but does
- * not permit inspection of the value of the `args` field.
+ * replay, you use one or more [`expressions`](/expressions/index).
  *
  * **Arguments**
  *
@@ -132,6 +127,27 @@ export async function runCommands(
  * OR
  *
  * - `index`: an expression specifying the single command to push to the
+ *
+ * ## Expression evaluation for History
+ *
+ * Expressions have access to a variable called `history` which is an indexable container of
+ * previously run commands. On this container you can
+ *
+ * - call `history.len()` to get the number of available commands
+ * - index values via `history[0]`; values range from 0 to `history.len()-1` and indexing
+ *   outside this range returns a null value. The most recently run commands are at largest
+ *   indices.
+ * - use `last_history_index` to call a predicate function for each index from
+ *   `history.len()-1` to `0` and return the first index that is true for this predicate.
+ *
+ * Each element of this history contains the following properties
+ *
+ * - `commands`: an array of objects containing all `command` field, but with `args`
+ *   excluded
+ * - `mode`: the mode the command was executed from
+ * - `repeat`: the number of times the command was repeated
+ * - `tags`: the tags defined by the `[[bind]]` entry
+ * - `doc`: all documentation fields as defined in `[[bind]]`
  *
  * ## Example
  *
@@ -156,7 +172,7 @@ export async function runCommands(
  * #- we can repeat any action but history-related actions; we make an exception for
  * #- replaying macros, which *can* be repeated
  * args.index = """{{
- * key.history.last_index_of(|x|
+ * last_history_index(|x|
  *     x.tags.contains("action") &&
  *     !(x.tags.contains("history") && !x.docs.name == "replay")
  * }}"""

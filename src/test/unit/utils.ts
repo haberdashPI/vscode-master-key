@@ -42,8 +42,10 @@ export async function assertCursorMovesBy(
     body: (x: void) => Promise<void>,
 ) {
     const start = editor.selection.active;
+    // console.log('DEBUG start: ' + JSON.stringify(start, null, 4));
     await body();
     const end = editor.selection.active;
+    // console.log('DEBUG end: ' + JSON.stringify(end, null, 4));
     const expectedEnd = new vscode.Position(
         start.line + by.line,
         start.character + by.character,

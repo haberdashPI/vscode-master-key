@@ -412,37 +412,38 @@ fn interp_to_string(interps: Vec<Value>) -> String {
 // ---------------- Value: Conversion ----------------
 //
 
-// impl TryFrom<toml::Value> for BareValue {
-//     type Error = ErrorSet;
-//     fn try_from(value: toml::Value) -> ResultVec<Self> {
-//         return Ok(match value {
-//             toml::Value::Boolean(x) => BareValue::Boolean(x),
-//             toml::Value::Float(x) => BareValue::Float(x),
-//             toml::Value::Integer(x) => BareValue::Integer({
-//                 if i32::try_from(x).is_ok() {
-//                     x as i32
-//                 } else {
-//                     Err(err("i64 value was too large (must fit in i32)"))?;
-//                     0
-//                 }
-//             }),
-//             toml::Value::Datetime(x) => BareValue::String(x.to_string()),
-//             toml::Value::String(x) => BareValue::String(x),
-//             toml::Value::Array(toml_values) => {
-//                 let values = flatten_errors(toml_values.into_iter().map(|x| {
-//                     return Ok(x.try_into::<BareValue>()?);
-//                 }))?;
-//                 BareValue::Array(values)
-//             }
-//             toml::Value::Table(toml_kv) => {
-//                 let kv = flatten_errors(toml_kv.into_iter().map(|(k, v)| {
-//                     Ok((k, Spanned::new(UNKNOWN_RANGE, v.try_into::<BareValue>()?)))
-//                 }))?;
-//                 BareValue::Table(kv.into_iter().collect())
-//             }
-//         });
-//     }
-// }
+impl BareValue {
+    pub(crate) fn new(value: toml::Value) -> ResultVec<Self> {
+        return Ok(match value {
+            toml::Value::Boolean(x) => BareValue::Boolean(x),
+            toml::Value::Float(x) => BareValue::Float(x),
+            toml::Value::Integer(x) => BareValue::Integer({
+                if i32::try_from(x).is_ok() {
+                    x as i32
+                } else {
+                    Err(err("i64 value was too large (must fit in i32)"))?;
+                    0
+                }
+            }),
+            toml::Value::Datetime(x) => BareValue::String(x.to_string()),
+            toml::Value::String(x) => BareValue::String(x),
+            toml::Value::Array(toml_values) => {
+                let values = flatten_errors(toml_values.into_iter().map(|x| {
+                    return Ok(BareValue::new(x)?);
+                }))?;
+                BareValue::Array(values)
+            }
+            toml::Value::Table(toml_kv) => {
+                let kv = flatten_errors(
+                    toml_kv
+                        .into_iter()
+                        .map(|(k, v)| Ok((k, Spanned::new(UNKNOWN_RANGE, BareValue::new(v)?)))),
+                )?;
+                BareValue::Table(kv.into_iter().collect())
+            }
+        });
+    }
+}
 
 impl From<Value> for BareValue {
     fn from(value: Value) -> BareValue {

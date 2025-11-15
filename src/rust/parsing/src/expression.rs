@@ -118,19 +118,7 @@ use crate::{
 /// - `key.record`: a boolean flag used to indicate when keys are marked for recording
 /// - `history`: a queue containing a record of all previously run master key commands, up
 ///   to the number configured by Master Key's "Command History Maximum" (defaults to 1024).
-///   Commands are stored from least recent (smallest index) to most recent (largest index).
-///   **TODO**: link to history-related commands; in that documentation describe API for the
-///   queue and then document the fields of the elements of said queue. The following fields
-///   are available for each entry:
-///     - commands: a an array of objects containing a `command` fields (`args` is not
-///       exposed)
-///     - mode: the mode the command was executed from
-///     - repeat: the number of times the command was repeated
-///     - tags: the tags defined by the `[[bind]]` entry
-///     - doc: all documentation fields as defined in `[[bind]]`
-/// - `macros`: **TODO**: describe (NOTE: some of this feels like a smell: I shouldn't use a
-/// generic variable passing situation here, but some specific storage for macros then I
-/// don't need to "mention" them in expressions at all)
+///   See [master-key.replayFromHistory](/commands/replayFromHistory) for details.
 pub struct Scope {
     pub(crate) asts: HashMap<String, rhai::AST>,
     pub(crate) engine: rhai::Engine,

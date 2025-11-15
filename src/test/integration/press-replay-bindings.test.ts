@@ -145,14 +145,17 @@ test.describe('Recorded keypresses', () => {
     });
 
     test('Replay stored commands', async ({ workbox }) => {
-        let { editor, pos } = await setup(workbox);
+        const result = await setup(workbox);
+        const pos = result.pos;
+        let editor = result.editor;
+
         await editor.press('Shift+q');
         await editor.press('d');
         await editor.press('w');
         editor = workbox.getByLabel('macro.md').
             filter({ has: workbox.getByText('b c ') }).
             filter({ has: workbox.getByRole('code') });
-        await editor.press('l')
+        await editor.press('l');
         await expect(pos).toHaveText('Ln 1, Col 2');
         await editor.press('Shift+q');
         await editor.press('q');
@@ -161,7 +164,7 @@ test.describe('Recorded keypresses', () => {
         editor = workbox.getByLabel('macro.md').
             filter({ has: workbox.getByText('  c d') }).
             filter({ has: workbox.getByRole('code') });
-        await editor.waitFor({ state: "visible" });
+        await editor.waitFor({ state: 'visible' });
     });
 
     test('Can nest replay', async ({ workbox }) => {

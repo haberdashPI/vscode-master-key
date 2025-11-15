@@ -20,12 +20,18 @@
         "onCommand:master-key.do",
         "onCommand:master-key.prefix",
         "onCommand:master-key.ignore",
+        "onCommand:master-key.search",
         "onCommand:master-key.setValue"
     ],
     "main": "./out/node/index.js",
     "browser": "./out/browser/index.js",
     "contributes": {
         "commands": [
+            {
+                "command": "master-key.internal-testCommand",
+                "title": "Test Command (Internal Debugging)",
+                "enablement": "master-key.val.internal__debug__flag"
+            },
             {
                 "command": "master-key.activateBindings",
                 "category": "Master Key",

@@ -145,10 +145,10 @@ pub(crate) trait CommandInputLike {
     }
 }
 
-struct CommandValue<'a> {
-    command: String,
-    args: Option<&'a Value>,
-    range: Range<usize>,
+pub(crate) struct CommandValue<'a> {
+    pub(crate) command: String,
+    pub(crate) args: Option<&'a Value>,
+    pub(crate) range: Range<usize>,
 }
 
 impl<'a> CommandInputLike for CommandValue<'a> {

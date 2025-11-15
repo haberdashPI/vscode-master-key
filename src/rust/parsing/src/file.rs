@@ -13,9 +13,10 @@
 /// top-level fields:
 ///
 ///
+
 // NOTE: .simple-src-docs.config.toml is setup to insert a list of
 // bindings here, between the above text and the below example
-use indexmap::map::serde_seq::deserialize;
+
 /// @file bindings/index.md
 /// @order 50
 ///
@@ -120,10 +121,8 @@ use indexmap::map::serde_seq::deserialize;
 ///     - the variable `i` renamed to `index` in expressions of these fields
 #[allow(unused_imports)]
 use log::{error, info};
-use toml::de::ValueDeserializer;
-use toml::ser::ValueSerializer;
 
-use crate::bind::command::Command;
+use crate::bind::command::{CommandValue, regularize_commands};
 use crate::bind::{
     Binding, BindingCodes, BindingInput, BindingOutput, KeyId, LegacyBindingInput, ReifiedBinding,
     UNKNOWN_RANGE,
@@ -132,7 +131,7 @@ use crate::define::{Define, DefineInput};
 use crate::error::{
     Context, ErrorContext, ErrorReport, ErrorSet, ParseError, Result, ResultVec, flatten_errors,
 };
-use crate::expression::value::Value;
+use crate::expression::value::{BareValue, Value};
 use crate::expression::{HistoryQueue, MacroStack, Scope};
 use crate::kind::Kind;
 use crate::mode::{Mode, ModeInput, Modes};
@@ -513,24 +512,47 @@ impl KeyFileResult {
     }
 
     fn do_stored_command_helper(&mut self, value: JsValue) -> ResultVec<ReifiedBinding> {
-        let value: toml::Value = match serde_wasm_bindgen::from_value(value) {
-            Err(e) => Err(err!("{e} while serializing command"))?,
+        let toml: toml::Value = match serde_wasm_bindgen::from_value(value) {
+            Err(e) => Err(err!("{e} while serializing command value"))?,
             Ok(x) => x,
         };
-        // because we make use of Spanned values in `Command` (via `Value`) we first need to
-        // round trip the serialized value from a string (we could re-write a lot of
-        // functionality to avoid this somewhat awkward situation, but that seems like
-        // premature optimization)
-        let content = value.to_string();
-        let deserializer = match ValueDeserializer::parse(&content) {
-            Err(e) => return Err(err!("{e} for string {content}"))?,
+        let bare_value = match BareValue::new(toml.clone()) {
+            Err(e) => Err(err!("{e} while parsing expression brackets in {toml:#?}"))?,
             Ok(x) => x,
         };
-        let command = match Command::deserialize(deserializer) {
-            Err(e) => return Err(err!("{e} for string {content}"))?,
+        let value = match Value::new(bare_value, None) {
+            Err(e) => Err(err!("{e} while creating value from {toml:#?}"))?,
             Ok(x) => x,
         };
-        return Ok(ReifiedBinding::from_commands(vec![command], &self.scope));
+        let commands = match value {
+            Value::Table(kv, _) => {
+                let command_value = kv.get("command").ok_or_else(|| {
+                    err!("Expected `command` fields while serializing command value {toml:#?}")
+                })?;
+                let command = match command_value {
+                    Value::String(x) => x.clone(),
+                    _ => Err(err!(
+                        "Expected `command` to be a string while serializing command value {toml:#?}",
+                    ))?,
+                };
+                let args = kv.get("args");
+                let value = CommandValue {
+                    command,
+                    args: args,
+                    range: UNKNOWN_RANGE,
+                };
+                let mut warnings = Vec::new();
+                regularize_commands(&value, &mut self.scope, &mut warnings)?
+            }
+            _ => Err(err!(
+                "Expected an object while serializing command value {toml:#?}"
+            ))?,
+        };
+        match self.scope.parse_asts(&commands) {
+            Err(e) => return Err(err!("{e} for value {toml:#?}"))?,
+            Ok(x) => x,
+        }
+        return Ok(ReifiedBinding::from_commands(commands, &self.scope));
     }
 
     pub fn do_stored_command(&mut self, value: JsValue) -> ReifiedBinding {
@@ -3001,6 +3023,48 @@ pub(crate) mod tests {
             _ => (),
         });
     }
+
+    // This tests doesn't work because it calls into wasm specific outputs
+    // and we haven't bothered getting tests working in a wasm target
+    // (because coverage needs a non wasm target anyways)
+    // #[test]
+    // fn do_stored_command_test() {
+    //     let data = r#"
+    //     #:master-keybindings
+
+    //     [header]
+    //     version = "2.0.0"
+
+    //     [[define.val]]
+    //     foo = 1
+    //     internal__debug__flag = false
+
+    //     [[bind]]
+    //     key = "a"
+    //     command = "bar"
+    //     "#;
+
+    //     let mut warnings = Vec::new();
+    //     let mut scope = Scope::new();
+    //     let file = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope).unwrap();
+    //     let mut result = KeyFileResult {
+    //         file: Some(file),
+    //         errors: None,
+    //         scope,
+    //     };
+
+    //     let toml = r#"
+    //     args = {value = '{{val.foo}}', to = 'right'}
+    //     command = 'cursorMove'
+    //     register = 'test'
+    //     "#;
+    //     let deserializer = toml::Deserializer::parse(toml).unwrap();
+    //     let command = Command::deserialize(deserializer).unwrap();
+    //     result.scope.parse_asts(&command).unwrap();
+    //     let mut reified = ReifiedBinding::from_commands(vec![command], &result.scope);
+    //     let command = reified.resolve_command(0, &mut result);
+    //     info!("command: {command:#?}");
+    // }
 
     // TODO: delete
     // #[test]

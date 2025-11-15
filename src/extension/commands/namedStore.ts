@@ -198,10 +198,10 @@ async function executedStoredCommand(args_: unknown): Promise<CommandResult> {
             }
         } else {
             for (let i = 0; i < reified.n_commands(); i++) {
-                const command = reified.resolve_command(i, bindings);
-                if (command.command === 'master-key.ignore') {
+                const resolved_command = reified.resolve_command(i, bindings);
+                if (resolved_command.command === 'master-key.ignore') {
                     let count = 0;
-                    for (const error of (command.errors || [])) {
+                    for (const error of (resolved_command.errors || [])) {
                         count++;
                         if (count >= 3) {
                             vscode.window.showErrorMessage(
@@ -216,8 +216,8 @@ async function executedStoredCommand(args_: unknown): Promise<CommandResult> {
                 } else {
                     const result = await vscode.commands.
                         executeCommand<WrappedCommandResult | void>(
-                            command.command,
-                            command.args,
+                            resolved_command.command,
+                            resolved_command.args,
                         );
                     const resolvedArgs = commandArgs(result);
                     if (resolvedArgs === 'cancel') {

@@ -169,3 +169,19 @@ mode = "normal-left"
 key = "shift+l"
 args.to = "left"
 args.value = "{{2}}"
+
+[[define.val]]
+foo = 3
+
+[[bind]]
+key = "p"
+command = "master-key.storeCommand"
+args.register = 'test'
+args.command = 'cursorMove'
+
+[[bind]]
+key = "o"
+command = "master-key.executeStoredCommand"
+args.register = 'test'
+args.args.value = '{{val.foo}}'
+args.args.to = "right"
