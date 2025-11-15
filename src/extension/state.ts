@@ -4,7 +4,6 @@ import { validateInput } from './utils';
 import { Map, List, RecordOf, Record as IRecord } from 'immutable';
 import { bindings, onChangeBindings } from './keybindings/config';
 import { KeyFileResult, ParseError } from '../rust/parsing/lib/parsing';
-
 export type Listener = (states: Map<string, unknown>) => boolean;
 
 interface IStateOptions {
@@ -343,31 +342,28 @@ const setFlagArgs = z.
     strict();
 
 /**
- * @command setFlag
+ * @command setValue
  * @order 101
  * @section State Management
  *
- * Sets a boolean flag named `name` that can be accessed in when clauses using
- * `master-key.[name]` and in [expressions](/expressions/index) using
- * `[name]`.
+ * Sets a a value named `name` that can be accessed in [expressions](/expressions/index)
+ * using `val.[name]`. The value must be defined in a `[[define.val]]` block
+ * or an error occurs.
  *
  * **Arguments**:
- * - `name`: String denoting the name of this flag, must end with the suffix `_on`.
- * - `value`: true or false
- * - `transient`: (default = `false`) whether the variable will reset to false
- *    when a key sequence is complete. See [`master-key.prefix`](/commands/prefix)
- *    for more details.
+ * - `name`: String denoting the name of this flag
+ * - `value`: any valid json value
+ * - `transient`: (default = `false`) whether the variable will reset to its original
+ *    value in the `[[define.val]]` block it was created in after the current key
+ *    sequence is complete. See [`master-key.prefix`](/commands/prefix) for more details.
  */
-async function setFlag(args_: unknown): Promise<CommandResult> {
-    const args = validateInput('master-key.setFlag', args_, setFlagArgs);
+async function setValue(args_: unknown): Promise<CommandResult> {
+    const args = validateInput('master-key.setValue', args_, setFlagArgs);
     if (args) {
-        const opt: ISetOptions = !args.transient ?
-                { public: true } :
-                { public: true, transient: { reset: false } };
-        const a = args;
-        await withState(async (state) => {
-            return state.set(a.name, opt, a.value);
-        });
+        let values = bindings.values();
+        values[args.name] = args.value;
+        bindings.set_value('val', values);
+        await withState(async state => addDefinitions(state, bindings.values()));
     }
     return;
 }
@@ -443,7 +439,7 @@ export async function activate(context: vscode.ExtensionContext) {
     onChangeBindings(updateDefinitions);
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('master-key.setFlag', recordedCommand(setFlag)),
+        vscode.commands.registerCommand('master-key.setValue', recordedCommand(setValue)),
     );
 
     vscode.window.onDidChangeTextEditorSelection(updateCodeVariables);

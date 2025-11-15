@@ -181,3 +181,34 @@ args.value = "{{key.captured}}"
 [[bind.args.commands]]
 command = "master-key.replayFromStack"
 args.index = 0
+
+[[bind]]
+doc.name = "delete"
+key = "d"
+mode = "normal"
+command = "runCommands"
+when = "editorTextFocus"
+
+[[bind.args.commands]]
+command = "master-key.prefix"
+args.cursor = "Underline"
+
+[[bind.args.commands]]
+command = "master-key.storeCommand"
+args.command = "deleteRight"
+args.register = "operation"
+
+[[bind]]
+doc.name = "word operation"
+key = "w"
+mode = "normal"
+prefixes.anyOf = ["d"]
+command = "runCommands"
+when = "editorTextFocus"
+
+[[bind.args.commands]]
+command = "cursorWordEndRightSelect"
+
+[[bind.args.commands]]
+command = "master-key.executeStoredCommand"
+args.register = "operation"

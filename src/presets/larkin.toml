@@ -460,7 +460,7 @@ reduce all selections to length zero
 command = "runCommands"
 args.commands = [
     "selection-utilities.shrinkToActive",
-    { command = "master-key.setFlag", args = { name = "{{val.select}}", value = false } },
+    { command = "master-key.setValue", args = { name = "select", value = false } },
 ]
 
 [[bind]]
@@ -471,8 +471,8 @@ doc.combined.name = "shrink/hold selection"
 doc.description = """
 all motions extend the selection
 """
-command = "master-key.setFlag"
-args.doc.name = "{{val.select}}"
+command = "master-key.setValue"
+args.doc.name = "select"
 args.value = true
 
 [[bind]]
@@ -3396,6 +3396,6 @@ reduce all selections to length zero and return to normal mode
 command = "runCommands"
 args.commands = [
     "selection-utilities.shrinkToActive",
-    { command = "master-key.setFlag", args = { name = "val.select", value = false } },
+    { command = "master-key.setValue", args = { name = "val.select", value = false } },
     "master-key.enterNormal",
 ]

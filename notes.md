@@ -449,16 +449,17 @@ Integration test debugging:
             id there is 14, we get an id of 7 in `toRun`
           - interestingly 7 *is* the command id, so I'm guess there's a bug there somehow
           - [X] properly get the id
-    - [ ] debug excess prefix definitions
-        - [ ] e.g. in simple motions we are getting a prefix definition for "d w"
+    - [X] debug excess prefix definitions
+        - [X] e.g. in simple motions we are getting a prefix definition for "d w"
               (should only get "d")
               - [X] write a test for this and bisect the file contents
                 - AH HA!: this comes from using `prefixes.any`: we need to avoid
                   any prefixes that are actually finalKey presses
-              - [ ] write a test
+              - [X] write a test
                 - it should demonstrate that when use have `prefixes.any`
                   only `finalKey = false` bindings show up
-              - [ ] get the test to pass
+              - [X] get the test to pass
+        - [X] check that `prefixs.anyOf` does not overwrite an existing binding
     - [X] debug multiple explicit prefixes
         - seems like it isn't quite setting up the right bindings in this case
         - [x] test a simpler case: prefixes.anyOf = ["a", "b"] where "a" and "b" are
@@ -475,18 +476,23 @@ Integration test debugging:
             - okay, I've found my MWE
         - [X] propagate usage of prefix code vs. key code through out codebase
         - [X] review outputs in debug to understand what is still going wrong with prefix for "shift+j"
-    - [ ] probably remove some cases where we store `key_id`: it isn't
+    - [X] probably remove some cases where we store `key_id`: it isn't
             needed post binding output generation anymore (just `prefix_id`)
-
-    - [ ] reimplement stored commands (to handle vim bindings)
+    - [X] reimplement stored commands (to handle vim bindings)
          - [X] implementation
          - [X] unit tests
          - [X] test with `runCommands`
             - [X] debug error when using `runCommands`
-         - [ ] test replay of stored commands
+         - [X] test replay of stored commands
     - [ ] replace `setFlag` with `updateValue` (or something like that)
         - [ ] implementation
+            - [X] define function api
+            - [X] implement tooling in rust to set a `define.val` that already exists
+            - [X] implement setup to add `val.` variables to context
         - [ ] write tests
+            - [ ] unit test that calls `setValue` and then uses `executeStored`
+                  to evaluate the variable in real time
+    - [ ] document macro / history values for expressions
     - [ ] parse and try out larkin
     - [ ] get existing tests (except unimplemented features) working again
         - [ ] update unit tests for running commands

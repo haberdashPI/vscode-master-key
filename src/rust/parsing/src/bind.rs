@@ -940,26 +940,27 @@ impl Binding {
                 Prefix::AnyOf(x) => x,
                 _ => continue, // these types don't define new prefixes, they reference what already exists
             };
+            let offset = if bind
+                .commands
+                .iter()
+                .any(|c| c.command == "master-key.prefix")
+            {
+                0
+            } else {
+                1
+            };
             if explicit_prefixes.len() > 0 {
                 for p in explicit_prefixes {
                     let seq = WHITESPACE
                         .split(&p)
                         .chain(bind.key.iter().map(String::as_str));
-                    for s in list_prefixes(seq) {
+                    let prefixes = list_prefixes(seq);
+                    for s in prefixes[0..(prefixes.len() - offset)].iter() {
                         all_prefixes.insert(s.join(" "));
                     }
                 }
             } else {
                 let prefixes = list_prefixes(bind.key.iter().map(String::as_str));
-                let offset = if bind
-                    .commands
-                    .iter()
-                    .any(|c| c.command == "master-key.prefix")
-                {
-                    0
-                } else {
-                    1
-                };
                 for s in prefixes[0..(prefixes.len() - offset)].iter() {
                     all_prefixes.insert(s.join(" "));
                 }

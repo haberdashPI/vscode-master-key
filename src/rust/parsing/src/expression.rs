@@ -1,3 +1,5 @@
+#![cfg_attr(coverage_nightly, feature(coverage_attribute))]
+
 // TODO: here is where we would want to invoke rhai to resolve any outstanding expressions
 
 pub mod value;
@@ -250,7 +252,7 @@ impl Scope {
         return Ok(());
     }
 
-    // LCOV_EXCL_START
+    #[cfg_attr(coverage_nightly, coverage(off))]
     pub fn set(&mut self, name: &str, value: JsValue) -> Result<()> {
         let toml: toml::Value = match serde_wasm_bindgen::from_value(value) {
             Err(e) => Err(err!("{} while converting js to toml value", e))?,
@@ -260,7 +262,6 @@ impl Scope {
         self.state.set_or_push(name, val);
         return Ok(());
     }
-    // LCOV_EXCL_STOP
 
     // pub fn unset(&mut self, name: &str) -> Result<()> {
     //     return Ok(self

@@ -10,6 +10,7 @@ import { restoreModesCursorState } from './mode';
 
 const prefixArgs = z.
     object({
+        key_id: z.number().optional(),
         prefix_id: z.number(),
         key: z.string(),
         cursor: z.enum([

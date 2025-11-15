@@ -132,6 +132,7 @@ use crate::define::{Define, DefineInput};
 use crate::error::{
     Context, ErrorContext, ErrorReport, ErrorSet, ParseError, Result, ResultVec, flatten_errors,
 };
+use crate::expression::value::Value;
 use crate::expression::{HistoryQueue, MacroStack, Scope};
 use crate::kind::Kind;
 use crate::mode::{Mode, ModeInput, Modes};
@@ -645,21 +646,20 @@ impl KeyFileResult {
     }
 
     pub fn values(&self) -> std::result::Result<JsValue, JsValue> {
-        match &self.file {
-            Some(KeyFile { define, .. }) => {
-                let result = js_sys::Object::new();
-                for (key, val) in &define.val {
-                    let toml_val: toml::Value = val.clone().into();
-                    let to_json = serde_wasm_bindgen::Serializer::json_compatible();
-                    let js_val = toml_val.serialize(&to_json)?;
-                    js_sys::Reflect::set(&result, &key.into(), &js_val)?;
+        if let Some(rhai_value) = self.scope.state.get_value::<rhai::Dynamic>("val") {
+            let value: Value = match rhai_value.try_into() {
+                Ok(x) => x,
+                Err(e) => {
+                    return Err(format!("{e}"))?;
                 }
-                return Ok(result.into());
-            }
-            Option::None => {
-                return Ok(js_sys::Object::new().into());
-            }
-        };
+            };
+            let toml: toml::Value = value.into();
+            let to_json = serde_wasm_bindgen::Serializer::json_compatible();
+            let js_val = toml.serialize(&to_json)?;
+            return Ok(js_val);
+        } else {
+            return Ok(js_sys::Object::new().into());
+        }
     }
 }
 
@@ -2937,7 +2937,7 @@ pub(crate) mod tests {
     }
 
     #[test]
-    fn scratch_test() {
+    fn explicit_prefixes_work_with_any_prefix_edge_case() {
         let data = r#"
         #:master-keybindings
 
@@ -2954,7 +2954,7 @@ pub(crate) mod tests {
         default = true
         highlight = "Highlight"
         cursorShape = "Block"
-        whenNoBinding = "ignoreCharacters"
+        whenNoBinding = "insertCharacters"
 
         [[bind]]
         doc.name = "normal mode"
@@ -2967,69 +2967,39 @@ pub(crate) mod tests {
         key = "d"
         mode = "normal"
         command = "runCommands"
-        when = "editorTextFocus"
 
         [[bind.args.commands]]
         command = "master-key.prefix"
-        args.cursor = "Underline"
 
         [[bind.args.commands]]
-        command = "master-key.storeCommand"
-        args.command = "deleteRight"
-        args.register = "operation"
-
-        [[bind]]
-        doc.name = "complex stored command"
-        key = "shift+j"
-        mode = "normal"
-        command = "runCommands"
-
-        [[bind.args.commands]]
-        command = "master-key.prefix"
-        args.cursor = "Underline"
-
-        [[bind.args.commands]]
-        command = "master-key.storeCommand"
-        args.command = "runCommands"
-        args.register = "operation"
-        args.args.commands = ["cursorDown", "cursorDown", "deleteRight"]
+        command = "foo"
 
         [[bind]]
         doc.name = "word operation"
         key = "w"
         mode = "normal"
-        prefixes.anyOf = ["d", "shift+j"]
-        command = "runCommands"
+        prefixes.anyOf = ["d"]
+        command = "biz"
         when = "editorTextFocus"
-
-        [[bind.args.commands]]
-        command = "cursorWordEndRightSelect"
-
-        [[bind.args.commands]]
-        command = "master-key.executeStoredCommand"
-        args.register = "operation"
         "#;
 
         let mut warnings = Vec::new();
         let mut scope = Scope::new();
         let result = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope).unwrap();
 
-        // result.key_bind.iter().for_each(|k| match k {
-        //     weird @ BindingOutput::Prefix {
-        //         key,
-        //         args:
-        //             crate::bind::PrefixArgs {
-        //                 key: prefix_key, ..
-        //             },
-        //         ..
-        //     } if key == "w" && prefix_key == "d w" => {
-        //         info!("Weird key still there: {weird:#?}");
-        //         assert!(false)
-        //     }
-        //     _ => (),
-        // });
-
-        info!("result: {result:#?}");
+        result.key_bind.iter().for_each(|k| match k {
+            BindingOutput::Prefix {
+                key,
+                args:
+                    crate::bind::PrefixArgs {
+                        key: prefix_key, ..
+                    },
+                ..
+            } if key == "w" && prefix_key == "d w" => {
+                assert!(false)
+            }
+            _ => (),
+        });
     }
 
     // TODO: delete

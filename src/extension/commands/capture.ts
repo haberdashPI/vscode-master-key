@@ -18,7 +18,7 @@ async function onType(event: { text: string }) {
     return await onTypeFn(event.text);
 }
 
-const CAPTURE = 'captured';
+export const CAPTURE = 'captured';
 
 function clearTypeSubscription() {
     if (typeSubscription) {
