@@ -43,31 +43,10 @@ export async function activate(context: vscode.ExtensionContext) {
      *
      * This command is used in a binding file to signal that the given keypress should do
      * nothing. This is useful for key presses that would otherwise cause some other action
-     * to occur (e.g. type keys).
-     *
-     * ## Example
-     *
-     * Master key ensures that when in a command-related mode (e.g. `normal`) key presses to
-     * letters do not cause keys to be typed.
-     *
-     * ```toml
-     * #- in "command" like modes (e.g. normal), typing keys without a command defined
-     * #- below should have no effect
-     * [[bind]]
-     * defaults = "modes"
-     * name = "ignore"
-     * description = "this key does nothing"
-     * #- all keys whose bindings are described by a single character
-     * foreach.key = ['{{key: .}}', 'shift+{{key: .}}']
-     * key = "{{key}}"
-     * command = "master-key.ignore"
-     * prefixes = "{{all_prefixes}}"
-     * mode = ["normal", "selectedit"]
-     * when = "editorTextFocus"
-     * hideInDocs = true
-     * hideInPalette = true
-     * priority = -10
-     * ```
+     * to occur (e.g. insert characters in a file). **However**, it is often more effective
+     * to use a `[[mode]]` section's `whenNoBinding = 'ignoreCharacters'`
+     * [setting](/bindings/mode), instead of an explicit call of `master-key.ignore`, which
+     * is implemented by creating ignore commands for all standard character-related keys.
      */
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.ignore', () => {

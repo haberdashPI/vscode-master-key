@@ -1,7 +1,7 @@
 // You can import and use all API from the 'vscode' module
 // as well as import your extension to test it
 import * as vscode from 'vscode';
-import * as assert from 'assert';
+// import * as assert from 'assert';
 import { assertCursorMovesBy, editorWithText } from './utils';
 
 function sleep(ms: number) {
@@ -73,8 +73,8 @@ suite('Set values', () => {
     //     let count = 0;
     //     while (!commandExists) {
     //         allCommands = await vscode.commands.getCommands();
-    //         // in package.json this command is defined, but it is simply a placeholder for
-    //         // testing
+    //         // in package.json this command is defined, but it is simply a placeholder
+    //         // for testing
     //         commandExists = allCommands.includes('master-key.internal-testCommand');
     //         await sleep(100);
     //         count++;

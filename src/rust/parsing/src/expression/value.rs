@@ -257,7 +257,7 @@ impl<'de> serde::de::Deserialize<'de> for BareValue {
 }
 
 lazy_static! {
-    pub static ref EXPRESSION: Regex = Regex::new(r"\{\{(.*?)\}\}").unwrap();
+    pub static ref EXPRESSION: Regex = Regex::new(r"\{\{((.|\r|\n)*?)\}\}").unwrap();
 }
 
 impl Value {

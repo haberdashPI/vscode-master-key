@@ -276,7 +276,11 @@ impl Merging for BindingInput {
             mode: self.mode.coalesce(y.mode),
             priority: self.priority.coalesce(y.priority),
             default: self.default.coalesce(y.default),
-            foreach: self.foreach,
+            foreach: if y.foreach.is_none() {
+                self.foreach
+            } else {
+                y.foreach
+            },
             prefixes: self.prefixes.coalesce(y.prefixes),
             finalKey: self.finalKey.coalesce(y.finalKey),
             repeat: self.repeat.coalesce(y.repeat),
@@ -1280,13 +1284,13 @@ impl BindingCodes {
             // defined binding with the same mode, key and when clause
             if !old.get().implicit && !implicit {
                 let errors: Vec<Result<i32>> = vec![
-                    Err(wrn!(
+                    Err(err!(
                         "Duplicate key sequence for mode `{mode}`. First instance is \
                              defined at "
                     ))
                     .with_range(span)
                     .with_ref_range(&old.get().span),
-                    Err(wrn!(
+                    Err(err!(
                         "Duplicate key sequence for mode `{mode}`. This sequence is \
                              also defined later in the file at "
                     ))

@@ -501,17 +501,19 @@ Integration test debugging:
                   the expressions aren't picked up ???
     - [X] document macro / history values for expressions
     - [ ] parse and try out larkin
-        - [ ] fix issue with missing foreach variables
+        - [X] fix issue with missing foreach variables
         - [ ] fix issue with unexpected `{{` in multiline strings
         - NOTE: it's kind of incredible that there were so few errors here
     - [ ] get any remaining, existing tests (except unimplemented features) working again
         - [ ] update unit tests for running commands
             - [ ] remove replay unit tests (they are become integration tests)
             - [ ] move the missing do unit tests to integration
-    - [ ] start dog-fooding the latest version to catch performances issues and bugs
+    - [ ] cleanup any files we need to delete
+    - [ ] merge PR; don't relase a new version yet
+    - [ ] start dog-fooding the latest changes to catch performances issues and bugs
     - [ ] properly handle user keybindings (have the main keybinding file in memory)
     - [ ] reimlement storeNamed? (or make it more specific to macros; I'm not
-          convinced the generic tool is helpful)
+          convinced the generic tool is really useful)
     - [ ] extraction of markdown docs
         - [ ] documentation expansion/validation
             - across all `[[bind]]` values with the same key and mode

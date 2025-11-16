@@ -208,7 +208,7 @@ id = "edit_motion_prim"
 default = "{{bind.edit_motion}}"
 command = "cursorMove"
 args.value = "{{key.count}}"
-args.select = "{{code.editorHasSelection || val.select}}"
+args.select = "{{editorHasSelection || val.select}}"
 
 [[bind]]
 default = "{{bind.edit_motion_prim}}"
@@ -1704,7 +1704,7 @@ args.index = """{{
 last_history_index(|i|
     history[i]?.tags.contains("action") &&
     !(history[i]?.tags.contains("history") && !history[i]?.docs.name == "replay")
-)}}"""
+}}"""
 
 [[bind.args.commands]]
 command = "master-key.enterNormal"
@@ -3297,6 +3297,18 @@ doc.description = "Return to normal model"
 key = "enter"
 command = "master-key.setMode"
 mode = "syminsert"
+
+[[bind]]
+default = "{{bind.edit_action_symmetric}}"
+foreach.key = ["{{keys(`[a-z]`)}}"]
+foreach.modifier = ["shift+", ""]
+doc.name = ""
+doc.description = "this key is ignored and has no associated command in syminsert mode"
+key = "{{modifier}}{{key}}"
+command = "master-key.ignore"
+mode = "syminsert"
+doc.hideInDocs = true
+doc.hideInPalette = true
 
 [[bind]]
 doc.name = "esc. char"

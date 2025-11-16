@@ -331,7 +331,8 @@ impl Define {
             } else {
                 default_value = occupied_entry.get().clone()
             }
-            default_value.without_id().merge(binding)
+            let result = default_value.without_id().merge(binding);
+            result
         } else {
             binding
         };

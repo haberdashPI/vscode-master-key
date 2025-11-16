@@ -1100,7 +1100,14 @@ pub(crate) mod tests {
         [header]
         version = "2.0.0"
 
+        # define.bind has interactions with foreach
+        # that can lead to bugs
+        [[define.bind]]
+        id = "testing"
+        doc.description = "testing"
+
         [[bind]]
+        default = "{{bind.testing}}"
         foreach.key = ["{{keys(`[0-9]`)}}"]
         key = "c {{key}}"
         doc.name = "update {{key}}"
@@ -3024,170 +3031,15 @@ pub(crate) mod tests {
         });
     }
 
-    // This tests doesn't work because it calls into wasm specific outputs
-    // and we haven't bothered getting tests working in a wasm target
-    // (because coverage needs a non wasm target anyways)
-    // #[test]
-    // fn do_stored_command_test() {
-    //     let data = r#"
-    //     #:master-keybindings
+    #[test]
+    fn larkin_test() {
+        // the default presets should be parseable (also a good "integration" test to ensure
+        // our parsing works at scale)
+        let data = std::fs::read("../../presets/larkin.toml").unwrap();
 
-    //     [header]
-    //     version = "2.0.0"
-
-    //     [[define.val]]
-    //     foo = 1
-    //     internal__debug__flag = false
-
-    //     [[bind]]
-    //     key = "a"
-    //     command = "bar"
-    //     "#;
-
-    //     let mut warnings = Vec::new();
-    //     let mut scope = Scope::new();
-    //     let file = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope).unwrap();
-    //     let mut result = KeyFileResult {
-    //         file: Some(file),
-    //         errors: None,
-    //         scope,
-    //     };
-
-    //     let toml = r#"
-    //     args = {value = '{{val.foo}}', to = 'right'}
-    //     command = 'cursorMove'
-    //     register = 'test'
-    //     "#;
-    //     let deserializer = toml::Deserializer::parse(toml).unwrap();
-    //     let command = Command::deserialize(deserializer).unwrap();
-    //     result.scope.parse_asts(&command).unwrap();
-    //     let mut reified = ReifiedBinding::from_commands(vec![command], &result.scope);
-    //     let command = reified.resolve_command(0, &mut result);
-    //     info!("command: {command:#?}");
-    // }
-
-    // TODO: delete
-    // #[test]
-    // fn playground_test_for_simple_motions() {
-    //     let data = r#"
-    //     #:master-keybindings
-
-    //     [header]
-    //     version = "2.0.0"
-
-    //     [[mode]]
-    //     name = "insert"
-    //     whenNoBinding = "insertCharacters"
-
-    //     [[mode]]
-    //     name = "normal"
-    //     default = true
-    //     highlight = "Highlight"
-    //     cursorShape = "Block"
-
-    //     [[bind]]
-    //     doc.name = "normal mode"
-    //     key = "escape"
-    //     command = "master-key.enterNormal"
-    //     prefixes.any = true
-
-    //     [[define.bind]]
-    //     id = "motion"
-    //     command = "cursorMove"
-    //     mode = "normal"
-    //     when = "editorTextFocus"
-    //     args.value = "{{key.count}}"
-
-    //     [[bind]]
-    //     key = "[KeyH]"
-    //     default = "{{bind.motion}}"
-    //     doc.name = "left"
-    //     args.to = "left"
-
-    //     [[bind]]
-    //     default = "{{bind.motion}}"
-    //     doc.name = "right"
-    //     key = "[KeyL]"
-    //     args.to = "right"
-
-    //     [[bind]]
-    //     default = "{{bind.motion}}"
-    //     doc.name = "down"
-    //     key = "[KeyJ]"
-    //     args.to = "down"
-
-    //     [[bind]]
-    //     default = "{{bind.motion}}"
-    //     doc.name = "up"
-    //     key = "[KeyK]"
-    //     args.to = "up"
-
-    //     [[bind]]
-    //     doc.name = "insert mode"
-    //     key = "[KeyI]"
-    //     command = "master-key.enterInsert"
-    //     mode = "normal"
-
-    //     [[bind]]
-    //     doc.name = "ignore"
-    //     key = "[KeyU]"
-    //     command = "master-key.ignore"
-    //     mode = "normal"
-
-    //     [[bind]]
-    //     doc.name = "delete"
-    //     key = "[KeyD]"
-    //     mode = "normal"
-    //     command = "runCommands"
-
-    //     [[bind.args.commands]]
-    //     command = "master-key.prefix"
-    //     args.cursor = "Underline"
-
-    //     [[bind.args.commands]]
-    //     command = "master-key.storeCommand"
-    //     args.command = "deleteRight"
-    //     args.register = "operation"
-
-    //     [[bind]]
-    //     doc.name = "word operation"
-    //     key = "[KeyW]"
-    //     mode = "normal"
-    //     #- to qualify from word *motion*
-    //     prefixes.anyOf = ["[KeyD]"]
-    //     command = "runCommands"
-
-    //     [[bind.args.commands]]
-    //     command = "cursorWordEndRightSelect"
-
-    //     [[bind.args.commands]]
-    //     command = "master-key.executeStoredCommand"
-    //     args.register = "operation"
-
-    //     [[bind]]
-    //     foreach.num = ["{{key: [0-3]}}"]
-    //     key = "[Digit{{num}}]"
-    //     mode = "normal"
-    //     doc.name = "count {{num}}"
-    //     command = "master-key.updateCount"
-    //     args.value = "{{num}}"
-    //     finalKey = false
-    //     "#;
-
-    //     let mut warnings = Vec::new();
-    //     let mut scope = Scope::new();
-    //     let file = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope).unwrap();
-    //     scope.state.set_or_push("count", Dynamic::from_float(1.0));
-    //     let mut result = KeyFileResult {
-    //         scope,
-    //         file: Some(file),
-    //         errors: None,
-    //     };
-    //     let command = result.resolve_commands(1);
-    //     info!("command: {}", command.commands[0].command);
-    // }
-
-    // TODO: write a test for required field `key` and ensure the span
-    // is narrowed to the appropriate `[[bind]]` element; also should only error once
-    // (right now we're erroring on the expanded value)
+        let mut warnings = Vec::new();
+        let mut scope = Scope::new();
+        let result = parse_bytes_helper(&data, &mut warnings, &mut scope).unwrap();
+        assert_eq!(result.bind.len(), 310);
+    }
 }
