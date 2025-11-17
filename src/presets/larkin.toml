@@ -321,7 +321,7 @@ doc.combined.description = "move down/up, relative to page size"
 doc.description = "move down, relative to page size"
 command = "selection-utilities.activePageMove"
 args.dir = "down"
-args.count = "{{max(count, 1)/3}}"
+args.count = "{{max(key.count, 1)/3}}"
 args.select = '{{key.mode == "normal"}}'
 
 [[bind]]
@@ -333,7 +333,7 @@ doc.combined.name = "pg ↓/↑"
 doc.description = "move up, relative to page size"
 command = "selection-utilities.activePageMove"
 args.dir = "up"
-args.count = "{{(max(count, 1))/3}}"
+args.count = "{{(max(key.count, 1))/3}}"
 args.select = '{{key.mode == "normal"}}'
 
 [[bind]]
@@ -426,7 +426,7 @@ doc.name = "parag. ←"
 doc.combined.name = "paragraph →/←"
 doc.description = "previous paragraph"
 args.unit = "paragraph"
-args.value = "{{-(max(count, 1))}}"
+args.value = "{{-(max(key.count, 1))}}"
 
 [[bind]]
 default = "{{bind.edit_motion_obj}}"
@@ -446,7 +446,7 @@ doc.name = "subsec ←"
 doc.description = "previous subsection"
 doc.combined.name = "subsec →/←"
 args.unit = "subsection"
-args.value = "{{-(max(count, 1))}}"
+args.value = "{{-(max(key.count, 1))}}"
 
 [[bind]]
 default = "{{bind.edit_motion_prim}}"
@@ -584,7 +584,7 @@ doc.combined.key = "shift+3/2"
 args.unit = "number"
 args.selectWhole = true
 args.boundary = "both"
-args.value = "{{(max(count, 1))}}"
+args.value = "{{(max(key.count, 1))}}"
 
 [[bind]]
 default = "{{bind.edit_motion_obj}}"
@@ -595,7 +595,7 @@ doc.combined.name = "→/← num."
 args.unit = "number"
 args.selectWhole = true
 args.boundary = "both"
-args.value = "{{-(max(count, 1))}}"
+args.value = "{{-(max(key.count, 1))}}"
 
 [[bind]]
 default = "{{bind.edit_motion}}"
@@ -757,7 +757,7 @@ doc.name = "→ search"
 doc.description = "Go to the next match of the search query"
 command = "master-key.nextMatch"
 args.register = "search"
-args.repeat = "{{(max(count, 1))-1}}"
+args.repeat = "{{(max(key.count, 1))-1}}"
 
 [[bind]]
 default = "{{bind.edit_motion_search}}"
@@ -766,7 +766,7 @@ doc.name = "← search"
 doc.description = "Go to the previous match of the search query"
 command = "master-key.previousMatch"
 args.register = "search"
-args.repeat = "{{(max(count, 1))-1}}"
+args.repeat = "{{(max(key.count, 1))-1}}"
 
 [[bind]]
 default = "{{bind.edit_motion_search}}"
@@ -1043,7 +1043,7 @@ doc.name = "sec ←"
 doc.description = "previous section"
 doc.combined.name = "sec →/←"
 args.unit = "section"
-args.value = "{{-(max(count, 1))}}"
+args.value = "{{-(max(key.count, 1))}}"
 
 [[bind]]
 default = "{{bind.window}}"
@@ -1210,7 +1210,7 @@ doc.name = "in parag. ←"
 doc.combined.name = "in paragraph →/←"
 args.unit = "paragraph"
 args.boundary = "both"
-args.value = "{{-(max(count, 1))}}"
+args.value = "{{-(max(key.count, 1))}}"
 
 [[bind]]
 default = "{{bind.edit_motion_match_obj}}"
@@ -1227,7 +1227,7 @@ key = "m shift+o"
 doc.name = "arn parag. ←"
 doc.combined.name = "around paragraph →/←"
 args.unit = "paragraph"
-args.value = "{{-(max(count, 1))}}"
+args.value = "{{-(max(key.count, 1))}}"
 
 [[bind]]
 default = "{{bind.edit_motion_match_obj}}"
@@ -1244,7 +1244,7 @@ key = "m shift+0"
 doc.name = "arn subsec ←"
 doc.combined.name = "around subsection →/←"
 args.unit = "subsection"
-args.value = "{{-(max(count, 1))}}"
+args.value = "{{-(max(key.count, 1))}}"
 
 [[bind]]
 default = "{{bind.edit_motion_match_obj}}"
@@ -1261,7 +1261,7 @@ key = "m shift+9"
 doc.name = "in subsec ←"
 doc.combined.name = "in subsection →/←"
 args.unit = "subsection"
-args.value = "{{-(max(count, 1))}}"
+args.value = "{{-(max(key.count, 1))}}"
 
 [[bind]]
 default = "{{bind.edit_motion}}"
@@ -1285,7 +1285,7 @@ key = "m g 9"
 doc.name = "section ←"
 doc.combined.name = "section →/←"
 args.unit = "section"
-args.value = "{{-(max(count, 1))}}"
+args.value = "{{-(max(key.count, 1))}}"
 
 [[bind]]
 default = "{{bind.edit_motion_match_obj}}"
@@ -1302,7 +1302,7 @@ key = "m g b"
 doc.name = "around WORD ←"
 doc.combined.name = "around WORD →/←"
 args.unit = "BigWord"
-args.value = "{{-(max(count, 1))}}"
+args.value = "{{-(max(key.count, 1))}}"
 
 [[bind]]
 default = "{{bind.edit_motion_match_obj}}"
@@ -1466,7 +1466,7 @@ command = "runCommands"
 
 [[bind.args.commands]]
 command = "master-key.captureKeys"
-args.acceptAfter = "{{2*(max(count, 1))}}"
+args.acceptAfter = "{{2*(max(key.count, 1))}}"
 
 [[bind.args.commands]]
 command = "selection-utilities.selectBetween"
@@ -2376,7 +2376,7 @@ Store the N most recently run commands as a macro, where N is the count (default
 """
 key = "q l"
 command = "master-key.pushHistoryToStack"
-args.range.from = "{{history.len()-max(count, 1)}}"
+args.range.from = "{{history.len()-max(key.count, 1)}}"
 args.range.to = "{{history.len()-1}}"
 
 # ## Utility Commands
