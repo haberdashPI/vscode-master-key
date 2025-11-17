@@ -500,10 +500,34 @@ Integration test debugging:
                 - very confused: seems like even when I have a good `BareValue`
                   the expressions aren't picked up ???
     - [X] document macro / history values for expressions
-    - [ ] parse and try out larkin
+    - [ ] parse and dog-food larkin
         - [X] fix issue with missing foreach variables
-        - [ ] fix issue with unexpected `{{` in multiline strings
-        - NOTE: it's kind of incredible that there were so few errors here
+        - [X] fix issue with unexpected `{{` in multiline strings
+        - NOTE: it's kind of incredible that there were so few errors here 🎉
+        - [X] we're missing key presses: it looks like sometimes the last mode is a little
+            "sticky" (e.g. I tried to hit "i" in insert mode and it instead selected
+             an indent region, as if I had hit "m i"; maybe I had hit m???)
+             it can take a *while* for the missed key presses to go away
+             it seems like there is a substantial delay in when we stop missing presses
+             (it could be that the context is slow to update here but it could also
+              be that there is some state that eventually "errors" out after
+              being in insert mode for long enough and then the presses work)
+              - ideally we find a way to reproduce this in an integration test first
+              - inspect context a few times during this time period, then review in console
+                do we see anything weird with the master key context
+              - maybe we need to make the 'mode' state special and have it in
+                a separate context value as well?? (maybe the large object)
+                that is present for `key.` leads to the sluggish behavior
+              - that said I think the best hypothesis is something pathological
+                about how context state is set that would impact what bindings get triggered
+            - OKAY: the problem is that escape requests it accept all prefixes
+              *and* it can occur in insert mode. This creates a bunch of
+              additional prefix bindings; I this completely explain
+        - [ ] highlighting is not resetting when using search
+        - [ ] we can't use `contains` on `.tags`
+            - [X] implement a getter
+              - NOTE: I think we should just make this `Vec<Dynamic>` and make sure `wasm_bindgen` ignores it
+            - [ ] DEBUG: we don't see errors now, but we also don't select anything
     - [ ] get any remaining, existing tests (except unimplemented features) working again
         - [ ] update unit tests for running commands
             - [ ] remove replay unit tests (they are become integration tests)

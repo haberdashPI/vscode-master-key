@@ -5,7 +5,7 @@ use core::ops::Range;
 use indexmap::IndexMap;
 use lazy_static::lazy_static;
 use regex::Regex;
-use rhai::{CustomType, TypeBuilder};
+use rhai::{CustomType, Dynamic, ImmutableString, TypeBuilder};
 use serde::{Deserialize, Serialize};
 use std::collections::hash_map::{Entry, OccupiedEntry};
 use std::collections::{HashMap, HashSet};
@@ -134,13 +134,15 @@ pub struct BindingInput {
     /// @forBindingField bind
     ///
     /// - `prefixes`: expresses the allowed key sequences that occur *before* this
-    /// keybinding using a call to [`master-key.prefix`](/commands/prefix). This is an object
-    /// with one of three possible keys:
-    ///   - `any`: when `true` any prefix is allowed before the binding, `false`
-    ///   means no sequence can occur prior to this binding (this is the default behavior).
+    /// keybinding. These sequences should be define elsewhere with a
+    /// [`master-key.prefix`](/commands/prefix) command. This is an object with one of three
+    /// possible keys:
+    ///   - `any`: when `true` any prefix defined elsewhere in the file is allowed before
+    ///   the binding, `false` means no sequence can occur prior to this binding (this is
+    ///   the default behavior).
     ///   - `anyOf`: A single string or an array of strings, each an allowed prefix
-    ///   - `allBut`: A single string or an array of strings; all prefixes *except*
-    ///   those specified here are valid
+    ///   - `allBut`: A single string or an array of strings; all prefixes *except* those
+    ///   specified here are valid
     pub prefixes: Option<Spanned<PrefixInput>>,
 
     /// @forBindingField bind
@@ -935,14 +937,18 @@ impl Binding {
         mut binds: Vec<Binding>,
         spans: &Vec<Range<usize>>,
     ) -> ResultVec<Vec<Binding>> {
-        let mut all_prefixes = HashSet::new();
-        all_prefixes.insert("".to_string());
+        let mut all_prefixes_to_spans = HashMap::new();
+        let mut implicit_prefixes = HashSet::new();
+        all_prefixes_to_spans.insert("".to_string(), UNKNOWN_RANGE);
+        implicit_prefixes.insert("".to_string());
         let empty_vec = vec![];
-        for bind in &binds {
+        for (bind, span) in binds.iter().zip(spans) {
             let explicit_prefixes = match &bind.prefixes {
                 Prefix::Any(false) => &empty_vec,
                 Prefix::AnyOf(x) => x,
-                _ => continue, // these types don't define new prefixes, they reference what already exists
+                // the other types will be resolved below when we know what all of the other
+                // prefixes are
+                _ => continue,
             };
             let offset = if bind
                 .commands
@@ -955,23 +961,49 @@ impl Binding {
             };
             if explicit_prefixes.len() > 0 {
                 for p in explicit_prefixes {
-                    let seq = WHITESPACE
-                        .split(&p)
+                    let explicit_items: Vec<_> = WHITESPACE.split(&p).collect();
+                    let explicit_len = explicit_items.len();
+                    let seq = explicit_items
+                        .into_iter()
                         .chain(bind.key.iter().map(String::as_str));
                     let prefixes = list_prefixes(seq);
+                    let mut prefix_index = 0;
                     for s in prefixes[0..(prefixes.len() - offset)].iter() {
-                        all_prefixes.insert(s.join(" "));
+                        let joined = s.join(" ");
+                        if prefix_index >= explicit_len {
+                            implicit_prefixes.insert(joined.clone());
+                        }
+                        all_prefixes_to_spans.insert(joined, span.clone());
+                        prefix_index += 1;
                     }
                 }
             } else {
                 let prefixes = list_prefixes(bind.key.iter().map(String::as_str));
                 for s in prefixes[0..(prefixes.len() - offset)].iter() {
-                    all_prefixes.insert(s.join(" "));
+                    let joined = s.join(" ");
+                    all_prefixes_to_spans.insert(joined.clone(), span.clone());
+                    implicit_prefixes.insert(joined);
                 }
             };
         }
 
         let mut errors = Vec::new();
+
+        // check the prefixes; are there any explicit prefixes (defined by `AnyOf`) that
+        // aren't defined elsewhere (via `key`?); this is is an error
+        let bad_prefixes: Vec<_> = all_prefixes_to_spans
+            .iter()
+            .filter(|(k, _)| !implicit_prefixes.contains(k.as_str()))
+            .collect();
+        for (k, v) in bad_prefixes {
+            let error: Result<()> = Err(err!("Prefix undefined: {k}")).with_range(v);
+            errors.push(error.unwrap_err());
+        }
+
+        let all_prefixes: HashSet<_> = all_prefixes_to_spans.into_keys().collect();
+
+        // expand all explicit prefix definitions that are defined by the entire set
+        // of prefixes defined elsewhere (Any(true) and AllBut(...))
         for (bind, span) in binds.iter_mut().zip(spans.iter()) {
             bind.prefixes = match &bind.prefixes {
                 Prefix::Any(true) => Prefix::AnyOf(all_prefixes.iter().map(String::from).collect()),
@@ -1441,23 +1473,25 @@ impl Binding {
     ) -> ResultVec<()> {
         // split the current explicit prefix into individual keys and then prepend
         // it to the key sequence for this binding
-        let prefix_seq = WHITESPACE
+        let explicit_seq: Vec<_> = WHITESPACE
             .split(&explicit_prefix)
             .filter(|x| !x.is_empty())
+            .collect();
+        let explicit_len = explicit_seq.len();
+        let prefix_seq = explicit_seq
+            .into_iter()
             .chain(self.key.iter().map(String::as_str));
         // generate a keybindings.json entry for each listed prefix of this Binding
         let prefixes = list_prefixes(prefix_seq);
         let mut old_prefix_code = 0; // 0 is never returned by `key_code` method
         let mut old_prefix_str = "".to_string();
+        let mut prefix_index = 0;
         for prefix in prefixes[0..(prefixes.len() - 1)].iter() {
             let mut when;
-            // TODO: key_code should signal when there is already a higher
+            // TODO: key_code could signal when there is already a higher
             // priority binding that's been added, and prevent
             // us from inserting a new binding here
 
-            // BUG: we need to distinguish between key_codes, which must be unique
-            // and prefix codes which are invariant to the `when` clause
-            // and do not need to be unique
             let (key_code, is_new_code) = codes.key_code(&prefix, &mode, &self.when, span, true)?;
             let prefix_code = codes.prefix_code(&prefix, &mode);
 
@@ -1470,7 +1504,9 @@ impl Binding {
                 when.push(format!("master-key.prefixCode == {old_prefix_code}"));
             }
             let new_prefix_str = prefix.clone().join(" ");
-            if is_new_code {
+            // the component of a prefix sequence that is part of an explicit `prefix`
+            // does not generate new `mater-key.prefix` bindings
+            if is_new_code && prefix_index >= explicit_len {
                 let key = prefix.last().unwrap().clone();
                 result.push(BindingOutput::Prefix {
                     key: key.clone(),
@@ -1485,6 +1521,7 @@ impl Binding {
             }
             old_prefix_code = prefix_code;
             old_prefix_str = new_prefix_str;
+            prefix_index += 1;
         }
 
         // generate keybindings.json entry for this Binding's actual
@@ -1536,6 +1573,7 @@ impl Binding {
 #[wasm_bindgen(getter_with_clone)]
 #[derive(Clone, Debug, CustomType)]
 pub struct ReifiedBinding {
+    #[rhai_type(skip)]
     pub error: Option<Vec<String>>,
     raw_commands: Vec<Command>,
     #[rhai_type(skip)]
@@ -1546,11 +1584,11 @@ pub struct ReifiedBinding {
     pub commands: Vec<CommandOutput>,
     pub mode: String,
     pub repeat: i32,
-    pub tags: Vec<String>,
+    #[wasm_bindgen(skip)]
+    pub tags: Vec<Dynamic>,
     pub doc: BindingDoc,
     // stores any textual edits between this command and the text
     // via `vscode.workspace.onDidChangeTextDocument` (see `replay.ts` and `do.ts`)
-    #[rhai_type(skip)]
     pub edit_document_id: i32,
     #[rhai_type(skip)]
     pub edit_text: String,
@@ -1593,7 +1631,11 @@ impl ReifiedBinding {
         return ReifiedBinding {
             error: None,
             doc: binding.doc.clone(),
-            tags: binding.tags.clone(),
+            tags: binding
+                .tags
+                .iter()
+                .map(|x| Dynamic::from(ImmutableString::from(x)))
+                .collect(),
             key: binding.key.join(" "),
             finalKey: binding.finalKey,
             mode,

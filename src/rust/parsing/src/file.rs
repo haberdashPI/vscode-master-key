@@ -1896,6 +1896,14 @@ pub(crate) mod tests {
         version = "2.0.0"
 
         [[bind]]
+        key = "x y z"
+        command = "bar"
+
+        [[bind]]
+        key = "h k z"
+        command = "biz"
+
+        [[bind]]
         key = "a b"
         command = "foo"
         prefixes.anyOf = ["x y", "h k"]
@@ -1909,7 +1917,50 @@ pub(crate) mod tests {
             &mut warnings,
         )
         .unwrap();
-        assert_eq!(result.key_bind.len(), 8)
+        assert_eq!(result.key_bind.len(), 10)
+    }
+
+    #[test]
+    fn explicit_prefixes_must_be_defined_elsewhere() {
+        let data = r#"
+        [header]
+        version = "2.0.0"
+
+        [[bind]]
+        key = "x y"
+        command = "bar"
+
+        [[bind]]
+        key = "a b"
+        command = "foo"
+        prefixes.anyOf = ["x y", "h k"]
+
+        [[bind]]
+        key = "k"
+        command = "bizzle"
+        prefixes.allBut = ["k", "y z"]
+        "#;
+
+        let mut scope = Scope::new();
+        let mut warnings = Vec::new();
+        let result = KeyFile::new(
+            toml::from_str::<KeyFileInput>(data).unwrap(),
+            &mut scope,
+            &mut warnings,
+        )
+        .unwrap_err();
+        let undefined_prefixes = result
+            .errors
+            .iter()
+            .filter(|e| match e {
+                ParseError {
+                    error: crate::error::RawError::Dynamic(m),
+                    ..
+                } => m.contains("Prefix") && m.contains("undefined"),
+                _ => false,
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(undefined_prefixes.len(), 4)
     }
 
     #[test]
