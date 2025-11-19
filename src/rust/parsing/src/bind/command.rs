@@ -414,6 +414,7 @@ impl Command {
             Err(e) => CommandOutput {
                 errors: Some(e.errors.iter().map(|x| format!("{}", x)).collect()),
                 command: "master-key.ignore".to_string(),
+                messages: Some(result.scope.report_messages()),
                 args: JsValue::null(),
             },
         };
@@ -425,13 +426,17 @@ impl Command {
             return Ok(CommandOutput {
                 errors: None,
                 command: "master-key.ignore".to_string(),
+                messages: Some(scope.report_messages()),
                 args: JsValue::null(),
             });
         }
+        let command = expanded.command.clone();
+        let args = expanded.args()?;
         return Ok(CommandOutput {
             errors: None,
-            command: expanded.command.clone(),
-            args: expanded.args()?,
+            messages: Some(scope.report_messages()),
+            command,
+            args,
         });
     }
 
@@ -464,6 +469,8 @@ pub struct CommandOutput {
     pub command: String,
     #[rhai_type(skip)]
     pub errors: Option<Vec<String>>,
+    #[rhai_type(skip)]
+    pub messages: Option<Vec<String>>,
     pub args: JsValue,
 }
 
@@ -472,6 +479,7 @@ impl CommandOutput {
         CommandOutput {
             command: "master-key.ignore".to_string(),
             errors: None,
+            messages: None,
             args: JsValue::null(),
         }
     }

@@ -575,7 +575,10 @@ impl TryFrom<Dynamic> for Value {
                     .to_string(),
             ));
         } else {
-            return Err(err!("{value} cannot be interpreted as a valid TOML value"))?;
+            return Err(err!(
+                "`{value}` of type `{}` cannot be interpreted as a valid TOML value",
+                value.type_name()
+            ))?;
         }
     }
 }
@@ -1028,11 +1031,63 @@ where
     }
 }
 
-impl<T: Serialize + std::fmt::Debug> Merging for TypedValue<T> {
+pub(crate) trait IsEmpty {
+    fn is_empty(&self) -> bool;
+}
+impl<T: Clone> IsEmpty for Plural<T> {
+    fn is_empty(&self) -> bool {
+        return self.0.is_empty();
+    }
+}
+impl<T: Clone> IsEmpty for Vec<T> {
+    fn is_empty(&self) -> bool {
+        return self.is_empty();
+    }
+}
+impl IsEmpty for String {
+    fn is_empty(&self) -> bool {
+        return self.is_empty();
+    }
+}
+
+impl<T: Serialize + std::fmt::Debug + IsEmpty> Merging for TypedValue<T> {
+    fn coalesce(self, new: Self) -> Self {
+        if let TypedValue::Constant(c) = &new
+            && IsEmpty::is_empty(c)
+        {
+            return self;
+        } else {
+            return new;
+        }
+    }
+
+    fn merge(self, new: Self) -> Self {
+        return self.coalesce(new);
+    }
+}
+
+impl Merging for TypedValue<bool> {
     fn coalesce(self, new: Self) -> Self {
         return new;
     }
+    fn merge(self, new: Self) -> Self {
+        return new;
+    }
+}
 
+impl Merging for TypedValue<i32> {
+    fn coalesce(self, new: Self) -> Self {
+        return new;
+    }
+    fn merge(self, new: Self) -> Self {
+        return new;
+    }
+}
+
+impl Merging for TypedValue<f64> {
+    fn coalesce(self, new: Self) -> Self {
+        return new;
+    }
     fn merge(self, new: Self) -> Self {
         return new;
     }

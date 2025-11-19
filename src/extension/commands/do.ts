@@ -12,7 +12,7 @@ import { PREFIX } from './prefix';
 // import { commandPalette } from './palette';
 import { bindings } from '../keybindings/config';
 import { MODE } from './mode';
-import { WhenNoBindingHeader } from '../../rust/parsing/lib/parsing';
+import { CommandOutput, WhenNoBindingHeader } from '../../rust/parsing/lib/parsing';
 
 export const COMMAND_HISTORY = 'history';
 
@@ -30,6 +30,18 @@ export const documentIdentifiers = new WeakMap();
 // visible; user-configurable
 let paletteDelay: number = 0;
 let paletteUpdate = Number.MIN_SAFE_INTEGER;
+
+let expressionMessages: vscode.OutputChannel;
+export function showExpressionMessages(command: CommandOutput) {
+    if (command.messages) {
+        for (const msg of command.messages) {
+            expressionMessages.appendLine(
+                `[DEBUG: ${new Date().toLocaleTimeString()}] ${msg}`,
+            );
+        }
+        expressionMessages.show(true);
+    }
+}
 
 /**
  * @command do
@@ -73,6 +85,8 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
                     // now we know that the command is begin run at least once
                     canceled = false;
                     const command = toRun.resolve_command(i, bindings);
+                    showExpressionMessages(command);
+
                     // pass key codes down into the arguments to prefix
                     if (command.command == 'master-key.ignore') {
                         if (command.errors) {
@@ -201,6 +215,9 @@ function updateConfig(event?: vscode.ConfigurationChangeEvent) {
 }
 
 export function activate(context: vscode.ExtensionContext) {
+    expressionMessages = vscode.window.createOutputChannel('Master Key Debug');
+    context.subscriptions.push(expressionMessages);
+
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.do', recordedCommand(doCommandsCmd)),
     );

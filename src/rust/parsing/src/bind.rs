@@ -269,6 +269,7 @@ impl Merging for BindingInput {
         return new;
     }
     fn merge(self, y: Self) -> Self {
+        let tags = self.tags.coalesce(y.tags);
         BindingInput {
             id: y.id,
             command: self.command.coalesce(y.command),
@@ -286,7 +287,7 @@ impl Merging for BindingInput {
             prefixes: self.prefixes.coalesce(y.prefixes),
             finalKey: self.finalKey.coalesce(y.finalKey),
             repeat: self.repeat.coalesce(y.repeat),
-            tags: self.tags.coalesce(y.tags),
+            tags: tags,
             doc: self.doc.merge(y.doc),
             other_fields: y.other_fields,
         }

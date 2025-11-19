@@ -8,7 +8,7 @@ pub mod value;
 use log::info;
 
 use log::error;
-use rhai::{Dynamic, Engine, EvalAltResult};
+use rhai::{Dynamic, Engine, EvalAltResult, ImmutableString};
 use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::collections::{HashMap, HashSet};
@@ -21,6 +21,7 @@ use crate::{
     err,
     error::{ErrorContext, RawError, Result, ResultVec},
     expression::value::{Expanding, Value},
+    note,
 };
 
 /// @file expressions/index.md
@@ -28,8 +29,8 @@ use crate::{
 /// # Expressions
 ///
 /// You can use expressions in a number of places inside a [bind](/bindings/bind)
-/// definition. An expression is a snippet of code surrounded by double curly braces <code
-/// v-pre>{{like + this}}</code> that occurs within a TOML string.
+/// definition. An expression is a snippet of code surrounded by double curly braces
+/// <code v-pre>{{like + this}}</code> that occurs within a TOML string.
 ///
 /// When the string is comprised entirely of a single expression, it can evaluate to any
 /// valid TOML object.
@@ -65,10 +66,10 @@ use crate::{
 ///
 /// Valid expressions are a simple derivative of
 /// [Rhai](https://rhai.rs/book/ref/index.html). You can only evaluate expressions not
-/// statements, and you cannot set variables or use loops. If you find yourself wanting to
-/// write a more elaborate expression, your goal is probably better accomplished by writing
-/// an [extension](https://code.visualstudio.com/api) and running the extension
-/// defined-command.
+/// statements, you cannot set variables, use loops or use named functions. If you find
+/// yourself wanting to write a more elaborate expression, your goal is probably better
+/// accomplished by writing an [extension](https://code.visualstudio.com/api) and running
+/// the extension defined-command.
 ///
 /// There are two points at which an expression can be evaluated: while parsing the master
 /// keybinding file (e.g. making use of [foreach](/bindings/bind#foreach-clauses)) or at
@@ -119,6 +120,25 @@ use crate::{
 /// - `history`: a queue containing a record of all previously run master key commands, up
 ///   to the number configured by Master Key's "Command History Maximum" (defaults to 1024).
 ///   See [master-key.replayFromHistory](/commands/replayFromHistory) for details.
+///
+/// ## Debugging
+///
+/// You can use the function `show` to print out a message in VSCode's output
+/// pane. It accepts to arguments: a string to print and a value. The value is printed
+/// and it is also returned as the result of show. This allows you to insert
+/// show whereever you want within an expression.
+///
+/// ```toml
+/// [[bind]]
+/// key = "j"
+/// mode = "normal"
+/// command = "cursorMove"
+/// args.to = "right"
+/// args.value = '{{show("count: ", 1+2)}}'
+/// ```
+///
+/// This would print the string `"count: 3"` to the output pane whenever the user presses
+/// the `j` key in normal mode.
 pub struct Scope {
     pub(crate) asts: HashMap<String, rhai::AST>,
     pub(crate) engine: rhai::Engine,
@@ -126,6 +146,7 @@ pub struct Scope {
     pub(crate) kinds: HashSet<String>,
     pub(crate) default_mode: String,
     pub(crate) state: rhai::Scope<'static>,
+    pub(crate) messages: Rc<RefCell<Vec<String>>>,
 }
 
 fn toml_to_dynamic(x: toml::Value) -> rhai::Dynamic {
@@ -157,10 +178,19 @@ pub type MacroStack = Rc<RefCell<Vec<Vec<ReifiedBinding>>>>;
 // TODO: define `CustomType` on `Value` and `Command` to avoid copying
 impl Scope {
     pub fn new() -> Scope {
+        let messages = Rc::new(RefCell::new(Vec::new()));
+        let debug_messages = messages.clone();
         let mut engine = rhai::Engine::new();
         engine.set_allow_looping(false);
         engine.set_allow_statement_expression(false);
         engine.register_fn("keys", expression_fn__keys);
+        engine.register_fn(
+            "show",
+            move |x: ImmutableString, y: rhai::Dynamic| -> rhai::Dynamic {
+                debug_messages.borrow_mut().push(format!("{}{}", x, y));
+                return y;
+            },
+        );
         engine
             .build_type::<BindingDoc>()
             .build_type::<CombinedBindingDoc>()
@@ -170,6 +200,7 @@ impl Scope {
         let mut scope = Scope {
             asts: HashMap::new(),
             engine: engine,
+            messages,
             state: rhai::Scope::new(),
             default_mode: "default".to_string(),
             modes: HashSet::from(["default".to_string()]),
@@ -186,6 +217,16 @@ impl Scope {
         scope.state.set_or_push("macros", macros);
 
         return scope;
+    }
+
+    pub fn report_messages(&self) -> Vec<String> {
+        return self.messages.borrow_mut().drain(..).collect();
+    }
+
+    pub fn messages_as_warnings(&self, warnings: &mut Vec<crate::error::ParseError>) {
+        for msg in self.messages.borrow_mut().drain(..) {
+            warnings.push(note!("{}", msg));
+        }
     }
 
     pub(crate) fn expand<T>(&mut self, obj: &T) -> ResultVec<T>

@@ -338,6 +338,7 @@ impl KeyFile {
                             .map(|x| {
                                 let mut bind_warnings = Vec::new();
                                 let bind = Binding::new(x, &mut scope, &mut bind_warnings)?;
+                                scope.messages_as_warnings(&mut bind_warnings);
                                 bind_warnings
                                     .iter_mut()
                                     .for_each(|w| w.contexts.push(Context::Range(span.clone())));
@@ -3083,6 +3084,63 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn expression_debug_parses() {
+        let data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.0.0"
+
+        [[mode]]
+        name = "insert"
+        whenNoBinding = "insertCharacters"
+
+        [[mode]]
+        name = "normal"
+        default = true
+        whenNoBinding = "insertCharacters"
+
+        [[bind]]
+        key = '{{show("string: ", "a b")}}'
+        command = "foo"
+        args.value = '{{show("sum: ", 1+2)}}'
+        "#;
+
+        let mut warnings = Vec::new();
+        let mut scope = Scope::new();
+        let _ = parse_bytes_helper(&data.as_bytes(), &mut warnings, &mut scope).unwrap();
+        let report = ErrorSet { errors: warnings }.report(data.as_bytes());
+
+        assert!(report[0].message.contains("string: "))
+    }
+
+    #[test]
+    fn tags_resolve_from_default() {
+        let data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.0.0"
+
+        [[define.bind]]
+        id = "default"
+        tags = ["a", "b"]
+
+        [[bind]]
+        default = "{{bind.default}}"
+        key = 'ctrl+a'
+        command = "foo"
+        "#;
+
+        let mut warnings = Vec::new();
+        let mut scope = Scope::new();
+        let result = parse_bytes_helper(&data.as_bytes(), &mut warnings, &mut scope).unwrap();
+        assert_eq!(result.bind[0].tags.len(), 2)
+    }
+
+    // TODO: make a tags test that ensure they propagate through multiple layers
+
+    #[test]
     fn larkin_test() {
         // the default presets should be parseable (also a good "integration" test to ensure
         // our parsing works at scale)
@@ -3092,5 +3150,7 @@ pub(crate) mod tests {
         let mut scope = Scope::new();
         let result = parse_bytes_helper(&data, &mut warnings, &mut scope).unwrap();
         assert_eq!(result.bind.len(), 310);
+        info!("result: {:#?}", result.bind);
     }
+    // TODO: write unit tests for `debug` function
 }

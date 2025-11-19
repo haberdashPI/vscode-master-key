@@ -639,8 +639,9 @@ repeat = "{{key.count}}"
 command = "master-key.replayFromHistory"
 args.index = """{{
 last_history_index(|i| {
-    history[i]?.tags?.contains("motion") && history[i]?.doc?.name != "repeat motion" &&
-    history[i]?.doc?.name != "shrink selection"
+    show("is not repeat: ", show("name: ", history[i]?.doc?.name) != "repeat motion") &&
+    show("is not shrink: ", history[i]?.doc?.name != "shrink selection") &&
+    show("is motion: ", show("tags: ", history[show("i: ", i)]?.tags)?.contains("motion"))
 })
 }}"""
 

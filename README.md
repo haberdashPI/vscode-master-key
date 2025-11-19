@@ -18,16 +18,17 @@ For example, this curated snippet from the Master Key's default bindings defines
 
 [[bind]]
 foreach.num = ['{{keys(`[0-9]`)}}']
+doc.name = "count {{num}}"
 key = "{{num}}"
 command = "master-key.updateCount"
-doc.name = "count {{num}}"
-doc.description = "Add digit {{num}} to the count argument of a command; this usually repeats the command the specified number of times."
+doc.description = "Add digit {{num}} to the count argument of a command"
 doc.combined.key = "0-9"
 doc.combined.name = "count 0-9"
-doc.combined.description = "Add digit 0-9 to count argument of a command; this usually repeats the command the specified number of times."
+doc.combined.description = "Add digit 1-9 to count argument of a command"
 args.value = "{{num}}"
 finalKey = false
-mode = 'normal'
+mode = '{{not_modes(["insert"])}}'
+doc.hideInDocs = true
 
 [[bind]]
 default = "{{bind.util}}"
@@ -35,8 +36,8 @@ key = "shift+;"
 doc.name = "suggest"
 finalKey = false
 doc.hideInPalette = true
-prefixes = "{{all_prefixes()}}"
-mode = 'normal'
+prefixes.any = true
+mode = '{{not_modes(["insert"])}}'
 doc.description = """
 show command suggestions within the context of the current mode and keybinding prefix
 (if any). E.g. `TAB, ⇧;` in `normal` mode will show all `normal` command suggestions that

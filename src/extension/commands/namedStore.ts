@@ -9,6 +9,7 @@ import {
 } from '../state';
 import { merge } from 'lodash';
 import { bindings } from '../keybindings/config';
+import { showExpressionMessages } from './do';
 
 /* eslint-disable */
 // /**
@@ -199,6 +200,8 @@ async function executedStoredCommand(args_: unknown): Promise<CommandResult> {
         } else {
             for (let i = 0; i < reified.n_commands(); i++) {
                 const resolved_command = reified.resolve_command(i, bindings);
+                showExpressionMessages(resolved_command);
+
                 if (resolved_command.command === 'master-key.ignore') {
                     let count = 0;
                     for (const error of (resolved_command.errors || [])) {

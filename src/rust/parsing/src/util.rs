@@ -122,7 +122,7 @@ impl<T: Merging> Merging for Required<T> {
 
 impl<T: Merging> Merging for Plural<T>
 where
-    T: Clone,
+    T: Clone + std::fmt::Debug,
 {
     fn merge(self, _: Self) -> Self {
         panic!("Not yet implemented (we don't yet need this function)")

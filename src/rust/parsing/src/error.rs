@@ -63,9 +63,9 @@ macro_rules! wrn {
 macro_rules! note {
     ( $($x:tt)* ) => {
         crate::error::ParseError {
-            error: crate::error::RawError::Dynamic(format!($($x)*))
+            error: crate::error::RawError::Dynamic(format!($($x)*)),
             contexts: smallvec::SmallVec::new(),
-            level: crate::error::ErrorLevel::Note
+            level: crate::error::ErrorLevel::Info,
         }
     };
 }

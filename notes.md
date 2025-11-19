@@ -524,10 +524,26 @@ Integration test debugging:
               *and* it can occur in insert mode. This creates a bunch of
               additional prefix bindings; I this completely explain
         - [ ] highlighting is not resetting when using search
+        - [X] ignore keys should work as expected when there's an existing prefix
+              (that is, they should clear the prefix not leave it untouched)
         - [ ] we can't use `contains` on `.tags`
             - [X] implement a getter
-              - NOTE: I think we should just make this `Vec<Dynamic>` and make sure `wasm_bindgen` ignores it
+              - NOTE: I think we should just make this `Vec<Dynamic>` and make sure `wasm_bindgen` ignores it (DONE!)
             - [ ] DEBUG: we don't see errors now, but we also don't select anything
+                - [X] let's improve debugging ergonomics of expressions for everyone
+                    - [X] add field to `CommandOutput` that is a list of `info` messages
+                    - [X] add messages to list of warnings during parse time
+                    - [X] ensure that TS code prints these messages
+                    - [X] unit tests for writing messages in expressions
+                    - [X] integration test
+                    - [X] document
+                - AH HAH!: the problem is that coalesce is not resolved
+                  to a constant value when default values are merged,
+                  and `coalesce` a typed value doesn't have a notion of
+                  emptiness. Options
+                - [ ] coalesce still doesn't work through multiple default layers
+        - [ ] we can't use symmetric insert commands (something about how we serialize
+              string arrays to rhai is wrong I think)
     - [ ] get any remaining, existing tests (except unimplemented features) working again
         - [ ] update unit tests for running commands
             - [ ] remove replay unit tests (they are become integration tests)
