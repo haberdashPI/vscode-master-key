@@ -161,7 +161,7 @@ doc.combined.key = "escape/ctrl+["
 doc.combined.name = "normal"
 doc.combined.description = "Enter normal mode"
 key = "{{key}}"
-mode = "{{all_modes()}}"
+mode = '{{all_modes() + ["capture"]}}'
 doc.hideInPalette = true
 doc.hideInDocs = false
 command = "master-key.enterNormal"
@@ -2066,8 +2066,8 @@ args.acceptAfter = 1
 
 [[bind.args.commands]]
 command = "selection-utilities.insertAround"
-args.before = "{{val.braces[key.captured].before || key.captured}}"
-args.after = "{{val.braces[key.captured].after || key.captured}}"
+args.before = '{{val.braces[key.captured]?.before ?? key.captured}}'
+args.after = "{{val.braces[key.captured]?.after ?? key.captured}}"
 args.followCursor = true
 
 [[bind]]
@@ -3236,6 +3236,8 @@ command = "selection-utilities.activeAtStart"
 # As a general rule, the letter keys issue commands of various sorts, and the other keys can be used to enter text (since we rarley want to surround a selection with an `a` but might want to surround it with `*` or `/`.
 
 [[define.val]]
+
+[define.val.braces]
 
 "{".before = "{"
 "{".after = "}"

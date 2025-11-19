@@ -523,7 +523,6 @@ Integration test debugging:
             - OKAY: the problem is that escape requests it accept all prefixes
               *and* it can occur in insert mode. This creates a bunch of
               additional prefix bindings; I this completely explain
-        - [ ] highlighting is not resetting when using search
         - [X] ignore keys should work as expected when there's an existing prefix
               (that is, they should clear the prefix not leave it untouched)
         - [X] we can't use `contains` on `.tags`
@@ -542,8 +541,11 @@ Integration test debugging:
                   and `coalesce` a typed value doesn't have a notion of
                   emptiness. Options
                 - [X] coalesce still doesn't work through multiple default layers
-        - [ ] we can't use symmetric insert commands (something about how we serialize
+        - [X] we can't use symmetric insert commands (something about how we serialize
               string arrays to rhai is wrong I think)
+        - [X] escape ctrl+[ isn't leaving capture mode
+        - [ ] highlighting is not resetting when using search
+        - [ ] syminsert isn't capture key presses
     - [ ] get any remaining, existing tests (except unimplemented features) working again
         - [ ] update unit tests for running commands
             - [ ] remove replay unit tests (they are become integration tests)
