@@ -3123,19 +3123,30 @@ pub(crate) mod tests {
         version = "2.0.0"
 
         [[define.bind]]
-        id = "default"
+        id = "foo"
         tags = ["a", "b"]
 
         [[bind]]
-        default = "{{bind.default}}"
+        default = "{{bind.foo}}"
         key = 'ctrl+a'
         command = "foo"
+
+        [[define.bind]]
+        id = "foo_bar"
+        default = "{{bind.foo}}"
+        doc.name = "testing"
+
+        [[bind]]
+        default = "{{bind.foo_bar}}"
+        key = 'ctrl+b'
+        command = "bar"
         "#;
 
         let mut warnings = Vec::new();
         let mut scope = Scope::new();
         let result = parse_bytes_helper(&data.as_bytes(), &mut warnings, &mut scope).unwrap();
-        assert_eq!(result.bind[0].tags.len(), 2)
+        assert_eq!(result.bind[0].tags.len(), 2);
+        assert_eq!(result.bind[1].tags.len(), 2);
     }
 
     // TODO: make a tags test that ensure they propagate through multiple layers
@@ -3150,7 +3161,6 @@ pub(crate) mod tests {
         let mut scope = Scope::new();
         let result = parse_bytes_helper(&data, &mut warnings, &mut scope).unwrap();
         assert_eq!(result.bind.len(), 310);
-        info!("result: {:#?}", result.bind);
     }
     // TODO: write unit tests for `debug` function
 }

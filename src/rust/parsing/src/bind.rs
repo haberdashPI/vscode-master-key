@@ -1629,7 +1629,11 @@ impl ReifiedBinding {
             Option::None => scope.default_mode.clone(),
         };
 
+        // if binding.doc.name == "" {
+        //     msg = format!("tags: {:?}", binding.tags);
+        // }
         return ReifiedBinding {
+            // error: Some(vec![msg]),
             error: None,
             doc: binding.doc.clone(),
             tags: binding
