@@ -548,7 +548,7 @@ Integration test debugging:
             - [X] implemented command execution
             - [X] debug `resolve` failures (is there something I'm not doing that occurs in e.g. do_command, which `resolve` assumes has already happened?)
             - [X] create an integration test
-        - [ ] highlighting ins't resetting when using search
+        - [X] highlighting ins't resetting when using search
     - [ ] get any remaining, existing tests (except unimplemented features) working again
         - [ ] update unit tests for running commands
             - [ ] remove replay unit tests (they are become integration tests)

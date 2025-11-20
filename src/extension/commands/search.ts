@@ -1,10 +1,9 @@
 import * as vscode from 'vscode';
 import z from 'zod';
 import { validateInput, wrappedTranslate } from '../utils';
-import { withState, CommandResult, recordedCommand, onSet } from '../state';
+import { withState, CommandResult, recordedCommand } from '../state';
 import { MODE } from './mode';
 import { captureKeys } from './capture';
-import { COMMAND_HISTORY } from './do';
 import { bindings } from '../keybindings/config';
 
 /**
@@ -424,7 +423,7 @@ function skipTo(state: SearchState, editor: vscode.TextEditor) {
     }
 }
 
-function searchDecorationCheck() {
+export function searchDecorationCheck() {
     const editor = vscode.window.activeTextEditor;
     if (editor) {
         const searchState = getOldSearchState(editor, currentSearch);
@@ -659,6 +658,4 @@ export async function activate(context: vscode.ExtensionContext) {
     );
     updateSearchHighlights();
     vscode.workspace.onDidChangeConfiguration(updateSearchHighlights);
-
-    await onSet(COMMAND_HISTORY, _ => searchDecorationCheck());
 }

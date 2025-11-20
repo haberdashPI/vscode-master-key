@@ -13,8 +13,7 @@ import { PREFIX } from './prefix';
 import { bindings } from '../keybindings/config';
 import { MODE } from './mode';
 import { CommandOutput, WhenNoBindingHeader } from '../../rust/parsing/lib/parsing';
-
-export const COMMAND_HISTORY = 'history';
+import { searchDecorationCheck } from './search';
 
 let maxHistory = 0;
 
@@ -182,6 +181,7 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
             } else {
                 await withState(async state => state.resolve());
             }
+            searchDecorationCheck();
         }
     }
 
