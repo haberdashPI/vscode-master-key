@@ -3266,8 +3266,8 @@ cursorShape = "BlockOutline"
 
 [[mode.whenNoBinding.run]]
 command = "selection-utilities.insertAround"
-args.before = "{{val.braces[key.captured].?before ?? key.captured}}"
-args.after = "{{val.braces[key.captured].?after ?? key.captured}}"
+args.before = '{{show("braces: ", val.braces)[show("captured", key.captured)]?.before ?? key.captured}}'
+args.after = "{{val.braces[key.captured]?.after ?? key.captured}}"
 args.followCursor = true
 
 [[define.bind]]

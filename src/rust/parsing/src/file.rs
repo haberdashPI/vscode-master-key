@@ -122,7 +122,7 @@
 #[allow(unused_imports)]
 use log::{error, info};
 
-use crate::bind::command::{CommandValue, regularize_commands};
+use crate::bind::command::{Command, CommandValue, regularize_commands};
 use crate::bind::{
     Binding, BindingCodes, BindingInput, BindingOutput, KeyId, LegacyBindingInput, ReifiedBinding,
     UNKNOWN_RANGE,
@@ -134,7 +134,7 @@ use crate::error::{
 use crate::expression::value::{BareValue, Value};
 use crate::expression::{HistoryQueue, MacroStack, Scope};
 use crate::kind::Kind;
-use crate::mode::{Mode, ModeInput, Modes};
+use crate::mode::{Mode, ModeInput, Modes, WhenNoBinding};
 use crate::{err, resolve, wrn};
 
 use lazy_static::lazy_static;
@@ -293,6 +293,16 @@ impl KeyFile {
             }
             Ok(x) => x,
         };
+        for (_, mode) in &modes.map {
+            if let WhenNoBinding::Run(commands) = &mode.whenNoBinding {
+                match scope.parse_asts(commands) {
+                    Err(mut es) => {
+                        errors.append(&mut es.errors);
+                    }
+                    Ok(_) => (),
+                }
+            }
+        }
 
         // [[kind]]
         let kind = Kind::process(&input.kind, &mut scope, warnings)?;
@@ -3148,8 +3158,6 @@ pub(crate) mod tests {
         assert_eq!(result.bind[0].tags.len(), 2);
         assert_eq!(result.bind[1].tags.len(), 2);
     }
-
-    // TODO: make a tags test that ensure they propagate through multiple layers
 
     #[test]
     fn larkin_test() {

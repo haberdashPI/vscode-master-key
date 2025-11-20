@@ -1,3 +1,4 @@
+#![cfg_attr(coverage_nightly, feature(coverage_attribute))]
 #[allow(unused_imports)]
 use log::info;
 
@@ -9,9 +10,12 @@ use wasm_bindgen::prelude::*;
 
 use crate::bind::command::{Command, CommandInput};
 use crate::bind::foreach::all_characters;
-use crate::bind::{Binding, BindingCodes, BindingOutput, TEXT_FOCUS_CONDITION, UNKNOWN_RANGE};
+use crate::bind::{
+    Binding, BindingCodes, BindingOutput, ReifiedBinding, TEXT_FOCUS_CONDITION, UNKNOWN_RANGE,
+};
 use crate::error::{Context, ErrorContext, ParseError, Result, ResultVec, err};
 use crate::expression::Scope;
+use crate::file::KeyFileResult;
 use crate::resolve;
 use crate::util::{LeafValue, Resolving};
 use crate::{err, wrn};
@@ -254,6 +258,7 @@ pub struct Mode {
 }
 
 #[wasm_bindgen]
+#[cfg_attr(coverage_nightly, coverage(off))]
 impl Mode {
     #[allow(non_snake_case)]
     pub fn whenNoBinding(&self) -> WhenNoBindingHeader {
@@ -265,12 +270,15 @@ impl Mode {
         };
     }
 
-    #[allow(non_snake_case)]
-    pub fn runWhenNoBinding(&self) -> Vec<Command> {
-        return match &self.whenNoBinding {
-            WhenNoBinding::Run(x) => x.clone(),
-            _ => Vec::new(),
-        };
+    pub fn run_commands(&self, bindings: &mut KeyFileResult) -> ReifiedBinding {
+        if let WhenNoBinding::Run(commands) = &self.whenNoBinding {
+            return ReifiedBinding::from_commands(
+                commands.iter().map(Command::clone).collect(),
+                &bindings.scope,
+            );
+        } else {
+            return ReifiedBinding::noop(&bindings.scope);
+        }
     }
 }
 

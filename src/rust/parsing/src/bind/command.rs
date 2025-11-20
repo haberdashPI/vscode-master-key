@@ -407,8 +407,9 @@ impl Resolving<Command> for CommandInput {
     }
 }
 
+#[wasm_bindgen]
 impl Command {
-    pub(crate) fn resolve(&self, result: &mut KeyFileResult) -> CommandOutput {
+    pub fn resolve(&self, result: &mut KeyFileResult) -> CommandOutput {
         return match self.resolve_helper(&mut result.scope) {
             Ok(x) => x,
             Err(e) => CommandOutput {
@@ -608,5 +609,37 @@ mod tests {
                 "baz".to_string()
             ]
         )
+    }
+
+    #[test]
+    fn tags_resolve_command() {
+        let data = Command {
+            command: "selection-utilities.insertAround".to_string(),
+            args: Value::Table(
+                HashMap::from([
+                    (
+                        "after".to_string(),
+                        Value::Exp(Expression {
+                            content: "braces[captured].?after ?? captured".to_string(),
+                            error: None,
+                            span: UNKNOWN_RANGE,
+                            scope: smallvec::smallvec![],
+                        }),
+                    ),
+                    (
+                        "before".to_string(),
+                        Value::Exp(Expression {
+                            content: "braces[captured].?before ?? captured".to_string(),
+                            error: None,
+                            span: UNKNOWN_RANGE,
+                            scope: smallvec::smallvec![],
+                        }),
+                    ),
+                    ("followCursor".to_string(), Value::Boolean(true)),
+                ]),
+                None,
+            ),
+            skipWhen: TypedValue::Constant(false),
+        };
     }
 }

@@ -25,6 +25,7 @@ postinstall = [
 run = 'pnpm exec eslint src'
 
 [tasks.check-types]
+depends = ['build-rust']
 run = 'tsc --noEmit --project tsconfig.json'
 
 # TODO: maybe consider using colons and figure out mise task hierarchies???

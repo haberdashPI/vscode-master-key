@@ -235,7 +235,7 @@ impl Scope {
     {
         return Ok(obj.clone().map_expressions(&mut |expr| {
             if let Some(_) = expr.error {
-                // errors stored int he expression are raised in `parse_asts` which must be
+                // errors stored in the expression are raised in `parse_asts` which must be
                 // run before `expand`, so we can safely call this a repeat error
                 return Err(RawError::RepeatError.into());
             }

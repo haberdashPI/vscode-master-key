@@ -3,16 +3,12 @@ import z from 'zod';
 import { onResolve } from '../state';
 import { updateCursorAppearance, validateInput } from '../utils';
 import { withState, recordedCommand, CommandResult } from '../state';
-import { runCommandOnKeys } from './capture';
+import { runCommandsForMode } from './capture';
 import { onChangeBindings } from '../keybindings/config';
 import { CursorShape, KeyFileResult } from '../../rust/parsing/lib/parsing';
 import { bindings } from '../keybindings/config';
 
 export const MODE = 'mode';
-
-async function updateModeKeyCapture(mode: string) {
-    runCommandOnKeys(bindings.mode(mode)?.runWhenNoBinding() || [], mode);
-}
 
 /**
  * @command setMode
@@ -100,11 +96,14 @@ export async function activate(context: vscode.ExtensionContext) {
         // changes to the mode state (something about how closures interact with scopes and
         // async that I don't understand???)
         const newMode = <string>values.get(MODE, bindings.default_mode() || 'default');
-        if (_currentMode !== newMode) {
-            const shape = (bindings.mode(newMode)?.cursorShape || CursorShape.Line);
-            updateCursorAppearance(vscode.window.activeTextEditor, shape);
-            updateModeKeyCapture(newMode);
-            currentMode = newMode;
+        const mode = bindings.mode(newMode);
+        if (mode) {
+            if (_currentMode !== newMode) {
+                const shape = (mode.cursorShape || CursorShape.Line);
+                updateCursorAppearance(vscode.window.activeTextEditor, shape);
+                runCommandsForMode(mode);
+                currentMode = newMode;
+            }
         }
         return true;
     });

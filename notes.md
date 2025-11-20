@@ -543,9 +543,12 @@ Integration test debugging:
                 - [X] coalesce still doesn't work through multiple default layers
         - [X] we can't use symmetric insert commands (something about how we serialize
               string arrays to rhai is wrong I think)
-        - [X] escape ctrl+[ isn't leaving capture mode
-        - [ ] highlighting is not resetting when using search
-        - [ ] syminsert isn't capture key presses
+        - [X] escape or `ctrl+[` isn't leaving capture mode
+        - [X] syminsert isn't capture key presses
+            - [X] implemented command execution
+            - [X] debug `resolve` failures (is there something I'm not doing that occurs in e.g. do_command, which `resolve` assumes has already happened?)
+            - [X] create an integration test
+        - [ ] highlighting ins't resetting when using search
     - [ ] get any remaining, existing tests (except unimplemented features) working again
         - [ ] update unit tests for running commands
             - [ ] remove replay unit tests (they are become integration tests)
