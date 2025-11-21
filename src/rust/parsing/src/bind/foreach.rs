@@ -4,10 +4,10 @@
 /// ## `foreach` Clauses
 ///
 /// The `bind.foreach` field of a keybinding can be used to generate many bindings from one
-/// entry. Each field under `foreach` is looped through exhaustively. On each iteration, any
-/// [expressions](/expressions/index) with `foreach` defined variables are replaced with those variables' values
-/// for the given iteration. Any expression containing a `foreach` defined variable is
-/// resolved at parse-time. For example, the following defines 9 bindings:
+/// entry. Each field under `foreach` is looped through exhaustively. On each iteration,
+/// these `foreach` values are all set to one of the possible combinations of values. For
+/// example, the following creates 9 bindings, for all possible combinations of the three
+/// values of `a` and `b`.
 ///
 /// ```toml
 /// [[bind]]
@@ -18,8 +18,8 @@
 /// args.text = "{{a-b}}"
 /// ```
 ///
-/// Furthermore, if the expression <code v-pre>{{keys([quoted-regex])}}</code> is included
-/// in a `foreach` value, it is expanded to all keybindings that match the given regular
+/// Furthermore, if the expression <code v-pre>{{keys(quoted-regex)}}</code> is included in
+/// a `foreach` value, it is expanded to all keybindings that match the given regular
 /// expression and spliced into the array of values. For example, the following definition
 /// is used in `Larkin` to allow the numeric keys to be used as a count prefix for motions.
 ///
@@ -33,6 +33,12 @@
 /// args.value = "{{num}}"
 /// # etc...
 /// ```
+///
+/// > [!NOTE] Implementation detail for advanced readers All expressions can include foreach
+/// > variables, including expressions evaluated at run-time. Each instance of a `foreach`
+/// > repeated binding has a local scope that resolves its `foreach` variables. The
+/// > expression itself is then evaluated within this scope at read-time or run-time,
+/// > depending on the field the expression is located in.
 use crate::bind::BindingInput;
 
 use indexmap::IndexMap;

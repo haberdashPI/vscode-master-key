@@ -25,11 +25,11 @@ use crate::{err, wrn};
 /// The `define` field can be used to define re-usable values. There are three types of
 /// values that can be defined.
 ///
-/// 1. `[[define.val]]:` variable definitions: defines any number of key-value pairs that can
+/// 1. `[[define.val]]` variable definitions: defines any number of key-value pairs that can
 ///    be referenced inside an [expression](/expressions/index)
-/// 2. `[[define.command]]`: command definitions: defines one or more commands that can be
+/// 2. `[[define.command]]` command definitions: defines one or more commands that can be
 ///    referenced when [running multiple commands](/bindings/bind#running-multiple-commands).
-/// 3. `[[define.bind]]`: bind definitions: defines a partial set of `command` fields that can
+/// 3. `[[define.bind]]` bind definitions: defines a partial set of `command` fields that can
 ///    be referenced using the `default` field of [bind](/bindings/bind).
 ///
 #[derive(Deserialize, Clone, Debug, Default)]
@@ -49,14 +49,12 @@ pub struct DefineInput {
     ///
     /// ### Example
     ///
-    /// A common command pattern in Larkin is to allow multiple lines to be selected using a
-    /// count followed by the operation to perform on those lines. The line selection is
-    /// defined as follows
-    ///
     /// To handle symmetric insert of brackets, Larkin uses the following definition
     ///
     /// ```toml
-    /// [define.braces]
+    /// [[define.val]]
+    ///
+    /// [define.val.braces]
     /// "{".before = "{"
     /// "{".after = "}"
     /// "}".before = "{"
@@ -84,13 +82,14 @@ pub struct DefineInput {
     /// highlight = "Highlight"
     /// cursorShape = "BlockOutline"
     ///
-    /// [[mode.onType]]
+    /// [[mode.whenNoBinding.run]]
     /// command = "selection-utilities.insertAround"
-    /// args.before = "{{braces[captured].?before ?? captured}}"
-    /// args.after = "{{braces[captured].?after ?? captured}}"
+    /// args.before = '{{val.braces[key.captured]?.before ?? key.captured}}'
+    /// args.after = "{{val.braces[key.captured]?.after ?? key.captured}}"
     /// args.followCursor = true
     /// ```
     pub val: Option<Vec<IndexMap<String, Spanned<Value>>>>,
+
     /// @forBindingField define
     ///
     /// ## Command Definitions
@@ -116,7 +115,7 @@ pub struct DefineInput {
     ///     "selection-utilities.exchangeAnchorActive",
     /// ]
     /// ```
-    /// And uses this definition is as follows
+    /// And uses this definition as follows
     ///
     /// ```toml
     /// [[bind]]
@@ -144,9 +143,9 @@ pub struct DefineInput {
     ///
     /// ### Example
     ///
-    /// Larkin makes extensive use of this for the simple cursor motions. The default
-    /// command is always `cursorMove` and each motion indications in what direction to move
-    /// using `args.value.`
+    /// Larkin makes extensive use of default keys for the simple cursor motions. The
+    /// default command is always `cursorMove` and each motion changes what direction
+    /// to move using `args.value.
     ///
     /// ```toml
     /// [[define.bind]]
@@ -169,7 +168,7 @@ pub struct DefineInput {
     /// ```
     ///
     /// This example also demonstrates that `define.bind` definitions can themselves have
-    /// defaults, allowing for a hierarchy of defaults if so desired.
+    /// a default, allowing for a hierarchy of defaults if so desired.
     ///
     pub bind: Option<Vec<Spanned<BindingInput>>>,
 

@@ -102,31 +102,33 @@ export async function runCommands(
  * Replay both previously run commands via master keybindings as well simple textual edits
  * to a buffer.
  *
- * > [!WARNING] API limitations mean this command cannot replay everything. Master key has
- * > no knowledge of commands or keybindings outside of master key. This is because `replay`
- * > uses a history of commands updated when calling into commands like
- * > [`master-key.do`](/commands/do). Furthermore while Master Key records text edits for
- * > modes where `whenNoBinding = 'insertCharacters'` these textual edits are limited. A
- * > maximum (determined by the setting `Text History Maximum`) is stored between each call
- * > to a master-key command and only simple insertion of text is handled. Given the limits
- * > of the VSCode API for observing edits, this missing some automated insertions such as
- * > code completion and automated parenthesis insertion. Also note that any edits that
- * > occur *before* the extension is activated are not recorded.
+ * > [!WARNING] Recording Limitations
+ * > API limitations mean this command cannot replay
+ * > everything. Master key has no knowledge of commands or keybindings outside of master
+ * > key. This is because `replay` uses a history of commands updated when calling into
+ * > commands like [`master-key.do`](/commands/do). Furthermore while Master Key records
+ * > text edits for modes where `whenNoBinding = 'insertCharacters'` these textual edits are
+ * > limited. A maximum number of characters are stored between each call to a master-key
+ * > command (determined by the setting `Text History Maximum`) and only simple insertion of
+ * > text is handled. Given the limits of the VSCode API for observing edits, this will mis
+ * > some automated insertions such as code completion and automated parenthesis insertion.
+ * > Also note that any edits that occur *before* the extension is activated are not
+ * > recorded.
  *
- * With some limitations commands and textual edits are recorded, up until the the history
- * limit (defined by the `Command History Maximum`). When selecting command history to
- * replay, you use one or more [`expressions`](/expressions/index).
+ * Excluding the aforementioned limitations, both commands and textual edits are recorded,
+ * up until the the history limit (defined by the `Command History Maximum`). When selecting
+ * command history to replay, you use one or more [`expressions`](/expressions/index).
  *
  * **Arguments**
  *
  * There are two ways the history can be selected:
  *
- * - `range.from`: an expression specifying the first command
- * - `range.to`: an expression specifying the last command
+ * - `range.from`: an expression specifying the index of the first command in the history
+ * - `range.to`: an expression specifying the index of the last command in the history
  *
  * OR
  *
- * - `index`: an expression specifying the single command to push to the
+ * - `index`: an expression specifying a single index from the command history
  *
  * ## Expression evaluation for History
  *
@@ -135,15 +137,16 @@ export async function runCommands(
  *
  * - call `history.len()` to get the number of available commands
  * - index values via `history[0]`; values range from 0 to `history.len()-1` and indexing
- *   outside this range returns a null value. The most recently run commands are at largest
- *   indices.
- * - use `last_history_index` to call a predicate function for each index from
- *   `history.len()-1` to `0` and return the first index that is true for this predicate.
+ *   outside this range returns a null value. The most recently run commands are at the
+ *   largest indices.
+ * - use `last_history_index()` to call a predicate function for each index from
+ *   `history.len()-1` to `0` and return the first index that is found to be true for this
+ *   predicate.
  *
  * Each element of this history contains the following properties
  *
- * - `commands`: an array of objects containing all `command` field, but with `args`
- *   excluded
+ * - `commands`: an array of objects containing all `command` fields, excluding `args`
+ *   which is not accessible
  * - `mode`: the mode the command was executed from
  * - `repeat`: the number of times the command was repeated
  * - `tags`: the tags defined by the `[[bind]]` entry
@@ -179,7 +182,7 @@ export async function runCommands(
  *
  * [[bind.args.commands]]
  * command = "master-key.enterNormal"
- *  * ```
+ * ```
  *
  * The key argument of relevance here is the expression defined in `args.index` where we
  * select the most recent command that has the tag `"action"`, excluding those actions that
@@ -301,8 +304,8 @@ const recordArgs = z.
  *
  * [[bind.args.commands]]
  * command = "master-key.pushHistoryToStack"
- * args.range.from = 'commandHistory[index-1].name === "record"'
- * args.range.to = "index"
+ * args.range.from = '{{last_history_index(|i| history[i-1]?.doc?.name == "record")}}'
+ * args.range.to = '{{history.len()-1}}'
  * ```
  */
 async function record(args_: unknown): Promise<CommandResult> {

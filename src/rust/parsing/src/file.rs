@@ -6,11 +6,12 @@
 ///
 /// # Master Keybindings
 ///
-/// This defines version 2.0 of the master keybinding file format.
-/// Breaking changes from version 1.0 are [described below](#breaking-changes)
+/// This defines version 2.0 of the master keybinding file format. Breaking changes from
+/// version 1.0 are [described below](#breaking-changes)
 ///
-/// Master keybindings are [TOML](https://toml.io/en/) files composed of the following
-/// top-level fields:
+/// Master keybindings are [TOML](https://toml.io/en/) files that begin with a line
+/// containing `#:master-keybindings` and include the following top-level
+/// fields:
 ///
 ///
 
@@ -23,6 +24,8 @@
 /// Here's a minimal example, demonstrating the most basic use of each field
 ///
 /// ```toml
+/// #:master-keybindings
+///
 /// [header]
 /// # this denotes the file-format version, it must be semver compatible with 2.0
 /// version = "2.0.0"
@@ -30,6 +33,7 @@
 ///
 /// [[mode]]
 /// name = "insert"
+/// whenNoBinding = 'insertCharacters'
 ///
 /// [[mode]]
 /// name = "normal"
@@ -64,14 +68,14 @@
 /// command = "cursorMove"
 ///
 /// [[bind]]
+/// default = '{{bind.basic_motion}}'
 /// doc.name = "right"
-/// defaults = "{{basic_motion}}"
 /// key = "l"
 /// args.to = "right"
 ///
 /// [[bind]]
 /// doc.name = "left"
-/// defaults = "{{basic_motion}}"
+/// default = '{{bind.basic_motion}}'
 /// key = "h"
 /// args.to = "left"
 ///
@@ -81,7 +85,7 @@
 /// [[bind]]
 /// doc.name = "double right"
 /// key = "g l"
-/// defaults = "{{basic_motion}}"
+/// default = '{{bind.basic_motion}}'
 /// args.to = "right"
 /// args.value = "{{foo+1}}"
 /// ```
@@ -91,20 +95,20 @@
 ///
 /// - `header.version` is now 2.0
 /// - [`[[define]]`](/bindings/define) now has several sub fields. Definitions
-///   previously under `[[define]]` should now usually go under `[[define.val]]`, but
+///   previously under `[[define]]` should usually go under `[[define.val]]`, but
 ///   also see `[[define.command]]`.
-/// - generalized [expressions](/expressions/index) which then changed or replaced several
+/// - generalized [expressions](/expressions/index). This changed or replaced several
 ///   other features:
-///   - `bind.computedArgs` no longer exists: instead place expressions inside of `args`
-///   - [`bind.foreach`](/bindings/bind#foreach-clause) have changed
+///   - `bind.computedArgs` no longer exists: instead, place expressions inside of `args`
+///   - [`bind.foreach`](/bindings/bind#foreach-clause) has changed
 ///     - `{key: [regex]}` is now <span v-pre><code>{{keys(&grave;[regex]&grave;)}}</code></span>
 ///     - foreach variables are interpolated as expressions (<span v-pre>`{{symbol}}`</span>
 ///       instead of `{symbol}`).
 ///   - `bind.path` and `[[path]]`: A similar, but more explicit approach
 ///      is possible using `default` and [`define.bind`](/bindings/define#binding-definitions)
 ///   - replaced `mode = []` with <span v-pre>`mode = '{{all_modes()}}'`</span>
-///   - replaced `mode = ["!insert", "!capture"]` with
-///     <span v-pre>`mode = '{{not_modes(["insert", "capture"])}}'`</span>
+///   - replaced `mode = ["!normal", "!visual"]` with
+///     <span v-pre>`mode = '{{not_modes(["normal", "visual"])}}'`</span>
 /// - revised several fields:
 ///   - replaced `prefixes = ["a", "b", ...]` with `prefixes.anyOf = ["a", "b", ...]`
 ///   - replaced <code>prefixes = "&lt;all-prefixes&gt;"</code> with `prefixes.any = true`
@@ -115,10 +119,8 @@
 ///   - `resetTransient` is now [`finalKey`](/bindings/bind)
 ///   - `bind.if` replaced with [`bind.skipWhen`](/bindings/bind)
 ///   - `name` renamed to `register` in [`(re)storeNamed`](/commands/storeNamed) command
-///   - Rename replay-related command fields:
-///     - `at` to `whereIndexIs`
-///     - `range` to `whereRangeIs`
-///     - the variable `i` renamed to `index` in expressions of these fields
+///   - replay-related command fields have changed their semantics, see examples
+///     under [replayFromHistory](/commands/replayFromHistory)
 #[allow(unused_imports)]
 use log::{error, info};
 
@@ -158,6 +160,7 @@ struct KeyFileInput {
 }
 
 /// @bindingField header
+/// @order -10
 /// @description top-level properties of the binding file
 ///
 /// **Example**
@@ -171,10 +174,11 @@ struct KeyFileInput {
 ///
 /// ## Required Fields
 ///
-/// - `version`: Must be version 2.0.x (typically 2.0.0); only version 2.0.0 currently exists,
-///   but any future versions of 2.0 can be parsed by this version of master key,
-///   as this version follows [semantic versioning](https://semver.org/).
-/// - `name`: The name of this keybinding set; shows up in menus to select keybinding presets
+/// - `version`: Must be version 2.x.y (typically 2.0.0); only version 2.0.0 currently
+///   exists, but any future versions of 2 can be parsed by this version of master key, as
+///   per [semantic versioning](https://semver.org/).
+/// - `name`: The name of this keybinding set; shows up in menus to select keybinding
+///   presets
 /// - `requiredExtensions`: An array of string identifiers for all extensions used by this
 ///   binding set.
 ///

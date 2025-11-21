@@ -1,4 +1,0 @@
-.vitepress/commands.mjs
-.vitepress/bindings.mjs
-.vitepress/dist/**
-**/*.md

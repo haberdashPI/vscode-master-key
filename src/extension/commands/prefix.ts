@@ -44,7 +44,13 @@ const PREFIX_CURSOR = 'prefixCursor';
  *
  * **Arguments**
  * - `cursor`: Transiently change the cursor shape until the last key in a multi-key
- *   sequence is pressed
+ *   sequence is pressed. Valid values are:
+ *    - 'Line',
+ *    - 'Block',
+ *    - 'Underline',
+ *    - 'LineThin',
+ *    - 'BlockOutline',
+ *    - 'UnderlineThin',
  *
  * ## Example
  *
@@ -82,7 +88,7 @@ const PREFIX_CURSOR = 'prefixCursor';
  * A binding that includes a `prefix` command has `finalKey` set to `false`. Whereas,
  * without a `prefix` command present, the default is `true`. When `finalKey` is `false`
  * master key does not reset any previously set transient state (e.g. from previous calls to
- * `prefix` or transient [`setFlag`](/commands/setFlag)). When `finalKey` is `true` any
+ * `prefix` or transient [`setValue`](/commands/setValue)). When `finalKey` is `true` any
  * transient state is returned to a default, unset state.
  *
  * In most circumstances you do not want to set `finalKey` to false *without* using
@@ -98,7 +104,7 @@ const PREFIX_CURSOR = 'prefixCursor';
  * finalKey = false
  * doc.hideInPalette = true
  * prefixes.any = true
- * mode = '{{not_modes(["capture", "insert"])}}'
+ * mode = '{{not_modes(["insert"])}}'
  * doc.description = """
  * show command suggestions within the context of the current mode and keybinding prefix
  * (if any). E.g. `TAB, ⇧;` in `normal` mode will show all `normal` command suggestions

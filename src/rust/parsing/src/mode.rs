@@ -21,6 +21,7 @@ use crate::util::{LeafValue, Resolving};
 use crate::{err, wrn};
 
 /// @bindingField mode
+/// @order -1
 /// @description array describing behavior of keybinding modes
 ///
 /// The `mode` element defines a distinct keybinding mode. Like vim modes, they affect which
@@ -36,7 +37,7 @@ use crate::{err, wrn};
 /// highlight = "Highlight"
 ///
 /// [[mode]]
-/// name = "insertCharacters"
+/// name = "insert"
 /// cursorShape = "Line"
 /// highlight = "NoHighlight"
 /// whenNoBinding = "insertCharacters"
@@ -55,7 +56,7 @@ use crate::{err, wrn};
 ///
 /// ## Fields
 ///
-/// The only required field for a mode is its name (marked with "*") but there are a number
+/// The only required field for a mode is its name (marked with "❗") but there are a number
 /// of optional fields that impact the behavior of the mode.
 
 #[allow(non_snake_case)]
@@ -63,7 +64,7 @@ use crate::{err, wrn};
 pub struct ModeInput {
     /// @forBindingField mode
     ///
-    /// - `name`*: The name of the mode; displayed in the bottom left corner of VSCode
+    /// - ❗`name`: The name of the mode; displayed in the bottom left corner of VSCode
     name: String,
 
     /// @forBindingField mode
@@ -94,19 +95,19 @@ pub struct ModeInput {
     ///
     /// - `whenNoBinding`: How to respond to keys when there is no binding for them in this
     /// mode. The options are:
-    ///   - `"ignoreChacaters"`: The mode will introduce implicit bindings that cause any
+    ///   - `"ignoreCharacters"`: The mode will introduce implicit bindings that cause any
     ///     characters that are typed to be ignored. This is the default behavior when you
     ///     explicitly define a mode in your file.
     ///   - `"insertCharacters"`: The mode defines no implicit bindings. Pressing characters
     ///     will cause text to be inserted into a file, as usual. This is the default
     ///     behavior for the implicitly defined "default" mode. If you define modes
-    ///     explicitly at least one of them must be set to `'insertCharacters'``; otherwise the
+    ///     explicitly at least one of them must be set to `'insertCharacters'`; otherwise the
     ///     user could not type.
     ///   - `{"useMode": "[mode]"}`: fallback to the keybindings and behavior defined in
     ///     another mode.
-    ///   - `{"run": [<commands>]}`: captures characters in the variable `key.capture`, a
+    ///   - `{"run": [<commands>]}`: captures characters in the variable `key.captured`, a
     ///     string representing the key pressed. Then run the given commands, as per the
-    ///     fields allowed when [running multiple commands](#running-multiple-commands) in
+    ///     fields allowed when [running multiple commands](/bindings/bind#running-multiple-commands) in
     ///     `[[bind]]`.
     #[serde(default)]
     whenNoBinding: Option<Spanned<WhenNoBindingInput>>,

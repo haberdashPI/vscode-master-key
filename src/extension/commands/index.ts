@@ -46,8 +46,7 @@ export async function activate(context: vscode.ExtensionContext) {
      * nothing. This is useful for key presses that would otherwise cause some other action
      * to occur (e.g. insert characters in a file). **However**, it is often more effective
      * to use a `[[mode]]` section's `whenNoBinding = 'ignoreCharacters'`
-     * [setting](/bindings/mode), instead of an explicit call of `master-key.ignore`, which
-     * is implemented by creating ignore commands for all standard character-related keys.
+     * [setting](/bindings/mode), instead of an explicit call of `master-key.ignore`.
      */
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.ignore', async () => {

@@ -23,7 +23,7 @@ use crate::{
 };
 
 /// @forBindingField bind
-/// @order 15
+/// @order 14
 ///
 /// ## Running Multiple Commands
 ///
@@ -32,9 +32,9 @@ use crate::{
 /// types:
 ///
 /// - string: the name of the command to run
-/// - object: with `command`, and optionally `args` and `skipWhen` fields.
-/// - an expression referencing a command `{{command.[commandId]}}`; this is a
-///   command defined in the [`[[define]]`](/bindings/define) section.
+/// - object: describes the command to run
+/// - an expression referencing a command <code v-pre>{{command.[commandId]}}</code>; this
+///   is a command defined in the [`[[define]]`](/bindings/define) section.
 ///
 /// The object fields are defined as follows:
 ///
@@ -45,16 +45,21 @@ pub struct CommandInput {
     pub(crate) id: Option<Spanned<TypedValue<String>>>,
     /// @forBindingField bind
     /// @order 15
-    /// - ❗`command`: as per the top level `command` field, this is a the command you wish to
+    ///
+    /// - ❗`command`: as per the top level `command` field, this is the command you wish to
     ///   run.
     pub command: Spanned<Required<TypedValue<String>>>,
     /// @forBindingField bind
     /// @order 15
+    ///
     /// - ⚡ `args`: as per the top level `args` field. Can include
     ///   runtime [expressions](/expressions/index).
     pub args: Option<Spanned<Value>>,
-    /// - ⚡ `skipWhen`: an [expression](/expressions/index) that, when evaluated to false, will
-    ///    cause the command to *not* be run.
+    /// @forBindingField bind
+    /// @order 15
+    ///
+    /// - ⚡ `skipWhen`: an [expression](/expressions/index) evaluated at run-time that, when
+    ///    equal to false, will cause the command to *not* be run.
     pub skipWhen: Option<Spanned<TypedValue<bool>>>,
 
     #[serde(flatten)]

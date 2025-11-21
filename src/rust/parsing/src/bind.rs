@@ -189,10 +189,9 @@ pub struct BindingInput {
 ///
 /// You can find commands in a few ways:
 ///
-/// - Find command you want to use from the command palette, and click on the gear (`⚙︎`)
-///   symbol to copy the command string to your clipboard
-/// - Review the [list of built-in
-///  commands](https://code.visualstudio.com/api/references/commands/index)
+/// - Find command you want to use from the command palette, and click on the gear symbol
+///   (`⚙︎`) to copy the command string to your clipboard
+/// - Review the [list of built-in commands](https://code.visualstudio.com/api/references/commands/index)
 /// - Run the command `Preferences: Open Default Keyboard Shortcuts (JSON)` to get a list of
 ///   built-in commands and extension commands already associated with a keybinding
 ///
@@ -219,8 +218,8 @@ pub struct BindingInput {
 /// - `master-key.prefix`: The currently active [keybinding prefix](/commands/prefix)
 /// - `master-key.record`: a boolean flag used to indicate when keys are marked for
 ///   recording
-/// - `master-key.val.[name]`: the current value of a
-///   [defined variable](/bindings/define#variable-definitions).
+/// - `master-key.val.[name]`: the current value of a [defined
+///   variable](/bindings/define#variable-definitions).
 /// - `master-key.keybindingPaletteBindingMode`: true when the suggestion palette accepts
 ///   keybinding key presses, false it accepts a string to search the descriptions of said
 ///   keybindings

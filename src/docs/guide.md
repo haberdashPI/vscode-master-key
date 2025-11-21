@@ -14,11 +14,8 @@ Once you've identified the bindings you'd like to create you can add these bindi
 1. Add user bindings to tweak an existing preset
 2. Create your own binding set
 
-> [!WARNING]
-> Because the error reporting for master keybinding files is not yet very precise, it is recommended that you edit bindings incrementally, testing them out as you go (e.g. by slowly creating new bindings or by slowly uncommenting an entire binding set you have imported). This will ensure that the changes you've made can be properly activated by Master Key. Improved error reporting is on the [roadmap](#roadmap)
-
 > [!NOTE]
-> The documentation covers version 2.0 of the master key binding format, created for version 0.4 of master key. A legacy definition of the bindings, created for version 0.3.0 (version 1.0) of the keybindings, is still supported, but might not benefit from future enhancements to master key. You can learn how to upgrade the keybinding format by reviewing https://github.com/haberdashPI/vscode-master-key/pull/70
+> This documentation covers version 2.0 of the master key binding format, first created for version 0.4 of master key. See [breaking changes](/bindings/#breaking-changes) for details. It should be possible to get started updating an old file by simply trying to activate it. Master key will show detailed errors, highlighting the exact line where a failure occurred.
 
 ### Add User Bindings
 
@@ -36,27 +33,25 @@ To simply tweak an existing preset, you can append additional bindings by activa
 You can define your own preset. The steps are:
 
 1. Create a new a toml file
-2. Optional: copy a present into the file using `Master Key: Edit Preset Copy`
-3. Optional: import include any existing user bindings, from `keyindings.json`, by calling `Master Key: Import User Keybindings` in this new toml file
+2. Optional: copy a preset into the file using `Master Key: Edit Preset Copy`
+3. Optional: import any existing user bindings, from `keyindings.json`, by calling `Master Key: Import User Keybindings` in this new toml file
 4. Add bindings, as per the [binding format](./bindings/) and [command documentation](./commands/).
-5. Activate the bindings with `Master Key: Activate Keybindings` at any time (do this *often* while your are writing your bindings).
+5. Activate the bindings with `Master Key: Activate Keybindings` at any time (do this *often* while your are writing your bindings so you can debug your bindings).
 
 ## Roadmap
 
 Master Key is quite stable for everyday use, but it remains a work in progress.
 
-- Release 0.4.x (you are here): documentation of all keybinding commands complete.
-- Release 0.4.y: more precise binding error report: use VSCode language server features to
-  get detailed line and character error indicators for binding-file problems
+- Release 0.4.y (you are here): precise binding errors: use VSCode to get detailed line and character error indicators for any problems with your bindings
 - Release 0.4.z: source code documentation — may involve substantial refactor to improve legibility / clarity of code
 - Release 1.0.0:
     - code should be legible
     - test coverage should be satisfactory
     - documentation should be largely complete
 - Release 1.x: upwards and onwards...
+  - additional keybinding sets: e.g. vim, emacs
   - support for more keyboard layouts for visual docs
   - search: `showCount` displays movement count overlaid with each highlight
-  - additional keybinding sets: e.g. vim, emacs
   - API improvements for new editor sets
   - keybinding debug QOL features: show the binding that was run for a given key sequence
   - clipboard registers
