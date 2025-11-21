@@ -1,7 +1,7 @@
 import { test, expect } from './config';
 import { activateKeybindings, openFile, runCommand } from './utils';
 
-test.describe('Visual Documentation', () => {
+test.describe('Configuration Updates', () => {
     test.beforeEach(async ({ workbox }) => {
         await activateKeybindings(workbox, 'simpleMotions.toml');
         await openFile(workbox, 'text.md');
