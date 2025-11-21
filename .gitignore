@@ -1,5 +1,12 @@
 !.vscode/settings.json
 
+# documentation
+docs/.vitepress/cache
+docs/.vitepress/dist
+docs/.vitepress/commands.mjs
+docs/.vitepress/bindings.mjs
+docs/**/*.md
+
 # build output
 out
 *.vsix

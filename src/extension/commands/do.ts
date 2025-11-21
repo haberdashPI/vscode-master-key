@@ -38,8 +38,29 @@ export function showExpressionMessages(command: CommandOutput) {
                 `[DEBUG: ${new Date().toLocaleTimeString()}] ${msg}`,
             );
         }
-        expressionMessages.show(true);
+        if (command.messages.length > 0) {
+            expressionMessages.show(true);
+        }
     }
+}
+
+export function showExpressionErrors(fallable: { errors?: string[]; error?: string[] }) {
+    if (fallable.errors || fallable.error) {
+        const errors = (fallable.errors || fallable.error || []);
+        for (const err of errors) {
+            expressionMessages.appendLine(
+                `[ERROR: ${new Date().toLocaleTimeString()}] ${err}`,
+            );
+        }
+        if (errors.length > 0) {
+            expressionMessages.show(true);
+            vscode.window.showErrorMessage(
+                'The keybinding you pressed had an error. Review `Master Key` output.',
+            );
+            return true;
+        }
+    }
+    return false;
 }
 
 /**
@@ -85,24 +106,10 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
                     canceled = false;
                     const command = toRun.resolve_command(i, bindings);
                     showExpressionMessages(command);
+                    showExpressionErrors(command);
 
                     // pass key codes down into the arguments to prefix
-                    if (command.command == 'master-key.ignore') {
-                        if (command.errors) {
-                            let count = 0;
-                            for (const error of command.errors) {
-                                count++;
-                                if (count >= 2) {
-                                    vscode.window.showErrorMessage(
-                                        'There were additional errors when running a \
-                                        key binding; they have been truncated to maintain \
-                                        a reasonable number of notifications ',
-                                    );
-                                }
-                                vscode.window.showErrorMessage(error);
-                            }
-                        }
-                    } else {
+                    if (command.command != 'master-key.ignore') {
                         if (command.command == 'master-key.prefix') {
                             command.args.prefix_id = args.prefix_id;
                             command.args.key = toRun.key;
@@ -215,7 +222,7 @@ function updateConfig(event?: vscode.ConfigurationChangeEvent) {
 }
 
 export function activate(context: vscode.ExtensionContext) {
-    expressionMessages = vscode.window.createOutputChannel('Master Key Debug');
+    expressionMessages = vscode.window.createOutputChannel('Master Key');
     context.subscriptions.push(expressionMessages);
 
     context.subscriptions.push(

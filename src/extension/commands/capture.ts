@@ -9,7 +9,7 @@ import { withState, recordedCommand } from '../state';
 import { Mode, WhenNoBindingHeader } from '../../rust/parsing/lib/parsing';
 
 import { bindings } from '../keybindings/config';
-import { showExpressionMessages } from './do';
+import { showExpressionErrors, showExpressionMessages } from './do';
 
 let typeSubscription: vscode.Disposable | undefined;
 let onTypeFn: (text: string) => void = async function (_text: string) {
@@ -50,16 +50,7 @@ export async function runCommandsForMode(mode: Mode) {
                 state.set(CAPTURE, { transient: { reset: '' } }, typed),
             );
             const binding = mode.run_commands(bindings);
-            if ((binding.error?.length || 0) > 0) {
-                let count = 0;
-                for (const e of (binding.error || [])) {
-                    count++;
-                    if (count > 3) {
-                        break;
-                    }
-                    vscode.window.showErrorMessage(e);
-                }
-            } else {
+            if (!showExpressionErrors(binding)) {
                 for (let i = 0; i < binding.n_commands(); i++) {
                     const resolved_command = binding.resolve_command(i, bindings);
                     showExpressionMessages(resolved_command);
@@ -167,13 +158,14 @@ const captureKeysArgs = z.object({
  * @order 110
  *
  * Awaits user input for a fixed number of key presses, and then stores the resulting
- * characters as a string in the variable `captured`, accessible in any subsequent
+ * characters as a string in the variable `key.captured`, accessible in any subsequent
  * [expression](/expressions/index).
  *
  * **Arguments**
  * - `acceptAfter`: The number of keys to capture
  *
- * > [!NOTE] The command also accepts a second, optional argument called `text`, which can
+ * > [!NOTE] Implementation detail
+ * > The command also accepts a second, optional argument called `text`, which can
  * > directly express what keys to store in `captured` instead of requesting input from the
  * > user. This is not really useful when writing a `[[bind]]` entry, but is defined to make
  * > it easy to replay previously executed versions of this command (e.g. in a keyboard

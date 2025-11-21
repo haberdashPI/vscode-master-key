@@ -9,7 +9,7 @@ import {
 } from '../state';
 import { merge } from 'lodash';
 import { bindings } from '../keybindings/config';
-import { showExpressionMessages } from './do';
+import { showExpressionErrors, showExpressionMessages } from './do';
 
 /* eslint-disable */
 // /**
@@ -188,16 +188,8 @@ async function executedStoredCommand(args_: unknown): Promise<CommandResult> {
     if (args) {
         const command = merge(storedCommands[args.register], args);
         const reified = bindings.do_stored_command(command);
-        if ((reified.error?.length || 0) > 0) {
-            let count = 0;
-            for (const e of (reified.error || [])) {
-                count++;
-                if (count > 3) {
-                    break;
-                }
-                vscode.window.showErrorMessage(e);
-            }
-        } else {
+
+        if (!showExpressionErrors(reified)) {
             for (let i = 0; i < reified.n_commands(); i++) {
                 const resolved_command = reified.resolve_command(i, bindings);
                 showExpressionMessages(resolved_command);

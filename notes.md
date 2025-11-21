@@ -549,16 +549,21 @@ Integration test debugging:
             - [X] debug `resolve` failures (is there something I'm not doing that occurs in e.g. do_command, which `resolve` assumes has already happened?)
             - [X] create an integration test
         - [X] highlighting ins't resetting when using search
+        - [ ] keep dog-fooding to find more issues
+            - [ ] code.firstSelectionOrWord isn't picking up things near the cursor
+              (sometimes?? it's working now... 🤔)
+            - [X] `captured` doesn't have a `slice` function (selecting between characters)
+            - [X] error messages not showing up
+        - [ ] tree commands aren't changing the mode properly
+    - [ ] proof-read documentation
     - [ ] get any remaining, existing tests (except unimplemented features) working again
         - [ ] update unit tests for running commands
             - [ ] remove replay unit tests (they are become integration tests)
             - [ ] move the missing do unit tests to integration
     - [ ] cleanup any files we need to delete
     - [ ] merge PR; don't relase a new version yet
-    - [ ] start dog-fooding the latest changes to catch performances issues and bugs
     - [ ] properly handle user keybindings (have the main keybinding file in memory)
-    - [ ] reimlement storeNamed? (or make it more specific to macros; I'm not
-          convinced the generic tool is really useful)
+    - [ ] replay symmetric edits
     - [ ] extraction of markdown docs
         - [ ] documentation expansion/validation
             - across all `[[bind]]` values with the same key and mode
@@ -572,8 +577,11 @@ Integration test debugging:
     - [ ] extraction of visual docs
         - [ ] reimplement visual output
         - [ ] reimplement integration tests
+    - [ ] reimlement storeNamed? (or make it more specific to macros; I'm not
+          convinced the generic tool is really useful)
     - [ ] rename from Master Key to Key Atlas (keep the same extension name, to avoid
           confusion, but do make a new git repository)
+          - [ ] rename references of Master key in Selection Utilities
     - [ ] CI
         - [x] setup CI unit tests for rust
         - [x] setup rust coverage

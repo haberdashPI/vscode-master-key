@@ -475,7 +475,7 @@ doc.description = """
 all motions extend the selection
 """
 command = "master-key.setValue"
-args.doc.name = "select"
+args.name = "select"
 args.value = true
 
 [[bind]]
@@ -778,7 +778,7 @@ doc.description = "Next match to object under cursor"
 doc.combined.name = "match →/←"
 doc.combined.description = "Next/previous match to object under cursor"
 doc.combined.key = "shift+8/7"
-args.text = "{{firstSelectionOrWord}}"
+args.text = "{{code.firstSelectionOrWord}}"
 args.offset = "start"
 args.register = "search"
 
@@ -965,6 +965,14 @@ default = "{{bind.edit_motion_prim}}"
 key = "g g"
 priority = 1
 doc.name = "doc start"
+doc.description = "select to start of document"
+command = "cursorTopSelect"
+
+[[bind]]
+default = "{{bind.edit_motion_prim}}"
+key = "g g"
+priority = 1
+doc.name = "doc start"
 doc.description = "select to start (line) of document."
 command = "runCommands"
 when = "master-key.count > 1"
@@ -982,14 +990,6 @@ args.value = "{{key.count-1}}"
 command = "revealLine"
 args.at = "center"
 args.lineNumber = "{{key.count}}"
-
-[[bind]]
-default = "{{bind.edit_motion_prim}}"
-key = "g g"
-priority = 1
-doc.name = "doc start"
-doc.description = "select to start of document"
-command = "cursorTopSelect"
 
 [[bind]]
 default = "{{bind.edit_motion_obj}}"
@@ -1472,8 +1472,8 @@ args.acceptAfter = "{{2*(max(key.count, 1))}}"
 
 [[bind.args.commands]]
 command = "selection-utilities.selectBetween"
-args.between.from = "{{key.captured.slice(0, key.captured.len()/2)}}"
-args.between.to = "{{key.captured.slice(key.captured.len()/2)}}"
+args.between.from = "{{key.captured.sub_string(0, key.captured.len()/2)}}"
+args.between.to = "{{key.captured.sub_string(key.captured.len()/2)}}"
 args.inclusive = false
 
 # ## Simple Actions
@@ -3035,7 +3035,7 @@ insert cursor on line below
 """
 key = "shift+j"
 command = "editor.action.insertCursorBelow"
-repeat = "{{key.count-1}}"
+repeat = "{{max(key.count, 1)-1}}"
 
 [[bind]]
 default = "{{bind.edit_select_edit}}"
@@ -3048,7 +3048,7 @@ mode if all selections are deleted.
 """
 key = "d"
 command = "selection-utilities.deletePrimary"
-repeat = "{{key.count-1}}"
+repeat = "{{max(key.count, 1)-1}}"
 
 [[bind]]
 default = "{{bind.edit_select_edit}}"
@@ -3266,7 +3266,7 @@ cursorShape = "BlockOutline"
 
 [[mode.whenNoBinding.run]]
 command = "selection-utilities.insertAround"
-args.before = '{{show("braces: ", val.braces)[show("captured", key.captured)]?.before ?? key.captured}}'
+args.before = '{{val.braces[key.captured]?.before ?? key.captured}}'
 args.after = "{{val.braces[key.captured]?.after ?? key.captured}}"
 args.followCursor = true
 
