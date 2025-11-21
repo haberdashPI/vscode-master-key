@@ -1,10 +1,13 @@
+#:master-keybindings
+
 # # Test Documentation
 #- IGNORED COMMENT
 [header]
-version = "2.0"
+version = "2.0.0"
 
 [[mode]]
 name = "insert"
+whenNoBinding = "insertCharacters"
 default = true
 
 [[mode]]
@@ -23,92 +26,93 @@ description = "more rightward keys"
 # Cillum adipisicing consequat aliquip Lorem adipisicing minim culpa officia aliquip reprehenderit.
 
 [[bind]]
-name = "normal mode"
+doc.name = "normal mode"
 key = "escape"
 command = "master-key.enterNormal"
-prefixes = "{{all_prefixes}}"
-hideInPalette = true
+prefixes.any = true
+doc.hideInPalette = true
 
-[[default]]
+[[define.bind]]
 id = "edit"
-appendWhen = "editorTextFocus && !findWidgetVisible"
+when = "!findWidgetVisible"
 
-[[default]]
-id = "edit.motion"
-default.command = "cursorMove"
-default.mode = "normal"
-default.computedArgs.value = "count"
+[[define.bind]]
+id = "edit_motion"
+command = "cursorMove"
+mode = "normal"
+args.value = "{{key.count}}"
+when = "!findWidgetVisible"
 
 [[bind]]
-defaults = "edit.motion"
-name = "left"
+default = "{{bind.edit_motion}}"
+doc.name = "left"
 key = "h"
 args.to = "left"
-kind = "left"
+doc.kind = "left"
 
 [[bind]]
-defaults = "edit.motion"
-name = "right"
+default = "{{bind.edit_motion}}"
+doc.name = "right"
 key = "l"
 args.to = "right"
-kind = "right"
+doc.kind = "right"
 
 [[bind]]
-defaults = "edit.motion"
-name = "down"
+default = "{{bind.edit_motion}}"
+doc.name = "down"
 key = "j"
 args.to = "down"
-kind = "left"
+doc.kind = "left"
 
 # ## Second Section
 
 # Aliquip ipsum enim cupidatat aute occaecat magna nostrud qui labore.
 
 [[bind]]
-defaults = "edit.motion"
-name = "up"
+default = "{{bind.edit_motion}}"
+doc.name = "up"
 key = "k"
 args.to = "up"
-kind = "right"
+doc.kind = "right"
 
 [[bind]]
-defaults = "edit.motion"
-name = "funny right"
+default = "{{bind.edit_motion}}"
+doc.name = "funny right"
 key = "w w"
 mode = "normal"
 args.to = "right"
-kind = "right"
+doc.kind = "right"
 
 [[bind]]
-defaults = "edit"
-name = "insert mode"
+doc.name = "insert mode"
+default = "{{bind.edit}}"
 key = "i"
 command = "master-key.enterInsert"
 mode = "normal"
-kind = "right"
+doc.kind = "right"
 
 [[bind]]
-defaults = "edit.motion"
+default = "{{bind.edit_motion}}"
 key = "ctrl+i"
-name = "magic insert"
+doc.name = "magic insert"
 command = "foobar"
 mode = "normal"
-kind = "right"
+doc.kind = "right"
 
 [[bind]]
-defaults = "edit.motion"
+default = "{{bind.edit_motion}}"
 key = "ctrl+o"
-name = "magic outsert"
+doc.name = "magic outsert"
 command = "foobiz"
 mode = "normal"
-kind = "right"
+doc.kind = "right"
 
 [[bind]]
-defaults = "edit.motion"
+default = "{{bind.edit_motion}}"
 key = "alt+i"
-name = "evil insert"
+doc.name = "evil insert"
 command = "die"
 mode = "normal"
-kind = "right"
+doc.kind = "right"
 
 # Final paragraph shows up.

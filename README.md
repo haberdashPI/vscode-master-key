@@ -7,12 +7,68 @@
 [![Code Style: Google](https://img.shields.io/badge/code%20style-google-blueviolet.png)](https://github.com/google/gts)
 [![Docs](https://img.shields.io/badge/docs-stable-blue.png)](https://haberdashpi.github.io/vscode-master-key)
 
-Master key helps you to learn, create and use powerful keybindings in [VSCode](https://code.visualstudio.com/).
+Master Key is a tool for becoming a power-user of your [VSCode](https://code.visualstudio.com/) keybindings: get in-context or visual documentation at any time, define modal bindings, record simple keyboard macros, and customize to your heart's content with a powerful TOML-based keybinding specification.
 
-If you want to improve your text editing super powers in VSCode, Master Key might just be the tool for you.
+With Master Key it is easy to create keybinding specifications that match your editor style of choice (modal, chorded, etc...) and it comes with pre-existing bindings to get you started.
 
-> [!NOTE]
-> To power users: Master Key was envisioned as a set of tools to make it easy to create powerful keybinding specifications that match your editor style of choice (modal, chorded, etc...). There are a few limitations, noted in [Keybinding Features](#keybinding-features) and [Customized Bindings](haberdashpi.github.io/vscode-master-key/guide.html#customizing-bindings).
+For example, this curated snippet from the Master Key's default bindings defines a VIM-like set of bindings for a count argument and downward motion:
+
+```toml
+# front matter...
+
+[[bind]]
+foreach.num = ['{{keys(`[0-9]`)}}']
+doc.name = "count {{num}}"
+key = "{{num}}"
+command = "master-key.updateCount"
+doc.description = "Add digit {{num}} to the count argument of a command"
+doc.combined.key = "0-9"
+doc.combined.name = "count 0-9"
+doc.combined.description = "Add digit 1-9 to count argument of a command"
+args.value = "{{num}}"
+finalKey = false
+mode = '{{not_modes(["insert"])}}'
+doc.hideInDocs = true
+
+[[bind]]
+default = "{{bind.util}}"
+key = "shift+;"
+doc.name = "suggest"
+finalKey = false
+doc.hideInPalette = true
+prefixes.any = true
+mode = '{{not_modes(["insert"])}}'
+doc.description = """
+show command suggestions within the context of the current mode and keybinding prefix
+(if any). E.g. `TAB, ⇧;` in `normal` mode will show all `normal` command suggestions that
+start with `TAB`.
+"""
+command = "master-key.commandSuggestions"
+
+[[bind]]
+key = "j"
+doc.name = "↓"
+doc.combined.name = "↓/↑"
+doc.combined.key = "j/k"
+doc.combined.description = "move down/up"
+doc.description = "move down"
+command = "cursorMove"
+args.value = '{{key.count}}'
+args.select = '{{code.editorHasSelection || val.select}}'
+args.to = "down"
+args.by = "wrappedLine"
+
+# more bindings...
+```
+
+This highlights a number of Master Key's features:
+
+1. We can use `foreach` to generate many bindings at once
+2. Bindings are expressive: e.g. we can use data stored by one binding as the argument to
+a second binding.
+3. Each binding is documented in-line: this documentation is available in a visual layout, a generated markdown output, and as part of a quick-pick palette
+
+Master Key validates this binding format, providing inline linting of the binding files as you write them.
 
 <!-- text between START_/STOP_ comments is extracted and inserted into the docs -->
 <!-- START_DOCS -->
@@ -33,18 +89,6 @@ The easiest way to get started is to activate the built-in keybindings that come
 You can revert these changes later using `Master Key: Deactivate Keybindings`.
 
 To learn more about how to use Master Key [read the documentation](haberdashpi.github.io/vscode-master-key).
-
-### Release Plans
-
-The most recent version of Master Key on VSCode's marketplace is 0.3.x, while the documentation and README are currently for the soon-to-be-released 0.4.0. (Refer to the tagged releases to see the older README). Because this newest version is somewhat disruptive (the keybinding file format has changed), the plan is to complete some important code refactoring work, which may necessitate a few additional changes to the file format, before the release of 0.4.0.
-
-## Feature Highlights
-
-Master key has quite of a few features, including:
-
-- **Keybinding Discoverability**: Bindings show up on a keyboard visualization. Binding files are literate TOML that is converted into markdown documentation. Multi-key sequences reveal a popup list of suggested keybinding completions (ala Kakaune / Helix / LazyVim).
-- **Record and repeat commands**: Record sequences of commands and parametrically select which ones to replay.
-- **Rich, parametric keybinding specification**: Modal bindings, simple `foreach` expressions, per-mode onType events, expression evaluation, cross-command state management
 
 ## Feature Tour
 
@@ -125,7 +169,7 @@ Record longer command sequences and replay them. These are sometimes referred to
 ![example of recording key sequence](images/readme/record.webp)
 
 > [!NOTE]
-> Command recording comes with a few limitations. Master key can record any edits, and any commands that are issued through master key bindings. Commands that are not part of this binding file (e.g. a standard call to Cmd/Ctrl+V to paste) will not be recorded. You can copy your non-master-key bindings over to Master Key (so that they will be recorded) by [customizing your bindings](#customized-bindings) and using `Import Default Bindings` and `Import User Bindings` to allow all of the default and user bindings stored in VSCode's normal keybinding files to be recorded by Master Key. (You will have to remove your original user bindings from the VSCode `keybinding.json` file manually)
+> Command recording comes with a few limitations. Master key can record any edits, and any commands that are issued through master key bindings. Commands that are not part of this binding file (e.g. a standard call to Cmd/Ctrl+V to paste) will not be recorded. You can copy your non-master-key bindings over to Master Key (so that they will be recorded) by [customizing your bindings](#customized-bindings) and using `Import Default Bindings` and `Import User Bindings` to allow all of the default and user bindings stored in VSCode's normal keybinding files to be recorded by Master Key. (You will have to remove your original user bindings from the VSCode `keybinding.json` file manually). Also note that some edits cannot be recordings using VSCode's API (e.g. automated completion of parenthesis), so the ability to record any typing is limited.
 
 ### Symmetric Insert
 
@@ -134,9 +178,6 @@ Insert or remove appropriate characters before and after each selection:
 ![example of syminsert mode](images/readme/syminsert.webp)
 
 ## Keybinding Features
-
-> [!WARNING]
-> For the initial release of Master Key, the keybinding features are not yet well documented. You can review the format when copying Larkin to your own customization file (via `Master Key: Edit Preset Copy`). The main goal of the 0.3.0 release was to make the default keybindings accessible to new users. See the [roadmap](#roadmap) for the versions expected to include better support for creating new keybinding presets. Before those milestones, the finer points of implementing your own keybindings could require some digging into source code and/or asking questions in the discussions section of this repo. These details are also currently subject to change.
 
 When you create your own keybindings using Master Key's special `.toml` keybinding format you get several powerful features that make it possible to easily create keybindings that would be difficult or impossible to implement without writing your own extension.
 
@@ -158,9 +199,8 @@ Express an entire series of bindings using the `foreach` field.
 
 ```toml
 [[bind]]
-path = "edit.count"
-foreach.num = ['{{key: [0-9]}}']
-name = "count {{num}}"
+foreach.num = ['{{key(`[0-9]`)}}']
+doc.name = "count {{num}}"
 key = "{{num}}"
 command = "master-key.updateCount"
 args.value = "{{num}}"
@@ -168,11 +208,12 @@ args.value = "{{num}}"
 
 ### Stateful Bindings
 
-Update state with the `master-key.captureKeys`, `master-key.updateCount`, `master-key.setFlag` or `master-key.storeNamed` and then use this state in downstream commands using `computedArgs` instead of `args` in your keybinding.
+Update state with the `master-key.captureKeys`, `master-key.updateCount`, `master-key.setFlag` or `master-key.storeNamed` and then use this state in downstream commands using
+expressions surrounded in `{{}}`
 
 ```toml
 [[bind]]
-name = "between pair"
+doc.name = "between pair"
 key = "m t"
 description = """
 Select between a pair of the specified character. Example: `m t '` would
@@ -186,7 +227,7 @@ args.acceptAfter = 1
 
 [[bind.args.commands]]
 command = "selection-utilities.selectBetween"
-computedArgs.str = "captured"
+args.str = "{{key.captured}}"
 args.inclusive = false
 ```
 
@@ -197,10 +238,14 @@ Master key records recent key presses, allowing you to create commands that quic
 ```toml
 [[bind]]
 key = ";"
-name = "repeat motion"
-computedRepeat = "count"
+doc.name = "repeat motion"
+repeat = "{{key.count}}"
 command = "master-key.replayFromHistory"
-args.at = "commandHistory[i].path.startsWith('edit.motion') && commandHistory[i].name != 'repeat motion'"
+args.whereIndexIs = """{{
+key.history[index].?tags.?contains('motion') &&
+key.history[index].?doc.?name != 'repeat motion' &&
+key.history[index].?doc.?name != 'shrink selection'
+}}"""
 ```
 
 ### Documented Bindings

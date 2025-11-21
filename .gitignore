@@ -1,15 +1,29 @@
+!.vscode/settings.json
+
+# documentation
+docs/.vitepress/cache
+docs/.vitepress/dist
+docs/.vitepress/commands.mjs
+docs/.vitepress/bindings.mjs
+docs/**/*.md
+
 # build output
 out
 *.vsix
 src/rust/parsing/target/**
+target/**
 
 # dependencies
 node_modules
 
 # code coverage
 .nyc_output/**
+*.info
+*.profdata
 coverage/**
 coverage.json
+*.profraw
+*.lcov
 
 # unit testing
 test/temp/**

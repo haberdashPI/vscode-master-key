@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
 import z from 'zod';
 import { validateInput, wrappedTranslate } from '../utils';
-import { withState, CommandResult, recordedCommand, onSet } from '../state';
-import { MODE, defaultMode } from './mode';
+import { withState, CommandResult, recordedCommand } from '../state';
+import { MODE } from './mode';
 import { captureKeys } from './capture';
-import { COMMAND_HISTORY } from './do';
+import { bindings } from '../keybindings/config';
 
 /**
  * @command search
@@ -423,7 +423,7 @@ function skipTo(state: SearchState, editor: vscode.TextEditor) {
     }
 }
 
-function searchDecorationCheck() {
+export function searchDecorationCheck() {
     const editor = vscode.window.activeTextEditor;
     if (editor) {
         const searchState = getOldSearchState(editor, currentSearch);
@@ -452,7 +452,7 @@ async function search(args_: unknown[]): Promise<CommandResult> {
 
     let mode = '';
     await withState(async (state) => {
-        mode = state.get(MODE, defaultMode)!;
+        mode = state.get(MODE, bindings.default_mode())!;
         return state;
     });
     const state = getSearchState(editor, mode, currentSearch);
@@ -580,7 +580,7 @@ async function nextMatch(
     }
     let mode = '';
     await withState(async (state) => {
-        mode = state.get(MODE, defaultMode)!;
+        mode = state.get(MODE, bindings.default_mode())!;
         return state;
     });
     const state = getSearchState(editor, mode, args!.register);
@@ -617,7 +617,7 @@ async function previousMatch(
     }
     let mode = '';
     await withState(async (state) => {
-        mode = state.get(MODE, defaultMode)!;
+        mode = state.get(MODE, bindings.default_mode())!;
         return state;
     });
     const state = getSearchState(editor, mode, args!.register);
@@ -658,6 +658,4 @@ export async function activate(context: vscode.ExtensionContext) {
     );
     updateSearchHighlights();
     vscode.workspace.onDidChangeConfiguration(updateSearchHighlights);
-
-    await onSet(COMMAND_HISTORY, _ => searchDecorationCheck());
 }

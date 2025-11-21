@@ -1,3 +1,5 @@
+#:master-keybindings
+
 # ---
 # author: David Little
 # license: MIT https://github.com/haberdashPI/vscode-master-key/blob/main/LICENSE.md
@@ -27,7 +29,7 @@
 
 [header]
 name = "Larkin"
-version = "2.0"
+version = "2.0.0"
 
 requiredExtensions = [
     "dbankier.vscode-quick-select",
@@ -43,7 +45,7 @@ requiredExtensions = [
 
 [[mode]]
 name = "insert"
-recordEdits = true
+whenNoBinding = "insertCharacters"
 
 [[mode]]
 name = "normal"
@@ -56,9 +58,8 @@ name = "selectedit"
 highlight = "Highlight"
 cursorShape = "BlockOutline"
 
-[define]
-select_on = false
-around_on = false
+[[define.val]]
+select = false
 
 [[kind]]
 name = "motion"
@@ -67,9 +68,7 @@ description = "These commands move the cursor and/or selections."
 [[kind]]
 name = "action"
 description = """
-Actions do something with the selected text (e.g. delete it). Unless otherwise noted, in
-the absence of a selection, an action will modify an entire line, and a count argument
-indicates the number of lines (e.g. 3d deletes this line and the next 3 lines).
+Actions do something with the selected text (e.g. delete it). Unless otherwise noted, in the absence of a selection, an action will modify an entire line, and a count argument indicates the number of lines (e.g. 3d deletes this line and the next 3 lines).
 """
 
 [[kind]]
@@ -78,34 +77,28 @@ description = """
 Assorted other commands that aren't motions or actions
 """
 
-[[define.selectLinesDown]]
-command = "selection-utilities.shrinkToActive"
+[[define.command]]
+id = "selectLinesDown"
+command = "runCommands"
+args.commands = [
+    "selection-utilities.shrinkToActive",
+    { skipWhen = "{{key.count <= 0}}", command = "cursorMove", args = { to = "down", by = "wrappedLine", select = true, value = "{{key.count}}" } },
+    "expandLineSelection",
+    "selection-utilities.exchangeAnchorActive",
+]
 
-[[define.selectLinesDown]]
-whenComputed = "count"
-command = "cursorMove"
-args = { to = "down", by = "wrappedLine", select = true }
-computedArgs = { value = "count" }
+[[define.command]]
+id = "selectLinesUp"
+command = "runCommands"
+args.commands = [
+    "selection-utilities.shrinkToActive",
+    { skipWhen = "{{key.count <= 0}}", command = "cursorMove", args = { to = "up", by = "wrappedLine", select = true, value = "{{key.count}}" } },
+    "expandLineSelection",
+]
 
-[[define.selectLinesDown]]
-command = "expandLineSelection"
-
-[[define.selectLinesUp]]
-command = "selection-utilities.shrinkToActive"
-
-[[define.selectLinesUp]]
-whenComputed = "count"
-command = "cursorMove"
-args = { to = "up", by = "wrappedLine", select = true }
-computedArgs = { value = "count" }
-
-[[define.selectLinesUp]]
-command = "expandLineSelection"
-
-
-[[default]]
+[[define.bind]]
 id = "modes"
-default.kind = "util"
+doc.kind = "util"
 
 # ## Getting Help
 
@@ -116,32 +109,34 @@ default.kind = "util"
 # 3. The suggestion palette shows a list of the current bindings given the current key binding prefix.
 
 [[bind]]
-defaults = "util"
+default = "{{bind.util}}"
 key = "shift+;"
-name = "suggest"
+doc.name = "suggest"
 finalKey = false
-hideInPalette = true
-prefixes = "{{all_prefixes}}"
-mode = ["!capture", "!insert"]
-description = """
-show command suggestions within the context of the current mode and keybinding prefix (if any). E.g. `TAB, ⇧;` in `normal` mode will show all `normal` command suggestions that start with `TAB`.
+doc.hideInPalette = true
+prefixes.any = true
+mode = '{{not_modes(["insert"])}}'
+doc.description = """
+show command suggestions within the context of the current mode and keybinding prefix
+(if any). E.g. `TAB, ⇧;` in `normal` mode will show all `normal` command suggestions that
+start with `TAB`.
 """
 command = "master-key.commandSuggestions"
 
 [[bind]]
 key = "tab /"
-name = "text docs"
+doc.name = "text docs"
 priority = -1
 mode = "normal"
-description = "Show text documentation for keybindings"
+doc.description = "Show text documentation for keybindings"
 command = "master-key.showTextDoc"
 
 [[bind]]
 key = "tab shift+/"
-name = "visual doc"
+doc.name = "visual doc"
 priority = -1
 mode = "normal"
-description = "Show visual documentation for keybindings"
+doc.description = "Show visual documentation for keybindings"
 command = "master-key.showVisualDoc"
 
 # The visual keybinding documentation is modified by the following command:
@@ -158,60 +153,43 @@ command = "master-key.showVisualDoc"
 # While in Normal model you will see a highlighted section with the text "normal" in the lower left hand corner of the status bar.
 
 [[bind]]
-defaults = "modes"
-name = "normal"
-description = "Enter normal mode"
+default = "{{bind.modes}}"
+doc.name = "normal"
+doc.description = "Enter normal mode"
 foreach.key = ["escape", "ctrl+["]
-combinedKey = "escape/ctrl+["
-combinedName = "normal"
-combinedDescription = "Enter normal mode"
+doc.combined.key = "escape/ctrl+["
+doc.combined.name = "normal"
+doc.combined.description = "Enter normal mode"
 key = "{{key}}"
-mode = []
-hideInPalette = true
-hideInDocs = false
+mode = '{{all_modes() + ["capture"]}}'
+doc.hideInPalette = true
+doc.hideInDocs = false
 command = "master-key.enterNormal"
 when = "!findWidgetVisible"
-prefixes = "{{all_prefixes}}"
+prefixes.any = true
 
 [[bind]]
-defaults = "modes"
-name = "normal"
+default = "{{bind.modes}}"
+doc.name = "normal"
 foreach.key = ["escape", "ctrl+["]
 key = "{{key}}"
-hideInPalette = true
-hideInDocs = true
+doc.hideInPalette = true
+doc.hideInDocs = true
 when = "suggestWidgetVisible && editorTextFocus && !findWidgetVisible"
 command = "runCommands"
 args.commands = ["hideSuggestWidget", "master-key.enterNormal"]
-mode = []
-prefixes = "{{all_prefixes}}"
+mode = "{{all_modes()}}"
+prefixes.any = true
 
-#- in "command" like modes (e.g. normal), typing keys without a command defined below should have no effect
-[[bind]]
-defaults = "modes"
-name = "ignore"
-description = "this key does nothing"
-foreach.key = [
-    '{{key: .}}',
-    'shift+{{key: .}}',
-] #- all keys whose bindings are described by a single character
-key = "{{key}}"
-command = "master-key.ignore"
-prefixes = "{{all_prefixes}}"
-mode = ["normal", "selectedit"]
-when = "editorTextFocus"
-hideInDocs = true
-hideInPalette = true
-priority = -10
-
-[[default]]
+[[define.bind]]
 id = "edit"
-appendWhen = "editorTextFocus && !findWidgetVisible"
-default.mode = "normal"
+when = "editorTextFocus && !findWidgetVisible"
+mode = "normal"
 
-[[default]]
-id = "edit.count"
-default.kind = "count"
+[[define.bind]]
+id = "edit_count"
+default = "{{bind.edit}}"
+doc.kind = "count"
 
 # ## Basic motions
 
@@ -219,83 +197,86 @@ default.kind = "count"
 
 # Selection behavior uses the following logic: motions that move more than one character generally select the text "under" the motion. If a selection already exists (e.g. from a previous motion) additional motions extend that selection. You can always reset the selection using `v`, and several commands (e.g. `x`) operate on the next character rather than the current selection.
 
-[[default]]
-id = "edit.motion"
-default.kind = "motion"
+[[define.bind]]
+id = "edit_motion"
+default = "{{bind.edit}}"
+doc.kind = "motion"
+tags = ["motion"]
 
-[[default]]
-id = "edit.motion.prim"
-default.command = "cursorMove"
-default.computedArgs.value = "count"
-default.computedArgs.select = "editorHasSelection || select_on"
+[[define.bind]]
+id = "edit_motion_prim"
+default = "{{bind.edit_motion}}"
+command = "cursorMove"
+args.value = "{{key.count}}"
+args.select = "{{code.editorHasSelection || val.select}}"
 
 [[bind]]
-defaults = "edit.motion.prim"
+default = "{{bind.edit_motion_prim}}"
 key = "h"
-name = "←"
-combinedName = "←/→"
-combinedKey = "h/l"
-combinedDescription = "move left/right"
-description = "move left"
+doc.name = "←"
+doc.combined.name = "←/→"
+doc.combined.key = "h/l"
+doc.combined.description = "move left/right"
+doc.description = "move left"
 args.to = "left"
 mode = "normal"
 
 [[bind]]
-defaults = "edit.motion.prim"
+default = "{{bind.edit_motion_prim}}"
 key = "l"
-combinedName = "←/→"
-name = "→"
-description = "move right"
+doc.combined.name = "←/→"
+doc.name = "→"
+doc.description = "move right"
 args.to = "right"
 
 [[bind]]
-defaults = "edit.motion.prim"
+default = "{{bind.edit_motion_prim}}"
 key = "j"
-name = "↓"
-combinedName = "↓/↑"
-combinedKey = "j/k"
-combinedDescription = "move down/up"
-description = "move down"
+doc.name = "↓"
+doc.combined.name = "↓/↑"
+doc.combined.key = "j/k"
+doc.combined.description = "move down/up"
+doc.description = "move down"
 args.to = "down"
 args.by = "wrappedLine"
 
 [[bind]]
-defaults = "edit.motion.prim"
+default = "{{bind.edit_motion_prim}}"
 key = "k"
-name = "↑"
-description = "move up"
-combinedName = "↓/↑"
+doc.name = "↑"
+doc.description = "move up"
+doc.combined.name = "↓/↑"
 args.to = "up"
 args.by = "wrappedLine"
 
 [[bind]]
-defaults = "edit.motion.prim"
+default = "{{bind.edit_motion_prim}}"
 key = "shift+h"
-name = "start"
-description = "start of line (alternates between first non-white and first)"
-combinedName = "start/end"
-combinedKey = "shift+h/shift+l"
-combinedDescription = "move to start/end of line"
+doc.name = "start"
+doc.description = "start of line (alternates between first non-white and first)"
+doc.combined.name = "start/end"
+doc.combined.key = "shift+h/shift+l"
+doc.combined.description = "move to start/end of line"
 command = "cursorHomeSelect"
 
 [[bind]] # we don't use prim because we don't want the defaults
-defaults = "edit.motion"
+default = "{{bind.edit_motion}}"
 key = "shift+l"
-name = "end"
-combinedName = "start/end"
-description = "end of line"
+doc.name = "end"
+doc.combined.name = "start/end"
+doc.description = "end of line"
 command = "cursorMove"
 args.to = "wrappedLineEnd"
 args.select = true
 
 [[bind]]
-defaults = "edit.motion.prim"
+default = "{{bind.edit_motion_prim}}"
 key = "shift+k"
-name = "sel ↑"
-combinedName = "sel ↑/↓"
-combinedDescription = "select lines up/down"
-combinedKey = "shift+k/shift+j"
-description = "select lines upwards"
+doc.name = "sel ↑"
+doc.combined.name = "sel ↑/↓"
+doc.combined.description = "select lines up/down"
+doc.combined.key = "shift+k/shift+j"
+doc.description = "select lines upwards"
 command = "runCommands"
 
 [[bind.args.commands]]
@@ -303,8 +284,7 @@ command = "selection-utilities.shrinkToActive"
 
 [[bind.args.commands]]
 command = "cursorMove"
-args = { to = "up", by = "wrappedLine", select = true }
-computedArgs = { value = "count" }
+args = { to = "up", by = "wrappedLine", select = true, value = "{{key.count}}" }
 
 [[bind.args.commands]]
 command = "expandLineSelection"
@@ -313,11 +293,11 @@ command = "expandLineSelection"
 command = "selection-utilities.exchangeAnchorActive"
 
 [[bind]]
-defaults = "edit.motion.prim"
+default = "{{bind.edit_motion_prim}}"
 key = "shift+j"
-name = "sel ↓"
-combinedName = "sel ↑/↓"
-description = "select lines downwards"
+doc.name = "sel ↓"
+doc.combined.name = "sel ↑/↓"
+doc.description = "select lines downwards"
 command = "runCommands"
 
 [[bind.args.commands]]
@@ -325,187 +305,187 @@ command = "selection-utilities.shrinkToActive"
 
 [[bind.args.commands]]
 command = "cursorMove"
-args = { to = "down", by = "wrappedLine", select = true }
-computedArgs = { value = "count" }
+args = { to = "down", by = "wrappedLine", select = true, value = "{{key.count}}" }
 
 [[bind.args.commands]]
 command = "expandLineSelection"
 
 [[bind]]
-defaults = "edit.motion.prim"
+default = "{{bind.edit_motion_prim}}"
 key = "ctrl+d"
 mode = ["normal", "insert"]
-name = "pg ↓"
-combinedName = "pg ↓/↑"
-combinedKey = "ctrl+d/ctrl+u"
-combinedDescription = "move down/up, relative to page size"
-description = "move down, relative to page size"
+doc.name = "pg ↓"
+doc.combined.name = "pg ↓/↑"
+doc.combined.key = "ctrl+d/ctrl+u"
+doc.combined.description = "move down/up, relative to page size"
+doc.description = "move down, relative to page size"
 command = "selection-utilities.activePageMove"
 args.dir = "down"
-computedArgs.count = "(count || 1)/3"
-computedArgs.select = "mode == 'normal'"
+args.count = "{{max(key.count, 1)/3}}"
+args.select = '{{key.mode == "normal"}}'
 
 [[bind]]
-defaults = "edit.motion.prim"
+default = "{{bind.edit_motion_prim}}"
 key = "ctrl+u"
 mode = ["normal", "insert"]
-name = "pg ↑"
-combinedName = "pg ↓/↑"
-description = "move up, relative to page size"
+doc.name = "pg ↑"
+doc.combined.name = "pg ↓/↑"
+doc.description = "move up, relative to page size"
 command = "selection-utilities.activePageMove"
 args.dir = "up"
-computedArgs.count = "(count || 1)/3"
-computedArgs.select = "mode == 'normal'"
+args.count = "{{(max(key.count, 1))/3}}"
+args.select = '{{key.mode == "normal"}}'
 
 [[bind]]
-defaults = "edit.motion.prim"
+default = "{{bind.edit_motion_prim}}"
 key = "shift+x"
-name = "exapand"
-description = "expand selections to full lines"
+doc.name = "exapand"
+doc.description = "expand selections to full lines"
 command = "expandLineSelection"
-computedRepeat = "count"
+repeat = "{{key.count}}"
 
-[[default]]
-id = "edit.motion.obj"
-default.command = "selection-utilities.moveBy"
-default.args.boundary = "start"
-default.args.select = true
+[[define.bind]]
+id = "edit_motion_obj"
+default = "{{bind.edit_motion}}"
+command = "selection-utilities.moveBy"
+args.boundary = "start"
+args.select = true
 
 [[bind]]
-defaults = "edit.motion.obj"
+default = "{{bind.edit_motion_obj}}"
 key = "w"
-name = "subwrd →"
-description = "next subword (camel/snake case)"
-combinedName = "subwrd ←/→"
-combinedDescription = "next/prev subword (camel/snake case)"
-combinedKey = "w/b"
+doc.name = "subwrd →"
+doc.description = "next subword (camel/snake case)"
+doc.combined.name = "subwrd ←/→"
+doc.combined.description = "next/prev subword (camel/snake case)"
+doc.combined.key = "w/b"
 args.unit = "subword"
-computedArgs.value = "count || 1"
+args.value = "{{max(key.count, 1)}}"
 
 [[bind]]
-defaults = "edit.motion.obj"
+default = "{{bind.edit_motion_obj}}"
 key = "b"
-name = "subwrd ←"
-description = "previous subword (camel/snake case)"
-combinedName = "subwrd ←/→"
+doc.name = "subwrd ←"
+doc.description = "previous subword (camel/snake case)"
+doc.combined.name = "subwrd ←/→"
 args.unit = "subword"
-computedArgs.value = "-count || -1"
+args.value = "{{-max(key.count, 1)}}"
 
 [[bind]]
-defaults = "edit.motion.obj"
+default = "{{bind.edit_motion_obj}}"
 key = "shift+w"
-name = "word →"
-description = "next word"
-combinedName = "word ←/→"
-combinedDescription = "next/prev word"
-combinedKey = "shift+w/b"
+doc.name = "word →"
+doc.description = "next word"
+doc.combined.name = "word ←/→"
+doc.combined.description = "next/prev word"
+doc.combined.key = "shift+w/b"
 args.unit = "word"
-computedArgs.value = "count || 1"
+args.value = "{{max(key.count, 1)}}"
 
 [[bind]]
-defaults = "edit.motion.obj"
+default = "{{bind.edit_motion_obj}}"
 key = "shift+b"
-name = "word ←"
-combinedName = "word ←/→"
-description = "previous word"
+doc.name = "word ←"
+doc.combined.name = "word ←/→"
+doc.description = "previous word"
 args.unit = "word"
-computedArgs.value = "-count || -1"
+args.value = "{{-max(key.count, 1)}}"
 
 [[bind]]
-defaults = "edit.motion.obj"
+default = "{{bind.edit_motion_obj}}"
 key = "e"
-name = "subwrd end"
-description = "next subword (camel/snake case) end"
+doc.name = "subwrd end"
+doc.description = "next subword (camel/snake case) end"
 args.unit = "subword"
 args.boundary = "end"
-computedArgs.value = "count || 1"
+args.value = "{{max(key.count, 1)}}"
 
 [[bind]]
-defaults = "edit.motion.obj"
+default = "{{bind.edit_motion_obj}}"
 key = "shift+e"
-name = "word end"
-description = "next word end"
+doc.name = "word end"
+doc.description = "next word end"
 args.unit = "word"
 args.boundary = "end"
-computedArgs.value = "count || 1"
+args.value = "{{max(key.count, 1)}}"
 
 [[bind]]
-defaults = "edit.motion.obj"
+default = "{{bind.edit_motion_obj}}"
 key = "shift+]"
-name = "parag. →"
-description = "next paragraph"
-combinedName = "paragraph →/←"
-combinedDescription = "next/previous paragraph"
-combinedKey = "shift+]/["
+doc.name = "parag. →"
+doc.description = "next paragraph"
+doc.combined.name = "paragraph →/←"
+doc.combined.description = "next/previous paragraph"
+doc.combined.key = "shift+]/["
 args.unit = "paragraph"
-computedArgs.value = "count || 1"
+args.value = "{{max(key.count, 1)}}"
 
 [[bind]]
-defaults = "edit.motion.obj"
+default = "{{bind.edit_motion_obj}}"
 key = "shift+["
-name = "parag. ←"
-combinedName = "paragraph →/←"
-description = "previous paragraph"
+doc.name = "parag. ←"
+doc.combined.name = "paragraph →/←"
+doc.description = "previous paragraph"
 args.unit = "paragraph"
-computedArgs.value = "-(count || 1)"
+args.value = "{{-(max(key.count, 1))}}"
 
 [[bind]]
-defaults = "edit.motion.obj"
+default = "{{bind.edit_motion_obj}}"
 key = "shift+0"
-name = "subsec →"
-description = "next subsection"
-combinedName = "subsec →/←"
-combinedDescription = "next/previous subsection"
-combinedKey = "shift+0/9"
+doc.name = "subsec →"
+doc.description = "next subsection"
+doc.combined.name = "subsec →/←"
+doc.combined.description = "next/previous subsection"
+doc.combined.key = "shift+0/9"
 args.unit = "subsection"
-computedArgs.value = "count || 1"
+args.value = "{{max(key.count, 1)}}"
 
 [[bind]]
-defaults = "edit.motion.obj"
+default = "{{bind.edit_motion_obj}}"
 key = "shift+9"
-name = "subsec ←"
-description = "previous subsection"
-combinedName = "subsec →/←"
+doc.name = "subsec ←"
+doc.description = "previous subsection"
+doc.combined.name = "subsec →/←"
 args.unit = "subsection"
-computedArgs.value = "-(count || 1)"
+args.value = "{{-(max(key.count, 1))}}"
 
 [[bind]]
-defaults = "edit.motion.prim"
+default = "{{bind.edit_motion_prim}}"
 key = "v"
-name = "shrink selection"
-combinedName = "shrink/hold selection"
-combinedDescription = """
+doc.name = "shrink selection"
+doc.combined.name = "shrink/hold selection"
+doc.combined.description = """
 reduce selections to zero length / make all commands extend the selection
 """
-description = """
+doc.description = """
 reduce all selections to length zero
 """
 command = "runCommands"
 args.commands = [
     "selection-utilities.shrinkToActive",
-    { command = "master-key.setFlag", args = { name = "select_on", value = false } },
+    { command = "master-key.setValue", args = { name = "select", value = false } },
 ]
 
 [[bind]]
-defaults = "edit.motion.mod"
+default = "{{bind.edit_motion}}"
 key = "shift+v"
-name = "hold selection"
-combinedName = "shrink/hold selection"
-description = """
+doc.name = "hold selection"
+doc.combined.name = "shrink/hold selection"
+doc.description = """
 all motions extend the selection
 """
-command = "master-key.setFlag"
-args.name = "select_on"
+command = "master-key.setValue"
+args.name = "select"
 args.value = true
 
 [[bind]]
-defaults = "edit.action.open_lines"
-name = "open, act →"
-description = "without selection: open a line below current line and enter insert, with selection: move cursor to start"
+default = "{{bind.edit_action}}"
+doc.name = "open, act →"
+doc.description = "without selection: open a line below current line and enter insert, with selection: move cursor to start"
 key = "o"
-combinedName = "open below/above, act →/←"
-combinedKey = "o/shift+o"
-combinedDescription = """
+doc.combined.name = "open below/above, act →/←"
+doc.combined.key = "o/shift+o"
+doc.combined.description = """
 without selection: open a line below/above current line and enter insert, with selection: move cursor to end/start
 of selection
 """
@@ -514,46 +494,46 @@ command = "runCommands"
 args.commands = ["editor.action.insertLineAfter", "master-key.enterInsert"]
 
 [[bind]]
-defaults = "edit.action.open_lines"
+default = "{{bind.edit_action}}"
 key = "o"
-combinedName = "open below/above, act →/←"
+doc.combined.name = "open below/above, act →/←"
 when = "editorHasSelection"
 command = "selection-utilities.activeAtEnd"
 
 [[bind]]
-defaults = "edit.action.open_lines"
-name = "open blw, act ←"
-combinedName = "open below/above, act →/←"
-description = "without selection: open a line above current line and enter insert, with selection: move cursor to end"
+default = "{{bind.edit_action}}"
+doc.name = "open blw, act ←"
+doc.combined.name = "open below/above, act →/←"
+doc.description = "without selection: open a line above current line and enter insert, with selection: move cursor to end"
 key = "shift+o"
 when = "!editorHasSelection"
 command = "runCommands"
 args.commands = ["editor.action.insertLineBefore", "master-key.enterInsert"]
 
 [[bind]]
-defaults = "edit.action.open_lines"
-name = "open blw, act ←"
-combinedName = "open below/above, act →/←"
-description = "without selection: open a line above current line and enter insert, with selection: move cursor to end"
+default = "{{bind.edit_action}}"
+doc.name = "open blw, act ←"
+doc.combined.name = "open below/above, act →/←"
+doc.description = "without selection: open a line above current line and enter insert, with selection: move cursor to end"
 key = "shift+o"
 when = "editorHasSelection"
 command = "selection-utilities.activeAtStart"
 
 [[bind]]
-defaults = "edit.motion"
+default = "{{bind.edit_motion}}"
 key = "shift+5"
-name = "to bracket"
-description = "Move to matching bracket"
+doc.name = "to bracket"
+doc.description = "Move to matching bracket"
 command = "editor.action.jumpToBracket"
 
 [[bind]]
-defaults = "edit.motion.prim"
+default = "{{bind.edit_motion_prim}}"
 key = '\'
-name = "→ sel"
-combinedName = "→/← sel"
-description = "select *just* the character to the right"
-combinedDescription = "select *just* the character to the right"
-combinedKey = 'shift+\/\'
+doc.name = "→ sel"
+doc.combined.name = "→/← sel"
+doc.description = "select *just* the character to the right"
+doc.combined.description = "select *just* the character to the right"
+doc.combined.key = 'shift+\/\'
 mode = ["normal", "selectedit"]
 command = "runCommands"
 
@@ -562,15 +542,14 @@ command = "selection-utilities.shrinkToActive"
 
 [[bind.args.commands]]
 command = "cursorMove"
-args = { to = "right", select = true }
-computedArgs = { value = "count" }
+args = { to = "right", select = true, value = "{{key.count}}" }
 
 [[bind]]
-defaults = "edit.motion.prim"
+default = "{{bind.edit_motion_prim}}"
 key = 'shift+\'
-name = "← sel"
-combinedName = "→/← sel"
-description = "select *just* the character to the left"
+doc.name = "← sel"
+doc.combined.name = "→/← sel"
+doc.description = "select *just* the character to the left"
 mode = ["normal", "selectedit"]
 command = "runCommands"
 
@@ -579,55 +558,50 @@ command = "selection-utilities.shrinkToActive"
 
 [[bind.args.commands]]
 command = "cursorMove"
-args = { to = "left", select = true }
-computedArgs = { value = "count" }
-
-[[default]]
-id = "edit.motion.mod"
-default.kind = "motion"
+args = { to = "left", select = true, value = "{{key.count}}" }
 
 [[bind]]
-defaults = "edit.motion.obj"
+default = "{{bind.edit_motion_obj}}"
 key = "shift+4"
-name = "all"
-description = "Select entire document"
+doc.name = "all"
+doc.description = "Select entire document"
 command = "editor.action.selectAll"
 
 [[bind]]
-defaults = "edit.motion"
+default = "{{bind.edit_motion}}"
 key = "shift+r"
-name = "trim wht"
-description = "trim external whitespace"
+doc.name = "trim wht"
+doc.description = "trim external whitespace"
 command = "selection-utilities.trimSelectionWhitespace"
 
 [[bind]]
-defaults = "edit.motion.obj"
-name = "→ num."
-description = "Move to next number"
+default = "{{bind.edit_motion_obj}}"
+doc.name = "→ num."
+doc.description = "Move to next number"
 key = "shift+3"
-combinedName = "→/← num."
-combinedDescription = "Move to next/prev number"
-combinedKey = "shift+3/2"
+doc.combined.name = "→/← num."
+doc.combined.description = "Move to next/prev number"
+doc.combined.key = "shift+3/2"
 args.unit = "number"
 args.selectWhole = true
 args.boundary = "both"
-computedArgs.value = "(count || 1)"
+args.value = "{{(max(key.count, 1))}}"
 
 [[bind]]
-defaults = "edit.motion.obj"
-name = "← num."
-description = "Move to next number"
+default = "{{bind.edit_motion_obj}}"
+doc.name = "← num."
+doc.description = "Move to next number"
 key = "shift+2"
-combinedName = "→/← num."
+doc.combined.name = "→/← num."
 args.unit = "number"
 args.selectWhole = true
 args.boundary = "both"
-computedArgs.value = "-(count || 1)"
+args.value = "{{-(max(key.count, 1))}}"
 
 [[bind]]
-defaults = "edit.motion"
-name = 'narrow to subword'
-description = "Narrow current selection so it starts and stops at a subword (e.g. 'snake' in snake_case)"
+default = "{{bind.edit_motion}}"
+doc.name = 'narrow to subword'
+doc.description = "Narrow current selection so it starts and stops at a subword (e.g. 'snake' in snake_case)"
 key = "z"
 command = "selection-utilities.narrowTo"
 args.unit = "subident"
@@ -640,106 +614,106 @@ args.boundary = "both"
 # times e.g. 2w would select the next two words starting from the current cursor position.
 
 [[bind]]
-defaults = "edit.count"
-foreach.num = ['{{key: [0-9]}}']
-name = "count {{num}}"
+foreach.num = ['{{keys(`[0-9]`)}}']
+doc.name = "count {{num}}"
 key = "{{num}}"
 command = "master-key.updateCount"
-description = "Add digit {{num}} to the count argument of a command"
-combinedKey = "0-9"
-combinedName = "count 0-9"
-combinedDescription = "Add digit 1-9 to count argument of a command"
+doc.description = "Add digit {{num}} to the count argument of a command"
+doc.combined.key = "0-9"
+doc.combined.name = "count 0-9"
+doc.combined.description = "Add digit 1-9 to count argument of a command"
 args.value = "{{num}}"
 finalKey = false
-mode = ["!insert", "!capture"]
-hideInDocs = true
+mode = '{{not_modes(["insert"])}}'
+doc.hideInDocs = true
 
 # There are several ways to repeat or undo previously entered commands, both actions and motions
 
-[[default]]
-id = "edit.motion.history"
-
 [[bind]]
-defaults = "edit.motion.history"
+default = "{{bind.edit_motion}}"
 key = ";"
-name = "repeat motion"
-description = """
+doc.name = "repeat motion"
+doc.description = """
 Repeat the last motion command. Motions usually move the cursor or change the selection.
 """
-computedRepeat = "count"
+repeat = "{{key.count}}"
 command = "master-key.replayFromHistory"
-args.whereComputedIndexIs = """
-commandHistory[index].defaults.startsWith('edit.motion') &&
-commandHistory[index].name != 'repeat motion' &&
-commandHistory[index].name != 'shrink selection'
-"""
+args.index = """{{
+last_history_index(|i| {
+    history[i]?.tags?.contains("motion") &&
+    history[i]?.doc?.name != "repeat motion" &&
+    history[i]?.doc?.name != "shrink selection"
+})
+}}"""
 
 [[bind]]
-defaults = "edit.motion.history"
-name = "repeat subject"
-description = """
+default = "{{bind.edit_motion}}"
+doc.name = "repeat subject"
+doc.description = """
 Repeat the subject: a motion command that occurred right before an action. For
 instance `w` followed by `d` selects a word and deletes it. The `w` command would be the
 last subject until some new action is run after `d`. See also `.` which repeats the last action.
 """
 key = ","
 command = "master-key.replayFromHistory"
-args.whereComputedIndexIs = """
-commandHistory[index].path.startsWith("edit.motion") &&
-commandHistory[index+1].path.startsWith("edit.action") &&
-!(commandHistory[index+1].name.startsWith("repeat ") &&
-  commandHistory[index+1].path.startsWith("edit.action.history"))
-"""
+args.index = """{{
+last_history_index(|i| {
+    history[i]?.tags?.contains("motion") &&
+    history[i+1]?.tags?.contains("action") &&
+    !(history[i+1]?.doc?.name?.starts_with("repeat") &&
+      history[i+1]?.tags?.contains("history"))
+})
+}}"""
 
 [[bind]]
-defaults = "edit.motion.history"
-name = "cursor undo"
+default = "{{bind.edit_motion}}"
+doc.name = "cursor undo"
 key = "-"
-combinedName = "cursor undo/redo"
-combinedKey = "-/shift+-"
+doc.combined.name = "cursor undo/redo"
+doc.combined.key = "-/shift+-"
 command = "cursorUndo"
 
 [[bind]]
-defaults = "edit.motion.history"
-name = "cursor redo"
-combinedName = "cursor undo/redo"
+default = "{{bind.edit_motion}}"
+doc.name = "cursor redo"
+doc.combined.name = "cursor undo/redo"
 key = "shift+-"
 command = "cursorRedo"
 
 [[bind]]
-defaults = "edit.motion.history"
-name = "nav ←"
-description = "Go back in navigation history (e.g. goto definition)"
-combinedName = "nav ←/→"
-combinedKey = "n/shift+n"
-combinedDescription = "Go back/forward in navigation history"
+default = "{{bind.edit_motion}}"
+doc.name = "nav ←"
+doc.description = "Go back in navigation history (e.g. goto definition)"
+doc.combined.name = "nav ←/→"
+doc.combined.key = "n/shift+n"
+doc.combined.description = "Go back/forward in navigation history"
 key = "g n"
 command = "workbench.action.navigateBackInNavigationLocations"
 
 [[bind]]
-defaults = "edit.motion.history"
-name = "nav →"
-combinedName = "nav ←/→"
-description = "Go forward in navigation history (e.g. goto definition)"
+default = "{{bind.edit_motion}}"
+doc.name = "nav →"
+doc.combined.name = "nav ←/→"
+doc.description = "Go forward in navigation history (e.g. goto definition)"
 key = "g shift+n"
 command = "workbench.action.navigateForwardInNavigationLocations"
 
 [[bind]]
-defaults = "edit.motion.history"
-name = "edit hist ←"
-description = "Go back in edit history"
+default = "{{bind.edit_motion}}"
+doc.name = "edit hist ←"
+doc.description = "Go back in edit history"
 key = "g -"
-combinedName = "edit ←/→"
-combinedKey = "-/shift+-"
-combinedDescription = "Go back/forward in edit history"
+doc.combined.name = "edit ←/→"
+doc.combined.key = "-/shift+-"
+doc.combined.description = "Go back/forward in edit history"
 command = "workbench.action.navigateBackInEditLocations"
 
 [[bind]]
-defaults = "edit.motion.history"
-name = "edit hist →"
-description = "Go forward in edit history)"
+default = "{{bind.edit_motion}}"
+doc.name = "edit hist →"
+doc.description = "Go forward in edit history)"
 key = "g shift+-"
-combinedName = "edit ←/→"
+doc.combined.name = "edit ←/→"
 command = "workbench.action.navigateForwardInEditLocations"
 
 # ## Search Motions
@@ -748,144 +722,145 @@ command = "workbench.action.navigateForwardInEditLocations"
 #
 # > I want some food
 
-[[default]]
-id = "edit.motion.search"
-default.command = "master-key.search"
-default.args.caseSensitive = false
-default.args.backwards = false
-default.args.selectTillMatch = true
-default.args.wrapAround = true
+[[define.bind]]
+id = "edit_motion_search"
+default = "{{bind.edit_motion}}"
+command = "master-key.search"
+args.caseSensitive = false
+args.backwards = false
+args.selectTillMatch = true
+args.wrapAround = true
 
 [[bind]]
-defaults = "edit.motion.search"
+default = "{{bind.edit_motion_search}}"
 key = "/"
-name = "search →"
-description = "search forwards"
-combinedName = "search → (←)"
-combinedDescription = "search forwards (backwards)"
-combinedKey = "/ (shift+/)"
+doc.name = "search →"
+doc.description = "search forwards"
+doc.combined.name = "search → (←)"
+doc.combined.description = "search forwards (backwards)"
+doc.combined.key = "/ (shift+/)"
 args.offset = "start"
 args.register = "search"
 
 [[bind]]
-defaults = "edit.motion.search"
+default = "{{bind.edit_motion_search}}"
 key = "shift+/"
-name = "search ←"
-description = "search backwards"
-combinedName = "search → (←)"
+doc.name = "search ←"
+doc.description = "search backwards"
+doc.combined.name = "search → (←)"
 args.offset = "start"
 args.register = "search"
 args.backwards = true
 
 [[bind]]
-defaults = "edit.motion.search"
+default = "{{bind.edit_motion_search}}"
 key = "n"
-name = "→ search"
-description = "Go to the next match of the search query"
+doc.name = "→ search"
+doc.description = "Go to the next match of the search query"
 command = "master-key.nextMatch"
 args.register = "search"
-computedArgs.computedRepeat = "(count || 1)-1"
+args.repeat = "{{(max(key.count, 1))-1}}"
 
 [[bind]]
-defaults = "edit.motion.search"
+default = "{{bind.edit_motion_search}}"
 key = "shift+n"
-name = "← search"
-description = "Go to the previous match of the search query"
+doc.name = "← search"
+doc.description = "Go to the previous match of the search query"
 command = "master-key.previousMatch"
 args.register = "search"
-computedArgs.computedRepeat = "(count || 1)-1"
+args.repeat = "{{(max(key.count, 1))-1}}"
 
 [[bind]]
-defaults = "edit.motion.search"
+default = "{{bind.edit_motion_search}}"
 key = "shift+8"
-name = "match →"
-description = "Next match to object under cursor"
-combinedName = "match →/←"
-combinedDescription = "Next/previous match to object under cursor"
-combinedKey = "shift+8/7"
-computedArgs.text = "firstSelectionOrWord"
+doc.name = "match →"
+doc.description = "Next match to object under cursor"
+doc.combined.name = "match →/←"
+doc.combined.description = "Next/previous match to object under cursor"
+doc.combined.key = "shift+8/7"
+args.text = "{{code.firstSelectionOrWord}}"
 args.offset = "start"
 args.register = "search"
 
 [[bind]]
-defaults = "edit.motion.search"
+default = "{{bind.edit_motion_search}}"
 key = "shift+7"
-name = "match ←"
-description = "Previous match to object under cursor"
-combinedName = "match →/←"
-computedArgs.text = "firstSelectionOrWord"
+doc.name = "match ←"
+doc.description = "Previous match to object under cursor"
+doc.combined.name = "match →/←"
+args.text = "{{firstSelectionOrWord}}"
 args.offset = "start"
 args.register = "search"
 args.backwards = true
 
 [[bind]]
-defaults = "edit.motion.search"
+default = "{{bind.edit_motion_search}}"
 key = "f"
-name = "find char"
-description = "Find the next char (include char in selection)"
-combinedName = "find char (back)"
-combinedDescription = "Find the next (previous) char (include char in selection)"
-combinedKey = "f (shift+f)"
+doc.name = "find char"
+doc.description = "Find the next char (include char in selection)"
+doc.combined.name = "find char (back)"
+doc.combined.description = "Find the next (previous) char (include char in selection)"
+doc.combined.key = "f (shift+f)"
 args.acceptAfter = 1
-computedArgs.skip = "count-1"
+args.skip = "{{key.count-1}}"
 args.offset = "inclusive"
 
 [[bind]]
-defaults = "edit.motion.search"
+default = "{{bind.edit_motion_search}}"
 key = "shift+f"
-name = "find char back"
-description = "Find the previous char (include char in selection)"
-combinedName = "find char (back)"
+doc.name = "find char back"
+doc.description = "Find the previous char (include char in selection)"
+doc.combined.name = "find char (back)"
 args.acceptAfter = 1
 args.offset = "inclusive"
 args.backwards = true
-computedArgs.skip = "count-1"
+args.skip = "{{key.count-1}}"
 
 [[bind]]
-defaults = "edit.motion.search"
+default = "{{bind.edit_motion_search}}"
 key = "t"
-name = "to char"
-description = "Find the next char (exclude char in selection)"
-combinedName = "to char (back)"
-combinedKey = "t (shift+t)"
-combinedDescription = "Find the next/previous char (exclude char in selection)"
+doc.name = "to char"
+doc.description = "Find the next char (exclude char in selection)"
+doc.combined.name = "to char (back)"
+doc.combined.key = "t (shift+t)"
+doc.combined.description = "Find the next/previous char (exclude char in selection)"
 args.acceptAfter = 1
 args.offset = "start"
-computedArgs.skip = "count-1"
+args.skip = "{{key.count-1}}"
 
 [[bind]]
-defaults = "edit.motion.search"
+default = "{{bind.edit_motion_search}}"
 key = "shift+t"
-name = "to char back"
-description = "Find the previous char (exclude char in selection)"
-combinedName = "to char (back)"
+doc.name = "to char back"
+doc.description = "Find the previous char (exclude char in selection)"
+doc.combined.name = "to char (back)"
 args.acceptAfter = 1
 args.offset = "end"
 args.backwards = true
-computedArgs.skip = "count-1"
+args.skip = "{{key.count-1}}"
 
 [[bind]]
-defaults = "edit.motion.search"
+default = "{{bind.edit_motion_search}}"
 key = "s"
-name = "find char pair"
-description = "To next character pair"
-combinedName = "char pair →/←"
-combinedDescription = "To next character pair"
-combinedKey = "s/shift+s"
+doc.name = "find char pair"
+doc.description = "To next character pair"
+doc.combined.name = "char pair →/←"
+doc.combined.description = "To next character pair"
+doc.combined.key = "s/shift+s"
 args.acceptAfter = 2
 args.offset = "start"
-computedArgs.skip = "count-1"
+args.skip = "{{key.count-1}}"
 mode = "normal"
 
 [[bind]]
-defaults = "edit.motion.search"
+default = "{{bind.edit_motion_search}}"
 key = "shift+s"
-name = "char pair back"
-description = "To previous character pair"
-combinedName = "char pair →/←"
+doc.name = "char pair back"
+doc.description = "To previous character pair"
+doc.combined.name = "char pair →/←"
 args.acceptAfter = 2
 args.offset = "start"
-computedArgs.skip = "count-1"
+args.skip = "{{key.count-1}}"
 args.backwards = true
 
 # ## Goto Commands
@@ -894,28 +869,28 @@ args.backwards = true
 # motion commands that compliment the basic motions listed in the previous section.
 
 [[bind]]
-defaults = "edit.motion"
+default = "{{bind.edit_motion}}"
 key = "g"
 priority = 1
-name = "goto"
+doc.name = "goto"
 command = "master-key.prefix"
-description = """
+doc.description = """
 Goto commands move the location of the cursor (or the active selection position) forward
 or backwards in some direction.
 """
 
 [[bind]]
-defaults = "edit.motion.prim"
+default = "{{bind.edit_motion_prim}}"
 key = "g j"
 priority = 1
-name = "unwrp ↓"
-combinedName = "unwrap ↓/↑"
-combinedKey = "j/k"
-combinedDescription = """
+doc.name = "unwrp ↓"
+doc.combined.name = "unwrap ↓/↑"
+doc.combined.key = "j/k"
+doc.combined.description = """
 move cursor up/down unwrapped text line; if a single line is wrapped into multiple lines by
 the editor, this command skips all such wrapped lines
 """
-description = """
+doc.description = """
 down unwrapped line; if a single line is wrapped into multiple lines by the editor, this
 command skips all such wrapped lines
 """
@@ -923,24 +898,24 @@ args.to = "down"
 args.by = "line"
 
 [[bind]]
-defaults = "edit.motion.prim"
+default = "{{bind.edit_motion_prim}}"
 key = "g k"
 priority = 1
-name = "unwrp ↑"
-combinedName = "unwrap ↓/↑"
-description = "up unwrapped line"
+doc.name = "unwrp ↑"
+doc.combined.name = "unwrap ↓/↑"
+doc.description = "up unwrapped line"
 args.to = "up"
 args.by = "line"
 
 [[bind]]
-defaults = "edit.motion.prim"
+default = "{{bind.edit_motion_prim}}"
 key = "g shift+k"
 priority = 1
-combinedName = "unwrp sel ↑/↓"
-combinedDescription = "select unwrapped lines up/down"
-combinedKey = "shift+k/j"
-name = "unwrp sel ↑"
-description = "select unwrapped lines upwards"
+doc.combined.name = "unwrp sel ↑/↓"
+doc.combined.description = "select unwrapped lines up/down"
+doc.combined.key = "shift+k/j"
+doc.name = "unwrp sel ↑"
+doc.description = "select unwrapped lines upwards"
 command = "runCommands"
 
 [[bind.args.commands]]
@@ -948,19 +923,19 @@ command = "selection-utilities.shrinkToActive"
 
 [[bind.args.commands]]
 command = "cursorMove"
-args = { to = "up", by = "line", select = true }
-computedArgs = { value = "count" }
+args = { to = "up", by = "line", select = true, value = "{{key.count}}" }
+
 
 [[bind.args.commands]]
 command = "expandLineSelection"
 
 [[bind]]
-defaults = "edit.motion.prim"
+default = "{{bind.edit_motion_prim}}"
 key = "g shift+j"
 priority = 1
-name = "sel ↓"
-combinedName = "unwrp sel ↑/↓"
-description = "select unwrapped lines downwards"
+doc.name = "sel ↓"
+doc.combined.name = "unwrp sel ↑/↓"
+doc.description = "select unwrapped lines downwards"
 command = "runCommands"
 
 [[bind.args.commands]]
@@ -968,29 +943,29 @@ command = "selection-utilities.shrinkToActive"
 
 [[bind.args.commands]]
 command = "cursorMove"
-args = { to = "down", by = "line", select = true }
-computedArgs = { value = "count" }
+args = { to = "down", by = "line", select = true, value = "{{key.count}}" }
+
 
 [[bind.args.commands]]
 command = "expandLineSelection"
 
 [[bind]]
-defaults = "edit.motion.prim"
+default = "{{bind.edit_motion_prim}}"
 key = "shift+g"
 priority = 1
-name = "doc end"
-description = "select to end of document"
-combinedName = "doc top/bottom"
-combinedDescription = "select to top/bottom of document"
-combinedKey = ",/."
+doc.name = "doc end"
+doc.description = "select to end of document"
+doc.combined.name = "doc top/bottom"
+doc.combined.description = "select to top/bottom of document"
+doc.combined.key = ",/."
 command = "cursorBottomSelect"
 
 [[bind]]
-defaults = "edit.motion.prim"
+default = "{{bind.edit_motion_prim}}"
 key = "g g"
 priority = 1
-name = "doc start"
-description = "select to start (line) of document."
+doc.name = "doc start"
+doc.description = "select to start (line) of document."
 command = "runCommands"
 when = "master-key.count > 1"
 
@@ -1001,141 +976,135 @@ command = "cursorTop"
 command = "cursorMove"
 args.to = "down"
 args.by = "wrappedLine"
-computedArgs.value = "count-1"
+args.value = "{{key.count-1}}"
 
 [[bind.args.commands]]
 command = "revealLine"
 args.at = "center"
-computedArgs.lineNumber = "count"
+args.lineNumber = "{{key.count}}"
 
 [[bind]]
-defaults = "edit.motion.prim"
+default = "{{bind.edit_motion_prim}}"
 key = "g g"
 priority = 1
-name = "doc start"
-description = "select to start of document"
+doc.name = "doc start"
+doc.description = "select to start of document"
 command = "cursorTopSelect"
-when = "master-key.count <= 1"
 
 [[bind]]
-defaults = "edit.motion.obj"
+default = "{{bind.edit_motion_obj}}"
 key = "g w"
 priority = 1
-name = "WORD →"
-combinedName = "WORD →/←"
-combinedDescription = """
+doc.name = "WORD →"
+doc.combined.name = "WORD →/←"
+doc.combined.description = """
 next/prev WORD;  e.g. contiguous non-whitespace region
 """
-combinedKey = "w/b"
-description = "next WORD; e.g. contiguous non-whitespace region"
+doc.combined.key = "w/b"
+doc.description = "next WORD; e.g. contiguous non-whitespace region"
 args.unit = "BigWord"
-computedArgs.value = "count || 1"
+args.value = "{{max(key.count, 1)}}"
 
 [[bind]]
-defaults = "edit.motion.obj"
+default = "{{bind.edit_motion_obj}}"
 key = "g b"
 priority = 1
-name = "WORD ←"
-combinedName = "WORD →/←"
-description = "previous WORD; e.g. contiguous non-whitespace region"
+doc.name = "WORD ←"
+doc.combined.name = "WORD →/←"
+doc.description = "previous WORD; e.g. contiguous non-whitespace region"
 args.unit = "BigWord"
-computedArgs.value = "-count || -1"
+args.value = "{{-max(key.count, 1)}}"
 
 [[bind]]
-defaults = "edit.motion.obj"
+default = "{{bind.edit_motion_obj}}"
 key = "g e"
 priority = 1
-name = "WORD end →"
-description = "next WORD end; e.g. contiguous non-whitespace region"
+doc.name = "WORD end →"
+doc.description = "next WORD end; e.g. contiguous non-whitespace region"
 args.unit = "BigWord"
-computedArgs.boundary = "around_on ? 'both' : 'end'"
-computedArgs.value = "count || 1"
+args.boundary = "end"
+args.value = "{{max(key.count, 1)}}"
 
 [[bind]]
-defaults = "edit.motion.obj"
+default = "{{bind.edit_motion_obj}}"
 key = "g 0"
 priority = 1
-name = "sec →"
-description = "next section"
-combinedName = "sec →/←"
-combinedDescription = "next/previous section"
-combinedKey = "0/9"
+doc.name = "sec →"
+doc.description = "next section"
+doc.combined.name = "sec →/←"
+doc.combined.description = "next/previous section"
+doc.combined.key = "0/9"
 args.unit = "section"
-computedArgs.value = "count || 1"
+args.value = "{{max(key.count, 1)}}"
 
 [[bind]]
-defaults = "edit.motion.obj"
+default = "{{bind.edit_motion_obj}}"
 key = "g 9"
 priority = 1
-name = "sec ←"
-description = "previous section"
-combinedName = "sec →/←"
+doc.name = "sec ←"
+doc.description = "previous section"
+doc.combined.name = "sec →/←"
 args.unit = "section"
-computedArgs.value = "-(count || 1)"
+args.value = "{{-(max(key.count, 1))}}"
 
 [[bind]]
-defaults = "window"
-name = "goto line"
+default = "{{bind.window}}"
+doc.name = "goto line"
 priority = 1
-description = "goto line command"
+doc.description = "goto line command"
 key = "g l"
 command = "workbench.action.gotoLine"
-when = "editorTextFocus"
 
 [[bind]]
-defaults = "window"
-name = "to refs"
+default = "{{bind.window}}"
+doc.name = "to refs"
 priority = 1
-description = "jump to a location where this symbol is referenced"
+doc.description = "jump to a location where this symbol is referenced"
 key = "g r"
 command = "editor.action.goToReferences"
-when = "editorTextFocus"
 
 [[bind]]
-defaults = "window"
-name = "go to"
+default = "{{bind.window}}"
+doc.name = "go to"
 priority = 1
-description = "go to the definition of symbol under cursor"
+doc.description = "go to the definition of symbol under cursor"
 key = "g d"
-combinedName = "go to (aside)"
-combinedKey = "(shift+)d"
-combinedDescription = "go to the definition of symbol (in an editor to the side)"
+doc.combined.name = "go to (aside)"
+doc.combined.key = "(shift+)d"
+doc.combined.description = "go to the definition of symbol (in an editor to the side)"
 command = "editor.action.revealDefinition"
-when = "editorTextFocus"
 
 [[bind]]
-defaults = "window"
-name = "go to, aside"
+default = "{{bind.window}}"
+doc.name = "go to, aside"
 priority = 1
-description = "go to the definition of symbol under cursor in an editor to the side"
+doc.description = "go to the definition of symbol under cursor in an editor to the side"
 key = "g shift+d"
-combinedName = "go to (aside)"
+doc.combined.name = "go to (aside)"
 command = "editor.action.revealDefinitionAside"
-when = "editorTextFocus"
 
 [[bind]]
-defaults = "window"
-name = "open"
-description = "open the file name under the cursor"
+default = "{{bind.window}}"
+doc.name = "open"
+doc.description = "open the file name under the cursor"
 key = "g f"
 command = "extension.openFileFromPath"
-when = "editorTextFocus"
 
 [[bind]]
-defaults = "edit.motion"
+default = "{{bind.edit_motion}}"
 key = "g c"
-name = "cell →"
-combinedName = "cell →/←"
+doc.name = "cell →"
+doc.combined.name = "cell →/←"
 command = "runCommands"
 args.commands = ["jupyter.gotoNextCellInFile", "jupyter.selectCell"]
-description = "previous jupyter notebook cell"
+doc.description = "previous jupyter notebook cell"
 
 [[bind]]
-defaults = "edit.motion"
+default = "{{bind.edit_motion}}"
 key = "g shift+c"
-name = "cell ←"
-combinedName = "cell →/←"
-description = "previous jupyter notebook cell"
+doc.name = "cell ←"
+doc.combined.name = "cell →/←"
+doc.description = "previous jupyter notebook cell"
 command = "runCommands"
 args.commands = ["jupyter.gotoPrevCellInFile", "jupyter.selectCell"]
 
@@ -1145,260 +1114,255 @@ args.commands = ["jupyter.gotoPrevCellInFile", "jupyter.selectCell"]
 
 # If you accidentally select `around` instead of `in`, you can revise your selection using `R` to narrow to non-white space or `z` to narrow to a subword (e.g. excludes `_`)
 
-[[default]]
-id = "edit.motion.match"
-
-[[default]]
-id = "edit.motion.match.obj"
-default.command = "selection-utilities.moveBy"
-default.kind = "motion"
-default.args.selectWhole = true
-default.args.boundary = "start"
+[[define.bind]]
+id = "edit_motion_match_obj"
+default = "{{bind.edit_motion}}"
+command = "selection-utilities.moveBy"
+doc.kind = "motion"
+args.selectWhole = true
+args.boundary = "start"
 
 [[bind]]
-defaults = "edit.motion.match"
+default = "{{bind.edit_motion}}"
 key = "m"
-name = "match"
-description = """
+doc.name = "match"
+doc.description = """
 Find the closest character range matching a specified object.
 """
-kind = "motion"
+doc.kind = "motion"
 command = "master-key.prefix"
 
 [[bind]]
-defaults = "edit.motion.match"
+default = "{{bind.edit_motion}}"
 key = "m m"
-name = "smart expand"
-description = "Use VSCode's built-in smart expansion command"
+doc.name = "smart expand"
+doc.description = "Use VSCode's built-in smart expansion command"
 command = "editor.action.smartSelect.expand"
 
 [[bind]]
-defaults = "edit.motion.match.obj"
+default = "{{bind.edit_motion_match_obj}}"
 key = "m w"
-name = "around subwrd →"
-description = "(camel/snake case)"
-combinedName = "around subwrd ←/→"
-combinedDescription = "(camel/snake case)"
-combinedKey = "w/b"
+doc.name = "around subwrd →"
+doc.description = "(camel/snake case)"
+doc.combined.name = "around subwrd ←/→"
+doc.combined.description = "(camel/snake case)"
+doc.combined.key = "w/b"
 args.unit = "subword"
-computedArgs.value = "count || 1"
+args.value = "{{max(key.count, 1)}}"
 
 [[bind]]
-defaults = "edit.motion.match.obj"
+default = "{{bind.edit_motion_match_obj}}"
 key = "m b"
-name = "around subwrd ←"
-description = "(camel/snake case)"
-combinedName = "around subwrd ←/→"
+doc.name = "around subwrd ←"
+doc.description = "(camel/snake case)"
+doc.combined.name = "around subwrd ←/→"
 args.unit = "subword"
-computedArgs.value = "-count || -1"
+args.value = "{{-max(key.count, 1)}}"
 
 [[bind]]
-defaults = "edit.motion.match.obj"
+default = "{{bind.edit_motion_match_obj}}"
 key = "m shift+w"
-name = "ard word →"
-combinedName = "around word →/←"
-combinedKey = "shift+w/b"
+doc.name = "ard word →"
+doc.combined.name = "around word →/←"
+doc.combined.key = "shift+w/b"
 args.unit = "word"
-computedArgs.value = "count || 1"
+args.value = "{{max(key.count, 1)}}"
 
 [[bind]]
-defaults = "edit.motion.match.obj"
+default = "{{bind.edit_motion_match_obj}}"
 key = "m shift+b"
-name = "ard word ←"
-combinedName = "around word →/←"
+doc.name = "ard word ←"
+doc.combined.name = "around word →/←"
 args.unit = "word"
-computedArgs.value = "-count || -1"
+args.value = "{{-max(key.count, 1)}}"
 
 [[bind]]
-defaults = "edit.motion.match.obj"
+default = "{{bind.edit_motion_match_obj}}"
 key = "m e"
-name = "in subwrd"
-combinedName = "in → subword/word"
-combinedKey = "e/shift+e"
+doc.name = "in subwrd"
+doc.combined.name = "in → subword/word"
+doc.combined.key = "e/shift+e"
 args.unit = "subident"
 args.boundary = "both"
-computedArgs.value = "count || 1"
+args.value = "{{max(key.count, 1)}}"
 
 [[bind]]
-defaults = "edit.motion.match.obj"
+default = "{{bind.edit_motion_match_obj}}"
 key = "m shift+e"
-name = "in word"
-combinedName = "in → subword/word"
+doc.name = "in word"
+doc.combined.name = "in → subword/word"
 args.unit = "word"
 args.boundary = "both"
-computedArgs.value = "count || 1"
+args.value = "{{max(key.count, 1)}}"
 
 [[bind]]
-defaults = "edit.motion.match.obj"
+default = "{{bind.edit_motion_match_obj}}"
 key = "m p"
-name = "in parag. →"
-combinedName = "in paragraph →/←"
-combinedKey = "p/o"
+doc.name = "in parag. →"
+doc.combined.name = "in paragraph →/←"
+doc.combined.key = "p/o"
 args.boundary = "both"
 args.unit = "paragraph"
-computedArgs.value = "count || 1"
+args.value = "{{max(key.count, 1)}}"
 
 [[bind]]
-defaults = "edit.motion.match.obj"
+default = "{{bind.edit_motion_match_obj}}"
 key = "m o"
-name = "in parag. ←"
-combinedName = "in paragraph →/←"
+doc.name = "in parag. ←"
+doc.combined.name = "in paragraph →/←"
 args.unit = "paragraph"
 args.boundary = "both"
-computedArgs.value = "-(count || 1)"
+args.value = "{{-(max(key.count, 1))}}"
 
 [[bind]]
-defaults = "edit.motion.match.obj"
+default = "{{bind.edit_motion_match_obj}}"
 key = "m shift+p"
-name = "arn parag. →"
-combinedName = "around paragraph →/←"
-combinedKey = "shift+p/shift+o"
+doc.name = "arn parag. →"
+doc.combined.name = "around paragraph →/←"
+doc.combined.key = "shift+p/shift+o"
 args.unit = "paragraph"
-computedArgs.value = "count || 1"
+args.value = "{{max(key.count, 1)}}"
 
 [[bind]]
-defaults = "edit.motion.match.obj"
+default = "{{bind.edit_motion_match_obj}}"
 key = "m shift+o"
-name = "arn parag. ←"
-combinedName = "around paragraph →/←"
+doc.name = "arn parag. ←"
+doc.combined.name = "around paragraph →/←"
 args.unit = "paragraph"
-computedArgs.value = "-(count || 1)"
+args.value = "{{-(max(key.count, 1))}}"
 
 [[bind]]
-defaults = "edit.motion.match.obj"
+default = "{{bind.edit_motion_match_obj}}"
 key = "m 0"
-name = "arn subsec →"
-combinedName = "around subsection →/←"
-combinedKey = "0/shift+0"
+doc.name = "arn subsec →"
+doc.combined.name = "around subsection →/←"
+doc.combined.key = "0/shift+0"
 args.unit = "subsection"
-computedArgs.value = "count || 1"
+args.value = "{{max(key.count, 1)}}"
 
 [[bind]]
-defaults = "edit.motion.match.obj"
+default = "{{bind.edit_motion_match_obj}}"
 key = "m shift+0"
-name = "arn subsec ←"
-combinedName = "around subsection →/←"
+doc.name = "arn subsec ←"
+doc.combined.name = "around subsection →/←"
 args.unit = "subsection"
-computedArgs.value = "-(count || 1)"
+args.value = "{{-(max(key.count, 1))}}"
 
 [[bind]]
-defaults = "edit.motion.match.obj"
+default = "{{bind.edit_motion_match_obj}}"
 key = "m 9"
-name = "in subsec →"
-combinedName = "in subsection →/←"
-combinedKey = "9/shift+9"
+doc.name = "in subsec →"
+doc.combined.name = "in subsection →/←"
+doc.combined.key = "9/shift+9"
 args.unit = "subsection"
-computedArgs.value = "count || 1"
+args.value = "{{max(key.count, 1)}}"
 
 [[bind]]
-defaults = "edit.motion.match.obj"
+default = "{{bind.edit_motion_match_obj}}"
 key = "m shift+9"
-name = "in subsec ←"
-combinedName = "in subsection →/←"
+doc.name = "in subsec ←"
+doc.combined.name = "in subsection →/←"
 args.unit = "subsection"
-computedArgs.value = "-(count || 1)"
+args.value = "{{-(max(key.count, 1))}}"
 
 [[bind]]
-defaults = "edit.motion.match"
+default = "{{bind.edit_motion}}"
 key = "m g"
-name = "other..."
-description = "additional objects to match..."
+doc.name = "other..."
+doc.description = "additional objects to match..."
 command = "master-key.prefix"
 
 [[bind]]
-defaults = "edit.motion.match.obj"
+default = "{{bind.edit_motion_match_obj}}"
 key = "m g 0"
-name = "section →"
-combinedName = "section →/←"
-combinedKey = "0/9"
+doc.name = "section →"
+doc.combined.name = "section →/←"
+doc.combined.key = "0/9"
 args.unit = "section"
-computedArgs.value = "count || 1"
+args.value = "{{max(key.count, 1)}}"
 
 [[bind]]
-defaults = "edit.motion.match.obj"
+default = "{{bind.edit_motion_match_obj}}"
 key = "m g 9"
-name = "section ←"
-combinedName = "section →/←"
+doc.name = "section ←"
+doc.combined.name = "section →/←"
 args.unit = "section"
-computedArgs.value = "-(count || 1)"
+args.value = "{{-(max(key.count, 1))}}"
 
 [[bind]]
-defaults = "edit.motion.match.obj"
+default = "{{bind.edit_motion_match_obj}}"
 key = "m g w"
-name = "around WORD →"
-combinedName = "around WORD →/←"
-combinedKey = "w/b"
+doc.name = "around WORD →"
+doc.combined.name = "around WORD →/←"
+doc.combined.key = "w/b"
 args.unit = "BigWord"
-computedArgs.value = "count || 1"
+args.value = "{{max(key.count, 1)}}"
 
 [[bind]]
-defaults = "edit.motion.match.obj"
+default = "{{bind.edit_motion_match_obj}}"
 key = "m g b"
-name = "around WORD ←"
-combinedName = "around WORD →/←"
+doc.name = "around WORD ←"
+doc.combined.name = "around WORD →/←"
 args.unit = "BigWord"
-computedArgs.value = "-(count || 1)"
+args.value = "{{-(max(key.count, 1))}}"
 
 [[bind]]
-defaults = "edit.motion.match.obj"
+default = "{{bind.edit_motion_match_obj}}"
 key = "m g e"
-name = "in WORD"
+doc.name = "in WORD"
 args.unit = "BigWord"
 args.boundary = "both"
-computedArgs.value = "count || 1"
-
-[[default]]
-id = "edit.motion.match.syntax"
+args.value = "{{max(key.count, 1)}}"
 
 [[bind]]
-defaults = "edit.motion.match.syntax"
+default = "{{bind.edit_motion}}"
 key = "m ["
-name = "in parens"
-combinedName = "in/arnd parens"
-combinedKey = "[/shift+["
-combinedDescription = """
+doc.name = "in parens"
+doc.combined.name = "in/arnd parens"
+doc.combined.key = "[/shift+["
+doc.combined.description = """
 expand inside/around parens/brackets/braces and their contents; repeated calls to this command
 will seek out larger and larger scopes
 """
-description = """
+doc.description = """
 expand inside parens/brackets/braces and their contents; repeated calls to this command
 will seek out larger and larger scopes
 """
 command = "selection-utilities.expandWithinBrackets"
 
 [[bind]]
-defaults = "edit.motion.match.syntax"
+default = "{{bind.edit_motion}}"
 key = "m shift+["
-name = "arnd parens"
-combinedName = "in/arnd parens"
-description = """
+doc.name = "arnd parens"
+doc.combined.name = "in/arnd parens"
+doc.description = """
 expand inside parens/brackets/braces and their contents; repeated calls to this command
 will seek out larger and larger scopes
 """
 command = "selection-utilities.expandAroundBrackets"
 
 [[bind]]
-defaults = "edit.motion.match.syntax"
+default = "{{bind.edit_motion}}"
 key = "m '"
-name = "in quotes"
-description = """
+doc.name = "in quotes"
+doc.description = """
 select within current quotes; repeated calls to this command
 will seek out larger and larger scopes
 """
-combinedName = "in/arnd quotes"
-combinedKey = "'/shift+'"
-combinedDescription = """
+doc.combined.name = "in/arnd quotes"
+doc.combined.key = "'/shift+'"
+doc.combined.description = """
 select within/around current quotes; repeated calls to this command
 will seek out larger and larger scopes
 """
 command = "bracketeer.selectQuotesContent"
 
 [[bind]]
-defaults = "edit.motion.match.syntax"
+default = "{{bind.edit_motion}}"
 key = "m shift+'"
-name = "around quotes"
-combinedName = "in/arnd quotes"
-description = """
+doc.name = "around quotes"
+doc.combined.name = "in/arnd quotes"
+doc.description = """
 select around current quotes; repeated calls to this command
 will seek out larger and larger scopes
 """
@@ -1406,74 +1370,68 @@ command = "runCommands"
 args.commands = ["bracketeer.selectQuotesContent", "bracketeer.selectQuotesContent"]
 
 [[bind]]
-defaults = "edit.motion.match.syntax"
+default = "{{bind.edit_motion}}"
 key = "m shift+."
-name = "in <>"
-description = "text inside angle brackets"
-combinedName = "in <> / in ><"
-combinedKey = "shift+. / shift+,"
-combinedDescription = "text inside angle brackets / pairs (e.g. text in <a>text</a>)"
+doc.name = "in <>"
+doc.description = "text inside angle brackets"
+doc.combined.name = "in <> / in ><"
+doc.combined.key = "shift+. / shift+,"
+doc.combined.description = "text inside angle brackets / pairs (e.g. text in <a>text</a>)"
 command = "extension.selectAngleBrackets"
 
 [[bind]]
-defaults = "edit.motion.match.syntax"
+default = "{{bind.edit_motion}}"
 key = "m shift+,"
-name = "in ><"
-combinedName = "in <> / in ><"
-description = "text inside tag pairs (e.g. <a>text</a>)"
+doc.name = "in ><"
+doc.combined.name = "in <> / in ><"
+doc.description = "text inside tag pairs (e.g. <a>text</a>)"
 command = "extension.selectInTag"
 
 [[bind]]
-defaults = "edit.motion.match.syntax"
+default = "{{bind.edit_motion}}"
 key = "m i"
-name = "in indent"
-description = "all text at the same indentation level"
-combinedName = "in/arnd"
-combinedKey = "space/shift+space"
-combinedDescription = """
+doc.name = "in indent"
+doc.description = "all text at the same indentation level"
+doc.combined.name = "in/arnd"
+doc.combined.key = "space/shift+space"
+doc.combined.description = """
 all text at the same indentation level / all indentation along with the line above and
 below this (ala c-like syntax)
 """
 command = "vscode-select-by-indent.select-inner"
 
 [[bind]]
-defaults = "edit.motion.match.syntax"
+default = "{{bind.edit_motion}}"
 key = "m shift+i"
-name = "arnd indent"
-description = """
+doc.name = "arnd indent"
+doc.description = """
 all text at the same indentation level along with the line above and below
 this (ala c-like syntax)
 """
-combinedName = "in/arnd"
+doc.combined.name = "in/arnd"
 command = "vscode-select-by-indent.select-outer"
 
 [[bind]]
-defaults = "edit.motion.match.syntax"
+default = "{{bind.edit_motion}}"
 key = "m g i"
-name = "indent+top"
-description = """
+doc.name = "indent+top"
+doc.description = """
 all text at the same indentation level and the line just above it (ala python syntax)
 """
-combinedName = "in/arnd"
+doc.combined.name = "in/arnd"
 command = "vscode-select-by-indent.select-outer-top-only"
 
-[[default]]
-id = "edit.motion.match.cell"
-
 [[bind]]
-defaults = "edit.motion.match.cell"
-name = "in cell"
-description = "select text within a cell (ala jupyter)"
+default = "{{bind.edit_motion}}"
+doc.name = "in cell"
+doc.description = "select text within a cell (ala jupyter)"
 key = "m c"
 command = "jupyter.selectCell"
 
-[[default]]
-id = "edit.motion.searchpair"
-
 [[bind]]
-defaults = "edit.motion.searchpair"
-name = "between pair"
-combinedDescription = """
+default = "{{bind.edit_motion}}"
+doc.name = "between pair"
+doc.combined.description = """
 Select between pairs of the same N characters (t) or distinct sets of N
 characters (s), where N is the count. Examples:
 2mt'' would search for a string between `''` and `''`.
@@ -1481,41 +1439,41 @@ characters (s), where N is the count. Examples:
 """
 key = "m t"
 command = "runCommands"
-combinedName = "between pair/two"
-combinedKey = "t/s"
-description = """
+doc.combined.name = "between pair/two"
+doc.combined.key = "t/s"
+doc.description = """
 Select between pairs of the same N characters, where N is the count.
 Example: 2mt'' would search for a string between '' and ''.
 """
 
 [[bind.args.commands]]
 command = "master-key.captureKeys"
-computedArgs.acceptAfter = "count || 1"
+args.acceptAfter = "{{max(key.count, 1)}}"
 
 [[bind.args.commands]]
 command = "selection-utilities.selectBetween"
-computedArgs.str = "captured"
+args.str = "{{key.captured}}"
 args.inclusive = false
 
 [[bind]]
-defaults = "edit.motion.searchpair"
-name = "between two"
-description = """
+default = "{{bind.edit_motion}}"
+doc.name = "between two"
+doc.description = """
 Select between two different sets of N characters, where N is the count e.g.
 2ms,,.. would search for a string between ,, and ..
 """
 key = "m s"
-combinedName = "between pair/two"
+doc.combined.name = "between pair/two"
 command = "runCommands"
 
 [[bind.args.commands]]
 command = "master-key.captureKeys"
-computedArgs.acceptAfter = "2*(count || 1)"
+args.acceptAfter = "{{2*(max(key.count, 1))}}"
 
 [[bind.args.commands]]
 command = "selection-utilities.selectBetween"
-computedArgs.between.from = "captured.slice(0, captured.length/2)"
-computedArgs.between.to = "captured.slice(captured.length/2)"
+args.between.from = "{{key.captured.slice(0, key.captured.len()/2)}}"
+args.between.to = "{{key.captured.slice(key.captured.len()/2)}}"
 args.inclusive = false
 
 # ## Simple Actions
@@ -1523,30 +1481,28 @@ args.inclusive = false
 # These are the most common, basic actions available in Larkin that can be used
 # to edit text in relation to the current selection.
 
-[[default]]
-id = "edit.action"
-default.kind = "action"
-default.mode = "normal"
-
-[[default]]
-id = "edit.action.basic"
+[[define.bind]]
+id = "edit_action"
+doc.kind = "action"
+mode = "normal"
+tags = ["action"]
 
 [[bind]]
-defaults = "edit.action.basic"
+default = "{{bind.edit_action}}"
 #- TODO: add documentation to these basic editor keys
 key = "i"
-name = "insert"
-description = "Switch to insert mode (right before character)"
+doc.name = "insert"
+doc.description = "Switch to insert mode (right before character)"
 command = "runCommands"
 args.commands = ["selection-utilities.shrinkToActive", "master-key.enterInsert"]
-mode = ["normal", "selectedit", "syminsert"]
+mode = '{{["normal", "selectedit", "syminsert"]}}'
 
 [[bind]]
-defaults = "edit.action.basic"
+default = "{{bind.edit_action}}"
 key = "a"
-name = "append"
-description = "insert after cursor"
-mode = ["normal", "selectedit", "syminsert"]
+doc.name = "append"
+doc.description = "insert after cursor"
+mode = '{{["normal", "selectedit", "syminsert"]}}'
 command = "runCommands"
 args.commands = [
     "selection-utilities.shrinkToActive",
@@ -1555,10 +1511,10 @@ args.commands = [
 ]
 
 [[bind]]
-defaults = "edit.action.basic"
+default = "{{bind.edit_action}}"
 key = "shift+i"
-name = "insert start"
-mode = ["normal", "selectedit", "syminsert"]
+doc.name = "insert start"
+mode = '{{["normal", "selectedit", "syminsert"]}}'
 command = "runCommands"
 args.commands = [
     { command = "cursorMove", args = { to = "wrappedLineFirstNonWhitespaceCharacter", select = false } },
@@ -1566,10 +1522,10 @@ args.commands = [
 ]
 
 [[bind]]
-defaults = "edit.action.basic"
+default = "{{bind.edit_action}}"
 key = "shift+a"
-name = "insert end"
-mode = ["normal", "selectedit", "syminsert"]
+doc.name = "insert end"
+mode = '{{["normal", "selectedit", "syminsert"]}}'
 command = "runCommands"
 args.commands = [
     { command = "cursorMove", args = { to = "wrappedLineEnd", select = false } },
@@ -1577,10 +1533,10 @@ args.commands = [
 ]
 
 [[bind]]
-defaults = "edit.action.basic"
+default = "{{bind.edit_action}}"
 key = "c"
-name = "change"
-description = """
+doc.name = "change"
+doc.description = """
 Without a count: change selected region of text. With a count:
 change up to `count` lines.
 """
@@ -1589,14 +1545,14 @@ command = "runCommands"
 args.commands = ["deleteRight", "editor.action.insertLineBefore", "master-key.enterInsert"]
 
 [[bind]]
-defaults = "edit.action.basic"
+default = "{{bind.edit_action}}"
 key = "c"
 when = "!editorHasMultilineSelection && editorHasSelection"
 command = "runCommands"
 args.commands = ["deleteRight", "master-key.enterInsert"]
 
 [[bind]]
-defaults = "edit.action.basic"
+default = "{{bind.edit_action}}"
 key = "c"
 when = "!editorHasSelection && master-key.count <= 1"
 command = "runCommands"
@@ -1608,26 +1564,25 @@ args.commands = [
 ]
 
 [[bind]]
-defaults = "edit.action.basic"
+default = "{{bind.edit_action}}"
 key = "c"
 when = "!editorHasSelection && master-key.count > 1"
 command = "runCommands"
 args.commands = [
-    { defined = "selectLinesDown" },
+    "{{command.selectLinesDown}}",
     "deleteRight",
     "editor.action.insertLineBefore",
     "master-key.enterInsert",
 ]
 
 [[bind]]
-defaults = "edit.action.basic"
+default = "{{bind.edit_action}}"
 key = "shift+c"
-name = "change to/back"
-description = """Without a count: change from current char to end of line. With a count:
+doc.name = "change to/back"
+doc.description = """Without a count: change from current char to end of line. With a count:
 change the previous `count` lines.
 """
 mode = "normal"
-when = "master-key.count <= 1"
 command = "runCommands"
 args.commands = [
     "selection-utilities.shrinkToActive",
@@ -1636,56 +1591,53 @@ args.commands = [
 ]
 
 [[bind]]
-defaults = "edit.action.basic"
+default = "{{bind.edit_action}}"
 key = "shift+c"
 mode = ["normal", "selectedit"]
 when = "master-key.count > 1"
 command = "runCommands"
 args.commands = [
-    { defined = "selectLinesUp" },
+    "{{command.selectLinesUp}}",
     "deleteRight",
     "editor.action.insertLineBefore",
     "master-key.enterInsert",
 ]
 
 [[bind]]
-defaults = "edit.action.basic"
-key = "x"
-mode = "normal"
-name = "delete char"
-command = "runCommands"
+default = "{{bind.edit_action}}"
 args.commands = [
     "selection-utilities.shrinkToActive",
-    { command = "cursorMove", args = { to = "right", select = true }, computedArgs = { value = "count" } },
+    { command = "cursorMove", args = { to = "right", select = true, value = "{{key.count}}" } },
     "editor.action.clipboardCutAction",
 ]
+key = "x"
+mode = "normal"
+doc.name = "delete char"
+command = "runCommands"
 
 [[bind]]
-defaults = "edit.action.basic"
+default = "{{bind.edit_action}}"
 key = "r"
-name = "replace char"
-description = "replace the character under the cursor"
+doc.name = "replace char"
+doc.description = "replace the character under the cursor"
 command = "master-key.replaceChar"
 
 [[bind]]
-defaults = "edit.action.basic"
+default = "{{bind.edit_action}}"
 key = "ctrl+i"
-name = "insert char"
+doc.name = "insert char"
 mode = ["normal", "selectedit"]
-description = "insert a character in front of the cursor"
+doc.description = "insert a character in front of the cursor"
 command = "master-key.insertChar"
 
-[[default]]
-id = "edit.action.clipboard"
-
 [[bind]]
-defaults = "edit.action.clipboard"
+default = "{{bind.edit_action}}"
 key = "p"
-name = "paste after"
-description = "Paste clipboard after the cursor/selection"
-combinedName = "paste before/after/in"
-combinedDescription = "Paste clipboard before/after/at the cursor/selection"
-combinedKey = "p/shift+p/ctrl+p"
+doc.name = "paste after"
+doc.description = "Paste clipboard after the cursor/selection"
+doc.combined.name = "paste before/after/in"
+doc.combined.description = "Paste clipboard before/after/at the cursor/selection"
+doc.combined.key = "p/shift+p/ctrl+p"
 when = "editorHasSelection"
 command = "runCommands"
 args.commands = [
@@ -1695,30 +1647,30 @@ args.commands = [
 ]
 
 [[bind]]
-defaults = "edit.action.clipboard"
+default = "{{bind.edit_action}}"
 key = "p"
-name = "paste after"
-combinedName = "paste before/after/in"
+doc.name = "paste after"
+doc.combined.name = "paste before/after/in"
 when = "!editorHasSelection"
 command = "runCommands"
 args.commands = ["cursorRight", "editor.action.clipboardPasteAction"]
 
 [[bind]]
-defaults = "edit.action.clipboard"
+default = "{{bind.edit_action}}"
 key = "ctrl+p"
 when = "!suggestWidgetVisible"
 mode = ["normal", "insert"]
-name = "paste in"
-combinedName = "paste before/after/in"
-description = "Paste clipboard at location"
+doc.name = "paste in"
+doc.combined.name = "paste before/after/in"
+doc.description = "Paste clipboard at location"
 command = "editor.action.clipboardPasteAction"
 
 [[bind]]
-defaults = "edit.action.clipboard"
+default = "{{bind.edit_action}}"
 key = "shift+p"
-name = "paste before"
-combinedName = "paste before/after"
-description = "Paste before the cursor/selection"
+doc.name = "paste before"
+doc.combined.name = "paste before/after"
+doc.description = "Paste before the cursor/selection"
 when = "editorHasSelection"
 command = "runCommands"
 args.commands = [
@@ -1728,76 +1680,76 @@ args.commands = [
 ]
 
 [[bind]]
-defaults = "edit.action.clipboard"
+default = "{{bind.edit_action}}"
 key = "shift+p"
-combinedName = "paste before/after"
+doc.combined.name = "paste before/after"
 when = "!editorHasSelection"
 command = "runCommands"
 args.commands = ["cursorRight", "editor.action.clipboardPasteAction"]
 
 [[bind]]
-defaults = "edit.action.history"
-name = "repeat action"
-description = """
+default = "{{bind.edit_action_history}}"
+doc.name = "repeat action"
+doc.description = """
 Repeat the last action command. Actions usually modify the text of a document in one way or
 another. (But, e.g. sending text to the REPL is also considered an editor action).
-See also `,` which repeats the last subject.
+See also `,` which repeats the last "subject" of an action (the selection preceding an action).
 """
 key = "."
 command = "runCommands"
-computedRepeat = "count"
+repeat = "{{key.count}}"
 
 [[bind.args.commands]]
 command = "master-key.replayFromHistory"
 #- we can repeat any action but history-related actions; we make an exception for replaying macros, which can be repeated
-args.at = """
-commandHistory[i].path.startsWith('edit.action') &&
-(!commandHistory[i].path.startsWith('edit.action.history') ||
- commandHistory[i].name == 'replay')
-"""
+args.index = """{{
+last_history_index(|i|
+    history[i]?.tags.contains("action") &&
+    !(history[i]?.tags.contains("history") && !history[i]?.docs.name == "replay")
+)}}"""
 
 [[bind.args.commands]]
 command = "master-key.enterNormal"
 
 [[bind]]
-defaults = "edit.action.history"
-name = "undo"
+default = "{{bind.edit_action_history}}"
+doc.name = "undo"
 key = "u"
 command = "runCommands"
 args.commands = ["undo", "selection-utilities.shrinkToActive"]
 
 [[bind]]
-defaults = "edit.action.history"
-name = "redo"
+default = "{{bind.edit_action_history}}"
+doc.name = "redo"
 key = "shift+u"
 command = "runCommands"
 args.commands = ["redo", "selection-utilities.shrinkToActive"]
 
 [[bind]]
-defaults = "edit.action.basic"
-name = 'toggle check'
-description = "Toggle a markdown checkbox"
+default = "{{bind.edit_action}}"
+doc.name = 'toggle check'
+doc.description = "Toggle a markdown checkbox"
 key = "shift+6"
 command = "markdown-checkbox.markCheckbox"
 
 [[bind]]
-defaults = "edit.action.clipboard"
+default = "{{bind.edit_action}}"
 key = "d"
-name = "delete"
-description = """
+doc.name = "delete"
+doc.description = """
 Without a count: delete selected text (and store to clipboard). With a
 count, delete up to the next `count` lines and store to clipboard.
 """
 when = "!editorHasSelection"
 command = "runCommands"
 args.commands = [
-    { defined = "selectLinesDown" },
+    "{{command.selectLinesDown}}",
     "editor.action.clipboardCutAction",
     { command = "master-key.setMode", args = { value = "normal" } },
 ]
 
 [[bind]]
-defaults = "edit.action.clipboard"
+default = "{{bind.edit_action}}"
 key = "d"
 when = "editorHasSelection"
 command = "runCommands"
@@ -1807,10 +1759,10 @@ args.commands = [
 ]
 
 [[bind]]
-defaults = "edit.action.clipboard"
+default = "{{bind.edit_action}}"
 key = "shift+d"
 mode = "normal"
-name = "without count: Delete from cursor to end of line; with count: Delete from current line up `count` number of keys."
+doc.name = "without count: Delete from cursor to end of line; with count: Delete from current line up `count` number of keys."
 command = "runCommands"
 args.commands = [
     "selection-utilities.shrinkToActive",
@@ -1819,38 +1771,37 @@ args.commands = [
 ]
 
 [[bind]]
-defaults = "edit.action.clipboard"
+default = "{{bind.edit_action}}"
 key = "shift+d"
 mode = "normal"
 when = "master-key.count > 1"
 command = "runCommands"
-args.commands = [{ defined = "selectLinesUp" }, "deleteRight"]
+args.commands = ["{{command.selectLinesUp}}", "deleteRight"]
 
 [[bind]]
-defaults = "edit.action.clipboard"
+default = "{{bind.edit_action}}"
 key = "y"
-name = "copy"
-description = "copy selected text to clipboard"
+doc.name = "copy"
+doc.description = "copy selected text to clipboard"
 command = "runCommands"
 args.commands = ["editor.action.clipboardCopyAction", "selection-utilities.shrinkToActive"]
 
 [[bind]]
-defaults = "edit.action.clipboard"
+default = "{{bind.edit_action}}"
 key = "y"
 when = "master-key.count > 1"
 command = "runCommands"
 args.commands = [
-    { defined = "selectLinesDown" },
+    "{{command.selectLinesDown}}",
     "editor.action.clipboardCopyAction",
     "selection-utilities.shrinkToActive",
 ]
 
 [[bind]]
-defaults = "edit.action.clipboard"
+default = "{{bind.edit_action}}"
 key = "shift+y"
-name = "copy (eol/up)"
-description = "without a count: copy to end of line; with a count: copy this and the previous N lines"
-when = "master-key.count <= 1"
+doc.name = "copy (eol/up)"
+doc.description = "without a count: copy to end of line; with a count: copy this and the previous N lines"
 command = "runCommands"
 args.commands = [
     "selection-utilities.shrinkToActive",
@@ -1860,80 +1811,72 @@ args.commands = [
 ]
 
 [[bind]]
-defaults = "edit.action.clipboard"
+default = "{{bind.edit_action}}"
 key = "shift+y"
 when = "master-key.count > 1"
 command = "runCommands"
 args.commands = [
-    { defined = "selectLinesUp" },
+    "{{command.selectLinesUp}}",
     "editor.action.clipboardCopyAction",
     "selection-utilities.shrinkToActive",
 ]
 
-[[default]]
-id = "edit.action.open_lines"
-
-[[default]]
-id = "edit.action.indent"
-
 [[bind]]
-defaults = "edit.action.indent"
+default = "{{bind.edit_action}}"
 key = "shift+."
-name = "indent"
-description = "Indent lines"
+doc.name = "indent"
+doc.description = "Indent lines"
 command = "editor.action.indentLines"
 
 [[bind]]
-defaults = "edit.action.indent"
+args.commands = ["{{command.selectLinesDown}}", "editor.action.indentLines"]
+default = "{{bind.edit_action}}"
 key = "shift+."
-name = "indent"
-description = "Indent lines"
+doc.name = "indent"
+doc.description = "Indent lines"
 when = "master-key.count >= 1"
 command = "runCommands"
-args.commands = [{ defined = "selectLinesDown" }, "editor.action.indentLines"]
 
 [[bind]]
-defaults = "edit.action.indent"
+default = "{{bind.edit_action}}"
 key = "shift+,"
-name = "deindent"
-when = "master-key.count < 1"
-description = "De-indent lines"
+doc.name = "deindent"
+doc.description = "De-indent lines"
 command = "editor.action.outdentLines"
 
 [[bind]]
-defaults = "edit.action.indent"
-key = "shift+,"
-name = "deindent"
-when = "master-key.count >= 1"
-description = "Deindent lines"
-command = "runCommands"
 args.commands = [
-    { defined = "selectLinesDown" },
+    "{{command.selectLinesDown}}",
     "editor.action.outdentLines",
     "selection-utilities.shrinkToActive",
 ]
+default = "{{bind.edit_action}}"
+key = "shift+,"
+doc.name = "deindent"
+when = "master-key.count >= 1"
+doc.description = "Deindent lines"
+command = "runCommands"
 
-[[default]]
-id = "edit.action.history"
+[[define.bind]]
+id = "edit_action_history"
+default = "{{bind.edit_action}}"
+tags = ["history"]
 
 # ## Number actions
 
 # These commands modify or enter numbers in some way.
 
-[[default]]
-id = "edit.action.numbers"
-
 [[bind]]
-defaults = "edit.action.numbers"
-name = 'inc #'
-description = "Increment a number by 1"
+default = "{{bind.edit_action}}"
+doc.name = 'inc #'
+doc.description = "Increment a number by 1"
 key = "="
 command = "selection-utilities.incrementNumber"
 
 [[bind]]
-defaults = "edit.action.numbers"
-name = 'dec #'
-description = "Decrement a number by 1 "
+default = "{{bind.edit_action}}"
+doc.name = 'dec #'
+doc.description = "Decrement a number by 1 "
 key = "shift+="
 command = "selection-utilities.decrementNumber"
 
@@ -1941,105 +1884,106 @@ command = "selection-utilities.decrementNumber"
 
 # These modify the capitalization of letters in some way.
 
-[[default]]
-id = "edit.action.capitals"
-default.mode = ["normal", "selectedit"]
+[[define.bind]]
+id = "edit_action_capitals"
+default = "{{bind.edit_action}}"
+mode = ["normal", "selectedit"]
 
 [[bind]]
-defaults = "edit.action.capitals"
-name = 'camel'
-description = "Swap style to lower camel case (`camelCase`)"
+default = "{{bind.edit_action_capitals}}"
+doc.name = 'camel'
+doc.description = "Swap style to lower camel case (`camelCase`)"
 key = "` c"
 command = "extension.changeCase.camel"
 
 [[bind]]
-defaults = "edit.action.capitals"
-name = 'constant'
-description = "Swap style to constant (`IS_CONSTANT`)"
+default = "{{bind.edit_action_capitals}}"
+doc.name = 'constant'
+doc.description = "Swap style to constant (`IS_CONSTANT`)"
 key = "` shift+u"
 command = "extension.changeCase.constant"
 
 [[bind]]
-defaults = "edit.action.capitals"
-name = 'dot'
-description = "Swap style to dot case (`dot.case`)"
+default = "{{bind.edit_action_capitals}}"
+doc.name = 'dot'
+doc.description = "Swap style to dot case (`dot.case`)"
 key = "` ."
 command = "extension.changeCase.dot"
 
 [[bind]]
-defaults = "edit.action.capitals"
-name = 'kebab'
-description = "Swap style to kebab case (`kebab-case`)"
+default = "{{bind.edit_action_capitals}}"
+doc.name = 'kebab'
+doc.description = "Swap style to kebab case (`kebab-case`)"
 key = "` -"
 command = "extension.changeCase.kebab"
 
 [[bind]]
-defaults = "edit.action.capitals"
-name = 'all lower'
-description = "Swap all to lower case"
+default = "{{bind.edit_action_capitals}}"
+doc.name = 'all lower'
+doc.description = "Swap all to lower case"
 key = "` shift+l"
 command = "extension.changeCase.lower"
 
 [[bind]]
-defaults = "edit.action.capitals"
-name = 'first lower'
-description = "Swap first letter to lower case"
+default = "{{bind.edit_action_capitals}}"
+doc.name = 'first lower'
+doc.description = "Swap first letter to lower case"
 key = "` l"
 command = "extension.changeCase.lowerFirst"
 
 [[bind]]
-defaults = "edit.action.capitals"
-name = 'spaces'
-description = "Swap to spaces (`camelCase` -> `camel case`)"
+default = "{{bind.edit_action_capitals}}"
+doc.name = 'spaces'
+doc.description = "Swap to spaces (`camelCase` -> `camel case`)"
 key = "` space"
 command = "extension.changeCase.no"
 
 [[bind]]
-defaults = "edit.action.capitals"
-name = 'Camel'
-description = "Swap to upper camel case (`CamelCase`)"
+default = "{{bind.edit_action_capitals}}"
+doc.name = 'Camel'
+doc.description = "Swap to upper camel case (`CamelCase`)"
 key = "` shift+c"
 command = "extension.changeCase.pascal"
 
 [[bind]]
-defaults = "edit.action.capitals"
-name = 'path'
-description = "Swap to 'path' case (`path/case`)"
+default = "{{bind.edit_action_capitals}}"
+doc.name = 'path'
+doc.description = "Swap to 'path' case (`path/case`)"
 key = "` /"
 command = "extension.changeCase.path"
 
 [[bind]]
-defaults = "edit.action.capitals"
-name = 'snake'
-description = "Swap to snake case (`snake_case`)"
+default = "{{bind.edit_action_capitals}}"
+doc.name = 'snake'
+doc.description = "Swap to snake case (`snake_case`)"
 key = "` shift+-"
 command = "extension.changeCase.snake"
 
 [[bind]]
-defaults = "edit.action.capitals"
-name = 'swap'
-description = "Swap upper and lower case letters"
+default = "{{bind.edit_action_capitals}}"
+doc.name = 'swap'
+doc.description = "Swap upper and lower case letters"
 key = "` s"
 command = "extension.changeCase.swap"
 
 [[bind]]
-defaults = "edit.action.capitals"
-name = 'title'
-description = "Swap to title case (all words have first upper case letter)"
+default = "{{bind.edit_action_capitals}}"
+doc.name = 'title'
+doc.description = "Swap to title case (all words have first upper case letter)"
 key = "` t"
 command = "extension.changeCase.title"
 
 [[bind]]
-defaults = "edit.action.capitals"
-name = 'all upper'
-description = "Swap to use all upper case letters"
+default = "{{bind.edit_action_capitals}}"
+doc.name = 'all upper'
+doc.description = "Swap to use all upper case letters"
 key = "` shift+y"
 command = "extension.changeCase.upper"
 
 [[bind]]
-defaults = "edit.action.capitals"
-name = 'first upper'
-description = "Swap first character to upper case"
+default = "{{bind.edit_action_capitals}}"
+doc.name = 'first upper'
+doc.description = "Swap first character to upper case"
 key = "` u"
 command = "extension.changeCase.upperFirst"
 
@@ -2047,23 +1991,19 @@ command = "extension.changeCase.upperFirst"
 
 # These keys are all organized under the `space` key and they "do" something. These are generally more elaborate editing operations in the current editor pane.
 
-[[default]]
-id = "edit.action.do"
-default.mode = "normal"
-
 [[bind]]
-defaults = "edit.action.do"
-name = "do"
+default = "{{bind.edit_action}}"
+doc.name = "do"
 key = "space"
-description = "additional actions, mostly for modifying specific syntactic formats"
+doc.description = "additional actions, mostly for modifying specific syntactic formats"
 command = "master-key.prefix"
 
 [[bind]]
-defaults = "edit.action.do"
-name = "paste after line"
-combinedName = "paste after/before line"
-combinedKey = "p/shift+p"
-description = "Paste text after current line"
+default = "{{bind.edit_action}}"
+doc.name = "paste after line"
+doc.combined.name = "paste after/before line"
+doc.combined.key = "p/shift+p"
+doc.description = "Paste text after current line"
 priority = 2
 key = "space p"
 command = "runCommands"
@@ -2075,11 +2015,11 @@ args.commands = [
 ]
 
 [[bind]]
-defaults = "edit.action.do"
+default = "{{bind.edit_action}}"
 priority = 2
-name = "paste before line"
-combinedName = "paste after/before line"
-description = "Paste text before current line"
+doc.name = "paste before line"
+doc.combined.name = "paste after/before line"
+doc.description = "Paste text before current line"
 key = "space shift+p"
 command = "runCommands"
 args.commands = [
@@ -2090,34 +2030,34 @@ args.commands = [
 ]
 
 [[bind]]
-defaults = "edit.action.do"
+default = "{{bind.edit_action}}"
 priority = 2
-name = "add line below"
-combinedName = "add line below/above"
-combinedDescription = "open a line below/above current line"
-combinedKey = "o/shift+o"
-description = "open a line below current line"
+doc.name = "add line below"
+doc.combined.name = "add line below/above"
+doc.combined.description = "open a line below/above current line"
+doc.combined.key = "o/shift+o"
+doc.description = "open a line below current line"
 key = "space o"
 command = "editor.action.insertLineAfter"
 
 [[bind]]
-defaults = "edit.action.do"
-name = "add line above"
+default = "{{bind.edit_action}}"
+doc.name = "add line above"
 priority = 2
-combinedName = "add line below/above"
-description = "open a line above current line"
+doc.combined.name = "add line below/above"
+doc.description = "open a line above current line"
 key = "space shift+o"
 command = "editor.action.insertLineBefore"
 
 [[bind]]
-defaults = "edit.action.do"
-name = 'sym insert'
-description = "Insert a character pair around a character"
+default = "{{bind.edit_action}}"
+doc.name = 'sym insert'
+doc.description = "Insert a character pair around a character"
 priority = 1
 key = "space i"
-combinedName = "sym insert (mode)"
-combinedDescription = "Insert characters around pair (switching to syminster mode until hitting  again)"
-combinedKey = "i/shift+i"
+doc.combined.name = "sym insert (mode)"
+doc.combined.description = "Insert characters around pair (switching to syminster mode until hitting  again)"
+doc.combined.key = "i/shift+i"
 command = "runCommands"
 
 [[bind.args.commands]]
@@ -2126,210 +2066,201 @@ args.acceptAfter = 1
 
 [[bind.args.commands]]
 command = "selection-utilities.insertAround"
-computedArgs.before = "braces[captured].before || captured"
-computedArgs.after = "braces[captured].after || captured"
+args.before = '{{val.braces[key.captured]?.before ?? key.captured}}'
+args.after = "{{val.braces[key.captured]?.after ?? key.captured}}"
 args.followCursor = true
 
 [[bind]]
-defaults = "edit.action.do"
-name = 'trim white'
-description = "Delete all external whitespace (left and right edges)"
+default = "{{bind.edit_action}}"
+doc.name = 'trim white'
+doc.description = "Delete all external whitespace (left and right edges)"
 key = "space shift+-"
 command = "selection-utilities.trimWhitespace"
 
 [[bind]]
-defaults = "edit.action.do"
+default = "{{bind.edit_action}}"
 key = "space w"
-name = "wrap p"
-combinedName = "wrap/join lines"
-description = "wrap paragraph text, preserving commenting"
-combinedDescription = "wrap paragraph text, preserving commenting / join lines together"
-combinedKey = "w/j"
+doc.name = "wrap p"
+doc.combined.name = "wrap/join lines"
+doc.description = "wrap paragraph text, preserving commenting"
+doc.combined.description = "wrap paragraph text, preserving commenting / join lines together"
+doc.combined.key = "w/j"
 command = "rewrap.rewrapComment"
 
 [[bind]]
-defaults = "edit.action.basic"
-name = 'join'
-combinedName = "wrap/join lines"
-description = "Remove newline between current and next line"
+default = "{{bind.edit_action}}"
+doc.name = 'join'
+doc.combined.name = "wrap/join lines"
+doc.description = "Remove newline between current and next line"
 key = "space j"
 mode = ["normal", "selectedit"]
 when = "!editorHasSelection"
 command = "runCommands"
-args.commands = [{ defined = "selectLinesDown" }, 'editor.action.joinLines']
+args.commands = ["{{command.selectLinesDown}}", 'editor.action.joinLines']
 
 [[bind]]
-defaults = "edit.action.basic"
-combinedName = "wrap/join lines"
-name = 'join'
-description = "Remove newline between current and next line"
+default = "{{bind.edit_action}}"
+doc.combined.name = "wrap/join lines"
+doc.name = 'join'
+doc.description = "Remove newline between current and next line"
 mode = ["normal", "selectedit"]
 key = "space j"
 command = "editor.action.joinLines"
 
 [[bind]]
-defaults = "edit.action.do"
+default = "{{bind.edit_action}}"
 key = "space f"
-name = "format"
-combinedName = "format / format document"
-when = "master-key.count < 1"
+doc.name = "format"
+doc.combined.name = "format / format document"
 command = "editor.action.formatSelection"
 
 [[bind]]
-defaults = "edit.action.do"
-key = "space f"
-combinedName = "format / format document"
-combinedKey = "f/shift+f"
-combinedDescription = "Format selection / document"
-name = "format"
-description = "Format sel"
-when = "master-key.count >= 1"
-command = "runCommands"
 args.commands = [
-    { defined = "selectLinesDown" },
+    "{{command.selectLinesDown}}",
     "editor.action.formatSelection",
     "selection-utilities.shrinkToActive",
 ]
+default = "{{bind.edit_action}}"
+key = "space f"
+doc.combined.name = "format / format document"
+doc.combined.key = "f/shift+f"
+doc.combined.description = "Format selection / document"
+doc.name = "format"
+doc.description = "Format sel"
+when = "master-key.count >= 1"
+command = "runCommands"
 
 [[bind]]
-defaults = "edit.action.do"
+default = "{{bind.edit_action}}"
 key = "space shift+f"
-name = "format doc"
-combinedName = "format / format document"
+doc.name = "format doc"
+doc.combined.name = "format / format document"
 command = "editor.action.formatDocument"
 
-[[default]]
-id = "edit.action.brackets"
-
 [[bind]]
-defaults = "edit.action.do"
-name = 'parens'
-description = "actions related to various brackets (`[`, `(`, `{`)"
+default = "{{bind.edit_action}}"
+doc.name = 'parens'
+doc.description = "actions related to various brackets (`[`, `(`, `{`)"
 key = "space ["
 command = "master-key.prefix"
 
 [[bind]]
-defaults = "edit.action.do"
-name = 'remove'
-description = "Removes surrounding pairs"
+default = "{{bind.edit_action}}"
+doc.name = 'remove'
+doc.description = "Removes surrounding pairs"
 key = "space [ d"
 command = "bracketeer.removeBrackets"
 
 [[bind]]
-defaults = "edit.action.do"
-name = 'parens/brackets'
-description = "Swap between `[`, `(` and `{`"
+default = "{{bind.edit_action}}"
+doc.name = 'parens/brackets'
+doc.description = "Swap between `[`, `(` and `{`"
 key = "space [ s"
 command = "bracketeer.swapBrackets"
 
 [[bind]]
-defaults = "edit.action.do"
-name = 'quotes'
-description = "Actions related to quotes"
+default = "{{bind.edit_action}}"
+doc.name = 'quotes'
+doc.description = "Actions related to quotes"
 key = "space '"
 command = "master-key.prefix"
 
 [[bind]]
-defaults = "edit.action.do"
-name = 'remove'
-description = "Removes quotes (', \" or `)"
+default = "{{bind.edit_action}}"
+doc.name = 'remove'
+doc.description = "Removes quotes (', \" or `)"
 key = "space ' d"
 command = "bracketeer.removeQuotes"
 
 [[bind]]
-defaults = "edit.action.do"
-name = 'swap'
-description = "Swap quotes (', \" or `)"
+default = "{{bind.edit_action}}"
+doc.name = 'swap'
+doc.description = "Swap quotes (', \" or `)"
 key = "space ' s"
 command = "bracketeer.swapQuotes"
 
-[[default]]
-id = "edit.action.comment"
-
 [[bind]]
-defaults = "edit.action.do"
+default = "{{bind.edit_action}}"
 key = "space /"
-combinedName = "(block) comment"
-when = "master-key.count < 1"
+doc.combined.name = "(block) comment"
 command = "editor.action.commentLine"
 
 [[bind]]
-defaults = "edit.action.do"
+args.commands = ["{{command.selectLinesDown}}", "editor.action.commentLine"]
+default = "{{bind.edit_action}}"
 key = "space /"
-name = "comment lines"
-combinedName = "(block) comment"
-combinedDescription = "Toggle (block) comment"
-combinedKey = "(shift+)/"
-description = "select next comment"
+doc.name = "comment lines"
+doc.combined.name = "(block) comment"
+doc.combined.description = "Toggle (block) comment"
+doc.combined.key = "(shift+)/"
+doc.description = "select next comment"
 when = "master-key.count >= 1"
 command = "runCommands"
-args.commands = [{ defined = "selectLinesDown" }, "editor.action.commentLine"]
 
 [[bind]]
-defaults = "edit.action.do"
+default = "{{bind.edit_action}}"
 key = "space shift+/"
-when = "master-key.count < 1"
-combinedName = "(block) comment"
+doc.combined.name = "(block) comment"
 command = "editor.action.blockComment"
 
 [[bind]]
-defaults = "edit.action.do"
-key = "space shift+/"
-name = "block comment lines"
-combinedName = "(block) comment"
-description = "select previous comment"
-when = "master-key.count >= 1"
-command = "runCommands"
 args.commands = [
-    { defined = "selectLinesDown" },
+    "{{command.selectLinesDown}}",
     "editor.action.blockComment",
     "selection-utilities.shrinkToActive",
 ]
+default = "{{bind.edit_action}}"
+key = "space shift+/"
+doc.name = "block comment lines"
+doc.combined.name = "(block) comment"
+doc.description = "select previous comment"
+when = "master-key.count >= 1"
+command = "runCommands"
 
 [[bind]]
-defaults = "edit.action.do"
-name = 'inc all #'
-combinedName = "inc/dec all #"
-combinedDescription = "Increment/decrement selected numbers; increment/decrement increases per selection"
-combinedKey = "=/shift+="
-description = "Increment selected numbers; increment increases per selection"
+default = "{{bind.edit_action}}"
+doc.name = 'inc all #'
+doc.combined.name = "inc/dec all #"
+doc.combined.description = "Increment/decrement selected numbers; increment/decrement increases per selection"
+doc.combined.key = "=/shift+="
+doc.description = "Increment selected numbers; increment increases per selection"
 key = "space ="
 command = "selection-utilities.incrementNumberPerSelection"
 
 [[bind]]
-defaults = "edit.action.do"
-name = 'dec all #'
-combinedName = "inc/dec all #"
-description = "Decrement selected numbers; decrement increases per selection"
+default = "{{bind.edit_action}}"
+doc.name = 'dec all #'
+doc.combined.name = "inc/dec all #"
+doc.description = "Decrement selected numbers; decrement increases per selection"
 key = "space shift+="
 command = "selection-utilities.decrementNumberPerSelection"
 
 [[bind]]
-defaults = "edit.action.do"
-name = 'nb cell'
-description = "Actions related to notebook cells"
+default = "{{bind.edit_action}}"
+doc.name = 'nb cell'
+doc.description = "Actions related to notebook cells"
 key = "space c"
 command = "master-key.prefix"
 
 [[bind]]
-defaults = "edit.action.do"
+default = "{{bind.edit_action}}"
 key = "space c i"
 when = "editorLangId == 'quarto'"
 command = "quarto.insertCodeCell"
-name = "insert cell"
-description = "insert a new cell in a notebook"
+doc.name = "insert cell"
+doc.description = "insert a new cell in a notebook"
 
 [[bind]]
-defaults = "edit.action.do"
+default = "{{bind.edit_action}}"
 key = "space c s"
 when = "editorLangId != 'quarto'"
 command = "jupyter.selectCell"
 
 [[bind]]
-defaults = "edit.action.basic"
+default = "{{bind.edit_action}}"
 key = "space ."
-name = 'sent. lines'
-description = "Split paragraph into one line per sentence"
+doc.name = 'sent. lines'
+doc.description = "Split paragraph into one line per sentence"
 mode = "normal"
 command = "runCommands"
 
@@ -2364,18 +2295,18 @@ command = "selection-utilities.cancelSelection"
 # These commands interact with the history of previously typed commands to repeat some sequence of commands. They can record any edits, and any commands that are issued through master key bindings. Commands that are not part of this binding file (e.g. a standard call to Cmd/Ctrl+V to paste) will not be recorded. You can copy your non-master-key bindings over to master key (so that they will be recorded) by [customizing your bindings](#customized-bindings) and using `Import Default Bindings` and `Import User Bindings` to allow all of the default and user bindings stored in VSCOde's normal keybinding files to be recorded by master key. (You will have to remove your original user bindings from the VSCOde `keybinding.json` file manually)
 
 [[bind]]
-defaults = "edit.action.history"
-name = "record"
-description = "Start/stop recording Master Key commands"
+default = "{{bind.edit_action_history}}"
+doc.name = "record"
+doc.description = "Start/stop recording Master Key commands"
 key = "shift+q"
 when = "!master-key.record"
 command = "master-key.record"
 args.on = true
 
 [[bind]]
-defaults = "edit.action.history"
-name = "record"
-description = """
+default = "{{bind.edit_action_history}}"
+doc.name = "record"
+doc.description = """
 Start/stop recording key presses defined by Master Key pushing it to the
 top of the `history` stack once recording finishes."
 """
@@ -2389,37 +2320,37 @@ args.on = false
 
 [[bind.args.commands]]
 command = "master-key.pushHistoryToStack"
-args.whereComputedRangeIs.from = 'commandHistory[index-1].name === "record"'
-args.whereComputedRangeIs.to = "index"
+args.range.from = '{{last_history_index(|i| history[i-1]?.doc?.name == "record")}}'
+args.range.to = '{{history.len()-1}}'
 
 [[bind]]
-defaults = "edit.action.history"
-name = "replay"
-description = """
-Replay the Master Key command sequence at the top of the `history` stack. Specifying
+default = "{{bind.edit_action_history}}"
+doc.name = "replay"
+doc.description = """
+Replay the Master Key command sequence at the top of the `key.macro` stack. Specifying
 a count requests the Nth most recent item on this stack.
 """
 key = "q q"
 command = "master-key.replayFromStack"
-computedArgs.index = "count"
+args.index = "{{key.count}}"
 
 [[bind]]
-defaults = "edit.action.history"
-name = "store macro"
-description = """
+default = "{{bind.edit_action_history}}"
+doc.name = "store macro"
+doc.description = """
 Stores the top of the `history` stack into a named register. Specifying a count stores the
 Nth most recent item on this stack.
 """
 key = "q s"
 command = "master-key.storeNamed"
-args.description = "Save Macro"
+args.doc.description = "Save Macro"
 args.register = "macro"
-args.contents = "macro[macro.length-(count || 0)-1]"
+args.contents = "{{key.macro[key.macro.len()-key.count-1]}}"
 
 [[bind]]
-defaults = "edit.action.history"
-name = "replay stored"
-description = """
+default = "{{bind.edit_action_history}}"
+doc.name = "replay stored"
+doc.description = """
 Replay a recorded Master Key command sequence from a named register, pushing
 it to the front of the history stack.
 """
@@ -2428,106 +2359,106 @@ command = "runCommands"
 
 [[bind.args.commands]]
 command = "master-key.restoreNamed"
-args.description = "Macro"
+args.doc.description = "Macro"
 args.register = "macro"
 
 [[bind.args.commands]]
 command = "master-key.pushHistoryToStack"
-computedArgs.value = "captured"
+args.value = "{{key.restored}}"
 
 [[bind.args.commands]]
 command = "master-key.replayFromStack"
 args.index = 0
 
 [[bind]]
-defaults = "edit.action.history"
-name = "store last"
-description = """
+default = "{{bind.edit_action_history}}"
+doc.name = "store last"
+doc.description = """
 Store the N most recently run commands as a macro, where N is the count (defaulting to 1).
 """
 key = "q l"
 command = "master-key.pushHistoryToStack"
-args.whereComputedRangeIs.from = "index-(count || 0)"
-args.whereComputedRangeIs.to = "index"
+args.range.from = "{{history.len()-max(key.count, 1)}}"
+args.range.to = "{{history.len()-1}}"
 
 # ## Utility Commands
 
 # These actions include miscellaneous utilities.
 
 [[bind]]
-defaults = "window"
+default = "{{bind.window}}"
 key = "shift+ctrl+;"
-name = "palette"
+doc.name = "palette"
 finalKey = false
-hideInPalette = true
-mode = []
-prefixes = "{{all_prefixes}}"
-description = """
+doc.hideInPalette = true
+mode = "{{all_modes()}}"
+prefixes.any = true
+doc.description = """
 show command suggestions within the context of the current mode and keybinding prefix
 (if any keys have already been typed)
 """
 command = "master-key.commandPalette"
 
 [[bind]]
-defaults = "util"
-name = "git..."
-description = "git commands"
+default = "{{bind.util}}"
+doc.name = "git..."
+doc.description = "git commands"
 key = "tab g"
 command = "master-key.prefix"
 
 [[bind]]
-defaults = "util"
-name = "pull"
-combinedName = "push/pull"
-description = "pull changes from remote"
-combinedDescription = "pull from/push to remote"
-combinedKey = "p/shift+p"
+default = "{{bind.util}}"
+doc.name = "pull"
+doc.combined.name = "push/pull"
+doc.description = "pull changes from remote"
+doc.combined.description = "pull from/push to remote"
+doc.combined.key = "p/shift+p"
 key = "tab g p"
 command = "git.pull"
 
 [[bind]]
-defaults = "util"
-name = "push"
-description = "push changes to remote"
+default = "{{bind.util}}"
+doc.name = "push"
+doc.description = "push changes to remote"
 key = "tab g shift+p"
 command = "git.push"
 
 [[bind]]
-defaults = "util"
-name = "checkout"
-combinedName = "commit/checkout"
-description = "commit changes"
-combinedDescription = "commit/checkout git changes"
-combinedKey = "c/shift+c"
+default = "{{bind.util}}"
+doc.name = "checkout"
+doc.combined.name = "commit/checkout"
+doc.description = "commit changes"
+doc.combined.description = "commit/checkout git changes"
+doc.combined.key = "c/shift+c"
 key = "tab g c"
 command = "git.commit"
 
 [[bind]]
-defaults = "util"
-name = "checkout"
-combinedName = "commit/checkout"
-description = "checkout changes"
+default = "{{bind.util}}"
+doc.name = "checkout"
+doc.combined.name = "commit/checkout"
+doc.description = "checkout changes"
 key = "tab g shift+c"
 command = "git.checkout"
 
 [[bind]]
-defaults = "util"
-name = "revert range"
-description = "revert unstaged changes in selected range"
+default = "{{bind.util}}"
+doc.name = "revert range"
+doc.description = "revert unstaged changes in selected range"
 key = "tab g r"
 command = "git.revertSelectedRanges"
 
 [[bind]]
-defaults = "util"
-name = "revert range"
-description = "revert unstaged changes in selected range"
+default = "{{bind.util}}"
+doc.name = "revert range"
+doc.description = "revert unstaged changes in selected range"
 key = "tab g s"
 command = "git.stageSelectedRanges"
 
 [[bind]]
-defaults = "util"
-name = "commands..."
-description = "show GitLens command palette for git"
+default = "{{bind.util}}"
+doc.name = "commands..."
+doc.description = "show GitLens command palette for git"
 key = "tab g g"
 command = "gitlens.gitCommands"
 
@@ -2535,96 +2466,96 @@ command = "gitlens.gitCommands"
 
 # These miscellaneous utility commands are all organized uner the prefix `tab`.
 
-[[default]]
+[[define.bind]]
 id = "util"
-appendWhen = "editorTextFocus && !findWidgetVisible"
+when = "editorTextFocus && !findWidgetVisible"
 
 [[bind]]
-defaults = "util"
-name = "utility"
+default = "{{bind.util}}"
+doc.name = "utility"
 key = "tab"
-description = "utility related commands: file opening, window manipulation, debugging etc..."
+doc.description = "utility related commands: file opening, window manipulation, debugging etc..."
 command = "master-key.prefix"
 
 [[bind]]
-defaults = "util"
-name = "open recent"
-description = "Open recent file"
+default = "{{bind.util}}"
+doc.name = "open recent"
+doc.description = "Open recent file"
 key = "tab r"
 command = "workbench.action.openRecent"
 
 [[bind]]
-defaults = "util"
-name = "hover"
-description = "show the hover view"
-combinedName = "(debug) hover"
-combinedDescription = "show the (debug) hover view"
-combinedKey = "(shift+)h"
+default = "{{bind.util}}"
+doc.name = "hover"
+doc.description = "show the hover view"
+doc.combined.name = "(debug) hover"
+doc.combined.description = "show the (debug) hover view"
+doc.combined.key = "(shift+)h"
 key = "tab h"
 command = "editor.action.showHover"
 
 [[bind]]
-defaults = "util"
-name = "debug hover"
-combinedName = "(debug) hover"
-description = "show the debug hover view"
+default = "{{bind.util}}"
+doc.name = "debug hover"
+doc.combined.name = "(debug) hover"
+doc.description = "show the debug hover view"
 key = "tab shift+h"
 command = "editor.debug.action.showDebugHover"
 
 [[bind]]
-defaults = "util"
-name = "add mark"
-combinedName = "add mark / mark..."
-description = "toggle bookmark at given line"
-combinedDescription = """
+default = "{{bind.util}}"
+doc.name = "add mark"
+doc.combined.name = "add mark / mark..."
+doc.description = "toggle bookmark at given line"
+doc.combined.description = """
 toggle bookmark at given line / bookmark related commands
 """
 key = "tab shift+m"
-combinedKey = "shift+m / m"
+doc.combined.key = "shift+m / m"
 command = "vsc-labeled-bookmarks.toggleBookmark"
 
 [[bind]]
-defaults = "util"
-name = "mark"
-combinedName = "add mark / mark..."
-description = "bookmark related commands"
+default = "{{bind.util}}"
+doc.name = "mark"
+doc.combined.name = "add mark / mark..."
+doc.description = "bookmark related commands"
 key = "tab m"
 command = "master-key.prefix"
 
 [[bind]]
-defaults = "util"
-name = "mark ↓"
-description = "move to next bookmark"
-combinedName = "mark ↓/↑"
-combinedDescription = "move to next/previous bookmark"
-combinedKey = "j/k"
+default = "{{bind.util}}"
+doc.name = "mark ↓"
+doc.description = "move to next bookmark"
+doc.combined.name = "mark ↓/↑"
+doc.combined.description = "move to next/previous bookmark"
+doc.combined.key = "j/k"
 key = "tab m j"
-when = "!master-key.select_on && !editorHasSelection"
+when = "!master-key.val.select && !editorHasSelection"
 command = "vsc-labeled-bookmarks.navigateToNextBookmark"
 
 [[bind]]
-defaults = "util"
-combinedName = "mark ↓/↑"
+default = "{{bind.util}}"
+doc.combined.name = "mark ↓/↑"
 key = "tab m j"
-when = "master-key.select_on || editorHasSelection"
+when = "master-key.val.select || editorHasSelection"
 command = "vsc-labeled-bookmarks.expandSelectionToNextBookmark"
 
 [[bind]]
-defaults = "util"
-name = "mark ↑"
-combinedName = "mark ↓/↑"
-description = "move to previous bookmark"
+default = "{{bind.util}}"
+doc.name = "mark ↑"
+doc.combined.name = "mark ↓/↑"
+doc.description = "move to previous bookmark"
 key = "tab m k"
-when = "!master-key.select_on && !editorHasSelection"
+when = "!master-key.val.select && !editorHasSelection"
 command = "vsc-labeled-bookmarks.navigateToPreviousBookmark"
 
 [[bind]]
-defaults = "util"
-name = "mark ↑"
-combinedName = "mark ↓/↑"
-description = "move to previous bookmark"
+default = "{{bind.util}}"
+doc.name = "mark ↑"
+doc.combined.name = "mark ↓/↑"
+doc.description = "move to previous bookmark"
 key = "tab m k"
-when = "master-key.select_on || editorHasSelection"
+when = "master-key.val.select || editorHasSelection"
 command = "runCommands"
 args.commands = [
     "vsc-labeled-bookmarks.expandSelectionToPreviousBookmark",
@@ -2632,80 +2563,80 @@ args.commands = [
 ]
 
 [[bind]]
-defaults = "util"
-name = "remove mark"
-description = "remove bookmark (use quick selection)"
+default = "{{bind.util}}"
+doc.name = "remove mark"
+doc.description = "remove bookmark (use quick selection)"
 key = "tab m d"
 command = "vsc-labeled-bookmarks.deleteBookmark"
 
 [[bind]]
-defaults = "util"
-name = "nav marks"
-description = "reveal quick selection to move to a bookmark"
+default = "{{bind.util}}"
+doc.name = "nav marks"
+doc.description = "reveal quick selection to move to a bookmark"
 key = "tab m t"
 command = "vsc-labeled-bookmarks.navigateToBookmark"
 
 [[bind]]
-defaults = "util"
-name = "error →"
-combinedName = "error →/←"
-combinedDescription = "move to next/previous error"
-combinedKey = "e/shift+e"
-description = """
+default = "{{bind.util}}"
+doc.name = "error →"
+doc.combined.name = "error →/←"
+doc.combined.description = "move to next/previous error"
+doc.combined.key = "e/shift+e"
+doc.description = """
 move to next error
 """
 key = "tab e"
 command = "editor.action.marker.next"
 
 [[bind]]
-defaults = "edit.motion"
-name = "error ←"
-combinedName = "error →/←"
-description = """
+default = "{{bind.edit_motion}}"
+doc.name = "error ←"
+doc.combined.name = "error →/←"
+doc.description = """
 move to previous error
 """
 key = "tab shift+e"
 command = "editor.action.marker.prev"
 
 [[bind]]
-defaults = "edit.motion"
-name = "diff →"
-combinedName = "diff →/←"
-combinedDescription = "move to and show next/previous diff"
-combinedKey = "c/shift+c"
-description = """
+default = "{{bind.edit_motion}}"
+doc.name = "diff →"
+doc.combined.name = "diff →/←"
+doc.combined.description = "move to and show next/previous diff"
+doc.combined.key = "c/shift+c"
+doc.description = """
 move to and show next diff
 """
 key = "tab c"
 command = "editor.action.dirtydiff.next"
 
 [[bind]]
-defaults = "edit.motion"
-name = "diff ←"
-combinedName = "diff →/←"
-description = """
+default = "{{bind.edit_motion}}"
+doc.name = "diff ←"
+doc.combined.name = "diff →/←"
+doc.description = """
 move to and show previous diff
 """
 key = "tab shift+c"
 command = "editor.action.dirtydiff.previous"
 
 [[bind]]
-defaults = "edit.motion"
-name = "change →"
-combinedName = "change →/←"
-combinedDescription = "move to next/previous file change"
-combinedKey = "d/shift+d"
-description = """
+default = "{{bind.edit_motion}}"
+doc.name = "change →"
+doc.combined.name = "change →/←"
+doc.combined.description = "move to next/previous file change"
+doc.combined.key = "d/shift+d"
+doc.description = """
 move to next file change
 """
 key = "tab d"
 command = "workbench.action.editor.nextChange"
 
 [[bind]]
-defaults = "edit.motion"
-name = "change ←"
-combinedName = "change →/←"
-description = """
+default = "{{bind.edit_motion}}"
+doc.name = "change ←"
+doc.combined.name = "change →/←"
+doc.description = """
 move to previous change
 """
 key = "tab shift+d"
@@ -2715,171 +2646,170 @@ command = "workbench.action.editor.previousChange"
 
 # These are commands that interact with VSCode's user-interface in some way, rather than editing or moving around in the editor pane.
 
-[[default]]
+[[define.bind]]
 id = "window"
-default.kind = "util"
-default.mode = "normal"
-appendWhen = "editorTextFocus && !findWidgetVisible"
+doc.kind = "util"
+mode = "normal"
+when = "editorTextFocus && !findWidgetVisible"
 
 [[bind]]
-defaults = "window"
-name = "cntr win"
-description = "center window at primary cursor position"
+default = "{{bind.window}}"
+doc.name = "cntr win"
+doc.description = "center window at primary cursor position"
 key = "tab l"
 command = "selection-utilities.revealActive"
 args.at = "center"
-when = "editorTextFocus"
 
 [[bind]]
-defaults = "window"
-name = "window"
-description = "window/editor pane manipulation-related commands"
+default = "{{bind.window}}"
+doc.name = "window"
+doc.description = "window/editor pane manipulation-related commands"
 key = "tab w"
 command = "master-key.prefix"
 
 [[bind]]
-defaults = "window"
-name = "vert/horz"
+default = "{{bind.window}}"
+doc.name = "vert/horz"
 key = "tab w r"
-description = "Toggle between horizontal and vertical layouts"
+doc.description = "Toggle between horizontal and vertical layouts"
 command = "workbench.action.toggleEditorGroupLayout"
 
 [[bind]]
-defaults = "window"
-name = "next window"
-combinedName = "next/previous window"
-description = "move to next window"
-combinedDescription = "move to next/prev window"
+default = "{{bind.window}}"
+doc.name = "next window"
+doc.combined.name = "next/previous window"
+doc.description = "move to next window"
+doc.combined.description = "move to next/prev window"
 key = "tab ]"
-combinedKey = "]/["
+doc.combined.key = "]/["
 command = "workbench.action.focusNextGroup"
 
 [[bind]]
-defaults = "window"
-name = "prev window"
-combinedName = "next/previous window"
-description = "move to previous window"
+default = "{{bind.window}}"
+doc.name = "prev window"
+doc.combined.name = "next/previous window"
+doc.description = "move to previous window"
 key = "tab ["
 command = "workbench.action.focusPreviousGroup"
 
 [[bind]]
-defaults = "window"
-name = "move →"
-combinedName = "move →/←"
-combinedDescription = "move editor to window left/right"
-combinedKey = "l/h"
-description = "move editor to window to left"
+default = "{{bind.window}}"
+doc.name = "move →"
+doc.combined.name = "move →/←"
+doc.combined.description = "move editor to window left/right"
+doc.combined.key = "l/h"
+doc.description = "move editor to window to left"
 key = "tab w l"
 command = "workbench.action.moveEditorToRightGroup"
 
 [[bind]]
-defaults = "window"
-name = "←"
-combinedName = "move →/←"
-description = "move editor to window to left"
+default = "{{bind.window}}"
+doc.name = "←"
+doc.combined.name = "move →/←"
+doc.description = "move editor to window to left"
 key = "tab w h"
 command = "workbench.action.moveEditorToLeftGroup"
 
 [[bind]]
-defaults = "window"
-name = "↓"
-combinedName = "move ↓/↑"
-combinedDescription = "move editor to window above/below"
-combinedKey = "j/k"
-description = "move editor to window below"
+default = "{{bind.window}}"
+doc.name = "↓"
+doc.combined.name = "move ↓/↑"
+doc.combined.description = "move editor to window above/below"
+doc.combined.key = "j/k"
+doc.description = "move editor to window below"
 key = "tab w j"
 command = "workbench.action.moveEditorToBelowGroup"
 
 [[bind]]
-defaults = "window"
-name = "↑"
-combinedName = "move ↓/↑"
-description = "move editor to window above"
+default = "{{bind.window}}"
+doc.name = "↑"
+doc.combined.name = "move ↓/↑"
+doc.description = "move editor to window above"
 key = "tab w k"
 command = "workbench.action.moveEditorToAboveGroup"
 
 [[bind]]
-defaults = "window"
-name = "split editor..."
-description = "split editor to in a given direction"
+default = "{{bind.window}}"
+doc.name = "split editor..."
+doc.description = "split editor to in a given direction"
 key = "tab w s"
 command = "master-key.prefix"
 
 [[bind]]
-defaults = "window"
-name = "move →"
-combinedName = "split →/←"
-combinedDescription = "move editor to window left/right"
-combinedKey = "l/h"
-description = "split editor to window to left"
+default = "{{bind.window}}"
+doc.name = "move →"
+doc.combined.name = "split →/←"
+doc.combined.description = "move editor to window left/right"
+doc.combined.key = "l/h"
+doc.description = "split editor to window to left"
 key = "tab w s l"
 command = "workbench.action.splitEditorRight"
 
 [[bind]]
-defaults = "window"
-name = "←"
-combinedName = "split →/←"
-description = "split editor to window to left"
+default = "{{bind.window}}"
+doc.name = "←"
+doc.combined.name = "split →/←"
+doc.description = "split editor to window to left"
 key = "tab w s h"
 command = "workbench.action.splitEditorLeft"
 
 [[bind]]
-defaults = "window"
-name = "↓"
-combinedName = "split ↓/↑"
-combinedDescription = "split editor to window above/below"
-combinedKey = "j/k"
-description = "split editor to window below"
+default = "{{bind.window}}"
+doc.name = "↓"
+doc.combined.name = "split ↓/↑"
+doc.combined.description = "split editor to window above/below"
+doc.combined.key = "j/k"
+doc.description = "split editor to window below"
 key = "tab w s j"
 command = "workbench.action.splitEditorDown"
 
 [[bind]]
-defaults = "window"
-name = "↑"
-combinedName = "split ↓/↑"
-combinedDescription = "split editor to window above/below"
-combinedKey = "j/k"
-description = "split editor to window below"
+default = "{{bind.window}}"
+doc.name = "↑"
+doc.combined.name = "split ↓/↑"
+doc.combined.description = "split editor to window above/below"
+doc.combined.key = "j/k"
+doc.description = "split editor to window below"
 key = "tab w s k"
 command = "workbench.action.splitEditorUp"
 
 [[bind]]
-defaults = "window"
-name = "close pane"
-description = "close the given group of editors"
+default = "{{bind.window}}"
+doc.name = "close pane"
+doc.description = "close the given group of editors"
 key = "tab w x"
 command = "workbench.action.closeEditorsInGroup"
 
 [[bind]]
-defaults = "window"
-name = "max"
-description = "minimize size of all other windows"
+default = "{{bind.window}}"
+doc.name = "max"
+doc.description = "minimize size of all other windows"
 key = "tab w shift+m"
 command = "workbench.action.minimizeOtherEditors"
 
 [[bind]]
-defaults = "window"
-name = "equal"
-description = "equalize size of all windows"
+default = "{{bind.window}}"
+doc.name = "equal"
+doc.description = "equalize size of all windows"
 key = "tab w ="
 command = "workbench.action.evenEditorWidths"
 
 [[bind]]
-defaults = "window"
-name = "curs. win top"
-description = "center window so that primary cursor is at the top"
+default = "{{bind.window}}"
+doc.name = "curs. win top"
+doc.description = "center window so that primary cursor is at the top"
 key = "tab k"
-combinedName = "center window top/bottom"
-combinedDescription = "center window so that primary cursor is at the top/bottom"
-combinedKey = "k/j"
+doc.combined.name = "center window top/bottom"
+doc.combined.description = "center window so that primary cursor is at the top/bottom"
+doc.combined.key = "k/j"
 command = "selection-utilities.revealActive"
 args.at = "top"
 
 [[bind]]
-defaults = "window"
-name = "curs. win bot"
-combinedName = "center window top/bottom"
-description = "center window so that primary cursor is at the bottom"
+default = "{{bind.window}}"
+doc.name = "curs. win bot"
+doc.combined.name = "center window top/bottom"
+doc.description = "center window so that primary cursor is at the bottom"
 key = "tab j"
 command = "selection-utilities.revealActive"
 args.at = "bottom"
@@ -2889,63 +2819,63 @@ args.at = "bottom"
 # Commands for interacting with VSCode's debugger UI.
 
 [[bind]]
-defaults = "util"
-name = "breakpt."
-combinedName = "breakpt / debug..."
-combinedKey = "shift+b/b"
-description = "toggle debug breakpoint"
-combinedDescription = "toggle debug breakpoint / debug related commands..."
+default = "{{bind.util}}"
+doc.name = "breakpt."
+doc.combined.name = "breakpt / debug..."
+doc.combined.key = "shift+b/b"
+doc.description = "toggle debug breakpoint"
+doc.combined.description = "toggle debug breakpoint / debug related commands..."
 key = "tab shift+b"
 command = "editor.debug.action.toggleBreakpoint"
 
 [[bind]]
-defaults = "util"
-name = "debug..."
-combinedName = "breakpt / debug..."
-description = "assorted debugging actions"
+default = "{{bind.util}}"
+doc.name = "debug..."
+doc.combined.name = "breakpt / debug..."
+doc.description = "assorted debugging actions"
 key = "tab b"
 command = "master-key.prefix"
 
 [[bind]]
-defaults = "util"
-name = "cond. break"
-description = "conditional breakpoint"
+default = "{{bind.util}}"
+doc.name = "cond. break"
+doc.description = "conditional breakpoint"
 key = "tab b shift+c"
 command = "editor.debug.action.conditionalBreakpoint"
 
 
 [[bind]]
-defaults = "util"
-name = "start"
-description = "start debugging"
+default = "{{bind.util}}"
+doc.name = "start"
+doc.description = "start debugging"
 key = "tab b r"
 command = "workbench.action.debug.start"
 
 [[bind]]
-defaults = "util"
-name = "continue"
-description = "continue debugging"
+default = "{{bind.util}}"
+doc.name = "continue"
+doc.description = "continue debugging"
 key = "tab b c"
 command = "workbench.action.debug.continue"
 
 [[bind]]
-defaults = "util"
-name = "next"
-description = "debug: step over next line"
+default = "{{bind.util}}"
+doc.name = "next"
+doc.description = "debug: step over next line"
 key = "tab b j"
 command = "workbench.action.debug.stepOver"
 
 [[bind]]
-defaults = "util"
-name = "into"
-description = "debug: step into next line"
+default = "{{bind.util}}"
+doc.name = "into"
+doc.description = "debug: step into next line"
 key = "tab b i"
 command = "workbench.action.debug.stepInto"
 
 [[bind]]
-defaults = "util"
-name = "out"
-description = "debug: step out"
+default = "{{bind.util}}"
+doc.name = "out"
+doc.description = "debug: step out"
 key = "tab b o"
 command = "workbench.action.debug.stepOut"
 
@@ -2958,15 +2888,15 @@ command = "workbench.action.debug.stepOut"
 # - save a single selection to a list of selections to use for later and
 # then move the cursor to the next selection you wish to add
 
-[[default]]
-id = "edit.select_edit"
-default.mode = "selectedit"
-default.kind = "motion"
+[[define.bind]]
+id = "edit_select_edit"
+mode = "selectedit"
+doc.kind = "motion"
 
 [[bind]]
-defaults = "edit.select_edit"
-name = "select-edit"
-description = """
+default = "{{bind.edit_select_edit}}"
+doc.name = "select-edit"
+doc.description = """
 Enter a mode where you can edit and manipulate (possibly multiple) selections.
 """
 key = "'"
@@ -2975,234 +2905,234 @@ args.value = "selectedit"
 mode = "normal"
 
 [[bind]]
-defaults = "edit.select_edit"
+default = "{{bind.edit_select_edit}}"
 key = "shift+'"
-combinedName = "rm cursors"
-combinedKey = "shift/ctrl+'"
-combinedDescription = "Delete all selections and return to normal (multiple key variants)"
-name = "del. cursors"
-description = "Delete all selections and return to normal"
+doc.combined.name = "rm cursors"
+doc.combined.key = "shift/ctrl+'"
+doc.combined.description = "Delete all selections and return to normal (multiple key variants)"
+doc.name = "del. cursors"
+doc.description = "Delete all selections and return to normal"
 command = "runCommands"
 args.commands = ["selection-utilities.cancelSelection", "master-key.enterNormal"]
 mode = ["selectedit", "normal"]
 
 [[bind]]
-defaults = "edit.select_edit"
+default = "{{bind.edit_select_edit}}"
 key = "ctrl+'"
 mode = ["insert", "selectedit", "normal"]
-name = "rm cursors"
-combinedName = "rm cursors"
-description = "Delete all selections and return to normal"
+doc.name = "rm cursors"
+doc.combined.name = "rm cursors"
+doc.description = "Delete all selections and return to normal"
 command = "runCommands"
 args.commands = ["selection-utilities.cancelSelection", "master-key.enterNormal"]
 
 [[bind]]
-defaults = "edit.select_edit"
-name = 'normal'
-description = "return to normal mode"
+default = "{{bind.edit_select_edit}}"
+doc.name = 'normal'
+doc.description = "return to normal mode"
 key = "'"
 command = "master-key.enterNormal"
 
 [[bind]]
-defaults = "edit.select_edit"
-name = "add →"
-combinedName = "add →/←"
-description = "add cursor at the next match to the primary cursor's text"
-combinedDescription = "add cursor at the next/previous match to the primary cursor's text"
+default = "{{bind.edit_select_edit}}"
+doc.name = "add →"
+doc.combined.name = "add →/←"
+doc.description = "add cursor at the next match to the primary cursor's text"
+doc.combined.description = "add cursor at the next/previous match to the primary cursor's text"
 key = "l"
-combinedKey = "l/h"
-computedRepeat = "count"
+doc.combined.key = "l/h"
+repeat = "{{key.count}}"
 command = "selection-utilities.addNext"
 
 [[bind]]
-defaults = "edit.select_edit"
-name = "add ←"
-combinedName = "add →/←"
-description = "add cursor at the previous match to the primary cursor's text"
+default = "{{bind.edit_select_edit}}"
+doc.name = "add ←"
+doc.combined.name = "add →/←"
+doc.description = "add cursor at the previous match to the primary cursor's text"
 key = "h"
 command = "selection-utilities.addPrev"
-computedRepeat = 'count'
+repeat = '{{key.count}}'
 
 [[bind]]
-defaults = "edit.select_edit"
-name = "skip →"
-combinedName = "skip →/←"
-description = "move primary cursor to the next match of the primary cursor's text"
-combinedDescription = "move primary cursor to the next/previous match of the primary cursor's text"
+default = "{{bind.edit_select_edit}}"
+doc.name = "skip →"
+doc.combined.name = "skip →/←"
+doc.description = "move primary cursor to the next match of the primary cursor's text"
+doc.combined.description = "move primary cursor to the next/previous match of the primary cursor's text"
 key = "shift+l"
-combinedKey = "shift+l/h"
+doc.combined.key = "shift+l/h"
 command = "selection-utilities.skipNext"
-computedRepeat = "count"
+repeat = "{{key.count}}"
 
 [[bind]]
-defaults = "edit.select_edit"
-name = "skip ←"
-combinedName = "skip →/←"
-description = "move primary cursor to the previous match of the primary cursor's text"
+default = "{{bind.edit_select_edit}}"
+doc.name = "skip ←"
+doc.combined.name = "skip →/←"
+doc.description = "move primary cursor to the previous match of the primary cursor's text"
 key = "shift+h"
 command = "selection-utilities.skipPrev"
-computedRepeat = 'count'
+repeat = '{{key.count}}'
 
 [[bind]]
-defaults = "edit.select_edit"
-name = "align ←"
-description = "align selections left"
+default = "{{bind.edit_select_edit}}"
+doc.name = "align ←"
+doc.description = "align selections left"
 key = "="
 command = "selection-utilities.alignSelectionsLeft"
 
 [[bind]]
-defaults = "edit.select_edit"
-name = "align →"
-description = "align selections right"
+default = "{{bind.edit_select_edit}}"
+doc.name = "align →"
+doc.description = "align selections right"
 key = "shift+="
 command = "selection-utilities.alignSelectionsRight"
 
 [[bind]]
-defaults = "edit.select_edit"
-name = "→ sel"
-combinedName = "→/← sel"
-description = """
+default = "{{bind.edit_select_edit}}"
+doc.name = "→ sel"
+doc.combined.name = "→/← sel"
+doc.description = """
 make the next selection primary; primary selections determine from where you add cursors,
 what cursor you delete, and where the cursor goes when you clear or save selections
 """
-combinedDescription = """
+doc.combined.description = """
 make the next/previous selection primary; primary selections determine from where you add cursors,
 what cursor you delete, and where the cursor goes when you clear or save selections
 """
 key = "j"
-combinedKey = "j/l"
+doc.combined.key = "j/l"
 command = "selection-utilities.movePrimaryRight"
-computedRepeat = 'count'
+repeat = '{{key.count}}'
 
 [[bind]]
-defaults = "edit.select_edit"
-name = "← sel"
-combinedName = "→/← sel"
-description = "make the previous selection primary; primary selections determine from where you add cursors, what cursor you delete, and where the cursor goes when you clear or save selections"
+default = "{{bind.edit_select_edit}}"
+doc.name = "← sel"
+doc.combined.name = "→/← sel"
+doc.description = "make the previous selection primary; primary selections determine from where you add cursors, what cursor you delete, and where the cursor goes when you clear or save selections"
 key = "k"
 command = "selection-utilities.movePrimaryLeft"
-computedRepeat = 'count'
+repeat = '{{key.count}}'
 
 [[bind]]
-defaults = "edit.select_edit"
-name = "insert ↑"
-combinedName = "insert ↑/↓"
-description = """
+default = "{{bind.edit_select_edit}}"
+doc.name = "insert ↑"
+doc.combined.name = "insert ↑/↓"
+doc.description = """
 insert cursor on line above
 """
-combinedDescription = "insert cursor on line above/below"
+doc.combined.description = "insert cursor on line above/below"
 key = "shift+k"
-combinedKey = "shift+k/j"
+doc.combined.key = "shift+k/j"
 command = "editor.action.insertCursorAbove"
-computedRepeat = "count"
+repeat = "{{key.count}}"
 
 [[bind]]
-defaults = "edit.select_edit"
-name = "insert sel ↓"
-combinedName = "insert ↑/↓"
-description = """
+default = "{{bind.edit_select_edit}}"
+doc.name = "insert sel ↓"
+doc.combined.name = "insert ↑/↓"
+doc.description = """
 insert cursor on line below
 """
 key = "shift+j"
 command = "editor.action.insertCursorBelow"
-computedRepeat = "count-1"
+repeat = "{{key.count-1}}"
 
 [[bind]]
-defaults = "edit.select_edit"
-name = "del. primary"
-combinedName = "del. primary/others"
-description = "remove the primary selection"
-combinedDescription = """
+default = "{{bind.edit_select_edit}}"
+doc.name = "del. primary"
+doc.combined.name = "del. primary/others"
+doc.description = "remove the primary selection"
+doc.combined.description = """
 Remove either the primary selection or all selections. Return to normal
 mode if all selections are deleted.
 """
 key = "d"
 command = "selection-utilities.deletePrimary"
-computedRepeat = "count-1"
+repeat = "{{key.count-1}}"
 
 [[bind]]
-defaults = "edit.select_edit"
-name = 'del. others'
-description = "delete all other cursors but the primary selection"
+default = "{{bind.edit_select_edit}}"
+doc.name = 'del. others'
+doc.description = "delete all other cursors but the primary selection"
 key = "shift+d"
 command = "removeSecondaryCursors"
 
 [[bind]]
-defaults = "edit.select_edit"
-name = "save sel"
-description = """
+default = "{{bind.edit_select_edit}}"
+doc.name = "save sel"
+doc.description = """
 save all selections to the default register.
 Use a count to specify an alternate register
 """
 key = "c"
 command = "runCommands"
 args.commands = [
-    { command = "selection-utilities.appendToMemory", computedArgs = { register = "count || 'default'" } },
+    { command = "selection-utilities.appendToMemory", args = { register = "count || 'default'" } },
     "selection-utilities.shrinkToActive",
     "master-key.enterNormal",
 ]
 
 [[bind]]
-defaults = "edit.select_edit"
-name = "load sel"
-description = """
+default = "{{bind.edit_select_edit}}"
+doc.name = "load sel"
+doc.description = """
 load previously saved selections in the default register.
 Use a count to specify an alternate register
 """
 key = "v"
 command = "runCommands"
 args.commands = [
-    { command = "selection-utilities.restoreAndClear", computedArgs = { register = "count || 'default'" } },
+    { command = "selection-utilities.restoreAndClear", args = { register = "count || 'default'" } },
 ]
 
 [[bind]]
-defaults = "edit.select_edit"
-name = "exchange sel"
-description = """
+default = "{{bind.edit_select_edit}}"
+doc.name = "exchange sel"
+doc.description = """
 exchange selections: with no saved selection, saves the selection, with saved selections exchanges text of current selections with those of the saved selections (number of selections must match). Use a count to specify an alternate register.
 """
 key = "x"
 command = "runCommands"
 args.commands = [
-    { command = "selection-utilities.swapWithMemory", computedArgs = { register = "count || 'default'" } },
+    { command = "selection-utilities.swapWithMemory", args = { register = "count || 'default'" } },
     "master-key.enterNormal",
 ]
 
 [[bind]]
-defaults = "edit.select_edit"
-name = "rem saved sel"
-description = """
+default = "{{bind.edit_select_edit}}"
+doc.name = "rem saved sel"
+doc.description = """
 remove the most recently saved selection from the list of saved selections
 """
 command = "runCommands"
 key = "n"
 args.commands = [
-    { command = "selection-utilities.deleteLastSaved", computedArgs = { register = "count || 'default'" } },
+    { command = "selection-utilities.deleteLastSaved", args = { register = "count || 'default'" } },
     "master-key.enterNormal",
 ]
 
 [[bind]]
-defaults = "edit.select_edit"
+default = "{{bind.edit_select_edit}}"
 key = "shift+enter"
-name = "split sel"
-description = """
+doc.name = "split sel"
+doc.description = """
 split selection into multiple selections by new line charactesr
 """
 command = "selection-utilities.splitByNewline"
 
 [[bind]]
-defaults = "edit.select_edit"
-name = "sel all"
-description = """
+default = "{{bind.edit_select_edit}}"
+doc.name = "sel all"
+doc.description = """
 create a selection for every match of the current word (or selection)
 """
 key = "shift+8"
 command = "editor.action.selectHighlights"
 
 [[bind]]
-defaults = "edit.select_edit"
-name = "character"
-description = "split by a given character"
+default = "{{bind.edit_select_edit}}"
+doc.name = "character"
+doc.description = "split by a given character"
 key = "s"
 command = "runCommands"
 
@@ -3212,90 +3142,90 @@ args.acceptAfter = 1
 
 [[bind.args.commands]]
 command = "selection-utilities.splitBy"
-computedArgs.text = "captured"
+args.text = "{{key.captured}}"
 
 [[bind]]
-defaults = "edit.select_edit"
-name = "string"
-description = "split by a given string"
+default = "{{bind.edit_select_edit}}"
+doc.name = "string"
+doc.description = "split by a given string"
 key = "shift+s"
 command = "selection-utilities.splitBy"
 
 [[bind]]
-defaults = "edit.select_edit"
-name = "include"
-description = """
+default = "{{bind.edit_select_edit}}"
+doc.name = "include"
+doc.description = """
 Include all selections that contain a given marker
 """
 key = "f"
 command = "selection-utilities.includeBy"
 
 [[bind]]
-defaults = "edit.select_edit"
-name = "exclude"
-description = """
+default = "{{bind.edit_select_edit}}"
+doc.name = "exclude"
+doc.description = """
 Exclude all selections that contain a given marker
 """
 key = "shift+f"
 command = "selection-utilities.excludeBy"
 
 [[bind]]
-defaults = "edit.select_edit"
-name = "create"
-description = "create selections of given string scoped to the current selections"
+default = "{{bind.edit_select_edit}}"
+doc.name = "create"
+doc.description = "create selections of given string scoped to the current selections"
 key = "/"
 command = "selection-utilities.createBy"
 
 [[bind]]
-defaults = "edit.select_edit"
-name = "regex"
-description = "operations by regex rather than string"
+default = "{{bind.edit_select_edit}}"
+doc.name = "regex"
+doc.description = "operations by regex rather than string"
 key = "r"
 command = "master-key.prefix"
 
 [[bind]]
-defaults = "edit.select_edit"
-name = "split"
-description = "split by a given regular expression"
+default = "{{bind.edit_select_edit}}"
+doc.name = "split"
+doc.description = "split by a given regular expression"
 key = "r shift+s"
 command = "selection-utilities.splitByRegex"
 
 [[bind]]
-defaults = "edit.select_edit"
-name = "create"
-description = "create selections of given regular expression scoped to the current selections"
+default = "{{bind.edit_select_edit}}"
+doc.name = "create"
+doc.description = "create selections of given regular expression scoped to the current selections"
 key = "r /"
 command = "selection-utilities.createByRegex"
 
 [[bind]]
-defaults = "edit.select_edit"
-name = "include"
-description = "Include all selections that contain a given regular expression"
+default = "{{bind.edit_select_edit}}"
+doc.name = "include"
+doc.description = "Include all selections that contain a given regular expression"
 key = "r f"
 command = "selection-utilities.includeByRegex"
 
 [[bind]]
-defaults = "edit.select_edit"
-name = "exclude"
-description = "Exclude all selections that contain a given regular expression"
+default = "{{bind.edit_select_edit}}"
+doc.name = "exclude"
+doc.description = "Exclude all selections that contain a given regular expression"
 key = "r shift+f"
 command = "selection-utilities.excludeByRegex"
 
 [[bind]]
-defaults = "edit.select_edit"
+default = "{{bind.edit_select_edit}}"
 key = "o"
-name = "active to front"
-combinedKey = "o/shift+o"
-combinedName = "active to start/end"
-combinedDescription = "move cursor to start/end of selection"
-description = "move cursor to start of selection"
+doc.name = "active to front"
+doc.combined.key = "o/shift+o"
+doc.combined.name = "active to start/end"
+doc.combined.description = "move cursor to start/end of selection"
+doc.description = "move cursor to start of selection"
 command = "selection-utilities.activeAtEnd"
 
 [[bind]]
-defaults = "edit.select_edit"
-name = "active to end"
-combinedName = "active to start/end"
-description = "move cursor to back of selection"
+default = "{{bind.edit_select_edit}}"
+doc.name = "active to end"
+doc.combined.name = "active to start/end"
+doc.description = "move cursor to back of selection"
 key = "shift+o"
 command = "selection-utilities.activeAtStart"
 
@@ -3305,7 +3235,9 @@ command = "selection-utilities.activeAtStart"
 
 # As a general rule, the letter keys issue commands of various sorts, and the other keys can be used to enter text (since we rarley want to surround a selection with an `a` but might want to surround it with `*` or `/`.
 
-[define.braces]
+[[define.val]]
+
+[define.val.braces]
 
 "{".before = "{"
 "{".after = "}"
@@ -3332,60 +3264,49 @@ name = "syminsert"
 highlight = "Highlight"
 cursorShape = "BlockOutline"
 
-[[mode.onType]]
+[[mode.whenNoBinding.run]]
 command = "selection-utilities.insertAround"
-computedArgs.before = "braces[captured].before || captured"
-computedArgs.after = "braces[captured].after || captured"
+args.before = '{{val.braces[key.captured]?.before ?? key.captured}}'
+args.after = "{{val.braces[key.captured]?.after ?? key.captured}}"
 args.followCursor = true
 
-[[default]]
-id = "edit.action.symmetric"
-default.kind = "action"
-default.mode = "syminsert"
+[[define.bind]]
+id = "edit_action_symmetric"
+doc.kind = "action"
+mode = "syminsert"
 
-[[default]]
-id = "edit.motion.symmetric"
-default.kind = "motion"
-default.mode = "syminsert"
+[[define.bind]]
+id = "edit_motion_symmetric"
+doc.kind = "motion"
+mode = "syminsert"
 
 [[bind]]
-defaults = "edit.action.symmetric"
-name = "sym insert mode"
+default = "{{bind.edit_action_symmetric}}"
+doc.name = "sym insert mode"
 priority = 1
-description = """
+doc.description = """
 In this mode all commands and character insertions happen at both ends of
 the selection
 """
 mode = "normal"
 key = "space shift+i"
-combinedName = "sym insert (mode)"
+doc.combined.name = "sym insert (mode)"
 command = "master-key.setMode"
 args.value = "syminsert"
 
 [[bind]]
-defaults = "edit.action.symmetric"
-name = "Normal"
-description = "Return to normal model"
+default = "{{bind.edit_action_symmetric}}"
+doc.name = "Normal"
+doc.description = "Return to normal model"
 key = "enter"
 command = "master-key.setMode"
 mode = "syminsert"
 
 [[bind]]
-defaults = "edit.action.symmetric"
-foreach.key = ["{{key: [a-z]}}", "shift+{{key: [a-z]}}"]
-name = ""
-description = "this key is ignored and has no associated command in syminsert mode"
-key = "{{key}}"
-command = "master-key.ignore"
-mode = "syminsert"
-hideInDocs = true
-hideInPalette = true
-
-[[bind]]
-name = "esc. char"
-defaults = "edit.action.symmetric"
+doc.name = "esc. char"
+default = "{{bind.edit_action_symmetric}}"
 key = "\\"
-description = "Insert escaped character"
+doc.description = "Insert escaped character"
 command = "runCommands"
 
 [[bind.args.commands]]
@@ -3394,81 +3315,81 @@ args.acceptAfter = 1
 
 [[bind.args.commands]]
 command = "selection-utilities.insertAround"
-computedArgs.before = "'\\\\' + (braces[captured].before || captured)"
-computedArgs.after = "'\\\\' + (braces[captured].after || captured)"
+args.before = "{{'\\\\' + (val.braces[key.captured]?.before ?? key.captured)}}"
+args.after = "{{'\\\\' + (val.braces[key.captured]?.after ?? key.captured)}}"
 args.followCursor = true
 
 [[bind]]
-defaults = "edit.action.symmetric"
-name = "delete"
+default = "{{bind.edit_action_symmetric}}"
+doc.name = "delete"
 key = "x"
-description = """
+doc.description = """
 delete the first and last adjacent character when cursor is at end of selection and
 delete the first and last character *in* the selection when cursor is at the start of the
 selection
 """
 command = "selection-utilities.deleteAround"
-computedArgs.count = "count"
+args.count = "{{key.count}}"
 args.followCursor = true
 
 [[bind]]
-defaults = "edit.motion.symmetric"
+default = "{{bind.edit_motion_symmetric}}"
 key = "l"
-name = "sel →"
-description = "shrink/grow selections in direction that's rightwards from cursor"
+doc.name = "sel →"
+doc.description = "shrink/grow selections in direction that's rightwards from cursor"
 command = "selection-utilities.adjustSelections"
 args.dir = "forward"
-computedArgs.count = "count"
+args.count = "{{key.count}}"
 
 [[bind]]
-defaults = "edit.motion.symmetric"
+default = "{{bind.edit_motion_symmetric}}"
 key = "h"
-name = "sel ←"
-description = "shrink/grow selections in direction that's leftwards from cursor"
+doc.name = "sel ←"
+doc.description = "shrink/grow selections in direction that's leftwards from cursor"
 command = "selection-utilities.adjustSelections"
 args.dir = "backward"
-computedArgs.count = "count"
+args.count = "{{key.count}}"
 
 [[bind]]
-defaults = "edit.motion.symmetric"
+default = "{{bind.edit_motion_symmetric}}"
 key = "o"
-name = "active to front"
-combinedKey = "o/shift+o"
-combinedName = "active to start/end"
-combinedDescription = "move cursor to start/end of selection"
-description = "move cursor to start of selection"
+doc.name = "active to front"
+doc.combined.key = "o/shift+o"
+doc.combined.name = "active to start/end"
+doc.combined.description = "move cursor to start/end of selection"
+doc.description = "move cursor to start of selection"
 command = "selection-utilities.activeAtEnd"
 
 [[bind]]
-defaults = "edit.motion.symmetric"
-name = "active to end"
-combinedName = "active to start/end"
-description = "move cursor to back of selection"
+default = "{{bind.edit_motion_symmetric}}"
+doc.name = "active to end"
+doc.combined.name = "active to start/end"
+doc.description = "move cursor to back of selection"
 key = "shift+o"
 command = "selection-utilities.activeAtStart"
 
 [[bind]]
-defaults = "edit.action.symmetric"
-name = "undo"
+default = "{{bind.edit_action_symmetric}}"
+doc.name = "undo"
 key = "u"
 command = "undo"
 
 [[bind]]
-defaults = "edit.action.symmetric"
-name = "redo"
+default = "{{bind.edit_action_symmetric}}"
+doc.name = "redo"
 key = "shift+u"
 command = "redo"
 
 [[bind]]
-defaults = "edit.motion.symmetric"
+default = "{{bind.edit_motion_symmetric}}"
 key = "v"
-name = "shrink selection"
-description = """
+doc.name = "shrink selection"
+doc.description = """
 reduce all selections to length zero and return to normal mode
 """
 command = "runCommands"
 args.commands = [
     "selection-utilities.shrinkToActive",
-    { command = "master-key.setFlag", args = { name = "select_on", value = false } },
+    { command = "master-key.setValue", args = { name = "val.select", value = false } },
     "master-key.enterNormal",
 ]

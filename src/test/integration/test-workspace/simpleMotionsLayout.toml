@@ -1,8 +1,11 @@
+#:master-keybindings
+
 [header]
-version = "2.0"
+version = "2.0.0"
 
 [[mode]]
 name = "insert"
+whenNoBinding = "insertCharacters"
 
 [[mode]]
 name = "normal"
@@ -11,56 +14,56 @@ highlight = "Highlight"
 cursorShape = "Block"
 
 [[bind]]
-name = "normal mode"
+doc.name = "normal mode"
 key = "escape"
 command = "master-key.enterNormal"
-prefixes = "{{all_prefixes}}"
+prefixes.any = true
 
-[[default]]
+[[define.bind]]
 id = "motion"
-default.command = "cursorMove"
-default.mode = "normal"
-default.when = "editorTextFocus"
-default.computedArgs.value = "count"
+command = "cursorMove"
+mode = "normal"
+when = "editorTextFocus"
+args.value = "{{key.count}}"
 
 [[bind]]
 key = "[KeyH]"
-defaults = "motion"
-name = "left"
+default = "{{bind.motion}}"
+doc.name = "left"
 args.to = "left"
 
 [[bind]]
-defaults = "motion"
-name = "right"
+default = "{{bind.motion}}"
+doc.name = "right"
 key = "[KeyL]"
 args.to = "right"
 
 [[bind]]
-defaults = "motion"
-name = "down"
+default = "{{bind.motion}}"
+doc.name = "down"
 key = "[KeyJ]"
 args.to = "down"
 
 [[bind]]
-defaults = "motion"
-name = "up"
+default = "{{bind.motion}}"
+doc.name = "up"
 key = "[KeyK]"
 args.to = "up"
 
 [[bind]]
-name = "insert mode"
+doc.name = "insert mode"
 key = "[KeyI]"
 command = "master-key.enterInsert"
 mode = "normal"
 
 [[bind]]
-name = "ignore"
+doc.name = "ignore"
 key = "[KeyU]"
 command = "master-key.ignore"
 mode = "normal"
 
 [[bind]]
-name = "delete"
+doc.name = "delete"
 key = "[KeyD]"
 mode = "normal"
 command = "runCommands"
@@ -75,11 +78,11 @@ args.command = "deleteRight"
 args.register = "operation"
 
 [[bind]]
-name = "word operation"
+doc.name = "word operation"
 key = "[KeyW]"
 mode = "normal"
 #- to qualify from word *motion*
-prefixes = ["[KeyD]"]
+prefixes.anyOf = ["[KeyD]"]
 command = "runCommands"
 
 [[bind.args.commands]]
@@ -90,10 +93,10 @@ command = "master-key.executeStoredCommand"
 args.register = "operation"
 
 [[bind]]
-foreach.num = ["{{key: [0-3]}}"]
+foreach.num = ["{{keys(`[0-3]`)}}"]
 key = "[Digit{{num}}]"
 mode = "normal"
-name = "count {{num}}"
+doc.name = "count {{num}}"
 command = "master-key.updateCount"
 args.value = "{{num}}"
 finalKey = false

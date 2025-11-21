@@ -12,7 +12,11 @@
             "args": [
                 "--extensionDevelopmentPath=${workspaceFolder}",
                 "--profile",
-                "debug",
+                "master-key-debug",
+                "--install-extension",
+                "tamasfe.even-better-toml",
+                "--install-extension",
+                "haberdashPI.selection-utilities"
             ],
             "outFiles": [
                 "${workspaceFolder}/out/node/**/*.js"

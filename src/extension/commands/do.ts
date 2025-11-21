@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import z from 'zod';
 import { validateInput } from '../utils';
-import { BindingCommand, doArgs } from '../keybindings/parsing';
 import {
     withState,
     CommandResult,
@@ -9,191 +8,41 @@ import {
     commandArgs,
     recordedCommand,
 } from '../state';
-import { cloneDeep, merge } from 'lodash';
-import { evalContext, reifyStrings } from '../expressions';
-import { keySuffix } from './prefix';
-import { isSingleCommand } from '../utils';
-import { MODE, defaultMode, modeSpecs } from './mode';
-import { List } from 'immutable';
-import { commandPalette } from './palette';
-
-export async function doCommand(
-    command: BindingCommand,
-): Promise<BindingCommand | undefined> {
-    const reifiedCommand = cloneDeep(command);
-    if (command.whenComputed !== undefined) {
-        let doRun: unknown = undefined;
-        if (typeof command.whenComputed === 'boolean') {
-            doRun = command.whenComputed;
-        } else {
-            const whenComputedResult = command.whenComputed;
-            await withState(async (state) => {
-                // TODO: ideally we would move string compilation outside
-                // of this function, and only have evaluation of the compiled result
-                // inside this call to `withState`
-                doRun = evalContext.evalStr(whenComputedResult, state.values);
-                return state;
-            });
-        }
-        reifiedCommand.whenComputed = !!doRun;
-        if (!doRun) {
-            reifiedCommand.computedArgs = undefined;
-            return reifiedCommand; // if the if check fails, don't run the command
-        }
-    }
-
-    let reifyArgs: Record<string, unknown> = command.args || {};
-    if (command.computedArgs !== undefined) {
-        let computed;
-        await withState(async (state) => {
-            computed = reifyStrings(command.computedArgs, str =>
-                evalContext.evalStr(str, state.values),
-            );
-            return state;
-        });
-        reifyArgs = merge(reifyArgs, computed);
-        reifiedCommand.args = reifyArgs;
-        reifiedCommand.computedArgs = undefined;
-    }
-
-    // sometime, based on user input, a command can change its final argument values we need
-    // to capture this result and save it as part of the `reifiedCommand` (for example, see
-    // `replaceChar` in `capture.ts`)
-    const result = await vscode.commands.executeCommand<WrappedCommandResult | void>(
-        command.command,
-        reifyArgs,
-    );
-    const args = commandArgs(result);
-    if (args === 'cancel') {
-        return undefined;
-    }
-    if (args) {
-        reifiedCommand.args = args;
-    }
-    return reifiedCommand;
-}
-
-export const runCommandsArgs = z.
-    object({
-        do: doArgs,
-        key: z.string().optional(),
-        finalKey: z.boolean().optional().default(true),
-        computedRepeat: z.number().min(0).or(z.string()).optional(),
-        hideInPalette: z.boolean().default(false).optional(),
-        hideInDocs: z.boolean().default(false).optional(),
-        priority: z.number().optional(),
-        combinedKey: z.string().optional(),
-        combinedName: z.string().optional(),
-        combinedDescription: z.string().optional(),
-        kind: z.string().optional(),
-        defaults: z.string().optional(),
-        name: z.string().optional(),
-        description: z.string().optional(),
-        prefixCode: z.number().optional(),
-        mode: z.string().optional(),
-    }).
-    strict();
-export type RunCommandsArgs = z.input<typeof runCommandsArgs>;
-
-export type RecordedCommandArgs = RunCommandsArgs & {
-    // if editing is being recorded, the text document where those edits are happening
-    recordEdits: vscode.TextDocument | undefined;
-    edits: vscode.TextDocumentChangeEvent[] | string;
-};
-
-async function resolveRepeat(args: RunCommandsArgs): Promise<number> {
-    if (typeof args.computedRepeat === 'string') {
-        let repeatEval;
-        const repeatStr = args.computedRepeat;
-        await withState(async (state) => {
-            repeatEval = evalContext.evalStr(repeatStr, state.values);
-            return state;
-        });
-        const repeatNum = z.number().safeParse(repeatEval);
-        if (repeatNum.success) {
-            return repeatNum.data;
-        } else {
-            vscode.window.showErrorMessage(`The expression '${args.computedRepeat}' did not
-                evaluate to a number`);
-            return -1;
-        }
-    } else {
-        return args.computedRepeat || 0;
-    }
-}
-
-const paletteDelay: number = 0;
-let paletteUpdate = Number.MIN_SAFE_INTEGER;
-
-function registerPaletteUpdate() {
-    if (paletteUpdate < Number.MAX_SAFE_INTEGER) {
-        paletteUpdate += 1;
-    } else {
-        paletteUpdate = Number.MIN_SAFE_INTEGER;
-    }
-}
-
-export async function doCommands(args: RunCommandsArgs): Promise<CommandResult> {
-    registerPaletteUpdate();
-
-    // run the commands
-    let reifiedCommands: BindingCommand[] | undefined = undefined;
-    let computedRepeat = 0;
-    try {
-        // `doCommand` can call a command that calls `doCommandsCmd` and will therefore
-        // clear transient values; thus we have to compute the value of `repeat` *before*
-        // running `doCommand` or the value of any transient variables (e.g. `count`) will
-        // be cleared
-        computedRepeat = await resolveRepeat(args);
-        if (computedRepeat < 0) {
-            return 'cancel';
-        }
-
-        reifiedCommands = [];
-        for (const cmd of args.do) {
-            const command = await doCommand(cmd);
-            if (command) {
-                reifiedCommands.push(command);
-            }
-        }
-        if (computedRepeat > 0) {
-            for (let i = 0; i < computedRepeat; i++) {
-                for (const cmd of reifiedCommands) {
-                    await doCommand(cmd);
-                }
-            }
-        }
-        if (!args.finalKey && paletteDelay > 0) {
-            const currentPaletteUpdate = paletteUpdate;
-            setTimeout(async () => {
-                if (currentPaletteUpdate === paletteUpdate) {
-                    registerPaletteUpdate();
-                    commandPalette(undefined, { useKey: true });
-                }
-            }, paletteDelay);
-        }
-    } finally {
-        if (args.finalKey) {
-            // this will be immediately cleared by `reset` but
-            // its display will persist in the status bar for a little bit
-            // (see `status/keyseq.ts`)
-            if (args.key) {
-                await keySuffix(args.key);
-            }
-            await withState(async (state) => {
-                return state.reset().resolve();
-            });
-        } else {
-            await withState(async state => state.resolve());
-        }
-    }
-    evalContext.reportErrors();
-    return { ...args, do: reifiedCommands, computedRepeat };
-}
-
-export const COMMAND_HISTORY = 'commandHistory';
+import { PREFIX } from './prefix';
+// import { commandPalette } from './palette';
+import { bindings } from '../keybindings/config';
+import { MODE } from './mode';
+import { CommandOutput, WhenNoBindingHeader } from '../../rust/parsing/lib/parsing';
+import { searchDecorationCheck } from './search';
 
 let maxHistory = 0;
+
+const masterBinding = z.object({
+    prefix_id: z.number().int().min(-1),
+    command_id: z.number().int().min(0).default(-1),
+});
+
+let documentIdentifierCount = 0;
+export const documentIdentifiers = new WeakMap();
+
+// determines how long between key presses before a palette of next key presses is made
+// visible; user-configurable
+let paletteDelay: number = 0;
+let paletteUpdate = Number.MIN_SAFE_INTEGER;
+
+let expressionMessages: vscode.OutputChannel;
+export function showExpressionMessages(command: CommandOutput) {
+    if (command.messages) {
+        for (const msg of command.messages) {
+            expressionMessages.appendLine(
+                `[DEBUG: ${new Date().toLocaleTimeString()}] ${msg}`,
+            );
+        }
+        if (command.messages.length > 0) {
+            expressionMessages.show(true);
+        }
+    }
+}
 
 /**
  * @command do
@@ -209,40 +58,144 @@ let maxHistory = 0;
  * ultimately implemented as a keybinding in VSCode's base `keybindings.json` file as a call
  * to `master-key.do`. This command ensures that all master-key triggered bindings get
  * recorded (so they can be replayed at a future date). It is also is the mechanism by which
- * the additional keybinding behaviors are possible in master key (e.g. `computedArgs`).
+ * the additional keybinding behaviors are possible in master key,
+ * such as [expressions](/expressions/index).
  */
-
 export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
-    const args = validateInput('master-key.do', args_, runCommandsArgs);
+    const args = validateInput('master-key.do', args_, masterBinding);
     if (args) {
-        const command = await doCommands(args);
-        if (!isSingleCommand(args.do, 'master-key.prefix')) {
-            await withState(async (state) => {
-                return state.update<List<unknown>>(
-                    COMMAND_HISTORY,
-                    { notSetValue: List() },
-                    (history) => {
-                        let recordEdits = undefined;
-                        if (
-                            (modeSpecs[state.get(MODE, defaultMode) || ''] || {})?.
-                                recordEdits
-                        ) {
-                            recordEdits = vscode.window.activeTextEditor?.document;
-                        }
-                        if (command !== 'cancel') {
-                            history = history.push({ ...command, edits: [], recordEdits });
-                            if (history.count() > maxHistory) {
-                                history = history.shift();
+        const toRun = bindings.do_binding(args.command_id);
+        if ((toRun.error?.length || 0) > 0) {
+            let count = 0;
+            for (const e of (toRun.error || [])) {
+                count++;
+                if (count > 3) {
+                    break;
+                }
+                vscode.window.showErrorMessage(e);
+            }
+            return;
+        }
+
+        try {
+            // this starts as true: repeating a command -1 or fewer times is equivalent
+            // to canceling the command
+            let canceled = true;
+            for (let r = 0; r < toRun.repeat + 1; r++) {
+                for (let i = 0; i < toRun.n_commands(); i++) {
+                    // now we know that the command is begin run at least once
+                    canceled = false;
+                    const command = toRun.resolve_command(i, bindings);
+                    showExpressionMessages(command);
+
+                    // pass key codes down into the arguments to prefix
+                    if (command.command == 'master-key.ignore') {
+                        if (command.errors) {
+                            let count = 0;
+                            for (const error of command.errors) {
+                                count++;
+                                if (count >= 2) {
+                                    vscode.window.showErrorMessage(
+                                        'There were additional errors when running a \
+                                        key binding; they have been truncated to maintain \
+                                        a reasonable number of notifications ',
+                                    );
+                                }
+                                vscode.window.showErrorMessage(error);
                             }
                         }
-                        return history;
-                    },
-                );
-            });
+                    } else {
+                        if (command.command == 'master-key.prefix') {
+                            command.args.prefix_id = args.prefix_id;
+                            command.args.key = toRun.key;
+                        }
+                        const result =
+                            await vscode.commands.
+                                executeCommand<WrappedCommandResult | void>(
+                                    command.command,
+                                    command.args,
+                                );
+                        const resolvedArgs = commandArgs(result);
+                        if (resolvedArgs === 'cancel') {
+                            canceled = true;
+                            break;
+                        }
+                        if (resolvedArgs) {
+                            command.args = resolvedArgs;
+                        }
+                        // update the command arguments based on any user input collected
+                        // during the call to run the command (e.g. for master-key.search).
+                        toRun.store_command(i, command);
+                    }
+                }
+                if (canceled) {
+                    break;
+                }
+            }
+
+            if (!canceled && toRun.finalKey) {
+                const editor = vscode.window.activeTextEditor || {};
+                let id = documentIdentifiers.get(editor);
+                if (!id) {
+                    id = documentIdentifierCount++;
+                    documentIdentifiers.set(editor, id);
+                }
+                await withState(async (state) => {
+                    const mode = state.get(MODE, bindings.default_mode()) || 'default';
+                    // we want to record edits if the current mode permits it
+                    if (bindings.mode(mode)?.whenNoBinding() ==
+                        WhenNoBindingHeader.InsertCharacters) {
+                        toRun.edit_document_id = id;
+                    }
+                    return state;
+                });
+            }
+
+            if (!canceled) {
+                bindings.store_binding(toRun, maxHistory);
+            }
+
+            if (!canceled && !toRun.finalKey && paletteDelay > 0) {
+                const currentPaletteUpdate = paletteUpdate;
+                setTimeout(async () => {
+                    if (currentPaletteUpdate === paletteUpdate) {
+                        registerPaletteUpdate();
+                        // commandPalette(undefined, { useKey: true });
+                    }
+                }, paletteDelay);
+            }
+        } finally {
+            if (toRun.finalKey) {
+                // this will be immediately cleared by `reset` but
+                // its display will persist in the status bar for a little bit
+                // (see `status/keyseq.ts`)
+                const prefix = toRun.key;
+                await withState(async (state) => {
+                    return state.update<string>(PREFIX, {
+                        transient: { reset: '' }, public: true, notSetValue: '',
+                    }, _ => prefix);
+                });
+                // here is where we clear the key sequence displayed by setting `PREFIX`
+                // above by calling `reset()`
+                await withState(async (state) => {
+                    return state.reset().resolve();
+                });
+            } else {
+                await withState(async state => state.resolve());
+            }
+            searchDecorationCheck();
         }
     }
-    // TODO: think about whether it is cool to nest `do` commands
+
     return args;
+}
+
+function registerPaletteUpdate() {
+    if (paletteUpdate < Number.MAX_SAFE_INTEGER) {
+        paletteUpdate += 1;
+    } else {
+        paletteUpdate = Number.MIN_SAFE_INTEGER;
+    }
 }
 
 function updateConfig(event?: vscode.ConfigurationChangeEvent) {
@@ -254,15 +207,23 @@ function updateConfig(event?: vscode.ConfigurationChangeEvent) {
         } else {
             maxHistory = configMaxHistory;
         }
+        const configPaletteDelay = config.get<number>('suggestionDelay');
+        if (configPaletteDelay === undefined) {
+            paletteDelay = 0;
+        } else {
+            paletteDelay = configPaletteDelay;
+        }
     }
 }
 
 export function activate(context: vscode.ExtensionContext) {
+    expressionMessages = vscode.window.createOutputChannel('Master Key Debug');
+    context.subscriptions.push(expressionMessages);
+
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.do', recordedCommand(doCommandsCmd)),
     );
 
     updateConfig();
-    console.log('configured max history: ' + maxHistory);
     vscode.workspace.onDidChangeConfiguration(updateConfig);
 }
