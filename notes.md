@@ -500,6 +500,7 @@ Integration test debugging:
                 - very confused: seems like even when I have a good `BareValue`
                   the expressions aren't picked up ???
     - [X] document macro / history values for expressions
+    - [X] proof-read documentation
     - [ ] parse and dog-food larkin
         - [X] fix issue with missing foreach variables
         - [X] fix issue with unexpected `{{` in multiline strings
@@ -549,13 +550,11 @@ Integration test debugging:
             - [X] debug `resolve` failures (is there something I'm not doing that occurs in e.g. do_command, which `resolve` assumes has already happened?)
             - [X] create an integration test
         - [X] highlighting ins't resetting when using search
-        - [ ] keep dog-fooding to find more issues
-            - [ ] code.firstSelectionOrWord isn't picking up things near the cursor
-              (sometimes?? it's working now... 🤔)
-            - [X] `captured` doesn't have a `slice` function (selecting between characters)
-            - [X] error messages not showing up
+        - [X] code.firstSelectionOrWord isn't picking up things near the cursor
+            (sometimes?? it's working now... 🤔)
+        - [X] `captured` doesn't have a `slice` function (selecting between characters)
+        - [X] error messages not showing up
         - [ ] tree commands aren't changing the mode properly
-    - [ ] proof-read documentation
     - [ ] get any remaining, existing tests (except unimplemented features) working again
         - [ ] update unit tests for running commands
             - [ ] remove replay unit tests (they are become integration tests)
