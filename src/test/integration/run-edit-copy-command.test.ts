@@ -1,6 +1,5 @@
 import { test, expect } from './config';
-import { activateKeybindings, openFile, runCommand } from './utils';
-import { Page } from '@playwright/test';
+import { runCommand } from './utils';
 
 // NOTE: ideally this would not be a playwright integration test, but a mocha unit test.
 // However there is something about the isolated environment created by vscode's test-cli
@@ -9,9 +8,13 @@ import { Page } from '@playwright/test';
 test.describe('edit preset command', () => {
     test('creates a file', async ({ workbox }) => {
         await runCommand(workbox, 'Master Key: Edit Preset Copy');
-        const input = workbox.getByRole('textbox', { name: 'Type to narrow down results.' });
+        const input = workbox.getByRole(
+            'textbox',
+            { name: 'Type to narrow down results.' },
+        );
         await input.press('Enter');
-        const fileTop = workbox.locator('div').filter({ hasText: /^#:master-keybindings$/ });
+        const fileTop = workbox.locator('div').
+            filter({ hasText: /^#:master-keybindings$/ });
         await expect(fileTop).toBeVisible();
     });
 });

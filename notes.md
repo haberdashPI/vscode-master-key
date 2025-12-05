@@ -573,16 +573,17 @@ Integration test debugging:
         - [X] after visual documentation commit we fail to load proper modes
               (something about config loading is going wrong here I assume; checksum?)
               - [X] see if the current integration tests for configuration pick up on this (NO)
-              - [ ] ideally get an integration test that picks up on this if it doesn't exist (NOPE; too hard, not worth creating)
+              - [X] ideally get an integration test that picks up on this if it doesn't exist (NOPE; too hard, not worth creating)
               - [X] fix the problem
                 - [X] determine conditions where config fails to load
                     - only triggers in non-debug context, we'll need to add some console.log statements to see what is happening when the
                     extension is running in production
     - [ ] TODO: decorators aren't working
     - [ ] get any remaining, existing tests (except unimplemented features) working again
-        - [ ] update unit tests for running commands
-            - [ ] remove replay unit tests (they are become integration tests)
-            - [ ] move the missing do unit tests to integration
+        - [X] update unit tests for running commands
+            - [X] remove replay unit tests (they are become integration tests)
+            - [X] move the missing do unit tests to integration
+        - [ ] run the tests in CI
     - [ ] cleanup any files we need to delete
     - [ ] merge PR; don't release a new version yet
     - [X] extraction of visual docs
