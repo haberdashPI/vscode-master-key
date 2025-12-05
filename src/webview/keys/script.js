@@ -47,7 +47,11 @@ window.addEventListener('message', (event) => {
 
         if (name && key && !key.empty) {
             label.innerHTML = key.label || '';
-            const args = key.args || { name: '', kind: '', description: '' };
+            const args = {
+                name: key.name || '',
+                kind: key.kind || '',
+                description: key.description || '',
+            };
             name.innerHTML = args.name;
             const kind = (kinds && kinds[args.kind]) || {
                 index: 'none',

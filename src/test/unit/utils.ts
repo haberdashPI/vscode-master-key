@@ -1,15 +1,28 @@
 import * as vscode from 'vscode';
 import * as assert from 'assert';
 
-export async function editorWithText(body: string) {
+import * as path from 'path';
+import * as os from 'os';
+
+export async function editorWithText(
+    body: string,
+    fileExt: string = '.txt',
+): Promise<[vscode.TextEditor, vscode.Uri]> {
     await vscode.commands.executeCommand('explorer.newFile');
 
-    const editor_ = vscode.window.activeTextEditor;
-    assert.notEqual(editor_, undefined);
-    const editor = editor_!;
+    const fileName = `test-file-${Date.now()}${fileExt}`;
+    const filePath = path.join(os.tmpdir(), fileName);
 
-    await editor.edit(e => e.insert(new vscode.Position(0, 0), body));
-    return editor;
+    // Convert the string path to a VS Code URI
+    const fileUri = vscode.Uri.file(filePath);
+
+    const fileContent = Buffer.from(body, 'utf8');
+    await vscode.workspace.fs.writeFile(fileUri, fileContent);
+
+    const document = await vscode.workspace.openTextDocument(fileUri);
+    const editor = await vscode.window.showTextDocument(document);
+
+    return [editor, fileUri];
 }
 
 export function cursorToStart(editor: vscode.TextEditor) {
@@ -29,8 +42,10 @@ export async function assertCursorMovesBy(
     body: (x: void) => Promise<void>,
 ) {
     const start = editor.selection.active;
+    // console.log('DEBUG start: ' + JSON.stringify(start, null, 4));
     await body();
     const end = editor.selection.active;
+    // console.log('DEBUG end: ' + JSON.stringify(end, null, 4));
     const expectedEnd = new vscode.Position(
         start.line + by.line,
         start.character + by.character,
