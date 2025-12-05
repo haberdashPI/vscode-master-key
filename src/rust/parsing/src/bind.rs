@@ -1001,12 +1001,14 @@ impl Binding {
         }
 
         let all_prefixes: HashSet<_> = all_prefixes_to_spans.into_keys().collect();
+        let mut all_sorted_prefixes: Vec<_> = all_prefixes.iter().map(String::from).collect();
+        all_sorted_prefixes.sort();
 
         // expand all explicit prefix definitions that are defined by the entire set
         // of prefixes defined elsewhere (Any(true) and AllBut(...))
         for (bind, span) in binds.iter_mut().zip(spans.iter()) {
             bind.prefixes = match &bind.prefixes {
-                Prefix::Any(true) => Prefix::AnyOf(all_prefixes.iter().map(String::from).collect()),
+                Prefix::Any(true) => Prefix::AnyOf(all_sorted_prefixes.clone()),
                 Prefix::Any(false) => Prefix::AnyOf(vec!["".to_string()]),
                 Prefix::AllBut(x) => {
                     let x_set: HashSet<_> = x.iter().map(String::from).collect();
@@ -1022,7 +1024,9 @@ impl Binding {
 
                         errors.push(error.unwrap_err());
                     }
-                    Prefix::AnyOf(selected.map(|x| x.to_owned()).collect())
+                    let mut subset: Vec<_> = selected.map(|x| x.to_owned()).collect();
+                    subset.sort();
+                    Prefix::AnyOf(subset)
                 }
                 other @ _ => other.clone(),
             }
@@ -1221,6 +1225,7 @@ pub struct BindingOutputArgs {
     // in the keybindings.json file, and so they are stored
     pub(crate) name: String,
     pub(crate) description: String,
+    pub(crate) kind: String,
     pub(crate) prefix: String,
     pub(crate) mode: String,
 }
@@ -1396,12 +1401,14 @@ impl Binding {
         let mut result = Vec::new();
 
         // create a distinct binding for each mode...
-        for mode in &self.mode {
+        let mut modes = self.mode.clone();
+        modes.sort();
+        for mode in modes {
             let mut when_with_mode = match &self.when {
                 Some(when) => vec![when.clone()],
                 Option::None => vec![],
             };
-            if mode != &scope.default_mode {
+            if mode != scope.default_mode {
                 when_with_mode.push(format!("master-key.mode == '{mode}'"));
             } else {
                 when_with_mode.push(format!("!master-key.mode || master-key.mode == '{mode}'"))
@@ -1557,6 +1564,10 @@ impl Binding {
                 priority: self.priority,
                 prefix: old_prefix_str,
                 name: self.doc.name.clone(),
+                kind: match &self.doc.kind {
+                    Some(x) => x.clone(),
+                    Option::None => String::new(),
+                },
                 implicit: self.implicit,
                 description: self.doc.description.clone(),
             },

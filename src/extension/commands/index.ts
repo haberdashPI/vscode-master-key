@@ -10,7 +10,7 @@ import * as search from './search';
 import * as prefix from './prefix';
 import { withState } from '../state';
 // import * as palette from './palette';
-// import * as visualKeyDoc from './visualKeyDoc';
+import * as visualKeyDoc from './visualKeyDoc';
 // import * as textKeyDoc from './textDocs';
 
 /**
@@ -35,7 +35,7 @@ export async function activate(context: vscode.ExtensionContext) {
     await search.activate(context);
     await prefix.activate(context);
     // await palette.activate(context);
-    // await visualKeyDoc.activate(context);
+    await visualKeyDoc.activate(context);
     // await textKeyDoc.activate(context);
 
     /**

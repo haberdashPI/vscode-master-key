@@ -442,6 +442,7 @@ export async function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand('master-key.setValue', recordedCommand(setValue)),
     );
 
+    updateCodeVariables({ textEditor: vscode.window.activeTextEditor });
     vscode.window.onDidChangeTextEditorSelection(updateCodeVariables);
     vscode.window.onDidChangeActiveTextEditor(e => updateCodeVariables({ textEditor: e }));
 }

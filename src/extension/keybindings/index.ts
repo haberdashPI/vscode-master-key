@@ -11,6 +11,7 @@ import {
     // createUserBindings,
     createBindings,
     getBindings,
+    KeyFileData,
 } from './config';
 import * as config from './config';
 import { toLayoutIndependentString } from './layout';
@@ -21,7 +22,6 @@ import TOML from 'smol-toml';
 import initParsing, {
     KeyFileResult,
     ErrorLevel,
-    parse_keybinding_bytes,
 } from '../../rust/parsing/lib';
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -68,6 +68,7 @@ let layoutIndependence = false;
 let layoutIndependenceUpdateCount = 0;
 async function updateConfig(
     event: vscode.ConfigurationChangeEvent | undefined,
+    context: vscode.ExtensionContext,
     updateKeys: boolean = true,
 ) {
     if (!event || event?.affectsConfiguration('master-key')) {
@@ -75,7 +76,7 @@ async function updateConfig(
         const newLayoutIndependence = config.get<boolean>('layoutIndependence') || false;
         if (layoutIndependence !== newLayoutIndependence && updateKeys) {
             layoutIndependence = newLayoutIndependence;
-            const data = await getBindings();
+            const data = await getBindings(context);
             if (data) {
                 // NOTE: since this is an expensive operation that modifies GUI elements,
                 // and the user is probably interacting with GUI elements, we want to delay
@@ -137,11 +138,11 @@ async function copyBindings(file: vscode.Uri) {
     }
 }
 
-async function removeKeybindings() {
+async function removeKeybindings(context: vscode.ExtensionContext) {
     await vscode.commands.executeCommand('workbench.action.openGlobalKeybindingsFile');
     const ed = vscode.window.activeTextEditor;
     if (ed) {
-        await createBindings();
+        await createBindings(context);
         const oldBindingsStart = findText(ed.document, 'AUTOMATED BINDINGS START');
         const oldBindingsEnd = findText(ed.document, 'AUTOMATED BINDINGS END');
         if (oldBindingsStart && oldBindingsEnd) {
@@ -278,7 +279,18 @@ async function insertKeybindingsIntoConfig(data: KeyFileData) {
             }
 
             if (installed) {
-                vscode.window.
+                if (bindings.has_layout_independent_bindings()) {
+                    vscode.window.showInformationMessage(
+                        replaceAll(
+                            `The assigned bindings include layout independent bindings.
+                            When you see keys surrounded by "[" and "]", they refer to the
+                            U.S. Layout location of these characters.`,
+                            /\s+/g,
+                            ' ',
+                        ),
+                    );
+                }
+                const selection = await vscode.window.
                     showInformationMessage(
                         replaceAll(
                             'Master keybindings were added to \`keybindings.json\`.',
@@ -291,16 +303,12 @@ async function insertKeybindingsIntoConfig(data: KeyFileData) {
                                 ['Install Extensions']),
                         'Show Documentation',
                     );
-                if (bindings.has_layout_independent_bindings()) {
-                    vscode.window.showInformationMessage(
-                        replaceAll(
-                            `The assigned bindings include layout independent bindings.
-                            When you see keys surrounded by "[" and "]", they refer to the
-                            U.S. Layout location of these characters.`,
-                            /\s+/g,
-                            ' ',
-                        ),
-                    );
+                if (selection == 'Install Extensions') {
+                    await handleRequireExtensions(data);
+                }
+                if (selection == 'Show Documentation') {
+                    vscode.commands.executeCommand('master-key.showVisualDoc');
+                    vscode.commands.executeCommand('master-key.showTextDoc');
                 }
             }
         }
@@ -435,7 +443,10 @@ async function handleRequireExtensions(data?: KeyFileData) {
     }
 }
 
-async function activateBindings(data?: KeyFileData | 'CurrentFile') {
+async function activateBindings(
+    context: vscode.ExtensionContext,
+    data?: KeyFileData | 'CurrentFile',
+) {
     if (!data) {
         data = await queryPreset();
     }
@@ -449,7 +460,7 @@ async function activateBindings(data?: KeyFileData | 'CurrentFile') {
             );
             return;
         }
-        await createBindings(data);
+        await createBindings(context, data);
         await insertKeybindingsIntoConfig(data);
     }
 }
@@ -477,41 +488,6 @@ async function activateBindings(data?: KeyFileData | 'CurrentFile') {
 //         vscode.window.showErrorMessage('Open document must be saved to a file first.');
 //     }
 // }
-
-export class KeyFileData {
-    uri: vscode.Uri;
-    _data?: Uint8Array;
-    _bindings?: KeyFileResult;
-    constructor(uri: vscode.Uri, data?: Uint8Array) {
-        this.uri = uri;
-        this._data = data;
-        this._bindings = undefined;
-    }
-
-    async data() {
-        if (!this._data) {
-            const result = await vscode.workspace.fs.readFile(this.uri);
-            this._data = result;
-            return result;
-        } else {
-            return this._data;
-        }
-    }
-
-    async bindings() {
-        if (!this._bindings) {
-            const data = await this.data();
-            // DEBUG:
-            // const decoder = new TextDecoder();
-            // console.log('File contents: \n' + decoder.decode(data));
-            // END_DEBUG
-            const result = parse_keybinding_bytes(data);
-            return result;
-        } else {
-            return this._bindings;
-        }
-    }
-}
 
 let extensionPresetsDir: vscode.Uri;
 const presetFiles = ['larkin.toml'];
@@ -545,6 +521,7 @@ export async function validateKeybindings(
         return false;
     }
     let isValid = true;
+    console.log('Errors found: ' + parsed.n_errors());
     if (parsed.n_errors() > 0) {
         const diagnosticItems: vscode.Diagnostic[] = [];
         for (let i = 0; i < parsed.n_errors(); i++) {
@@ -589,8 +566,8 @@ export async function validateKeybindings(
 let diagnostics: vscode.DiagnosticCollection;
 
 export async function activate(context: vscode.ExtensionContext) {
-    updateConfig(undefined, false);
-    vscode.workspace.onDidChangeConfiguration(updateConfig);
+    updateConfig(undefined, context, false);
+    vscode.workspace.onDidChangeConfiguration(event => updateConfig(event, context, true));
 
     diagnostics = vscode.languages.createDiagnosticCollection('Master Key Bindings');
 
@@ -600,7 +577,7 @@ export async function activate(context: vscode.ExtensionContext) {
             debounce(() => {
                 const text = e.document.getText();
                 const bytes = encoder.encode(text);
-                validateKeybindings(new KeyFileData(e.document.uri, bytes));
+                validateKeybindings(new KeyFileData(e.document.uri, { bytes }));
             }, 1000)();
         }
     });
@@ -628,7 +605,10 @@ export async function activate(context: vscode.ExtensionContext) {
      * Insert your master key bindings into VSCode, making them active
      */
     context.subscriptions.push(
-        vscode.commands.registerCommand('master-key.activateBindings', activateBindings),
+        vscode.commands.registerCommand(
+            'master-key.activateBindings',
+            () => activateBindings(context),
+        ),
     );
     /**
      * @userCommand deactivateBindings
@@ -637,7 +617,10 @@ export async function activate(context: vscode.ExtensionContext) {
      * Remove your master key bindings from VSCode
      */
     context.subscriptions.push(
-        vscode.commands.registerCommand('master-key.deactivateBindings', removeKeybindings),
+        vscode.commands.registerCommand(
+            'master-key.deactivateBindings',
+            () => removeKeybindings(context),
+        ),
     );
     /**
      * @userCommand activateUserBindings

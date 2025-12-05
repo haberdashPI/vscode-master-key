@@ -658,10 +658,10 @@ key = ","
 command = "master-key.replayFromHistory"
 args.index = """{{
 last_history_index(|i| {
-    history[i]?.tags?.contains("motion") &&
-    history[i+1]?.tags?.contains("action") &&
-    !(history[i+1]?.doc?.name?.starts_with("repeat") &&
-      history[i+1]?.tags?.contains("history"))
+    (history[i]?.tags?.contains("motion") ?? false) &&
+    (history[i+1]?.tags?.contains("action") ?? false) &&
+    !((history[i+1]?.doc?.name?.starts_with("repeat") ?? false) &&
+      (history[i+1]?.tags?.contains("history") ?? false))
 })
 }}"""
 

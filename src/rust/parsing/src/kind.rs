@@ -1,9 +1,10 @@
 #[allow(unused_imports)]
 use log::info;
 
-use serde::Deserialize;
-use std::collections::HashMap;
+use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, HashSet};
 use toml::Spanned;
+use wasm_bindgen::prelude::*;
 
 use crate::error::{ErrorContext, ParseError, Result, ResultVec};
 use crate::expression::Scope;
@@ -37,10 +38,11 @@ use crate::{err, wrn};
 /// command = "cursorLeft"
 /// ```
 
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[wasm_bindgen(getter_with_clone)]
 pub struct Kind {
-    name: String,
-    description: String,
+    pub name: String,
+    pub description: String,
     #[serde(flatten)]
     other_fields: HashMap<String, toml::Value>,
 }
@@ -50,13 +52,13 @@ impl Kind {
         input: &Option<Vec<Spanned<Kind>>>,
         scope: &mut Scope,
         warnings: &mut Vec<ParseError>,
-    ) -> ResultVec<HashMap<String, String>> {
-        let mut kinds = HashMap::new();
+    ) -> ResultVec<Vec<Kind>> {
+        let mut known_kinds = HashSet::new();
         if let Some(input) = input {
             for kind in input.iter() {
                 let span = kind.span().clone();
                 let kind_input = kind.as_ref();
-                if kinds.contains_key(&kind_input.name) {
+                if known_kinds.contains(&kind_input.name) {
                     return Err(err!("Kind `name` must be unique.")).with_range(&span)?;
                 }
 
@@ -70,12 +72,12 @@ impl Kind {
                     warnings.push(err.unwrap_err());
                 }
 
-                kinds.insert(kind_input.name.clone(), kind_input.description.clone());
+                known_kinds.insert(kind_input.name.clone());
             }
-            scope.kinds = kinds.keys().map(|x| x.clone()).collect();
-            return Ok(kinds);
+            scope.kinds = input.iter().map(|x| x.as_ref().name.clone()).collect();
+            return Ok(input.iter().map(|x| x.as_ref().clone()).collect());
         } else {
-            return Ok(HashMap::new());
+            return Ok(Vec::new());
         }
     }
 }

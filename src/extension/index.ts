@@ -13,7 +13,7 @@ export async function activate(context: vscode.ExtensionContext) {
     await commands.activate(context);
     await status.activate(context);
 
-    await config.updateBindings();
+    await config.updateBindings(context);
 }
 
 // This method is called when your extension is deactivated

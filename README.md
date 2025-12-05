@@ -7,11 +7,15 @@
 [![Code Style: Google](https://img.shields.io/badge/code%20style-google-blueviolet.png)](https://github.com/google/gts)
 [![Docs](https://img.shields.io/badge/docs-stable-blue.png)](https://haberdashpi.github.io/vscode-master-key)
 
-Master Key is a tool for becoming a power-user of your [VSCode](https://code.visualstudio.com/) keybindings: get in-context or visual documentation at any time, define modal bindings, record simple keyboard macros, and customize to your heart's content with a powerful TOML-based keybinding specification.
+Master Key is a tool for becoming a power-user of your [VSCode](https://code.visualstudio.com/) keybindings. Features include:
 
-With Master Key it is easy to create keybinding specifications that match your editor style of choice (modal, chorded, etc...) and it comes with pre-existing bindings to get you started.
+- extensive documentation of your bindings (quick pick, visual and text)
+- modal bindings (ala Vim),
+- recording simple keyboard macros
+- a powerful TOML-based keybinding specification
+- learn by example from the pre-existing bindings
 
-For example, this curated snippet from the Master Key's default bindings defines a VIM-like set of bindings for a count argument and downward motion:
+For example, this curated snippet from the Master Key's Larking preset defines a VIM-like feature to update a count argument along with and downward motion that uses the count argument:
 
 ```toml
 # front matter...
@@ -66,9 +70,9 @@ This highlights a number of Master Key's features:
 1. We can use `foreach` to generate many bindings at once
 2. Bindings are expressive: e.g. we can use data stored by one binding as the argument to
 a second binding.
-3. Each binding is documented in-line: this documentation is available in a visual layout, a generated markdown output, and as part of a quick-pick palette
+3. Each binding is documented in-line: this documentation is available in a visual layout, a generated markdown output, and as part of a quick-pick palette (in this case shown using `shift+;`)
 
-Master Key validates this binding format, providing inline linting of the binding files as you write them.
+Master Key validates this TOML file, providing inline linting of as you edit.
 
 <!-- text between START_/STOP_ comments is extracted and inserted into the docs -->
 <!-- START_DOCS -->
@@ -86,7 +90,9 @@ The easiest way to get started is to activate the built-in keybindings that come
 
 <!-- STOP_DOCS -->
 
-You can revert these changes later using `Master Key: Deactivate Keybindings`.
+You can start creating your own bindings based off an available preset using `Master Key: Edit Preset Copy`: this will open TOML file and insert the preset bindings into this file.
+
+You can revert back to the state before master keybindings was installed using `Master Key: Deactivate Keybindings`.
 
 To learn more about how to use Master Key [read the documentation](haberdashpi.github.io/vscode-master-key).
 

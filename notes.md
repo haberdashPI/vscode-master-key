@@ -554,15 +554,52 @@ Integration test debugging:
             (sometimes?? it's working now... 🤔)
         - [X] `captured` doesn't have a `slice` function (selecting between characters)
         - [X] error messages not showing up
-        - [ ] tree commands aren't changing the mode properly
+        - [X] tree commands aren't changing the mode properly
+        - [X] hit error with repeat history where we had null
+              but were expecting bool (3-value logic doesn't seem
+              to exist?)
     - [ ] get any remaining, existing tests (except unimplemented features) working again
         - [ ] update unit tests for running commands
             - [ ] remove replay unit tests (they are become integration tests)
             - [ ] move the missing do unit tests to integration
     - [ ] cleanup any files we need to delete
-    - [ ] merge PR; don't relase a new version yet
-    - [ ] properly handle user keybindings (have the main keybinding file in memory)
-    - [ ] replay symmetric edits
+    - [ ] merge PR; don't release a new version yet
+    - [X] extraction of visual docs
+        - [X] reimplement visual output
+            - [X] create a map of keys-mode-prefix -> name, description, kind
+            - [X] reimplement checks to send this info to the webview when any of these change
+        - [X] test/out and debug re-implementation
+            - [X] base view works
+            - [X] bug: some prefixes are swapped (e.g. q and space are swapped)
+                  NOTE: tracing through, an initial run through
+                  the bindings seems to correctly assign things
+                  but then we loose it; it's not that the same keys are
+                  swapped though, we loose e.g. '23:normal'. I think some
+                  of the prefix_id's are probably messed up (e.g. maybe
+                  23 means 'space' and some other prefix code also means space?)
+                - AH HAH: the file gets parsed twice and this leads to
+                  distinct prefix codes. I'm not quite sure why, but I
+                  think this is probably because it somehow depends on
+                  the order of things in a hash map (which is not stable
+                  from parse to parse).
+                - [X] we probably only want to parse once, this is needless
+                    effort
+                        - [X] we've found one duplicate parsing culprit, a failed
+                          cache operation
+                        - [X] but we can't as easily get around a `useBinding` hook,
+                          since there are a variety of reasons the config file
+                          might update for which we should update the bindings
+                          (e.g. changes from another machine). We want to
+                          be able to hash the key file and use that
+                            - we started to implement hash for the parsed structued
+                            but we should undo that work and just compute a hash
+                            of the toml file. that's easier to implement and
+                            probably the better strategy anyways
+                - [X] we probably want to avoid depending on the hash
+                      order
+        - [X] reimplement integration tests
+    - [ ] reimplement palette
+    - [ ] show documentation button isn't working!
     - [ ] extraction of markdown docs
         - [ ] documentation expansion/validation
             - across all `[[bind]]` values with the same key and mode
@@ -573,9 +610,7 @@ Integration test debugging:
                   whose span overlaps
             - [ ] convert any bind elements in this overlap into markdown table
         - [ ] reimplement integration tests
-    - [ ] extraction of visual docs
-        - [ ] reimplement visual output
-        - [ ] reimplement integration tests
+    - [ ] replay symmetric edits
     - [ ] reimlement storeNamed? (or make it more specific to macros; I'm not
           convinced the generic tool is really useful)
     - [ ] rename from Master Key to Key Atlas (keep the same extension name, to avoid
@@ -587,6 +622,13 @@ Integration test debugging:
         - [x] setup CI and merge coverage across rust and javascript
         - [X] verify that CI is running and coverage is showing up
         - [ ] check in with CI setup once we get the above tasks completed
+
+Follow-up:
+- [ ] make some features more discoverable
+    - add a button to edit a binding from the activate binding menu
+        - make sure editing is prominently in the documentation for Larkin
+          (and an future binding files)
+        - make sure it is prominently in the getting started section
 
 4. Move palette from quick pick to tree view
 1   - NOTE: the new features in 1.105 make this moot: we just need to update the quick
@@ -619,3 +661,14 @@ Integration test debugging:
 9. Translate selection utility tests to new build setup
 10. Get CI working for all tests in selection utilities
 11. continue the quest for better test coverage if necessary
+
+Quick wins not addressed above:
+- visual documentation improvements
+    - the visual documentation could show a hint about the command
+    to toggle between binding modifiers (and show the default key binding)
+    - currently keybindings are sorted from highest to lowest frequency
+    modifiers across all modes. This should really be a feature per mode,
+    so that the most relevant bindings for a given mode are visible
+    immediately.
+    - visual documentation could highlighlt the most recently pressed
+    key in the same way that status bar shows the most recently pressed binding

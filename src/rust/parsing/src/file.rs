@@ -124,7 +124,7 @@
 #[allow(unused_imports)]
 use log::{error, info};
 
-use crate::bind::command::{Command, CommandValue, regularize_commands};
+use crate::bind::command::{CommandValue, regularize_commands};
 use crate::bind::{
     Binding, BindingCodes, BindingInput, BindingOutput, KeyId, LegacyBindingInput, ReifiedBinding,
     UNKNOWN_RANGE,
@@ -211,7 +211,7 @@ pub struct KeyFile {
     define: Define,
     mode: Modes,
     bind: Vec<Binding>,
-    kind: HashMap<String, String>,
+    pub kind: Vec<Kind>,
     // TODO: avoid storing `key_bind` to make serialization smaller
     key_bind: Vec<BindingOutput>,
 }
@@ -696,6 +696,14 @@ impl KeyFileResult {
             return Ok(js_val);
         } else {
             return Ok(js_sys::Object::new().into());
+        }
+    }
+
+    pub fn kinds(&self) -> Vec<Kind> {
+        if let Some(KeyFile { kind, .. }) = &self.file {
+            return kind.clone();
+        } else {
+            return Vec::new();
         }
     }
 }
