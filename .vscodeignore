@@ -3,6 +3,7 @@
 !LICENSE.md
 !README.md
 !package.json
+!logo.png
 
 !out/browser/index.js
 !out/node/index.js

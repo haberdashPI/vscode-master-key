@@ -17,12 +17,26 @@
         "Keymaps"
     ],
     "activationEvents": [
-        "*"
+        "onCommand:master-key.do",
+        "onCommand:master-key.prefix",
+        "onCommand:master-key.ignore",
+        "onCommand:master-key.search",
+        "onCommand:master-key.setValue"
     ],
     "main": "./out/node/index.js",
     "browser": "./out/browser/index.js",
     "contributes": {
         "commands": [
+            {
+                "command": "master-key.internal-testCommand",
+                "title": "Test Command (Internal Debugging)",
+                "enablement": "master-key.val.internal__debug__flag"
+            },
+            {
+                "command": "master-key.togglePaletteDisplay",
+                "category": "Master Key",
+                "title": "Toggle automatic display of quick-pick menu for multi-key keybindings"
+            },
             {
                 "command": "master-key.activateBindings",
                 "category": "Master Key",
@@ -237,7 +251,7 @@
         "type-fest": "^4.41.0",
         "typescript": "^5.8.3",
         "typescript-eslint": "^8.35.1",
-        "vitepress": "^1.6.3",
+        "vitepress": "^1.6.4",
         "vscode-uri": "^3.1.0",
         "zod": "^3.25.67",
         "zod-validation-error": "^3.5.2"

@@ -1,0 +1,31 @@
+#:master-keybindings
+
+[header]
+version = "2.0.0"
+
+[[mode]]
+name = "insert"
+default = true
+whenNoBinding = "insertCharacters"
+
+[[mode]]
+name = "replace"
+
+[[mode.whenNoBinding.run]]
+command = "master-key.replaceChar"
+args.char = '{{key.captured}}'
+
+[[mode.whenNoBinding.run]]
+command = "cursorRight"
+
+[[bind]]
+key = "alt+shift+r"
+command = "master-key.setMode"
+args.value = "replace"
+mode = "insert"
+
+[[bind]]
+key = "alt+shift+r"
+command = "master-key.setMode"
+args.value = "insert"
+mode = "replace"

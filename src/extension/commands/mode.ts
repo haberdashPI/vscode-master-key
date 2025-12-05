@@ -3,16 +3,12 @@ import z from 'zod';
 import { onResolve } from '../state';
 import { updateCursorAppearance, validateInput } from '../utils';
 import { withState, recordedCommand, CommandResult } from '../state';
-import { ModeSpec } from '../keybindings/parsing';
-import { runCommandOnKeys } from './capture';
+import { runCommandsForMode } from './capture';
 import { onChangeBindings } from '../keybindings/config';
-import { Bindings } from '../keybindings/processing';
+import { CursorShape, KeyFileResult } from '../../rust/parsing/lib/parsing';
+import { bindings } from '../keybindings/config';
 
 export const MODE = 'mode';
-
-async function updateModeKeyCapture(mode: string, modeSpec: Record<string, ModeSpec>) {
-    runCommandOnKeys(modeSpec[mode]?.onType, mode);
-}
 
 /**
  * @command setMode
@@ -29,33 +25,33 @@ const setModeArgs = z.object({ value: z.string() }).strict();
 async function setMode(args_: unknown): Promise<CommandResult> {
     const args = validateInput('master-key.setMode', args_, setModeArgs);
     if (args) {
-        const a = args;
-        await withState(async state => state.set(MODE, { public: true }, a.value));
+        let toMode = args.value;
+        if (!bindings.mode(toMode)) {
+            vscode.window.showErrorMessage(`There is no mode named '${args.value}'.`);
+            toMode = bindings.default_mode();
+        }
+        await withState(async state => state.set(MODE, { public: true }, toMode));
     }
     return args;
 }
-export let modeSpecs: Record<string, ModeSpec> = {};
-export let defaultMode: string = 'default';
-async function updateModeSpecs(bindings: Bindings | undefined) {
-    modeSpecs = bindings?.mode || {};
-    defaultMode = (Object.values(modeSpecs).
-        filter(x => x.default)[0] || { name: 'default' }).
-        name;
+async function updateModes(bindings: KeyFileResult) {
     await withState(async (state) => {
-        return state.set(MODE, { public: true }, defaultMode).resolve();
+        const newDefault = bindings.default_mode();
+        console.log(`newDefault: ${newDefault}`);
+        return state.set(MODE, { public: true }, newDefault).resolve();
     });
 }
 export function restoreModesCursorState() {
-    const shape = modeSpecs[currentMode]?.cursorShape || 'Line';
+    const shape = bindings.mode(currentMode)?.cursorShape || CursorShape.Line;
     updateCursorAppearance(vscode.window.activeTextEditor, shape);
 }
 
 let currentMode = 'default';
 export async function activate(context: vscode.ExtensionContext) {
-    onChangeBindings(updateModeSpecs);
+    onChangeBindings(updateModes);
 
     vscode.window.onDidChangeActiveTextEditor((e) => {
-        const shape = modeSpecs[currentMode]?.cursorShape || 'Line';
+        const shape = bindings.mode(currentMode)?.cursorShape || CursorShape.Line;
         updateCursorAppearance(e, shape);
     });
 
@@ -90,19 +86,24 @@ export async function activate(context: vscode.ExtensionContext) {
     );
 
     await withState(async (state) => {
+        const defaultMode = bindings.default_mode() || 'default';
         return state.set(MODE, { public: true }, defaultMode).resolve();
     });
     await onResolve('mode', (values) => {
-        const cmode = currentMode; // NOTE: I don't really know why I to declare `cmode`
-        // instead of using `currentMode` directly but not doing it prevents this function
-        // from detecting changes to the mode state (something about how closures interact
-        // with scopes and async that I don't understand???)
-        const newMode = <string>values.get(MODE, defaultMode);
-        if (cmode !== newMode) {
-            const shape = (modeSpecs || {})[newMode]?.cursorShape || 'Line';
-            updateCursorAppearance(vscode.window.activeTextEditor, shape);
-            updateModeKeyCapture(newMode, modeSpecs || {});
-            currentMode = newMode;
+        const _currentMode = currentMode;
+        // NOTE: I don't really know why I to declare `_currentMode` instead of using
+        // `currentMode` directly but not doing it prevents this function from detecting
+        // changes to the mode state (something about how closures interact with scopes and
+        // async that I don't understand???)
+        const newMode = <string>values.get(MODE, bindings.default_mode() || 'default');
+        const mode = bindings.mode(newMode);
+        if (mode) {
+            if (_currentMode !== newMode) {
+                const shape = (mode.cursorShape || CursorShape.Line);
+                updateCursorAppearance(vscode.window.activeTextEditor, shape);
+                runCommandsForMode(mode);
+                currentMode = newMode;
+            }
         }
         return true;
     });
