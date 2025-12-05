@@ -501,7 +501,7 @@ Integration test debugging:
                   the expressions aren't picked up ???
     - [X] document macro / history values for expressions
     - [X] proof-read documentation
-    - [ ] parse and dog-food larkin
+    - [X] parse and dog-food larkin
         - [X] fix issue with missing foreach variables
         - [X] fix issue with unexpected `{{` in multiline strings
         - NOTE: it's kind of incredible that there were so few errors here 🎉
@@ -558,6 +558,27 @@ Integration test debugging:
         - [X] hit error with repeat history where we had null
               but were expecting bool (3-value logic doesn't seem
               to exist?)
+        - [X] are there performance issues?
+            - possibly: though I'm mostly seeing this on remote connections where
+              a flakey connection could be the best explanation
+            - however: it's possible there is some cumulative issue where the performance
+              is somewhat slow for `master-key.do`, and this only has an impact
+              on a a slower connection where the latency of ssh communcation *combined*
+              with do execution leads to an unacceptable latecy for user interaction
+            - best approach here is to get a profile of the extension; I've created
+              a task below for this
+        - [X] we occasionally get stuck in a weird state where escape doesn't work
+            - I think this is about the slowness of master-key.do command execution
+              on a remote worker. Will need to do the work above first to know better
+        - [X] after visual documentation commit we fail to load proper modes
+              (something about config loading is going wrong here I assume; checksum?)
+              - [X] see if the current integration tests for configuration pick up on this (NO)
+              - [ ] ideally get an integration test that picks up on this if it doesn't exist (NOPE; too hard, not worth creating)
+              - [X] fix the problem
+                - [X] determine conditions where config fails to load
+                    - only triggers in non-debug context, we'll need to add some console.log statements to see what is happening when the
+                    extension is running in production
+    - [ ] TODO: decorators aren't working
     - [ ] get any remaining, existing tests (except unimplemented features) working again
         - [ ] update unit tests for running commands
             - [ ] remove replay unit tests (they are become integration tests)
@@ -598,17 +619,24 @@ Integration test debugging:
                 - [X] we probably want to avoid depending on the hash
                       order
         - [X] reimplement integration tests
-    - [ ] reimplement palette
-    - [ ] show documentation button isn't working!
+    - [X] show documentation button isn't working!
+    - [X] reimplement palette
+        - [X] get display working
+        - [X] get key presses working
+        - [X] get command selection working (in search mode)
+        - [X] get integration tests working
+            - [X] command "w w" is missing the prefix binding 🤔 (bug in binding outputs)
+                - [X] narrow down to simple MWE
+                - [X] debug and fix
+            - [X] palette shows up with explicit command
+            - [X] palette can switch modes
+            - [X] palette shows up automatically after delay
     - [ ] extraction of markdown docs
-        - [ ] documentation expansion/validation
-            - across all `[[bind]]` values with the same key and mode
-            - across all combined bindings
-        - [ ] extract all comment regions (exclude `#-`)
-        - [ ] replace `[[bind]]` regions:
-            - [ ] identify each non-comment region, and look for parsed elements
-                  whose span overlaps
-            - [ ] convert any bind elements in this overlap into markdown table
+        - [ ] extract all comment regions (exclude `#-` or include `##`) and assign line numbers (byte offset?)
+        - [ ] assing `[[bind]]` line number (byte offset?)
+        - [ ] in rust pass comments and bindings in grouped sections, by line number (or offset?)
+              (e.g. comment + all bindings that follow before next comment)
+        - [ ] convert to markdown docs in typescript
         - [ ] reimplement integration tests
     - [ ] replay symmetric edits
     - [ ] reimlement storeNamed? (or make it more specific to macros; I'm not
@@ -629,38 +657,14 @@ Follow-up:
         - make sure editing is prominently in the documentation for Larkin
           (and an future binding files)
         - make sure it is prominently in the getting started section
+- [ ] profile mater-key.do performance
 
-4. Move palette from quick pick to tree view
-1   - NOTE: the new features in 1.105 make this moot: we just need to update the quick
-      pick implementation to make use of the new contexts that make it possible
-      to set and change bindings on the quick pick
-    - [ ] get a simple tree view working (just show one item)
-    - [ ] get tree view to show palette items
-    - [ ] sections of literate documentation should determine tree structure
-    - [ ] allow a small set of high priority items to show up at the top
-    - [ ] add CI tests informted by palette.ux.mts
-5. Translate the lower priority tests
-    - [ ] low impact on stability and coverage, but high effort changes
-        - save these for after the PR migrating for rust refactoring is merged
-        - [ ] searchMotions.ux.mts integration tests
-            - [ ] `acceptAfter`
-            - [ ] `acceptAfter` with delete char
-            - [ ] post search commands
-        - [ ] replay.ux.mts integration tests
-            - [ ] replay canceled entry
-            - [ ] replay captured keys
-            - [ ] replay canceled captured keys
-            - [ ] replay insert/replace
-            - [ ] allow store and restore
-        - [ ] configEdit.ux.mts
-            - [ ] can create editable copy
-            - [ ] can copy user config
-6. Review documentation
-7. Release version 0.4
-8. Migration of selection utilities to the same build and test setup
-9. Translate selection utility tests to new build setup
-10. Get CI working for all tests in selection utilities
-11. continue the quest for better test coverage if necessary
+5. Review documentation
+6. Release version 0.4
+7. Migration of selection utilities to the same build and test setup
+8. Translate selection utility tests to new build setup
+9. Get CI working for all tests in selection utilities
+10. continue the quest for better test coverage if necessary
 
 Quick wins not addressed above:
 - visual documentation improvements

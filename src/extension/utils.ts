@@ -54,6 +54,24 @@ export function modifierKey(str: string) {
     return [''];
 }
 
+export function getRequiredMode(when: string) {
+    const matches = when.match(/master-key.mode == '([^']+)'/);
+    if (matches) {
+        return matches[1];
+    } else {
+        return '';
+    }
+}
+
+export function getRequiredPrefixCode(when: string) {
+    const matches = when.match(/master-key.prefixCode == (\w+)/);
+    if (matches) {
+        return parseInt(matches[1]);
+    } else {
+        return 0;
+    }
+}
+
 export function prettifyPrefix(str: string) {
     str = str.toUpperCase();
     str = replaceAll(str, /shift(\+|$)/gi, '⇧');

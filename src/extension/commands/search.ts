@@ -5,6 +5,7 @@ import { withState, CommandResult, recordedCommand } from '../state';
 import { MODE } from './mode';
 import { captureKeys } from './capture';
 import { bindings } from '../keybindings/config';
+import { onCommandComplete } from './do';
 
 /**
  * @command search
@@ -658,4 +659,9 @@ export async function activate(context: vscode.ExtensionContext) {
     );
     updateSearchHighlights();
     vscode.workspace.onDidChangeConfiguration(updateSearchHighlights);
+
+    onCommandComplete(async () => {
+        searchDecorationCheck();
+        return true;
+    });
 }

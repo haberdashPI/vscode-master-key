@@ -7,6 +7,7 @@ import {
 } from '../utils';
 import { recordedCommand, CommandResult, withState, onSet } from '../state';
 import { restoreModesCursorState } from './mode';
+import { registerPaletteUpdate, showPaletteOnDelay } from './do';
 
 const prefixArgs = z.
     object({
@@ -153,6 +154,8 @@ async function prefix(args_: unknown): Promise<CommandResult> {
                 state.resolve();
             });
         });
+        registerPaletteUpdate();
+        showPaletteOnDelay();
         return args;
     }
     return args;

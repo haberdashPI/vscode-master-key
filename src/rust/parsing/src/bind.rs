@@ -893,23 +893,32 @@ impl Binding {
         let key_string: String = resolve!(input, key, scope)?;
         let key: Vec<_> = WHITESPACE.split(&key_string).map(String::from).collect();
         let mut when: Option<String> = resolve!(input, when, scope)?;
-        let has_modifier = KEY_WITH_MODIFIER.is_match(&key[0]);
-        when = if has_modifier {
-            if let Some(w) = when {
-                Some(
-                    EDITOR_TEXT_FOCUS
-                        .replace_all(&w, TEXT_FOCUS_CONDITION)
-                        .to_string(),
-                )
-            } else {
-                Option::None
-            }
+
+        // replace bare text focus conditions with the TEXT_FOCUS_CONDITION
+        // this adds additional flags to ensure that the palette for command suggestions
+        // behaviors properly
+        when = if let Some(w) = when {
+            let result = Some(
+                EDITOR_TEXT_FOCUS
+                    .replace_all(&w, TEXT_FOCUS_CONDITION)
+                    .to_string(),
+            );
+            result
         } else {
+            Option::None
+        };
+
+        // add text focus if the binding doesn't have a modifier, we cannot expect reliable
+        // behavior outside of a editor window for such binding
+        let has_modifier = KEY_WITH_MODIFIER.is_match(&key[0]);
+        when = if !has_modifier {
             if let Some(w) = when {
                 Some(format!("({}) && {TEXT_FOCUS_CONDITION}", w))
             } else {
                 Some(TEXT_FOCUS_CONDITION.to_string())
             }
+        } else {
+            when
         };
 
         // resolve all keys to appropriate types
@@ -1058,9 +1067,9 @@ pub struct BindingDoc {
 #[allow(non_snake_case)]
 #[wasm_bindgen(getter_with_clone)]
 pub struct CombinedBindingDoc {
-    name: String,
-    key: String,
-    description: String,
+    pub name: String,
+    pub key: String,
+    pub description: String,
 }
 
 #[wasm_bindgen]
@@ -1256,6 +1265,7 @@ struct BindingId {
 impl Eq for BindingId {}
 
 // For each unique `BindingId`, we need to know a few things about it
+#[derive(Clone)]
 struct BindingProperties {
     // the span where the binding was first defined; if we find a second
     // definition our error message can point to the first definition
@@ -1263,10 +1273,23 @@ struct BindingProperties {
     // the code tells us how to create `when` clauses that are conditioned
     // on this keypress having already happened (as a prefix)
     code: i32,
-    // whether this binding was defined implicitly as a prefix of an explicit binding, or if
-    // it was defined explicitly within a keybinding file; all implicit bindings imply the
-    // same exact command, so it's okay if they overlap.
-    implicit: bool,
+    // indicates where and how the binding was defined most recently
+    reason: InsertReason,
+}
+
+// The reason a key was inserted. The ordering of these reasons determines their priority.
+// When attempting to insert a key binding a second time, it only results in the creation
+// of a new binding output when the reason is higher priority.
+#[derive(PartialEq, PartialOrd, Clone)]
+pub(crate) enum InsertReason {
+    // a prefix defined via `prefixes` keyword in in `[[bind]]` (in `prefixes.anyOf = ["a",
+    // "c"]` "a" and "c" are explicit prefixes)
+    ExplicitPrefix,
+    // a prefix defined via a `key` (in `key = "a b c"`, both "a" and "a b" are implicit
+    // prefixes)
+    ImplicitPrefix,
+    // the last key in value of `key` (in `key = "a b c"`, `"c"` is the terminal key)
+    TerminalKey,
 }
 
 // tracks all unique bindings
@@ -1306,8 +1329,12 @@ impl BindingCodes {
         mode: &str,
         when: &Option<impl ToString>,
         span: &Option<Range<usize>>,
-        implicit: bool,
+        reason: InsertReason,
     ) -> ResultVec<(i32, bool)> {
+        // Return value:
+        // - i32: the code for the given key-mode-when tuple
+        // - bool: whether we need to actually generate the binding output or if its already
+        //   been accounted for in another output. This depends on the value of `reason`.
         let id = BindingId {
             key: key.iter().map(ToString::to_string).collect(),
             mode: mode.to_string(),
@@ -1316,52 +1343,96 @@ impl BindingCodes {
                 Option::None => "".to_string(),
             },
         };
-        if let Entry::Occupied(mut old @ OccupiedEntry { .. }) = self.codes.entry(id.clone()) {
-            // it's okay to overwrite implicit bindings, but we don't want two explicitly
-            // defined binding with the same mode, key and when clause
-            if !old.get().implicit && !implicit {
-                let errors: Vec<Result<i32>> = vec![
-                    Err(err!(
-                        "Duplicate key sequence for mode `{mode}`. First instance is \
-                             defined at "
-                    ))
-                    .with_range(span)
-                    .with_ref_range(&old.get().span),
-                    Err(err!(
-                        "Duplicate key sequence for mode `{mode}`. This sequence is \
-                             also defined later in the file at "
-                    ))
-                    .with_range(&old.get().span)
-                    .with_ref_range(span),
-                ];
-                return Err(errors
-                    .into_iter()
-                    .map(Result::unwrap_err)
-                    .collect::<Vec<_>>())?;
-            } else if !implicit {
-                // if the new binding is explicit, overwrite the old one
-                old.insert(BindingProperties {
-                    span: span.clone(),
-                    code: old.get().code,
-                    implicit,
-                });
-                return Ok((old.get().code, true));
+        // do we tell the caller to generate a new output binding?
+        let output_binding;
+        // what code do we return?
+        let code;
+        // do we need to insert this code into self.codes?
+        let insert_into_codes;
+        match reason {
+            // terminal keys must be inserted or they must raise an error
+            InsertReason::TerminalKey => {
+                if self.codes.contains_key(&id) {
+                    let old = self.codes[&id].clone();
+                    if old.reason == InsertReason::TerminalKey {
+                        let errors: Vec<Result<i32>> = vec![
+                            Err(err!(
+                                "Duplicate key sequence for mode `{mode}`. First instance is \
+                                    defined at "
+                            ))
+                            .with_range(span)
+                            .with_ref_range(&old.span),
+                            Err(err!(
+                                "Duplicate key sequence for mode `{mode}`. This sequence is \
+                                    also defined later in the file at "
+                            ))
+                            .with_range(&old.span)
+                            .with_ref_range(span),
+                        ];
+                        output_binding = false;
+                        return Err(errors
+                            .into_iter()
+                            .map(Result::unwrap_err)
+                            .collect::<Vec<_>>())?;
+                    } else {
+                        code = old.code;
+                        output_binding = true;
+                        insert_into_codes = true;
+                    }
+                } else {
+                    self.count += 1;
+                    insert_into_codes = true;
+                    code = self.count;
+                    output_binding = true;
+                }
             }
-            return Ok((old.get().code, false));
-        } else {
-            // create a new entry
-            self.count += 1;
+            // we never generate an output for an explicit prefix but we might need to
+            // define a new code and insert it into self.codes
+            InsertReason::ExplicitPrefix => {
+                output_binding = false;
+                if self.codes.contains_key(&id) {
+                    code = self.codes[&id].code;
+                    insert_into_codes = false;
+                } else {
+                    self.count += 1;
+                    insert_into_codes = true;
+                    code = self.count;
+                }
+            }
+            // implicit prefixes generate output when the key doesn't exist or when
+            // when the existing key is defined by an explicit prefix
+            InsertReason::ImplicitPrefix => {
+                if self.codes.contains_key(&id) {
+                    let old = self.codes[&id].clone();
+                    code = old.code;
+                    if old.reason == InsertReason::ExplicitPrefix {
+                        output_binding = true;
+                        insert_into_codes = true;
+                    } else {
+                        output_binding = false;
+                        insert_into_codes = false;
+                    }
+                } else {
+                    self.count += 1;
+                    output_binding = true;
+                    insert_into_codes = true;
+                    code = self.count;
+                }
+            }
+        }
+
+        // insert the new code if necessary
+        if insert_into_codes {
             self.codes.insert(
                 id,
                 BindingProperties {
                     span: span.clone(),
-                    code: self.count,
-                    implicit,
+                    code,
+                    reason,
                 },
             );
-
-            return Ok((self.count, true));
         }
+        return Ok((code, output_binding));
     }
 }
 
@@ -1495,11 +1566,13 @@ impl Binding {
         let mut prefix_index = 0;
         for prefix in prefixes[0..(prefixes.len() - 1)].iter() {
             let mut when;
-            // TODO: key_code could signal when there is already a higher
-            // priority binding that's been added, and prevent
-            // us from inserting a new binding here
-
-            let (key_code, is_new_code) = codes.key_code(&prefix, &mode, &self.when, span, true)?;
+            let reason = if prefix_index >= explicit_len {
+                InsertReason::ImplicitPrefix
+            } else {
+                InsertReason::ExplicitPrefix
+            };
+            let (key_code, generate_output) =
+                codes.key_code(&prefix, &mode, &self.when, span, reason)?;
             let prefix_code = codes.prefix_code(&prefix, &mode);
 
             when = when_with_mode.clone();
@@ -1513,7 +1586,7 @@ impl Binding {
             let new_prefix_str = prefix.clone().join(" ");
             // the component of a prefix sequence that is part of an explicit `prefix`
             // does not generate new `mater-key.prefix` bindings
-            if is_new_code && prefix_index >= explicit_len {
+            if generate_output {
                 let key = prefix.last().unwrap().clone();
                 result.push(BindingOutput::Prefix {
                     key: key.clone(),
@@ -1544,8 +1617,13 @@ impl Binding {
 
         // we can unwrap here because non-implicit bindings always
         // throw an error if they already exist
-        let (code, _) =
-            codes.key_code(&prefixes.last().unwrap(), &mode, &self.when, span, false)?;
+        let (code, _) = codes.key_code(
+            &prefixes.last().unwrap(),
+            &mode,
+            &self.when,
+            span,
+            InsertReason::TerminalKey,
+        )?;
         let prefix_code = if !self.finalKey {
             codes.prefix_code(&self.key, &mode)
         } else {

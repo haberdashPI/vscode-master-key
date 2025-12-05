@@ -5,7 +5,12 @@ import { MODE } from './mode';
 import { normalizeLayoutIndependentString } from '../keybindings/layout';
 import { onChangeBindings } from '../keybindings/config';
 import { PREFIX_CODE } from './prefix';
-import { modifierKey, prettifyPrefix } from '../utils';
+import {
+    getRequiredMode,
+    getRequiredPrefixCode,
+    modifierKey,
+    prettifyPrefix,
+} from '../utils';
 import { Map } from 'immutable';
 import { KeyFileResult } from '../../rust/parsing/lib/parsing';
 
@@ -163,24 +168,6 @@ interface IVisualKeyBinding {
     kind?: string;
 }
 
-function getRequiredMode(when: string) {
-    const matches = when.match(/master-key.mode == '([^']+)'/);
-    if (matches) {
-        return matches[1];
-    } else {
-        return '';
-    }
-}
-
-function getRequiredPrefixCode(when: string) {
-    const matches = when.match(/master-key.prefixCode == (\w+)/);
-    if (matches) {
-        return parseInt(matches[1]);
-    } else {
-        return 0;
-    }
-}
-
 // generates the webview for a provider
 export class DocViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'masterkey.visualDoc';
@@ -291,17 +278,18 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
             const mode = getRequiredMode(binding.when);
             const key = `${prefixCode}:${mode}`;
             const mapping = bindingMap[key] || {};
+            const oldKey = mapping[label] || {};
             if (binding.command === 'master-key.do') {
                 mapping[label] = {
-                    name: binding.args.name || '',
-                    description: binding.args.description || '',
-                    kind: binding.args.kind || '',
+                    name: binding.args.name || oldKey.name || '',
+                    description: binding.args.description || oldKey.description || '',
+                    kind: binding.args.kind || oldKey.kind || '',
                 };
             } else if (binding.command === 'master-key.prefix') {
                 mapping[label] = {
-                    name: 'prefix',
-                    description: '',
-                    kind: '',
+                    name: oldKey.name || 'prefix',
+                    description: oldKey.description || '',
+                    kind: oldKey.kind || '',
                 };
             }
             bindingMap[key] = mapping;

@@ -10,38 +10,38 @@
 Master Key is a tool for becoming a power-user of your [VSCode](https://code.visualstudio.com/) keybindings. Features include:
 
 - extensive documentation of your bindings (quick pick, visual and text)
+- predefined keybinding sets
 - modal bindings (ala Vim),
 - recording simple keyboard macros
 - a powerful TOML-based keybinding specification
-- learn by example from the pre-existing bindings
 
-For example, this curated snippet from the Master Key's Larking preset defines a VIM-like feature to update a count argument along with and downward motion that uses the count argument:
+For example, this curated snippet from the Master Key's Larkin preset defines a VIM-like feature to update a count argument along with and downward motion that uses the count argument:
 
 ```toml
 # front matter...
 
 [[bind]]
 foreach.num = ['{{keys(`[0-9]`)}}']
-doc.name = "count {{num}}"
 key = "{{num}}"
 command = "master-key.updateCount"
+args.value = "{{num}}"
+finalKey = false
+mode = '{{not_modes(["insert"])}}'
+doc.name = "count {{num}}"
+doc.hideInDocs = true
 doc.description = "Add digit {{num}} to the count argument of a command"
 doc.combined.key = "0-9"
 doc.combined.name = "count 0-9"
 doc.combined.description = "Add digit 1-9 to count argument of a command"
-args.value = "{{num}}"
-finalKey = false
-mode = '{{not_modes(["insert"])}}'
-doc.hideInDocs = true
 
 [[bind]]
 default = "{{bind.util}}"
 key = "shift+;"
-doc.name = "suggest"
 finalKey = false
-doc.hideInPalette = true
 prefixes.any = true
 mode = '{{not_modes(["insert"])}}'
+doc.name = "suggest"
+doc.hideInPalette = true
 doc.description = """
 show command suggestions within the context of the current mode and keybinding prefix
 (if any). E.g. `TAB, ⇧;` in `normal` mode will show all `normal` command suggestions that
@@ -51,16 +51,34 @@ command = "master-key.commandSuggestions"
 
 [[bind]]
 key = "j"
+command = "cursorMove"
+mode = "normal"
+args.value = '{{key.count}}'
+args.select = '{{code.editorHasSelection || val.select}}'
+args.to = "down"
+args.by = "wrappedLine"
 doc.name = "↓"
 doc.combined.name = "↓/↑"
 doc.combined.key = "j/k"
 doc.combined.description = "move down/up"
 doc.description = "move down"
-command = "cursorMove"
-args.value = '{{key.count}}'
-args.select = '{{code.editorHasSelection || val.select}}'
-args.to = "down"
-args.by = "wrappedLine"
+
+# ... other bindings
+
+[[define.val]]
+select = false
+
+[[bind]]
+key = "shift+v"
+command = "master-key.setValue"
+mode = "normal"
+args.name = "select"
+args.value = true
+doc.name = "hold selection"
+doc.combined.name = "shrink/hold selection"
+doc.description = """
+all motions extend the selection
+"""
 
 # more bindings...
 ```
@@ -68,11 +86,13 @@ args.by = "wrappedLine"
 This highlights a number of Master Key's features:
 
 1. We can use `foreach` to generate many bindings at once
-2. Bindings are expressive: e.g. we can use data stored by one binding as the argument to
-a second binding.
-3. Each binding is documented in-line: this documentation is available in a visual layout, a generated markdown output, and as part of a quick-pick palette (in this case shown using `shift+;`)
+2. Bindings can be modal: in this case the binding is defined with the context of a specific
+   mode (e.g. "normal")
+3. Bindings can use expressions via `{{exp}}`, which have access to values defined
+and set by other commands (e.g. `setValue` and `updateCount`).
+4. Each binding is documented in-line: this documentation is available to the user in a visual layout, a generated markdown output, and as part of a quick-pick palette (in this case revealed using `shift+;`)
 
-Master Key validates this TOML file, providing inline linting of as you edit.
+Master Key validates this TOML file, providing inline linting of the file as you edit.
 
 <!-- text between START_/STOP_ comments is extracted and inserted into the docs -->
 <!-- START_DOCS -->
@@ -90,11 +110,11 @@ The easiest way to get started is to activate the built-in keybindings that come
 
 <!-- STOP_DOCS -->
 
-You can start creating your own bindings based off an available preset using `Master Key: Edit Preset Copy`: this will open TOML file and insert the preset bindings into this file.
+You can start creating your own bindings based off an available preset using `Master Key: Edit Preset Copy`: this will open a TOML file and insert the preset bindings into the file.
 
 You can revert back to the state before master keybindings was installed using `Master Key: Deactivate Keybindings`.
 
-To learn more about how to use Master Key [read the documentation](haberdashpi.github.io/vscode-master-key).
+To learn more about how to use Master Key [read the documentation](https://haberdashpi.github.io/vscode-master-key).
 
 ## Feature Tour
 

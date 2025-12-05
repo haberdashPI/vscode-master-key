@@ -122,20 +122,17 @@ function formatBindings(name: string, bindings: KeyFileResult) {
 }
 
 async function copyBindings(file: vscode.Uri) {
-    await vscode.commands.executeCommand('workbench.action.files.newUntitledFile');
-    const ed = vscode.window.activeTextEditor;
-    if (ed) {
-        vscode.languages.setTextDocumentLanguage(ed.document, 'toml');
-        const fileData = await vscode.workspace.fs.readFile(file);
-        const fileText = new TextDecoder().decode(fileData);
-        const wholeDocument = new vscode.Range(
-            new vscode.Position(0, 0),
-            new vscode.Position(0, ed.document.lineCount + 1),
-        );
-        await ed.edit((builder) => {
-            builder.replace(wholeDocument, fileText);
-        });
-    }
+    console.log('reading file');
+    const fileData = await vscode.workspace.fs.readFile(file);
+    const fileText = new TextDecoder().decode(fileData);
+    console.log('loaded file text');
+    const document = await vscode.workspace.openTextDocument({
+        content: fileText,
+        language: 'toml',
+    });
+    console.log('opened document');
+    await vscode.window.showTextDocument(document);
+    console.log('document displayed');
 }
 
 async function removeKeybindings(context: vscode.ExtensionContext) {
@@ -237,7 +234,7 @@ async function insertKeybindingsIntoConfig(data: KeyFileData) {
             vscode.window.showErrorMessage(
                 'Could not find opening `[` at top of ' +
                 'keybindings file. Your keybinding file does not appear to be ' +
-                'proplery formatted.',
+                'properly formatted.',
             );
             return;
         } else {
@@ -364,9 +361,16 @@ export async function queryPreset(): Promise<KeyFileData | undefined> {
     return undefined;
 }
 
-async function copyBindingsToNewFile() {
-    const options = makeQuickPicksFromPresets(listPresets());
-    const picked = await vscode.window.showQuickPick(options);
+async function copyBindingsToNewFile(args?: { preset?: number }) {
+    const options = await makeQuickPicksFromPresets(listPresets());
+    let picked;
+    if (args?.preset !== undefined) {
+        picked = options[args?.preset];
+    } else {
+        picked = await vscode.window.showQuickPick(options);
+    }
+    console.log('Picked: ');
+    console.dir(picked);
     if (picked?.preset) {
         copyBindings(picked.preset.uri);
     }
@@ -607,7 +611,7 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand(
             'master-key.activateBindings',
-            () => activateBindings(context),
+            (...args) => activateBindings(context, ...args),
         ),
     );
     /**

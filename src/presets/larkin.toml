@@ -957,15 +957,18 @@ doc.name = "doc end"
 doc.description = "select to end of document"
 doc.combined.name = "doc top/bottom"
 doc.combined.description = "select to top/bottom of document"
-doc.combined.key = ",/."
+doc.combined.key = "g/shift+g"
 command = "cursorBottomSelect"
 
 [[bind]]
 default = "{{bind.edit_motion_prim}}"
 key = "g g"
 priority = 1
-doc.name = "doc start"
-doc.description = "select to start of document"
+doc.name = "doc top"
+doc.description = "select to top of document"
+doc.combined.name = "doc top/bottom"
+doc.combined.description = "select to top/bottom of document"
+doc.combined.key = "g g/shift+g"
 command = "cursorTopSelect"
 
 [[bind]]

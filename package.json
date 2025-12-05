@@ -33,6 +33,11 @@
                 "enablement": "master-key.val.internal__debug__flag"
             },
             {
+                "command": "master-key.togglePaletteDisplay",
+                "category": "Master Key",
+                "title": "Toggle automatic display of quick-pick menu for multi-key keybindings"
+            },
+            {
                 "command": "master-key.activateBindings",
                 "category": "Master Key",
                 "title": "Activate Keybindings"

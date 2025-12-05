@@ -126,8 +126,8 @@ use log::{error, info};
 
 use crate::bind::command::{CommandValue, regularize_commands};
 use crate::bind::{
-    Binding, BindingCodes, BindingInput, BindingOutput, KeyId, LegacyBindingInput, ReifiedBinding,
-    UNKNOWN_RANGE,
+    Binding, BindingCodes, BindingDoc, BindingInput, BindingOutput, BindingOutputArgs,
+    CombinedBindingDoc, KeyId, LegacyBindingInput, ReifiedBinding, UNKNOWN_RANGE,
 };
 use crate::define::{Define, DefineInput};
 use crate::error::{
@@ -479,6 +479,31 @@ impl KeyFileResult {
     pub fn binding(&self, i: usize) -> JsValue {
         return serde_wasm_bindgen::to_value(&self.file.as_ref().unwrap().key_bind[i])
             .expect("keybinding object");
+    }
+
+    pub fn docs(&self, i: usize) -> Option<BindingDoc> {
+        let command_id = match &self.file.as_ref().unwrap().key_bind[i] {
+            BindingOutput::Do {
+                args: BindingOutputArgs { command_id, .. },
+                ..
+            } => *command_id,
+            _ => -1 as i32,
+        };
+        if command_id >= 0 {
+            if let Some(KeyFile { bind, .. }) = &self.file {
+                let binding = bind[command_id as usize].clone();
+                let docs = &binding.doc;
+                let combined = docs.combined.clone().unwrap_or_else(|| CombinedBindingDoc {
+                    name: docs.name.clone(),
+                    key: binding.key.last().unwrap().clone(),
+                    description: docs.description.clone(),
+                });
+                let mut result = docs.clone();
+                result.combined = Some(combined);
+                return Some(result);
+            }
+        }
+        return None;
     }
 
     pub fn has_layout_independent_bindings(&self) -> bool {
@@ -2679,8 +2704,8 @@ pub(crate) mod tests {
 
         [[mode.whenNoBinding.run]]
         command = "selection-utilities.insertAround"
-        args.before = "{{val.braces[captured].?before ?? captured}}"
-        args.after = "{{val.braces[captured].?after ?? captured}}"
+        args.before = "{{val.braces[captured]?.before ?? captured}}"
+        args.after = "{{val.braces[captured]?.after ?? captured}}"
         args.followCursor = true
         "#;
 
@@ -3035,7 +3060,6 @@ pub(crate) mod tests {
             })
             .next()
             .unwrap();
-
         assert!(c_bind_when.contains(&format!("prefixCode == {a_bind_id}")));
     }
 
@@ -3169,6 +3193,60 @@ pub(crate) mod tests {
         let result = parse_bytes_helper(&data.as_bytes(), &mut warnings, &mut scope).unwrap();
         assert_eq!(result.bind[0].tags.len(), 2);
         assert_eq!(result.bind[1].tags.len(), 2);
+    }
+
+    #[test]
+    fn prefix_any_and_automated_prefix_interaction_test() {
+        // in an older implementation we found an edge case where including the first
+        // binding (which must have prefixes.any to cause the problem), would prevent the
+        // second binding from producing the automated `master-key.prefix` binding, at least
+        // in some cases.
+        let data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.0.0"
+
+        [[mode]]
+        name = "insert"
+        default = true
+        whenNoBinding = "insertCharacters"
+
+        [[mode]]
+        name = "normal"
+
+        # NOTE: this binding specifically had to occur *before* the bindings below
+        # for the automated prefix commands to be excluded
+        [[bind]]
+        doc.name = "show palette"
+        key = "shift+;"
+        finalKey = false
+        doc.hideInPalette = true
+        prefixes.any = true
+        mode = "normal"
+        command = "master-key.commandSuggestions"
+
+        [[bind]]
+        command = "cursorMove"
+        mode = "normal"
+        args.value = "{{key.count}}"
+        doc.name = "funny right"
+        key = "r w"
+        args.to = "right"
+        "#;
+
+        let mut warnings = Vec::new();
+        let mut scope = Scope::new();
+        let result = parse_bytes_helper(&data.as_bytes(), &mut warnings, &mut scope).unwrap();
+        let prefixes: Vec<_> = result
+            .key_bind
+            .iter()
+            .filter(|x| match x {
+                BindingOutput::Prefix { .. } => true,
+                _ => false,
+            })
+            .collect();
+        assert_eq!(prefixes.len(), 1);
     }
 
     #[test]

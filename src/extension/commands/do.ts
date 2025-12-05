@@ -13,7 +13,7 @@ import { PREFIX } from './prefix';
 import { bindings } from '../keybindings/config';
 import { MODE } from './mode';
 import { CommandOutput, WhenNoBindingHeader } from '../../rust/parsing/lib/parsing';
-import { searchDecorationCheck } from './search';
+import { commandPalette } from './palette';
 
 let maxHistory = 0;
 
@@ -61,6 +61,24 @@ export function showExpressionErrors(fallable: { errors?: string[]; error?: stri
         }
     }
     return false;
+}
+
+type CommandCompletedHook = () => Promise<boolean>;
+let commandCompletedHooks: CommandCompletedHook[] = [];
+
+export function onCommandComplete(hook: CommandCompletedHook) {
+    commandCompletedHooks.push(hook);
+}
+
+async function triggerCommandCompleteHooks() {
+    const keep = await Promise.all(commandCompletedHooks.map(hook => hook()));
+    const newHooks = [];
+    for (let i = 0; i < keep.length; i++) {
+        if (keep[i]) {
+            newHooks.push(commandCompletedHooks[i]);
+        }
+    }
+    commandCompletedHooks = newHooks;
 }
 
 /**
@@ -160,17 +178,13 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
                 bindings.store_binding(toRun, maxHistory);
             }
 
-            if (!canceled && !toRun.finalKey && paletteDelay > 0) {
-                const currentPaletteUpdate = paletteUpdate;
-                setTimeout(async () => {
-                    if (currentPaletteUpdate === paletteUpdate) {
-                        registerPaletteUpdate();
-                        // commandPalette(undefined, { useKey: true });
-                    }
-                }, paletteDelay);
+            registerPaletteUpdate();
+            if (!canceled && !toRun.finalKey) {
+                showPaletteOnDelay();
             }
         } finally {
             if (toRun.finalKey) {
+                registerPaletteUpdate();
                 // this will be immediately cleared by `reset` but
                 // its display will persist in the status bar for a little bit
                 // (see `status/keyseq.ts`)
@@ -188,14 +202,26 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
             } else {
                 await withState(async state => state.resolve());
             }
-            searchDecorationCheck();
+            await triggerCommandCompleteHooks();
         }
     }
 
     return args;
 }
 
-function registerPaletteUpdate() {
+export function showPaletteOnDelay() {
+    if (paletteDelay > 0) {
+        const currentPaletteUpdate = paletteUpdate;
+        setTimeout(async () => {
+            if (currentPaletteUpdate === paletteUpdate) {
+                registerPaletteUpdate();
+                commandPalette(undefined, { useKey: true });
+            }
+        }, paletteDelay);
+    }
+}
+
+export function registerPaletteUpdate() {
     if (paletteUpdate < Number.MAX_SAFE_INTEGER) {
         paletteUpdate += 1;
     } else {
@@ -227,6 +253,17 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.do', recordedCommand(doCommandsCmd)),
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('master-key.togglePaletteDisplay', () => {
+            if (paletteDelay === 0) {
+                const config = vscode.workspace.getConfiguration('master-key');
+                paletteDelay = config.get<number>('suggestionDelay') || 500;
+            } else {
+                paletteDelay = 0;
+            }
+        }),
     );
 
     updateConfig();

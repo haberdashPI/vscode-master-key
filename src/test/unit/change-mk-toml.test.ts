@@ -5,6 +5,7 @@ import { editorWithText } from './utils';
 suite('*.toml Linting', () => {
     test('Good file has no linting', async function () {
         this.timeout(5000);
+        await vscode.commands.executeCommand('master-key.activateBindings', 'CurrentFile');
         const body = `
             #:master-keybindings
 
@@ -23,6 +24,7 @@ suite('*.toml Linting', () => {
         `;
 
         const [_editor, fileUri] = await editorWithText(body, '.toml');
+        await vscode.commands.executeCommand('master-key.activateBindings', 'CurrentFile');
         await vscode.window.activeTextEditor?.document.save();
 
         // TODO: check diagnostics on a specific file, and ideally use this event
@@ -53,8 +55,13 @@ suite('*.toml Linting', () => {
 
         const [_editor, fileUri] = await editorWithText(body, '.toml');
         // trigger file validation
+        console.log('activating file');
+        await vscode.commands.executeCommand('master-key.activateBindings', 'CurrentFile');
+        console.log('File activated');
         await vscode.window.activeTextEditor?.document.save();
+        console.log('File saved');
 
+        console.log('loading diagnostics');
         const diag = vscode.languages.getDiagnostics(fileUri);
 
         assert.notEqual(diag.length, 0);
