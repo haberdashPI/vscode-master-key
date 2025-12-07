@@ -579,13 +579,6 @@ Integration test debugging:
                     - only triggers in non-debug context, we'll need to add some console.log statements to see what is happening when the
                     extension is running in production
     - [ ] TODO: decorators aren't working
-    - [ ] get any remaining, existing tests (except unimplemented features) working again
-        - [X] update unit tests for running commands
-            - [X] remove replay unit tests (they are become integration tests)
-            - [X] move the missing do unit tests to integration
-        - [ ] run the tests in CI
-    - [ ] cleanup any files we need to delete
-    - [ ] merge PR; don't release a new version yet
     - [X] extraction of visual docs
         - [X] reimplement visual output
             - [X] create a map of keys-mode-prefix -> name, description, kind
@@ -639,18 +632,25 @@ Integration test debugging:
               (e.g. comment + all bindings that follow before next comment)
         - [ ] convert to markdown docs in typescript
         - [ ] reimplement integration tests
+    - [ ] cleanup any files we need to delete
     - [ ] replay symmetric edits
     - [ ] reimlement storeNamed? (or make it more specific to macros; I'm not
           convinced the generic tool is really useful)
     - [ ] rename from Master Key to Key Atlas (keep the same extension name, to avoid
           confusion, but do make a new git repository)
           - [ ] rename references of Master key in Selection Utilities
+    - [ ] merge PR; don't release a new version yet
     - [ ] CI
         - [x] setup CI unit tests for rust
         - [x] setup rust coverage
         - [x] setup CI and merge coverage across rust and javascript
         - [X] verify that CI is running and coverage is showing up
-        - [ ] check in with CI setup once we get the above tasks completed
+        - [X] update unit tests for running commands
+            - [X] remove replay unit tests (they are become integration tests)
+            - [X] move the missing do unit tests to integration
+        - [ ] run the tests in CI
+            - [ ] get unit tests working for `mise build --web` again
+            - [ ] make sure `mise build --web` is run for `mise package`
 
 Follow-up:
 - [ ] make some features more discoverable

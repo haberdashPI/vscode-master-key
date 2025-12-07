@@ -143,9 +143,7 @@ export async function createBindings(
 export async function getBindings(context: vscode.ExtensionContext) {
     const checksum = context.globalState.get<string>(CONFIG_CHECKSUM) || '';
     const storage = context.globalState.get<IStorage>(CONFIG_STORAGE) || {};
-    console.log('Loading stored bindings');
     if (storage.file && storage.data) {
-        console.log('defining KeyFileData');
         return new KeyFileData(
             vscode.Uri.parse(storage.file),
             { base64: storage.data, checksum: checksum },

@@ -24,7 +24,7 @@ suite('Set values', () => {
             [[bind]]
             key = "a"
             command = "bar"
-        `);
+        `, 'toml');
         await vscode.commands.executeCommand('master-key.activateBindings', 'CurrentFile');
         await sleep(150);
         await vscode.window.showTextDocument(editor.document);

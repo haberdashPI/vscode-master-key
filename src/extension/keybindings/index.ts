@@ -122,17 +122,13 @@ function formatBindings(name: string, bindings: KeyFileResult) {
 }
 
 async function copyBindings(file: vscode.Uri) {
-    console.log('reading file');
     const fileData = await vscode.workspace.fs.readFile(file);
     const fileText = new TextDecoder().decode(fileData);
-    console.log('loaded file text');
     const document = await vscode.workspace.openTextDocument({
         content: fileText,
         language: 'toml',
     });
-    console.log('opened document');
     await vscode.window.showTextDocument(document);
-    console.log('document displayed');
 }
 
 async function removeKeybindings(context: vscode.ExtensionContext) {
@@ -287,7 +283,7 @@ async function insertKeybindingsIntoConfig(data: KeyFileData) {
                         ),
                     );
                 }
-                const selection = await vscode.window.
+                vscode.window.
                     showInformationMessage(
                         replaceAll(
                             'Master keybindings were added to \`keybindings.json\`.',
@@ -299,14 +295,19 @@ async function insertKeybindingsIntoConfig(data: KeyFileData) {
                                 [] :
                                 ['Install Extensions']),
                         'Show Documentation',
-                    );
-                if (selection == 'Install Extensions') {
-                    await handleRequireExtensions(data);
-                }
-                if (selection == 'Show Documentation') {
-                    vscode.commands.executeCommand('master-key.showVisualDoc');
-                    vscode.commands.executeCommand('master-key.showTextDoc');
-                }
+                    ).then(async (selection) => {
+                        if (selection == 'Install Extensions') {
+                            await handleRequireExtensions(data);
+                        }
+                        if (selection == 'Show Documentation') {
+                            await vscode.commands.executeCommand(
+                                'master-key.showVisualDoc',
+                            );
+                            await vscode.commands.executeCommand(
+                                'master-key.showTextDoc',
+                            );
+                        }
+                    });
             }
         }
     }
@@ -342,8 +343,13 @@ function parseCurrentFile() {
     if (!editor) {
         vscode.window.showErrorMessage('There is no current file');
     } else {
+        const encoder = new TextEncoder();
         const uri = editor.document.uri;
-        return new KeyFileData(uri);
+        const text = editor.document.getText();
+        const bytes = encoder.encode(text);
+
+        editor.document.getText();
+        return new KeyFileData(uri, { bytes });
     }
 }
 
@@ -369,8 +375,6 @@ async function copyBindingsToNewFile(args?: { preset?: number }) {
     } else {
         picked = await vscode.window.showQuickPick(options);
     }
-    console.log('Picked: ');
-    console.dir(picked);
     if (picked?.preset) {
         copyBindings(picked.preset.uri);
     }
@@ -459,7 +463,7 @@ async function activateBindings(
     }
     if (data) {
         if (!(await validateKeybindings(data, { explicit: true }))) {
-            await vscode.window.showErrorMessage(
+            vscode.window.showErrorMessage(
                 `There were errors when trying to read the keybinding file: ${data.uri}`,
             );
             return;
@@ -525,7 +529,6 @@ export async function validateKeybindings(
         return false;
     }
     let isValid = true;
-    console.log('Errors found: ' + parsed.n_errors());
     if (parsed.n_errors() > 0) {
         const diagnosticItems: vscode.Diagnostic[] = [];
         for (let i = 0; i < parsed.n_errors(); i++) {

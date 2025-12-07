@@ -1,28 +1,17 @@
 import * as vscode from 'vscode';
 import * as assert from 'assert';
 
-import * as path from 'path';
-import * as os from 'os';
-
 export async function editorWithText(
     body: string,
-    fileExt: string = '.txt',
+    language: string = '',
 ): Promise<[vscode.TextEditor, vscode.Uri]> {
-    await vscode.commands.executeCommand('explorer.newFile');
-
-    const fileName = `test-file-${Date.now()}${fileExt}`;
-    const filePath = path.join(os.tmpdir(), fileName);
-
-    // Convert the string path to a VS Code URI
-    const fileUri = vscode.Uri.file(filePath);
-
-    const fileContent = Buffer.from(body, 'utf8');
-    await vscode.workspace.fs.writeFile(fileUri, fileContent);
-
-    const document = await vscode.workspace.openTextDocument(fileUri);
+    const document = await vscode.workspace.openTextDocument({
+        content: body,
+        language,
+    });
     const editor = await vscode.window.showTextDocument(document);
 
-    return [editor, fileUri];
+    return [editor, document.uri];
 }
 
 export function cursorToStart(editor: vscode.TextEditor) {
