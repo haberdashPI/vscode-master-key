@@ -17,8 +17,9 @@ rust = { version = "1.90", targets = "wasm32-unknown-unknown", component = "llvm
 postinstall = [
     'pnpm install --frozen-lockfile',
     'pnpm exec playwright install chromium',
-    'rustup toolchain install nightly -c llvm-tools-preview',      # needed to compute test coverage
+    'rustup toolchain install nightly',                            # needed to compute test coverage
     'rustup component add llvm-tools-preview --toolchain nightly',
+    'rustup component add llvm-tools-preview',
     'rustup target add wasm32-unknown-unknown',                    # mise doesn't seem to install this automatically
 ]
 
@@ -59,7 +60,11 @@ def main [...args] {
             each { |f| $'--object=($in)' }
 
         cargo +nightly test --tests ...$args -- --nocapture
-        cargo +nightly profdata -- merge -sparse coverage/parsing.profraw -o coverage/parsing.profdata
+        # construct exact path to llvm-profdata (it's hard to find otherwise)
+        let target_triple = (rustc -Vv | grep host | cut -d' ' -f2)
+        let toolchain_name = (rustup show active-toolchain | cut -d' ' -f1 | sed 's/(default)//')
+        let llvm_profdata_path = $"($env.HOME)/.rustup/toolchains/($toolchain_name)/lib/rustlib/($target_triple)/bin/llvm-profdata"
+        ^$llvm_profdata_path merge -sparse coverage/parsing.profraw -o coverage/parsing.profdata
         (cargo +nightly cov -- export {{vars.coverage_options}} --format=lcov ...($object_files) o>
             coverage/parsing.info)
 
