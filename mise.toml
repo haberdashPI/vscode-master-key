@@ -17,9 +17,9 @@ rust = { version = "1.90", targets = "wasm32-unknown-unknown", component = "llvm
 postinstall = [
     'pnpm install --frozen-lockfile',
     'pnpm exec playwright install chromium',
-    'rustup component add llvm-tools-preview',
-    'rustup toolchain install nightly -c llvm-tools-preview', # needed to compute test coverage
-    'rustup target add wasm32-unknown-unknown',               # mise doesn't seem to install this automatically
+    'rustup component add llvm-tools-preview --toolchain nightly',
+    'rustup toolchain install nightly -c llvm-tools-preview',      # needed to compute test coverage
+    'rustup target add wasm32-unknown-unknown',                    # mise doesn't seem to install this automatically
 ]
 
 [tasks.lint]
