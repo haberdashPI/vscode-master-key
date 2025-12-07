@@ -412,6 +412,8 @@ fn interp_to_string(interps: Vec<Value>) -> String {
 // ---------------- Value: Conversion ----------------
 //
 
+// this code is only covered by KeyFileResult which is run during integration tests
+#[cfg_attr(coverage_nightly, coverage(off))]
 impl BareValue {
     pub(crate) fn new(value: toml::Value) -> ResultVec<Self> {
         return Ok(match value {
@@ -1066,6 +1068,8 @@ impl<T: Serialize + std::fmt::Debug + IsEmpty> Merging for TypedValue<T> {
     }
 }
 
+// this code is only covered by KeyFileResult which is run during integration tests
+#[cfg_attr(coverage_nightly, coverage(off))]
 impl Merging for TypedValue<bool> {
     fn coalesce(self, new: Self) -> Self {
         return new;
@@ -1075,6 +1079,8 @@ impl Merging for TypedValue<bool> {
     }
 }
 
+// this code is only covered by KeyFileResult which is run during integration tests
+#[cfg_attr(coverage_nightly, coverage(off))]
 impl Merging for TypedValue<i32> {
     fn coalesce(self, new: Self) -> Self {
         return new;
@@ -1084,6 +1090,8 @@ impl Merging for TypedValue<i32> {
     }
 }
 
+// this code is only covered by KeyFileResult which is run during integration tests
+#[cfg_attr(coverage_nightly, coverage(off))]
 impl Merging for TypedValue<f64> {
     fn coalesce(self, new: Self) -> Self {
         return new;

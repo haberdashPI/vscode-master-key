@@ -507,6 +507,8 @@ impl Merging for BindingDocInput {
     }
 }
 
+// this code is only covered by KeyFileResult which is run during integration tests
+#[cfg_attr(coverage_nightly, coverage(off))]
 impl Merging for CombinedBindingDocInput {
     fn coalesce(self, new: Self) -> Self {
         return new;
@@ -1683,6 +1685,8 @@ pub struct ReifiedBinding {
     pub edit_text: String,
 }
 
+// most of this code is only covered by KeyFileResult which is run during integration tests
+#[cfg_attr(coverage_nightly, coverage(off))]
 impl ReifiedBinding {
     pub fn rhai_clone(&self) -> Self {
         return ReifiedBinding {
@@ -1789,6 +1793,8 @@ impl ReifiedBinding {
     }
 }
 
+// this code is only covered by KeyFileResult which is run during integration tests
+#[cfg_attr(coverage_nightly, coverage(off))]
 #[wasm_bindgen]
 impl ReifiedBinding {
     pub fn n_commands(&self) -> usize {

@@ -149,6 +149,8 @@ pub struct Scope {
     pub(crate) messages: Rc<RefCell<Vec<String>>>,
 }
 
+// this code is only covered by KeyFileResult which is run during integration tests
+#[cfg_attr(coverage_nightly, coverage(off))]
 fn toml_to_dynamic(x: toml::Value) -> rhai::Dynamic {
     // TODO: there might be a more efficient approach to the containers that avoids more
     // copying
@@ -322,6 +324,8 @@ fn define_history_queue_api(engine: &mut Engine, history: HistoryQueue) {
         );
 }
 
+// this code is only covered by expressions run during integration tests
+#[cfg_attr(coverage_nightly, coverage(off))]
 fn last_index_of_history(
     context: rhai::NativeCallContext,
     queue: HistoryQueue,

@@ -58,22 +58,22 @@ impl<T: Merging + Clone> Merging for HashMap<String, T> {
     }
 }
 
-impl<T: Merging + Clone> Merging for IndexMap<String, T> {
-    fn coalesce(self, new: Self) -> Self {
-        return new;
-    }
-    fn merge(self, new: Self) -> Self {
-        let (mut to_merge, to_append): (IndexMap<_, _>, IndexMap<_, _>) =
-            new.into_iter().partition(|(k, _)| self.get(k).is_some());
-        let pairs = self
-            .into_iter()
-            .map(|(k, v)| match to_merge.shift_remove(&k) {
-                Some(new_v) => (k, v.merge(new_v)),
-                Option::None => (k, v),
-            });
-        return pairs.chain(to_append.into_iter()).collect();
-    }
-}
+// impl<T: Merging + Clone> Merging for IndexMap<String, T> {
+//     fn coalesce(self, new: Self) -> Self {
+//         return new;
+//     }
+//     fn merge(self, new: Self) -> Self {
+//         let (mut to_merge, to_append): (IndexMap<_, _>, IndexMap<_, _>) =
+//             new.into_iter().partition(|(k, _)| self.get(k).is_some());
+//         let pairs = self
+//             .into_iter()
+//             .map(|(k, v)| match to_merge.shift_remove(&k) {
+//                 Some(new_v) => (k, v.merge(new_v)),
+//                 Option::None => (k, v),
+//             });
+//         return pairs.chain(to_append.into_iter()).collect();
+//     }
+// }
 
 impl<T: Merging> Merging for Spanned<T> {
     fn merge(self, new: Self) -> Self {
@@ -120,42 +120,42 @@ impl<T: Merging> Merging for Required<T> {
     }
 }
 
-impl<T: Merging> Merging for Plural<T>
-where
-    T: Clone + std::fmt::Debug,
-{
-    fn merge(self, _: Self) -> Self {
-        panic!("Not yet implemented (we don't yet need this function)")
-    }
+// impl<T: Merging> Merging for Plural<T>
+// where
+//     T: Clone + std::fmt::Debug,
+// {
+//     fn merge(self, _: Self) -> Self {
+//         panic!("Not yet implemented (we don't yet need this function)")
+//     }
 
-    fn coalesce(self, new: Self) -> Self {
-        if new.0.is_empty() {
-            return self;
-        } else {
-            return new;
-        }
-    }
-}
+//     fn coalesce(self, new: Self) -> Self {
+//         if new.0.is_empty() {
+//             return self;
+//         } else {
+//             return new;
+//         }
+//     }
+// }
 
-impl Merging for i64 {
-    fn merge(self, new: Self) -> Self {
-        return new;
-    }
+// impl Merging for i64 {
+//     fn merge(self, new: Self) -> Self {
+//         return new;
+//     }
 
-    fn coalesce(self, new: Self) -> Self {
-        return new;
-    }
-}
+//     fn coalesce(self, new: Self) -> Self {
+//         return new;
+//     }
+// }
 
-impl Merging for bool {
-    fn merge(self, new: Self) -> Self {
-        return new;
-    }
+// impl Merging for bool {
+//     fn merge(self, new: Self) -> Self {
+//         return new;
+//     }
 
-    fn coalesce(self, new: Self) -> Self {
-        return new;
-    }
-}
+//     fn coalesce(self, new: Self) -> Self {
+//         return new;
+//     }
+// }
 
 impl<T: Merging> Merging for Option<T> {
     fn merge(self, new: Self) -> Self {
@@ -173,14 +173,14 @@ impl<T: Merging> Merging for Option<T> {
     }
 }
 
-impl Merging for String {
-    fn merge(self, new: Self) -> Self {
-        return new;
-    }
-    fn coalesce(self, new: Self) -> Self {
-        return new;
-    }
-}
+// impl Merging for String {
+//     fn merge(self, new: Self) -> Self {
+//         return new;
+//     }
+//     fn coalesce(self, new: Self) -> Self {
+//         return new;
+//     }
+// }
 
 // impl Merging for toml::Value {
 //     fn coalesce(self, new: Self) -> Self {
