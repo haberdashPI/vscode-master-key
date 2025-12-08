@@ -25,7 +25,7 @@ jobs:
         - name: Install Dev Environment
           uses: jdx/mise-action@v2
           with:
-            version: 2025.6.4
+            version: 2025.11.2
             install: true
             cache: true
         - name: Prepare Cache

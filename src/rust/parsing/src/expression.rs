@@ -487,8 +487,8 @@ mod tests {
 
         let report = err.report(data.as_bytes());
         let message = report.first().unwrap().message.clone();
-        let range = report.first().unwrap().range.clone();
-        let val: String = data[(range.start.col)..=(range.end.col)].to_string();
+        // let range = report.first().unwrap().range.clone();
+        // let val: String = data[(range.start.col)..=(range.end.col)].to_string();
         assert!(message.contains("unexpected `{{`"));
     }
 
