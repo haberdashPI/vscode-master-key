@@ -1,5 +1,3 @@
-#![cfg_attr(coverage_nightly, feature(coverage_attribute))]
-
 // TODO: here is where we would want to invoke rhai to resolve any outstanding expressions
 
 pub mod value;

@@ -43,13 +43,6 @@ jobs:
                 ${{ github.workspace }}/.vscode-test${{ matrix.environment }}
                 ${{ env.PNPM_STORE_PATH }}
                 $HOME/Library/Caches
-        - name: Locate llvm-profdata Binary
-          shell: bash # Use bash here for reliable file system searching
-          run: |
-              echo "Searching for llvm-profdata in .rustup directory..."
-              # The find command will print the exact path if found
-              find $HOME/.rustup -name "llvm-profdata"
-              find $HOME/.rustup -name "llvm-*"
         - name: Install Dependencies
           run: pnpm install --frozen-lockfile && pnpm exec playwright install chromium
         - name: Unit Tests

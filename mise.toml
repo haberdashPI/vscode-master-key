@@ -7,20 +7,25 @@ node = "20"
 "npm:pnpm" = "10.13.1"
 "ubi:haberdashpi/simple-src-docs" = "0.6.0"
 watchexec = "2.3.2"
-rust = { version = "1.90", targets = "wasm32-unknown-unknown", component = "llvm-tools-preview" }
+rust = [
+    { version = "1.90", targets = "wasm32-unknown-unknown", component = "llvm-tools-preview" },
+    { version = "nightly", targets = "wasm32-unknown-unknown", component = "llvm-tools-preview" },
+]
 "cargo:wasm-pack" = "0.13.1"
 "cargo:cargo-binutils" = "0.3.6"
-"cargo:rustfilt" = "latest"
-"cargo:nu" = "latest"
+"cargo:rustfilt" = "0.2.1"
+"cargo:nu" = "0.109.1"
+# this ensures that profiling tools (profdata, cov, etc...) as cargo subcommands
+"github:taiki-e/cargo-llvm-cov" = "0.6.21"
+
+[settings]
+lockfile = true
 
 [hooks]
 postinstall = [
     'pnpm install --frozen-lockfile',
     'pnpm exec playwright install chromium',
-    'rustup toolchain install nightly',                            # needed to compute test coverage
-    'rustup component add llvm-tools-preview --toolchain nightly',
-    'rustup component add llvm-tools-preview',
-    'rustup target add wasm32-unknown-unknown',                    # mise doesn't seem to install this automatically
+    'rustup target add wasm32-unknown-unknown', # mise doesn't seem to install this automatically
 ]
 
 [tasks.lint]
@@ -54,22 +59,19 @@ def main [...args] {
         $env.RUSTFLAGS = '-C instrument-coverage --cfg coverage_nightly'
         $env.LLVM_PROFILE_FILE = 'coverage/parsing.profraw'
 
-        cargo +nightly test --tests --no-run
+        mise exec rust@nightly -- cargo test --tests --no-run
 
-        let object_files = cargo +nightly test --tests --no-run --message-format=json |
+        let object_files = mise exec rust@nightly -- cargo test --tests --no-run --message-format=json |
             from json -o | where profile?.test |
             get filenames.0 |
             each { |f| $'--object=($in)' }
 
-        cargo +nightly test --tests ...$args -- --nocapture
-        # construct exact path to llvm-profdata (it's hard to find otherwise)
-        let target_triple = (rustc -Vv | grep host | cut -d' ' -f2)
-        let llvm_profdata_path = $"($env.HOME)/.rustup/toolchains/nightly-($target_triple)/lib/rustlib/($target_triple)/bin/llvm-profdata"
-        ^$llvm_profdata_path merge -sparse coverage/parsing.profraw -o coverage/parsing.profdata
-        (cargo +nightly cov -- export {{vars.coverage_options}} --format=lcov ...($object_files) o>
+        mise exec rust@nightly -- cargo test --tests ...$args -- --nocapture
+        mise exec rust@nightly -- cargo profdata -- merge -sparse coverage/parsing.profraw -o coverage/parsing.profdata
+        (mise exec rust@nightly -- cargo cov -- export {{vars.coverage_options}} --format=lcov ...($object_files) o>
             coverage/parsing.info)
 
-        cargo +nightly cov -- report --use-color {{vars.coverage_options}} ...($object_files)
+        mise exec rust@nightly -- cargo cov -- report --use-color {{vars.coverage_options}} ...($object_files)
     } else {
         cargo test ...$args -- --nocapture
     }

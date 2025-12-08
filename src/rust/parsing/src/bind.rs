@@ -7,7 +7,6 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use rhai::{CustomType, Dynamic, ImmutableString, TypeBuilder};
 use serde::{Deserialize, Serialize};
-use std::collections::hash_map::{Entry, OccupiedEntry};
 use std::collections::{HashMap, HashSet};
 use std::convert::identity;
 use std::iter::Iterator;
@@ -1371,7 +1370,6 @@ impl BindingCodes {
                             .with_range(&old.span)
                             .with_ref_range(span),
                         ];
-                        output_binding = false;
                         return Err(errors
                             .into_iter()
                             .map(Result::unwrap_err)

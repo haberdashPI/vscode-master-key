@@ -1,5 +1,3 @@
-#![cfg_attr(coverage_nightly, feature(coverage_attribute))]
-
 ///
 /// @file bindings/index.md
 /// @order -10
