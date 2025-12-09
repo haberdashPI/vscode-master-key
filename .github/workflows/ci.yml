@@ -22,17 +22,22 @@ jobs:
         steps:
         - name: Checkout
           uses: actions/checkout@v4
+        - name: Install Dev Environment
+          uses: jdx/mise-action@v3
+          with:
+            version: 2025.11.2
+            install: true
+            cache: true
         - name: Setup Node and Cache NPM
           uses: actions/setup-node@v6
           with:
             node-version: 20
             cache: 'pnpm'
-        - name: Install Dev Environment
-          uses: jdx/mise-action@v2
-          with:
-            version: 2025.11.2
-            install: true
-            cache: true
+        - name: Install node packages
+          # normally we run as a hook in mise.toml, but we run it here, *after* setting up
+          # the NPM cache
+          env: { CI: 'false' }
+          run: nu postinstall.nu
         - name: Unit Tests
           env: { COVERAGE: 'true' }
           run: |

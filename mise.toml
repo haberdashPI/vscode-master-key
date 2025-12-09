@@ -28,7 +28,12 @@ components = "llvm-tools-preview"
 lockfile = true
 
 [hooks]
-postinstall = ['pnpm install --frozen-lockfile', 'pnpm exec playwright install chromium']
+postinstall = '''
+nu -c 'if not ($env.CI? | default false | into bool) {
+    pnpm install --frozen-lockfile
+    pnpm exec playwright install chromium
+}'
+'''
 
 [tasks.lint]
 run = 'pnpm exec eslint src'
