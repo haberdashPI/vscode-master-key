@@ -15,7 +15,6 @@ suite('Set values', () => {
 
         let _;
 
-        console.log('loading file');
         [editor, _] = await editorWithText(`#:master-keybindings
             [header]
             version = "2.0.0"
@@ -28,17 +27,14 @@ suite('Set values', () => {
             key = "a"
             command = "bar"
         `, 'toml');
-        console.log('activate file');
         await vscode.commands.executeCommand('master-key.activateBindings', 'CurrentFile');
-        await sleep(1000);
-        console.log('show document');
         await vscode.window.showTextDocument(editor.document);
-        await sleep(1000);
-        console.log('get document editor');
-        editor = vscode.window.activeTextEditor!;
+
+        [editor, _] = await editorWithText('a b c\nd e f');
     });
 
     test('Updated value visible to expressions', async () => {
+        await sleep(500);
         await vscode.commands.executeCommand('master-key.setValue', {
             name: 'foo', value: 3,
         });
