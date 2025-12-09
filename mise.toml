@@ -28,11 +28,7 @@ components = "llvm-tools-preview"
 lockfile = true
 
 [hooks]
-postinstall = [
-    'pnpm install --frozen-lockfile',
-    'pnpm exec playwright install chromium',
-    'rustup target add wasm32-unknown-unknown', # mise doesn't seem to install this automatically
-]
+postinstall = ['pnpm install --frozen-lockfile', 'pnpm exec playwright install chromium']
 
 [tasks.lint]
 run = 'pnpm exec eslint src'

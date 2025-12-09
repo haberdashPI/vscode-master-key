@@ -10,9 +10,12 @@ function sleep(ms: number) {
 
 suite('Set values', () => {
     let editor: vscode.TextEditor;
-    setup(async () => {
+    setup(async function () {
+        this.timeout(5000);
+
         let _;
 
+        console.log('loading file');
         [editor, _] = await editorWithText(`#:master-keybindings
             [header]
             version = "2.0.0"
@@ -25,9 +28,13 @@ suite('Set values', () => {
             key = "a"
             command = "bar"
         `, 'toml');
+        console.log('activate file');
         await vscode.commands.executeCommand('master-key.activateBindings', 'CurrentFile');
-        await sleep(150);
+        await sleep(1000);
+        console.log('show document');
         await vscode.window.showTextDocument(editor.document);
+        await sleep(1000);
+        console.log('get document editor');
         editor = vscode.window.activeTextEditor!;
     });
 

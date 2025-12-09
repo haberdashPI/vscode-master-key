@@ -22,9 +22,7 @@ suite('*.toml Linting', () => {
             command = "bizbaz"
         `;
 
-        console.log('setting up editor');
         const [_editor, fileUri] = await editorWithText(body, 'toml');
-        console.log('activating bindings');
         await vscode.commands.executeCommand('master-key.activateBindings', 'CurrentFile');
 
         const diags = vscode.languages.getDiagnostics(fileUri);
@@ -51,7 +49,6 @@ suite('*.toml Linting', () => {
         `;
 
         const [_editor, fileUri] = await editorWithText(body, '.toml');
-        // trigger file validation
         await vscode.commands.executeCommand('master-key.activateBindings', 'CurrentFile');
         const diag = vscode.languages.getDiagnostics(fileUri);
 
@@ -82,7 +79,6 @@ suite('*.toml Linting', () => {
         `;
 
         const [_editor, fileUri] = await editorWithText(body, '.toml');
-        // trigger file validation
         await vscode.commands.executeCommand('master-key.activateBindings', 'CurrentFile');
         const diag = vscode.languages.getDiagnostics(fileUri);
 
