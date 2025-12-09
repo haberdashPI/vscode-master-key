@@ -5,9 +5,9 @@ import { Page } from '@playwright/test';
 test.describe('Basic keypresses', () => {
     async function setup(workbox: Page, file: string) {
         await activateKeybindings(workbox, file);
-        await openFile(workbox, 'text.md');
-        const editor = workbox.getByLabel('text.md').
-            filter({ has: workbox.getByText('Commodo fugiat magna ') }).
+        await openFile(workbox, 'macro.md');
+        const editor = workbox.getByLabel('macro.md').
+            filter({ has: workbox.getByText('a b c ') }).
             filter({ has: workbox.getByRole('code') });
         const pos = await workbox.getByRole('button').
             filter({ hasText: /Ln [0-9]+, Col [0-9]+/ });
@@ -103,7 +103,7 @@ test.describe('Basic keypresses', () => {
         const { editor, pos } = await setup(workbox, 'simpleMotions.toml');
         await editor.press('Shift+j');
         await editor.press('w');
-        await expect(pos).toHaveText('Ln 2, Col 7');
+        await expect(pos).toHaveText('Ln 2, Col 3');
     });
 
     test('Can use implicit prefixes', async ({ workbox }) => {

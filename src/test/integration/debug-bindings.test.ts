@@ -23,7 +23,7 @@ test.describe('Debug expressions', () => {
         await editor.press('a');
         await expect(pos).toHaveText('Ln 1, Col 4');
 
-        const output = workbox.getByLabel('Master Key Debug - Output');
+        const output = workbox.getByLabel('Master Key - Output');
         const content = output.getByRole('code').locator('div');
         const item = content.filter({ hasText: '] sum:' }).first();
         await expect(item).toBeVisible();
@@ -33,7 +33,7 @@ test.describe('Debug expressions', () => {
         const { editor } = await setup(workbox);
         await editor.press('b');
 
-        const output = workbox.getByLabel('Master Key Debug - Output');
+        const output = workbox.getByLabel('Master Key - Output');
         const content = output.getByRole('code').locator('div');
         const item = content.filter({ hasText: '] result:' }).first();
         await expect(item).toBeVisible();

@@ -95,7 +95,7 @@ args.cursor = "Underline"
 command = "master-key.storeCommand"
 args.command = "runCommands"
 args.register = "operation"
-args.args.commands = ["cursorDown", "cursorLeft"]
+args.args.commands = ["cursorDown", "cursorRight"]
 
 [[bind]]
 doc.name = "word operation"

@@ -14,7 +14,7 @@ test.describe('edit preset command', () => {
         );
         await input.press('Enter');
         const fileTop = workbox.locator('div').
-            filter({ hasText: /^#:master-keybindings$/ });
+            filter({ hasText: /^#:master-keybindings$/ }).first();
         await expect(fileTop).toBeVisible();
     });
 });

@@ -115,11 +115,11 @@ depends = ['build-tests']
 shell = 'nu -c'
 run = '''
 if ($env.COVERAGE? | default false | into bool) {
-    (pnpm exec vscode-test --config .vscode-test.mjs --extensionDevelopmentPath .
-        --version insiders --coverage --coverage-output coverage/unit
+    (pnpm exec vscode-test --config .vscode-test.mjs --extensionDevelopmentPath=.
+        --version=insiders --coverage --coverage-output coverage/unit
         --coverage-reporter json)
 } else {
-    (pnpm exec vscode-test --config .vscode-test.mjs --extensionDevelopmentPath .
+    (pnpm exec vscode-test --config .vscode-test.mjs --extensionDevelopmentPath=.
         --version=insiders)
 }
 '''
