@@ -25,6 +25,7 @@ jobs:
         - name: Install Dev Environment
           uses: jdx/mise-action@v3
           with:
+            experimental: true # enables postinstall hooks
             version: 2025.11.2
             install: true
             cache: true

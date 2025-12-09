@@ -29,6 +29,10 @@ lockfile = true
 
 [hooks]
 postinstall = '''
+rustup target add wasm32-unknown-unknown
+rustup component add llvm-tools-preview
+rustup target add wasm32-unknown-unknown --toolchain nightly
+rustup component add llvm-tools-preview --toolchain nightly
 nu -c 'if not ($env.CI? | default false | into bool) {
     pnpm install --frozen-lockfile
     pnpm exec playwright install chromium
