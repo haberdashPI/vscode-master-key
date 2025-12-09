@@ -34,10 +34,9 @@ jobs:
             node-version: 20
             cache: 'pnpm'
         - name: Install node packages
-          # normally we run as a hook in mise.toml, but we run it here, *after* setting up
-          # the NPM cache
-          env: { CI: 'false' }
-          run: nu postinstall.nu
+          run: |
+            pnpm install --frozen-lockfile
+            pnpm exec playwright install chromium
         - name: Unit Tests
           env: { COVERAGE: 'true' }
           run: |
