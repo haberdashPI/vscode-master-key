@@ -38,6 +38,7 @@ async function updateModes(bindings: KeyFileResult) {
     await withState(async (state) => {
         const newDefault = bindings.default_mode();
         console.log(`newDefault: ${newDefault}`);
+        restoreModesCursorState();
         return state.set(MODE, { public: true }, newDefault).resolve();
     });
 }

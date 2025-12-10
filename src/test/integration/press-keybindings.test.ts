@@ -117,7 +117,7 @@ test.describe('Basic keypresses', () => {
         const { editor, pos } = await setup(workbox, 'simpleMotions.toml');
         await editor.press('t');
         await editor.press('f');
-        await expect(pos).toHaveText('Ln 1, Col 8');
+        await expect(pos).toHaveText('Ln 2, Col 2');
     });
 
     test('Can leverage fallback bindings', async ({ workbox }) => {
