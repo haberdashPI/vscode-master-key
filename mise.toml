@@ -83,6 +83,7 @@ def main [...args] {
             coverage/parsing.info)
 
         cargo +nightly cov -- report --use-color {{vars.coverage_options}} ...($object_files)
+        cp coverage/parsing.info ../../../coverage/rs_coverage.info
     } else {
         cargo test ...$args -- --nocapture
     }
@@ -137,13 +138,13 @@ run = 'pnpm exec vscode-test-web --extensionDevelopmentPath=.'
 [tasks.assemble-coverage]
 shell = 'nu -c'
 run = '''
-c8 --temp-directory coverage/integration/tmp/ report -r json -o coverage/integration/',
+c8 --temp-directory coverage/integration/tmp/ report -r json -o coverage/integration/
 (pnpm exec istanbul-merge --out coverage/merged/coverage-final.json
     coverage/integration/coverage-final.json coverage/unit/coverage-final.json)
 (pnpm exec nyc report -t coverage/merged --report-dir coverage -r lcov
     --exclude node_modules --exclude out --exclude .vscode-test
     --exclude src/test)
-mv coverage/lcov.info coverage/ts_coverage.info'
+mv coverage/lcov.info coverage/ts_coverage.info
 
 cat coverage/*_coverage.info o> coverage/lcov.info
 lcov-summary coverage/lcov.info
