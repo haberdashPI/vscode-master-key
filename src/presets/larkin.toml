@@ -1,31 +1,26 @@
 #:master-keybindings
-
-# ---
 # author: David Little
 # license: MIT https://github.com/haberdashPI/vscode-master-key/blob/main/LICENSE.md
-# ---
 
-# # Master Keybindings: Larkin
+## # Master Keybindings: Larkin
 
-# Larkin is the default keybinding set that ships with Master Key. It follows in the footsteps of Vim, Kakoune and Helix.
+## Larkin is the default keybinding set that ships with Master Key. It follows in the footsteps of Vim, Kakoune and Helix.
 
-# It leverages a number of extensions which can be installed using the `Install Extensions Required by Keybindings` command.
+## It leverages a number of extensions which can be installed using the `Install Extensions Required by Keybindings` command.
 
-# Some key features:
+## Some key features:
 
-# - Commands are modal: most actions are available in `normal` mode, while typing occurs in `insert` mode
-# - Command are organized around noun-verb ordering: e.g. `w` selects a word, and `d` will then delete it.
-# - Selection is sticky: once a selection is created, further commands tend to extend that selection until it is reset (using `v`). However a number of commands are defined to automatically reset the selection (e.g. `mw` creates a new selection around a word).
+## - Commands are modal: most actions are available in `normal` mode, while typing occurs in `insert` mode
+## - Command are organized around noun-verb ordering: e.g. `w` selects a word, and `d` will then delete it.
+## - Selection is sticky: once a selection is created, further commands tend to extend that selection until it is reset (using `v`). However a number of commands are defined to automatically reset the selection (e.g. `mw` creates a new selection around a word).
 
-#
-# These bindings are named after the middle name of my first child (Larkin).
+## These bindings are named after the middle name of my first child (Larkin).
 
-#
-# > ℹ **Info**: If your needs require a layout independent keymap consider changing "Use Layout Independent Bindings" in settings to true. It will transform all bindings to use the layout independent versions of the keys. For example the binding for `w` will be transformed to `[KeyW]`, which corresponds to the location of the letter "W" in the U.S. Keyboard layout.
+## > ℹ **Info**
+## >
+## > If your needs require a layout independent keymap consider changing "Use Layout Independent Bindings" in settings to true. It will transform all bindings to use the layout independent versions of the keys. For example the binding for `w` will be transformed to `[KeyW]`, which corresponds to the location of the letter "W" in the U.S. Keyboard layout.
 
-#
-
-#- NOTE: this file is used to generate both keybindings and to generate a markdown file that documents the bindings. When comments are prefixed with a `-` they are ignored in the final markdown output. All other comments will become part of the markdown output. Any [[bind]] entries unbroken by normal, markdown-displayed comments will show up in a table in the markdown output. Make sure that the normal comments do not break up TOML data in a way that means it is invalid TOML.
+# NOTE: this file is used to generate both keybindings and to generate a markdown file that documents the bindings. When comments are prefixed with a `-` they are ignored in the final markdown output. All other comments will become part of the markdown output. Any [[bind]] entries unbroken by normal, markdown-displayed comments will show up in a table in the markdown output. Make sure that the normal comments do not break up TOML data in a way that means it is invalid TOML.
 
 [header]
 name = "Larkin"
@@ -100,13 +95,13 @@ args.commands = [
 id = "modes"
 doc.kind = "util"
 
-# ## Getting Help
+## ## Getting Help
 
-# There are three kinds of help available in Master Key.
+## There are three kinds of help available in Master Key.
 
-# 1. The visual documentation shows up in the lower pane and shows the currently available bindings on-top of a keyboard layout.
-# 2. The text documentation is what you are reading now.
-# 3. The suggestion palette shows a list of the current bindings given the current key binding prefix.
+## 1. The visual documentation shows up in the lower pane and shows the currently available bindings on-top of a keyboard layout.
+## 2. The text documentation is what you are reading now.
+## 3. The suggestion palette shows a list of the current bindings given the current key binding prefix.
 
 [[bind]]
 default = "{{bind.util}}"
@@ -139,18 +134,18 @@ mode = "normal"
 doc.description = "Show visual documentation for keybindings"
 command = "master-key.showVisualDoc"
 
-# The visual keybinding documentation is modified by the following command:
+## The visual keybinding documentation is modified by the following command:
 
-# - `Master Key: Toggle Visual Doc Modifier by frequency`: changes keybinding modifiers from most to least common modifiers across all modifiers defined by the current keybindings.
+## - `Master Key: Toggle Visual Doc Modifier by frequency`: changes keybinding modifiers from most to least common modifiers across all modifiers defined by the current keybindings.
 
 #
-# There are no keybindings for these commands by default.
+## There are no keybindings for these commands by default.
 
-# ## Normal Mode
+## ## Normal Mode
 
-# The default mode in Larkin is Normal mode. In this mode, instead of the keys entering text, all keys are commands that modify selections or perform actions on those selections. To exit normal mode you can use `i` to enter `insert` mode, which returns VSCode keybindings to their normal state (see [Simple actions](#simple-actions) for more ways to enter insert mode).
+## The default mode in Larkin is Normal mode. In this mode, instead of the keys entering text, all keys are commands that modify selections or perform actions on those selections. To exit normal mode you can use `i` to enter `insert` mode, which returns VSCode keybindings to their normal state (see [Simple actions](#simple-actions) for more ways to enter insert mode).
 
-# While in Normal model you will see a highlighted section with the text "normal" in the lower left hand corner of the status bar.
+## While in Normal model you will see a highlighted section with the text "normal" in the lower left hand corner of the status bar.
 
 [[bind]]
 default = "{{bind.modes}}"
@@ -191,11 +186,11 @@ id = "edit_count"
 default = "{{bind.edit}}"
 doc.kind = "count"
 
-# ## Basic motions
+## ## Basic motions
 
-# These are the most common, simple motions that can be performed in Larkin.
+## These are the most common, simple motions that can be performed in Larkin.
 
-# Selection behavior uses the following logic: motions that move more than one character generally select the text "under" the motion. If a selection already exists (e.g. from a previous motion) additional motions extend that selection. You can always reset the selection using `v`, and several commands (e.g. `x`) operate on the next character rather than the current selection.
+## Selection behavior uses the following logic: motions that move more than one character generally select the text "under" the motion. If a selection already exists (e.g. from a previous motion) additional motions extend that selection. You can always reset the selection using `v`, and several commands (e.g. `x`) operate on the next character rather than the current selection.
 
 [[define.bind]]
 id = "edit_motion"
@@ -607,11 +602,11 @@ command = "selection-utilities.narrowTo"
 args.unit = "subident"
 args.boundary = "both"
 
-# ## Repeating Motions
+## ## Repeating Motions
 
-# Like VIM, the number keys (0-9) can be typed as a prefix to most commands and serve as a `count`
-# argument to that command. In most cases this causes the command to be repeated `count`
-# times e.g. 2w would select the next two words starting from the current cursor position.
+## Like VIM, the number keys (0-9) can be typed as a prefix to most commands and serve as a `count`
+## argument to that command. In most cases this causes the command to be repeated `count`
+## times e.g. 2w would select the next two words starting from the current cursor position.
 
 [[bind]]
 foreach.num = ['{{keys(`[0-9]`)}}']
@@ -627,7 +622,7 @@ finalKey = false
 mode = '{{not_modes(["insert"])}}'
 doc.hideInDocs = true
 
-# There are several ways to repeat or undo previously entered commands, both actions and motions
+## There are several ways to repeat or undo previously entered commands, both actions and motions
 
 [[bind]]
 default = "{{bind.edit_motion}}"
@@ -716,11 +711,11 @@ key = "g shift+-"
 doc.combined.name = "edit ←/→"
 command = "workbench.action.navigateForwardInEditLocations"
 
-# ## Search Motions
+## ## Search Motions
 
-# Search motions accept one or more characters and select text up until the given character. Search commands are case insensitive by default. They can serve as very efficient ways to jump to a desired location. E.g. typing `sfod` in normal mode would delete the first three words of the following line of text
-#
-# > I want some food
+## Search motions accept one or more characters and select text up until the given character. Search commands are case insensitive by default. They can serve as very efficient ways to jump to a desired location. E.g. typing `sfod` in normal mode would delete the first three words of the following line of text
+
+## > I want some food
 
 [[define.bind]]
 id = "edit_motion_search"
@@ -863,10 +858,9 @@ args.offset = "start"
 args.skip = "{{key.count-1}}"
 args.backwards = true
 
-# ## Goto Commands
+## ## Goto Commands
 
-# Goto commands all begin with the mnemonic prefix key `g`. They are additional
-# motion commands that compliment the basic motions listed in the previous section.
+## Goto commands all begin with the mnemonic prefix key `g`. They are additional motion commands that compliment the basic motions listed in the previous section.
 
 [[bind]]
 default = "{{bind.edit_motion}}"
@@ -1111,11 +1105,11 @@ doc.description = "previous jupyter notebook cell"
 command = "runCommands"
 args.commands = ["jupyter.gotoPrevCellInFile", "jupyter.selectCell"]
 
-# ## Match Commands
+## ## Match Commands
 
-# Match commands select some syntactical region of text, e.g. in or around parenthesis, brackets, indent level etc... Where the `g` prefixed commands move forward or backward, these commands move both the start and the end of the selection away from the active cursor position. Repeating the command moves to the next (or previous) match, depending on the command.
+## Match commands select some syntactical region of text, e.g. in or around parenthesis, brackets, indent level etc... Where the `g` prefixed commands move forward or backward, these commands move both the start and the end of the selection away from the active cursor position. Repeating the command moves to the next (or previous) match, depending on the command.
 
-# If you accidentally select `around` instead of `in`, you can revise your selection using `R` to narrow to non-white space or `z` to narrow to a subword (e.g. excludes `_`)
+## If you accidentally select `around` instead of `in`, you can revise your selection using `R` to narrow to non-white space or `z` to narrow to a subword (e.g. excludes `_`)
 
 [[define.bind]]
 id = "edit_motion_match_obj"
@@ -1479,10 +1473,10 @@ args.between.from = "{{key.captured.sub_string(0, key.captured.len()/2)}}"
 args.between.to = "{{key.captured.sub_string(key.captured.len()/2)}}"
 args.inclusive = false
 
-# ## Simple Actions
+## ## Simple Actions
 
-# These are the most common, basic actions available in Larkin that can be used
-# to edit text in relation to the current selection.
+## These are the most common, basic actions available in Larkin that can be used
+## to edit text in relation to the current selection.
 
 [[define.bind]]
 id = "edit_action"
@@ -1492,7 +1486,7 @@ tags = ["action"]
 
 [[bind]]
 default = "{{bind.edit_action}}"
-#- TODO: add documentation to these basic editor keys
+# TODO: add documentation to these basic editor keys
 key = "i"
 doc.name = "insert"
 doc.description = "Switch to insert mode (right before character)"
@@ -1672,7 +1666,7 @@ command = "editor.action.clipboardPasteAction"
 default = "{{bind.edit_action}}"
 key = "shift+p"
 doc.name = "paste before"
-doc.combined.name = "paste before/after"
+doc.combined.name = "paste before/after/in"
 doc.description = "Paste before the cursor/selection"
 when = "editorHasSelection"
 command = "runCommands"
@@ -1704,7 +1698,7 @@ repeat = "{{key.count}}"
 
 [[bind.args.commands]]
 command = "master-key.replayFromHistory"
-#- we can repeat any action but history-related actions; we make an exception for replaying macros, which can be repeated
+# we can repeat any action but history-related actions; we make an exception for replaying macros, which can be repeated
 args.index = """{{
 last_history_index(|i|
     history[i]?.tags.contains("action") &&
@@ -1865,9 +1859,9 @@ id = "edit_action_history"
 default = "{{bind.edit_action}}"
 tags = ["history"]
 
-# ## Number actions
+## ## Number actions
 
-# These commands modify or enter numbers in some way.
+## These commands modify or enter numbers in some way.
 
 [[bind]]
 default = "{{bind.edit_action}}"
@@ -1883,9 +1877,9 @@ doc.description = "Decrement a number by 1 "
 key = "shift+="
 command = "selection-utilities.decrementNumber"
 
-# ## Captilization
+## ## Captilization
 
-# These modify the capitalization of letters in some way.
+## These modify the capitalization of letters in some way.
 
 [[define.bind]]
 id = "edit_action_capitals"
@@ -1990,9 +1984,9 @@ doc.description = "Swap first character to upper case"
 key = "` u"
 command = "extension.changeCase.upperFirst"
 
-# ## "Do" Actions
+## ## "Do" Actions
 
-# These keys are all organized under the `space` key and they "do" something. These are generally more elaborate editing operations in the current editor pane.
+## These keys are all organized under the `space` key and they "do" something. These are generally more elaborate editing operations in the current editor pane.
 
 [[bind]]
 default = "{{bind.edit_action}}"
@@ -2293,9 +2287,9 @@ args.text = "\n"
 [[bind.args.commands]]
 command = "selection-utilities.cancelSelection"
 
-# ## Repeat actions
+## ## Repeat actions
 
-# These commands interact with the history of previously typed commands to repeat some sequence of commands. They can record any edits, and any commands that are issued through master key bindings. Commands that are not part of this binding file (e.g. a standard call to Cmd/Ctrl+V to paste) will not be recorded. You can copy your non-master-key bindings over to master key (so that they will be recorded) by [customizing your bindings](#customized-bindings) and using `Import Default Bindings` and `Import User Bindings` to allow all of the default and user bindings stored in VSCOde's normal keybinding files to be recorded by master key. (You will have to remove your original user bindings from the VSCOde `keybinding.json` file manually)
+## These commands interact with the history of previously typed commands to repeat some sequence of commands. They can record any edits, and any commands that are issued through master key bindings. Commands that are not part of this binding file (e.g. a standard call to Cmd/Ctrl+V to paste) will not be recorded. You can copy your non-master-key bindings over to master key (so that they will be recorded) using `Import Default Bindings` and `Import User Bindings` to allow all of the default and user bindings stored in VSCode's normal keybinding files to be recorded by master key. (You will have to remove your original user bindings from the VSCode `keybinding.json` file manually)
 
 [[bind]]
 default = "{{bind.edit_action_history}}"
@@ -2384,9 +2378,9 @@ command = "master-key.pushHistoryToStack"
 args.range.from = "{{history.len()-max(key.count, 1)}}"
 args.range.to = "{{history.len()-1}}"
 
-# ## Utility Commands
+## ## Utility Commands
 
-# These actions include miscellaneous utilities.
+## These actions include miscellaneous utilities.
 
 [[bind]]
 default = "{{bind.window}}"
@@ -2465,9 +2459,9 @@ doc.description = "show GitLens command palette for git"
 key = "tab g g"
 command = "gitlens.gitCommands"
 
-# ## Miscellaneous Commands
+## ## Miscellaneous Commands
 
-# These miscellaneous utility commands are all organized uner the prefix `tab`.
+## These miscellaneous utility commands are all organized uner the prefix `tab`.
 
 [[define.bind]]
 id = "util"
@@ -2645,9 +2639,9 @@ move to previous change
 key = "tab shift+d"
 command = "workbench.action.editor.previousChange"
 
-# ## Window Manipulation
+## ## Window Manipulation
 
-# These are commands that interact with VSCode's user-interface in some way, rather than editing or moving around in the editor pane.
+## These are commands that interact with VSCode's user-interface in some way, rather than editing or moving around in the editor pane.
 
 [[define.bind]]
 id = "window"
@@ -2817,9 +2811,9 @@ key = "tab j"
 command = "selection-utilities.revealActive"
 args.at = "bottom"
 
-# ## Debugging Commands
+## ## Debugging Commands
 
-# Commands for interacting with VSCode's debugger UI.
+## Commands for interacting with VSCode's debugger UI.
 
 [[bind]]
 default = "{{bind.util}}"
@@ -2882,14 +2876,14 @@ doc.description = "debug: step out"
 key = "tab b o"
 command = "workbench.action.debug.stepOut"
 
-# ## Select-edit Mode
+## ## Select-edit Mode
 
-# Select-edit mode allows you make a variety of kakoune-like modifications of one or more cursors. This lends itself to work flows such as:
-#
-# - select every line of text as a separate cursor, then filter out the lines you don't want
-# - split an array by comma delimiters and edit each element of the array.
-# - save a single selection to a list of selections to use for later and
-# then move the cursor to the next selection you wish to add
+## Select-edit mode allows you make a variety of kakoune-like modifications of one or more cursors. This lends itself to work flows such as:
+
+## - select every line of text as a separate cursor, then filter out the lines you don't want
+## - split an array by comma delimiters and edit each element of the array.
+## - save a single selection to a list of selections to use for later and
+## then move the cursor to the next selection you wish to add
 
 [[define.bind]]
 id = "edit_select_edit"
@@ -3232,11 +3226,11 @@ doc.description = "move cursor to back of selection"
 key = "shift+o"
 command = "selection-utilities.activeAtStart"
 
-# ## Symmetric Insert Mode
+## ## Symmetric Insert Mode
 
-# Symmetric insert mode allows you to edit text at both the start and the beginning of a selection. When entering a character with a complimentary pair (e.g. `(` to `)`) entry is handled in the expected way. For example if you type `(` at the start of a selection while in symmetric insert mode, `)` will apepar at the end of the selection.
+## Symmetric insert mode allows you to edit text at both the start and the beginning of a selection. When entering a character with a complimentary pair (e.g. `(` to `)`) entry is handled in the expected way. For example if you type `(` at the start of a selection while in symmetric insert mode, `)` will apepar at the end of the selection.
 
-# As a general rule, the letter keys issue commands of various sorts, and the other keys can be used to enter text (since we rarley want to surround a selection with an `a` but might want to surround it with `*` or `/`.
+## As a general rule, the letter keys issue commands of various sorts, and the other keys can be used to enter text (since we rarley want to surround a selection with an `a` but might want to surround it with `*` or `/`.
 
 [[define.val]]
 

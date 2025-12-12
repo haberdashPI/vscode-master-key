@@ -128,6 +128,7 @@ use crate::bind::{
     CombinedBindingDoc, KeyId, LegacyBindingInput, ReifiedBinding, UNKNOWN_RANGE,
 };
 use crate::define::{Define, DefineInput};
+use crate::docs::{FileDocLine, FileDocSection};
 use crate::error::{
     Context, ErrorContext, ErrorReport, ErrorSet, ParseError, Result, ResultVec, flatten_errors,
 };
@@ -209,6 +210,7 @@ pub struct KeyFile {
     define: Define,
     mode: Modes,
     bind: Vec<Binding>,
+    docs: Vec<FileDocSection>,
     pub kind: Vec<Kind>,
     // TODO: avoid storing `key_bind` to make serialization smaller
     key_bind: Vec<BindingOutput>,
@@ -219,6 +221,7 @@ impl KeyFile {
     // for that section
     fn new(
         input: KeyFileInput,
+        doc_lines: Vec<FileDocLine>,
         mut scope: &mut Scope,
         warnings: &mut Vec<ParseError>,
     ) -> ResultVec<KeyFile> {
@@ -375,6 +378,8 @@ impl KeyFile {
             })
             .unzip();
 
+        let docs = FileDocSection::assemble(&bind, &bind_span, doc_lines);
+
         // create outputs to store in `keybindings.json`
         // TODO: store spans so we can do avoid serializing `key_bind`?
         let mut key_bind = Vec::new();
@@ -412,6 +417,7 @@ impl KeyFile {
                 requiredExtensions,
                 define,
                 bind,
+                docs,
                 mode: modes,
                 kind,
                 key_bind: final_key_bind.into(),
@@ -729,6 +735,14 @@ impl KeyFileResult {
             return Vec::new();
         }
     }
+
+    pub fn text_docs(&self) -> Option<String> {
+        if let Some(KeyFile { docs, mode, .. }) = &self.file {
+            return Some(FileDocSection::write_markdown(&docs, mode.map.len() > 1));
+        } else {
+            return None;
+        }
+    }
 }
 
 lazy_static! {
@@ -801,8 +815,9 @@ fn parse_bytes_helper(
     }
 
     let parsed = toml::from_slice::<KeyFileInput>(file_content)?;
+    let docs = FileDocLine::read(file_content);
 
-    let result = KeyFile::new(parsed, scope, warnings);
+    let result = KeyFile::new(parsed, docs, scope, warnings);
     warnings.append(&mut identify_legacy_warnings(file_content));
 
     return result;
@@ -996,6 +1011,7 @@ pub(crate) mod tests {
         let mut warnings = Vec::new();
         let err = KeyFile::new(
             toml::from_str::<KeyFileInput>(data).unwrap(),
+            Vec::new(),
             &mut scope,
             &mut warnings,
         )
@@ -1055,6 +1071,7 @@ pub(crate) mod tests {
         let mut warnings = Vec::new();
         let result = KeyFile::new(
             toml::from_str::<KeyFileInput>(data).unwrap(),
+            Vec::new(),
             &mut scope,
             &mut warnings,
         )
@@ -1114,6 +1131,7 @@ pub(crate) mod tests {
         let mut warnings = Vec::new();
         let result = KeyFile::new(
             toml::from_str::<KeyFileInput>(data).unwrap(),
+            Vec::new(),
             &mut scope,
             &mut warnings,
         )
@@ -1165,6 +1183,7 @@ pub(crate) mod tests {
         let mut warnings = Vec::new();
         let result = KeyFile::new(
             toml::from_str::<KeyFileInput>(data).unwrap(),
+            Vec::new(),
             &mut scope,
             &mut warnings,
         )
@@ -1213,6 +1232,7 @@ pub(crate) mod tests {
         let mut warnings = Vec::new();
         let result = KeyFile::new(
             toml::from_str::<KeyFileInput>(data).unwrap(),
+            Vec::new(),
             &mut scope,
             &mut warnings,
         );
@@ -1241,6 +1261,7 @@ pub(crate) mod tests {
         let mut warnings = Vec::new();
         let result = KeyFile::new(
             toml::from_str::<KeyFileInput>(data).unwrap(),
+            Vec::new(),
             &mut scope,
             &mut warnings,
         );
@@ -1271,6 +1292,7 @@ pub(crate) mod tests {
         let mut warnings = Vec::new();
         let result = KeyFile::new(
             toml::from_str::<KeyFileInput>(data).unwrap(),
+            Vec::new(),
             &mut scope,
             &mut warnings,
         )
@@ -1306,6 +1328,7 @@ pub(crate) mod tests {
         let mut warnings = Vec::new();
         let err = KeyFile::new(
             toml::from_str::<KeyFileInput>(data).unwrap(),
+            Vec::new(),
             &mut scope,
             &mut warnings,
         )
@@ -1337,6 +1360,7 @@ pub(crate) mod tests {
         let mut warnings = Vec::new();
         let err = KeyFile::new(
             toml::from_str::<KeyFileInput>(data).unwrap(),
+            Vec::new(),
             &mut scope,
             &mut warnings,
         )
@@ -1372,6 +1396,7 @@ pub(crate) mod tests {
         let mut warnings = Vec::new();
         let err = KeyFile::new(
             toml::from_str::<KeyFileInput>(data).unwrap(),
+            Vec::new(),
             &mut scope,
             &mut warnings,
         )
@@ -1404,6 +1429,7 @@ pub(crate) mod tests {
         let mut warnings = Vec::new();
         let result = KeyFile::new(
             toml::from_str::<KeyFileInput>(data).unwrap(),
+            Vec::new(),
             &mut scope,
             &mut warnings,
         )
@@ -1434,6 +1460,7 @@ pub(crate) mod tests {
         let mut warnings = Vec::new();
         let err = KeyFile::new(
             toml::from_str::<KeyFileInput>(data).unwrap(),
+            Vec::new(),
             &mut scope,
             &mut warnings,
         )
@@ -1501,6 +1528,7 @@ pub(crate) mod tests {
         let mut warnings = Vec::new();
         let result = KeyFile::new(
             toml::from_str::<KeyFileInput>(data).unwrap(),
+            Vec::new(),
             &mut scope,
             &mut warnings,
         )
@@ -1540,6 +1568,7 @@ pub(crate) mod tests {
         let mut warnings = Vec::new();
         let err = KeyFile::new(
             toml::from_str::<KeyFileInput>(data).unwrap(),
+            Vec::new(),
             &mut scope,
             &mut warnings,
         )
@@ -1590,6 +1619,7 @@ pub(crate) mod tests {
         let mut warnings = Vec::new();
         let result = KeyFile::new(
             toml::from_str::<KeyFileInput>(data).unwrap(),
+            Vec::new(),
             &mut scope,
             &mut warnings,
         )
@@ -1676,6 +1706,7 @@ pub(crate) mod tests {
         let mut warnings = Vec::new();
         let err = KeyFile::new(
             toml::from_str::<KeyFileInput>(data).unwrap(),
+            Vec::new(),
             &mut scope,
             &mut warnings,
         )
@@ -1723,6 +1754,7 @@ pub(crate) mod tests {
         let mut warnings = Vec::new();
         let result = KeyFile::new(
             toml::from_str::<KeyFileInput>(data).unwrap(),
+            Vec::new(),
             &mut scope,
             &mut warnings,
         )
@@ -1775,6 +1807,7 @@ pub(crate) mod tests {
         let mut warnings = Vec::new();
         let err = KeyFile::new(
             toml::from_str::<KeyFileInput>(data).unwrap(),
+            Vec::new(),
             &mut scope,
             &mut warnings,
         )
@@ -1821,6 +1854,7 @@ pub(crate) mod tests {
         let mut warnings = Vec::new();
         let result = KeyFile::new(
             toml::from_str::<KeyFileInput>(data).unwrap(),
+            Vec::new(),
             &mut scope,
             &mut warnings,
         )
@@ -1855,6 +1889,7 @@ pub(crate) mod tests {
         let mut warnings = Vec::new();
         let result = KeyFile::new(
             toml::from_str::<KeyFileInput>(data).unwrap(),
+            Vec::new(),
             &mut scope,
             &mut warnings,
         )
@@ -1924,6 +1959,7 @@ pub(crate) mod tests {
         let mut warnings = Vec::new();
         let err = KeyFile::new(
             toml::from_str::<KeyFileInput>(data).unwrap(),
+            Vec::new(),
             &mut scope,
             &mut warnings,
         )
@@ -1959,6 +1995,7 @@ pub(crate) mod tests {
         let mut warnings = Vec::new();
         let result = KeyFile::new(
             toml::from_str::<KeyFileInput>(data).unwrap(),
+            Vec::new(),
             &mut scope,
             &mut warnings,
         )
@@ -1991,6 +2028,7 @@ pub(crate) mod tests {
         let mut warnings = Vec::new();
         let result = KeyFile::new(
             toml::from_str::<KeyFileInput>(data).unwrap(),
+            Vec::new(),
             &mut scope,
             &mut warnings,
         )
@@ -2169,6 +2207,7 @@ pub(crate) mod tests {
         let mut warnings = Vec::new();
         let err = KeyFile::new(
             toml::from_str::<KeyFileInput>(data).unwrap(),
+            Vec::new(),
             &mut scope,
             &mut warnings,
         )
@@ -2195,6 +2234,7 @@ pub(crate) mod tests {
         let mut warnings = Vec::new();
         let err = KeyFile::new(
             toml::from_str::<KeyFileInput>(data).unwrap(),
+            Vec::new(),
             &mut scope,
             &mut warnings,
         )
@@ -2223,6 +2263,7 @@ pub(crate) mod tests {
         let mut warnings = Vec::new();
         let err = KeyFile::new(
             toml::from_str::<KeyFileInput>(data).unwrap(),
+            Vec::new(),
             &mut scope,
             &mut warnings,
         )
@@ -2292,6 +2333,7 @@ pub(crate) mod tests {
         let mut warnings = Vec::new();
         let result = KeyFile::new(
             toml::from_str::<KeyFileInput>(data).unwrap(),
+            Vec::new(),
             &mut scope,
             &mut warnings,
         );
@@ -2313,6 +2355,7 @@ pub(crate) mod tests {
         let mut warnings = Vec::new();
         let err = KeyFile::new(
             toml::from_str::<KeyFileInput>(data).unwrap(),
+            Vec::new(),
             &mut scope,
             &mut warnings,
         )
@@ -2342,6 +2385,7 @@ pub(crate) mod tests {
         let mut warnings = Vec::new();
         let err = KeyFile::new(
             toml::from_str::<KeyFileInput>(data).unwrap(),
+            Vec::new(),
             &mut scope,
             &mut warnings,
         )
@@ -2405,6 +2449,7 @@ pub(crate) mod tests {
         let mut warnings = Vec::new();
         let err = KeyFile::new(
             toml::from_str::<KeyFileInput>(data).unwrap(),
+            Vec::new(),
             &mut scope,
             &mut warnings,
         )
@@ -2435,6 +2480,7 @@ pub(crate) mod tests {
         let mut warnings = Vec::new();
         let err = KeyFile::new(
             toml::from_str::<KeyFileInput>(data).unwrap(),
+            Vec::new(),
             &mut scope,
             &mut warnings,
         )
@@ -2465,6 +2511,7 @@ pub(crate) mod tests {
         let mut warnings = Vec::new();
         let err = KeyFile::new(
             toml::from_str::<KeyFileInput>(data).unwrap(),
+            Vec::new(),
             &mut scope,
             &mut warnings,
         )
@@ -3248,6 +3295,25 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn text_doc_parsing() {
+        let data = std::fs::read("src/test_files/text-docs.toml").unwrap();
+        let mut warnings = Vec::new();
+        let mut scope = Scope::new();
+        let result = parse_bytes_helper(&data, &mut warnings, &mut scope).unwrap();
+        let output = std::fs::read("src/test_files/text-docs.md").unwrap();
+
+        // info!(
+        //     "Text output: \n{}",
+        //     FileDocSection::write_markdown(&result.docs, true)
+        // );
+
+        assert_eq!(
+            FileDocSection::write_markdown(&result.docs, true).trim(),
+            str::from_utf8(&output).unwrap().trim()
+        );
+    }
+
+    #[test]
     fn larkin_test() {
         // the default presets should be parseable (also a good "integration" test to ensure
         // our parsing works at scale)
@@ -3257,6 +3323,12 @@ pub(crate) mod tests {
         let mut scope = Scope::new();
         let result = parse_bytes_helper(&data, &mut warnings, &mut scope).unwrap();
         assert_eq!(result.bind.len(), 310);
+
+        assert!(FileDocSection::write_markdown(&result.docs, true).len() > 0);
+        info!(
+            "docs: {}",
+            FileDocSection::write_markdown(&result.docs, true)
+        )
     }
     // TODO: write unit tests for `debug` function
 }

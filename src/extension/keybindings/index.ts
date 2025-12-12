@@ -6,23 +6,23 @@ import { debounce } from 'lodash';
 import replaceAll from 'string.prototype.replaceall';
 import { Utils } from 'vscode-uri';
 import {
-    // TODO: reimplement
-    // clearUserBindings,
-    // createUserBindings,
     createBindings,
     getBindings,
     KeyFileData,
+    bindings,
 } from './config';
 import * as config from './config';
 import { toLayoutIndependentString } from './layout';
 import JSONC from 'jsonc-simple-parser';
 import TOML from 'smol-toml';
+import { marked } from 'marked';
 
 // run `mise build-rust` to create this auto generated source fileu
 import initParsing, {
     KeyFileResult,
     ErrorLevel,
 } from '../../rust/parsing/lib';
+import { prettifyPrefix, replaceMatchesWith } from '../utils';
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 // Keybinding Generation
@@ -300,10 +300,10 @@ async function insertKeybindingsIntoConfig(data: KeyFileData) {
                             await handleRequireExtensions(data);
                         }
                         if (selection == 'Show Documentation') {
-                            await vscode.commands.executeCommand(
+                            vscode.commands.executeCommand(
                                 'master-key.showVisualDoc',
                             );
-                            await vscode.commands.executeCommand(
+                            vscode.commands.executeCommand(
                                 'master-key.showTextDoc',
                             );
                         }
@@ -570,6 +570,43 @@ export async function validateKeybindings(
     return isValid;
 }
 
+async function getWebviewContent(
+    context: vscode.ExtensionContext,
+    renderedHtml: string,
+): Promise<string> {
+    let styleContent = '';
+    try {
+        const docStyle = vscode.Uri.joinPath(
+            context.extensionUri,
+            'src',
+            'webview',
+            'text-doc.css',
+        );
+        const data = await vscode.workspace.fs.readFile(docStyle);
+        styleContent = new TextDecoder().decode(data);
+    } catch (e) {
+        console.error('Could not read text-doc.css file:', e);
+    }
+    return `<!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Rendered Content</title>
+        <style>
+            ${styleContent}
+        </style>
+    </head>
+    <body>
+        ${renderedHtml}
+    </body>
+    </html>`;
+}
+
+function snakeCase(str: string) {
+    return replaceAll(str, /\s+/g, '-').toLowerCase();
+}
+
 let diagnostics: vscode.DiagnosticCollection;
 
 export async function activate(context: vscode.ExtensionContext) {
@@ -684,6 +721,51 @@ export async function activate(context: vscode.ExtensionContext) {
             copyCommandResultIntoBindingFile('workbench.action.openDefaultKeybindingsFile'),
         ),
     );
+
+    /**
+     * @userCommand showTextDoc
+     * @name Show Text Documentation
+     * @order 10
+     *
+     * Show documentation for the current master keybindings in a rendered markdown file.
+     */
+    async function showTextDoc() {
+        const content = bindings.text_docs();
+        if (content) {
+            const regex = /<key>(.*?)<\/key>/gs;
+            const prettyKey = replaceMatchesWith(content, regex, (str) => {
+                str = replaceAll(str, /\\/g, '\\\\');
+                return prettifyPrefix(str);
+            });
+            const html = await marked(prettyKey);
+            const header = /<h[1-3]>(.*?)<\/h[1-3]>/gs;
+            const headerAnchors = replaceMatchesWith(html, header, (str) => {
+                return `
+                    <a id="${snakeCase(str)}">${str}</a>
+                `;
+            });
+            const panel = vscode.window.createWebviewPanel(
+                'master-key.documentation',
+                `${bindings.name()} Documentation`,
+                vscode.ViewColumn.Beside,
+                {
+                    enableScripts: false,
+                    enableFindWidget: true,
+                    enableCommandUris: true,
+                },
+            );
+            panel.webview.html = await getWebviewContent(context, headerAnchors);
+            panel.iconPath = vscode.Uri.joinPath(context.extensionUri, 'logo.png');
+            panel.reveal();
+        }
+    }
+    context.subscriptions.push(
+        vscode.commands.registerCommand(
+            'master-key.showTextDoc',
+            showTextDoc,
+        ),
+    );
+
     /**
      * @userCommand installRequiredExtensions
      * @name Install Extensions Required by Keybindings

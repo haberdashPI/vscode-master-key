@@ -1,6 +1,3 @@
-// TODO: reimplement
-/* eslint-disable */
-
 import * as vscode from 'vscode';
 import { getRequiredMode, getRequiredPrefixCode, prettifyPrefix } from '../utils';
 import { withState } from '../state';
@@ -8,10 +5,8 @@ import { bindings, onChangeBindings } from '../keybindings/config';
 import { PREFIX_CODE } from './prefix';
 import { MODE } from './mode';
 import {
-    normalizeLayoutIndependentBindings,
     normalizeLayoutIndependentString,
 } from '../keybindings/layout';
-import { reverse, uniqBy, sortBy } from 'lodash';
 import replaceAll from 'string.prototype.replaceall';
 import { KeyFileResult } from '../../rust/parsing/lib/parsing';
 import { doCommandsCmd, onCommandComplete } from './do';
@@ -52,39 +47,38 @@ interface IPaletteBinding {
     name?: string;
     description?: string;
     key?: string;
-    combinedDescription?: string,
-    combinedKey?: string,
+    combinedDescription?: string;
+    combinedKey?: string;
     order: number;
     command_id?: number;
     prefix_id?: number;
 }
 
-let paletteEntries: Record<string, IPaletteBinding[]> = {};
+const paletteEntries: Record<string, IPaletteBinding[]> = {};
 
 function updateKeys(bindings: KeyFileResult) {
-    let bindingMap: Record<string, Record<string, IPaletteBinding>> = {};
-    for (let i = 0 ; i < bindings.n_bindings(); i++) {
+    const bindingMap: Record<string, Record<string, IPaletteBinding>> = {};
+    for (let i = 0; i < bindings.n_bindings(); i++) {
         const binding = bindings.binding(i);
         if (binding.command === 'master-key.ignore') {
             continue;
         }
-        let docs = bindings.docs(i);
+        const docs = bindings.docs(i);
         if (docs?.hideInPalette) {
             continue;
         }
-        let paletteEntry = {
+        const paletteEntry = {
             key: docs?.combined?.key || binding.key,
             name: docs?.combined?.name || binding.args.name,
             description: docs?.combined?.description || binding.args.description,
             combinedKey: docs?.combined?.key,
             combinedDescription: docs?.combined?.description,
             order: binding.command === 'master-key.do' ? i : bindings.n_bindings() + 1,
-        }
+        };
         let key = prettifyPrefix(paletteEntry.key);
         key = normalizeLayoutIndependentString(key, { noBrackets: true });
         let combinedKey = prettifyPrefix(paletteEntry.combinedKey || '');
         combinedKey = normalizeLayoutIndependentString(combinedKey, { noBrackets: true });
-
 
         const prefixCode = getRequiredPrefixCode(binding.when);
         const mode = getRequiredMode(binding.when);
@@ -97,7 +91,8 @@ function updateKeys(bindings: KeyFileResult) {
             name,
             description: paletteEntry.description || oldEntry.description,
             combinedKey: combinedKey || oldEntry.combinedKey,
-            combinedDescription: paletteEntry.combinedDescription || oldEntry.combinedDescription,
+            combinedDescription: paletteEntry.combinedDescription ||
+                oldEntry.combinedDescription,
             order: Math.max(paletteEntry.order || -1, oldEntry.order || -1),
             command_id: binding.args.command_id || oldEntry.command_id,
             prefix_id: binding.args.prefix_id || oldEntry.prefix_id,
@@ -106,7 +101,7 @@ function updateKeys(bindings: KeyFileResult) {
     }
 
     for (const [key, bindings] of Object.entries(bindingMap)) {
-        let entries = Object.values(bindings);
+        const entries = Object.values(bindings);
         entries.sort((x, y) => x.order - y.order);
         paletteEntries[key] = entries;
     }
@@ -127,10 +122,10 @@ export async function commandPalette(_args: unknown, opt: { useKey?: boolean } =
             'master-key.keybindingPaletteBindingMode',
             paletteBindingMode,
         );
-        let picks = paletteEntries[key].map((binding) => {
+        const picks = paletteEntries[key].map((binding) => {
             const key = binding.combinedKey || binding.key || '';
             const name = binding.name || '';
-            let description = binding.combinedDescription || binding.description || '';
+            const description = binding.combinedDescription || binding.description || '';
             return {
                 label: key,
                 description: name + (/\[.+\]/.test(key) ? LAYOUT_MARKER : ''),
@@ -152,7 +147,6 @@ export async function commandPalette(_args: unknown, opt: { useKey?: boolean } =
             command_id?: number;
             prefix_id?: number;
         }>();
-        picker
         currentPicker = picker;
         let accepted = false;
         setPickerText();
@@ -234,7 +228,7 @@ export function activate(context: vscode.ExtensionContext) {
         false,
     );
 
-    onChangeBindings(async (x) => updateKeys(x));
+    onChangeBindings(async x => updateKeys(x));
 
     /**
      * @userCommand togglePaletteMode

@@ -1,0 +1,132 @@
+/* -------------------------------------- */
+/* 1. Base Styles (Theme-Aware)         */
+/* -------------------------------------- */
+body {
+    /* Inherit background/foreground colors from the active VS Code theme */
+    color: var(--vscode-editor-foreground);
+    background-color: var(--vscode-editor-background);
+    padding: 15px;
+    line-height: 1.6;
+    font-family: var(--vscode-font-family);
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+/* Ensure headings use a slightly bolder font and theme color */
+h1,
+h2,
+h3 {
+    color: var(--vscode-foreground);
+    /* Use a noticeable color */
+    border-bottom: 1px solid var(--vscode-editorGroupHeader-tabsBorder);
+    padding-bottom: 0.3em;
+}
+
+h1 a,
+h2 a,
+h3 a {
+    color: inherit;
+    text-decoration: none;
+}
+
+/* -------------------------------------- */
+/* 2. Table Legibility Enhancements     */
+/* -------------------------------------- */
+table {
+    /* Set table to span the container width */
+    width: 100%;
+    border-collapse: collapse;
+    /* Use VS Code's border color for a subtle look */
+    border: 1px solid var(--vscode-dropdown-border);
+}
+
+th,
+td {
+    /* Add internal padding */
+    padding: 8px 12px;
+    /* Use a slightly lighter line for internal borders */
+    border: 1px solid var(--vscode-dropdown-border);
+    text-align: left;
+}
+
+table th:first-child,
+table td:first-child {
+    width: 120px;
+}
+
+table th:nth-child(2),
+table td:nth-child(2) {
+    width: 120px;
+}
+
+table th:last-child,
+table td:last-child {
+    width: 50%;
+}
+
+/* Style the table header row */
+th {
+    background-color: var(--vscode-button-background);
+    font-weight: bold;
+    color: var(--vscode-editor-foreground);
+}
+
+/* Add a subtle striping effect for better readability */
+tr:nth-child(even) {
+    background-color: var(--vscode-sideBar-background);
+}
+
+/* -------------------------------------- */
+/* 3. Code Block Legibility             */
+/* -------------------------------------- */
+pre {
+    /* Mimic the VS Code editor background */
+    background-color: var(--vscode-editor-background);
+    /* Use a subtle border and padding */
+    border: 1px solid var(--vscode-editorGroupHeader-tabsBorder);
+    padding: 10px;
+    overflow-x: auto;
+    /* Handle long lines */
+    border-radius: 4px;
+}
+
+code {
+    /* Keep inline code distinct */
+    background-color: var(--vscode-textCodeBlock-background);
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: var(--vscode-editor-font-family);
+}
+
+key {
+    /* Required for padding and border to work correctly */
+    display: inline-block;
+
+    /* Small, consistent spacing */
+    padding: 3px 6px;
+    margin: 0 2px;
+
+    /* Rounded corners typical of keys */
+    border-radius: 4px;
+
+    /* Use monospace font for uniformity, like a terminal */
+    font-family: var(--vscode-editor-font-family);
+    font-size: 0.9em;
+    font-weight: bold;
+
+    /* -------------------------------------- */
+    /* Theme-Aware Colors and Borders         */
+    /* -------------------------------------- */
+
+    /* Background: Use a subtly different background than the main body */
+    background-color: var(--vscode-editorGroupHeader-tabsBorder);
+
+    /* Text Color: Keep it the main foreground color */
+    color: var(--vscode-editor-foreground);
+
+    /* Border: A subtle, darker border for definition */
+    border: 1px solid var(--vscode-dropdown-border);
+
+    /* Box Shadow: Mimic a slight depression/3D effect */
+    box-shadow: 1px 1px 0px 0px var(--vscode-scrollbarSlider-background);
+}

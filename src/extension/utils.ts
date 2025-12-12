@@ -126,3 +126,27 @@ export function updateCursorAppearance(
             CURSOR_STYLES[cursorShape] || vscode.TextEditorCursorStyle.Line;
     }
 }
+
+export type Replacer = (substring: string) => string;
+
+export function replaceMatchesWith(str: string, regex: RegExp, replacer: Replacer): string {
+    let result = '';
+
+    // Loop to find all matches
+    let match = regex.exec(str);
+    let lastIndex = 0;
+    while (match) {
+        const fullMatch = match[0]; // e.g., "<key>shift+t</key>"
+        const innerMatch = match[1]; // e.g., "shift+t"
+        // replace matched text
+        result += str.substring(lastIndex, match.index);
+        result += fullMatch.replace(innerMatch, replacer(innerMatch));
+        lastIndex = match.index + fullMatch.length;
+
+        match = regex.exec(str);
+    }
+
+    result += str.substring(lastIndex);
+
+    return result;
+}

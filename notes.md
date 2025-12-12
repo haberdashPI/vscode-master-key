@@ -1,13 +1,8 @@
-validation.rs(11, 99): consider introducing a `where` clause, but there might be an alternative better way to express this requirement: ` where &toml::map::Map<std::string::String, Value>: From<&T>`
-Next steps:
-
-**TODO**: set up start and stop for tasks.json
-
 Integration test debugging:
-- [ ] github action caching works
+- [X] github action caching works
     - [x] close, still working on exact naming and handling of directories so things actually cache
-    - [ ] https://github.com/haberdashPI/vscode-master-key/pull/74/commits/d8eac66226fa1b8316156404c6f5f16d08a65cd6 should have been a cache hit
-    - [ ] check that things are actually getting cached across CI runs
+    - [X] https://github.com/haberdashPI/vscode-master-key/pull/74/commits/d8eac66226fa1b8316156404c6f5f16d08a65cd6 should have been a cache hit
+    - [X] check that things are actually getting cached across CI runs
 - [x] get code coverage working
     - [x] unit test coverage just works 🚀
         - [x] how do I filter out node_modules ??
@@ -578,7 +573,6 @@ Integration test debugging:
                 - [X] determine conditions where config fails to load
                     - only triggers in non-debug context, we'll need to add some console.log statements to see what is happening when the
                     extension is running in production
-    - [ ] TODO: decorators aren't working
     - [X] extraction of visual docs
         - [X] reimplement visual output
             - [X] create a map of keys-mode-prefix -> name, description, kind
@@ -625,21 +619,40 @@ Integration test debugging:
             - [X] palette shows up with explicit command
             - [X] palette can switch modes
             - [X] palette shows up automatically after delay
-    - [ ] extraction of markdown docs
-        - [ ] extract all comment regions (exclude `#-` or include `##`) and assign line numbers (byte offset?)
-        - [ ] assing `[[bind]]` line number (byte offset?)
-        - [ ] in rust pass comments and bindings in grouped sections, by line number (or offset?)
+    - [X] extraction of markdown docs
+        - [X] extract all comment regions (exclude `#-` or include `##`) and assign line numbers (byte offset?)
+        - [X] assing `[[bind]]` line number (byte offset?)
+        - [X] in rust pass comments and bindings in grouped sections, by line number (or offset?)
               (e.g. comment + all bindings that follow before next comment)
-        - [ ] convert to markdown docs in typescript
-        - [ ] reimplement integration tests
-    - [ ] cleanup any files we need to delete
-    - [ ] replay symmetric edits
-    - [ ] reimlement storeNamed? (or make it more specific to macros; I'm not
-          convinced the generic tool is really useful)
+        - [X] unit tests in rust
+            - [X] include examples of using `combined` keys both within sections
+                  and across sections (where they shouldn't be combined)
+        - [X] cleanup up keybindings in javascript
+        - [X] continue reviewing documentation output for formatting errors
+            - [X] the yaml header is ugly
+            - [X] make sure sections are defined so they have anchors
+            - [X] need more padding for quoted content
+            - [X] sometimes there is no `<key>` tag between keybindings
+                - [X] I think we need to escape `\` characters
+                - [X] double check
+            - [X] sometimes the prefix isn't shown
+                - [X] I think we need to escape `\` characters
+                - [X] there are still more missing, review the source
+            - [X] sometime there are new lines that muck with the table formatting
+        - [X] implement a simple integration test (verify that the docs show up)
+            - [X] write code
+            - [X] run/test
+    - [X] cleanup any files we need to delete
+    - [ ] misc. cleanup
+        - [ ] fix bug in replay of insert actions
+        - [ ] replay symmetric edits
+        - [ ] reimlement storeNamed? (or make it more specific to macros; I'm not
+            convinced the generic tool is really useful)
     - [ ] rename from Master Key to Key Atlas (keep the same extension name, to avoid
-          confusion, but do make a new git repository)
-          - [ ] rename references of Master key in Selection Utilities
+        confusion, but do make a new git repository)
+        - [ ] rename references of Master key in Selection Utilities
     - [ ] merge PR; don't release a new version yet
+    - [ ] TODO: decorators aren't working
     - [ ] CI
         - [x] setup CI unit tests for rust
         - [x] setup rust coverage
@@ -654,10 +667,12 @@ Integration test debugging:
 
 Follow-up:
 - [ ] make some features more discoverable
+    - create "tour" section for vscode's start window
     - add a button to edit a binding from the activate binding menu
         - make sure editing is prominently in the documentation for Larkin
           (and an future binding files)
         - make sure it is prominently in the getting started section
+- [ ] make a command that activates the current file directly
 - [ ] profile mater-key.do performance
 
 5. Review documentation

@@ -8,6 +8,7 @@ mod util;
 // define file sections
 mod bind;
 mod define;
+mod docs;
 mod kind;
 mod mode;
 

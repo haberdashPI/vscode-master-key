@@ -11,7 +11,6 @@ import * as prefix from './prefix';
 import { withState } from '../state';
 import * as palette from './palette';
 import * as visualKeyDoc from './visualKeyDoc';
-// import * as textKeyDoc from './textDocs';
 
 /**
  * @file commands/index.md
@@ -29,14 +28,12 @@ export async function activate(context: vscode.ExtensionContext) {
     await count.activate(context);
     await doCommand.activate(context);
     await mode.activate(context);
-    // TODO: reimplement
     await namedStore.activate(context);
     await replay.activate(context);
     await search.activate(context);
     await prefix.activate(context);
     await palette.activate(context);
     await visualKeyDoc.activate(context);
-    // await textKeyDoc.activate(context);
 
     /**
      * @command ignore
