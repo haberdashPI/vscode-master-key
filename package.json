@@ -240,6 +240,7 @@
         "istanbul-merge": "^2.0.0",
         "jsonc-simple-parser": "^3.0.0",
         "lodash": "^4.17.21",
+        "marked": "^17.0.1",
         "mocha": "^11.7.1",
         "nyc": "^17.1.0",
         "object-hash": "^3.0.0",

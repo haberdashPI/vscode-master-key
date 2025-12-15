@@ -362,8 +362,8 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.workspace.onDidChangeConfiguration(updateConfig);
 
     vscode.workspace.onDidChangeTextDocument(async (e) => {
-        const id = documentIdentifiers.get(e.document);
-        if (bindings.is_recording_edits_for(id, maxTextHistory)) {
+        const id = documentIdentifiers.get(e.document.uri);
+        if (id && bindings.is_recording_edits_for(id, maxTextHistory)) {
             bindings.store_edit(cleanupEdit(e), maxTextHistory);
         }
     });

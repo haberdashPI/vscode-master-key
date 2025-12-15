@@ -9,7 +9,7 @@ import { withState, recordedCommand } from '../state';
 import { Mode, WhenNoBindingHeader } from '../../rust/parsing/lib/parsing';
 
 import { bindings } from '../keybindings/config';
-import { showExpressionErrors, showExpressionMessages } from './do';
+import { maxHistory, showExpressionErrors, showExpressionMessages } from './do';
 
 let typeSubscription: vscode.Disposable | undefined;
 let onTypeFn: (text: string) => void = async function (_text: string) {
@@ -54,22 +54,8 @@ export async function runCommandsForMode(mode: Mode) {
                 for (let i = 0; i < binding.n_commands(); i++) {
                     const resolved_command = binding.resolve_command(i, bindings);
                     showExpressionMessages(resolved_command);
-
-                    if (resolved_command.command === 'master-key.ignore') {
-                        let count = 0;
-                        for (const error of (resolved_command.errors || [])) {
-                            count++;
-                            if (count >= 3) {
-                                vscode.window.showErrorMessage(
-                                    'There were additional errors when running a \
-                                    key binding; they have been ignored to maintain \
-                                    a reasonable number of notifications ',
-                                );
-                            } else {
-                                vscode.window.showErrorMessage(error);
-                            }
-                        }
-                    } else {
+                    showExpressionErrors(resolved_command);
+                    if (resolved_command.command !== 'master-key.ignore') {
                         const result = await vscode.commands.
                             executeCommand<WrappedCommandResult | void>(
                                 resolved_command.command,
@@ -79,8 +65,13 @@ export async function runCommandsForMode(mode: Mode) {
                         if (resolvedArgs === 'cancel') {
                             return 'cancel';
                         }
+                        if (resolvedArgs) {
+                            resolved_command.args = resolvedArgs;
+                        }
+                        binding.store_command(i, resolved_command);
                     }
                 }
+                bindings.store_binding(binding, maxHistory);
             }
         };
     }

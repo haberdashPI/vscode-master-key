@@ -35,4 +35,31 @@ test.describe('mode.whenNoBindings.run option', () => {
         newText = workbox.getByText('replace mode do');
         await expect(newText).toBeVisible();
     });
+
+    test('can be recorded and replayed', async ({ workbox }) => {
+        const result = await setup(workbox);
+        const pos = result.pos;
+        let editor = result.editor;
+
+        await editor.pressSequentially('This is a test of replace ');
+        let newText = workbox.getByText('This is a test of replace ');
+        await expect(newText).toBeVisible();
+        await expect(pos).toHaveText('Ln 1, Col 27');
+        editor = workbox.locator('[id="workbench.parts.editor"]').
+            getByRole('textbox', { name: 'The editor is not accessible' });
+        await editor.press('Control+Shift+q');
+        await editor.press('Alt+Shift+r');
+        // wait for mode to change
+        const statusBarMode = workbox.locator(
+            'div[aria-label="Keybinding Mode: rec: replace"]',
+        );
+        await expect(statusBarMode).toBeVisible();
+        await editor.pressSequentially('mode ', { delay: 100 });
+        newText = workbox.getByText('replace mode do');
+        await expect(newText).toBeVisible();
+        await editor.press('Alt+Shift+r');
+        await editor.press('Control+Shift+q');
+        await editor.press('Control+q');
+        await expect(pos).toHaveText('Ln 1, Col 37');
+    });
 });

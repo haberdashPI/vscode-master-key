@@ -164,7 +164,26 @@ test.describe('Recorded keypresses', () => {
         editor = workbox.getByLabel('macro.md').
             filter({ has: workbox.getByText('  c d') }).
             filter({ has: workbox.getByRole('code') });
-        await editor.waitFor({ state: 'visible' });
+        expect(editor).toBeVisible();
+    });
+
+    test('Can replay insert text', async ({ workbox }) => {
+        const result = await setup(workbox);
+        const pos = result.pos;
+        let editor = result.editor;
+
+        await editor.press('Shift+q');
+        await editor.press('i');
+        await editor.press('x');
+        editor = workbox.locator('[id="workbench.parts.editor"]').
+            getByRole('textbox', { name: 'The editor is not accessible' });
+        await editor.press('Escape');
+        await editor.press('Shift+q');
+        await editor.press('q');
+        await editor.press('q');
+        await expect(pos).toHaveText('Ln 1, Col 3');
+        await workbox.pause();
+        expect(editor).toBeVisible();
     });
 
     test('Can nest replay', async ({ workbox }) => {
@@ -181,6 +200,4 @@ test.describe('Recorded keypresses', () => {
     });
 
     // TODO: test repeating two macros
-
-    // TODO: convert the rest of `replay.ux.mts` that remains relevant
 });

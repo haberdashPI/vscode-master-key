@@ -15,7 +15,7 @@ import { MODE } from './mode';
 import { CommandOutput, WhenNoBindingHeader } from '../../rust/parsing/lib/parsing';
 import { commandPalette } from './palette';
 
-let maxHistory = 0;
+export let maxHistory = 0;
 
 const masterBinding = z.object({
     prefix_id: z.number().int().min(-1),
@@ -157,21 +157,24 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
             }
 
             if (!canceled && toRun.finalKey) {
-                const editor = vscode.window.activeTextEditor || {};
-                let id = documentIdentifiers.get(editor);
-                if (!id) {
-                    id = documentIdentifierCount++;
-                    documentIdentifiers.set(editor, id);
-                }
-                await withState(async (state) => {
-                    const mode = state.get(MODE, bindings.default_mode()) || 'default';
-                    // we want to record edits if the current mode permits it
-                    if (bindings.mode(mode)?.whenNoBinding() ==
-                        WhenNoBindingHeader.InsertCharacters) {
-                        toRun.edit_document_id = id;
+                const editor = vscode.window.activeTextEditor;
+                let id = 0;
+                if (editor) {
+                    id = documentIdentifiers.get(editor.document.uri);
+                    if (!id) {
+                        id = documentIdentifierCount++;
+                        documentIdentifiers.set(editor.document.uri, id);
                     }
-                    return state;
-                });
+                    await withState(async (state) => {
+                        const mode = state.get(MODE, bindings.default_mode()) || 'default';
+                        // we want to record edits if the current mode permits it
+                        if (bindings.mode(mode)?.whenNoBinding() ==
+                            WhenNoBindingHeader.InsertCharacters) {
+                            toRun.edit_document_id = id;
+                        }
+                        return state;
+                    });
+                }
             }
 
             if (!canceled) {

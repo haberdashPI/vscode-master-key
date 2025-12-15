@@ -29,3 +29,31 @@ key = "alt+shift+r"
 command = "master-key.setMode"
 args.value = "insert"
 mode = "replace"
+
+[[bind]]
+doc.name = "record"
+key = "ctrl+shift+q"
+when = "!master-key.record"
+command = "master-key.record"
+args.on = true
+
+[[bind]]
+doc.name = "record"
+key = "ctrl+shift+q"
+when = "master-key.record"
+command = "runCommands"
+
+[[bind.args.commands]]
+command = "master-key.record"
+args.on = false
+
+[[bind.args.commands]]
+command = "master-key.pushHistoryToStack"
+args.range.from = '{{last_history_index(|i| history[i-1]?.doc.name == "record")}}'
+args.range.to = "{{history.len()-1}}"
+
+[[bind]]
+doc.name = "replay"
+key = "ctrl+q"
+command = "master-key.replayFromStack"
+args.index = "{{key.count}}"

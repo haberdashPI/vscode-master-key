@@ -644,14 +644,16 @@ Integration test debugging:
             - [X] run/test
     - [X] cleanup any files we need to delete
     - [ ] misc. cleanup
-        - [ ] fix bug in replay of insert actions
-        - [ ] replay symmetric edits
+        - [X] fix bug in replay of insert actions
+        - [X] replay symmetric edits
+            - [X] write an integration test
+            - [X] implement recording of intercepted commands
         - [ ] reimlement storeNamed? (or make it more specific to macros; I'm not
             convinced the generic tool is really useful)
+    - [ ] merge PR; don't release a new version yet
     - [ ] rename from Master Key to Key Atlas (keep the same extension name, to avoid
         confusion, but do make a new git repository)
         - [ ] rename references of Master key in Selection Utilities
-    - [ ] merge PR; don't release a new version yet
     - [ ] TODO: decorators aren't working
     - [ ] CI
         - [x] setup CI unit tests for rust
@@ -662,8 +664,9 @@ Integration test debugging:
             - [X] remove replay unit tests (they are become integration tests)
             - [X] move the missing do unit tests to integration
         - [ ] run the tests in CI
-            - [ ] get unit tests working for `mise build --web` again
+            - [X] get unit tests working for `mise build --web` again
             - [ ] make sure `mise build --web` is run for `mise package`
+            - [ ] improve flakey tests (or skip some???)
 
 Follow-up:
 - [ ] make some features more discoverable
@@ -692,3 +695,5 @@ Quick wins not addressed above:
     immediately.
     - visual documentation could highlighlt the most recently pressed
     key in the same way that status bar shows the most recently pressed binding
+- insert accepts a count: replicating vim's behavior
+    - [ ] this probably needs to be per mode configurable
