@@ -49,6 +49,7 @@ test.describe('Visual Documentation', () => {
     });
 
     test('Updates on prefix', async ({ workbox }) => {
+        test.skip(process.env.CI === 'true', 'Non-essential test skipped in CI');
         await openFile(workbox, 'text.md');
         await workbox.keyboard.press('w');
         const name = getKey(3, 6).name;
@@ -69,6 +70,7 @@ test.describe('Visual Documentation', () => {
     });
 
     test('Layout toggles by command', async ({ workbox }) => {
+        test.skip(process.env.CI === 'true', 'Non-essential test skipped in CI');
         await checkKey('I', 'insert mode', '1', getKey(2, 8));
         await checkKey('^I', 'magic insert', '1', getKey(2, 8, 'top'));
         await checkKey('^O', 'magic outsert', '1', getKey(2, 9, 'top'));

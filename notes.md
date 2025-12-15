@@ -663,9 +663,12 @@ Integration test debugging:
         - [X] update unit tests for running commands
             - [X] remove replay unit tests (they are become integration tests)
             - [X] move the missing do unit tests to integration
+        - [ ] integration tests take a long time to run;
+            - [ ] ideally we reduce or combine some of the tests
+            - [ ] maybe run a separate set in a nightly test
         - [ ] run the tests in CI
             - [X] get unit tests working for `mise build --web` again
-            - [ ] make sure `mise build --web` is run for `mise package`
+            - [X] make sure `mise build --web` is run for `mise package`
             - [ ] improve flakey tests (or skip some???)
 
 Follow-up:

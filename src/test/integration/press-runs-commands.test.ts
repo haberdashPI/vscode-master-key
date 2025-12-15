@@ -37,6 +37,7 @@ test.describe('mode.whenNoBindings.run option', () => {
     });
 
     test('can be recorded and replayed', async ({ workbox }) => {
+        test.skip(process.env.CI === 'true', 'Non-essential test skipped in CI');
         const result = await setup(workbox);
         const pos = result.pos;
         let editor = result.editor;

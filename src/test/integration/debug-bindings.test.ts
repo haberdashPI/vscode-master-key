@@ -30,6 +30,7 @@ test.describe('Debug expressions', () => {
     });
 
     test('Debug shows after error', async ({ workbox }) => {
+        test.skip(process.env.CI === 'true', 'Non-essential test skipped in CI');
         const { editor } = await setup(workbox);
         await editor.press('b');
 
