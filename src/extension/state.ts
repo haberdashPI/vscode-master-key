@@ -435,14 +435,16 @@ function updateCodeVariables(
     }
 }
 
-export async function activate(context: vscode.ExtensionContext) {
+export async function activate(_context: vscode.ExtensionContext) {
     onChangeBindings(updateDefinitions);
-
-    context.subscriptions.push(
-        vscode.commands.registerCommand('master-key.setValue', recordedCommand(setValue)),
-    );
 
     updateCodeVariables({ textEditor: vscode.window.activeTextEditor });
     vscode.window.onDidChangeTextEditorSelection(updateCodeVariables);
     vscode.window.onDidChangeActiveTextEditor(e => updateCodeVariables({ textEditor: e }));
+}
+
+export async function defineCommands(context: vscode.ExtensionContext) {
+    context.subscriptions.push(
+        vscode.commands.registerCommand('master-key.setValue', recordedCommand(setValue)),
+    );
 }

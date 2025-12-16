@@ -220,16 +220,17 @@ export async function commandPalette(_args: unknown, opt: { useKey?: boolean } =
     return;
 }
 
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(_context: vscode.ExtensionContext) {
     vscode.commands.executeCommand('setContext', 'master-key.keybindingPaletteOpen', false);
     vscode.commands.executeCommand(
         'setContext',
         'master-key.keybindingPaletteBindingMode',
         false,
     );
-
     onChangeBindings(async x => updateKeys(x));
+}
 
+export async function defineCommands(context: vscode.ExtensionContext) {
     /**
      * @userCommand togglePaletteMode
      * @name Toggle palette input mode

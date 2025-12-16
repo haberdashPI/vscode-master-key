@@ -34,6 +34,19 @@ export async function activate(context: vscode.ExtensionContext) {
     await prefix.activate(context);
     await palette.activate(context);
     await visualKeyDoc.activate(context);
+}
+
+export async function defineCommands(context: vscode.ExtensionContext) {
+    await capture.defineCommands(context);
+    await count.defineCommands(context);
+    await doCommand.defineCommands(context);
+    await mode.defineCommands(context);
+    await storeCommand.defineCommands(context);
+    await replay.defineCommands(context);
+    await search.defineCommands(context);
+    await prefix.defineCommands(context);
+    await palette.defineCommands(context);
+    await visualKeyDoc.defineCommands(context);
 
     /**
      * @command ignore

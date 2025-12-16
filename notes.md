@@ -648,15 +648,16 @@ Integration test debugging:
         - [X] replay symmetric edits
             - [X] write an integration test
             - [X] implement recording of intercepted commands
-        - [ ] reimplement storeNamed? (or make it more specific to macros; I'm not
-            convinced the generic tool is really useful)
         - [ ] fix bugs that come up with the first, activating key press
-            - [ ] option: add something that will ensure all activation functions
-                  have completely run before executing a command (my impression is that
-                  isn't the case right now)
-            - [ ] option: only ensure that keybindings have truly been loaded with proper
-                  state
-            - [ ] resolve symptoms
+            - [X] refactor all command definitions out from module's `activate` function,
+                  and only define the commands after all activation functions have been
+                  called
+            - [ ] the config module for keybindings also probably needs to
+                update bindings in a second phase
+            - [ ] question: what is the substantial delay in running prefix keys?
+                  e.g. we see this when typing `space t` prior to activation
+                  is this a V8 JIT issue?
+            - [ ] does the fix resolve these symptoms
                 - [ ] multi-key sequences often fail in this case (shows up in integration tests as well as my personal interactions)
                 - [ ] sometimes the variable `code` is not yet defined
                 - [ ] these are possibly symptomatic of the same problem that variable
@@ -683,6 +684,8 @@ Integration test debugging:
             - [ ] improve flakey tests (or skip some???)
 
 Follow-up:
+- [ ] reimplement storeNamed? (or make it more specific to macros; I'm not
+    convinced the generic tool is really useful)
 - [ ] make some features more discoverable
     - create "tour" section for vscode's start window
     - add a button to edit a binding from the activate binding menu

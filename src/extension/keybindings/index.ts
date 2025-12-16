@@ -642,6 +642,10 @@ export async function activate(context: vscode.ExtensionContext) {
     const bits = await vscode.workspace.fs.readFile(filename);
     await initParsing(bits);
 
+    extensionPresetsDir = Utils.joinPath(context.extensionUri, 'src', 'presets');
+}
+
+export async function defineCommands(context: vscode.ExtensionContext) {
     /**
      * @userCommand activateBindings
      * @name Activate Keybindings
@@ -779,6 +783,4 @@ export async function activate(context: vscode.ExtensionContext) {
             handleRequireExtensions,
         ),
     );
-
-    extensionPresetsDir = Utils.joinPath(context.extensionUri, 'src', 'presets');
 }

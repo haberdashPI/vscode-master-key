@@ -61,3 +61,7 @@ export async function activate(_context: vscode.ExtensionContext) {
     await onResolve('modeStatus', updateModeStatus);
     await onChangeBindings(updateModeStatusConfig);
 }
+
+export async function defineCommands(_context: vscode.ExtensionContext) {
+    return;
+}

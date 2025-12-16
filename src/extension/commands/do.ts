@@ -250,10 +250,15 @@ function updateConfig(event?: vscode.ConfigurationChangeEvent) {
     }
 }
 
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
     expressionMessages = vscode.window.createOutputChannel('Master Key');
     context.subscriptions.push(expressionMessages);
 
+    updateConfig();
+    vscode.workspace.onDidChangeConfiguration(updateConfig);
+}
+
+export async function defineCommands(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.do', recordedCommand(doCommandsCmd)),
     );
@@ -268,7 +273,4 @@ export function activate(context: vscode.ExtensionContext) {
             }
         }),
     );
-
-    updateConfig();
-    vscode.workspace.onDidChangeConfiguration(updateConfig);
 }

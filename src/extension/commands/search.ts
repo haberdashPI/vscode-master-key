@@ -633,7 +633,17 @@ async function previousMatch(
     return;
 }
 
-export async function activate(context: vscode.ExtensionContext) {
+export async function activate(_context: vscode.ExtensionContext) {
+    updateSearchHighlights();
+    vscode.workspace.onDidChangeConfiguration(updateSearchHighlights);
+
+    onCommandComplete(async () => {
+        searchDecorationCheck();
+        return true;
+    });
+}
+
+export async function defineCommands(context: vscode.ExtensionContext) {
     // NOTE: `search` must be registered as a normal command, so that its result is returned
     // we need it when call `executeCommand` in `doCommand`.
     context.subscriptions.push(
@@ -657,11 +667,4 @@ export async function activate(context: vscode.ExtensionContext) {
             clearSearchDecorations,
         ),
     );
-    updateSearchHighlights();
-    vscode.workspace.onDidChangeConfiguration(updateSearchHighlights);
-
-    onCommandComplete(async () => {
-        searchDecorationCheck();
-        return true;
-    });
 }

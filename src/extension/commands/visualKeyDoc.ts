@@ -482,17 +482,28 @@ async function showVisualDoc() {
     return;
 }
 
+let docProvider: DocViewProvider | undefined;
 export async function activate(context: vscode.ExtensionContext) {
+    docProvider = new DocViewProvider(context.extensionUri);
+    await withState(async (state) => {
+        if (docProvider) {
+            return await docProvider.attach(state);
+        } else {
+            console.error(
+                'Master key visual documentation `docProvider` is unexpectedly `undefined',
+            );
+            return state;
+        }
+    });
+    vscode.window.registerWebviewViewProvider(DocViewProvider.viewType, docProvider);
+    // TODO: only show `command` in os x
+    // TODO: make a meta key for linux (and windows for windows)
+}
+
+export async function defineCommands(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.showVisualDoc', showVisualDoc),
     );
-    const docProvider = new DocViewProvider(context.extensionUri);
-    await withState(async (state) => {
-        return await docProvider.attach(state);
-    });
-    vscode.window.registerWebviewViewProvider(DocViewProvider.viewType, docProvider);
-    // TODO: only show command in os x
-    // TODO: make a meta key for linux (and windows for windows)
     /**
      * @userCommand toggleVisualDocModifiers
      * @name Toggle Visual Doc Modifier by frequency
@@ -502,7 +513,7 @@ export async function activate(context: vscode.ExtensionContext) {
      */
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.toggleVisualDocModifiers', _args =>
-            docProvider.toggleModifier(),
+            docProvider?.toggleModifier(),
         ),
     );
 }

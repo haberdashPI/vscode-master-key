@@ -332,7 +332,19 @@ function updateConfig(event?: vscode.ConfigurationChangeEvent) {
     }
 }
 
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(_context: vscode.ExtensionContext) {
+    updateConfig();
+    vscode.workspace.onDidChangeConfiguration(updateConfig);
+
+    vscode.workspace.onDidChangeTextDocument(async (e) => {
+        const id = documentIdentifiers.get(e.document.uri);
+        if (id && bindings.is_recording_edits_for(id, maxTextHistory)) {
+            bindings.store_edit(cleanupEdit(e), maxTextHistory);
+        }
+    });
+}
+
+export async function defineCommands(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand(
             'master-key.pushHistoryToStack',
@@ -357,14 +369,4 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.record', recordedCommand(record)),
     );
-
-    updateConfig();
-    vscode.workspace.onDidChangeConfiguration(updateConfig);
-
-    vscode.workspace.onDidChangeTextDocument(async (e) => {
-        const id = documentIdentifiers.get(e.document.uri);
-        if (id && bindings.is_recording_edits_for(id, maxTextHistory)) {
-            bindings.store_edit(cleanupEdit(e), maxTextHistory);
-        }
-    });
 }
