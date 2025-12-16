@@ -648,8 +648,19 @@ Integration test debugging:
         - [X] replay symmetric edits
             - [X] write an integration test
             - [X] implement recording of intercepted commands
-        - [ ] reimlement storeNamed? (or make it more specific to macros; I'm not
+        - [ ] reimplement storeNamed? (or make it more specific to macros; I'm not
             convinced the generic tool is really useful)
+        - [ ] fix bugs that come up with the first, activating key press
+            - [ ] option: add something that will ensure all activation functions
+                  have completely run before executing a command (my impression is that
+                  isn't the case right now)
+            - [ ] option: only ensure that keybindings have truly been loaded with proper
+                  state
+            - [ ] resolve symptoms
+                - [ ] multi-key sequences often fail in this case (shows up in integration tests as well as my personal interactions)
+                - [ ] sometimes the variable `code` is not yet defined
+                - [ ] these are possibly symptomatic of the same problem that variable
+                    state is not entirely up and going until the extension is activated
     - [ ] merge PR; don't release a new version yet
     - [ ] rename from Master Key to Key Atlas (keep the same extension name, to avoid
         confusion, but do make a new git repository)
@@ -664,7 +675,7 @@ Integration test debugging:
             - [X] remove replay unit tests (they are become integration tests)
             - [X] move the missing do unit tests to integration
         - [ ] integration tests take a long time to run;
-            - [ ] ideally we reduce or combine some of the tests
+            - [X] ideally we reduce or combine some of the tests
             - [ ] maybe run a separate set in a nightly test
         - [ ] run the tests in CI
             - [X] get unit tests working for `mise build --web` again
