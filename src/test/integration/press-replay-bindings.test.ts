@@ -41,115 +41,122 @@ test.describe('Recorded keypresses', () => {
         await expect(pos).toHaveText('Ln 3, Col 2');
     });
 
-    test('Replays counts', async ({ workbox }) => {
-        test.skip(process.env.CI === 'true', 'Non-essential test skipped in CI');
-        const { editor, pos } = await setup(workbox);
+    if (process.env.CI !== 'true') {
+        test('Replays counts', async ({ workbox }) => {
+            const { editor, pos } = await setup(workbox);
 
-        await editor.press('Shift+q');
-        await editor.press('Shift+3');
-        await editor.press('l');
-        await expect(pos).toHaveText('Ln 1, Col 4');
-        await editor.press('Shift+q');
-        await editor.press('q');
-        await editor.press('q');
-        await expect(pos).toHaveText('Ln 1, Col 7');
-    });
+            await editor.press('Shift+q');
+            await editor.press('Shift+3');
+            await editor.press('l');
+            await expect(pos).toHaveText('Ln 1, Col 4');
+            await editor.press('Shift+q');
+            await editor.press('q');
+            await editor.press('q');
+            await expect(pos).toHaveText('Ln 1, Col 7');
+        });
+    }
 
-    test('Replays search', async ({ workbox }) => {
-        test.skip(process.env.CI === 'true', 'Non-essential test skipped in CI');
-        const { editor, pos } = await setup(workbox);
-        await editor.press('Shift+q');
-        await editor.press('/');
-        const search = workbox.getByRole('textbox', { name: 'Search' });
-        await search.pressSequentially('c d');
-        await search.press('Enter');
-        await expect(pos).toHaveText('Ln 1, Col 4');
-        await editor.press('Shift+q');
-        await editor.press('Shift+3');
-        await editor.press('h');
-        await editor.press('q');
-        await editor.press('q');
-        await expect(pos).toHaveText('Ln 1, Col 4');
-    });
+    if (process.env.CI !== 'true') {
+        test('Replays search', async ({ workbox }) => {
+            const { editor, pos } = await setup(workbox);
+            await editor.press('Shift+q');
+            await editor.press('/');
+            const search = workbox.getByRole('textbox', { name: 'Search' });
+            await search.pressSequentially('c d');
+            await search.press('Enter');
+            await expect(pos).toHaveText('Ln 1, Col 4');
+            await editor.press('Shift+q');
+            await editor.press('Shift+3');
+            await editor.press('h');
+            await editor.press('q');
+            await editor.press('q');
+            await expect(pos).toHaveText('Ln 1, Col 4');
+        });
+    }
 
-    test('Replays search with `acceptAfter`', async ({ workbox }) => {
-        test.skip(process.env.CI === 'true', 'Non-essential test skipped in CI');
-        const { editor, pos } = await setup(workbox);
-        await editor.press('Shift+q');
-        await editor.press('t');
-        await editor.press('c');
-        await expect(pos).toHaveText('Ln 1, Col 4');
-        await editor.press('Shift+q');
-        await editor.press('Shift+3');
-        await editor.press('h');
-        await editor.press('q');
-        await editor.press('q');
-        await expect(pos).toHaveText('Ln 1, Col 4');
-    });
+    if (process.env.CI !== 'true') {
+        test('Replays search with `acceptAfter`', async ({ workbox }) => {
+            const { editor, pos } = await setup(workbox);
+            await editor.press('Shift+q');
+            await editor.press('t');
+            await editor.press('c');
+            await expect(pos).toHaveText('Ln 1, Col 4');
+            await editor.press('Shift+q');
+            await editor.press('Shift+3');
+            await editor.press('h');
+            await editor.press('q');
+            await editor.press('q');
+            await expect(pos).toHaveText('Ln 1, Col 4');
+        });
+    }
 
-    test('Replays search with canceled input', async ({ workbox }) => {
-        test.skip(process.env.CI === 'true', 'Non-essential test skipped in CI');
-        const { editor, pos } = await setup(workbox);
-        await editor.press('Shift+q');
-        await editor.press('t');
-        await editor.press('Escape');
-        await editor.press('t');
-        await editor.press('c');
-        await expect(pos).toHaveText('Ln 1, Col 4');
-        await editor.press('Shift+q');
-        await editor.press('Shift+3');
-        await editor.press('h');
-        await editor.press('q');
-        await editor.press('q');
-        await expect(pos).toHaveText('Ln 1, Col 4');
-    });
+    if (process.env.CI !== 'true') {
+        test('Replays search with canceled input', async ({ workbox }) => {
+            const { editor, pos } = await setup(workbox);
+            await editor.press('Shift+q');
+            await editor.press('t');
+            await editor.press('Escape');
+            await editor.press('t');
+            await editor.press('c');
+            await expect(pos).toHaveText('Ln 1, Col 4');
+            await editor.press('Shift+q');
+            await editor.press('Shift+3');
+            await editor.press('h');
+            await editor.press('q');
+            await editor.press('q');
+            await expect(pos).toHaveText('Ln 1, Col 4');
+        });
+    }
 
-    test('Replays captures keys', async ({ workbox }) => {
-        test.skip(process.env.CI === 'true', 'Non-essential test skipped in CI');
-        const { editor, pos } = await setup(workbox);
-        await editor.press('Shift+q');
-        await editor.press('s');
-        await editor.press('c');
-        await editor.press(' ');
-        await expect(pos).toHaveText('Ln 1, Col 4');
-        await editor.press('Shift+q');
-        await editor.press('Shift+3');
-        await editor.press('h');
-        await editor.press('q');
-        await editor.press('q');
-        await expect(pos).toHaveText('Ln 1, Col 4');
-    });
+    if (process.env.CI !== 'true') {
+        test('Replays captures keys', async ({ workbox }) => {
+            const { editor, pos } = await setup(workbox);
+            await editor.press('Shift+q');
+            await editor.press('s');
+            await editor.press('c');
+            await editor.press(' ');
+            await expect(pos).toHaveText('Ln 1, Col 4');
+            await editor.press('Shift+q');
+            await editor.press('Shift+3');
+            await editor.press('h');
+            await editor.press('q');
+            await editor.press('q');
+            await expect(pos).toHaveText('Ln 1, Col 4');
+        });
+    }
 
-    test('Replays captures keys with cancel', async ({ workbox }) => {
-        test.skip(process.env.CI === 'true', 'Non-essential test skipped in CI');
-        const { editor, pos } = await setup(workbox);
-        await editor.press('Shift+q');
-        await editor.press('s');
-        await editor.press('Escape');
-        await editor.press('s');
-        await editor.press('c');
-        await editor.press(' ');
-        await expect(pos).toHaveText('Ln 1, Col 4');
-        await editor.press('Shift+q');
-        await editor.press('Shift+3');
-        await editor.press('h');
-        await editor.press('q');
-        await editor.press('q');
-        await expect(pos).toHaveText('Ln 1, Col 4');
-    });
+    if (process.env.CI !== 'true') {
+        test('Replays captures keys with cancel', async ({ workbox }) => {
+            const { editor, pos } = await setup(workbox);
+            await editor.press('Shift+q');
+            await editor.press('s');
+            await editor.press('Escape');
+            await editor.press('s');
+            await editor.press('c');
+            await editor.press(' ');
+            await expect(pos).toHaveText('Ln 1, Col 4');
+            await editor.press('Shift+q');
+            await editor.press('Shift+3');
+            await editor.press('h');
+            await editor.press('q');
+            await editor.press('q');
+            await expect(pos).toHaveText('Ln 1, Col 4');
+        });
+    }
 
-    test('Repeats replay using count', async ({ workbox }) => {
-        test.skip(process.env.CI === 'true', 'Non-essential test skipped in CI');
-        const { editor, pos } = await setup(workbox);
-        await editor.press('Shift+q');
-        await editor.press('l');
-        await expect(pos).toHaveText('Ln 1, Col 2');
-        await editor.press('Shift+q');
-        await editor.press('Shift+2');
-        await editor.press('q');
-        await editor.press('c');
-        await expect(pos).toHaveText('Ln 1, Col 5');
-    });
+    if (process.env.CI !== 'true') {
+        test('Repeats replay using count', async ({ workbox }) => {
+            const { editor, pos } = await setup(workbox);
+            await editor.press('Shift+q');
+            await editor.press('l');
+            await expect(pos).toHaveText('Ln 1, Col 2');
+            await editor.press('Shift+q');
+            await editor.press('Shift+2');
+            await editor.press('q');
+            await editor.press('c');
+            await expect(pos).toHaveText('Ln 1, Col 5');
+        });
+    }
 
     test('Replay stored commands', async ({ workbox }) => {
         const result = await setup(workbox);
@@ -189,7 +196,6 @@ test.describe('Recorded keypresses', () => {
         await editor.press('q');
         await editor.press('q');
         await expect(pos).toHaveText('Ln 1, Col 3');
-        await workbox.pause();
         expect(editor).toBeVisible();
     });
 

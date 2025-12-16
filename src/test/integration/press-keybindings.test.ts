@@ -77,39 +77,42 @@ test.describe('Basic keypresses', () => {
         await expect(pos).toHaveText('Ln 2, Col 2');
     });
 
-    test('Can change cursor shape when using a delayed action' + label,
-        async ({ workbox }) => {
-            test.skip(process.env.CI === 'true', 'Non-essential test skipped in CI');
-            const { editor } = await setup(workbox, file);
-            await editor.press('Escape');
-            const cursor = workbox.locator('div[role="presentation"].cursors-layer');
-            await expect(cursor.first()).toHaveClass(/cursor-block-style/);
+    if (process.env.CI !== 'true') {
+        test('Can change cursor shape when using a delayed action' + label,
+            async ({ workbox }) => {
+                const { editor } = await setup(workbox, file);
+                await editor.press('Escape');
+                const cursor = workbox.locator('div[role="presentation"].cursors-layer');
+                await expect(cursor.first()).toHaveClass(/cursor-block-style/);
 
-            await editor.press('d');
-            // assert cursor state
-            await expect(cursor.first()).toHaveClass(/cursor-underline-style/);
+                await editor.press('d');
+                // assert cursor state
+                await expect(cursor.first()).toHaveClass(/cursor-underline-style/);
 
-            // execute the action
+                // execute the action
+                await editor.press('w');
+                await expect(cursor.first()).toHaveClass(/cursor-block-style/);
+            },
+        );
+    }
+
+    if (process.env.CI !== 'true') {
+        test('Can use number prefixes' + label, async ({ workbox }) => {
+            const { editor, pos } = await setup(workbox, file);
+            await editor.press('3');
+            await editor.press('l');
+            await expect(pos).toHaveText('Ln 1, Col 4');
+        });
+    }
+
+    if (process.env.CI !== 'true') {
+        test('Can use store `runCommands` sequence to run later', async ({ workbox }) => {
+            const { editor, pos } = await setup(workbox, 'simpleMotions.toml');
+            await editor.press('Shift+j');
             await editor.press('w');
-            await expect(cursor.first()).toHaveClass(/cursor-block-style/);
-        },
-    );
-
-    test('Can use number prefixes' + label, async ({ workbox }) => {
-        test.skip(process.env.CI === 'true', 'Non-essential test skipped in CI');
-        const { editor, pos } = await setup(workbox, file);
-        await editor.press('3');
-        await editor.press('l');
-        await expect(pos).toHaveText('Ln 1, Col 4');
-    });
-
-    test('Can use store `runCommands` sequence to run later', async ({ workbox }) => {
-        test.skip(process.env.CI === 'true', 'Non-essential test skipped in CI');
-        const { editor, pos } = await setup(workbox, 'simpleMotions.toml');
-        await editor.press('Shift+j');
-        await editor.press('w');
-        await expect(pos).toHaveText('Ln 2, Col 3');
-    });
+            await expect(pos).toHaveText('Ln 2, Col 3');
+        });
+    }
 
     test('Can use implicit prefixes', async ({ workbox }) => {
         const { editor, pos } = await setup(workbox, 'simpleMotions.toml');

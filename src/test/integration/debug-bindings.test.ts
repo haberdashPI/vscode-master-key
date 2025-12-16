@@ -29,14 +29,15 @@ test.describe('Debug expressions', () => {
         await expect(item).toBeVisible();
     });
 
-    test('Debug shows after error', async ({ workbox }) => {
-        test.skip(process.env.CI === 'true', 'Non-essential test skipped in CI');
-        const { editor } = await setup(workbox);
-        await editor.press('b');
+    if (process.env.CI !== 'true') {
+        test('Debug shows after error', async ({ workbox }) => {
+            const { editor } = await setup(workbox);
+            await editor.press('b');
 
-        const output = workbox.getByLabel('Master Key - Output');
-        const content = output.getByRole('code').locator('div');
-        const item = content.filter({ hasText: '] result:' }).first();
-        await expect(item).toBeVisible();
-    });
+            const output = workbox.getByLabel('Master Key - Output');
+            const content = output.getByRole('code').locator('div');
+            const item = content.filter({ hasText: '] result:' }).first();
+            await expect(item).toBeVisible();
+        });
+    }
 });
