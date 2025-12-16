@@ -2,6 +2,10 @@ import { test, expect } from './config';
 import { activateKeybindings, openFile } from './utils';
 import { Page } from '@playwright/test';
 
+function sleep(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 test.describe('Basic keypresses', () => {
     async function setup(workbox: Page, file: string) {
         await activateKeybindings(workbox, file);
