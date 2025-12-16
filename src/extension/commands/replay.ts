@@ -332,6 +332,27 @@ function updateConfig(event?: vscode.ConfigurationChangeEvent) {
     }
 }
 
+/**
+ * @command saveFromHistoryStack
+ * @order 150
+ *
+ * Stores the item at the top of the history stack (ala
+ * [`pushHistoryToStack`](/commands/pushHistoryToStack)) to a permanent location associated
+ * with the current VSCode profile. This brings up a quick-pick for the user to give
+ * the item a name.
+ *
+ * **Arguments**:
+ * - `index`: 0-based index indicating the location on the stack (from top to bottom)
+ *    of the item to store
+ */
+export async function saveFromHistoryStack(args_: unknown): Promise<CommandResult> {
+    const args = validateInput('master-key.saveFromHistoryStacck', args_, replayFromStackArgs);
+    if (args) {
+        const commands = bindings.get_macro(args.index);
+
+    }
+}
+
 export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand(

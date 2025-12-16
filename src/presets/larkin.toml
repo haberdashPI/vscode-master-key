@@ -2333,6 +2333,36 @@ args.index = "{{key.count}}"
 
 [[bind]]
 default = "{{bind.edit_action_history}}"
+doc.name = "store macro"
+doc.description = """
+Stores the top of the `history` stack into a named register that will persist across VSCode
+sessions; it is stored in your profile. Specifying a count stores the
+Nth most recent item on this stack.
+"""
+key = "q s"
+command = "master-key.saveFromHistoryStack"
+args.doc.description = "Save Macro"
+args.index = "{{min(1, key.count)}}"
+
+[[bind]]
+default = "{{bind.edit_action_history}}"
+doc.name = "replay stored"
+doc.description = """
+Replay a recorded Master Key command sequence from a named register, pushing
+it to the front of the history stack.
+"""
+key = "q r"
+command = "runCommands"
+
+[[bind.args.commands]]
+command = "master-key.restoreToHistoryStack"
+
+[[bind.args.commands]]
+command = "master-key.replayFromStack"
+args.index = 0
+
+[[bind]]
+default = "{{bind.edit_action_history}}"
 doc.name = "store last"
 doc.description = """
 Store the N most recently run commands as a macro, where N is the count (defaulting to 1).
