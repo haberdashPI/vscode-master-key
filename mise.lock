@@ -30,6 +30,10 @@ backend = "npm:c8"
 version = "14.1.1"
 backend = "npm:http-server"
 
+[[tools."npm:lcov-summary"]]
+version = "1.0.1"
+backend = "npm:lcov-summary"
+
 [[tools."npm:pnpm"]]
 version = "10.13.1"
 backend = "npm:pnpm"
