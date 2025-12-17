@@ -34,7 +34,8 @@
 /// # etc...
 /// ```
 ///
-/// > [!NOTE] Implementation detail for advanced readers All expressions can include foreach
+/// > [!NOTE] Implementation detail for advanced readers
+/// > All expressions can include foreach
 /// > variables, including expressions evaluated at run-time. Each instance of a `foreach`
 /// > repeated binding has a local scope that resolves its `foreach` variables. The
 /// > expression itself is then evaluated within this scope at read-time or run-time,

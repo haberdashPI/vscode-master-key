@@ -42,6 +42,7 @@ pub struct DefineInput {
     /// each `[[define.val]]` element this way. These are then available in any
     /// [expressions](/expressions/index)
     /// evaluated at runtime and in [when clauses](/bindings/bind#available-when-contexts).
+    /// They can also be changes using [`setValue`](/commands/setValue)
     ///
     /// Expressions can occur within the values, and these will be evaluated at read-time.
     /// No `val.` fields are in scope within these expressions (i.e. you cannot refer to
@@ -74,7 +75,7 @@ pub struct DefineInput {
     /// ```
     ///
     /// This is then applied when handling symmetric typing using the
-    /// [`onType`](/bindings/mode#ontype-field) field of `[[mode]]`.
+    /// `whenNoBinding.run` option of [`[[mode]]`](/bindings/mode).
     ///
     /// ```toml
     /// [[mode]]
@@ -94,11 +95,11 @@ pub struct DefineInput {
     ///
     /// ## Command Definitions
     ///
-    /// You can define re-usable commands that can be run when running
-    /// [running multiple commands](/bindings/bind#running-multiple-commands).
+    /// You can define re-usable commands that can be run when running [multiple
+    /// commands](/bindings/bind#running-multiple-commands).
     ///
-    /// In addition the normal fields of a command, you must provide an `id` to refer to the
-    /// command as <span v-pre>`{{command.[id]}}`</span>.
+    /// In addition to the normal fields of a command, you must provide an `id` to refer to
+    /// the command as <span v-pre>`{{command.[id]}}`</span>.
     ///
     /// ### Example
     ///
@@ -138,14 +139,16 @@ pub struct DefineInput {
     /// You can define partial [bind](/bindings/bind) definitions, e.g. for common default
     /// values to use across many bindings.
     ///
-    /// The `args` field is merged recursively, allowing you to specify some arguments in
-    /// the default `[[define.bind]]` and others in `[[bind]]` directly.
+    /// The `args` field is merged recursively with the default value, allowing you to
+    /// specify some arguments in the default `[[define.bind]]` and others in `[[bind]]`
+    /// directly. The remaining fields are set to the default value when not specified
+    /// (i.e. there is no deep merging for the other fields).
     ///
     /// ### Example
     ///
     /// Larkin makes extensive use of default keys for the simple cursor motions. The
-    /// default command is always `cursorMove` and each motion changes what direction
-    /// to move using `args.value.
+    /// default command is always `cursorMove` and each motion changes what direction to
+    /// move using `args.value.
     ///
     /// ```toml
     /// [[define.bind]]
@@ -167,8 +170,8 @@ pub struct DefineInput {
     /// args.to = "right"
     /// ```
     ///
-    /// This example also demonstrates that `define.bind` definitions can themselves have
-    /// a default, allowing for a hierarchy of defaults if so desired.
+    /// This example also demonstrates that `define.bind` definitions can themselves have a
+    /// default, allowing for a hierarchy of defaults if so desired.
     ///
     pub bind: Option<Vec<Spanned<BindingInput>>>,
 

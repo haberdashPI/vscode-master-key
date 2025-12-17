@@ -21,13 +21,13 @@ hero:
 features:
     - title: Keybinding Discoverability
       details: >
-        Bindings show up on a keyboard visualization. Binding files are literate TOML that is converted into markdown documentation. Multi-key sequences reveal a popup list of suggested keybinding completions (ala Kakaune / Helix / LazyVim).
+        Pop-up suggestions for keybindings, visual documentation, and text documentation, all defined via a literate TOML file
     - title: Record and repeat commands
       details: >
         Record sequences of commands and parametrically select which ones to replay.
     - title: Rich, parametric keybinding specification
       details: >
-        Modal bindings, simple `foreach` expressions, per-mode onType events, expression evaluation, cross-command state management
+        Modal bindings, expressions, simple `foreach` expressions and more
 ---
 
 <!-- TODO: image? -->

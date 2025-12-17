@@ -635,9 +635,9 @@ repeat = "{{key.count}}"
 command = "master-key.replayFromHistory"
 args.index = """{{
 last_history_index(|i| {
-    history[i]?.tags?.contains("motion") &&
-    history[i]?.doc?.name != "repeat motion" &&
-    history[i]?.doc?.name != "shrink selection"
+    (history[i]?.tags?.contains("motion") ?? false) &&
+    (history[i]?.doc?.name != "repeat motion" ?? false) &&
+    (history[i]?.doc?.name != "shrink selection" ?? false)
 })
 }}"""
 
@@ -1759,7 +1759,8 @@ args.commands = [
 default = "{{bind.edit_action}}"
 key = "shift+d"
 mode = "normal"
-doc.name = "without count: Delete from cursor to end of line; with count: Delete from current line up `count` number of keys."
+doc.name = "del. to"
+doc.description = "without count: Delete from cursor to end of line; with count: Delete from current line up `count` number of keys."
 command = "runCommands"
 args.commands = [
     "selection-utilities.shrinkToActive",
@@ -2252,6 +2253,8 @@ default = "{{bind.edit_action}}"
 key = "space c s"
 when = "editorLangId != 'quarto'"
 command = "jupyter.selectCell"
+doc.name = "sel. cell"
+doc.description = "select jupyter cell"
 
 [[bind]]
 default = "{{bind.edit_action}}"

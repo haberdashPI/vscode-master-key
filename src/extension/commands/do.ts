@@ -94,7 +94,7 @@ async function triggerCommandCompleteHooks() {
  * of a master keybinding file. Every binding stored in a master keybinding file is
  * ultimately implemented as a keybinding in VSCode's base `keybindings.json` file as a call
  * to `master-key.do`. This command ensures that all master-key triggered bindings get
- * recorded (so they can be replayed at a future date). It is also is the mechanism by which
+ * recorded (so they can be replayed at a future date). It also is the mechanism by which
  * the additional keybinding behaviors are possible in master key,
  * such as [expressions](/expressions/index).
  */

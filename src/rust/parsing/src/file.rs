@@ -11,7 +11,6 @@
 /// containing `#:master-keybindings` and include the following top-level
 /// fields:
 ///
-///
 
 // NOTE: .simple-src-docs.config.toml is setup to insert a list of
 // bindings here, between the above text and the below example
@@ -19,10 +18,21 @@
 /// @file bindings/index.md
 /// @order 50
 ///
+/// In addition, any comments prefixed with `##` will show up in the documentation displayed
+/// by `Master Key: Show Text Documentation`. Any key bindings that fall between paragraphs
+/// of the literate documentation are combined and presented as a table of keybindings.
+///
+/// ## Example
+///
 /// Here's a minimal example, demonstrating the most basic use of each field
 ///
 /// ```toml
 /// #:master-keybindings
+///
+/// ## # My Key Bindings
+/// ##
+/// ## The binding file is a literate document. This text will show up in
+/// ## `Master Key: Show Text Documentation`
 ///
 /// [header]
 /// # this denotes the file-format version, it must be semver compatible with 2.0
@@ -31,6 +41,8 @@
 ///
 /// [[mode]]
 /// name = "insert"
+/// # this comment will not show up in the documentation because it is prefixed
+/// # with `#` instead of `##`.
 /// whenNoBinding = 'insertCharacters'
 ///
 /// [[mode]]
@@ -95,6 +107,8 @@
 /// - [`[[define]]`](/bindings/define) now has several sub fields. Definitions
 ///   previously under `[[define]]` should usually go under `[[define.val]]`, but
 ///   also see `[[define.command]]`.
+/// - Comments prefixed with `##` show up in literate documentation and all other comments
+///   are ignored. (Previously `#` showed up as literate documentation and `#-` was ignored).
 /// - generalized [expressions](/expressions/index). This changed or replaced several
 ///   other features:
 ///   - `bind.computedArgs` no longer exists: instead, place expressions inside of `args`
@@ -116,7 +130,7 @@
 ///     `doc.combined.name`, `doc.combined.description` and `doc.combined.key`.
 ///   - `resetTransient` is now [`finalKey`](/bindings/bind)
 ///   - `bind.if` replaced with [`bind.skipWhen`](/bindings/bind)
-///   - `name` renamed to `register` in [`(re)storeNamed`](/commands/storeNamed) command
+///   - removed `(re)storeNamed` commands
 ///   - replay-related command fields have changed their semantics, see examples
 ///     under [replayFromHistory](/commands/replayFromHistory)
 #[allow(unused_imports)]

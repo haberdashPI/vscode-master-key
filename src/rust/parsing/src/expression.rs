@@ -90,7 +90,7 @@ use crate::{
 ///   and [`master-key.captureKeys`](/commands/captureKeys).
 /// - `not_modes([exclusions])`: given an array of strings of excluded modes, returns all
 ///   keybinding modes defined by the current keybinding set that are not among these
-///   exclusions.
+///   exclusions. Like `all_modes` the mode "capture" is not included.
 ///
 /// ## Run-time Evaluation
 ///
@@ -111,7 +111,6 @@ use crate::{
 /// - `key.count`: The current count, as defined by
 ///   [`master-key.updateCount`](/commands/updateCount)
 /// - `key.captured`: The text currently captured by the most recent call to
-///   [`master-key.restoreNamed`](/commands/restoreNamed) or
 ///   [`master-key.captureKeys`](/commands/captureKeys).
 /// - `key.prefix`: The currently active [keybinding prefix](/commands/prefix)
 /// - `key.record`: a boolean flag used to indicate when keys are marked for recording
@@ -124,7 +123,7 @@ use crate::{
 /// You can use the function `show` to print out a message in VSCode's output
 /// pane. It accepts to arguments: a string to print and a value. The value is printed
 /// and it is also returned as the result of show. This allows you to insert
-/// show whereever you want within an expression.
+/// show wherever you want within an expression.
 ///
 /// ```toml
 /// [[bind]]

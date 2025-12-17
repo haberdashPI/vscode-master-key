@@ -665,6 +665,9 @@ Integration test debugging:
                     state is not entirely up and going until the extension is activated
                     - I've resolved the `code` issue, and eliminated this by refactoring
                       the code. Still have the multi-key sequence issue
+    - [ ] install latest version on my pet
+    - [ ] wait a day or two: see if anything comes up now that we've installed
+          the latest versions
     - [ ] merge PR; don't release a new version yet
     - [ ] TODO: decorators aren't working
     - [ ] CI

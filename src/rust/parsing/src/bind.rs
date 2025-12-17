@@ -104,12 +104,12 @@ pub struct BindingInput {
     /// @forBindingField bind
     ///
     /// - `mode`: The mode during which the binding will be active. The default mode is
-    ///   used when this field is not specified (either directly or via the `defaults`
+    ///   used when this field is not specified (either directly or via the `default`
     ///   field). You can also make use of an [expression](/expressions/index)
     ///   that will be evaluated while the bindings are being parsed. There are two
     ///   available functions of use here:
-    ///   [`all_modes`](/expressions/functions#all_modes) and
-    ///   [`not_modes`](/expressions/functions#not_modes)
+    ///   [`all_modes`](/expressions/#read-time-evaluation) and
+    ///   [`not_modes`](/expressions/#read-time-evaluation)
     pub mode: Option<Spanned<TypedValue<Plural<String>>>>,
     /// @forBindingField bind
     ///
@@ -158,7 +158,7 @@ pub struct BindingInput {
     /// - ⚡ `repeat`: The number of times to repeat the command; this can be a runtime
     ///   [expression](/expressions/index). This defaults to zero: one repeat means the
     ///   command is run twice. The most common use case here is to set this to <span
-    ///   v-pre>`'{{key.count}}'`</span> for a command that does not accept a count value as
+    ///   v-pre>`'{{(max(key.count, 1))-1}}'`</span> for a command that does not accept a count value as
     ///   an argument.
     repeat: Option<Spanned<TypedValue<i32>>>,
 
@@ -166,7 +166,7 @@ pub struct BindingInput {
     ///
     /// - `tags`: An array of strings used to characterize the behavior of the binding. They
     /// have no inherent meaning but are often used when filtering which commands in a call
-    /// to [`master-key.replayFromHistory`](/commands/replayFromHistory/) can be replayed.
+    /// to [`master-key.replayFromHistory`](/commands/replayFromHistory) can be replayed.
     #[serde(default = "span_plural_default")]
     tags: Spanned<TypedValue<Plural<String>>>,
 
@@ -188,7 +188,7 @@ pub struct BindingInput {
 ///
 /// You can find commands in a few ways:
 ///
-/// - Find command you want to use from the command palette, and click on the gear symbol
+/// - Find commands you want to use from the command palette, and click on the gear symbol
 ///   (`⚙︎`) to copy the command string to your clipboard
 /// - Review the [list of built-in commands](https://code.visualstudio.com/api/references/commands/index)
 /// - Run the command `Preferences: Open Default Keyboard Shortcuts (JSON)` to get a list of
@@ -212,7 +212,6 @@ pub struct BindingInput {
 /// - `master-key.count`: The current count, as defined by
 ///   [`master-key.updateCount`](/commands/updateCount)
 /// - `master-key.captured`: The text currently captured by the most recent call to
-///   [`master-key.restoreNamed`](/commands/restoreNamed) or
 ///   [`master-key.captureKeys`](/commands/captureKeys).
 /// - `master-key.prefix`: The currently active [keybinding prefix](/commands/prefix)
 /// - `master-key.record`: a boolean flag used to indicate when keys are marked for
@@ -220,8 +219,8 @@ pub struct BindingInput {
 /// - `master-key.val.[name]`: the current value of a [defined
 ///   variable](/bindings/define#variable-definitions).
 /// - `master-key.keybindingPaletteBindingMode`: true when the suggestion palette accepts
-///   keybinding key presses, false it accepts a string to search the descriptions of said
-///   keybindings
+///   keybinding key presses, false when it accepts a string to search the descriptions of
+///   said keybindings
 /// - `master-key.keybindingPaletteOpen`: true when the suggestion palette is open
 ///
 
@@ -437,7 +436,7 @@ pub struct BindingDocInput {
     ///
     /// - `kind`: The broad cagegory of commands this binding falls under. There should
     ///   be no more than 4-5 of these. Each `kind` here should have a corresponding
-    ///   entry in the top-level `kind` array.
+    ///   entry in the top-level [`kind`](/bindings/kind) array.
     #[serde(default)]
     pub kind: Option<Spanned<TypedValue<String>>>,
 

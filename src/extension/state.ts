@@ -346,7 +346,7 @@ const setFlagArgs = z.
  * @order 101
  * @section State Management
  *
- * Sets a a value named `name` that can be accessed in [expressions](/expressions/index)
+ * Sets a value named `name` that can be accessed in [expressions](/expressions/index)
  * using `val.[name]`. The value must be defined in a `[[define.val]]` block
  * or an error occurs.
  *

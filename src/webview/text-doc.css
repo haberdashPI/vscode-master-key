@@ -130,3 +130,16 @@ key {
     /* Box Shadow: Mimic a slight depression/3D effect */
     box-shadow: 1px 1px 0px 0px var(--vscode-scrollbarSlider-background);
 }
+
+/* -------------------------------------- */
+/* 3. Blockquote Legibility               */
+/* -------------------------------------- */
+
+blockquote {
+    padding: 10px 15px 10px 20px;
+    margin: 1em 0;
+
+    border-left: 5px solid;
+    border-color: var(--vscode-editorGhostText-foreground);
+    background-color: var(--vscode-sideBar-background);
+}

@@ -12,7 +12,7 @@ Master Key is a tool for becoming a power-user of your [VSCode](https://code.vis
 - extensive documentation of your bindings (quick pick, visual and text)
 - predefined keybinding sets
 - modal bindings (ala Vim),
-- recording simple keyboard macros
+- record simple keyboard macros
 - a powerful TOML-based keybinding specification
 
 For example, this curated snippet from the Master Key's Larkin preset defines a VIM-like feature to update a count argument along with and downward motion that uses the count argument:
@@ -35,21 +35,6 @@ doc.combined.name = "count 0-9"
 doc.combined.description = "Add digit 1-9 to count argument of a command"
 
 [[bind]]
-default = "{{bind.util}}"
-key = "shift+;"
-finalKey = false
-prefixes.any = true
-mode = '{{not_modes(["insert"])}}'
-doc.name = "suggest"
-doc.hideInPalette = true
-doc.description = """
-show command suggestions within the context of the current mode and keybinding prefix
-(if any). E.g. `TAB, ⇧;` in `normal` mode will show all `normal` command suggestions that
-start with `TAB`.
-"""
-command = "master-key.commandSuggestions"
-
-[[bind]]
 key = "j"
 command = "cursorMove"
 mode = "normal"
@@ -62,35 +47,7 @@ doc.combined.name = "↓/↑"
 doc.combined.key = "j/k"
 doc.combined.description = "move down/up"
 doc.description = "move down"
-
-# ... other bindings
-
-[[define.val]]
-select = false
-
-[[bind]]
-key = "shift+v"
-command = "master-key.setValue"
-mode = "normal"
-args.name = "select"
-args.value = true
-doc.name = "hold selection"
-doc.combined.name = "shrink/hold selection"
-doc.description = """
-all motions extend the selection
-"""
-
-# more bindings...
 ```
-
-This highlights a number of Master Key's features:
-
-1. We can use `foreach` to generate many bindings at once
-2. Bindings can be modal: in this case the binding is defined with the context of a specific
-   mode (e.g. "normal")
-3. Bindings can use expressions via `{{exp}}`, which have access to values defined
-and set by other commands (e.g. `setValue` and `updateCount`).
-4. Each binding is documented in-line: this documentation is available to the user in a visual layout, a generated markdown output, and as part of a quick-pick palette (in this case revealed using `shift+;`)
 
 Master Key validates this TOML file, providing inline linting of the file as you edit.
 
@@ -234,7 +191,7 @@ args.value = "{{num}}"
 
 ### Stateful Bindings
 
-Update state with the `master-key.captureKeys`, `master-key.updateCount`, `master-key.setFlag` or `master-key.storeNamed` and then use this state in downstream commands using
+Update state with the `master-key.captureKeys`, `master-key.updateCount`, `master-key.setValue` and then use this state in downstream commands using
 expressions surrounded in `{{}}`
 
 ```toml
@@ -263,14 +220,20 @@ Master key records recent key presses, allowing you to create commands that quic
 
 ```toml
 [[bind]]
+default = "{{bind.edit_motion}}"
 key = ";"
 doc.name = "repeat motion"
+doc.description = """
+Repeat the last motion command. Motions usually move the cursor or change the selection.
+"""
 repeat = "{{key.count}}"
 command = "master-key.replayFromHistory"
-args.whereIndexIs = """{{
-key.history[index].?tags.?contains('motion') &&
-key.history[index].?doc.?name != 'repeat motion' &&
-key.history[index].?doc.?name != 'shrink selection'
+args.index = """{{
+last_history_index(|i| {
+    (history[i]?.tags?.contains("motion") ?? false) &&
+    (history[i]?.doc?.name != "repeat motion" ?? false) &&
+    (history[i]?.doc?.name != "shrink selection" ?? false)
+})
 }}"""
 ```
 
@@ -291,5 +254,4 @@ You can then install all dependencies for this project as follows:
 ```sh
 mise activate
 mise install
-npm ic
 ```
