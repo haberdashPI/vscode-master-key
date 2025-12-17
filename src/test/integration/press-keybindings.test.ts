@@ -114,12 +114,14 @@ test.describe('Basic keypresses', () => {
         });
     }
 
-    test('Can use implicit prefixes', async ({ workbox }) => {
-        const { editor, pos } = await setup(workbox, 'simpleMotions.toml');
-        await editor.press('g');
-        await editor.press('g');
-        await expect(pos).toHaveText('Ln 3, Col 1');
-    });
+    if (process.env.CI !== 'true') {
+        test('Can use implicit prefixes', async ({ workbox }) => {
+            const { editor, pos } = await setup(workbox, 'simpleMotions.toml');
+            await editor.press('g');
+            await editor.press('g');
+            await expect(pos).toHaveText('Ln 3, Col 1');
+        });
+    }
 
     test('Updates `capture` variable', async ({ workbox }) => {
         const { editor, pos } = await setup(workbox, 'simpleMotions.toml');

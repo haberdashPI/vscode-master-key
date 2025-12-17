@@ -643,26 +643,29 @@ Integration test debugging:
             - [X] write code
             - [X] run/test
     - [X] cleanup any files we need to delete
-    - [ ] misc. cleanup
+    - [X] misc. cleanup
         - [X] fix bug in replay of insert actions
         - [X] replay symmetric edits
             - [X] write an integration test
             - [X] implement recording of intercepted commands
-        - [ ] fix bugs that come up with the first, activating key press
+        - [X] fix bugs that come up with the first, activating key press
             - [X] refactor all command definitions out from module's `activate` function,
                   and only define the commands after all activation functions have been
                   called
             - [X] the config module for keybindings also probably needs to
                 update bindings in a second phase
-            - [ ] does the fix resolve these symptoms
+            - [X] does the fix resolve these symptoms
                 - [ ] multi-key sequences often fail in this case (shows up in integration tests as well as my personal interactions)
-                - [ ] sometimes the variable `code` is not yet defined
-                - [ ] these are possibly symptomatic of the same problem that variable
+                    - this depends on handling multi-key bindings differently
+                      prior to activation I think: they delay during activation
+                      is going to be pretty hard to avoid. This is
+                      a fair bit of work and not in scope for the current PR I think
+                - [X] sometimes the variable `code` is not yet defined
+                - [X] these are possibly symptomatic of the same problem that variable
                     state is not entirely up and going until the extension is activated
+                    - I've resolved the `code` issue, and eliminated this by refactoring
+                      the code. Still have the multi-key sequence issue
     - [ ] merge PR; don't release a new version yet
-    - [ ] rename from Master Key to Key Atlas (keep the same extension name, to avoid
-        confusion, but do make a new git repository)
-        - [ ] rename references of Master key in Selection Utilities
     - [ ] TODO: decorators aren't working
     - [ ] CI
         - [x] setup CI unit tests for rust
@@ -675,12 +678,17 @@ Integration test debugging:
         - [ ] integration tests take a long time to run;
             - [X] ideally we reduce or combine some of the tests
             - [ ] ~~maybe run a separate set in a nightly test~~
-        - [ ] run the tests in CI
+        - [X] run the tests in CI
             - [X] get unit tests working for `mise build --web` again
             - [X] make sure `mise build --web` is run for `mise package`
-            - [ ] improve flakey tests (or skip some???)
+            - [X] improve flakey tests (or skip some???)
 
 Follow-up:
+- [ ] organize priorities before release 1.0
+- [ ] rename from Master Key to Key Atlas (keep the same extension name, to avoid
+    confusion, but do make a new git repository)
+    - [ ] I should wait until I'm ready for a larger audience before renaming
+    - [ ] rename references of Master key in Selection Utilities
 - [ ] reimplement storeNamed? (or make it more specific to macros; I'm not
     convinced the generic tool is really useful)
 - [ ] make some features more discoverable
