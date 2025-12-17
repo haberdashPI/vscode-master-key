@@ -200,3 +200,7 @@ export async function activate(context: vscode.ExtensionContext) {
         dispose: () => clearInterval(configPolling),
     });
 }
+
+export async function defineCommands(_context: vscode.ExtensionContext) {
+    return;
+}

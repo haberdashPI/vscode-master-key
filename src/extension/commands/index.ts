@@ -4,7 +4,7 @@ import * as count from './count';
 import * as doCommand from './do';
 import * as mode from './mode';
 // TODO: reimplement
-import * as namedStore from './namedStore';
+import * as storeCommand from './storeCommand';
 import * as replay from './replay';
 import * as search from './search';
 import * as prefix from './prefix';
@@ -28,12 +28,25 @@ export async function activate(context: vscode.ExtensionContext) {
     await count.activate(context);
     await doCommand.activate(context);
     await mode.activate(context);
-    await namedStore.activate(context);
+    await storeCommand.activate(context);
     await replay.activate(context);
     await search.activate(context);
     await prefix.activate(context);
     await palette.activate(context);
     await visualKeyDoc.activate(context);
+}
+
+export async function defineCommands(context: vscode.ExtensionContext) {
+    await capture.defineCommands(context);
+    await count.defineCommands(context);
+    await doCommand.defineCommands(context);
+    await mode.defineCommands(context);
+    await storeCommand.defineCommands(context);
+    await replay.defineCommands(context);
+    await search.defineCommands(context);
+    await prefix.defineCommands(context);
+    await palette.defineCommands(context);
+    await visualKeyDoc.defineCommands(context);
 
     /**
      * @command ignore

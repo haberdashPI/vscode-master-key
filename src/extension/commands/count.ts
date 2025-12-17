@@ -59,12 +59,15 @@ async function updateCount(args_: unknown): Promise<CommandResult> {
     return;
 }
 
-export async function activate(context: vscode.ExtensionContext) {
+export async function activate(_context: vscode.ExtensionContext) {
+    await withState(async state => state.set(COUNT, { public: true }, 0).resolve());
+}
+
+export async function defineCommands(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand(
             'master-key.updateCount',
             recordedCommand(updateCount),
         ),
     );
-    await withState(async state => state.set(COUNT, { public: true }, 0).resolve());
 }

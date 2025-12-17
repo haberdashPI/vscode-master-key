@@ -265,7 +265,11 @@ async function insertChar(args_: unknown): Promise<CommandResult> {
     return args;
 }
 
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(_context: vscode.ExtensionContext) {
+    return;
+}
+
+export async function defineCommands(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand(
             'master-key.captureKeys',

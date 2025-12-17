@@ -102,17 +102,7 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
     const args = validateInput('master-key.do', args_, masterBinding);
     if (args) {
         const toRun = bindings.do_binding(args.command_id);
-        if ((toRun.error?.length || 0) > 0) {
-            let count = 0;
-            for (const e of (toRun.error || [])) {
-                count++;
-                if (count > 3) {
-                    break;
-                }
-                vscode.window.showErrorMessage(e);
-            }
-            return;
-        }
+        showExpressionErrors(toRun);
 
         try {
             // this starts as true: repeating a command -1 or fewer times is equivalent
@@ -250,10 +240,15 @@ function updateConfig(event?: vscode.ConfigurationChangeEvent) {
     }
 }
 
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
     expressionMessages = vscode.window.createOutputChannel('Master Key');
     context.subscriptions.push(expressionMessages);
 
+    updateConfig();
+    vscode.workspace.onDidChangeConfiguration(updateConfig);
+}
+
+export async function defineCommands(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.do', recordedCommand(doCommandsCmd)),
     );
@@ -268,7 +263,4 @@ export function activate(context: vscode.ExtensionContext) {
             }
         }),
     );
-
-    updateConfig();
-    vscode.workspace.onDidChangeConfiguration(updateConfig);
 }

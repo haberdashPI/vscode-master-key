@@ -648,8 +648,17 @@ Integration test debugging:
         - [X] replay symmetric edits
             - [X] write an integration test
             - [X] implement recording of intercepted commands
-        - [ ] reimlement storeNamed? (or make it more specific to macros; I'm not
-            convinced the generic tool is really useful)
+        - [ ] fix bugs that come up with the first, activating key press
+            - [X] refactor all command definitions out from module's `activate` function,
+                  and only define the commands after all activation functions have been
+                  called
+            - [X] the config module for keybindings also probably needs to
+                update bindings in a second phase
+            - [ ] does the fix resolve these symptoms
+                - [ ] multi-key sequences often fail in this case (shows up in integration tests as well as my personal interactions)
+                - [ ] sometimes the variable `code` is not yet defined
+                - [ ] these are possibly symptomatic of the same problem that variable
+                    state is not entirely up and going until the extension is activated
     - [ ] merge PR; don't release a new version yet
     - [ ] rename from Master Key to Key Atlas (keep the same extension name, to avoid
         confusion, but do make a new git repository)
@@ -664,14 +673,16 @@ Integration test debugging:
             - [X] remove replay unit tests (they are become integration tests)
             - [X] move the missing do unit tests to integration
         - [ ] integration tests take a long time to run;
-            - [ ] ideally we reduce or combine some of the tests
-            - [ ] maybe run a separate set in a nightly test
+            - [X] ideally we reduce or combine some of the tests
+            - [ ] ~~maybe run a separate set in a nightly test~~
         - [ ] run the tests in CI
             - [X] get unit tests working for `mise build --web` again
             - [X] make sure `mise build --web` is run for `mise package`
             - [ ] improve flakey tests (or skip some???)
 
 Follow-up:
+- [ ] reimplement storeNamed? (or make it more specific to macros; I'm not
+    convinced the generic tool is really useful)
 - [ ] make some features more discoverable
     - create "tour" section for vscode's start window
     - add a button to edit a binding from the activate binding menu
@@ -680,6 +691,11 @@ Follow-up:
         - make sure it is prominently in the getting started section
 - [ ] make a command that activates the current file directly
 - [ ] profile mater-key.do performance
+    - [ ] define separate bindings for multi-keys when there is no mode defined
+        - these bindings are for the entire sequence, not each key separately
+        - we loose the ability to show a pop-up menu (for the first keybinding only)
+        - but we avoid errors in the execution of the very first binding
+        - not clear this is the right trade off yet 🤔
 
 5. Review documentation
 6. Release version 0.4

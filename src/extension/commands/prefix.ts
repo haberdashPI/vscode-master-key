@@ -171,18 +171,20 @@ export async function keySuffix(key: string) {
     });
 }
 
-export async function activate(context: vscode.ExtensionContext) {
+export async function activate(_context: vscode.ExtensionContext) {
     await withState(async (state) => {
         return state.set(PREFIX_CODE, { public: true }, 0).resolve();
     });
-    context.subscriptions.push(
-        vscode.commands.registerCommand('master-key.prefix', recordedCommand(prefix)),
-    );
-
     await onSet(PREFIX_CURSOR, (state) => {
         if (!state.get(PREFIX_CURSOR, false) && oldPrefixCursor) {
             restoreModesCursorState();
         }
         return true;
     });
+}
+
+export async function defineCommands(context: vscode.ExtensionContext) {
+    context.subscriptions.push(
+        vscode.commands.registerCommand('master-key.prefix', recordedCommand(prefix)),
+    );
 }
