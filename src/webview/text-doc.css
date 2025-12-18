@@ -68,7 +68,7 @@ table td:last-child {
 th {
     background-color: var(--vscode-button-background);
     font-weight: bold;
-    color: var(--vscode-editor-foreground);
+    color: var(--vscode-button-foreground);
 }
 
 /* Add a subtle striping effect for better readability */

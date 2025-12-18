@@ -665,7 +665,28 @@ Integration test debugging:
                     state is not entirely up and going until the extension is activated
                     - I've resolved the `code` issue, and eliminated this by refactoring
                       the code. Still have the multi-key sequence issue
-    - [ ] install latest version on my pet
+        - [ ] when the first binding changes the mode to `capture` we can't hit escape
+              to cancel the command
+            - NOTE: turns out its a little more complicated. What happens when pressing
+              `space t`, for instance, is that both "space" and "t" bindings trigger,
+              causing the state of both *prior* to setting a prefix to occur. ESC no longer
+              works because `SPACE` isn't a valid prefix and we're waiting for a key to be
+              entered because we're in the `capture` mode
+            - possible solutions:
+                - can the commands that set prefixes always be separate?
+                  would this speed things up enough?
+                - [X] prevent the second key press from registering
+                - wait to register the second key press, changing course
+                  for which binding it is registered as if the prefix has changed
+                  (sounds complicated)
+                - have non-activated bindings (check mode is not set) that
+                  include the full key sequence; these would have to copy
+                  over any commands defined during a master-key.prefix call
+            - [ ] fix bug: we need to know what prefix was *intended* when
+                  running the given command, so we need to copy the prefix
+                  specified in the binding to an argument of `master-key.do`
+                  so we can compare that to the current value of PREFIX_CODE
+    - [X] install latest version on my pet
     - [ ] wait a day or two: see if anything comes up now that we've installed
           the latest versions
     - [ ] merge PR; don't release a new version yet
@@ -687,6 +708,7 @@ Integration test debugging:
             - [X] improve flakey tests (or skip some???)
 
 Follow-up:
+- [ ] generate literat docs for each preset within the documentation website
 - [ ] organize priorities before release 1.0
 - [ ] rename from Master Key to Key Atlas (keep the same extension name, to avoid
     confusion, but do make a new git repository)

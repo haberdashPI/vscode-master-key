@@ -272,6 +272,11 @@ async function insertKeybindingsIntoConfig(data: KeyFileData) {
             }
 
             if (installed) {
+                // remove any legacy data after the new bindings are installed
+                const settings = vscode.workspace.getConfiguration('master-key');
+                settings.update('storage', undefined, vscode.ConfigurationTarget.Global);
+
+                // inform the user about the installed bindings
                 if (bindings.has_layout_independent_bindings()) {
                     vscode.window.showInformationMessage(
                         replaceAll(

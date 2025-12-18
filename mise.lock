@@ -22,6 +22,11 @@ backend = "github:taiki-e/cargo-llvm-cov"
 version = "20.19.5"
 backend = "core:node"
 
+[tools.node.platforms.macos-arm64]
+checksum = "sha256:cfed7503d8d99fbcf2f52e408ec52f616058eb0867b34dbc3437259993ef5cba"
+size = 41312337
+url = "https://nodejs.org/dist/v20.19.5/node-v20.19.5-darwin-arm64.tar.gz"
+
 [[tools."npm:c8"]]
 version = "10.1.3"
 backend = "npm:c8"

@@ -1222,6 +1222,9 @@ pub struct BindingOutputArgs {
     pub(crate) key_id: i32,
     // this uniquely identified the key sequence / mode for this binding
     pub(crate) prefix_id: i32,
+    // this identifies the prefix that should be present prior to this key press
+    // (which is also encoded in the when clause for this binding)
+    pub(crate) old_prefix_id: i32,
     // this uniquely identifiers the command that runs after pressing a binding
     // (which is retrieved by `maaster-key.do`)
     pub(crate) command_id: i32,
@@ -1245,11 +1248,15 @@ pub struct PrefixArgs {
     pub(crate) key_id: i32,
     // this uniquely identified the key sequence / mode for this binding
     pub(crate) prefix_id: i32,
+    // this identifies the prefix that should be present prior to this key press
+    // (which is also encoded in the when clause for this binding)
+    pub(crate) old_prefix_id: i32,
     // human readable field displaying the key sequence pressed to reach prefix command
     pub(crate) key: String,
     // these fields help us track and order binding outputs, we don't need them serialized
     #[serde(skip)]
     pub(crate) priority: f64,
+    pub(crate) mode: String,
     // NOTE: there are other arguments to `master-key.prefix` but they are not used by
     // automatically generated bindings, which is what this type is for
 }
@@ -1594,6 +1601,8 @@ impl Binding {
                         priority: 0.0,
                         key_id: key_code,
                         prefix_id: prefix_code,
+                        old_prefix_id: old_prefix_code,
+                        mode: mode.to_string(),
                         key: new_prefix_str.clone(),
                     },
                 });
@@ -1637,6 +1646,7 @@ impl Binding {
                 command_id,
                 key_id: code,
                 prefix_id: prefix_code,
+                old_prefix_id: old_prefix_code,
                 mode: mode.to_string(),
                 priority: self.priority,
                 prefix: old_prefix_str,
