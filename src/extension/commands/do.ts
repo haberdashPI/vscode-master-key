@@ -12,7 +12,11 @@ import { PREFIX, PREFIX_CODE } from './prefix';
 // import { commandPalette } from './palette';
 import { bindings } from '../keybindings/config';
 import { MODE } from './mode';
-import { CommandOutput, WhenNoBindingHeader } from '../../rust/parsing/lib/parsing';
+import {
+    CommandOutput,
+    ReifiedBinding,
+    WhenNoBindingHeader,
+} from '../../rust/parsing/lib/parsing';
 import { commandPalette } from './palette';
 import { Mutex } from 'async-mutex';
 
@@ -68,14 +72,9 @@ export function showExpressionErrors(fallable: { errors?: string[]; error?: stri
 
 type CommandEventHook = () => Promise<boolean>;
 let commandCompletedHooks: CommandEventHook[] = [];
-let commandStartHooks: CommandEventHook[] = [];
 
 export function onCommandComplete(hook: CommandEventHook) {
     commandCompletedHooks.push(hook);
-}
-
-export function onCommandStart(hook: CommandEventHook) {
-    commandStartHooks.push(hook);
 }
 
 export async function triggerCommandCompleteHooks() {
@@ -89,15 +88,11 @@ export async function triggerCommandCompleteHooks() {
     commandCompletedHooks = newHooks;
 }
 
-export async function triggerCommandStartHooks() {
-    const keep = await Promise.all(commandStartHooks.map(hook => hook()));
-    const newHooks = [];
-    for (let i = 0; i < keep.length; i++) {
-        if (keep[i]) {
-            newHooks.push(commandStartHooks[i]);
-        }
-    }
-    commandStartHooks = newHooks;
+function commandChangesModeOrPrefix(command: ReifiedBinding) {
+    return command.has_command('master-key.prefix') ||
+        command.has_command('master-key.setMode') ||
+        command.has_command('master-key.enterInsert') ||
+        command.has_command('master-key.enterNormal');
 }
 
 // TODO: we could also probably use Mutex to improve the legibility of `state.ts`
@@ -124,7 +119,6 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
     // register that a key was pressed (cancelling the display of the quick pick for
     // prefixes of this keypress
     registerPaletteUpdate();
-    await triggerCommandStartHooks();
 
     // we should execute a single do command at a time
     const release = await commandMutex.acquire();
@@ -150,7 +144,7 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
             }
 
             // if this key doesn't impact the prefix state or the mode we don't have to hold
-            // on to the lock that prevents other keys from running this is worth doing
+            // on to the lock that prevents other keys from running; this is worth doing
             // because some commands take a long time to execute and if it is a terminal key
             // that won't normally impact other keys we don't want to hold on to the state
             // to wait to execute subsequent commands
@@ -159,10 +153,7 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
             // short running?) and only release the lock here for the long-running bindings.
             // This would help to ensure that key sequences like `w d` in larkin work as
             // expected, even though both keys are terminal
-            if (!toRun.has_command('master-key.prefix') &&
-                !toRun.has_command('master-key.setMode') &&
-                !toRun.has_command('master-key.enterInsert') &&
-                !toRun.has_command('master-key.enterNormal')) {
+            if (commandChangesModeOrPrefix(toRun)) {
                 release();
             }
 
@@ -214,6 +205,10 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
                     }
                 }
 
+                if (!canceled && !toRun.finalKey && commandChangesModeOrPrefix(toRun)) {
+                    showPaletteOnDelay();
+                }
+
                 if (!canceled && toRun.finalKey) {
                     const editor = vscode.window.activeTextEditor;
                     let id = 0;
@@ -234,15 +229,10 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
                             return state;
                         });
                     }
-                    registerPaletteUpdate();
                 }
 
                 if (!canceled) {
                     bindings.store_binding(toRun, maxHistory);
-                }
-
-                if (!canceled && !toRun.finalKey) {
-                    showPaletteOnDelay();
                 }
             } finally {
                 if (toRun.finalKey) {

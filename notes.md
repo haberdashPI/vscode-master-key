@@ -697,7 +697,7 @@ Integration test debugging:
         - [X] palette's "binding mode" ins't working with the latest version of
               VSCode
             - [X] replace with tree view (it's more reliable and probably a better UX)
-            - [ ] update the integration tests (should be simpler now)
+            - [X] update the integration tests (should be simpler now)
         - [ ] refactor locking code; it's similar and messy across the
               three binding commands (do, ignore and prefix)
     - [X] install latest version on my pet

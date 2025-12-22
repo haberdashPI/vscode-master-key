@@ -118,7 +118,7 @@
                 {
                     "id": "masterKeySidePanel",
                     "name": "Key Suggestions",
-                    "icon": "icon.svg"
+                    "icon": "logo.png"
                 }
             ],
             "masterKeyVisualDoc": [
@@ -127,7 +127,7 @@
                     "id": "masterkey.visualDoc",
                     "name": "Master Key Bindings",
                     "contextualTitle": "Keys",
-                    "icon": "icon.svg",
+                    "icon": "logo.png",
                     "visibility": "visible"
                 }
             ]
@@ -137,14 +137,14 @@
                 {
                     "id": "masterKeyBindingList",
                     "title": "Master Key",
-                    "icon": "icon.svg"
+                    "icon": "logo.png"
                 }
             ],
             "panel": [
                 {
                     "id": "masterKeyVisualDoc",
                     "title": "Master Key Bindings",
-                    "icon": "icon.svg"
+                    "icon": "logo.png"
                 }
             ]
         },

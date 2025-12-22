@@ -12,7 +12,6 @@ import {
     registerPaletteUpdate,
     showPaletteOnDelay,
     triggerCommandCompleteHooks,
-    triggerCommandStartHooks,
 } from './do';
 
 const prefixArgs = z.
@@ -141,7 +140,6 @@ const PREFIX_CURSOR = 'prefixCursor';
 let oldPrefixCursor: boolean = false;
 async function prefix(args_: unknown): Promise<CommandResult> {
     registerPaletteUpdate();
-    await triggerCommandStartHooks();
     const args = validateInput('master-key.prefix', args_, prefixArgs);
 
     if (args !== undefined) {

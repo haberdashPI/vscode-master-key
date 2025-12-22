@@ -19,20 +19,12 @@ test.describe('command palette', () => {
         const { editor } = await setup(workbox);
 
         await editor.press('Shift+;');
-        const list = workbox.locator('#quickInput_list div');
-        await expect(list.getByRole('option', { name: 'H/L, left/right' }).locator('a')).
-            toBeVisible();
-        await expect(list.getByRole('option', { name: 'J, down' }).locator('a')).
-            toBeVisible();
-        await expect(list.getByRole('option', { name: 'K, up' }).locator('a')).
-            toBeVisible();
-        await expect(list.getByRole('option', { name: 'I, insert mode' }).locator('a')).
-            toBeVisible();
+        await expect(workbox.getByText('H/Lleft/right')).toBeVisible();
+        await expect(workbox.getByText('Jdown')).toBeVisible();
+        await expect(workbox.getByText('Kup')).toBeVisible();
+        await expect(workbox.getByText('Iinsert mode')).toBeVisible();
 
-        const input = workbox.
-            getByRole('textbox', { name: 'Run a command by pressing its' });
-        await input.press('i');
-        await expect(list.first()).toBeHidden();
+        await editor.press('i');
 
         const statusBarMode = workbox.locator(
             'div[aria-label="Keybinding Mode: insert"]',
@@ -41,41 +33,12 @@ test.describe('command palette', () => {
     });
 
     if (process.env.CI !== 'true') {
-        test('Can toggle modes', async ({ workbox }) => {
-            const { editor, pos } = await setup(workbox);
-
-            await editor.press('Shift+;');
-            let input = workbox.getByText('Master Key Commands (');
-            await input.click();
-            await input.press('Control+.');
-            await input.click();
-            input = workbox.getByRole('textbox', { name: 'Search the commands by their' });
-            await input.pressSequentially('down');
-            const list = workbox.locator('#quickInput_list div');
-            await expect(list.getByRole('option', { name: 'H/L, left/right' }).
-                locator('a')).
-                toBeHidden();
-            await expect(list.getByRole('option', { name: 'J, down' }).locator('a')).
-                toBeVisible();
-            await expect(list.getByRole('option', { name: 'K, up' }).locator('a')).
-                toBeHidden();
-            await expect(list.getByRole('option', { name: 'I, insert mode' }).locator('a')).
-                toBeHidden();
-
-            await input.press('Enter');
-            await expect(pos).toHaveText('Ln 2, Col 1');
-        });
-    }
-
-    if (process.env.CI !== 'true') {
         test('Can display after a delay', async ({ workbox }) => {
             const { editor } = await setup(workbox);
 
             await runCommand(workbox, 'Master Key: Toggle automatic display of quick-pick');
             await editor.press('w');
-            const list = workbox.locator('#quickInput_list div');
-            await expect(list.getByRole('option', { name: 'W, funny right' }).locator('a')).
-                toBeVisible();
+            await expect(workbox.getByText('Wfunny right')).toBeVisible();
         });
     }
 });
