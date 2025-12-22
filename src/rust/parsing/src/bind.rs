@@ -1808,6 +1808,10 @@ impl ReifiedBinding {
         return self.raw_commands.len();
     }
 
+    pub fn has_command(&self, name: &str) -> bool {
+        return self.raw_commands.iter().any(|x| x.command == name);
+    }
+
     pub fn resolve_command(&mut self, i: i32, result: &mut KeyFileResult) -> CommandOutput {
         if i < 0 {
             return CommandOutput::noop();

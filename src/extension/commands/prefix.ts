@@ -7,12 +7,21 @@ import {
 } from '../utils';
 import { recordedCommand, CommandResult, withState, onSet } from '../state';
 import { restoreModesCursorState } from './mode';
-import { registerPaletteUpdate, showPaletteOnDelay } from './do';
+import {
+    commandMutex,
+    registerPaletteUpdate,
+    showPaletteOnDelay,
+    triggerCommandCompleteHooks,
+    triggerCommandStartHooks,
+} from './do';
 
 const prefixArgs = z.
     object({
         key_id: z.number().optional(),
+        old_prefix_id: z.number().optional(),
+        mode: z.string(),
         prefix_id: z.number(),
+        fromDo: z.boolean().default(true),
         key: z.string(),
         cursor: z.enum([
             'Line',
@@ -131,34 +140,43 @@ const PREFIX_CURSOR = 'prefixCursor';
 
 let oldPrefixCursor: boolean = false;
 async function prefix(args_: unknown): Promise<CommandResult> {
+    registerPaletteUpdate();
+    await triggerCommandStartHooks();
     const args = validateInput('master-key.prefix', args_, prefixArgs);
+
     if (args !== undefined) {
-        const a = args;
-        await withState(async (state) => {
-            return state.withMutations((state) => {
-                const prefix = a.key;
-                state.set(
-                    PREFIX_CODE,
-                    { transient: { reset: 0 }, public: true },
-                    a.prefix_id,
-                );
-                state.set(PREFIX, { transient: { reset: '' }, public: true }, prefix);
+        const release = !args.fromDo ? await commandMutex.acquire() : undefined;
+        try {
+            const a = args;
+            await withState(async (state) => {
+                return state.withMutations((state) => {
+                    const prefix = a.key;
+                    state.set(
+                        PREFIX_CODE,
+                        { transient: { reset: 0 }, public: true },
+                        a.prefix_id,
+                    );
+                    state.set(PREFIX, { transient: { reset: '' }, public: true }, prefix);
 
-                if (a.cursor) {
-                    const cursorShape = STRING_TO_CURSOR[a.cursor];
-                    state.set(PREFIX_CURSOR, { transient: { reset: false } }, true);
-                    oldPrefixCursor = true;
-                    updateCursorAppearance(vscode.window.activeTextEditor, cursorShape);
-                }
+                    if (a.cursor) {
+                        const cursorShape = STRING_TO_CURSOR[a.cursor];
+                        state.set(PREFIX_CURSOR, { transient: { reset: false } }, true);
+                        oldPrefixCursor = true;
+                        updateCursorAppearance(vscode.window.activeTextEditor, cursorShape);
+                    }
 
-                state.resolve();
+                    state.resolve();
+                });
             });
-        });
-        registerPaletteUpdate();
-        showPaletteOnDelay();
-        return args;
+            showPaletteOnDelay();
+            await triggerCommandCompleteHooks();
+            return args;
+        } finally {
+            if (release) {
+                release();
+            }
+        }
     }
-    return args;
 }
 
 export async function keySuffix(key: string) {

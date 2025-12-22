@@ -58,6 +58,11 @@
                 "title": "Key Suggestions..."
             },
             {
+                "command": "master-key.toggleSuggestions",
+                "category": "Master Key",
+                "title": "Toggle Key Suggestions"
+            },
+            {
                 "command": "master-key.showVisualDoc",
                 "category": "Master Key",
                 "title": "Show Visual Documentation"
@@ -109,6 +114,13 @@
             }
         ],
         "views": {
+            "masterKeyBindingList": [
+                {
+                    "id": "masterKeySidePanel",
+                    "name": "Key Suggestions",
+                    "icon": "icon.svg"
+                }
+            ],
             "masterKeyVisualDoc": [
                 {
                     "type": "webview",
@@ -121,6 +133,13 @@
             ]
         },
         "viewsContainers": {
+            "activitybar": [
+                {
+                    "id": "masterKeyBindingList",
+                    "title": "Master Key",
+                    "icon": "icon.svg"
+                }
+            ],
             "panel": [
                 {
                     "id": "masterKeyVisualDoc",
@@ -132,7 +151,7 @@
         "keybindings": [
             {
                 "key": "ctrl+shift+;",
-                "command": "master-key.commandSuggestions"
+                "command": "master-key.toggleSuggestions"
             },
             {
                 "key": "ctrl+.",

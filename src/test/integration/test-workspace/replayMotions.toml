@@ -156,9 +156,27 @@ key = "q l"
 command = "master-key.replayFromHistory"
 args.index = "{{history.len()-1}}"
 
+[[bind]]
+doc.name = "store macro"
+key = "q s"
+command = "master-key.storeNamed"
+args.description = "Save Macro"
+args.name = "macro"
+args.contents = "{{macro[macro.len()-key.count-1]}}"
+
+[[bind]]
+doc.name = "replay stored"
+key = "q r"
+command = "runCommands"
+
+[[bind.args.commands]]
+command = "master-key.restoreNamed"
+args.description = "Replay Macro"
+args.name = "macro"
+
 [[bind.args.commands]]
 command = "master-key.pushHistoryToStack"
-args.value = "{{key.captured}}"
+args.value = "{{key.count}}"
 
 [[bind.args.commands]]
 command = "master-key.replayFromStack"

@@ -66,14 +66,19 @@ export function showExpressionErrors(fallable: { errors?: string[]; error?: stri
     return false;
 }
 
-type CommandCompletedHook = () => Promise<boolean>;
-let commandCompletedHooks: CommandCompletedHook[] = [];
+type CommandEventHook = () => Promise<boolean>;
+let commandCompletedHooks: CommandEventHook[] = [];
+let commandStartHooks: CommandEventHook[] = [];
 
-export function onCommandComplete(hook: CommandCompletedHook) {
+export function onCommandComplete(hook: CommandEventHook) {
     commandCompletedHooks.push(hook);
 }
 
-async function triggerCommandCompleteHooks() {
+export function onCommandStart(hook: CommandEventHook) {
+    commandStartHooks.push(hook);
+}
+
+export async function triggerCommandCompleteHooks() {
     const keep = await Promise.all(commandCompletedHooks.map(hook => hook()));
     const newHooks = [];
     for (let i = 0; i < keep.length; i++) {
@@ -84,8 +89,19 @@ async function triggerCommandCompleteHooks() {
     commandCompletedHooks = newHooks;
 }
 
+export async function triggerCommandStartHooks() {
+    const keep = await Promise.all(commandStartHooks.map(hook => hook()));
+    const newHooks = [];
+    for (let i = 0; i < keep.length; i++) {
+        if (keep[i]) {
+            newHooks.push(commandStartHooks[i]);
+        }
+    }
+    commandStartHooks = newHooks;
+}
+
 // TODO: we could also probably use Mutex to improve the legibility of `state.ts`
-const doMutex = new Mutex();
+export const commandMutex = new Mutex();
 
 /**
  * @command do
@@ -105,8 +121,13 @@ const doMutex = new Mutex();
  * such as [expressions](/expressions/index).
  */
 export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
+    // register that a key was pressed (cancelling the display of the quick pick for
+    // prefixes of this keypress
+    registerPaletteUpdate();
+    await triggerCommandStartHooks();
+
     // we should execute a single do command at a time
-    const release = await doMutex.acquire();
+    const release = await commandMutex.acquire();
     try {
         const args = validateInput('master-key.do', args_, masterBinding);
         if (args) {
@@ -128,6 +149,23 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
                 return;
             }
 
+            // if this key doesn't impact the prefix state or the mode we don't have to hold
+            // on to the lock that prevents other keys from running this is worth doing
+            // because some commands take a long time to execute and if it is a terminal key
+            // that won't normally impact other keys we don't want to hold on to the state
+            // to wait to execute subsequent commands
+
+            // TODO: we could add a field that indicates that a command is long-running (or
+            // short running?) and only release the lock here for the long-running bindings.
+            // This would help to ensure that key sequences like `w d` in larkin work as
+            // expected, even though both keys are terminal
+            if (!toRun.has_command('master-key.prefix') &&
+                !toRun.has_command('master-key.setMode') &&
+                !toRun.has_command('master-key.enterInsert') &&
+                !toRun.has_command('master-key.enterNormal')) {
+                release();
+            }
+
             try {
                 // this starts as true: repeating a command -1 or fewer times is equivalent
                 // to canceling the command
@@ -145,6 +183,11 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
                             if (command.command == 'master-key.prefix') {
                                 command.args.prefix_id = args.prefix_id;
                                 command.args.key = toRun.key;
+                                command.args.mode = args.mode;
+                                // we need to know we're calling it from `master-key.do` so
+                                // that we don't try to acquire the commandMutex a second
+                                // time
+                                command.args.fromDo = true;
                             }
                             const result =
                                 await vscode.commands.
@@ -191,19 +234,18 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
                             return state;
                         });
                     }
+                    registerPaletteUpdate();
                 }
 
                 if (!canceled) {
                     bindings.store_binding(toRun, maxHistory);
                 }
 
-                registerPaletteUpdate();
                 if (!canceled && !toRun.finalKey) {
                     showPaletteOnDelay();
                 }
             } finally {
                 if (toRun.finalKey) {
-                    registerPaletteUpdate();
                     // this will be immediately cleared by `reset` but
                     // its display will persist in the status bar for a little bit
                     // (see `status/keyseq.ts`)
@@ -237,7 +279,7 @@ export function showPaletteOnDelay() {
         setTimeout(async () => {
             if (currentPaletteUpdate === paletteUpdate) {
                 registerPaletteUpdate();
-                commandPalette(undefined, { useKey: true });
+                commandPalette();
             }
         }, paletteDelay);
     }

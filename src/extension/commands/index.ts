@@ -68,9 +68,13 @@ export async function defineCommands(context: vscode.ExtensionContext) {
             // a binding and we want to prevent this from trigger an actual command e.g.
             // `gg` goes to the top of the buffer but `gog` should do nothing. so we need to
             // reset the state when the user types o in this situation
+            doCommand.registerPaletteUpdate();
+            await doCommand.triggerCommandStartHooks();
             await withState(async (state) => {
                 return state.reset().resolve();
             });
+            await doCommand.triggerCommandCompleteHooks();
+
             return;
         }),
     );

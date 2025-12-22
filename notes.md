@@ -655,7 +655,7 @@ Integration test debugging:
             - [X] the config module for keybindings also probably needs to
                 update bindings in a second phase
             - [X] does the fix resolve these symptoms
-                - [ ] multi-key sequences often fail in this case (shows up in integration tests as well as my personal interactions)
+                - [X] multi-key sequences often fail in this case (shows up in integration tests as well as my personal interactions)
                     - this depends on handling multi-key bindings differently
                       prior to activation I think: they delay during activation
                       is going to be pretty hard to avoid. This is
@@ -665,7 +665,7 @@ Integration test debugging:
                     state is not entirely up and going until the extension is activated
                     - I've resolved the `code` issue, and eliminated this by refactoring
                       the code. Still have the multi-key sequence issue
-        - [ ] when the first binding changes the mode to `capture` we can't hit escape
+        - [X] when the first binding changes the mode to `capture` we can't hit escape
               to cancel the command
             - NOTE: turns out its a little more complicated. What happens when pressing
               `space t`, for instance, is that both "space" and "t" bindings trigger,
@@ -682,10 +682,24 @@ Integration test debugging:
                 - have non-activated bindings (check mode is not set) that
                   include the full key sequence; these would have to copy
                   over any commands defined during a master-key.prefix call
-            - [ ] fix bug: we need to know what prefix was *intended* when
+            - [X] fix bug: we need to know what prefix was *intended* when
                   running the given command, so we need to copy the prefix
                   specified in the binding to an argument of `master-key.do`
                   so we can compare that to the current value of PREFIX_CODE
+        - [X] pasting with `space shift+p` fails, I think because the suggestion
+              palette has captured focus. We want to clear the palette as soon as
+              a binding is run rather than later on in the call to `doCommandCmds`.
+              We probably want something like `triggerCommandStartedHooks`
+              (or maybe we just need to move `registerPaletteUpdate`)
+        - [X] locking keys while something runs is actually annoying,
+              because some commands take a while to run (Enter to run julia
+              via the extension)
+        - [X] palette's "binding mode" ins't working with the latest version of
+              VSCode
+            - [X] replace with tree view (it's more reliable and probably a better UX)
+            - [ ] update the integration tests (should be simpler now)
+        - [ ] refactor locking code; it's similar and messy across the
+              three binding commands (do, ignore and prefix)
     - [X] install latest version on my pet
     - [ ] wait a day or two: see if anything comes up now that we've installed
           the latest versions
@@ -710,6 +724,9 @@ Integration test debugging:
 Follow-up:
 - [ ] generate literat docs for each preset within the documentation website
 - [ ] organize priorities before release 1.0
+- [ ] improve key suggestions
+    - [ ] use section headers (and their level) to create tree for the key suggestions
+    - [ ] and command to search and filter the key suggestions
 - [ ] rename from Master Key to Key Atlas (keep the same extension name, to avoid
     confusion, but do make a new git repository)
     - [ ] I should wait until I'm ready for a larger audience before renaming

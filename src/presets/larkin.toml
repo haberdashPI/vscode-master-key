@@ -116,7 +116,7 @@ show command suggestions within the context of the current mode and keybinding p
 (if any). E.g. `TAB, ⇧;` in `normal` mode will show all `normal` command suggestions that
 start with `TAB`.
 """
-command = "master-key.commandSuggestions"
+command = "master-key.toggleSuggestions"
 
 [[bind]]
 key = "tab /"
