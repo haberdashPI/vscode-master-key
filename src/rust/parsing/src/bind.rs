@@ -114,13 +114,13 @@ pub struct BindingInput {
     /// @forBindingField bind
     ///
     /// - `priority`: The ordering of the keybinding relative to others; determines which
-    ///   bindings take precedence. Higher priorities take precedence over lower priorities.
+    ///   bindings trigger. Higher priorities trigger over lower priorities.
     ///   Defaults to 0.
     pub priority: Option<Spanned<TypedValue<f64>>>,
     /// @forBindingField bind
     ///
     /// - `default`: the default values to use for fields, specified as
-    ///    string of the form <span v-pre>`{{bind.[name]}}`</span>.
+    ///    a string of the form <span v-pre>`{{bind.[name]}}`</span>.
     ///    See [`define`](/bindings/define) for more details.
     pub default: Option<Spanned<BindingReference>>,
     /// @forBindingField bind
@@ -133,9 +133,9 @@ pub struct BindingInput {
     /// @forBindingField bind
     ///
     /// - `prefixes`: expresses the allowed key sequences that occur *before* this
-    /// keybinding. These sequences should be define elsewhere with a
-    /// [`master-key.prefix`](/commands/prefix) command. This is an object with one of three
-    /// possible keys:
+    /// keybinding. Explicit sequences specified here should be define elsewhere with a
+    /// [`master-key.prefix`](/commands/prefix) command or they will raise an error.
+    /// The value is an object with only one of the following three keys:
     ///   - `any`: when `true` any prefix defined elsewhere in the file is allowed before
     ///   the binding, `false` means no sequence can occur prior to this binding (this is
     ///   the default behavior).
@@ -146,11 +146,11 @@ pub struct BindingInput {
 
     /// @forBindingField bind
     ///
-    /// - `finalKey`: (boolean, default=true unless `master-key.prefix` is a command)
-    ///   Whether this key should clear any transient state associated with the pending
-    ///   keybinding prefix. See [`master-key.prefix`](/commands/prefix) for details. When
-    ///   `master-key.prefix` is one of the commands in this binding, this field defaults to
-    ///   `false`.
+    /// - `finalKey`: (boolean, default=true unless `master-key.prefix` is one of the
+    ///   commands run by this binding) Whether this key should clear any transient state
+    ///   associated with the pending keybinding prefix. See
+    ///   [`master-key.prefix`](/commands/prefix) for details. When `master-key.prefix` is
+    ///   one of the commands in this binding, this field defaults to `false`.
     pub finalKey: Option<Spanned<TypedValue<bool>>>,
 
     /// @forBindingField bind
@@ -190,7 +190,7 @@ pub struct BindingInput {
 ///
 /// - Find commands you want to use from the command palette, and click on the gear symbol
 ///   (`⚙︎`) to copy the command string to your clipboard
-/// - Review the [list of built-in commands](https://code.visualstudio.com/api/references/commands/index)
+/// - Review the [list of built-in commands](https://code.visualstudio.com/api/references/commands)
 /// - Run the command `Preferences: Open Default Keyboard Shortcuts (JSON)` to get a list of
 ///   built-in commands and extension commands already associated with a keybinding
 ///

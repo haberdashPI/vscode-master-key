@@ -351,10 +351,10 @@ const setFlagArgs = z.
  * or an error occurs.
  *
  * **Arguments**:
- * - `name`: String denoting the name of this flag
+ * - `name`: The name of the variable
  * - `value`: any valid json value
  * - `transient`: (default = `false`) whether the variable will reset to its original
- *    value in the `[[define.val]]` block it was created in after the current key
+ *    value---as defined by`[[define.val]]`---after the current key
  *    sequence is complete. See [`master-key.prefix`](/commands/prefix) for more details.
  */
 async function setValue(args_: unknown): Promise<CommandResult> {

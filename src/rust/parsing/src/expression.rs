@@ -27,8 +27,8 @@ use crate::{
 /// # Expressions
 ///
 /// You can use expressions in a number of places inside a [bind](/bindings/bind)
-/// definition. An expression is a snippet of code surrounded by double curly braces
-/// <code v-pre>{{like + this}}</code> that occurs within a TOML string.
+/// definition. An expression is a snippet of code surrounded by double curly braces <code
+/// v-pre>{{like + this}}</code> that occurs within a TOML string.
 ///
 /// When the string is comprised entirely of a single expression, it can evaluate to any
 /// valid TOML object.
@@ -63,11 +63,16 @@ use crate::{
 /// ```
 ///
 /// Valid expressions are a simple derivative of
-/// [Rhai](https://rhai.rs/book/ref/index.html). You can only evaluate expressions not
-/// statements, you cannot set variables, use loops or use named functions. If you find
-/// yourself wanting to write a more elaborate expression, your goal is probably better
-/// accomplished by writing an [extension](https://code.visualstudio.com/api) and running
-/// the extension defined-command.
+/// [Rhai](https://rhai.rs/book/ref/index.html). The constraints are:
+///   1. You can only evaluate expressions not statements
+///   2. You cannot set variables
+///   3. You cannot use loops
+///   4. You cannot define named functions
+///
+/// If you find yourself wanting to write more than a few relatively simple lines, your goal
+/// is probably better accomplished by writing an
+/// [extension](https://code.visualstudio.com/api) and running the extension-defined
+/// command.
 ///
 /// There are two points at which an expression can be evaluated: while parsing the master
 /// keybinding file (e.g. making use of [foreach](/bindings/bind#foreach-clauses)) or at
@@ -75,14 +80,14 @@ use crate::{
 ///
 /// ## Read-time Evaluation
 ///
-/// Read-time expressions are computed directly after a keybinding file (and any user
-/// defined bindings) have been loaded. The following values are in scope:
+/// Read-time expressions are computed directly after a keybinding file have been loaded.
+/// The following values are in scope:
 ///
 /// - Any field defined in a [`[[define.val]]`](/bindings/define) section. These variables
 ///   are all stored under the top-level `val.` object.
 /// - Variables defined by [`foreach`](/bindings/bind#foreach-clauses)
-/// - `keys([regex]):` returns all keys matching the regular expression defined by the given
-///   string
+/// - `keys([regex]):` returns all valid keys (as per `key` in `keybindings.json`) matching
+///   the regular expression
 /// - `all_modes()`: returns an array of strings of all keybinding modes defined by the
 ///   current keybinding set. It does not include the automatically defined mode
 ///   `"capture"`, since it is rarely advised to define bindings for this mode, which should
@@ -95,8 +100,11 @@ use crate::{
 /// ## Run-time Evaluation
 ///
 /// Fields for which expressions are evaluated at run time are clearly denoted as such with
-/// a ⚡ symbol. The are computed directly after a user presses the given keybinding. They
-/// have access to the following values:
+/// a ⚡ symbol. They are computed after a user presses the given keybinding. When there are
+/// multiple commands run for a keybinding (via `runCommands`) the expressions for a given
+/// command are evaluated after all previous commands have executed.
+///
+/// Run-time expressions have access to the following values:
 ///
 /// - any value available at read-time (see above)
 /// - `code.editorHasSelection`: true if there is any selection, false otherwise
@@ -120,10 +128,10 @@ use crate::{
 ///
 /// ## Debugging
 ///
-/// You can use the function `show` to print out a message in VSCode's output
-/// pane. It accepts to arguments: a string to print and a value. The value is printed
-/// and it is also returned as the result of show. This allows you to insert
-/// show wherever you want within an expression.
+/// You can use the function `show` to print out a message in VSCode's output pane. It
+/// accepts two arguments: a string to print and a value. The value is printed after the
+/// string and it is also returned as the result of show. This allows you to insert show
+/// wherever you want within an expression.
 ///
 /// ```toml
 /// [[bind]]

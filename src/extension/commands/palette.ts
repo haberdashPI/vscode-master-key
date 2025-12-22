@@ -189,8 +189,8 @@ export async function defineCommands(context: vscode.ExtensionContext) {
      * @userCommand commandSuggestions
      * @name Key Suggestions...
      *
-     * Display a list of possible key presses that follow after the current prefix of
-     * keys that have been pressed so far.
+     * Display a list of possible key presses which follow from the current prefix of
+     * keys pressed so far.
      */
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.commandSuggestions', commandPalette),
@@ -200,8 +200,8 @@ export async function defineCommands(context: vscode.ExtensionContext) {
      * @userCommand toggleSuggestions
      * @name Toggle Key Suggestions
      *
-     * Display or hide a list of possible key presses that follow after the current prefix
-     * of keys that have been pressed so far.
+     * Display or hide a list of possible key presses which follow from the current prefix
+     * of keys pressed so far.
      */
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.toggleSuggestions', async () => {

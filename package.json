@@ -43,16 +43,6 @@
                 "title": "Activate Keybindings"
             },
             {
-                "command": "master-key.activateUserBindings",
-                "category": "Master Key",
-                "title": "Activate User Keybindings"
-            },
-            {
-                "command": "master-key.deactivateUserBindings",
-                "category": "Master Key",
-                "title": "Deactivate User Keybindings"
-            },
-            {
                 "command": "master-key.commandSuggestions",
                 "category": "Master Key",
                 "title": "Key Suggestions..."
@@ -95,7 +85,7 @@
             {
                 "command": "master-key.editPreset",
                 "category": "Master Key",
-                "title": "Edit Preset Copy"
+                "title": "New Keybinding Copy"
             },
             {
                 "command": "master-key.importUserBindings",

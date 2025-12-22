@@ -698,13 +698,16 @@ Integration test debugging:
               VSCode
             - [X] replace with tree view (it's more reliable and probably a better UX)
             - [X] update the integration tests (should be simpler now)
-        - [ ] refactor locking code; it's similar and messy across the
+        - [X] refactor locking code; it's similar and messy across the
               three binding commands (do, ignore and prefix)
+        - [ ] update the image of the suggestion palette
+        - [ ] delete `keybindingPaletteOpen` and related context variables (they are no
+          longer needed)
     - [X] install latest version on my pet
-    - [ ] wait a day or two: see if anything comes up now that we've installed
-          the latest versions
-    - [ ] merge PR; don't release a new version yet
-    - [ ] TODO: decorators aren't working
+    - [ ] wait a day or two: if this adds items under misc. cleanup, keep waiting
+    - [ ] verify that an older setup will cause the extension to flag an error
+    - [ ] merge PR
+    - [ ] release new version on both extension stores
     - [ ] CI
         - [x] setup CI unit tests for rust
         - [x] setup rust coverage
@@ -722,8 +725,9 @@ Integration test debugging:
             - [X] improve flakey tests (or skip some???)
 
 Follow-up:
-- [ ] generate literat docs for each preset within the documentation website
-- [ ] organize priorities before release 1.0
+- [ ] generate literate docs for each preset within the documentation website
+- [ ] release 0.4
+- [ ] organize additional priorities before release 1.0 (including the below follow-ups)
 - [ ] improve key suggestions
     - [ ] use section headers (and their level) to create tree for the key suggestions
     - [ ] and command to search and filter the key suggestions
@@ -735,10 +739,13 @@ Follow-up:
     convinced the generic tool is really useful)
 - [ ] make some features more discoverable
     - create "tour" section for vscode's start window
-    - add a button to edit a binding from the activate binding menu
+    - add a button to edit a copy of a binding file from the activate binding menu
         - make sure editing is prominently in the documentation for Larkin
           (and an future binding files)
         - make sure it is prominently in the getting started section
+- [ ] implement binding feature `source` which adds an existing predefined
+      binding set to the current binding set. (this will replace the user
+      binding features)
 - [ ] make a command that activates the current file directly
 - [ ] profile mater-key.do performance
     - [ ] define separate bindings for multi-keys when there is no mode defined
@@ -746,23 +753,20 @@ Follow-up:
         - we loose the ability to show a pop-up menu (for the first keybinding only)
         - but we avoid errors in the execution of the very first binding
         - not clear this is the right trade off yet 🤔
-
-5. Review documentation
-6. Release version 0.4
-7. Migration of selection utilities to the same build and test setup
-8. Translate selection utility tests to new build setup
-9. Get CI working for all tests in selection utilities
-10. continue the quest for better test coverage if necessary
-
-Quick wins not addressed above:
-- visual documentation improvements
-    - the visual documentation could show a hint about the command
+- [ ] visual documentation improvements
+    - [ ] the visual documentation could show a hint about the command
     to toggle between binding modifiers (and show the default key binding)
-    - currently keybindings are sorted from highest to lowest frequency
+    - [ ] currently keybindings are sorted from highest to lowest frequency
     modifiers across all modes. This should really be a feature per mode,
     so that the most relevant bindings for a given mode are visible
     immediately.
-    - visual documentation could highlighlt the most recently pressed
+    - [ ] visual documentation could highlighlt the most recently pressed
     key in the same way that status bar shows the most recently pressed binding
-- insert accepts a count: replicating vim's behavior
+- [ ] insert accepts a count: replicating vim's behavior
     - [ ] this probably needs to be per mode configurable
+
+- [ ] update extension utilities
+    - [ ] TODO: decorators aren't working
+    - [ ] migrate to the same build and test setup
+    - [ ] get tests working again
+    - [ ] get CI working

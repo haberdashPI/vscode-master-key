@@ -676,30 +676,6 @@ export async function defineCommands(context: vscode.ExtensionContext) {
         ),
     );
     /**
-     * @userCommand activateUserBindings
-     * @name Activate User Keybindings
-     *
-     * Select a set of user specified bindings, to append to your master key bindings
-     */
-    // TODO: re-implement
-    // context.subscriptions.push(
-    //     vscode.commands.registerCommand(
-    //         'master-key.activateUserBindings',
-    //         activateUserBindings),
-    // );
-    /**
-     * @userCommand removeUserBindings
-     * @name Deactivate User Keybindings
-     *
-     * Remove user specified bindings from your master key bindings
-     */
-    // TODO: reimplement
-    // context.subscriptions.push(
-    //     vscode.commands.registerCommand(
-    //         'master-key.deactivateUserBindings',
-    //         deactivateUserBindings),
-    // );
-    /**
      * @userCommand editPreset
      * @name New Keybinding Copy
      *

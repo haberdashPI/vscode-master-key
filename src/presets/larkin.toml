@@ -1654,7 +1654,7 @@ args.commands = ["cursorRight", "editor.action.clipboardPasteAction"]
 [[bind]]
 default = "{{bind.edit_action}}"
 key = "ctrl+p"
-when = "!suggestWidgetVisible"
+when = "!suggestWidgetVisible && !inQuickInput"
 mode = ["normal", "insert"]
 doc.name = "paste in"
 doc.combined.name = "paste before/after/in"
