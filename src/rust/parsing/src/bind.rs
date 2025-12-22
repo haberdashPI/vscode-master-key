@@ -218,10 +218,6 @@ pub struct BindingInput {
 ///   recording
 /// - `master-key.val.[name]`: the current value of a [defined
 ///   variable](/bindings/define#variable-definitions).
-/// - `master-key.keybindingPaletteBindingMode`: true when the suggestion palette accepts
-///   keybinding key presses, false when it accepts a string to search the descriptions of
-///   said keybindings
-/// - `master-key.keybindingPaletteOpen`: true when the suggestion palette is open
 ///
 
 impl BindingInput {
@@ -782,13 +778,11 @@ pub struct Binding {
     pub(crate) implicit: bool,
 }
 
-pub const TEXT_FOCUS_CONDITION: &str = "(editorTextFocus || master-key.keybindingPaletteOpen \
-                 && master-key.keybindingPaletteBindingMode)";
+pub const TEXT_FOCUS_CONDITION: &str = "(editorTextFocus && !suggestionWidgetVisible)";
 
 lazy_static! {
     static ref WHITESPACE: Regex = Regex::new(r"\s+").unwrap();
     static ref KEY_WITH_MODIFIER: Regex = Regex::new(r"(?i)Ctrl|Alt|Cmd|Win|Meta").unwrap();
-    static ref EDITOR_TEXT_FOCUS: Regex = Regex::new(r"\beditorTextFocus\b").unwrap();
 }
 
 impl Binding {
@@ -889,24 +883,10 @@ impl Binding {
         }
 
         // require that bare keybindings (those without a modifier key)
-        // be specific to `textEditorFocus` / `keybindingPaletteOpen` context
+        // be specific to `textEditorFocus`
         let key_string: String = resolve!(input, key, scope)?;
         let key: Vec<_> = WHITESPACE.split(&key_string).map(String::from).collect();
         let mut when: Option<String> = resolve!(input, when, scope)?;
-
-        // replace bare text focus conditions with the TEXT_FOCUS_CONDITION
-        // this adds additional flags to ensure that the palette for command suggestions
-        // behaviors properly
-        when = if let Some(w) = when {
-            let result = Some(
-                EDITOR_TEXT_FOCUS
-                    .replace_all(&w, TEXT_FOCUS_CONDITION)
-                    .to_string(),
-            );
-            result
-        } else {
-            Option::None
-        };
 
         // add text focus if the binding doesn't have a modifier, we cannot expect reliable
         // behavior outside of a editor window for such binding
