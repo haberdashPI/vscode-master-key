@@ -67,3 +67,7 @@ export async function activate(_context: vscode.ExtensionContext) {
     await onSet(PREFIX, updateKeyStatus);
     await onSet(COUNT, updateKeyStatus);
 }
+
+export async function defineCommands(_context: vscode.ExtensionContext) {
+    return;
+}
