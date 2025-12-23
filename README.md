@@ -68,7 +68,7 @@ The easiest way to get started is to activate the built-in keybindings that come
 
 <!-- STOP_DOCS -->
 
-You can start creating your own bindings based off an available preset using `Master Key: Edit Preset Copy`: this will open a TOML file and insert the preset bindings into the file.
+You can start creating your own bindings based off an available preset using `Master key: New Keybinding Copy`: this will open a TOML file and insert the preset bindings into the file.
 
 You can revert back to the state before master keybindings was installed using `Master Key: Deactivate Keybindings`.
 
