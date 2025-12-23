@@ -161,8 +161,21 @@ sources = ['README.md', 'src/extension/**/*.ts', 'src/rust/**/*.rs', 'src/docs/*
 outputs = ['docs/**/*.md']
 run = ['simple-src-docs -d docs src README.md', 'cp src/docs/index.md docs/']
 
+[tasks.extract-preset-docs]
+depends = ['build-rust']
+sources = ['../../presets/**/*.toml']
+outputs = ['../../../docs/presets/*.md']
+dir = 'src/rust/parsing/'
+shell = 'nu -c'
+run = '''
+mkdir -v ../../../docs/presets
+ls ../../presets/**/*.toml | each { |file|
+    cargo run -- $file.name ../../../docs/presets/$"($file.name | path parse | get stem).md"
+}
+'''
+
 [tasks.dev-docs]
-depends = ['extract-docs']
+depends = ['extract-docs', 'extract-preset-docs']
 run = 'pnpm exec vitepress dev docs'
 
 [tasks.build-docs]
