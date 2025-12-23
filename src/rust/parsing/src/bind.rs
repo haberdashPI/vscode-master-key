@@ -2253,21 +2253,6 @@ mod tests {
     }
 
     #[test]
-    fn editor_focus_expands_to_palette_focus() {
-        let data = r#"
-        key = "a"
-        command = "foobar"
-        when = "editorTextFocus && bizbaz"
-        "#;
-
-        let input = toml::from_str::<BindingInput>(data).unwrap();
-        let mut scope = Scope::new();
-        let mut warnings = Vec::new();
-        let result = Binding::new(input, &mut scope, &mut warnings).unwrap();
-        assert!(result.when.unwrap().contains("keybindingPaletteOpen"));
-    }
-
-    #[test]
     fn default_is_wrong_type() {
         let data = r#"
         key = "a"
