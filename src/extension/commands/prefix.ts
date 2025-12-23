@@ -1,23 +1,35 @@
 import * as vscode from 'vscode';
 import z from 'zod';
 import {
-    CURSOR_SHAPES,
-    CursorShape,
+    STRING_TO_CURSOR,
     updateCursorAppearance,
     validateInput,
 } from '../utils';
-import { recordedCommand, CommandState, CommandResult, withState, onSet } from '../state';
-import { PrefixCodes } from '../keybindings/processing';
+import { recordedCommand, CommandResult, withState, onSet } from '../state';
 import { restoreModesCursorState } from './mode';
+import {
+    commandMutex,
+    registerPaletteUpdate,
+    showPaletteOnDelay,
+    triggerCommandCompleteHooks,
+} from './do';
 
 const prefixArgs = z.
     object({
-        code: z.number(),
-        flag: z.string().min(1).endsWith('_on').optional(),
-        cursor: z.enum(CURSOR_SHAPES).optional(),
-        // `automated` is used during keybinding preprocessing and is not normally used
-        // otherwise
-        automated: z.boolean().optional(),
+        key_id: z.number().optional(),
+        old_prefix_id: z.number().optional(),
+        mode: z.string(),
+        prefix_id: z.number(),
+        fromDo: z.boolean().default(true),
+        key: z.string(),
+        cursor: z.enum([
+            'Line',
+            'Block',
+            'Underline',
+            'LineThin',
+            'BlockOutline',
+            'UnderlineThin',
+        ]).optional(),
     }).
     strict();
 
@@ -26,31 +38,14 @@ export const PREFIX_CODES = 'prefixCodes';
 export const PREFIX = 'prefix';
 const PREFIX_CURSOR = 'prefixCursor';
 
-// HOLD ON!! this feels broken — really when the prefix codes get LOADED
-// we should translate them into the proper type of object
-// (and this would keep us from having this weird async api within `withState`)
-export function prefixCodes(state: CommandState): [CommandState, PrefixCodes] {
-    const prefixCodes_ = state.get(PREFIX_CODES);
-    let prefixCodes: PrefixCodes;
-    if (!prefixCodes_) {
-        prefixCodes = new PrefixCodes();
-        state = state.set(PREFIX_CODES, prefixCodes);
-    } else if (!(prefixCodes_ instanceof PrefixCodes)) {
-        prefixCodes = new PrefixCodes(<Record<string, number>>prefixCodes_);
-        state = state.set(PREFIX_CODES, prefixCodes);
-    } else {
-        prefixCodes = prefixCodes_;
-    }
-    return [state, prefixCodes];
-}
-
 /**
  * @command prefix
  * @order 131
  *
  * This command is used to implement multi-key sequence bindings in master key. It causes
- * the current key press to be appended to a variable storing the pending key sequence. It
- * can also be used explicitly within a binding file for a few purposes:
+ * the current key press to be appended to the variable `key.prefix`. This prefix shows up
+ * in the status bar in vscode. It can also be used explicitly within a binding file for a
+ * few purposes:
  *
  * - provide helpful documentation for a given key prefix.
  * - define a command that has several possible follow-up key presses (such as operators in
@@ -58,10 +53,14 @@ export function prefixCodes(state: CommandState): [CommandState, PrefixCodes] {
  * - execute commands in addition to updating the prefix (via `runCommands`)
  *
  * **Arguments**
- * - `flag`: If present, transiently sets the given flag to true. See also
- *   [`setFlag`](/commands/setFlag)
  * - `cursor`: Transiently change the cursor shape until the last key in a multi-key
- *   sequence is pressed
+ *   sequence is pressed. Valid values are:
+ *    - 'Line',
+ *    - 'Block',
+ *    - 'Underline',
+ *    - 'LineThin',
+ *    - 'BlockOutline',
+ *    - 'UnderlineThin',
  *
  * ## Example
  *
@@ -79,7 +78,7 @@ export function prefixCodes(state: CommandState): [CommandState, PrefixCodes] {
  * ```
  *
  * These prefixes may be explicitly specified in this way so they can be documented. When
- * users do not provide an explicit prefix, Master key explicitly creates these bindings by
+ * users do not provide an explicit prefix, Master key implicitly creates these bindings by
  * itself, but without documentation. As such, all of the bindings written in a
  * `keybinding.json` file have just a single key press, with some conditioned on the
  * specific prefix that must occur beforehand. This is so that master key can explicitly
@@ -87,7 +86,7 @@ export function prefixCodes(state: CommandState): [CommandState, PrefixCodes] {
  *
  * ## Prefix Format
  *
- * The prefix state is stored under `prefix` (when evaluating an
+ * The prefix state is stored under `key.prefix` (when evaluating an
  * [expression](/expressions/index)) and under `master-key.prefix` in a `when` clause
  * (though it should rarely be necessary to access the prefix explicitly in a `when`
  * clause). It is stored as a space delimited sequence of keybindings in the same form that
@@ -98,8 +97,8 @@ export function prefixCodes(state: CommandState): [CommandState, PrefixCodes] {
  *
  * A binding that includes a `prefix` command has `finalKey` set to `false`. Whereas,
  * without a `prefix` command present, the default is `true`. When `finalKey` is `false`
- * master key not reset any previously set transient state (e.g. from previous calls to
- * `prefix` or transient [`setFlag`](/commands/setFlag)). When `finalKey` is `true` any
+ * master key does not reset any previously set transient state (e.g. from previous calls to
+ * `prefix` or transient [`setValue`](/commands/setValue)). When `finalKey` is `true` any
  * transient state is returned to a default, unset state.
  *
  * In most circumstances you do not want to set `finalKey` to false *without* using
@@ -111,61 +110,73 @@ export function prefixCodes(state: CommandState): [CommandState, PrefixCodes] {
  * ```toml
  * [[bind]]
  * key = "shift+;"
- * name = "suggest"
+ * doc.name = "suggest"
  * finalKey = false
- * hideInPalette = true
- * prefixes = "{{all_prefixes}}"
- * mode = ["!capture", "!insert"]
- * description = """
+ * doc.hideInPalette = true
+ * prefixes.any = true
+ * mode = '{{not_modes(["insert"])}}'
+ * doc.description = """
  * show command suggestions within the context of the current mode and keybinding prefix
  * (if any). E.g. `TAB, ⇧;` in `normal` mode will show all `normal` command suggestions
  * that start with `TAB`.
  * """
- * command = "master-key.commandSuggestions"
+ * command = "master-key.toggleSuggestions"
  * ```
  *
  * A few things are going on here:
  *
- * 1. The binding applies regardless of the current prefix (`prefixes =
- *    "&#123;&#123;all_prefixes&#125;&#125;").
+ * 1. The binding applies regardless of the current prefix (`prefixes.any = true`).
  * 2. This calls a command that lists possible keys that can be pressed given the current
- *    prefix (`command = "master-key.commandSuggestions"`). `master-key.prefix` is not
+ *    prefix (`command = "master-key.toggleSuggestions"`). `master-key.prefix` is not
  *    called, so the press of `shift+;` will not update to the current sequence of keys that
- *    have been pressed. (It's "invisible")
+ *    have been pressed. It's "invisible" as far as the sequence of a multi-key binding is
+ *    concerned.
  * 3. The binding does not reset the prefixes state since `finalKey = false`, so master key
  *    will continue to wait for additional key presses that can occur for the given
  *    keybinding prefix.
  *
- * In this way the user can ask for help regarding which keys they can press next.
+ * In this way the user can ask for help regarding which keys they can press next, without
+ * resetting the state.
  */
 
 let oldPrefixCursor: boolean = false;
 async function prefix(args_: unknown): Promise<CommandResult> {
+    registerPaletteUpdate();
     const args = validateInput('master-key.prefix', args_, prefixArgs);
-    if (args !== undefined) {
-        const a = args;
-        await withState(async (state) => {
-            return state.withMutations((state) => {
-                let codes;
-                [state, codes] = prefixCodes(state);
-                const prefix = codes.nameFor(a.code);
-                state.set(PREFIX_CODE, { transient: { reset: 0 }, public: true }, a.code);
-                state.set(PREFIX, { transient: { reset: '' }, public: true }, prefix);
 
-                if (a.flag) {
-                    state.set(a.flag, { transient: { reset: false }, public: true }, true);
-                }
-                if (a.cursor) {
-                    const cursorShape = <CursorShape>a.cursor;
-                    state.set(PREFIX_CURSOR, { transient: { reset: false } }, true);
-                    oldPrefixCursor = true;
-                    updateCursorAppearance(vscode.window.activeTextEditor, cursorShape);
-                }
+    if (args !== undefined) {
+        const release = !args.fromDo ? await commandMutex.acquire() : undefined;
+        try {
+            const a = args;
+            await withState(async (state) => {
+                return state.withMutations((state) => {
+                    const prefix = a.key;
+                    state.set(
+                        PREFIX_CODE,
+                        { transient: { reset: 0 }, public: true },
+                        a.prefix_id,
+                    );
+                    state.set(PREFIX, { transient: { reset: '' }, public: true }, prefix);
+
+                    if (a.cursor) {
+                        const cursorShape = STRING_TO_CURSOR[a.cursor];
+                        state.set(PREFIX_CURSOR, { transient: { reset: false } }, true);
+                        oldPrefixCursor = true;
+                        updateCursorAppearance(vscode.window.activeTextEditor, cursorShape);
+                    }
+
+                    state.resolve();
+                });
             });
-        });
-        return args;
+            showPaletteOnDelay();
+            await triggerCommandCompleteHooks();
+            return args;
+        } finally {
+            if (release) {
+                release();
+            }
+        }
     }
-    return args;
 }
 
 export async function keySuffix(key: string) {
@@ -178,18 +189,20 @@ export async function keySuffix(key: string) {
     });
 }
 
-export async function activate(context: vscode.ExtensionContext) {
+export async function activate(_context: vscode.ExtensionContext) {
     await withState(async (state) => {
         return state.set(PREFIX_CODE, { public: true }, 0).resolve();
     });
-    context.subscriptions.push(
-        vscode.commands.registerCommand('master-key.prefix', recordedCommand(prefix)),
-    );
-
     await onSet(PREFIX_CURSOR, (state) => {
         if (!state.get(PREFIX_CURSOR, false) && oldPrefixCursor) {
             restoreModesCursorState();
         }
         return true;
     });
+}
+
+export async function defineCommands(context: vscode.ExtensionContext) {
+    context.subscriptions.push(
+        vscode.commands.registerCommand('master-key.prefix', recordedCommand(prefix)),
+    );
 }

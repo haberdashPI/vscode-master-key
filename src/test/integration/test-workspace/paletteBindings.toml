@@ -1,0 +1,80 @@
+#:master-keybindings
+
+[header]
+version = "2.0.0"
+
+[[mode]]
+name = "insert"
+default = true
+whenNoBinding = "insertCharacters"
+
+[[mode]]
+name = "normal"
+
+[[bind]]
+doc.name = "normal mode"
+key = "escape"
+command = "master-key.enterNormal"
+prefixes.any = true
+doc.hideInPalette = true
+
+[[define.bind]]
+id = "motion"
+command = "cursorMove"
+mode = "normal"
+args.value = "{{key.count}}"
+
+[[bind]]
+default = "{{bind.motion}}"
+doc.name = "left"
+doc.combined.name = "left/right"
+doc.combined.key = "h/l"
+key = "h"
+args.to = "left"
+
+[[bind]]
+default = "{{bind.motion}}"
+doc.name = "right"
+doc.combined.name = "left/right"
+key = "l"
+args.to = "right"
+
+[[bind]]
+default = "{{bind.motion}}"
+doc.name = "down"
+key = "j"
+args.to = "down"
+
+[[bind]]
+default = "{{bind.motion}}"
+doc.name = "up"
+key = "k"
+args.to = "up"
+
+[[bind]]
+doc.name = "insert mode"
+key = "i"
+command = "master-key.enterInsert"
+mode = "normal"
+
+[[bind]]
+doc.name = "show palette"
+key = "shift+;"
+finalKey = false
+doc.hideInPalette = true
+prefixes.any = true
+mode = "normal"
+command = "master-key.commandSuggestions"
+
+[[bind]]
+default = "{{bind.motion}}"
+doc.name = "funny right"
+key = "w w"
+mode = "normal"
+args.to = "right"
+
+[[bind]]
+doc.name = "toggle palette"
+key = "p"
+mode = "normal"
+command = "master-key.togglePaletteDelay"

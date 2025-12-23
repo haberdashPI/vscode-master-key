@@ -3,13 +3,14 @@ import * as capture from './capture';
 import * as count from './count';
 import * as doCommand from './do';
 import * as mode from './mode';
-import * as namedStore from './namedStore';
+// TODO: reimplement
+import * as storeCommand from './storeCommand';
 import * as replay from './replay';
 import * as search from './search';
 import * as prefix from './prefix';
+import { withState } from '../state';
 import * as palette from './palette';
 import * as visualKeyDoc from './visualKeyDoc';
-import * as textKeyDoc from './textDocs';
 
 /**
  * @file commands/index.md
@@ -27,13 +28,25 @@ export async function activate(context: vscode.ExtensionContext) {
     await count.activate(context);
     await doCommand.activate(context);
     await mode.activate(context);
-    await namedStore.activate(context);
+    await storeCommand.activate(context);
     await replay.activate(context);
     await search.activate(context);
     await prefix.activate(context);
     await palette.activate(context);
     await visualKeyDoc.activate(context);
-    await textKeyDoc.activate(context);
+}
+
+export async function defineCommands(context: vscode.ExtensionContext) {
+    await capture.defineCommands(context);
+    await count.defineCommands(context);
+    await doCommand.defineCommands(context);
+    await mode.defineCommands(context);
+    await storeCommand.defineCommands(context);
+    await replay.defineCommands(context);
+    await search.defineCommands(context);
+    await prefix.defineCommands(context);
+    await palette.defineCommands(context);
+    await visualKeyDoc.defineCommands(context);
 
     /**
      * @command ignore
@@ -41,33 +54,27 @@ export async function activate(context: vscode.ExtensionContext) {
      *
      * This command is used in a binding file to signal that the given keypress should do
      * nothing. This is useful for key presses that would otherwise cause some other action
-     * to occur (e.g. type keys).
-     *
-     * ## Example
-     *
-     * Master key ensures that when in a command-related mode (e.g. `normal`) key presses to
-     * letters do not cause keys to be typed.
-     *
-     * ```toml
-     * #- in "command" like modes (e.g. normal), typing keys without a command defined
-     * #- below should have no effect
-     * [[bind]]
-     * defaults = "modes"
-     * name = "ignore"
-     * description = "this key does nothing"
-     * #- all keys whose bindings are described by a single character
-     * foreach.key = ['{{key: .}}', 'shift+{{key: .}}']
-     * key = "{{key}}"
-     * command = "master-key.ignore"
-     * prefixes = "{{all_prefixes}}"
-     * mode = ["normal", "selectedit"]
-     * when = "editorTextFocus"
-     * hideInDocs = true
-     * hideInPalette = true
-     * priority = -10
-     * ```
+     * to occur (e.g. insert characters in a file). **However**, it is often more effective
+     * to use a `[[mode]]` section's `whenNoBinding = 'ignoreCharacters'`
+     * [setting](/bindings/mode), instead of an explicit call of `master-key.ignore`.
      */
     context.subscriptions.push(
-        vscode.commands.registerCommand('master-key.ignore', () => undefined),
+        vscode.commands.registerCommand('master-key.ignore', async () => {
+            // NOTE: the actual command master-key.ignore is not actually called inside of
+            // `master-key.do`: that command detects ignore commands and skips them. Thus
+            // the only time this function is run is when `mater-key.ignore` is called
+            // *directly*, outside of `master-key.do`. In this situation, we want to reset
+            // any transient state as the user has hit some key that doesn't actually define
+            // a binding and we want to prevent this from trigger an actual command e.g.
+            // `gg` goes to the top of the buffer but `gog` should do nothing. so we need to
+            // reset the state when the user types o in this situation
+            doCommand.registerPaletteUpdate();
+            await withState(async (state) => {
+                return state.reset().resolve();
+            });
+            await doCommand.triggerCommandCompleteHooks();
+
+            return;
+        }),
     );
 }

@@ -1,15 +1,17 @@
 import * as vscode from 'vscode';
 import * as assert from 'assert';
 
-export async function editorWithText(body: string) {
-    await vscode.commands.executeCommand('explorer.newFile');
+export async function editorWithText(
+    body: string,
+    language: string = '',
+): Promise<[vscode.TextEditor, vscode.Uri]> {
+    const document = await vscode.workspace.openTextDocument({
+        content: body,
+        language,
+    });
+    const editor = await vscode.window.showTextDocument(document);
 
-    const editor_ = vscode.window.activeTextEditor;
-    assert.notEqual(editor_, undefined);
-    const editor = editor_!;
-
-    await editor.edit(e => e.insert(new vscode.Position(0, 0), body));
-    return editor;
+    return [editor, document.uri];
 }
 
 export function cursorToStart(editor: vscode.TextEditor) {
@@ -29,8 +31,10 @@ export async function assertCursorMovesBy(
     body: (x: void) => Promise<void>,
 ) {
     const start = editor.selection.active;
+    // console.log('DEBUG start: ' + JSON.stringify(start, null, 4));
     await body();
     const end = editor.selection.active;
+    // console.log('DEBUG end: ' + JSON.stringify(end, null, 4));
     const expectedEnd = new vscode.Position(
         start.line + by.line,
         start.character + by.character,
