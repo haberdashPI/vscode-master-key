@@ -700,8 +700,8 @@ Integration test debugging:
             - [X] update the integration tests (should be simpler now)
         - [X] refactor locking code; it's similar and messy across the
               three binding commands (do, ignore and prefix)
-        - [ ] update the image of the suggestion palette
-        - [ ] delete `keybindingPaletteOpen` and related context variables (they are no
+        - [X] update the image of the suggestion palette
+        - [X] delete `keybindingPaletteOpen` and related context variables (they are no
           longer needed)
     - [X] install latest version on my pet
     - [X] wait a day or two: if this adds items under misc. cleanup, keep waiting
@@ -725,9 +725,25 @@ Integration test debugging:
             - [X] improve flakey tests (or skip some???)
 
 Follow-up:
-- [ ] generate literate docs for each preset within the documentation website
+- [X] generate literate docs for each preset within the documentation website
 - [ ] release 0.4
 - [ ] organize additional priorities before release 1.0 (including the below follow-ups)
+- [X] make a command that activates the current file directly
+- [ ] make some features more discoverable
+    - [x] create "tour" section for vscode's start window
+    - add a button to edit a copy of a binding file from the activate binding menu
+        - make sure editing is prominently in the documentation for Larkin
+          (and an future binding files)
+        - make sure it is prominently in the getting started section
+- [ ] visual documentation improvements
+    - [X] the visual documentation could show a hint about the command
+    to toggle between binding modifiers (and show the default key binding)
+    - [X] currently keybindings are sorted from highest to lowest frequency
+    modifiers across all modes. This should really be a feature per mode,
+    so that the most relevant bindings for a given mode are visible
+    immediately.
+    - [ ] visual documentation could highlight the most recently pressed
+    key in the same way that status bar shows the most recently pressed binding
 - [ ] improve key suggestions
     - [ ] use section headers (and their level) to create tree for the key suggestions
     - [ ] and command to search and filter the key suggestions
@@ -737,31 +753,15 @@ Follow-up:
     - [ ] rename references of Master key in Selection Utilities
 - [ ] reimplement storeNamed? (or make it more specific to macros; I'm not
     convinced the generic tool is really useful)
-- [ ] make some features more discoverable
-    - create "tour" section for vscode's start window
-    - add a button to edit a copy of a binding file from the activate binding menu
-        - make sure editing is prominently in the documentation for Larkin
-          (and an future binding files)
-        - make sure it is prominently in the getting started section
 - [ ] implement binding feature `source` which adds an existing predefined
       binding set to the current binding set. (this will replace the user
       binding features)
-- [ ] make a command that activates the current file directly
 - [ ] profile mater-key.do performance
     - [ ] define separate bindings for multi-keys when there is no mode defined
         - these bindings are for the entire sequence, not each key separately
         - we loose the ability to show a pop-up menu (for the first keybinding only)
         - but we avoid errors in the execution of the very first binding
         - not clear this is the right trade off yet 🤔
-- [ ] visual documentation improvements
-    - [ ] the visual documentation could show a hint about the command
-    to toggle between binding modifiers (and show the default key binding)
-    - [ ] currently keybindings are sorted from highest to lowest frequency
-    modifiers across all modes. This should really be a feature per mode,
-    so that the most relevant bindings for a given mode are visible
-    immediately.
-    - [ ] visual documentation could highlighlt the most recently pressed
-    key in the same way that status bar shows the most recently pressed binding
 - [ ] insert accepts a count: replicating vim's behavior
     - [ ] this probably needs to be per mode configurable
 

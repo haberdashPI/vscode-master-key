@@ -409,6 +409,10 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
         /* eslint-disable @stylistic/max-len */
         const keys = `
         <div id="master-key-visual-doc" class="container">
+            <p>To see additional bindings use the command \`Mater Key: Toggle Visual
+                Doc Modifier by frequency\` (default keybinding
+                ctrl/cmd+k ctrl/cmd+shift+m)</p>
+
             <div class="keyboard">
                 ${keyRows(['⇧'], ['']).
                     map(row => `

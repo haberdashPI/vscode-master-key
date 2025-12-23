@@ -26,8 +26,13 @@ export default defineConfig({
         sidebar: [
             { text: 'Home', link: '/' },
             { text: 'User Guide', link: '/guide' },
+            { text: 'Bindings',
+                items: [
+                    { text: 'Larkin', link: '/presets/larkin' },
+                ]
+            },
             {
-                text: 'Keybindings',
+                text: 'Binding Configuration',
                 items: [
                     { text: 'Overview', link: '/bindings' },
                     ...bindingItems,

@@ -30,7 +30,14 @@ toml_datetime = "0.7.2"
 semver = { version = "1.0.27", features = ["serde"] }
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "rlib"]
+name = "parsing"
+path = "src/lib.rs"
+
+[[bin]]
+name = "process-preset"
+path = "src/main.rs"
+
 
 [target.'cfg(target_arch="wasm")'.dependencies]
 rhai = { version = "1.22.2", features = ["wasm-bindgen"] }
