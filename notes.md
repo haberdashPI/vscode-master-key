@@ -704,8 +704,8 @@ Integration test debugging:
         - [X] delete `keybindingPaletteOpen` and related context variables (they are no
           longer needed)
     - [X] install latest version on my pet
-    - [ ] wait a day or two: if this adds items under misc. cleanup, keep waiting
-    - [ ] verify that an older setup will cause the extension to flag an error
+    - [X] wait a day or two: if this adds items under misc. cleanup, keep waiting
+    - [X] verify that an older setup will cause the extension to flag an error
     - [ ] merge PR
     - [ ] release new version on both extension stores
     - [ ] CI
@@ -728,7 +728,7 @@ Follow-up:
 - [X] generate literate docs for each preset within the documentation website
 - [ ] release 0.4
 - [ ] organize additional priorities before release 1.0 (including the below follow-ups)
-- [ ] make a command that activates the current file directly
+- [X] make a command that activates the current file directly
 - [ ] make some features more discoverable
     - create "tour" section for vscode's start window
     - add a button to edit a copy of a binding file from the activate binding menu
