@@ -12,9 +12,9 @@ const updateCountArgs = z.object({ value: z.coerce.number() }).strict();
  * @order 103
  *
  * Updates the count. If already set, adds a new digit to the count. This shows up in the
- * status bar in front of any keybinding It can be accessed in when clauses using
- * `master-key.count` and in [expressions](/expressions/index) using `count`. Typically one
- * should set `finalKey` to false when using `updateCount`, as the count is only set
+ * status bar in front of any keybinding. It can be accessed in when clauses using
+ * `master-key.count` and in [expressions](/expressions/index) using `key.count`. Typically
+ * one should set `finalKey` to false when using `updateCount`, as the count is only set
  * transiently; see [`master-key.prefix`](/commands/prefix) for details.
  *
  * **Arguments**
@@ -59,12 +59,15 @@ async function updateCount(args_: unknown): Promise<CommandResult> {
     return;
 }
 
-export async function activate(context: vscode.ExtensionContext) {
+export async function activate(_context: vscode.ExtensionContext) {
+    await withState(async state => state.set(COUNT, { public: true }, 0).resolve());
+}
+
+export async function defineCommands(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand(
             'master-key.updateCount',
             recordedCommand(updateCount),
         ),
     );
-    await withState(async state => state.set(COUNT, { public: true }, 0).resolve());
 }

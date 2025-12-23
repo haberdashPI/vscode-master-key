@@ -3,7 +3,7 @@ import { Page } from '@playwright/test';
 
 export async function openFile(page: Page, file: string) {
     await page.getByRole('main').press('ControlOrMeta+P');
-    const openInput = await page.getByRole(
+    const openInput = page.getByRole(
         'textbox',
         { name: 'Search files by name (append' },
     );
@@ -27,6 +27,8 @@ export async function runCommand(page: Page, command: string) {
 export async function activateKeybindings(page: Page, file: string) {
     // open binding file
     await openFile(page, file);
+
+    await runCommand(page, 'Master Key: Toggle automatic display of quick-pick');
 
     // load current file as a keybinding
     await runCommand(page, 'Master Key: Activate Keybindings');

@@ -1,10 +1,11 @@
 import * as vscode from 'vscode';
 import z from 'zod';
 import { validateInput, wrappedTranslate } from '../utils';
-import { withState, CommandResult, recordedCommand, onSet } from '../state';
-import { MODE, defaultMode } from './mode';
+import { withState, CommandResult, recordedCommand } from '../state';
+import { MODE } from './mode';
 import { captureKeys } from './capture';
-import { COMMAND_HISTORY } from './do';
+import { bindings } from '../keybindings/config';
+import { onCommandComplete } from './do';
 
 /**
  * @command search
@@ -423,7 +424,7 @@ function skipTo(state: SearchState, editor: vscode.TextEditor) {
     }
 }
 
-function searchDecorationCheck() {
+export function searchDecorationCheck() {
     const editor = vscode.window.activeTextEditor;
     if (editor) {
         const searchState = getOldSearchState(editor, currentSearch);
@@ -452,7 +453,7 @@ async function search(args_: unknown[]): Promise<CommandResult> {
 
     let mode = '';
     await withState(async (state) => {
-        mode = state.get(MODE, defaultMode)!;
+        mode = state.get(MODE, bindings.default_mode())!;
         return state;
     });
     const state = getSearchState(editor, mode, currentSearch);
@@ -580,7 +581,7 @@ async function nextMatch(
     }
     let mode = '';
     await withState(async (state) => {
-        mode = state.get(MODE, defaultMode)!;
+        mode = state.get(MODE, bindings.default_mode())!;
         return state;
     });
     const state = getSearchState(editor, mode, args!.register);
@@ -617,7 +618,7 @@ async function previousMatch(
     }
     let mode = '';
     await withState(async (state) => {
-        mode = state.get(MODE, defaultMode)!;
+        mode = state.get(MODE, bindings.default_mode())!;
         return state;
     });
     const state = getSearchState(editor, mode, args!.register);
@@ -632,7 +633,17 @@ async function previousMatch(
     return;
 }
 
-export async function activate(context: vscode.ExtensionContext) {
+export async function activate(_context: vscode.ExtensionContext) {
+    updateSearchHighlights();
+    vscode.workspace.onDidChangeConfiguration(updateSearchHighlights);
+
+    onCommandComplete(async () => {
+        searchDecorationCheck();
+        return true;
+    });
+}
+
+export async function defineCommands(context: vscode.ExtensionContext) {
     // NOTE: `search` must be registered as a normal command, so that its result is returned
     // we need it when call `executeCommand` in `doCommand`.
     context.subscriptions.push(
@@ -656,8 +667,4 @@ export async function activate(context: vscode.ExtensionContext) {
             clearSearchDecorations,
         ),
     );
-    updateSearchHighlights();
-    vscode.workspace.onDidChangeConfiguration(updateSearchHighlights);
-
-    await onSet(COMMAND_HISTORY, _ => searchDecorationCheck());
 }

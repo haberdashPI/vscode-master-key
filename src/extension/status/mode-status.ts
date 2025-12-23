@@ -1,29 +1,28 @@
 import * as vscode from 'vscode';
 import { CommandState, onResolve, withState } from '../state';
 import { RECORD } from '../commands/replay';
-import { MODE, modeSpecs } from '../commands/mode';
+import { MODE } from '../commands/mode';
 import { Map } from 'immutable';
 import { onChangeBindings } from '../keybindings/config';
-import { ModeSpec } from '../keybindings/parsing';
-import { Bindings } from '../keybindings/processing';
+import { bindings } from '../keybindings/config';
+import { ModeHighlight } from '../../rust/parsing/lib/parsing';
 
 function updateModeStatusHelper(
     state: Map<string, unknown> | CommandState,
-    modeSpecs: Record<string, ModeSpec>,
 ) {
     if (modeStatusBar) {
         const mode = <string>state.get(MODE);
-        const highlight = modeSpecs[mode] ? modeSpecs[mode].highlight : 'NoHighlight';
+        const highlight = bindings.mode(mode)?.highlight || 'NoHighlight';
         const rec = state.get<boolean>(RECORD, false);
         modeStatusBar.text = (rec ? 'rec: ' : '') + mode;
         modeStatusBar.accessibilityInformation = {
             label: 'Keybinding Mode: ' + modeStatusBar.text,
         };
-        if (state.get<boolean>(RECORD, false) || highlight === 'Alert') {
+        if (state.get<boolean>(RECORD, false) || highlight === ModeHighlight.Alert) {
             modeStatusBar.backgroundColor = new vscode.ThemeColor(
                 'statusBarItem.errorBackground',
             );
-        } else if (highlight === 'Highlight') {
+        } else if (highlight === ModeHighlight.Highlight) {
             modeStatusBar.backgroundColor = new vscode.ThemeColor(
                 'statusBarItem.warningBackground',
             );
@@ -34,14 +33,13 @@ function updateModeStatusHelper(
 }
 
 function updateModeStatus(state: Map<string, unknown> | CommandState) {
-    updateModeStatusHelper(state, modeSpecs);
+    updateModeStatusHelper(state);
     return true;
 }
 
-async function updateModeStatusConfig(bindings: Bindings | undefined) {
-    const modeSpecs = bindings?.mode || {};
+async function updateModeStatusConfig() {
     await withState(async (state) => {
-        updateModeStatusHelper(state, modeSpecs);
+        updateModeStatusHelper(state);
         return state;
     });
 }
@@ -62,4 +60,8 @@ export async function activate(_context: vscode.ExtensionContext) {
     });
     await onResolve('modeStatus', updateModeStatus);
     await onChangeBindings(updateModeStatusConfig);
+}
+
+export async function defineCommands(_context: vscode.ExtensionContext) {
+    return;
 }

@@ -1,0 +1,68 @@
+[[tools."cargo:cargo-binutils"]]
+version = "0.3.6"
+backend = "cargo:cargo-binutils"
+
+[[tools."cargo:nu"]]
+version = "0.109.1"
+backend = "cargo:nu"
+
+[[tools."cargo:rustfilt"]]
+version = "0.2.1"
+backend = "cargo:rustfilt"
+
+[[tools."cargo:wasm-pack"]]
+version = "0.13.1"
+backend = "cargo:wasm-pack"
+
+[[tools."github:taiki-e/cargo-llvm-cov"]]
+version = "0.6.21"
+backend = "github:taiki-e/cargo-llvm-cov"
+
+[[tools.node]]
+version = "20.19.5"
+backend = "core:node"
+
+[tools.node.platforms.macos-arm64]
+checksum = "sha256:cfed7503d8d99fbcf2f52e408ec52f616058eb0867b34dbc3437259993ef5cba"
+size = 41312337
+url = "https://nodejs.org/dist/v20.19.5/node-v20.19.5-darwin-arm64.tar.gz"
+
+[[tools."npm:c8"]]
+version = "10.1.3"
+backend = "npm:c8"
+
+[[tools."npm:http-server"]]
+version = "14.1.1"
+backend = "npm:http-server"
+
+[[tools."npm:lcov-summary"]]
+version = "1.0.1"
+backend = "npm:lcov-summary"
+
+[[tools."npm:pnpm"]]
+version = "10.13.1"
+backend = "npm:pnpm"
+
+[[tools."npm:typescript"]]
+version = "5.8.3"
+backend = "npm:typescript"
+
+[[tools."npm:vsce"]]
+version = "2.15.0"
+backend = "npm:vsce"
+
+[[tools.rust]]
+version = "1.90.0"
+backend = "core:rust"
+
+[[tools.rust]]
+version = "nightly"
+backend = "core:rust"
+
+[[tools."ubi:haberdashpi/simple-src-docs"]]
+version = "0.6.0"
+backend = "ubi:haberdashpi/simple-src-docs"
+
+[[tools.watchexec]]
+version = "2.3.2"
+backend = "aqua:watchexec/watchexec"
