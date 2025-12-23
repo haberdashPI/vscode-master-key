@@ -704,8 +704,8 @@ Integration test debugging:
         - [ ] delete `keybindingPaletteOpen` and related context variables (they are no
           longer needed)
     - [X] install latest version on my pet
-    - [ ] wait a day or two: if this adds items under misc. cleanup, keep waiting
-    - [ ] verify that an older setup will cause the extension to flag an error
+    - [X] wait a day or two: if this adds items under misc. cleanup, keep waiting
+    - [X] verify that an older setup will cause the extension to flag an error
     - [ ] merge PR
     - [ ] release new version on both extension stores
     - [ ] CI
