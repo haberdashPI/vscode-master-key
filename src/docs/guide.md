@@ -6,13 +6,13 @@
 
 There are two ways to start customizing bindings:
 
-- Review the built-in `Larkin` presets: run the command `Master Key: Edit Preset Copy` to start editing a copy of this preset. This is a toml file which has comments throughout.
+- Review the built-in `Larkin` presets: run the command `Master key: New Keybinding Copy` to start editing a copy of this preset. This is a toml file which has comments throughout.
 - Review the [binding file format](/bindings/index) and [command documentation](/commands/index), and start creating your own TOML file.
 
 The steps are:
 
 1. Create a new a toml file
-2. Optional: copy a preset into the file using `Master Key: Edit Preset Copy`
+2. Optional: copy a preset into the file using `Master key: New Keybinding Copy`
 3. Optional: import any existing user bindings, from `keyindings.json`, by calling `Master Key: Import User Keybindings` in this new toml file
 4. Add bindings, as per the [binding format](./bindings/) and [command documentation](./commands/).
 5. Activate the bindings with `Master Key: Activate Keybindings` at any time.

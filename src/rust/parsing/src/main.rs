@@ -1,10 +1,9 @@
 use std::env;
 use std::fs;
 
-// Replace 'your_project_name' with your actual library name
 use parsing::file::parse_keybinding_data;
 
-// NOTE: this isn't a user facing executive, so we are lazy about error handling
+// NOTE: this isn't a user facing executable, so we are lazy about error handling
 fn process_preset(path: &str) -> String {
     let data = std::fs::read(path).expect("file to exist");
     let result = parse_keybinding_data(&data);
