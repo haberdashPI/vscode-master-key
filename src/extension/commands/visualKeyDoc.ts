@@ -508,8 +508,8 @@ export async function defineCommands(context: vscode.ExtensionContext) {
      * @userCommand toggleVisualDocModifiers
      * @name Toggle Visual Doc Modifier by frequency
      *
-     * Cycle through the possible keybinding modifiers based on how frequently they are used
-     * in the current set of keybindings.
+     * In the visual documentation view, cycle through the possible keybinding modifiers
+     * based on how frequently they are used in the current set of keybindings.
      */
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.toggleVisualDocModifiers', _args =>

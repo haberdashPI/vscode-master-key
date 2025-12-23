@@ -42,11 +42,11 @@ pub struct DefineInput {
     /// each `[[define.val]]` element this way. These are then available in any
     /// [expressions](/expressions/index)
     /// evaluated at runtime and in [when clauses](/bindings/bind#available-when-contexts).
-    /// They can also be changes using [`setValue`](/commands/setValue)
+    /// They can also be changed using [`setValue`](/commands/setValue)
     ///
-    /// Expressions can occur within the values, and these will be evaluated at read-time.
-    /// No `val.` fields are in scope within these expressions (i.e. you cannot refer to
-    /// one `define.val` key within the expression of a second `define.val` key).
+    /// Expressions can occur within the values, and these will be evaluated at [read-time](/expressions/index#read-time-evaluation).
+    /// No `val.` fields are in scope within these expressions: you cannot refer to
+    /// one `define.val` key within the expression of a second `define.val` key.
     ///
     /// ### Example
     ///
@@ -148,7 +148,7 @@ pub struct DefineInput {
     ///
     /// Larkin makes extensive use of default keys for the simple cursor motions. The
     /// default command is always `cursorMove` and each motion changes what direction to
-    /// move using `args.value.
+    /// move using `args.value`.
     ///
     /// ```toml
     /// [[define.bind]]

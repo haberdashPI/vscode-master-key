@@ -43,8 +43,9 @@ const PREFIX_CURSOR = 'prefixCursor';
  * @order 131
  *
  * This command is used to implement multi-key sequence bindings in master key. It causes
- * the current key press to be appended to a variable storing the pending key sequence. It
- * can also be used explicitly within a binding file for a few purposes:
+ * the current key press to be appended to the variable `key.prefix`. This prefix shows up
+ * in the status bar in vscode. It can also be used explicitly within a binding file for a
+ * few purposes:
  *
  * - provide helpful documentation for a given key prefix.
  * - define a command that has several possible follow-up key presses (such as operators in
@@ -119,22 +120,23 @@ const PREFIX_CURSOR = 'prefixCursor';
  * (if any). E.g. `TAB, ⇧;` in `normal` mode will show all `normal` command suggestions
  * that start with `TAB`.
  * """
- * command = "master-key.commandSuggestions"
+ * command = "master-key.toggleSuggestions"
  * ```
  *
  * A few things are going on here:
  *
  * 1. The binding applies regardless of the current prefix (`prefixes.any = true`).
  * 2. This calls a command that lists possible keys that can be pressed given the current
- *    prefix (`command = "master-key.commandSuggestions"`). `master-key.prefix` is not
+ *    prefix (`command = "master-key.toggleSuggestions"`). `master-key.prefix` is not
  *    called, so the press of `shift+;` will not update to the current sequence of keys that
- *    have been pressed. (It's "invisible")
+ *    have been pressed. It's "invisible" as far as the sequence of a multi-key binding is
+ *    concerned.
  * 3. The binding does not reset the prefixes state since `finalKey = false`, so master key
  *    will continue to wait for additional key presses that can occur for the given
  *    keybinding prefix.
  *
- * In this way the user can ask for help regarding which keys they can press next,
- * without resetting the state.
+ * In this way the user can ask for help regarding which keys they can press next, without
+ * resetting the state.
  */
 
 let oldPrefixCursor: boolean = false;
