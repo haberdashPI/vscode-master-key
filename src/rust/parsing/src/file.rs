@@ -767,14 +767,21 @@ lazy_static! {
 #[wasm_bindgen]
 #[cfg_attr(coverage_nightly, coverage(off))]
 pub fn parse_keybinding_bytes(file_content: Box<[u8]>) -> KeyFileResult {
+    return parse_keybinding_data(&file_content);
+}
+
+pub fn parse_keybinding_data<T>(file_content: T) -> KeyFileResult
+where
+    T: AsRef<[u8]>,
+{
     let mut warnings = Vec::new();
     let mut scope = Scope::new();
-    let result = parse_bytes_helper(&file_content, &mut warnings, &mut scope);
+    let result = parse_bytes_helper(file_content.as_ref(), &mut warnings, &mut scope);
     return match result {
         Ok(result) => KeyFileResult {
             scope,
             file: Some(result),
-            errors: Some(ErrorSet::from(warnings).report(&file_content)),
+            errors: Some(ErrorSet::from(warnings).report(file_content.as_ref())),
         },
         Err(err) => KeyFileResult {
             scope,
@@ -786,13 +793,13 @@ pub fn parse_keybinding_bytes(file_content: Box<[u8]>) -> KeyFileResult {
                         .chain(warnings.into_iter())
                         .collect::<Vec<_>>(),
                 )
-                .report(&file_content),
+                .report(file_content.as_ref()),
             ),
         },
     };
 }
 
-fn parse_bytes_helper(
+pub fn parse_bytes_helper(
     file_content: &[u8],
     warnings: &mut Vec<ParseError>,
     scope: &mut Scope,

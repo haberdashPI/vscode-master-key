@@ -64,6 +64,7 @@ The easiest way to get started is to activate the built-in keybindings that come
 2. On windows only: restart VSCode — there is an [active investigation to avoid this workaround](https://github.com/haberdashPI/vscode-master-key/issues/51).
 3. Run the command `Master Key: Activate Keybindings`
 4. Select the built-in binding set "Larkin"
+5. Review [Larkin's documentation](https://haberdashpi.github.io/vscode-master-key/presets/larkin) (e.g. using `Master Key: Show Text Documentation`)
 
 <!-- STOP_DOCS -->
 
@@ -91,9 +92,9 @@ Review your bindings in a cheat sheet organized by theme:
 
 See a quick pick palette of possible bindings for the current mode and prefix of keys already pressed:
 
-![example of palette](images/readme/palette.png)
+<img src="images/readme/palette.png" width="400" alt="example of palette">
 
-The example above shows the bindings available after pressing `m` in the Larkin keybinding set that is included with Master Key.
+The example above shows some of the bindings available in normal mode.
 
 ## Editing Features
 
