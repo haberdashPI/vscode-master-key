@@ -64,10 +64,11 @@ The easiest way to get started is to activate the built-in keybindings that come
 2. On windows only: restart VSCode — there is an [active investigation to avoid this workaround](https://github.com/haberdashPI/vscode-master-key/issues/51).
 3. Run the command `Master Key: Activate Keybindings`
 4. Select the built-in binding set "Larkin"
+5. Review [Larkin's documentation](https://haberdashpi.github.io/vscode-master-key/presets/larkin) (e.g. using `Master Key: Show Text Documentation`)
 
 <!-- STOP_DOCS -->
 
-You can start creating your own bindings based off an available preset using `Master Key: Edit Preset Copy`: this will open a TOML file and insert the preset bindings into the file.
+You can start creating your own bindings based off an available preset using `Master key: New Keybinding Copy`: this will open a TOML file and insert the preset bindings into the file.
 
 You can revert back to the state before master keybindings was installed using `Master Key: Deactivate Keybindings`.
 

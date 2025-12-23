@@ -15,7 +15,7 @@ get ignored in the doc output.
 | ---- | --- | ---- | ----------- |
 | normal | <key>h/l</key> | left/right | move cursor left/right |
 | normal | <key>j</key> | down |  |
-| normal | <key>shift+i</key> | special insert mode |  |
+| normal | <key>shift\+i</key> | special insert mode |  |
 
 ## Second Section
 
