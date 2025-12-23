@@ -5,6 +5,9 @@ on:
             - main
         tags:
             - v[0-9]+.[0-9]+.[0-9]+*
+        paths:
+            - src/**
+
     pull_request:
         types: ['opened', 'edited', 'reopened', 'synchronize', 'ready_for_review']
 
@@ -20,31 +23,26 @@ jobs:
         - name: Checkout
           uses: actions/checkout@v4
         - name: Install Dev Environment
-          uses: jdx/mise-action@v2
+          uses: jdx/mise-action@v3
           with:
-            version: 2025.6.4
+            experimental: true # enables postinstall hooks
+            version: 2025.11.2
             install: true
             cache: true
-        - name: Prepare Cache
-          run: |
-            mkdir -p $(pnpm store path)
-            mkdir -p $HOME/Library/Caches
-            mkdir -p ${{ github.workspace }}/.vscode-test${{ matrix.environment }}
-            echo "PNPM_STORE_PATH=$(pnpm store path)" >> $GITHUB_ENV
-            echo "Created cachedir $HOME/Library/Caches"
-        - name: Cache
-          uses: actions/cache@v4
+        - name: Setup Node and Cache NPM
+          uses: actions/setup-node@v6
           with:
-            key: mise${{ matrix.environment }}-${{ hashFiles('{0}/vscode-master-key/mise.toml {0}/vscode-master-key/pnpm-lock.yaml', github.workspace) }}
-            path: |
-                ${{ github.workspace }}/.vscode-test${{ matrix.environment }}
-                ${{ env.PNPM_STORE_PATH }}
-                $HOME/Library/Caches
-        - name: Install Dependencies
-          run: pnpm install --frozen-lockfile && pnpm exec playwright install chromium
+            node-version: 20
+            cache: 'pnpm'
+        - name: Install node packages
+          run: |
+            pnpm install --frozen-lockfile
+            pnpm exec playwright install chromium
         - name: Unit Tests
           env: { COVERAGE: 'true' }
-          run: mise test${{ matrix.environment }}
+          run: |
+            mise test${{ matrix.environment }}
+            mise test-rust
         - name: Integration Tests
           if: matrix.environment == ''
           env: { COVERAGE: 'true' }

@@ -1,134 +1,97 @@
 import * as vscode from 'vscode';
 import z from 'zod';
 import { validateInput } from '../utils';
-import { EvalContext } from '../expressions';
 import { withState, CommandResult, recordedCommand } from '../state';
-import { doCommands, RecordedCommandArgs, RunCommandsArgs, COMMAND_HISTORY } from './do';
-import { uniq } from 'lodash';
-import { List } from 'immutable';
+import { bindings } from '../keybindings/config';
+import { documentIdentifiers } from './do';
+import { ReifiedBinding } from '../../rust/parsing/lib/parsing';
 
 const selectHistoryArgs = z.
     object({
-        whereComputedRangeIs: z.object({ from: z.string(), to: z.string() }).optional(),
-        whereComputedIndexIs: z.string().optional(),
-        value: z.object({}).passthrough().array().optional(),
+        range: z.object({ from: z.number(), to: z.number() }).optional(),
+        index: z.number().optional(),
+        value: z.unknown(), // always a ReifiedBinding[], but we bypass validation
         register: z.string().optional(),
     }).
     strict().
-    refine(x => x.whereComputedIndexIs || x.whereComputedRangeIs || x.value, {
+    refine(x =>
+        (x.index != undefined ? 1 : 0) +
+        (x.range != undefined ? 1 : 0) +
+        (x.value != undefined ? 1 : 0) == 1, {
         message:
-            'Either `whereComputedIndexIs`, `whereComputedRangeIs` or `value` is required.',
+            'Exactly one of `index`, `range` or `value` must be non null',
     });
 
-const evalContext = new EvalContext();
-
-async function evalMatcher(matcher: string, i: number) {
-    let result_;
-    await withState(async (state) => {
-        result_ = evalContext.evalStr(matcher, { ...state.values, index: i });
-        return state;
-    });
-    if (typeof result_ !== 'number') {
-        if (result_) {
-            return i;
-        } else {
-            return -1;
-        }
-    } else {
-        return result_;
-    }
-}
-
-async function selectHistoryCommand(cmd: string, args_: unknown) {
-    const args = validateInput(cmd, args_, selectHistoryArgs);
+function commandsFromHistory(command: string, args_: unknown) {
+    const args = validateInput(command, args_, selectHistoryArgs);
     if (args) {
-        let value: RecordedCommandArgs[] | undefined = undefined;
+        let value;
+        // extract this into a function for anything wanting to process `selectHistoryArgs`
         if (args.value) {
-            value = <RecordedCommandArgs[]>args.value;
+            value = <ReifiedBinding[]>args.value;
         } else {
-            // find the range of commands we want to replay
-            const state = await withState(async x => x);
-            if (!state) {
-                return;
+            let from;
+            let to;
+            if (args.index) {
+                from = args.index;
+                to = args.index;
+            } else {
+                from = args.range?.from;
+                to = args.range?.to;
             }
-            const history_ = state.get<List<RecordedCommandArgs>>(COMMAND_HISTORY, List())!;
-            const history = history_.toArray();
-            let from = -1;
-            let to = -1;
-            const toMatcher = args.whereComputedRangeIs?.to || args.whereComputedIndexIs;
-            const fromMatcher = args.whereComputedRangeIs?.from;
-            // TODO: the problem here is that we're treating history as an array but its a
-            // `immutablejs.List`. Don't really want to expose that to the user... also
-            // sounds expensive to convert to javascript array every time a repeat is
-            // performed
-            for (let i = history.length - 1; i >= 0; i--) {
-                // NOTE: remember that `selectHistoryArgs` cannot leave both `range` and
-                // `at` undefined, so at least one of `toMatcher` and `fromMatcher` are not
-                // undefined
-                if (to < 0 && toMatcher) {
-                    to = await evalMatcher(toMatcher, i);
-                    if (args.whereComputedIndexIs) {
-                        from = to;
-                    }
-                }
-                if (from < 0 && fromMatcher) {
-                    from = await evalMatcher(fromMatcher, i);
-                }
-                if (from > 0 && to > 0) {
-                    value = history.slice(from, to + 1);
-                    break;
-                }
-            }
+            // `!` is safe given XOR constraint for `selectHistoryArgs`
+            value = bindings.history_at(from!, to!);
         }
-        return value;
+        return { value, register: args.register };
     }
-    return undefined;
+    return;
 }
 
-function cleanupEdits(edits: vscode.TextDocumentChangeEvent[] | string) {
-    if (typeof edits === 'string') {
-        return edits;
-    } else {
-        let result = '';
-        for (const edit of edits) {
-            const strings = uniq(edit.contentChanges.map(x => x.text));
-            if (strings.length === 1) {
-                result += strings[0];
-            }
-        }
-        return result;
+function cleanupEdit(edit: vscode.TextDocumentChangeEvent) {
+    let result = '';
+    const strings = edit.contentChanges.map(x => x.text);
+    // NOTE: if there are multiple locations where edits happened, this implies we'd need to
+    // infer how insertion with a new set of text should "move the cursor" between edits
+    // "like before". It's not clear how to do this, in general, so these kind of edit
+    // events are simply ignored. Such non-trivial situations in the edit events are
+    // avoidable for many uses cases we intend to cover here. The way the multiple edit
+    // locations would arise would normally would be via calls to multiple commands that
+    // each run `master-key.do` for which we would not see these multiple edit locations in
+    // a single event recorded by the same command)
+    if (strings.length === 1) {
+        result += strings[0];
     }
+    return result;
 }
 
 const REPLAY_DELAY = 50;
 // TODO: does `commands` require the `RunCommandsArgs` type?
-async function runCommandHistory(
-    commands: (RunCommandsArgs | RecordedCommandArgs)[],
-): Promise<CommandResult> {
-    for (const cmd of commands) {
-        await doCommands(cmd);
-
-        if ((<RecordedCommandArgs>cmd).edits) {
-            const editor = vscode.window.activeTextEditor;
-            if (editor) {
-                const ed = editor;
-                const recorded = <RecordedCommandArgs>cmd;
-                const edits = cleanupEdits(recorded.edits);
-                recorded.edits = edits;
-                editor.edit((e) => {
-                    for (const sel of ed.selections) {
-                        e.insert(sel.anchor, edits);
-                    }
-                });
-            } else {
-                vscode.window.showErrorMessage(`Command includes edits to the active text
-                    editor, but there is currently no active editor.`);
+export async function runCommands(
+    macro: ReifiedBinding[],
+): Promise<void> {
+    for (const binding of macro) {
+        for (let i = 0; i < binding.repeat + 1; i++) {
+            for (const command of binding.commands) {
+                if (command.command !== 'master-key.ignore') {
+                    await vscode.commands.executeCommand(command.command, command.args);
+                }
+                const editor = vscode.window.activeTextEditor;
+                const edits = binding.edit_text;
+                if (edits && editor) {
+                    const ed = editor;
+                    editor.edit((e) => {
+                        for (const sel of ed.selections) {
+                            e.insert(sel.anchor, edits);
+                        }
+                    });
+                } else if (edits) {
+                    vscode.window.showErrorMessage(`Command includes edits to the
+                        active text editor, but there is currently no active editor.`);
+                }
             }
         }
-        // replaying actions too fast messes up selection
         await new Promise(res => setTimeout(res, REPLAY_DELAY));
     }
-    return;
 }
 
 /**
@@ -136,70 +99,102 @@ async function runCommandHistory(
  * @section Recording and Replaying Commands
  * @order 150
  *
- * Replay previously typed master keybindings.
+ * Replay both previously run commands via master keybindings as well simple textual edits
+ * to a buffer.
  *
- * > [!NOTE] Master key has no knowledge of commands or keybindings that were not run from a
- * > keybinding defined in a master keybinding file. This is because the command history is
- * > implemented by pushing each command called with [`master-key.do`](/commands/do) to an
- * > array. Commands that *only* call `master-key.prefix` are not recorded, since they do
- * > not need to be replayed to reproduce the ultimate effect of a keybinding.
+ * > [!WARNING] Recording Limitations
+ * > API limitations mean this command cannot replay
+ * > everything. Master key has no knowledge of commands or keybindings outside of master
+ * > key. This is because `replay` uses a history of commands updated when calling into
+ * > commands like [`master-key.do`](/commands/do). Furthermore while Master Key records
+ * > text edits for modes where `whenNoBinding = 'insertCharacters'` these textual edits are
+ * > limited. A maximum number of characters are stored between each call to a master-key
+ * > command (determined by the setting `Text History Maximum`) and only simple insertion of
+ * > text is handled. Given the limits of the VSCode API for observing edits, this will mis
+ * > some automated insertions such as code completion and automated parentheses insertion.
+ * > Also note that any edits that occur *before* the extension is activated are not
+ * > recorded.
  *
- * All commands are recorded, up until the the history limit (defined by the `Command
- * History Maximum`). When selecting command history to replay, you use one or more
- * [`expressions`](/expressions/index) An expression is evaluated at each valid
- * `index` of `commandHistory`. Evaluation occurs from most recent command (largest index)
- * to least recent command (smallest indx), selecting the first index where the expression
- * evaluates to a truthy value. The structure of each command in `commandHistory` is exactly
- * the format used to represent the commands in a master keybinding file.
+ * Excluding the aforementioned limitations, both commands and textual edits are recorded,
+ * up until the the history limit (defined by the `Command History Maximum`). When selecting
+ * command history to replay, you use one or more [`expressions`](/expressions/index).
  *
  * **Arguments**
  *
  * There are two ways the history can be selected:
  *
- * - `whereComputedRangeIs.from`: an expression specifying the first command to push to the
- *   stack
- * - `whereComputedRangeIs.to`: an expression specifying the last command to push to the
- *   stack
+ * - `range.from`: an expression specifying the index of the first command in the history
+ * - `range.to`: an expression specifying the index of the last command in the history
  *
  * OR
  *
- * - `whereComputedIndexIs`: an expression specifying the single command to push to the
- *   stack
+ * - `index`: an expression specifying a single index from the command history
+ *
+ * ## Expression evaluation for History
+ *
+ * Expressions have access to a variable called `history` which is an indexable container of
+ * previously run commands. On this container you can
+ *
+ * - call `history.len()` to get the number of available commands
+ * - index values via `history[0]`; values range from 0 to `history.len()-1` and indexing
+ *   outside this range returns a null value. The most recently run commands are at the
+ *   largest indices.
+ * - use `last_history_index()` to call a predicate function for each index from
+ *   `history.len()-1` to `0` and return the first index that is found to be true for this
+ *   predicate.
+ *
+ * Each element of this history contains the following properties
+ *
+ * - `commands`: an array of objects containing all `command` fields, excluding `args`
+ *   which is not accessible
+ * - `mode`: the mode the command was executed from
+ * - `repeat`: the number of times the command was repeated
+ * - `tags`: the tags defined by the `[[bind]]` entry
+ * - `doc`: all documentation fields as defined in `[[bind]]`
  *
  * ## Example
  *
- * As an example, here's how Larkin runs the most recently run action.
+ * As an example, here's how Larkin runs the most recent action.
  *
  * ```toml
  * [[bind]]
- * defaults = "edit.action.history"
- * name = "repeat action"
+ * default = "{{bind.edit_action_history}}"
+ * doc.name = "repeat action"
+ * doc.description = """
+ * Repeat the last action command. Actions usually modify the text of a document in one
+ * way or another. (But, e.g. sending text to the REPL is also considered an editor action).
+ * See also `,` which repeats the last "subject" of an action (the selection preceding an
+ * action).
+ * """
  * key = "."
  * command = "runCommands"
- * computedRepeat = "count"
+ * repeat = "{{key.count}}"
  *
  * [[bind.args.commands]]
  * command = "master-key.replayFromHistory"
- * args.whereComputedIndexIs = """
- * commandHistory[index].defaults.startsWith('edit.action') &&
- * (!commandHistory[index].defaults.startsWith('edit.action.history') ||
- *  commandHistory[index].name == 'replay')
- * """
+ * #- we can repeat any action but history-related actions; we make an exception for
+ * #- replaying macros, which *can* be repeated
+ * args.index = """{{
+ * last_history_index(|x|
+ *     x.tags.contains("action") &&
+ *     !(x.tags.contains("history") && !x.docs.name == "replay")
+ * }}"""
  *
  * [[bind.args.commands]]
  * command = "master-key.enterNormal"
  * ```
  *
- * The key argument of relevance here is the expression defined in
- * `args.whereComputedIndexIs` where we select the most recent command that is an
- * `edit.action`, excluding those actions that are used to replay actions themselves.
+ * The key argument of relevance here is the expression defined in `args.index` where we
+ * select the most recent command that has the tag `"action"`, excluding those actions that
+ * are related to manipulating the history of commands.
  */
-async function replayFromHistory(args: unknown): Promise<CommandResult> {
-    const commands = await selectHistoryCommand('master-key.replayFromHistory', args);
+async function replayFromHistory(args_: unknown): Promise<CommandResult> {
+    const result = commandsFromHistory('master-key.replayFromHistory', args_);
+    const commands = result?.value;
     if (commands) {
-        await runCommandHistory(commands);
-        return { ...(<object>args), value: commands };
+        await runCommands(commands);
     }
+    // return commands;
     return;
 }
 
@@ -209,26 +204,20 @@ async function replayFromHistory(args: unknown): Promise<CommandResult> {
  *
  * Store a set of previously typed keybindings defined by master key to a stack. Refer to
  * [`replayFromHistory`](/commands/replayFromHistory) for details on how to use the
- * `whenComputedRange` and `whenComputedIndex` arguments.
+ * `range` and `index` arguments.
  *
  * **Arguments**
- * - `whenComputedRange.from`: an expression specifying the first command to push to the
+ * - `range.from`: an expression specifying the first command to push to the
  *   stack
- * - `whenComputedRange.to`: an expression specifying the last command to push to the stack
- * - `whenComputedIndex`: an expression specifying the single command to push to the stack
- * - `register`: (defaults to "") the specific, named stack where commands will be stored.
+ * - `range.to`: an expression specifying the last command to push to the stack
+ * - `index`: an expression specifying the single command to push to the stack
  */
 async function pushHistoryToStack(args: unknown): Promise<CommandResult> {
-    const commands = await selectHistoryCommand('master-key.pushHistoryToStack', args);
+    const value = commandsFromHistory('master-key.pushHistoryToStack', args);
+    const commands = value?.value;
     if (commands) {
-        const cs = commands;
-        await withState(async (state) => {
-            return state.update<List<RecordedCommandArgs[]>>(
-                MACRO,
-                { notSetValue: List() },
-                macro => macro.push(cs),
-            );
-        });
+        bindings.push_macro(commands);
+        return commands;
     }
     return;
 }
@@ -237,10 +226,9 @@ async function pushHistoryToStack(args: unknown): Promise<CommandResult> {
  * @command replayFromStack
  * @order 150
  *
- * Reply a command stored on the given stack.
+ * Reply a command stored on the stack.
  *
  * **Arguments**
- * - `register`: (defaults "") the named stack to replay from
  * - `index`: (defaults to 0) the position on the stack to replay from, with 0 being the
  *   most recently added item to the stack.
  *
@@ -250,24 +238,18 @@ async function pushHistoryToStack(args: unknown): Promise<CommandResult> {
 const replayFromStackArgs = z.
     object({
         index: z.number().min(0).optional().default(0),
-        register: z.string().optional(),
     }).
     strict();
 
 async function replayFromStack(args_: unknown): Promise<CommandResult> {
     const args = validateInput('master-key.replayFromStack', args_, replayFromStackArgs);
     if (args) {
-        const state = await withState(async s => s);
-        if (!state) {
-            return;
-        }
-        const macros = state.get<List<RecordedCommandArgs[]>>(MACRO, List())!;
-        const commands = macros.last();
+        const commands = bindings.get_macro(args.index);
         if (commands) {
-            await runCommandHistory(commands);
+            await runCommands(commands);
         }
     }
-    return;
+    return args;
 }
 
 export const RECORD = 'record';
@@ -322,8 +304,8 @@ const recordArgs = z.
  *
  * [[bind.args.commands]]
  * command = "master-key.pushHistoryToStack"
- * args.whereComputedRangeIs.from = 'commandHistory[index-1].name === "record"'
- * args.whereComputedRangeIs.to = "index"
+ * args.range.from = '{{last_history_index(|i| history[i-1]?.doc?.name == "record")}}'
+ * args.range.to = '{{history.len()-1}}'
  * ```
  */
 async function record(args_: unknown): Promise<CommandResult> {
@@ -337,8 +319,32 @@ async function record(args_: unknown): Promise<CommandResult> {
     return;
 }
 
-const MACRO = 'macro';
-export function activate(context: vscode.ExtensionContext) {
+let maxTextHistory = 1024;
+function updateConfig(event?: vscode.ConfigurationChangeEvent) {
+    if (!event || event?.affectsConfiguration('master-key')) {
+        const config = vscode.workspace.getConfiguration('master-key');
+        let configMaxHistory = config.get<number>('maxTextHistory');
+        if (configMaxHistory === undefined) {
+            configMaxHistory = 1024;
+        } else {
+            maxTextHistory = configMaxHistory;
+        }
+    }
+}
+
+export async function activate(_context: vscode.ExtensionContext) {
+    updateConfig();
+    vscode.workspace.onDidChangeConfiguration(updateConfig);
+
+    vscode.workspace.onDidChangeTextDocument(async (e) => {
+        const id = documentIdentifiers.get(e.document.uri);
+        if (id && bindings.is_recording_edits_for(id, maxTextHistory)) {
+            bindings.store_edit(cleanupEdit(e), maxTextHistory);
+        }
+    });
+}
+
+export async function defineCommands(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand(
             'master-key.pushHistoryToStack',
@@ -363,26 +369,4 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.record', recordedCommand(record)),
     );
-
-    vscode.workspace.onDidChangeTextDocument(async (e) => {
-        await withState(async (state) => {
-            // TODO: handle the empty history case
-            const opts = { notSetValue: List<object>() };
-            return state.update<List<object>>(COMMAND_HISTORY, opts, (history) => {
-                const len = history.count();
-
-                return history.update(len - 1, (lastCommand_) => {
-                    const lastCommand = <RecordedCommandArgs>lastCommand_;
-                    if (
-                        lastCommand &&
-                        typeof lastCommand.edits !== 'string' &&
-                        lastCommand.recordEdits === e.document
-                    ) {
-                        lastCommand.edits = lastCommand.edits.concat(e);
-                    }
-                    return lastCommand;
-                });
-            });
-        });
-    });
 }
