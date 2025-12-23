@@ -700,8 +700,8 @@ Integration test debugging:
             - [X] update the integration tests (should be simpler now)
         - [X] refactor locking code; it's similar and messy across the
               three binding commands (do, ignore and prefix)
-        - [X] update the image of the suggestion palette
-        - [X] delete `keybindingPaletteOpen` and related context variables (they are no
+        - [ ] update the image of the suggestion palette
+        - [ ] delete `keybindingPaletteOpen` and related context variables (they are no
           longer needed)
     - [X] install latest version on my pet
     - [X] wait a day or two: if this adds items under misc. cleanup, keep waiting

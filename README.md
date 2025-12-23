@@ -92,9 +92,9 @@ Review your bindings in a cheat sheet organized by theme:
 
 See a quick pick palette of possible bindings for the current mode and prefix of keys already pressed:
 
-<img src="images/readme/palette.png" width="400" alt="example of palette">
+![example of palette](images/readme/palette.png)
 
-The example above shows some of the bindings available in normal mode.
+The example above shows the bindings available after pressing `m` in the Larkin keybinding set that is included with Master Key.
 
 ## Editing Features
 
