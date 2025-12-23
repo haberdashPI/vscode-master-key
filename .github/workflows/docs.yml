@@ -31,12 +31,12 @@ jobs:
         with:
           fetch-depth: 0 # Not needed if lastUpdated is not enabled
       - name: Install Dev Environment
-        uses: jdx/mise-action@v2
+        uses: jdx/mise-action@v3
         with:
-          version: 2025.6.4
+          experimental: true # enables postinstall hooks
+          version: 2025.11.2
           install: true
           cache: true
-          experimental: true
       - name: Setup Pages
         uses: actions/configure-pages@v4
       - name: Build with VitePress
