@@ -68,11 +68,6 @@
                 "title": "Toggle Visual Doc Modifier by frequency"
             },
             {
-                "command": "master-key.togglePaletteMode",
-                "category": "Master Key",
-                "title": "Toggle palette input mode"
-            },
-            {
                 "command": "master-key.deactivateBindings",
                 "category": "Master Key",
                 "title": "Deactivate Master Keybindings"
@@ -142,11 +137,6 @@
             {
                 "key": "ctrl+shift+;",
                 "command": "master-key.toggleSuggestions"
-            },
-            {
-                "key": "ctrl+.",
-                "when": "master-key.keybindingPaletteOpen",
-                "command": "master-key.togglePaletteMode"
             }
         ],
         "configuration": {
