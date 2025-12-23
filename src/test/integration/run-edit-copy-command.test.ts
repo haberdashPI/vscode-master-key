@@ -7,7 +7,7 @@ import { runCommand } from './utils';
 // that problem
 test.describe('edit preset command', () => {
     test('creates a file', async ({ workbox }) => {
-        await runCommand(workbox, 'Master Key: Edit Preset Copy');
+        await runCommand(workbox, 'Master key: New Keybinding Copy');
         const input = workbox.getByRole(
             'textbox',
             { name: 'Type to narrow down results.' },
