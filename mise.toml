@@ -181,7 +181,7 @@ run = 'pnpm exec vitepress dev docs'
 [tasks.build-docs]
 sources = ['docs/**/*.md']
 outputs = ['docs/.vitepress/dist/**/*']
-depends = ['extract-docs']
+depends = ['extract-docs', 'extract-preset-docs']
 run = 'pnpm exec vitepress build docs'
 
 [tasks.clean-docs]
