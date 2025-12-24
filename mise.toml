@@ -74,12 +74,12 @@ def main [...args] {
 
         cargo +nightly test --tests --no-run
 
-        let object_files = cargo +nightly test --tests --no-run --message-format=json |
+        let object_files = cargo +nightly test --lib --no-run --message-format=json |
             from json -o | where profile?.test |
             get filenames.0 |
             each { |f| $'--object=($in)' }
 
-        cargo +nightly test --tests ...$args -- --nocapture
+        cargo +nightly test --lib ...$args -- --nocapture
         cargo +nightly profdata -- merge -sparse coverage/parsing.profraw -o coverage/parsing.profdata
         (cargo +nightly cov -- export {{vars.coverage_options}} --format=lcov ...($object_files) o>
             coverage/parsing.info)
