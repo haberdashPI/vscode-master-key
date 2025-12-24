@@ -706,9 +706,9 @@ Integration test debugging:
     - [X] install latest version on my pet
     - [X] wait a day or two: if this adds items under misc. cleanup, keep waiting
     - [X] verify that an older setup will cause the extension to flag an error
-    - [ ] merge PR
+    - [X] merge PR
     - [ ] release new version on both extension stores
-    - [ ] CI
+    - [X] CI
         - [x] setup CI unit tests for rust
         - [x] setup rust coverage
         - [x] setup CI and merge coverage across rust and javascript
@@ -730,7 +730,7 @@ Follow-up:
 - [ ] organize additional priorities before release 1.0 (including the below follow-ups)
 - [X] make a command that activates the current file directly
 - [ ] make some features more discoverable
-    - create "tour" section for vscode's start window
+    - [x] create "tour" section for vscode's start window
     - add a button to edit a copy of a binding file from the activate binding menu
         - make sure editing is prominently in the documentation for Larkin
           (and an future binding files)
@@ -746,7 +746,7 @@ Follow-up:
     key in the same way that status bar shows the most recently pressed binding
 - [ ] improve key suggestions
     - [ ] use section headers (and their level) to create tree for the key suggestions
-    - [ ] and command to search and filter the key suggestions
+    - [ ] add command to search and filter the key suggestions
 - [ ] rename from Master Key to Key Atlas (keep the same extension name, to avoid
     confusion, but do make a new git repository)
     - [ ] I should wait until I'm ready for a larger audience before renaming
