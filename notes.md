@@ -736,13 +736,13 @@ Follow-up:
           (and an future binding files)
         - make sure it is prominently in the getting started section
 - [ ] visual documentation improvements
-    - [ ] the visual documentation could show a hint about the command
+    - [X] the visual documentation could show a hint about the command
     to toggle between binding modifiers (and show the default key binding)
     - [X] currently keybindings are sorted from highest to lowest frequency
     modifiers across all modes. This should really be a feature per mode,
     so that the most relevant bindings for a given mode are visible
     immediately.
-    - [ ] visual documentation could highlighlt the most recently pressed
+    - [ ] visual documentation could highlight the most recently pressed
     key in the same way that status bar shows the most recently pressed binding
 - [ ] improve key suggestions
     - [ ] use section headers (and their level) to create tree for the key suggestions

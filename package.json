@@ -206,6 +206,11 @@
             {
                 "key": "ctrl+shift+;",
                 "command": "master-key.toggleSuggestions"
+            },
+            {
+                "key": "ctrl+k ctrl+shift+m",
+                "mac": "cmd+k cmd+shift+m",
+                "command": "master-key.toggleVisualDocModifiers"
             }
         ],
         "configuration": {
