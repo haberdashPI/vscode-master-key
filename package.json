@@ -43,6 +43,11 @@
                 "title": "Activate Keybindings"
             },
             {
+                "command": "master-key.activateCurrentFile",
+                "category": "Master Key",
+                "title": "Activate Keybindings in Current File"
+            },
+            {
                 "command": "master-key.commandSuggestions",
                 "category": "Master Key",
                 "title": "Key Suggestions..."
