@@ -172,8 +172,8 @@ export async function runCommands(
  *
  * [[bind.args.commands]]
  * command = "master-key.replayFromHistory"
- * #- we can repeat any action but history-related actions; we make an exception for
- * #- replaying macros, which *can* be repeated
+ * # we can repeat any action but history-related actions; we make an exception for
+ * # replaying macros, which *can* be repeated
  * args.index = """{{
  * last_history_index(|x|
  *     x.tags.contains("action") &&

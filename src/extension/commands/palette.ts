@@ -8,7 +8,8 @@ import {
     normalizeLayoutIndependentString,
 } from '../keybindings/layout';
 import { KeyFileResult } from '../../rust/parsing/lib/parsing';
-import { doCommandsCmd } from './do';
+import { doCommandsCmd, paletteEnabled } from './do';
+import { isEqual } from 'lodash';
 
 /**
  * Represents an individual command in the sidebar tree.
@@ -25,11 +26,22 @@ class CommandTreeItem extends vscode.TreeItem {
         this.tooltip = binding.combinedDescription || binding.description;
 
         // This command is triggered when the user clicks the item
-        this.command = {
-            command: 'master-key.executePaletteItem',
-            title: 'Execute Binding',
-            arguments: [binding],
-        };
+        if (binding.isToggle) {
+            this.command = {
+                command: 'master-key.togglePaletteDisplay',
+                title: 'toggle binding',
+            };
+        } else {
+            this.command = {
+                command: 'master-key.executePaletteItem',
+                title: 'Execute Binding',
+                arguments: [binding],
+            };
+        }
+
+        this.iconPath = binding.isSection ?
+            new vscode.ThemeIcon('primitive-square') :
+            undefined;
 
         // Optional: Add icons or context values for styling
         this.contextValue = 'masterKeyCommandEntry';
@@ -81,7 +93,26 @@ export class MasterKeyDataProvider implements vscode.TreeDataProvider<IPaletteBi
         // We only have a flat list, so if 'element' is provided, there are no sub-children
         if (element) return [];
         const key = `${this._prefixCode}:${this._mode}`;
-        return paletteEntries[key] || [];
+        const items = paletteEntries[key] || [];
+        let toggle: IPaletteBinding;
+        if (paletteEnabled) {
+            toggle = {
+                key: '',
+                name: 'Automatic display enabled (click to disable)',
+                sections: [],
+                isToggle: true,
+                order: -1,
+            };
+        } else {
+            toggle = {
+                key: '',
+                name: 'Automatic display disabled (click to enable)',
+                sections: [],
+                isToggle: true,
+                order: -1,
+            };
+        }
+        return [toggle].concat(items);
     }
 }
 
@@ -91,12 +122,58 @@ interface IPaletteBinding {
     key?: string;
     combinedDescription?: string;
     combinedKey?: string;
+    sections: string[];
+    isSection?: boolean;
+    isToggle?: boolean;
     order: number;
     command_id?: number;
     prefix_id?: number;
 }
 
 const paletteEntries: Record<string, IPaletteBinding[]> = {};
+
+function addSections(items: IPaletteBinding[]) {
+    let currentSections: string[] = [];
+    let sectionCounts: number[] = [];
+    const result: IPaletteBinding[] = [];
+    let firstSection = true;
+
+    for (const item of items) {
+        if (!isEqual(currentSections, item.sections)) {
+            const minLen = Math.min(item.sections.length, currentSections.length);
+            for (let i = 1; i < minLen; i++) {
+                if (item.sections[i] !== currentSections[i]) {
+                    sectionCounts[i] += 1;
+                    break;
+                }
+            }
+            for (let i = minLen; i < item.sections.length; i++) {
+                sectionCounts[i] = 1;
+            }
+            sectionCounts = sectionCounts.slice(0, item.sections.length);
+            currentSections = item.sections;
+            const sectionTitle = sectionCounts.slice(1).join('.') + ': ' +
+                currentSections[currentSections.length - 1];
+            if (firstSection) {
+                firstSection = false;
+            } else {
+                result.push({
+                    key: '',
+                    order: item.order,
+                    sections: [],
+                });
+            }
+            result.push({
+                key: sectionTitle,
+                sections: currentSections,
+                order: item.order,
+                isSection: true,
+            });
+        }
+        result.push(item);
+    }
+    return result;
+}
 
 function updateKeys(bindings: KeyFileResult) {
     const bindingMap: Record<string, Record<string, IPaletteBinding>> = {};
@@ -109,13 +186,14 @@ function updateKeys(bindings: KeyFileResult) {
         if (docs?.hideInPalette) {
             continue;
         }
+
         const paletteEntry = {
             key: docs?.combined?.key || binding.key,
             name: docs?.combined?.name || binding.args.name,
             description: docs?.combined?.description || binding.args.description,
             combinedKey: docs?.combined?.key,
             combinedDescription: docs?.combined?.description,
-            order: binding.command === 'master-key.do' ? i : bindings.n_bindings() + 1,
+            order: binding.args.command_id,
         };
         let key = prettifyPrefix(paletteEntry.key);
         key = normalizeLayoutIndependentString(key, { noBrackets: true });
@@ -127,10 +205,12 @@ function updateKeys(bindings: KeyFileResult) {
         const context = `${prefixCode}:${mode}`;
         const mapping = bindingMap[context] || {};
         const name = paletteEntry.name;
+        const section = bindings.binding_section(binding.args.command_id);
         const oldEntry = mapping[name] || {};
         mapping[name] = {
-            key: key || oldEntry.key,
+            key: (key || oldEntry.key),
             name,
+            sections: section?.names || [],
             description: paletteEntry.description || oldEntry.description,
             combinedKey: combinedKey || oldEntry.combinedKey,
             combinedDescription: paletteEntry.combinedDescription ||
@@ -145,7 +225,7 @@ function updateKeys(bindings: KeyFileResult) {
     for (const [key, bindings] of Object.entries(bindingMap)) {
         const entries = Object.values(bindings);
         entries.sort((x, y) => x.order - y.order);
-        paletteEntries[key] = entries;
+        paletteEntries[key] = addSections(entries);
     }
 }
 
@@ -181,6 +261,12 @@ export async function commandPalette() {
             focus: false,
             expand: true,
         });
+    }
+}
+
+function updateConfig(event?: vscode.ConfigurationChangeEvent) {
+    if (!event || event?.affectsConfiguration('master-key')) {
+        treeDataProvider.refresh();
     }
 }
 
@@ -230,6 +316,8 @@ export async function defineCommands(context: vscode.ExtensionContext) {
             },
         ),
     );
+
+    vscode.workspace.onDidChangeConfiguration(updateConfig);
 
     onSet(MODE, (state) => {
         treeDataProvider.mode = <string>state.get(MODE, bindings.default_mode());

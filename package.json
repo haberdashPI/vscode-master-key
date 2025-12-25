@@ -99,7 +99,7 @@
             {
                 "command": "master-key.togglePaletteDisplay",
                 "category": "Master Key",
-                "title": "Toggle automatic display of quick-pick menu for multi-key keybindings"
+                "title": "Toggle automatic display of command suggestions in sidebar"
             },
             {
                 "command": "master-key.activateBindings",
@@ -249,7 +249,13 @@
                     "title": "Suggestion Delay",
                     "type": "integer",
                     "default": 500,
-                    "description": "Time to wait, in milliseconds, before showing command suggestions for multi-key commands (set to 0 to disable)"
+                    "description": "Time to wait, in milliseconds, before showing command suggestions for multi-key commands. Command suggestion must be enabled for this setting to apply."
+                },
+                "master-key.commandSuggestionsEnabled": {
+                    "title": "Enable Command Suggestions",
+                    "type": "boolean",
+                    "default": true,
+                    "description": "When set, command suggestions will be displayed after a delay during a multi-key sequence."
                 },
                 "master-key.keyDisplayDelay": {
                     "title": "Key Display Delay",

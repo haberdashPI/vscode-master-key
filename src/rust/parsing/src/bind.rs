@@ -765,6 +765,7 @@ impl LegacyBindingInput {
 #[allow(non_snake_case)]
 #[wasm_bindgen(getter_with_clone)]
 pub struct Binding {
+    pub section: Option<BindSection>,
     pub key: Vec<String>,
     pub(crate) commands: Vec<Command>,
     pub when: Option<String>,
@@ -776,6 +777,13 @@ pub struct Binding {
     pub tags: Vec<String>,
     pub doc: BindingDoc,
     pub(crate) implicit: bool,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[wasm_bindgen(getter_with_clone)]
+pub struct BindSection {
+    pub names: Vec<String>,
+    pub index: i32,
 }
 
 pub const TEXT_FOCUS_CONDITION: &str = "(editorTextFocus && !suggestionWidgetVisible)";
@@ -903,6 +911,7 @@ impl Binding {
 
         // resolve all keys to appropriate types
         let result = Binding {
+            section: None,
             commands: commands,
             key,
             when,
@@ -1206,7 +1215,7 @@ pub struct BindingOutputArgs {
     // (which is also encoded in the when clause for this binding)
     pub(crate) old_prefix_id: i32,
     // this uniquely identifiers the command that runs after pressing a binding
-    // (which is retrieved by `maaster-key.do`)
+    // (which is retrieved by `master-key.do`)
     pub(crate) command_id: i32,
     // these fields help us track and order binding outputs, we don't need them serialized
     #[serde(skip)]
@@ -1231,6 +1240,9 @@ pub struct PrefixArgs {
     // this identifies the prefix that should be present prior to this key press
     // (which is also encoded in the when clause for this binding)
     pub(crate) old_prefix_id: i32,
+    // this uniquely identifiers the command that runs after pressing a binding
+    // it is stored here to enable use of `binding_section`
+    pub(crate) command_id: i32,
     // human readable field displaying the key sequence pressed to reach prefix command
     pub(crate) key: String,
     // these fields help us track and order binding outputs, we don't need them serialized
@@ -1578,6 +1590,7 @@ impl Binding {
                     key: key.clone(),
                     when: join_when_vec(&when),
                     args: PrefixArgs {
+                        command_id,
                         priority: 0.0,
                         key_id: key_code,
                         prefix_id: prefix_code,

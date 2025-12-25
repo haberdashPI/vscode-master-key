@@ -85,7 +85,7 @@ args.register = "operation"
 doc.name = "word operation"
 key = "w"
 mode = "normal"
-#- to qualify from word *motion*
+# to qualify from word *motion*
 prefixes.anyOf = ["d"]
 command = "runCommands"
 when = "editorTextFocus"
