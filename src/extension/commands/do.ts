@@ -35,6 +35,7 @@ export const documentIdentifiers = new WeakMap();
 // determines how long between key presses before a palette of next key presses is made
 // visible; user-configurable
 let paletteDelay: number = 0;
+export let paletteEnabled = true;
 let paletteUpdate = Number.MIN_SAFE_INTEGER;
 
 let expressionMessages: vscode.OutputChannel;
@@ -175,6 +176,7 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
                                 command.args.prefix_id = args.prefix_id;
                                 command.args.key = toRun.key;
                                 command.args.mode = args.mode;
+                                command.args.command_id = args.command_id;
                                 // we need to know we're calling it from `master-key.do` so
                                 // that we don't try to acquire the commandMutex a second
                                 // time
@@ -264,7 +266,7 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
 }
 
 export function showPaletteOnDelay() {
-    if (paletteDelay > 0) {
+    if (paletteEnabled) {
         const currentPaletteUpdate = paletteUpdate;
         setTimeout(async () => {
             if (currentPaletteUpdate === paletteUpdate) {
@@ -292,12 +294,8 @@ function updateConfig(event?: vscode.ConfigurationChangeEvent) {
         } else {
             maxHistory = configMaxHistory;
         }
-        const configPaletteDelay = config.get<number>('suggestionDelay');
-        if (configPaletteDelay === undefined) {
-            paletteDelay = 0;
-        } else {
-            paletteDelay = configPaletteDelay;
-        }
+        paletteDelay = config.get<number>('suggestionDelay', 500);
+        paletteEnabled = config.get<boolean>('commandSuggestionsEnabled', true);
     }
 }
 
@@ -316,12 +314,12 @@ export async function defineCommands(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.togglePaletteDisplay', () => {
-            if (paletteDelay === 0) {
-                const config = vscode.workspace.getConfiguration('master-key');
-                paletteDelay = config.get<number>('suggestionDelay') || 500;
-            } else {
-                paletteDelay = 0;
-            }
+            const config = vscode.workspace.getConfiguration('master-key');
+            config.update(
+                'commandSuggestionsEnabled',
+                !paletteEnabled,
+                vscode.ConfigurationTarget.Global,
+            );
         }),
     );
 }

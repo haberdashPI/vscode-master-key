@@ -144,6 +144,7 @@ use crate::{
 ///
 /// This would print the string `"count: 3"` to the output pane whenever the user presses
 /// the `j` key in normal mode.
+#[derive(Debug)]
 pub struct Scope {
     pub(crate) asts: HashMap<String, rhai::AST>,
     pub(crate) engine: rhai::Engine,

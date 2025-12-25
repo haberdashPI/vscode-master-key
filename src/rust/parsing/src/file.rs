@@ -138,7 +138,7 @@ use log::{error, info};
 
 use crate::bind::command::{CommandValue, regularize_commands};
 use crate::bind::{
-    Binding, BindingCodes, BindingDoc, BindingInput, BindingOutput, BindingOutputArgs,
+    BindSection, Binding, BindingCodes, BindingDoc, BindingInput, BindingOutput, BindingOutputArgs,
     CombinedBindingDoc, KeyId, LegacyBindingInput, ReifiedBinding, UNKNOWN_RANGE,
 };
 use crate::define::{Define, DefineInput};
@@ -393,6 +393,7 @@ impl KeyFile {
             .unzip();
 
         let docs = FileDocSection::assemble(&bind, &bind_span, doc_lines);
+        FileDocSection::assign_binding_headings(&mut bind, &docs);
 
         // create outputs to store in `keybindings.json`
         // TODO: store spans so we can do avoid serializing `key_bind`?
@@ -443,7 +444,7 @@ impl KeyFile {
 }
 
 // TODO: don't use clone on `file`
-#[derive(Default)]
+#[derive(Default, Debug)]
 #[wasm_bindgen(getter_with_clone)]
 pub struct KeyFileResult {
     file: Option<KeyFile>,
@@ -522,6 +523,19 @@ impl KeyFileResult {
             }
         }
         return None;
+    }
+
+    pub fn binding_section(&self, command_id: i32) -> Option<BindSection> {
+        return match &self.file {
+            Some(KeyFile { bind, .. }) => {
+                if command_id >= 0 && (command_id as usize) < bind.len() {
+                    bind[command_id as usize].section.clone()
+                } else {
+                    None
+                }
+            }
+            Option::None => None,
+        };
     }
 
     pub fn has_layout_independent_bindings(&self) -> bool {
@@ -3318,20 +3332,100 @@ pub(crate) mod tests {
     #[test]
     fn text_doc_parsing() {
         let data = std::fs::read("src/test_files/text-docs.toml").unwrap();
-        let mut warnings = Vec::new();
-        let mut scope = Scope::new();
-        let result = parse_bytes_helper(&data, &mut warnings, &mut scope).unwrap();
+        let result = parse_keybinding_data(&data);
         let output = std::fs::read("src/test_files/text-docs.md").unwrap();
 
-        // info!(
-        //     "Text output: \n{}",
-        //     FileDocSection::write_markdown(&result.docs, true)
-        // );
-
         assert_eq!(
-            FileDocSection::write_markdown(&result.docs, true).trim(),
+            result.text_docs().unwrap().trim(),
             str::from_utf8(&output).unwrap().trim()
         );
+
+        assert_eq!(
+            result.binding_section(0).unwrap().names,
+            Vec::from([
+                "Test Documentation".to_string(),
+                "First Section".to_string()
+            ])
+        );
+        assert_eq!(
+            result.binding_section(1).unwrap().names,
+            Vec::from([
+                "Test Documentation".to_string(),
+                "First Section".to_string()
+            ])
+        );
+        assert_eq!(
+            result.binding_section(2).unwrap().names,
+            Vec::from([
+                "Test Documentation".to_string(),
+                "First Section".to_string()
+            ])
+        );
+        assert_eq!(
+            result.binding_section(51).unwrap().names,
+            Vec::from([
+                "Test Documentation".to_string(),
+                "Second Section".to_string()
+            ])
+        );
+        assert_eq!(
+            &result.file.as_ref().unwrap().bind[0]
+                .key
+                .first()
+                .as_ref()
+                .unwrap()
+                .as_str(),
+            &"escape"
+        );
+        assert_eq!(
+            &result.file.as_ref().unwrap().bind[1]
+                .key
+                .first()
+                .as_ref()
+                .unwrap()
+                .as_str(),
+            &"h"
+        );
+        assert_eq!(
+            &result.file.as_ref().unwrap().bind[2]
+                .key
+                .first()
+                .as_ref()
+                .unwrap()
+                .as_str(),
+            &"l"
+        );
+        assert_eq!(
+            &result.file.as_ref().unwrap().bind[51]
+                .key
+                .first()
+                .as_ref()
+                .unwrap()
+                .as_str(),
+            &"k"
+        );
+    }
+
+    #[test]
+    fn playground() {
+        let data =
+            std::fs::read("../../test/integration/test-workspace/textDocExample.toml").unwrap();
+        let result = parse_keybinding_data(&data);
+
+        for i in 0..result.n_bindings() {
+            let bind = result.file.as_ref().unwrap().key_bind[i].clone();
+            if let BindingOutput::Do {
+                args: BindingOutputArgs { command_id, .. },
+                ..
+            } = bind
+            {
+                let section = result.binding_section(command_id);
+                info!("command_id: {command_id}");
+                info!("section: {section:#?}");
+            }
+        }
+
+        // info!("result: {:#?}", result);
     }
 
     #[test]

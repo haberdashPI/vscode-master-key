@@ -1,7 +1,7 @@
 #:master-keybindings
 
-# # Test Documentation
-#- IGNORED COMMENT
+## # Test Documentation
+# IGNORED COMMENT
 [header]
 version = "2.0.0"
 
@@ -21,9 +21,9 @@ description = "more leftward keys"
 name = "right"
 description = "more rightward keys"
 
-# ## First Section
+## ## First Section
 
-# Cillum adipisicing consequat aliquip Lorem adipisicing minim culpa officia aliquip reprehenderit.
+## Cillum adipisicing consequat aliquip Lorem adipisicing minim culpa officia aliquip reprehenderit.
 
 [[bind]]
 doc.name = "normal mode"
@@ -60,21 +60,9 @@ key = "j"
 args.to = "down"
 doc.kind = "left"
 
-#- verify that including lots of ignored keys doesn't mess up display
-[[bind]]
-doc.name = "ignore"
-foreach.key = ['{{keys(`.`)}}']
-key = "{{key}}"
-command = "master-key.ignore"
-doc.hideInDocs = true
-doc.hideInPalette = true
-priority = -10
-when = "editorTextFocus"
-mode = "normal"
+## ## Second Section
 
-# ## Second Section
-
-# Aliquip ipsum enim cupidatat aute occaecat magna nostrud qui labore.
+## Aliquip ipsum enim cupidatat aute occaecat magna nostrud qui labore.
 
 [[bind]]
 default = "{{bind.motion}}"
@@ -98,4 +86,4 @@ command = "master-key.enterInsert"
 mode = "normal"
 doc.kind = "right"
 
-# Final paragraph shows up.
+## Final paragraph shows up.

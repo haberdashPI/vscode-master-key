@@ -18,6 +18,7 @@ const prefixArgs = z.
     object({
         key_id: z.number().optional(),
         old_prefix_id: z.number().optional(),
+        command_id: z.number(),
         mode: z.string(),
         prefix_id: z.number(),
         fromDo: z.boolean().default(true),

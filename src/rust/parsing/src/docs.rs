@@ -5,8 +5,9 @@ use core::ops::Range;
 use regex::Regex;
 use serde::Serialize;
 use std::collections::HashMap;
+use std::sync::LazyLock;
 
-use crate::bind::{Binding, BindingDoc, CombinedBindingDoc};
+use crate::bind::{BindSection, Binding, BindingDoc, CombinedBindingDoc};
 
 pub(crate) struct FileDocLine {
     offset: usize,
@@ -15,6 +16,7 @@ pub(crate) struct FileDocLine {
 
 #[derive(Clone, Debug, Serialize)]
 pub(crate) struct FileDocSection {
+    index: usize,
     doc: String,
     order: Vec<String>,
     bindings: HashMap<String, FileDocTableRow>,
@@ -159,14 +161,14 @@ impl FileDocLine {
 
 enum FileDocElement {
     Doc(FileDocLine),
-    Bind(FileDocTableRow, usize),
+    Bind(FileDocTableRow, usize, usize),
 }
 
 impl FileDocElement {
     fn offset(&self) -> usize {
         match self {
             FileDocElement::Doc(x) => x.offset,
-            FileDocElement::Bind(_, offset) => *offset,
+            FileDocElement::Bind(_, offset, _) => *offset,
         }
     }
 }
@@ -174,6 +176,7 @@ impl FileDocElement {
 impl FileDocSection {
     fn new() -> Self {
         return FileDocSection {
+            index: 0,
             doc: String::new(),
             bindings: HashMap::new(),
             order: Vec::new(),
@@ -188,7 +191,8 @@ impl FileDocSection {
         let mut elements: Vec<_> = bind
             .iter()
             .zip(bind_span.iter())
-            .map(|(b, s)| FileDocElement::Bind(FileDocTableRow::new(&b), s.start))
+            .enumerate()
+            .map(|(i, (b, s))| FileDocElement::Bind(FileDocTableRow::new(&b), s.start, i))
             .chain(docs.into_iter().map(|d| FileDocElement::Doc(d)))
             .collect();
 
@@ -196,7 +200,6 @@ impl FileDocSection {
 
         let mut result = Vec::new();
         let mut current_section = FileDocSection::new();
-        // TODO: consolidate anything with the same combined.name
         for element in elements {
             match element {
                 FileDocElement::Doc(x) => {
@@ -205,13 +208,17 @@ impl FileDocSection {
                     if current_section.bindings.len() > 0 {
                         result.push(current_section);
                         current_section = FileDocSection::new();
+                        current_section.index = bind.len();
                     }
                     current_section.doc.push_str(x.data.as_str());
                     current_section.doc.push_str("\n");
                 }
-                FileDocElement::Bind(b, _) => {
+                FileDocElement::Bind(b, _, i) => {
                     if !b.doc.hideInDocs {
                         let key = b.key();
+                        if current_section.index == bind.len() && i > 0 {
+                            current_section.index = i;
+                        }
                         current_section
                             .bindings
                             .entry(key.clone())
@@ -231,6 +238,44 @@ impl FileDocSection {
         };
 
         return result;
+    }
+
+    pub(crate) fn assign_binding_headings(bind: &mut Vec<Binding>, docs: &Vec<FileDocSection>) {
+        let mut last_bind_section = BindSection {
+            names: Vec::new(),
+            index: 0,
+        };
+        for section in docs {
+            if section.index >= bind.len() {
+                continue;
+            }
+            for i in (last_bind_section.index as usize)..section.index {
+                bind[i].section = Some(last_bind_section.clone());
+            }
+            static RE: LazyLock<Regex> =
+                LazyLock::new(|| Regex::new(r"(?m)^(#+\s*)(.*)$").unwrap());
+            for (_, [level, heading]) in RE.captures_iter(&section.doc).map(|c| c.extract()) {
+                if level.len() < 2 {
+                    panic!("Unexpected capture length");
+                }
+                let level_index = level.len() - 2;
+                if level_index < last_bind_section.names.len() {
+                    last_bind_section.names[level_index] = heading.to_string();
+                    last_bind_section.names = Vec::from(&last_bind_section.names[0..=level_index])
+                } else {
+                    for _ in (level.len())..level_index {
+                        last_bind_section.names.push(String::new())
+                    }
+                    last_bind_section.names.push(heading.to_string());
+                }
+            }
+            if last_bind_section.names.len() > 0 && section.index < bind.len() {
+                last_bind_section.index = section.index as i32;
+            }
+        }
+        for i in (last_bind_section.index as usize)..bind.len() {
+            bind[i].section = Some(last_bind_section.clone());
+        }
     }
 
     pub(crate) fn write_markdown(docs: &Vec<FileDocSection>, show_mode: bool) -> String {
