@@ -86,4 +86,11 @@ command = "master-key.enterInsert"
 mode = "normal"
 doc.kind = "right"
 
+[[bind]]
+doc.name = "super insert mode"
+key = "ctrl+i"
+command = "master-key.enterInsert"
+mode = "normal"
+doc.kind = "right"
+
 ## Final paragraph shows up.

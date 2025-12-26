@@ -80,7 +80,7 @@ use crate::{
 ///
 /// ## Read-time Evaluation
 ///
-/// Read-time expressions are computed directly after a keybinding file have been loaded.
+/// Read-time expressions are computed directly after a keybinding file has been loaded.
 /// The following values are in scope:
 ///
 /// - Any field defined in a [`[[define.val]]`](/bindings/define) section. These variables

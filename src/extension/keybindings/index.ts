@@ -731,7 +731,6 @@ export async function defineCommands(context: vscode.ExtensionContext) {
         if (content) {
             const regex = /<key>(.*?)<\/key>/gs;
             const prettyKey = replaceMatchesWith(content, regex, (str) => {
-                str = replaceAll(str, /\\/g, '\\\\');
                 return prettifyPrefix(str);
             });
             const html = await marked(prettyKey);
