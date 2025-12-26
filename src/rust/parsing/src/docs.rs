@@ -216,6 +216,10 @@ impl FileDocSection {
                 FileDocElement::Bind(b, _, i) => {
                     if !b.doc.hideInDocs {
                         let key = b.key();
+                        // bindings without names are excluded from the table
+                        if key.is_empty() {
+                            continue;
+                        }
                         if current_section.index == bind.len() && i > 0 {
                             current_section.index = i;
                         }
@@ -297,7 +301,7 @@ impl FileDocSection {
                 let bind = &section.bindings[key.as_str()];
                 let raw = bind.as_markdown_row(show_mode);
                 // escape special characters in markdown
-                let re = Regex::new(r"(\\|\[|\]|`|\*|_|\(|\)|\#|\+|-|\.|!)").unwrap();
+                let re = Regex::new(r"(\\|\[|\]|`|\*|_|\(|\)|\#|!)").unwrap();
                 result.push_str(re.replace_all(raw.as_str(), "\\$1").to_string().as_str());
                 result.push('\n');
             }
