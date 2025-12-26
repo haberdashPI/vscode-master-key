@@ -725,12 +725,16 @@ Integration test debugging:
             - [X] improve flakey tests (or skip some???)
 
 Follow-up:
-- [ ] update README view of key suggestions (out of data with new section headings)
+- [X] update README view of key suggestions (out of data with new section headings)
 - [X] generate literate docs for each preset within the documentation website
-- [ ] release 0.4
-- [ ] revise the larkin literate docs to make it more beginner friendly
-      (include less in basic motions and move basic actions higher up, so
-      all of the basic commands can be see at a glance)
+- [X] release 0.4
+- [ ] automated upload the extension to marketplaces
+- [ ] improvement doc display and content
+    - [ ] fix larkin docs on webset to use pretified, `<key>`ified key bindings
+    - [ ] prettify docs for inline docs is not using unicode chars
+    - [ ] revise the larkin literate docs to make it more beginner friendly
+        (include less in basic motions and move basic actions higher up, so
+        all of the basic commands can be see at a glance)
 - [ ] organize additional priorities before release 1.0 (including the below follow-ups)
 - [X] make a command that activates the current file directly
 - [ ] make some features more discoverable

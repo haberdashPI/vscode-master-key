@@ -8,7 +8,7 @@
 
 Master Key is a tool for becoming a power-user of your [VSCode](https://code.visualstudio.com/) keybindings. Features include:
 
-- extensive documentation of your bindings (quick pick, visual and text)
+- extensive documentation of your bindings (sidebar suggestions, visual and text)
 - predefined keybinding sets
 - modal bindings (ala Vim),
 - record simple keyboard macros
