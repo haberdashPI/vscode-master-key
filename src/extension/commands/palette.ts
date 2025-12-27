@@ -140,20 +140,6 @@ function addSections(items: IPaletteBinding[]) {
 
     for (const item of items) {
         if (!isEqual(currentSections, item.sections)) {
-            const minLen = Math.min(item.sections.length, currentSections.length);
-            for (let i = 1; i < minLen; i++) {
-                if (item.sections[i] !== currentSections[i]) {
-                    sectionCounts[i] += 1;
-                    break;
-                }
-            }
-            for (let i = minLen; i < item.sections.length; i++) {
-                sectionCounts[i] = 1;
-            }
-            sectionCounts = sectionCounts.slice(0, item.sections.length);
-            currentSections = item.sections;
-            const sectionTitle = sectionCounts.slice(1).join('.') + ': ' +
-                currentSections[currentSections.length - 1];
             if (firstSection) {
                 firstSection = false;
             } else {
@@ -163,6 +149,38 @@ function addSections(items: IPaletteBinding[]) {
                     sections: [],
                 });
             }
+
+            const minLen = Math.min(item.sections.length, currentSections.length);
+            let i = 0;
+            for (; i < minLen; i++) {
+                if (item.sections[i] !== currentSections[i]) {
+                    if (sectionCounts[i] === undefined) {
+                        sectionCounts[i] = 1;
+                    } else {
+                        sectionCounts[i] += 1;
+                    }
+                    i++;
+                    break;
+                }
+            }
+            for (; i < item.sections.length; i++) {
+                if (i >= 1 && (i - 1) < (item.sections.length - 1)) {
+                    const superSectionTitle =
+                        (i === 1 ? '' : sectionCounts.slice(1, i).join('.') + ': ') +
+                        item.sections[i - 1];
+                    result.push({
+                        key: superSectionTitle,
+                        sections: currentSections.slice(0, i),
+                        order: item.order,
+                        isSection: true,
+                    });
+                }
+                sectionCounts[i] = 1;
+            }
+            sectionCounts = sectionCounts.slice(0, item.sections.length);
+            currentSections = item.sections;
+            const sectionTitle = sectionCounts.slice(1).join('.') + ': ' +
+                currentSections[currentSections.length - 1];
             result.push({
                 key: sectionTitle,
                 sections: currentSections,
@@ -183,7 +201,7 @@ function updateKeys(bindings: KeyFileResult) {
             continue;
         }
         const docs = bindings.docs(i);
-        if (docs?.hideInPalette) {
+        if (docs?.hideInPalette || !(docs?.name)) {
             continue;
         }
 

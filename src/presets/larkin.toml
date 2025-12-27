@@ -2,7 +2,7 @@
 # author: David Little
 # license: MIT https://github.com/haberdashPI/vscode-master-key/blob/main/LICENSE.md
 
-## # Master Keybindings: Larkin
+## # Larkin Keybindings
 
 ## Larkin is the default keybinding set that ships with Master Key. It follows in the footsteps of Vim, Kakoune and Helix.
 
@@ -118,6 +118,10 @@ priority = -1
 mode = "normal"
 doc.description = "Show visual documentation for keybindings"
 command = "master-key.showVisualDoc"
+
+## ## Essential Commands
+
+## There are a core set of commands, many of which should be familiar to users of Helix or Vim, summarized here.
 
 ## ### Normal Mode
 
@@ -294,11 +298,7 @@ args.value = "{{num}}"
 finalKey = false
 mode = '{{not_modes(["insert"])}}'
 
-## ## Essential Commands
-
-## There are a core set of commands, many of which should be familiar to users of Helix or Vim, summarized here.
-
-## ### Basic Actions
+## ### Simple Actions
 
 ## Basic actions available in Larkin that can be used to edit text in relation to either the current line or the currently selected text.
 
