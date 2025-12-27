@@ -728,7 +728,7 @@ Follow-up:
 - [X] update README view of key suggestions (out of data with new section headings)
 - [X] generate literate docs for each preset within the documentation website
 - [X] release 0.4
-- [ ] automated upload the extension to marketplaces
+- [X] automated upload the extension to marketplaces
 - [ ] improvement doc display and content
     - [ ] fix larkin docs on webset to use pretified, `<key>`ified key bindings
     - [X] prettify docs for inline docs is not using unicode chars

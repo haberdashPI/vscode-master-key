@@ -201,7 +201,7 @@ function updateKeys(bindings: KeyFileResult) {
             continue;
         }
         const docs = bindings.docs(i);
-        if (docs?.hideInPalette) {
+        if (docs?.hideInPalette || !(docs?.name)) {
             continue;
         }
 
