@@ -121,7 +121,7 @@ command = "master-key.showVisualDoc"
 
 ## ## Essential Commands
 
-## There are a core set of commands, many of which should be familiar to users of Helix or Vim, summarized here.
+## Larkin has a core set of commands that should be familiar to users of Helix or Vim.
 
 ## ### Normal Mode
 

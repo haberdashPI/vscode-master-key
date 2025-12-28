@@ -117,6 +117,7 @@ export const commandMutex = new Mutex();
  * such as [expressions](/expressions/index).
  */
 export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
+    // console.profile('master-key-do');
     // register that a key was pressed (cancelling the display of the quick pick for
     // prefixes of this keypress
     registerPaletteUpdate();
@@ -262,6 +263,7 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
         return args;
     } finally {
         release();
+        // console.profileEnd('master-key-do');
     }
 }
 

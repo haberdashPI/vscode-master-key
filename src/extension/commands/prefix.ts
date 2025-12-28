@@ -142,6 +142,7 @@ const PREFIX_CURSOR = 'prefixCursor';
 
 let oldPrefixCursor: boolean = false;
 async function prefix(args_: unknown): Promise<CommandResult> {
+    // console.profile('master-key-prefix');
     registerPaletteUpdate();
     const args = validateInput('master-key.prefix', args_, prefixArgs);
 
@@ -176,6 +177,7 @@ async function prefix(args_: unknown): Promise<CommandResult> {
             if (release) {
                 release();
             }
+            // console.profileEnd('master-key-prefix');
         }
     }
 }

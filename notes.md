@@ -729,16 +729,29 @@ Follow-up:
 - [X] generate literate docs for each preset within the documentation website
 - [X] release 0.4
 - [X] automated upload the extension to marketplaces
-- [ ] improvement doc display and content
-    - [ ] fix larkin docs on webset to use pretified, `<key>`ified key bindings
+- [X] initial profiling; identify any obvious optimization targets
+    - FINDINGS: there isn't much latency introduced by the actual calls in master-key.do
+      or master-key.profile. The latency is mostly spent in the callback trampoline,
+      This suggestions that the design of `state.ts` is at fault.
+      I have been wanting to clean this up anyways (for legibility/maintainability)
+    - ALTERNATIVE: aysnc-mutex is the direct culprit
+      - I think this still points to state.ts refactoring as a good place to start
+- [ ] improve doc display and content
     - [X] prettify docs for inline docs is not using unicode chars
     - [X] revise the larkin literate docs to make it more beginner friendly
         (include less in basic motions and move basic actions higher up, so
         all of the basic commands can be see at a glance)
-    - [ ] proof-read larking docs
-    - [ ] fix section headings
-- [ ] organize additional priorities before release 1.0 (including the below follow-ups)
+    - [X] fix section headings
+    - [ ] proof-read larkin docs
 - [X] make a command that activates the current file directly
+- [ ] refactor `state.ts`:
+    - [X] simplify implementation, using rust as the backing state container
+    - [ ] re-read through logic in `state.ts`, make sure I didn't miss anything
+    - [ ] refactor all callers of `state.ts`
+    - [ ] integration testing
+- [ ] organize additional priorities before release 1.0 (including the below follow-ups)
+    - [ ] review issues listed on repo / project board
+    - [ ] add below issues to project board
 - [ ] make some features more discoverable
     - [x] create "tour" section for vscode's start window
     - add a button to edit a copy of a binding file from the activate binding menu
@@ -754,11 +767,11 @@ Follow-up:
     immediately.
     - [ ] visual documentation could highlight the most recently pressed
     key in the same way that status bar shows the most recently pressed binding
+- [ ] fix larkin docs on website to use pretified, `<key>`ified key bindings
+- [ ] copying default keybindings bug: missing bind.args
 - [ ] improve key suggestions
     - [X] use section headers (and their level) to create tree for the key suggestions
-    - [ ] add command to search and filter the key suggestions
-- [ ] rename from Master Key to Key Atlas (keep the same extension name, to avoid
-    confusion, but do make a new git repository)
+- [ ] rename from Master Key to Key Atlas
     - [ ] I should wait until I'm ready for a larger audience before renaming
     - [ ] rename references of Master key in Selection Utilities
 - [ ] reimplement storeNamed? (or make it more specific to macros; I'm not
@@ -775,7 +788,7 @@ Follow-up:
 - [ ] insert accepts a count: replicating vim's behavior
     - [ ] this probably needs to be per mode configurable
 
-- [ ] update extension utilities
+- [ ] update selection utilities
     - [ ] TODO: decorators aren't working
     - [ ] migrate to the same build and test setup
     - [ ] get tests working again
