@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import z from 'zod';
 import { validateInput } from '../utils';
-import { withState, recordedCommand, CommandResult } from '../state';
+import { state, recordedCommand, CommandResult } from '../state';
 
 export const COUNT = 'count';
 
@@ -48,19 +48,18 @@ async function updateCount(args_: unknown): Promise<CommandResult> {
     const args = validateInput('master-key.updateCount', args_, updateCountArgs);
     if (args !== undefined) {
         const a = args;
-        await withState(async (state) => {
-            return state.update<number>(
-                COUNT,
-                { public: true, transient: { reset: 0 }, notSetValue: 0 },
-                count => count * 10 + a.value,
-            );
-        });
+        const count = state.get<number>(COUNT) || 0;
+        state.set<number>(
+            COUNT,
+            count * 10 + a.value,
+        );
     }
     return;
 }
 
 export async function activate(_context: vscode.ExtensionContext) {
-    await withState(async state => state.set(COUNT, { public: true }, 0).resolve());
+    state.define(COUNT, { transient: { reset: 0 } });
+    state.set(COUNT, 0);
 }
 
 export async function defineCommands(context: vscode.ExtensionContext) {

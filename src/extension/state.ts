@@ -13,7 +13,7 @@ interface IStateOptions {
 }
 
 interface ISetOptions {
-    namespace?: string,
+    namespace?: string;
 }
 
 export class CommandState {
@@ -21,20 +21,20 @@ export class CommandState {
     private resolveListeners: Record<string, ResolveListener> = {};
     private defined: Set<string> = new Set();
 
-    define<T>(key: string, opt: IStateOptions = {}, setOpt: ISetOptions = {}) {
-        let fullKey = (setOpt.namespace || 'key') + '.' + key;
+    define(key: string, opt: IStateOptions = {}, setOpt: ISetOptions = {}) {
+        const fullKey = (setOpt.namespace || 'key') + '.' + key;
         if (this.defined.has(fullKey)) {
             throw Error(`${fullKey} already exists`);
         }
         if (key.includes('.')) {
-            throw Error("Variables names can't include `.`");
+            throw Error('Variables names can\'t include `.`');
         }
         this.defined.add(fullKey);
         this.options[fullKey] = opt;
     }
 
     get<T>(key: string, opt: ISetOptions = {}): T | undefined {
-        let namespace = opt.namespace || 'key';
+        const namespace = opt.namespace || 'key';
         const fullKey = namespace + '.' + key;
         if (!this.defined.has(fullKey)) {
             throw Error(`\`${fullKey}\` is not defined`);
@@ -45,7 +45,7 @@ export class CommandState {
             if ((<ParseError>e).report_string) {
                 const msg = (<ParseError>e).report_string();
                 vscode.window.showErrorMessage(
-                    `While getting \`${namespace}.${key}\` ${msg}.`
+                    `While getting \`${namespace}.${key}\` ${msg}.`,
                 );
             }
             return undefined;
@@ -53,14 +53,14 @@ export class CommandState {
     }
 
     set<T>(key: string, val: T, opt: ISetOptions = {}) {
-        let namespace = opt.namespace || 'key';
-        let fullKey = namespace + '.' + key;
+        const namespace = opt.namespace || 'key';
+        const fullKey = namespace + '.' + key;
         if (!this.defined.has(fullKey)) {
             throw Error(`\`${fullKey}\` is not defined`);
         }
         if (this.get(key, opt) !== val) {
-            let listeners = this.options[fullKey].listeners || [];
-            listeners = listeners.filter(listener => listener(val));
+            const listeners = this.options[fullKey].listeners || [];
+            this.options[fullKey].listeners = listeners.filter(listener => listener(val));
 
             try {
                 bindings.set_value(namespace, key, val);
@@ -77,19 +77,20 @@ export class CommandState {
     }
 
     reset() {
-        for (let fullKey of this.defined.keys()) {
+        for (const fullKey of this.defined.keys()) {
             const transient = this.options[fullKey]?.transient;
-            const [namespace, key] = fullKey.split('.'); // key is guaranteed to not include `.`
-            const value = this.get(key, {namespace});
+            // key is guaranteed to not include `.`
+            const [namespace, key] = fullKey.split('.');
+            const value = this.get(key, { namespace });
             if (transient && transient.reset !== value) {
-                this.set(key, transient.reset, {namespace});
+                this.set(key, transient.reset, { namespace });
             }
         }
     }
 
     onSet(key: string, listener: Listener, opt: ISetOptions = {}) {
-        let fullKey = key + '.' + (opt.namespace || 'key');
-        let options = this.options[fullKey];
+        const fullKey = key + '.' + (opt.namespace || 'key');
+        const options = this.options[fullKey];
         if (!options?.listeners) {
             options.listeners = [];
         }
@@ -106,22 +107,22 @@ export class CommandState {
         this.resolveListeners = Object.fromEntries(
             listenerResult.
                 filter(([_k, _f, keep]) => keep).
-                map(([k, f, _keep]) => [k, f])
+                map(([k, f, _keep]) => [k, f]),
         );
-        for (let fullKey of this.defined) {
+        for (const fullKey of this.defined) {
             if (!this.options[fullKey].private) {
-                let [namespace, key] = fullKey.split('.');
+                const [namespace, key] = fullKey.split('.');
                 vscode.commands.executeCommand(
                     'setContext',
                     'master-key.' + fullKey,
-                    this.get(key, {namespace})
+                    this.get(key, { namespace }),
                 );
             }
         };
     }
 }
 
-export let state: CommandState = new CommandState();
+export const state: CommandState = new CommandState();
 
 export function onResolve(resolveId: string, listener: ResolveListener) {
     state.onResolve(resolveId, listener);
@@ -176,24 +177,10 @@ const setFlagArgs = z.
 async function setValue(args_: unknown): Promise<CommandResult> {
     const args = validateInput('master-key.setValue', args_, setFlagArgs);
     if (args) {
-        state.set(args.name, args.value, {namespace: 'val'});
+        state.set(args.name, args.value, { namespace: 'val' });
     }
     return;
 }
-
-interface ICodeState {
-    editorHasSelection: boolean;
-    editorHasMultipleSelections: boolean;
-    editorLangId: string;
-    firstSelectionOrWord: string;
-}
-
-let codeState: ICodeState = {
-    editorHasSelection: false,
-    editorHasMultipleSelections: false,
-    editorLangId: '',
-    firstSelectionOrWord: '',
-};
 
 function updateCodeVariables(
     e: { textEditor?: vscode.TextEditor;
@@ -230,19 +217,12 @@ function updateCodeVariables(
     if (doc) {
         editorLangId = e?.textEditor?.document?.languageId;
     }
-    codeState = {
-        editorHasSelection: selCount > 0,
-        editorHasMultipleSelections: selCount > 1,
-        editorLangId: editorLangId || '',
-        firstSelectionOrWord,
-    };
-    const opt = {namespace: 'code'};
+    const opt = { namespace: 'code' };
     state.set('editorHasSelection', selCount > 0, opt);
     state.set('editorHasMultipleSelections', selCount > 1, opt);
     state.set('editorLangId', editorLangId || '', opt);
     state.set('firstSelectionOrWord', firstSelectionOrWord, opt);
 }
-
 
 export async function activate(_context: vscode.ExtensionContext) {
     // TODO: how to handle the lack of `state.define` calls for

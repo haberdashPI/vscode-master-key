@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import z from 'zod';
 import { validateInput, wrappedTranslate } from '../utils';
-import { withState, CommandResult, recordedCommand } from '../state';
+import { state as keyState, CommandResult, recordedCommand } from '../state';
 import { MODE } from './mode';
 import { captureKeys } from './capture';
 import { bindings } from '../keybindings/config';
@@ -451,11 +451,7 @@ async function search(args_: unknown[]): Promise<CommandResult> {
     }
     currentSearch = args.register;
 
-    let mode = '';
-    await withState(async (state) => {
-        mode = state.get(MODE, bindings.default_mode())!;
-        return state;
-    });
+    const mode: string = keyState.get(MODE) || bindings.default_mode();
     const state = getSearchState(editor, mode, currentSearch);
     state.args = args;
     state.text = args.text || '';
@@ -490,9 +486,8 @@ async function search(args_: unknown[]): Promise<CommandResult> {
             }
             skipTo(state, editor);
         } else {
-            await withState(async (state) => {
-                return state.set(MODE, { public: true }, 'capture').resolve();
-            });
+            keyState.set(MODE, 'capture');
+            keyState.resolve();
             let accepted = false;
             const inputResult = new Promise<string>((resolve, reject) => {
                 try {
@@ -527,18 +522,16 @@ async function search(args_: unknown[]): Promise<CommandResult> {
             await inputResult;
             await skipTo(state, editor);
         }
-        await withState(async (st) => {
-            return st.set(MODE, { public: true }, state.oldMode).resolve();
-        });
+        keyState.set(MODE, state.oldMode);
+        keyState.resolve();
     }
     if (state.text) {
         return { ...state.args, text: state.text };
     } else {
         editor.selections = state.searchFrom;
         revealActive(editor, vscode.TextEditorRevealType.InCenterIfOutsideViewport);
-        await withState(async (st) => {
-            return st.set(MODE, { public: true }, state.oldMode).resolve();
-        });
+        keyState.set(MODE, state.oldMode);
+        keyState.resolve();
         return 'cancel';
     }
 }
@@ -579,11 +572,7 @@ async function nextMatch(
     if (!args) {
         return;
     }
-    let mode = '';
-    await withState(async (state) => {
-        mode = state.get(MODE, bindings.default_mode())!;
-        return state;
-    });
+    const mode: string = keyState.get(MODE) || bindings.default_mode();
     const state = getSearchState(editor, mode, args!.register);
     if (state.text) {
         for (let i = 0; i < (args.repeat || 1); i++) {
@@ -616,11 +605,7 @@ async function previousMatch(
     if (!args) {
         return;
     }
-    let mode = '';
-    await withState(async (state) => {
-        mode = state.get(MODE, bindings.default_mode())!;
-        return state;
-    });
+    const mode: string = keyState.get(MODE) || bindings.default_mode();
     const state = getSearchState(editor, mode, args!.register);
     if (state.text) {
         state.args.backwards = !state.args.backwards;

@@ -1,5 +1,5 @@
 import { CommandState } from '../state';
-import { withState } from '../state';
+import { state, onSet } from '../state';
 import * as vscode from 'vscode';
 import { MODE } from './mode';
 import { normalizeLayoutIndependentString } from '../keybindings/layout';
@@ -362,17 +362,14 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
         onChangeBindings(async (x) => {
             this.updateKinds(x);
             this.updateKeys(x);
-            await withState(async (state) => {
-                this.updateState(state);
-                return state;
-            });
+            this.updateState(state);
         });
-        state = state.onSet(MODE, (vals) => {
-            this.updateState(vals);
+        onSet(MODE, (_mode) => {
+            this.updateState(state);
             return true;
         });
-        state = state.onSet(PREFIX_CODE, (vals) => {
-            this.updateState(vals);
+        onSet(PREFIX_CODE, (_code) => {
+            this.updateState(state);
             return true;
         });
         return state;
@@ -489,16 +486,7 @@ async function showVisualDoc() {
 let docProvider: DocViewProvider | undefined;
 export async function activate(context: vscode.ExtensionContext) {
     docProvider = new DocViewProvider(context.extensionUri);
-    await withState(async (state) => {
-        if (docProvider) {
-            return await docProvider.attach(state);
-        } else {
-            console.error(
-                'Master key visual documentation `docProvider` is unexpectedly `undefined',
-            );
-            return state;
-        }
-    });
+    await docProvider.attach(state);
     vscode.window.registerWebviewViewProvider(DocViewProvider.viewType, docProvider);
     // TODO: only show `command` in os x
     // TODO: make a meta key for linux (and windows for windows)

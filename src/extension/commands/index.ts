@@ -8,7 +8,7 @@ import * as storeCommand from './storeCommand';
 import * as replay from './replay';
 import * as search from './search';
 import * as prefix from './prefix';
-import { withState } from '../state';
+import { state } from '../state';
 import * as palette from './palette';
 import * as visualKeyDoc from './visualKeyDoc';
 
@@ -69,9 +69,8 @@ export async function defineCommands(context: vscode.ExtensionContext) {
             // `gg` goes to the top of the buffer but `gog` should do nothing. so we need to
             // reset the state when the user types o in this situation
             doCommand.registerPaletteUpdate();
-            await withState(async (state) => {
-                return state.reset().resolve();
-            });
+            state.reset();
+            state.resolve();
             await doCommand.triggerCommandCompleteHooks();
 
             return;

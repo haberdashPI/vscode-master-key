@@ -3,9 +3,7 @@ import z from 'zod';
 import { validateInput } from '../utils';
 import { commandArgs, CommandResult, WrappedCommandResult } from '../state';
 import { MODE } from './mode';
-import { withState, recordedCommand } from '../state';
-// TODO: implement
-// import { doCommandsCmd } from './do';
+import { state, onSet, recordedCommand } from '../state';
 import { Mode, WhenNoBindingHeader } from '../../rust/parsing/lib/parsing';
 
 import { bindings } from '../keybindings/config';
@@ -46,9 +44,7 @@ export async function runCommandsForMode(mode: Mode) {
             }
         }
         onTypeFn = async (typed: string) => {
-            await withState(async state =>
-                state.set(CAPTURE, { transient: { reset: '' } }, typed),
-            );
+            state.set(CAPTURE, typed);
             const binding = mode.run_commands(bindings);
             if (!showExpressionErrors(binding)) {
                 for (let i = 0; i < binding.n_commands(); i++) {
@@ -79,22 +75,19 @@ export async function runCommandsForMode(mode: Mode) {
 
 type UpdateFn = (captured: string, nextChar: string) => [string, boolean];
 export async function captureKeys(onUpdate: UpdateFn) {
-    let oldMode: string;
-    await withState(async (state) => {
-        oldMode = state.get<string>(MODE)!;
-        if (!typeSubscription) {
-            try {
-                typeSubscription = vscode.commands.registerCommand('type', onType);
-                return state.set(MODE, { public: true }, 'capture').resolve();
-            } catch (_) {
-                vscode.window.
-                    showErrorMessage(`Master key failed to capture keyboard input. You
-                    might have an extension that is already listening to type events
-                    (e.g. vscodevim).`);
-            }
+    const oldMode = state.get<string>(MODE)!;
+    if (!typeSubscription) {
+        try {
+            typeSubscription = vscode.commands.registerCommand('type', onType);
+            state.set(MODE, 'capture');
+            state.resolve();
+        } catch (_) {
+            vscode.window.
+                showErrorMessage(`Master key failed to capture keyboard input. You
+                might have an extension that is already listening to type events
+                (e.g. vscodevim).`);
         }
-        return state;
-    });
+    }
 
     let stringResult = '';
     let isResolved = false;
@@ -103,18 +96,16 @@ export async function captureKeys(onUpdate: UpdateFn) {
         resolveFn = res;
     });
 
-    await withState(async (state) => {
-        return state.onSet(MODE, (state) => {
-            if (state.get(MODE, bindings.default_mode()) !== 'capture') {
-                clearTypeSubscription();
-                if (!isResolved) {
-                    isResolved = true;
-                    resolveFn(stringResult);
-                    return false;
-                }
+    onSet(MODE, (mode) => {
+        if (mode !== 'capture') {
+            clearTypeSubscription();
+            if (!isResolved) {
+                isResolved = true;
+                resolveFn(stringResult);
+                return false;
             }
-            return !isResolved;
-        });
+        }
+        return !isResolved;
     });
 
     onTypeFn = async (str: string) => {
@@ -123,9 +114,9 @@ export async function captureKeys(onUpdate: UpdateFn) {
         if (stop) {
             clearTypeSubscription();
             // setting the mode will call `resolveFn`
-            await withState(async state =>
-                state.set(MODE, { public: true }, oldMode).resolve(),
-            );
+            state.set(MODE, oldMode);
+            state.resolve();
+
             // if the old mode wasn't 'capture', `resolveFn` will have already been called
             // (in the `onSet` block above)
             if (!isResolved) {
@@ -187,9 +178,7 @@ async function captureKeysCmd(args_: unknown): Promise<CommandResult> {
         if (!text) {
             return 'cancel';
         }
-        await withState(async (state) => {
-            return state.set(CAPTURE, { transient: { reset: '' } }, text);
-        });
+        state.set(CAPTURE, text);
         args = { ...args, text };
     }
     return args;
@@ -266,6 +255,7 @@ async function insertChar(args_: unknown): Promise<CommandResult> {
 }
 
 export async function activate(_context: vscode.ExtensionContext) {
+    state.define(CAPTURE);
     return;
 }
 
