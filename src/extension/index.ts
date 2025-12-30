@@ -1,11 +1,21 @@
+import * as state from './state';
 import * as vscode from 'vscode';
 import * as keybindings from './keybindings/index';
 import * as commands from './commands/index';
 import * as status from './status/index';
-import * as state from './state';
 import * as config from './keybindings/config';
 
+export function defineState() {
+    keybindings.defineState();
+    config.defineState();
+    state.defineState();
+    commands.defineState();
+    status.defineState();
+}
+
 export async function activate(context: vscode.ExtensionContext) {
+    defineState();
+
     await keybindings.activate(context);
     await config.activate(context);
     await state.activate(context);

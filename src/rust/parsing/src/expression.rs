@@ -217,6 +217,7 @@ impl Scope {
         };
         scope.state.set_or_push("key", rhai::Map::new());
         scope.state.set_or_push("val", rhai::Map::new());
+        scope.state.set_or_push("code", rhai::Map::new());
 
         let history: HistoryQueue = Rc::new(RefCell::new(VecDeque::new()));
         let noop = ReifiedBinding::noop(&scope);
@@ -351,6 +352,15 @@ impl Scope {
         } else {
             return Ok(js_sys::Object::new().into());
         }
+    }
+
+    #[cfg_attr(coverage_nightly, coverage(off))]
+    pub fn get_defined_vals(&self) -> Result<Vec<String>> {
+        return Ok(self
+            .get_namespace("val")?
+            .keys()
+            .map(|x| x.as_str().to_string())
+            .collect());
     }
 
     // pub fn unset(&mut self, name: &str) -> Result<()> {

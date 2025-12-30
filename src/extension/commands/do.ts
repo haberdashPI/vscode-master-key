@@ -287,6 +287,9 @@ function updateConfig(event?: vscode.ConfigurationChangeEvent) {
     }
 }
 
+export function defineState() {
+}
+
 export async function activate(context: vscode.ExtensionContext) {
     expressionMessages = vscode.window.createOutputChannel('Master Key');
     context.subscriptions.push(expressionMessages);

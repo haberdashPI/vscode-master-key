@@ -23,6 +23,19 @@ import * as visualKeyDoc from './visualKeyDoc';
  *
  */
 
+export function defineState() {
+    capture.defineState();
+    count.defineState();
+    doCommand.defineState();
+    mode.defineState();
+    storeCommand.defineState();
+    replay.defineState();
+    search.defineState();
+    prefix.defineState();
+    palette.defineState();
+    visualKeyDoc.defineState();
+}
+
 export async function activate(context: vscode.ExtensionContext) {
     await capture.activate(context);
     await count.activate(context);

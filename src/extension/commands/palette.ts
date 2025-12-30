@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { getRequiredMode, getRequiredPrefixCode, prettifyPrefix } from '../utils';
-import { state, onSet } from '../state';
+import { state, onResolve } from '../state';
 import { bindings, onChangeBindings } from '../keybindings/config';
 import { PREFIX_CODE } from './prefix';
 import { MODE } from './mode';
@@ -250,6 +250,9 @@ function updateKeys(bindings: KeyFileResult) {
 let treeDataProvider: MasterKeyDataProvider;
 let treeView: vscode.TreeView<IPaletteBinding>;
 
+export function defineState() {
+}
+
 export async function activate(context: vscode.ExtensionContext) {
     treeDataProvider = new MasterKeyDataProvider();
     treeView = vscode.window.createTreeView('masterKeySidePanel', {
@@ -333,13 +336,9 @@ export async function defineCommands(context: vscode.ExtensionContext) {
 
     vscode.workspace.onDidChangeConfiguration(updateConfig);
 
-    onSet(MODE, (mode) => {
-        treeDataProvider.mode = <string>mode || bindings.default_mode();
-        return true;
-    });
-
-    onSet(PREFIX_CODE, (code) => {
-        treeDataProvider.prefixCode = <number>code;
+    onResolve('palette', () => {
+        treeDataProvider.mode = state.get<string>(MODE) || '';
+        treeDataProvider.prefixCode = state.get<number>(PREFIX_CODE) || -1;
         return true;
     });
 }

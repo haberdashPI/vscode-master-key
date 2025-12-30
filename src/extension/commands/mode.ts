@@ -46,6 +46,10 @@ export function restoreModesCursorState() {
     updateCursorAppearance(vscode.window.activeTextEditor, shape);
 }
 
+export function defineState() {
+    state.define(MODE);
+}
+
 let currentMode = 'default';
 export async function activate(_context: vscode.ExtensionContext) {
     onChangeBindings(updateModes);
@@ -56,7 +60,6 @@ export async function activate(_context: vscode.ExtensionContext) {
     });
 
     const defaultMode = bindings.default_mode() || 'default';
-    state.define(MODE);
     state.set(MODE, defaultMode);
     state.resolve();
 

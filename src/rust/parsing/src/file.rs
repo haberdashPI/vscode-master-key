@@ -743,6 +743,10 @@ impl KeyFileResult {
         return self.scope.get(namespace, name);
     }
 
+    pub fn get_defined_vals(&self) -> Result<Vec<String>> {
+        return self.scope.get_defined_vals();
+    }
+
     pub fn kinds(&self) -> Vec<Kind> {
         if let Some(KeyFile { kind, .. }) = &self.file {
             return kind.clone();

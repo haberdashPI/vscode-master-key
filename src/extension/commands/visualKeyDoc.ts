@@ -1,5 +1,5 @@
 import { CommandState } from '../state';
-import { state, onSet } from '../state';
+import { state, onResolve } from '../state';
 import * as vscode from 'vscode';
 import { MODE } from './mode';
 import { normalizeLayoutIndependentString } from '../keybindings/layout';
@@ -11,7 +11,6 @@ import {
     modifierKey,
     prettifyPrefix,
 } from '../utils';
-import { Map } from 'immutable';
 import { KeyFileResult } from '../../rust/parsing/lib/parsing';
 
 // TODO: use KeyboardLayoutMap to improve behavior
@@ -171,6 +170,8 @@ interface IVisualKeyBinding {
 // generates the webview for a provider
 export class DocViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'masterkey.visualDoc';
+    _mode?: string;
+    _prefixCode?: number;
     _view?: vscode.WebviewView;
     _bindingMap: Record<string, Record<string, IVisualKeyBinding>> = {};
     _currentBindingKey: string = '0:';
@@ -298,16 +299,20 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
         this._bindingMap = bindingMap;
     }
 
-    private updateState(state: CommandState | Map<string, unknown>) {
+    private updateState(state: CommandState) {
         this._modifierIndex = 0;
-        const prefixCode = state.get(PREFIX_CODE);
-        const mode = state.get(MODE);
-        const key = `${prefixCode}:${mode}`;
-        this._currentBindingKey = key;
-        this._modifierOrder = this._modifierOrderMap[key];
-        this._modifierIndex = 0;
-        this.updateKeyHelper(this._bindingMap[key]);
-        this.refresh();
+        const prefixCode: number = state.get(PREFIX_CODE) || -1;
+        const mode: string = state.get(MODE) || '';
+        if (this._prefixCode !== prefixCode || this._mode !== mode) {
+            this._prefixCode = prefixCode;
+            this._mode = mode;
+            const key = `${prefixCode}:${mode}`;
+            this._currentBindingKey = key;
+            this._modifierOrder = this._modifierOrderMap[key];
+            this._modifierIndex = 0;
+            this.updateKeyHelper(this._bindingMap[key]);
+            this.refresh();
+        }
     }
 
     private updateKeyHelper(
@@ -364,11 +369,7 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
             this.updateKeys(x);
             this.updateState(state);
         });
-        onSet(MODE, (_mode) => {
-            this.updateState(state);
-            return true;
-        });
-        onSet(PREFIX_CODE, (_code) => {
+        onResolve('visualDocs', () => {
             this.updateState(state);
             return true;
         });
@@ -481,6 +482,9 @@ async function showVisualDoc() {
         vscode.window.showTextDocument(editor.document);
     }
     return;
+}
+
+export function defineState() {
 }
 
 let docProvider: DocViewProvider | undefined;

@@ -53,6 +53,9 @@ function updateConfig(event?: vscode.ConfigurationChangeEvent) {
     }
 }
 
+export function defineState() {
+}
+
 export async function activate(_context: vscode.ExtensionContext) {
     updateConfig();
     vscode.workspace.onDidChangeConfiguration(updateConfig);
@@ -64,8 +67,8 @@ export async function activate(_context: vscode.ExtensionContext) {
     );
     keyStatusBar.accessibilityInformation = { label: 'No Keys Typed' };
     keyStatusBar.show();
-    await onSet(PREFIX, updateKeyStatus);
-    await onSet(COUNT, updateKeyStatus);
+    onSet(PREFIX, updateKeyStatus);
+    onSet(COUNT, updateKeyStatus);
 }
 
 export async function defineCommands(_context: vscode.ExtensionContext) {

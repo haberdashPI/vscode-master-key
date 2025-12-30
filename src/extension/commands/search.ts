@@ -618,6 +618,9 @@ async function previousMatch(
     return;
 }
 
+export function defineState() {
+}
+
 export async function activate(_context: vscode.ExtensionContext) {
     updateSearchHighlights();
     vscode.workspace.onDidChangeConfiguration(updateSearchHighlights);

@@ -30,6 +30,9 @@ function updateModeStatus() {
     return true;
 }
 
+export function defineState() {
+}
+
 let modeStatusBar: vscode.StatusBarItem | undefined = undefined;
 export async function activate(_context: vscode.ExtensionContext) {
     modeStatusBar = vscode.window.createStatusBarItem(

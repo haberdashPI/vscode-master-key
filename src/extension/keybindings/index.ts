@@ -614,6 +614,9 @@ function snakeCase(str: string) {
 
 let diagnostics: vscode.DiagnosticCollection;
 
+export function defineState() {
+}
+
 export async function activate(context: vscode.ExtensionContext) {
     updateConfig(undefined, context, false);
     vscode.workspace.onDidChangeConfiguration(event => updateConfig(event, context, true));

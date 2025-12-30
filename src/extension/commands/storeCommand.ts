@@ -107,6 +107,9 @@ async function executedStoredCommand(args_: unknown): Promise<CommandResult> {
     return undefined;
 }
 
+export function defineState() {
+}
+
 export async function activate(_context: vscode.ExtensionContext) {
     return;
 }

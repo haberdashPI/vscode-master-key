@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import z from 'zod';
+import { defineState as defineExtensionState } from './index';
 import { validateInput } from './utils';
 import { bindings, onChangeBindings } from './keybindings/config';
 import { ParseError } from '../rust/parsing/lib/parsing';
@@ -20,6 +21,12 @@ export class CommandState {
     private options: Record<string, IStateOptions> = {};
     private resolveListeners: Record<string, ResolveListener> = {};
     private defined: Set<string> = new Set();
+
+    clear() {
+        this.defined.clear();
+        this.options = {};
+        this.resolveListeners = {};
+    }
 
     define(key: string, opt: IStateOptions = {}, setOpt: ISetOptions = {}) {
         const fullKey = (setOpt.namespace || 'key') + '.' + key;
@@ -73,6 +80,26 @@ export class CommandState {
                     );
                 }
             }
+            if (!this.options[fullKey].private) {
+                if (namespace === 'val') {
+                    vscode.commands.executeCommand(
+                        'setContext',
+                        'master-key.val.' + key,
+                        val,
+                    );
+                } else if (namespace === 'key') {
+                    vscode.commands.executeCommand(
+                        'setContext',
+                        'master-key.' + key,
+                        val,
+                    );
+                } else {
+                    throw Error(
+                        'All public state must exist in the \`key\` or \`val\` ' +
+                        'namespace.',
+                    );
+                }
+            }
         }
     }
 
@@ -89,7 +116,7 @@ export class CommandState {
     }
 
     onSet(key: string, listener: Listener, opt: ISetOptions = {}) {
-        const fullKey = key + '.' + (opt.namespace || 'key');
+        const fullKey = (opt.namespace || 'key') + '.' + key;
         const options = this.options[fullKey];
         if (!options?.listeners) {
             options.listeners = [];
@@ -109,16 +136,6 @@ export class CommandState {
                 filter(([_k, _f, keep]) => keep).
                 map(([k, f, _keep]) => [k, f]),
         );
-        for (const fullKey of this.defined) {
-            if (!this.options[fullKey].private) {
-                const [namespace, key] = fullKey.split('.');
-                vscode.commands.executeCommand(
-                    'setContext',
-                    'master-key.' + fullKey,
-                    this.get(key, { namespace }),
-                );
-            }
-        };
     }
 }
 
@@ -128,7 +145,7 @@ export function onResolve(resolveId: string, listener: ResolveListener) {
     state.onResolve(resolveId, listener);
 }
 
-export async function onSet(name: string, listener: Listener) {
+export function onSet(name: string, listener: Listener) {
     state.onSet(name, listener);
 }
 
@@ -224,16 +241,24 @@ function updateCodeVariables(
     state.set('firstSelectionOrWord', firstSelectionOrWord, opt);
 }
 
-export async function activate(_context: vscode.ExtensionContext) {
-    // TODO: how to handle the lack of `state.define` calls for
-    // `val.` definitions. We mostly don't want to add these checks
-    // since we know how to handle `val` a priori
-    // onChangeBindings(updateDefinitions);
+export function defineState() {
+    state.define('editorHasSelection', { private: true }, { namespace: 'code' });
+    state.define('editorHasMultipleSelections', { private: true }, { namespace: 'code' });
+    state.define('editorLangId', { private: true }, { namespace: 'code' });
+    state.define('firstSelectionOrWord', { private: true }, { namespace: 'code' });
 
-    state.define('editorHasSelection', { private: true });
-    state.define('editorHasMultipleSelections', { private: true });
-    state.define('editorLangId', { private: true });
-    state.define('firstSelectionOrWord', { private: true });
+    if (bindings) {
+        for (const val of bindings.get_defined_vals()) {
+            state.define(val, {}, { namespace: 'val' });
+        }
+    }
+}
+
+export async function activate(_context: vscode.ExtensionContext) {
+    onChangeBindings(async (_bindings) => {
+        state.clear();
+        defineExtensionState();
+    });
 
     // TODO: what else do we need to update in the state when the bindings change??
     // TODO: I think we at least need to review any default state we might want to

@@ -254,8 +254,11 @@ async function insertChar(args_: unknown): Promise<CommandResult> {
     return args;
 }
 
-export async function activate(_context: vscode.ExtensionContext) {
+export function defineState() {
     state.define(CAPTURE);
+}
+
+export async function activate(_context: vscode.ExtensionContext) {
     return;
 }
 
