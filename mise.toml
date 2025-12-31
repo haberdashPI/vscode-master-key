@@ -162,7 +162,6 @@ outputs = ['docs/**/*.md']
 run = ['simple-src-docs -d docs src README.md', 'cp src/docs/index.md docs/']
 
 [tasks.extract-preset-docs]
-depends = ['build-rust']
 sources = ['../../presets/**/*.toml']
 outputs = ['../../../docs/presets/*.md']
 dir = 'src/rust/parsing/'
@@ -170,7 +169,11 @@ shell = 'nu -c'
 run = '''
 mkdir -v ../../../docs/presets
 ls ../../presets/**/*.toml | each { |file|
-    cargo run -- $file.name ../../../docs/presets/$"($file.name | path parse | get stem).md"
+    let tmp = (mktemp)
+    let output = $"../../../docs/presets/($file.name | path parse | get stem).md"
+    cargo run -- $file.name $tmp
+    pnpm exec tsx src/build/prettify-bindings.ts ($tmp | path expand) ($output | path expand)
+    rm $tmp
 }
 '''
 

@@ -323,6 +323,8 @@
         "semver": "^7.7.2",
         "smol-toml": "^1.4.1",
         "string.prototype.replaceall": "^1.0.10",
+        "ts-node": "^10.9.2",
+        "tsx": "^4.21.0",
         "type-fest": "^4.41.0",
         "typescript": "^5.8.3",
         "typescript-eslint": "^8.35.1",
