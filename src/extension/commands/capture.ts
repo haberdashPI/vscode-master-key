@@ -255,7 +255,7 @@ async function insertChar(args_: unknown): Promise<CommandResult> {
 }
 
 export function defineState() {
-    state.define(CAPTURE);
+    state.define(CAPTURE, '');
 }
 
 export async function activate(_context: vscode.ExtensionContext) {

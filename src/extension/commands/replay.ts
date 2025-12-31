@@ -331,8 +331,7 @@ function updateConfig(event?: vscode.ConfigurationChangeEvent) {
 }
 
 export function defineState() {
-    state.define(RECORD);
-    state.set(RECORD, false);
+    state.define(RECORD, false);
 }
 
 export async function activate(_context: vscode.ExtensionContext) {

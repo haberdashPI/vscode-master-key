@@ -15,6 +15,10 @@ interface IStateOptions {
 
 interface ISetOptions {
     namespace?: string;
+    // private property used only in this file
+    // that prevents `bidnings.set_value` from being called
+    // (used for `val` fields that have already been set)
+    __dont_update_bindings__?: boolean;
 }
 
 export class CommandState {
@@ -28,7 +32,12 @@ export class CommandState {
         this.resolveListeners = {};
     }
 
-    define(key: string, opt: IStateOptions = {}, setOpt: ISetOptions = {}) {
+    define<T>(
+        key: string,
+        initialValue: T,
+        opt: IStateOptions = {},
+        setOpt: ISetOptions = {},
+    ) {
         const fullKey = (setOpt.namespace || 'key') + '.' + key;
         if (this.defined.has(fullKey)) {
             throw Error(`${fullKey} already exists`);
@@ -38,6 +47,7 @@ export class CommandState {
         }
         this.defined.add(fullKey);
         this.options[fullKey] = opt;
+        this.set(key, initialValue, setOpt);
     }
 
     get<T>(key: string, opt: ISetOptions = {}): T | undefined {
@@ -70,7 +80,9 @@ export class CommandState {
             this.options[fullKey].listeners = listeners.filter(listener => listener(val));
 
             try {
-                bindings.set_value(namespace, key, val);
+                if (!opt.__dont_update_bindings__) {
+                    bindings.set_value(namespace, key, val);
+                }
             } catch (e) {
                 if ((<ParseError>e).report_string) {
                     const msg = (<ParseError>e).report_string();
@@ -242,14 +254,39 @@ function updateCodeVariables(
 }
 
 export function defineState() {
-    state.define('editorHasSelection', { private: true }, { namespace: 'code' });
-    state.define('editorHasMultipleSelections', { private: true }, { namespace: 'code' });
-    state.define('editorLangId', { private: true }, { namespace: 'code' });
-    state.define('firstSelectionOrWord', { private: true }, { namespace: 'code' });
+    state.define(
+        'editorHasSelection',
+        false,
+        { private: true },
+        { namespace: 'code' },
+    );
+    state.define(
+        'editorHasMultipleSelections',
+        false,
+        { private: true },
+        { namespace: 'code' },
+    );
+    state.define(
+        'editorLangId',
+        '',
+        { private: true },
+        { namespace: 'code' },
+    );
+    state.define(
+        'firstSelectionOrWord',
+        '',
+        { private: true },
+        { namespace: 'code' },
+    );
 
     if (bindings) {
         for (const val of bindings.get_defined_vals()) {
-            state.define(val, {}, { namespace: 'val' });
+            state.define(
+                val,
+                bindings.get_value('val', val),
+                {},
+                { namespace: 'val', __dont_update_bindings__: false },
+            );
         }
     }
 }

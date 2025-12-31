@@ -180,15 +180,12 @@ export async function keySuffix(key: string) {
 }
 
 export function defineState() {
-    state.define(PREFIX, { transient: { reset: '' } });
-    state.define(PREFIX_CODE, { transient: { reset: 0 } });
-    state.define(PREFIX_CURSOR, { transient: { reset: false } });
+    state.define(PREFIX, '', { transient: { reset: '' } });
+    state.define(PREFIX_CODE, 0, { transient: { reset: 0 } });
+    state.define(PREFIX_CURSOR, false, { transient: { reset: false } });
 }
 
 export async function activate(_context: vscode.ExtensionContext) {
-    state.set(PREFIX, '');
-    state.set(PREFIX_CODE, 0);
-    state.set(PREFIX_CURSOR, false);
     onSet(PREFIX_CURSOR, (prefixCursor) => {
         if (!prefixCursor && oldPrefixCursor) {
             restoreModesCursorState();

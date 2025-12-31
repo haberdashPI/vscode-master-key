@@ -58,8 +58,7 @@ async function updateCount(args_: unknown): Promise<CommandResult> {
 }
 
 export function defineState() {
-    state.define(COUNT, { transient: { reset: 0 } });
-    state.set(COUNT, 0);
+    state.define(COUNT, 0, { transient: { reset: 0 } });
 }
 
 export async function activate(_context: vscode.ExtensionContext) {

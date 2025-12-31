@@ -746,12 +746,23 @@ Follow-up:
 - [X] make a command that activates the current file directly
 - [ ] refactor `state.ts`:
     - [X] simplify implementation, using rust as the backing state container
-    - [ ] re-read through logic in `state.ts`, make sure I didn't miss anything
-    - [ ] refactor all callers of `state.ts`
+    - [X] re-read through logic in `state.ts`, make sure I didn't miss anything
+    - [X] refactor all callers of `state.ts`
+    - [X] simple debug testing
     - [ ] integration testing
+        - [ ] `press-keybindings.tests.ts`: cursor shape doesn't change
+            - we cannot yet reproduce during a debug run, only integration run
+            - in the process of tooling out code path with `console.log`
+              and comparing their outputs across debug and integration run
+- [ ] build source for webview components in esbuild, probably by making them
+      an entrypoint of esbuild
 - [ ] organize additional priorities before release 1.0 (including the below follow-ups)
     - [ ] review issues listed on repo / project board
     - [ ] add below issues to project board
+- [ ] commenting
+    - non-goal: clean up code
+    - goal: make sure anything that is unclear or messy is discussed in a comment
+      (e.g. with TODO and/or description/rationale)
 - [ ] make some features more discoverable
     - [x] create "tour" section for vscode's start window
     - add a button to edit a copy of a binding file from the activate binding menu

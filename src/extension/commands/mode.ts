@@ -43,11 +43,13 @@ async function updateModes(bindings: KeyFileResult) {
 }
 export function restoreModesCursorState() {
     const shape = bindings.mode(currentMode)?.cursorShape || CursorShape.Line;
+    console.log(`[DEBUG]: n_bindings ${bindings.n_bindings()}`);
+    console.log(`[DEBUG]: shape ${shape}`);
     updateCursorAppearance(vscode.window.activeTextEditor, shape);
 }
 
 export function defineState() {
-    state.define(MODE);
+    state.define(MODE, 'default');
 }
 
 let currentMode = 'default';
