@@ -653,7 +653,7 @@ export async function activate(context: vscode.ExtensionContext) {
 export async function defineCommands(context: vscode.ExtensionContext) {
     /**
      * @userCommand activateCurrentFile
-     * @name Activate Keybindings in Current File
+     * @name Activate Keybindings
      *
      * Insert the master key bindings in the current file into VSCode, making them active
      */
