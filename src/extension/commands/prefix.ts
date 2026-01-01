@@ -80,8 +80,8 @@ const PREFIX_CURSOR = 'prefixCursor';
  *
  * These prefixes may be explicitly specified in this way so they can be documented. When
  * users do not provide an explicit prefix, Master key implicitly creates these bindings by
- * itself, but without documentation. As such, all of the bindings written in a
- * `keybinding.json` file have just a single key press, with some conditioned on the
+ * itself, but without documentation. As such, by the time master keybindings are inserted
+ * into `keybinding.json` they have just a single key press, with some conditioned on the
  * specific prefix that must occur beforehand. This is so that master key can explicitly
  * manage state across the key presses of a multi-key sequence keybinding.
  *
@@ -92,14 +92,15 @@ const PREFIX_CURSOR = 'prefixCursor';
  * (though it should rarely be necessary to access the prefix explicitly in a `when`
  * clause). It is stored as a space delimited sequence of keybindings in the same form that
  * the [`key`](/bindings/bind) field is specified (which is the same as the binding format
- * for any VSCode keybinding).
+ * for any VSCode keybinding). It is displayed in a stylized fashion: e.g. Ctrl+J becomes
+ * ^J.
  *
  * ## Transient State
  *
  * A binding that includes a `prefix` command has `finalKey` set to `false`. Whereas,
  * without a `prefix` command present, the default is `true`. When `finalKey` is `false`
  * master key does not reset any previously set transient state (e.g. from previous calls to
- * `prefix` or transient [`setValue`](/commands/setValue)). When `finalKey` is `true` any
+ * `prefix` or `updateCount`). When `finalKey` is `true` any
  * transient state is returned to a default, unset state.
  *
  * In most circumstances you do not want to set `finalKey` to false *without* using
