@@ -70,7 +70,7 @@ pub struct ModeInput {
     ///
     /// - `default`: whether this mode is the default when the editor is opened. There
     ///   should be exactly one default mode. All keybindings without an explicit
-    ///   mode are defined to use this mode.
+    ///   mode use this mode.
     default: Option<bool>,
     /// @forBindingField mode
     ///
@@ -100,13 +100,13 @@ pub struct ModeInput {
     ///   - `"insertCharacters"`: The mode defines no implicit bindings. Pressing characters
     ///     will cause text to be inserted into a file, as usual. This is the default
     ///     behavior for the implicitly defined "default" mode. If you define modes
-    ///     explicitly at least one of them must be set to `'insertCharacters'`; otherwise the
+    ///     explicitly at least one of them must be set to `"insertCharacters"`; otherwise the
     ///     user could not type.
     ///   - `{"useMode": "[mode]"}`: fallback to the keybindings and behavior defined in
     ///     another mode.
-    ///   - `{"run": [<commands>]}`: captures characters in the variable `key.captured`, a
-    ///     string representing the key pressed. Then run the given commands, as per the
-    ///     fields allowed when [running multiple commands](/bindings/bind#running-multiple-commands) in
+    ///   - `{"run": [<commands>]}`: every character pressed is stored in `key.captured`.
+    ///     Then `commands` are run, as per the fields allowed when
+    ///     [running multiple commands](/bindings/bind#running-multiple-commands) in
     ///     `[[bind]]`.
     #[serde(default)]
     whenNoBinding: Option<Spanned<WhenNoBindingInput>>,

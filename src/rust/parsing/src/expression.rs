@@ -91,9 +91,11 @@ use crate::{
 ///   the regular expression
 /// - `all_modes()`: returns an array of strings of all keybinding modes defined by the
 ///   current keybinding set. It does not include the automatically defined mode
-///   `"capture"`, since it is rarely advised to define bindings for this mode, which should
-///   instead be used to capture keys typed during [`master-key.search`](/commands/search)
-///   and [`master-key.captureKeys`](/commands/captureKeys).
+///   `"capture"`. It is rarely advised to define bindings for this mode.
+///   The "capture" is used to capture keys typed during
+///   [`master-key.search`](/commands/search)
+///   and [`master-key.captureKeys`](/commands/captureKeys). Defining bindings for
+///   a key will prevent it from being captured by these commands.
 /// - `not_modes([exclusions])`: given an array of strings of excluded modes, returns all
 ///   keybinding modes defined by the current keybinding set that are not among these
 ///   exclusions. Like `all_modes` the mode "capture" is not included.
