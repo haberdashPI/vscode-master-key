@@ -515,7 +515,7 @@ doc.name = "repeat subject"
 doc.description = """
 Repeat the subject: a motion command that occurred right before an action. For
 instance `w` followed by `d` selects a word and deletes it. The `w` command would be the
-last subject until some new action is run after `d`. See also `.` which repeats the last action.
+last subject until some new action is run. See also `.` which repeats the last action.
 """
 key = ","
 command = "master-key.replayFromHistory"
@@ -778,10 +778,10 @@ command = "editor.action.jumpToBracket"
 default = "{{bind.edit_motion_prim}}"
 key = '\'
 doc.name = "→ sel"
-doc.combined.name = "→/← sel"
+doc.combined.name = "→ (←) sel"
 doc.description = "select *just* the character to the right"
-doc.combined.description = "select *just* the character to the right"
-doc.combined.key = 'shift+\/\'
+doc.combined.description = "select *just* the character to the right (left)"
+doc.combined.key = '(shift+)\'
 mode = ["normal", "selectedit"]
 command = "runCommands"
 
@@ -796,7 +796,7 @@ args = { to = "right", select = true, value = "{{key.count}}" }
 default = "{{bind.edit_motion_prim}}"
 key = 'shift+\'
 doc.name = "← sel"
-doc.combined.name = "→/← sel"
+doc.combined.name = "→ (←) sel"
 doc.description = "select *just* the character to the left"
 mode = ["normal", "selectedit"]
 command = "runCommands"
@@ -1231,11 +1231,11 @@ args.backwards = true
 
 ## ## Advanced Commands
 
-## Advanced commands comprise a much broader set of behaviors than the essential commands but an advanced user would be expected to make frequent use of many of these commands.
+## Advanced commands comprise a much broader set of behaviors than the essential commands but an experienced user would be expected to make frequent use of many of these commands.
 
 ## ### Goto Motions
 
-## Goto motions all begin with the mnemonic prefix key `g`. They are additional motion commands that compliment the basic motions listed in the previous section.
+## Goto motions all begin with the mnemonic prefix key `g`. They are additional motion commands that compliment the simple and standard actions.
 
 [[bind]]
 default = "{{bind.edit_motion}}"
@@ -1370,7 +1370,7 @@ priority = 1
 doc.name = "WORD →"
 doc.combined.name = "WORD →/←"
 doc.combined.description = """
-next/prev WORD;  e.g. contiguous non-whitespace region
+next/prev WORD; e.g. contiguous non-whitespace region
 """
 doc.combined.key = "w/b"
 doc.description = "next WORD; e.g. contiguous non-whitespace region"
@@ -1392,7 +1392,7 @@ default = "{{bind.edit_motion_obj}}"
 key = "g e"
 priority = 1
 doc.name = "WORD end →"
-doc.description = "next WORD end; e.g. contiguous non-whitespace region"
+doc.description = "next WORD end; i.e. contiguous non-whitespace region"
 args.unit = "BigWord"
 args.boundary = "end"
 args.value = "{{max(key.count, 1)}}"
@@ -1667,6 +1667,8 @@ key = "m g w"
 doc.name = "around WORD →"
 doc.combined.name = "around WORD →/←"
 doc.combined.key = "w/b"
+doc.combined.description = "expand around a WORD; a contiguous non-whitespace region"
+
 args.unit = "BigWord"
 args.value = "{{max(key.count, 1)}}"
 
@@ -1682,6 +1684,7 @@ args.value = "{{-(max(key.count, 1))}}"
 default = "{{bind.edit_motion_match_obj}}"
 key = "m g e"
 doc.name = "in WORD"
+doc.description = "select within a WORD; a contiguous non-whitespace region"
 args.unit = "BigWord"
 args.boundary = "both"
 args.value = "{{max(key.count, 1)}}"
@@ -1748,7 +1751,7 @@ doc.name = "in <>"
 doc.description = "text inside angle brackets"
 doc.combined.name = "in <> / in ><"
 doc.combined.key = "shift+. / shift+,"
-doc.combined.description = "text inside angle brackets / pairs (e.g. text in <a>text</a>)"
+doc.combined.description = "text inside angle brackets / pairs"
 command = "extension.selectAngleBrackets"
 
 [[bind]]
@@ -1756,7 +1759,7 @@ default = "{{bind.edit_motion}}"
 key = "m shift+,"
 doc.name = "in ><"
 doc.combined.name = "in <> / in ><"
-doc.description = "text inside tag pairs (e.g. <a>text</a>)"
+doc.description = "text inside xml tag pairs"
 command = "extension.selectInTag"
 
 [[bind]]
@@ -1864,6 +1867,7 @@ default = "{{bind.edit_action}}"
 doc.name = "paste after line"
 doc.combined.name = "paste after/before line"
 doc.combined.key = "p/shift+p"
+doc.combined.description = "Paste text after/before current line"
 doc.description = "Paste text after current line"
 priority = 2
 key = "space p"

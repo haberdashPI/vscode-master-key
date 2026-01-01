@@ -162,7 +162,7 @@ outputs = ['docs/**/*.md']
 run = ['simple-src-docs -d docs src README.md', 'cp src/docs/index.md docs/']
 
 [tasks.extract-preset-docs]
-sources = ['../../presets/**/*.toml']
+sources = ['../../presets/**/*.toml', 'src/**/*.rs']
 outputs = ['../../../docs/presets/*.md']
 dir = 'src/rust/parsing/'
 shell = 'nu -c'

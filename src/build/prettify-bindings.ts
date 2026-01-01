@@ -6,7 +6,7 @@ import { replaceMatchesWith, prettifyPrefix } from '../extension/key-utils';
 const input = process.argv[2];
 const output = process.argv[3];
 const content = fs.readFileSync(path.resolve(input), 'utf8');
-const regex = /<key>(.*?)<\/key>/gs;
+const regex = /<key-bind>(.*?)<\/key-bind>/gs;
 const prettyKey = replaceMatchesWith(content, regex, (str) => {
     return prettifyPrefix(str);
 });
