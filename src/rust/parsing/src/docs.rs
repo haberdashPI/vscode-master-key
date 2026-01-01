@@ -82,15 +82,15 @@ impl FileDocTableRow {
             && self.combine_count > 1
         {
             if self.key.len() > 1 {
-                let mut key = self.key[0..(self.key.len() - 1)].join("</key> <key>");
-                key.push_str("</key> <key>");
+                let mut key = self.key[0..(self.key.len() - 1)].join("</key-bind> <key-bind>");
+                key.push_str("</key-bind> <key-bind>");
                 key.push_str(combined.key.as_str());
                 key
             } else {
                 combined.key.clone()
             }
         } else {
-            self.key.join("</key> <key>")
+            self.key.join("</key-bind> <key-bind>")
         };
 
         let name = if let Some(combined) = &self.doc.combined
@@ -112,11 +112,11 @@ impl FileDocTableRow {
 
         if show_mode {
             return format!(
-                "| {} | <key>{key}</key> | {name} | {description} |",
+                "| <key-bind>{key}</key-bind> | {name} | {description} | {} | ",
                 self.mode
             );
         } else {
-            return format!("| <key>{key}</key> | {name} | {description} |");
+            return format!("| <key-bind>{key}</key-bind> | {name} | {description} |");
         }
     }
 }
@@ -291,8 +291,8 @@ impl FileDocSection {
                 continue;
             }
             if show_mode {
-                result.push_str("| mode | key | name | description |\n");
-                result.push_str("| ---- | --- | ---- | ----------- |\n");
+                result.push_str("| key | name | description | mode |\n");
+                result.push_str("| --- | ---- | ----------- | ---- |\n");
             } else {
                 result.push_str("| key | name | description |\n");
                 result.push_str("| --- | ---- | ----------- |\n");
