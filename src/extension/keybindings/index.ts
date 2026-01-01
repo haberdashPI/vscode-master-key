@@ -729,7 +729,7 @@ export async function defineCommands(context: vscode.ExtensionContext) {
     async function showTextDoc() {
         const content = bindings.text_docs();
         if (content) {
-            const regex = /<key>(.*?)<\/key>/gs;
+            const regex = /<key-bind>(.*?)<\/key-bind>/gs;
             const prettyKey = replaceMatchesWith(content, regex, (str) => {
                 return prettifyPrefix(str);
             });

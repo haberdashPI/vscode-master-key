@@ -35,7 +35,7 @@ export function replaceMatchesWith(str: string, regex: RegExp, replacer: Replace
     let match = regex.exec(str);
     let lastIndex = 0;
     while (match) {
-        const fullMatch = match[0]; // e.g., "<key>shift+t</key>"
+        const fullMatch = match[0]; // e.g., "<key-bind>shift+t</key-bind>"
         const innerMatch = match[1]; // e.g., "shift+t"
         // replace matched text
         result += str.substring(lastIndex, match.index);
