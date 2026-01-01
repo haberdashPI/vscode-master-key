@@ -22,11 +22,11 @@ use crate::{err, wrn};
 /// @description object of arbitrary fields which can be used in
 /// computed arguments.
 ///
-/// The `define` field can be used to define re-usable values. There are three types of
+/// The `define` field can be used to define reusable values. There are three types of
 /// values that can be defined.
 ///
 /// 1. `[[define.val]]` variable definitions: defines any number of key-value pairs that can
-///    be referenced inside an [expression](/expressions/index)
+///    be referenced inside an [expression](/expressions/index) or when clause.
 /// 2. `[[define.command]]` command definitions: defines one or more commands that can be
 ///    referenced when [running multiple commands](/bindings/bind#running-multiple-commands).
 /// 3. `[[define.bind]]` bind definitions: defines a partial set of `command` fields that can
@@ -95,7 +95,7 @@ pub struct DefineInput {
     ///
     /// ## Command Definitions
     ///
-    /// You can define re-usable commands that can be run when running [multiple
+    /// You can define reusable commands that can be run when running [multiple
     /// commands](/bindings/bind#running-multiple-commands).
     ///
     /// In addition to the normal fields of a command, you must provide an `id` to refer to
