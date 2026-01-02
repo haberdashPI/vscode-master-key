@@ -38,9 +38,10 @@ import { onCommandComplete } from './do';
  *      rather than to one side or the other
  *   - `start`: cursor will land on the first character of the match
  *   - `end`: cursor will land on the last character of the match
- * - `register` (default="default"): Determine what storage register repeated search
- *    commands (`nextMatch`/`previousMatch`) use. If you have multiple search commands you
- *    can use registers to avoid the two commands using the same search state.
+ * - `register` (default="default"): A unique name determining where search state will be
+ *    stored. Calls to (`nextMatch`/`previousMatch`) use this state to determine where to
+ *    jump. If you have multiple search commands you can use registers to avoid the two
+ *    commands using a shared search state.
  * - `skip` (default=0): the number of matches to skip before stopping.
  */
 
@@ -564,9 +565,9 @@ const matchStepArgs = z.object({
  * Find the next match of the most recently executed run of `master-key.search`
  *
  * **Arguments**
- * - `register` (default="default"): Determine what storage register repeated search
- *    commands use. If you have multiple search commands you can use registers to avoid the
- *    two commands using the same search state.
+ * - `register` (default="default"): A unique name determining what search state will be
+ *    used to determine where to jump. If you have multiple search commands you can use
+ *    registers to avoid the two commands using a shared search state.
  * - `repeat`: how many matches to skip before stopping
  */
 
@@ -601,9 +602,9 @@ async function nextMatch(
  * Find the previous match of the most recently executed run of `master-key.search`
  *
  * **Arguments**
- * - `register` (default="default"): Determine what storage register repeated search
- *    commands use. If you have multiple search commands you can use registers to avoid the
- *    two commands using the same search state.
+ * - `register` (default="default"): A unique name determining what search state will be
+ *    used to determine where to jump. If you have multiple search commands you can use
+ *    registers to avoid the two commands using a shared search state.
  * - `repeat`: how many matches to skip before stopping
  */
 
