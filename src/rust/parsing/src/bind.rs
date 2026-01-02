@@ -103,19 +103,19 @@ pub struct BindingInput {
     pub when: Option<Spanned<TypedValue<String>>>,
     /// @forBindingField bind
     ///
-    /// - `mode`: The mode during which the binding will be active. The default mode is
-    ///   used when this field is not specified (either directly or via the `default`
-    ///   field). You can also make use of an [expression](/expressions/index)
-    ///   that will be evaluated while the bindings are being parsed. There are two
-    ///   available functions of use here:
-    ///   [`all_modes`](/expressions/#read-time-evaluation) and
+    /// - `mode`: The key mode (or modes) for which the binding is active. Can be a string
+    ///   or an array of strings. The default mode is used when this field is not specified.
+    ///   When using an [expression](/expressions/index) there are two available functions
+    ///   of use here: [`all_modes`](/expressions/#read-time-evaluation) and
     ///   [`not_modes`](/expressions/#read-time-evaluation)
     pub mode: Option<Spanned<TypedValue<Plural<String>>>>,
     /// @forBindingField bind
     ///
-    /// - `priority`: The ordering of the keybinding relative to others; determines which
-    ///   bindings trigger. Higher priorities trigger over lower priorities.
-    ///   Defaults to 0.
+    /// - `priority`: The ordering of the keybinding relative to others when inserted into
+    ///   `keybinding.json`; determines which bindings trigger for a given key press. Higher
+    ///   priorities trigger over lower priorities because they are ordered later in
+    ///   `keybindings.json`. Defaults to 0. When ordering bindings with same priority the
+    ///   order is determined by the binding's order in the TOML file.
     pub priority: Option<Spanned<TypedValue<f64>>>,
     /// @forBindingField bind
     ///
@@ -132,13 +132,13 @@ pub struct BindingInput {
 
     /// @forBindingField bind
     ///
-    /// - `prefixes`: expresses the allowed key sequences that occur *before* this
-    /// keybinding. Explicit sequences specified here should be define elsewhere with a
-    /// [`master-key.prefix`](/commands/prefix) command or they will raise an error.
-    /// The value is an object with only one of the following three keys:
+    /// - `prefixes`: expresses the allowed key sequences that can occur *before* this
+    /// keybinding. Explicit prefixes listed here should be define elsewhere with a
+    /// [`master-key.prefix`](/commands/prefix) command or they will raise an error. The
+    /// value is an object with only one of the following three keys:
     ///   - `any`: when `true` any prefix defined elsewhere in the file is allowed before
-    ///   the binding, `false` means no sequence can occur prior to this binding (this is
-    ///   the default behavior).
+    ///   the binding. This includes the implicit prefixes of any other keybinding. `false`
+    ///   means no other key sequence can occur prior to this binding (this is the default behavior).
     ///   - `anyOf`: A single string or an array of strings, each an allowed prefix
     ///   - `allBut`: A single string or an array of strings; all prefixes *except* those
     ///   specified here are valid
@@ -407,8 +407,9 @@ pub struct BindingDocInput {
     /// @forBindingField bind
     /// @order 10
     ///
-    /// - `hideInPalette/hideInDocs`: whether to show the keys in the popup suggestions
-    ///   and the documentation. These both default to false.
+    /// - `hideInPalette/hideInDocs`: whether to show the keys in the sidebar suggestions
+    ///   and the documentation. These both default to false. Note that if the `name`
+    ///   of a key is not defined it does not show up anywhere in the documentation.
     #[serde(default)]
     pub hideInPalette: Option<Spanned<TypedValue<bool>>>,
     #[serde(default)]

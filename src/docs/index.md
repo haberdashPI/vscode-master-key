@@ -32,4 +32,4 @@ features:
 
 <!-- TODO: image? -->
 
-Master Key was envisioned as a set of tools to make it easy to create powerful keybinding specifications that match your editor style of choice (modal, chorded, etc...). There are extensive options for [customizing your bindings](guide#customizing-bindings).
+Master Key is a set of tools to make it easy to create powerful keybinding specifications that match your editor style of choice (modal, chorded, etc...). There are extensive options for [customizing your bindings](guide#customizing-bindings).

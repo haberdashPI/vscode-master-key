@@ -8,13 +8,13 @@
 
 Master Key is a tool for becoming a power-user of your [VSCode](https://code.visualstudio.com/) keybindings. Features include:
 
-- extensive documentation of your bindings (sidebar suggestions, visual and text)
+- extensive documentation of your bindings (sidebar suggestions, visual guide and inline text documentation)
 - predefined keybinding sets
 - modal bindings (ala Vim),
 - record simple keyboard macros
 - a powerful TOML-based keybinding specification
 
-For example, this curated snippet from the Master Key's Larkin preset defines a VIM-like feature to update a count argument along with and downward motion that uses the count argument:
+This curated snippet from the Master Key's Larkin preset defines a VIM-like feature to update a count argument along with and downward motion that uses the count argument:
 
 ```toml
 # front matter...
@@ -27,7 +27,6 @@ args.value = "{{num}}"
 finalKey = false
 mode = '{{not_modes(["insert"])}}'
 doc.name = "count {{num}}"
-doc.hideInDocs = true
 doc.description = "Add digit {{num}} to the count argument of a command"
 doc.combined.key = "0-9"
 doc.combined.name = "count 0-9"
@@ -83,13 +82,13 @@ Learn and review your bindings on a keyboard layout:
 
 ### Cheat sheet of keybindings
 
-Review your bindings in a cheat sheet organized by theme:
+Review your bindings in the text documentation
 
 ![example of cheat sheet](images/readme/cheatsheet.png)
 
 ### Keybinding hints
 
-See a quick pick palette of possible bindings for the current mode and prefix of keys already pressed:
+See a sidebar listing possible bindings for the current mode and prefix of keys already pressed:
 
 <img src="images/readme/palette.png" width="400" alt="example of palette">
 
@@ -152,7 +151,7 @@ Record longer command sequences and replay them. These are sometimes referred to
 ![example of recording key sequence](images/readme/record.webp)
 
 > [!NOTE]
-> Command recording comes with a few limitations. Master key can record any edits, and any commands that are issued through master key bindings. Commands that are not part of this binding file (e.g. a standard call to Cmd/Ctrl+V to paste) will not be recorded. You can copy your non-master-key bindings over to Master Key (so that they will be recorded) by [customizing your bindings](#customized-bindings) and using `Import Default Bindings` and `Import User Bindings` to allow all of the default and user bindings stored in VSCode's normal keybinding files to be recorded by Master Key. (You will have to remove your original user bindings from the VSCode `keybinding.json` file manually). Also note that some edits cannot be recordings using VSCode's API (e.g. automated completion of parenthesis), so the ability to record any typing is limited.
+> Command recording comes with a few limitations. Master key can record some edits, and any commands that are issued through master key bindings. Commands that are not part of this binding file (e.g. a standard call to Cmd/Ctrl+V to paste) will not be recorded. Also note that some edits cannot be recordings using VSCode's API (e.g. automated completion of parenthesis).
 
 ### Symmetric Insert
 
@@ -239,7 +238,7 @@ last_history_index(|i| {
 
 ### Documented Bindings
 
-Of course, just like all of the built-in bindings in Master Key, you can document your bindings so that they show up legibly within the discoverability features above. The toml file is a literate document used to generate the textual documentation and all binding's names will show up in the visual documentation as appropriate.
+Of course, just like all of the built-in bindings in Master Key, you can document your bindings so that they show up legibly within the discoverability features above. The toml file is a literate document used to generate the textual documentation and all bindings' names will show up in the visual documentation as appropriate.
 
 ## Developer Notes
 
