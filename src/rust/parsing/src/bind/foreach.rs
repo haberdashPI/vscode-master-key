@@ -4,8 +4,8 @@
 /// ## `foreach` Clauses
 ///
 /// The `bind.foreach` field of a keybinding can be used to generate many bindings from one
-/// entry. Each field under `foreach` is looped through exhaustively. On each iteration,
-/// these `foreach` values are all set to one of the possible combinations of values. For
+/// entry. Each field under `foreach` should be an array. They are looped through
+/// exhaustively, creating a binding for each combination of values of the fields. For
 /// example, the following creates 9 bindings, for all possible combinations of the three
 /// values of `a` and `b`.
 ///
@@ -18,10 +18,10 @@
 /// args.text = "{{a-b}}"
 /// ```
 ///
-/// Furthermore, if the expression <code v-pre>{{keys(quoted-regex)}}</code> is included in
-/// a `foreach` value, it is expanded to all keybindings that match the given regular
-/// expression and spliced into the array of values. For example, the following definition
-/// is used in `Larkin` to allow the numeric keys to be used as a count prefix for motions.
+/// Furthermore, if an element of this array is a nested array, it is spliced into the array
+/// of values. This is commonly used to leverage the `keys` function available from
+/// [expressions](/expression/index). For example, the following definition is used in
+/// `Larkin` to allow the numeric keys to be used as a count prefix for motions.
 ///
 /// ```toml
 /// [[bind]]

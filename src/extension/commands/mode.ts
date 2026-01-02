@@ -37,14 +37,12 @@ async function setMode(args_: unknown): Promise<CommandResult> {
 async function updateModes(bindings: KeyFileResult) {
     const newDefault = bindings.default_mode();
     console.log(`newDefault: ${newDefault}`);
-    restoreModesCursorState();
     state.set(MODE, newDefault);
     state.resolve();
 }
+
 export function restoreModesCursorState() {
-    const shape = bindings.mode(currentMode)?.cursorShape || CursorShape.Line;
-    console.log(`[DEBUG]: n_bindings ${bindings.n_bindings()}`);
-    console.log(`[DEBUG]: shape ${shape}`);
+    const shape = bindings.mode(currentResolvedMode)?.cursorShape || CursorShape.Line;
     updateCursorAppearance(vscode.window.activeTextEditor, shape);
 }
 
@@ -52,12 +50,12 @@ export function defineState() {
     state.define(MODE, 'default');
 }
 
-let currentMode = 'default';
+let currentResolvedMode = '';
 export async function activate(_context: vscode.ExtensionContext) {
     onChangeBindings(updateModes);
 
     vscode.window.onDidChangeActiveTextEditor((e) => {
-        const shape = bindings.mode(currentMode)?.cursorShape || CursorShape.Line;
+        const shape = bindings.mode(currentResolvedMode)?.cursorShape || CursorShape.Line;
         updateCursorAppearance(e, shape);
     });
 
@@ -66,7 +64,7 @@ export async function activate(_context: vscode.ExtensionContext) {
     state.resolve();
 
     onResolve('mode', () => {
-        const _currentMode = currentMode;
+        const _currentMode = currentResolvedMode;
         // NOTE: I don't really know why I to declare `_currentMode` instead of using
         // `currentMode` directly but not doing it prevents this function from detecting
         // changes to the mode state (something about how closures interact with scopes and
@@ -74,13 +72,13 @@ export async function activate(_context: vscode.ExtensionContext) {
         // TODO: this might not be necessary now that we've changed how `state` works
         const newMode = <string>state.get(MODE) || bindings.default_mode() || 'default';
         const mode = bindings.mode(newMode);
-        if (mode) {
-            if (_currentMode !== newMode) {
-                const shape = (mode.cursorShape || CursorShape.Line);
-                updateCursorAppearance(vscode.window.activeTextEditor, shape);
+        if (_currentMode !== newMode) {
+            const shape = (mode?.cursorShape || CursorShape.Line);
+            updateCursorAppearance(vscode.window.activeTextEditor, shape);
+            if (mode) {
                 runCommandsForMode(mode);
-                currentMode = newMode;
             }
+            currentResolvedMode = newMode;
         }
         return true;
     });

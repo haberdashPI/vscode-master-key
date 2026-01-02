@@ -750,10 +750,15 @@ Follow-up:
     - [X] refactor all callers of `state.ts`
     - [X] simple debug testing
     - [ ] integration testing
-        - [ ] `press-keybindings.tests.ts`: cursor shape doesn't change
+        - [X] `press-keybindings.tests.ts`: cursor shape doesn't change
             - we cannot yet reproduce during a debug run, only integration run
             - in the process of tooling out code path with `console.log`
               and comparing their outputs across debug and integration run
+            - this is a race condition -- in the integration test the `MODE` state
+              is still equal to normal by the time the cursor is being updated
+            - resolution: we needed to clean up how and when variables are set;
+              we have to sometimes delay setting values so they aren't set
+              before they're defined (happens when new bindings are loaded)
 - [ ] build source for webview components in esbuild, probably by making them
       an entrypoint of esbuild
 - [ ] organize additional priorities before release 1.0 (including the below follow-ups)

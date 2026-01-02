@@ -18,7 +18,7 @@ import TOML from 'smol-toml';
 import { marked } from 'marked';
 
 // run `mise build-rust` to create this auto generated source fileu
-import initParsing, {
+import {
     KeyFileResult,
     ErrorLevel,
 } from '../../rust/parsing/lib';
@@ -644,11 +644,6 @@ export async function activate(context: vscode.ExtensionContext) {
             await validateKeybindings(new KeyFileData(e.uri));
         }
     });
-
-    // initialize rust WASM module for parsing keybinding files
-    const filename = vscode.Uri.joinPath(context.extensionUri, 'out', 'parsing_bg.wasm');
-    const bits = await vscode.workspace.fs.readFile(filename);
-    await initParsing(bits);
 
     extensionPresetsDir = Utils.joinPath(context.extensionUri, 'src', 'presets');
 }

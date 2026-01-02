@@ -4,12 +4,12 @@ import { defineState as defineExtensionState } from './index';
 import { validateInput } from './utils';
 import { bindings, onChangeBindings } from './keybindings/config';
 import { ParseError } from '../rust/parsing/lib/parsing';
+import { cloneDeep } from 'lodash';
 export type Listener = (value: unknown) => boolean;
 export type ResolveListener = () => boolean;
 
 interface IStateOptions {
     transient?: { reset: unknown };
-    listeners?: Array<Listener>;
     private?: boolean;
 }
 
@@ -24,12 +24,17 @@ interface ISetOptions {
 export class CommandState {
     private options: Record<string, IStateOptions> = {};
     private resolveListeners: Record<string, ResolveListener> = {};
+    private setListeners: Record<string, Array<Listener>> = {};
     private defined: Set<string> = new Set();
+    private onSetQueued: Record<string, unknown[]> | undefined;
 
     clear() {
         this.defined.clear();
         this.options = {};
-        this.resolveListeners = {};
+        // when we clear variables, we only want to trigger onSet values when resolve is
+        // called, because not all variables will be defined until we've run all
+        // `defineState` functions
+        this.onSetQueued = {};
     }
 
     define<T>(
@@ -57,13 +62,19 @@ export class CommandState {
             throw Error(`\`${fullKey}\` is not defined`);
         }
         try {
-            return bindings.get_value(namespace, key);
+            const result = bindings.get_value(namespace, key);
+            if (Object.keys(result).length === 0 && result.constructor === Object) {
+                return undefined;
+            }
+            return result;
         } catch (e) {
             if ((<ParseError>e).report_string) {
                 const msg = (<ParseError>e).report_string();
                 vscode.window.showErrorMessage(
                     `While getting \`${namespace}.${key}\` ${msg}.`,
                 );
+            } else {
+                throw e;
             }
             return undefined;
         }
@@ -75,9 +86,21 @@ export class CommandState {
         if (!this.defined.has(fullKey)) {
             throw Error(`\`${fullKey}\` is not defined`);
         }
+
+        // if we have a queue set up, don't trigger listeners right away
+        if (this.onSetQueued) {
+            let queue: unknown[] = [];
+            if (this.onSetQueued[fullKey]) {
+                queue = this.onSetQueued[fullKey];
+            }
+            queue.push(cloneDeep(val));
+            this.onSetQueued[fullKey] = queue;
+            return;
+        }
+
         if (this.get(key, opt) !== val) {
-            const listeners = this.options[fullKey].listeners || [];
-            this.options[fullKey].listeners = listeners.filter(listener => listener(val));
+            const listeners = this.setListeners[fullKey] || [];
+            this.setListeners[fullKey] = listeners.filter(listener => listener(val));
 
             try {
                 if (!opt.__dont_update_bindings__) {
@@ -90,6 +113,8 @@ export class CommandState {
                         `While setting \`${namespace}.${key}\` ${msg}.
                         Value to assign:\n${JSON.stringify(val, null, 4)}.`,
                     );
+                } else {
+                    throw e;
                 }
             }
             if (!this.options[fullKey].private) {
@@ -129,11 +154,10 @@ export class CommandState {
 
     onSet(key: string, listener: Listener, opt: ISetOptions = {}) {
         const fullKey = (opt.namespace || 'key') + '.' + key;
-        const options = this.options[fullKey];
-        if (!options?.listeners) {
-            options.listeners = [];
+        if (!this.setListeners[fullKey]) {
+            this.setListeners[fullKey] = [];
         }
-        options.listeners.push(listener);
+        this.setListeners[fullKey].push(listener);
     }
 
     onResolve(resolveId: string, listener: ResolveListener) {
@@ -141,6 +165,15 @@ export class CommandState {
     }
 
     resolve() {
+        // if we have a set of queued value updates, trigger those as well
+        const queued = this.onSetQueued;
+        this.onSetQueued = undefined;
+        for (const [fullKey, vals] of Object.entries(queued || {})) {
+            for (const val of vals) {
+                const [namespace, key] = fullKey.split('.', 2);
+                this.set(key, val, { namespace });
+            }
+        }
         const listenerResult = Object.entries(this.resolveListeners).
             map(([k, f]) => [k, f, f()]);
         this.resolveListeners = Object.fromEntries(
@@ -295,6 +328,7 @@ export async function activate(_context: vscode.ExtensionContext) {
     onChangeBindings(async (_bindings) => {
         state.clear();
         defineExtensionState();
+        state.resolve();
     });
 
     // TODO: what else do we need to update in the state when the bindings change??

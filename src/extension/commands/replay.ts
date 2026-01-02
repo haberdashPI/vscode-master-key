@@ -145,8 +145,9 @@ export async function runCommands(
  *
  * Each element of this history contains the following properties
  *
- * - `commands`: an array of objects containing all `command` fields, excluding `args`
- *   which is not accessible
+ * - `commands`: an array of objects with the `command` field from each run command. All
+ *   commands are regularized to be objects here: e.g. ["a", "b"] will be regularized to
+ *   `[{command = "a"}, {command = "b"}]`.
  * - `mode`: the mode the command was executed from
  * - `repeat`: the number of times the command was repeated
  * - `tags`: the tags defined by the `[[bind]]` entry
