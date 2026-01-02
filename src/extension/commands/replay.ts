@@ -110,7 +110,7 @@ export async function runCommands(
  * > text edits for modes where `whenNoBinding = 'insertCharacters'` these textual edits are
  * > limited. A maximum number of characters are stored between each call to a master-key
  * > command (determined by the setting `Text History Maximum`) and only simple insertion of
- * > text is handled. Given the limits of the VSCode API for observing edits, this will mis
+ * > text is handled. Given the limits of the VSCode API for observing edits, this will miss
  * > some automated insertions such as code completion and automated parentheses insertion.
  * > Also note that any edits that occur *before* the extension is activated are not
  * > recorded.

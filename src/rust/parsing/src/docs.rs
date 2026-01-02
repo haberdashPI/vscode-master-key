@@ -112,7 +112,7 @@ impl FileDocTableRow {
 
         if show_mode {
             return format!(
-                "| <key-bind>{key}</key-bind> | {name} | {description} | {} | ",
+                "| <key-bind>{key}</key-bind> | {name} | {description} | {} |",
                 self.mode
             );
         } else {

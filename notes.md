@@ -736,19 +736,21 @@ Follow-up:
       I have been wanting to clean this up anyways (for legibility/maintainability)
     - ALTERNATIVE: aysnc-mutex is the direct culprit
       - I think this still points to state.ts refactoring as a good place to start
-- [ ] improve doc display and content
+- [X] improve doc display and content
     - [X] prettify docs for inline docs is not using unicode chars
     - [X] revise the larkin literate docs to make it more beginner friendly
         (include less in basic motions and move basic actions higher up, so
         all of the basic commands can be see at a glance)
+    - [X] proof-read larkin docs
     - [X] fix section headings
-    - [ ] proof-read larkin docs
 - [X] make a command that activates the current file directly
 - [ ] refactor `state.ts`:
     - [X] simplify implementation, using rust as the backing state container
     - [X] re-read through logic in `state.ts`, make sure I didn't miss anything
     - [X] refactor all callers of `state.ts`
     - [X] simple debug testing
+    - NOTE: a cursory review of latency in typing does seem to corroborate that this
+      was a good place to start
     - [ ] integration testing
         - [X] `press-keybindings.tests.ts`: cursor shape doesn't change
             - we cannot yet reproduce during a debug run, only integration run
@@ -759,8 +761,32 @@ Follow-up:
             - resolution: we needed to clean up how and when variables are set;
               we have to sometimes delay setting values so they aren't set
               before they're defined (happens when new bindings are loaded)
-- [ ] build source for webview components in esbuild, probably by making them
-      an entrypoint of esbuild
+        - [X] `press-replay-binding.tests.ts` several tests failing
+            - [X] 'Replays search with canceled input': this is a bug in
+                  being able to cancel a search. (I've noticed this in
+                  the current release as well).
+                - the problem is that mode-changing commands do not release the mutex
+                - solution: rather than hold a mutex we want to immediately cancel
+                  bindings that depend on a particular change (mode and prefix separately)
+                - we need to encode that some bindings don't depend on one or both
+                  of these state changes and let them run even when they're async.
+                - additionally: we're reaching a point where we probably want
+                  some kind of trait system for  our commands so we don't have
+                  to special case so much. e.g. `changes binding state`
+                - OR: do we just need something special for capturing-keys related commands
+                  (think of exmaples that aren't this and see if the same logic makes sense)
+                  - I think this is probably key: in most cases we want bindings to
+                    run, one-by-one in an orderly fashion; hence the mutex.
+                    The only case where this doesn't make sense are when we
+                    request user facing input.
+                  - probably the more general point is that we want *long* running
+                    bindings to release the lock, not just user facing bindings
+                    (e.g. running code in the background should release)
+                    anything else should hold on to the binding to ensure, e.g.
+                    word selection is complete before running delete for `w d`.
+                    these long running bindings should cancel any pre-existing
+                    bindings and allow future bindings to run
+            - [ ] 'Can nest replay' debug
 - [ ] organize additional priorities before release 1.0 (including the below follow-ups)
     - [ ] review issues listed on repo / project board
     - [ ] add below issues to project board
@@ -768,6 +794,8 @@ Follow-up:
     - non-goal: clean up code
     - goal: make sure anything that is unclear or messy is discussed in a comment
       (e.g. with TODO and/or description/rationale)
+- [ ] build source for webview components in esbuild, probably by making them
+      an entrypoint of esbuild
 - [ ] make some features more discoverable
     - [x] create "tour" section for vscode's start window
     - add a button to edit a copy of a binding file from the activate binding menu
@@ -783,7 +811,6 @@ Follow-up:
     immediately.
     - [ ] visual documentation could highlight the most recently pressed
     key in the same way that status bar shows the most recently pressed binding
-- [ ] fix larkin docs on website to use pretified, `<key>`ified key bindings
 - [ ] copying default keybindings bug: missing bind.args
 - [ ] improve key suggestions
     - [X] use section headers (and their level) to create tree for the key suggestions

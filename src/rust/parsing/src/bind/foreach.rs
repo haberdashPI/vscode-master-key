@@ -20,7 +20,7 @@
 ///
 /// Furthermore, if an element of this array is a nested array, it is spliced into the array
 /// of values. This is commonly used to leverage the `keys` function available from
-/// [expressions](/expression/index). For example, the following definition is used in
+/// [expressions](/expressions/index). For example, the following definition is used in
 /// `Larkin` to allow the numeric keys to be used as a count prefix for motions.
 ///
 /// ```toml

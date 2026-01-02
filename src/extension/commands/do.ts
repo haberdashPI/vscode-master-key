@@ -130,10 +130,10 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
             const toRun = bindings.do_binding(args.command_id);
             showExpressionErrors(toRun);
 
-            // if the current binding state doesn't match what's expected by this key
-            // binding, then we need to cancel the binding (keys were pressed too fast and
-            // the binding that was triggered for this call doesn't match the updates caused
-            // by previous key presses)
+            // if the current binding state, after obtaining a lock, doesn't match what's
+            // expected by this key binding, then we need to cancel the binding (keys were
+            // pressed too fast and the binding that was triggered for this call doesn't
+            // match the updates caused by previous key presses)
             const newPrefixCode = state.get(PREFIX_CODE) || 0;
             const newMode = state.get(MODE) || 0;
 
@@ -141,19 +141,9 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
                 return;
             }
 
-            // if this key doesn't impact the prefix state or the mode we don't have to hold
-            // on to the lock that prevents other keys from running; this is worth doing
-            // because some commands take a long time to execute and if it is a terminal key
-            // that won't normally impact other keys we don't want to hold on to the state
-            // to wait to execute subsequent commands
-
-            // TODO: we could add a field that indicates that a command is long-running (or
-            // short running?) and only release the lock here for the long-running bindings.
-            // This would help to ensure that key sequences like `w d` in larkin work as
-            // expected, even though both keys are terminal
-            if (commandChangesModeOrPrefix(toRun)) {
-                release();
-            }
+            // if a command runs for too long, don't force the other pressed bindings
+            // to wait for it
+            setTimeout(release, 1500);
 
             try {
                 // this starts as true: repeating a command -1 or fewer times is equivalent
@@ -167,9 +157,21 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
                         showExpressionMessages(command);
                         showExpressionErrors(command);
 
+                        // if a command waits for user input, we don't want other bindings
+                        // to become unresponsive (most bindings will not be available
+                        // during the "capture" mode that will be active during these
+                        // commands, but we still want some bindings, such as `ESC`, to
+                        // work)
+                        if (command.command === 'master-key.search' ||
+                            command.command === 'master-key.captureKeys' ||
+                            command.command === 'master-key.replaceChar' ||
+                            command.command === 'master-key.insertChar') {
+                            release();
+                        }
+
                         // pass key codes down into the arguments to prefix
-                        if (command.command != 'master-key.ignore') {
-                            if (command.command == 'master-key.prefix') {
+                        if (command.command !== 'master-key.ignore') {
+                            if (command.command === 'master-key.prefix') {
                                 command.args.prefix_id = args.prefix_id;
                                 command.args.key = toRun.key;
                                 command.args.mode = args.mode;
