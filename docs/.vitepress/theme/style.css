@@ -11,13 +11,13 @@
     --vp-c-text-1: #3c3c43;
     --vp-c-text-2: #67676c;
     --vp-c-text-3: #929295;
-  }
+}
 
-  .dark {
+.dark {
     --vp-c-text-1: #dfdfd6;
     --vp-c-text-2: #98989f;
     --vp-c-text-3: #6a6a71;
-  }
+}
 
 :root {
 
@@ -29,4 +29,40 @@
 
 .dark {
     --vp-c-brand-1: hsl(191, 68%, 30%);
+}
+
+/* `key-bind` is always the first column; ensure all bindings show in an unwrapped row */
+table:has(key-bind) td:nth-child(1) {
+    white-space: nowrap;
+    width: 1px;
+}
+
+/* Keyboard Key Style */
+key-bind {
+    /* Required for padding and border to work correctly */
+    display: inline-block;
+
+    /* Small, consistent spacing */
+    padding: 3px 6px;
+    margin: 0 2px;
+
+    /* Rounded corners typical of keys */
+    border-radius: 4px;
+
+    /* Use monospace font for uniformity, like a terminal */
+    font-size: 0.9em;
+    font-weight: bold;
+
+    /* -------------------------------------- */
+    /* Theme-Aware Colors and Borders         */
+    /* -------------------------------------- */
+
+    /* Background: Use a subtly different background than the main body */
+    background-color: var(--vp-c-bg-soft);
+
+    /* Border: A subtle, darker border for definition */
+    border: 1px solid var(--vp-c-text-2);
+
+    /* Box Shadow: Mimic a slight depression/3D effect */
+    box-shadow: 1px 1px 0px 0px var(--vp-c-text-3);
 }

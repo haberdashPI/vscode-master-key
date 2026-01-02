@@ -653,7 +653,7 @@ export async function activate(context: vscode.ExtensionContext) {
 export async function defineCommands(context: vscode.ExtensionContext) {
     /**
      * @userCommand activateCurrentFile
-     * @name Activate Keybindings
+     * @name Activate Keybindings in Current File
      *
      * Insert the master key bindings in the current file into VSCode, making them active
      */
@@ -729,7 +729,7 @@ export async function defineCommands(context: vscode.ExtensionContext) {
     async function showTextDoc() {
         const content = bindings.text_docs();
         if (content) {
-            const regex = /<key>(.*?)<\/key>/gs;
+            const regex = /<key-bind>(.*?)<\/key-bind>/gs;
             const prettyKey = replaceMatchesWith(content, regex, (str) => {
                 return prettifyPrefix(str);
             });

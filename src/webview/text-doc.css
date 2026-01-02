@@ -49,21 +49,6 @@ td {
     text-align: left;
 }
 
-table th:first-child,
-table td:first-child {
-    width: 120px;
-}
-
-table th:nth-child(2),
-table td:nth-child(2) {
-    width: 120px;
-}
-
-table th:last-child,
-table td:last-child {
-    width: 50%;
-}
-
 /* Style the table header row */
 th {
     background-color: var(--vscode-button-background);
@@ -98,7 +83,13 @@ code {
     font-family: var(--vscode-editor-font-family);
 }
 
-key {
+/* `key-bind` is always the first column; ensure all bindings show in an unwrapped row */
+table:has(key-bind) td:nth-child(1) {
+    white-space: nowrap;
+    width: 1px;
+}
+
+key-bind {
     /* Required for padding and border to work correctly */
     display: inline-block;
 

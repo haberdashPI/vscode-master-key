@@ -11,7 +11,7 @@ Master Key is a tool for becoming a power-user of your [VSCode](https://code.vis
 - extensive documentation of your bindings (sidebar suggestions, visual guide and inline text documentation)
 - predefined keybinding sets
 - modal bindings (ala Vim),
-- record simple keyboard macros
+- recording of keyboard input (a.k.a. keyboard macros)
 - a powerful TOML-based keybinding specification
 
 This curated snippet from the Master Key's Larkin preset defines a VIM-like feature to update a count argument along with and downward motion that uses the count argument:
