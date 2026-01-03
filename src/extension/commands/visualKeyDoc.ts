@@ -301,7 +301,7 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
 
     private updateState(state: CommandState) {
         this._modifierIndex = 0;
-        const prefixCode: number = state.get(PREFIX_CODE) || -1;
+        const prefixCode: number = state.get(PREFIX_CODE) || 0;
         const mode: string = state.get(MODE) || '';
         if (this._prefixCode !== prefixCode || this._mode !== mode) {
             this._prefixCode = prefixCode;

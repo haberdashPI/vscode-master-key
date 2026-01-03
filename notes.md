@@ -789,8 +789,9 @@ Follow-up:
         - [X] `show-binding-palette.test.ts`
             - [X] 'shows all bindings': debug
                 - we had to fix the PREFIX_CODE update to use 0 instead of -1
-        - [ ] `open-visual-docs.test.ts`
-            - [ ] 'Labels Keys': debug
+        - [X] `open-visual-docs.test.ts`
+            - [X] 'Labels Keys': debug
+                - we had to fix the PREFIX_CODE update to use 0 instead of -1
 - [ ] organize additional priorities before release 1.0 (including the below follow-ups)
     - [ ] review issues listed on repo / project board
     - [ ] add below issues to project board
