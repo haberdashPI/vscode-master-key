@@ -201,13 +201,17 @@ function updateKeys(bindings: KeyFileResult) {
             continue;
         }
         const docs = bindings.docs(i);
-        if (docs?.hideInPalette || !(docs?.name)) {
+        let docName = docs?.name;
+        if (binding.command === 'master-key.prefix' && !docName) {
+            docName = 'prefix';
+        }
+        if (docs?.hideInPalette || !docName) {
             continue;
         }
 
         const paletteEntry = {
+            name: docs?.combined?.name || docName,
             key: docs?.combined?.key || binding.key,
-            name: docs?.combined?.name || binding.args.name,
             description: docs?.combined?.description || binding.args.description,
             combinedKey: docs?.combined?.key,
             combinedDescription: docs?.combined?.description,
@@ -338,7 +342,7 @@ export async function defineCommands(context: vscode.ExtensionContext) {
 
     onResolve('palette', () => {
         treeDataProvider.mode = state.get<string>(MODE) || '';
-        treeDataProvider.prefixCode = state.get<number>(PREFIX_CODE) || -1;
+        treeDataProvider.prefixCode = state.get<number>(PREFIX_CODE) || 0;
         return true;
     });
 }
