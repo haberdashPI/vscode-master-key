@@ -117,7 +117,7 @@ run = 'tsc -p src/test --outDir out/test'
 depends = ['build-tests']
 shell = 'nu -c'
 run = '''
-if $(env.CI | default false | into bool) {
+if ($env.CI | default false | into bool) {
     # NOTE: CI always has COVERAGE='true'
     (xvfb-run --auto-servernum --server-args="-screen 0 1280x1024x24" pnpm exec
         vscode-test --config .vscode-test.mjs --extensionDevelopmentPath=.
