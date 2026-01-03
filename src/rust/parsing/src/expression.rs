@@ -7,6 +7,7 @@ use log::info;
 
 use log::error;
 use rhai::{Dynamic, Engine, EvalAltResult, ImmutableString};
+use serde::Serialize;
 use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::collections::{HashMap, HashSet};
@@ -216,6 +217,9 @@ impl Scope {
             modes: HashSet::from(["default".to_string()]),
             kinds: HashSet::new(),
         };
+        scope.state.set_or_push("key", rhai::Map::new());
+        scope.state.set_or_push("val", rhai::Map::new());
+        scope.state.set_or_push("code", rhai::Map::new());
 
         let history: HistoryQueue = Rc::new(RefCell::new(VecDeque::new()));
         let noop = ReifiedBinding::noop(&scope);
@@ -292,14 +296,73 @@ impl Scope {
     }
 
     #[cfg_attr(coverage_nightly, coverage(off))]
-    pub fn set(&mut self, name: &str, value: JsValue) -> Result<()> {
+    fn get_namespace<'a>(
+        &self,
+        name: &str,
+    ) -> Result<impl std::ops::Deref<Target = rhai::Map> + '_> {
+        let namespace_object = if let Some(val) = self.state.get(name) {
+            val
+        } else {
+            return Err(err!("Namespace `{name}` does not exist"))?;
+        };
+
+        return match namespace_object.as_map_ref() {
+            Ok(x) => Ok(x),
+            Err(t) => Err(err!("Namespace `{name}` is of unexpected type `{t}`"))?,
+        };
+    }
+
+    #[cfg_attr(coverage_nightly, coverage(off))]
+    fn get_mut_namespace<'a>(
+        &mut self,
+        name: &str,
+    ) -> Result<impl std::ops::DerefMut<Target = rhai::Map> + '_> {
+        let namespace_object = if let Some(val) = self.state.get_mut(name) {
+            val
+        } else {
+            return Err(err!("Namespace `{name}` does not exist"))?;
+        };
+
+        return match namespace_object.as_map_mut() {
+            Ok(x) => Ok(x),
+            Err(t) => Err(err!("Namespace `{name}` is of unexpected type `{t}`"))?,
+        };
+    }
+
+    #[cfg_attr(coverage_nightly, coverage(off))]
+    pub fn set(&mut self, namespace: &str, name: &str, value: JsValue) -> Result<()> {
         let toml: toml::Value = match serde_wasm_bindgen::from_value(value) {
             Err(e) => Err(err!("{} while converting js to toml value", e))?,
             Ok(x) => x,
         };
         let val: Dynamic = toml_to_dynamic(toml);
-        self.state.set_or_push(name, val);
+        self.get_mut_namespace(namespace)?.insert(name.into(), val);
         return Ok(());
+    }
+
+    #[cfg_attr(coverage_nightly, coverage(off))]
+    pub fn get(&self, namespace: &str, name: &str) -> Result<JsValue> {
+        if let Some(rhai_value) = self.get_namespace(namespace)?.get(name) {
+            let value: Value = rhai_value.clone().try_into()?;
+            let toml: toml::Value = value.into();
+            let to_json = serde_wasm_bindgen::Serializer::json_compatible();
+            let js_val = match toml.serialize(&to_json) {
+                Err(e) => Err(err!("While serializing `{name}` {}", e))?,
+                Ok(x) => x,
+            };
+            return Ok(js_val);
+        } else {
+            return Ok(js_sys::Object::new().into());
+        }
+    }
+
+    #[cfg_attr(coverage_nightly, coverage(off))]
+    pub fn get_defined_vals(&self) -> Result<Vec<String>> {
+        return Ok(self
+            .get_namespace("val")?
+            .keys()
+            .map(|x| x.as_str().to_string())
+            .collect());
     }
 
     // pub fn unset(&mut self, name: &str) -> Result<()> {

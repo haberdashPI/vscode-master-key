@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import z from 'zod';
 import { validateInput } from '../utils';
 import {
-    withState,
+    state,
     CommandResult,
     WrappedCommandResult,
     commandArgs,
@@ -117,6 +117,7 @@ export const commandMutex = new Mutex();
  * such as [expressions](/expressions/index).
  */
 export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
+    // console.profile('master-key-do');
     // register that a key was pressed (cancelling the display of the quick pick for
     // prefixes of this keypress
     registerPaletteUpdate();
@@ -129,34 +130,20 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
             const toRun = bindings.do_binding(args.command_id);
             showExpressionErrors(toRun);
 
-            // if the current binding state doesn't match what's expected by this key
-            // binding, then we need to cancel the binding (keys were pressed too fast and
-            // the binding that was triggered for this call doesn't match the updates caused
-            // by previous key presses)
-            let newPrefixCode;
-            let newMode;
-            await withState(async (x) => {
-                newPrefixCode = x.get<number>(PREFIX_CODE, 0)!;
-                newMode = x.get<number>(MODE, 0);
-                return x;
-            });
+            // if the current binding state, after obtaining a lock, doesn't match what's
+            // expected by this key binding, then we need to cancel the binding (keys were
+            // pressed too fast and the binding that was triggered for this call doesn't
+            // match the updates caused by previous key presses)
+            const newPrefixCode = state.get(PREFIX_CODE) || 0;
+            const newMode = state.get(MODE) || 0;
+
             if (args.old_prefix_id !== newPrefixCode || args.mode !== newMode) {
                 return;
             }
 
-            // if this key doesn't impact the prefix state or the mode we don't have to hold
-            // on to the lock that prevents other keys from running; this is worth doing
-            // because some commands take a long time to execute and if it is a terminal key
-            // that won't normally impact other keys we don't want to hold on to the state
-            // to wait to execute subsequent commands
-
-            // TODO: we could add a field that indicates that a command is long-running (or
-            // short running?) and only release the lock here for the long-running bindings.
-            // This would help to ensure that key sequences like `w d` in larkin work as
-            // expected, even though both keys are terminal
-            if (commandChangesModeOrPrefix(toRun)) {
-                release();
-            }
+            // if a command runs for too long, don't force the other pressed bindings
+            // to wait for it
+            setTimeout(release, 1500);
 
             try {
                 // this starts as true: repeating a command -1 or fewer times is equivalent
@@ -170,9 +157,21 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
                         showExpressionMessages(command);
                         showExpressionErrors(command);
 
+                        // if a command waits for user input, we don't want other bindings
+                        // to become unresponsive (most bindings will not be available
+                        // during the "capture" mode that will be active during these
+                        // commands, but we still want some bindings, such as `ESC`, to
+                        // work)
+                        if (command.command === 'master-key.search' ||
+                            command.command === 'master-key.captureKeys' ||
+                            command.command === 'master-key.replaceChar' ||
+                            command.command === 'master-key.insertChar') {
+                            release();
+                        }
+
                         // pass key codes down into the arguments to prefix
-                        if (command.command != 'master-key.ignore') {
-                            if (command.command == 'master-key.prefix') {
+                        if (command.command !== 'master-key.ignore') {
+                            if (command.command === 'master-key.prefix') {
                                 command.args.prefix_id = args.prefix_id;
                                 command.args.key = toRun.key;
                                 command.args.mode = args.mode;
@@ -220,16 +219,11 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
                             id = documentIdentifierCount++;
                             documentIdentifiers.set(editor.document.uri, id);
                         }
-                        await withState(async (state) => {
-                            const mode = state.get(MODE, bindings.default_mode()) ||
-                                'default';
-                            // we want to record edits if the current mode permits it
-                            if (bindings.mode(mode)?.whenNoBinding() ==
-                                WhenNoBindingHeader.InsertCharacters) {
-                                toRun.edit_document_id = id;
-                            }
-                            return state;
-                        });
+                        const mode: string = state.get(MODE) || bindings.default_mode();
+                        if (bindings.mode(mode)?.whenNoBinding() ==
+                            WhenNoBindingHeader.InsertCharacters) {
+                            toRun.edit_document_id = id;
+                        }
                     }
                 }
 
@@ -242,18 +236,13 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
                     // its display will persist in the status bar for a little bit
                     // (see `status/keyseq.ts`)
                     const prefix = toRun.key;
-                    await withState(async (state) => {
-                        return state.update<string>(PREFIX, {
-                            transient: { reset: '' }, public: true, notSetValue: '',
-                        }, _ => prefix);
-                    });
+                    state.set(PREFIX, prefix);
                     // here is where we clear the key sequence displayed by setting `PREFIX`
                     // above by calling `reset()`
-                    await withState(async (state) => {
-                        return state.reset().resolve();
-                    });
+                    state.reset();
+                    state.resolve();
                 } else {
-                    await withState(async state => state.resolve());
+                    state.resolve();
                 }
                 await triggerCommandCompleteHooks();
             }
@@ -262,6 +251,7 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
         return args;
     } finally {
         release();
+        // console.profileEnd('master-key-do');
     }
 }
 
@@ -297,6 +287,9 @@ function updateConfig(event?: vscode.ConfigurationChangeEvent) {
         paletteDelay = config.get<number>('suggestionDelay', 500);
         paletteEnabled = config.get<boolean>('commandSuggestionsEnabled', true);
     }
+}
+
+export function defineState() {
 }
 
 export async function activate(context: vscode.ExtensionContext) {

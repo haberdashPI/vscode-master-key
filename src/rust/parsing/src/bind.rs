@@ -393,6 +393,9 @@ pub struct BindingDocInput {
     /// - `name`: A very brief description for the command; this must fit in the visual
     ///   documentation of keybindings so it shouldn't be much longer than five characters for most
     ///   keys. Favor unicode symbols such as →/← over text like left/right.
+    ///   For bindings that include [`master-key.prefix`](/commands/prefix) `name`
+    ///   defaults to `prefix`. This ensures that all key prefixes show up in documentation,
+    ///   thereby maintaining visibility of the suffixes' documentation.
     #[serde(default)]
     pub name: Option<Spanned<TypedValue<String>>>,
 
@@ -409,7 +412,7 @@ pub struct BindingDocInput {
     ///
     /// - `hideInPalette/hideInDocs`: whether to show the keys in the sidebar suggestions
     ///   and the documentation. These both default to false. Note that if the `name`
-    ///   of a key is not defined it does not show up anywhere in the documentation.
+    ///   of a key is not defined it does not show up in the palette or documentation.
     #[serde(default)]
     pub hideInPalette: Option<Spanned<TypedValue<bool>>>,
     #[serde(default)]
@@ -924,7 +927,7 @@ impl Binding {
             repeat: resolve!(input, repeat, scope)?,
             tags: resolve!(input, tags, scope)?,
             doc: match input.doc {
-                Some(x) => BindingDoc::new(x, scope)?,
+                Some(x) => BindingDoc::new(x, has_prefix, scope)?,
                 Option::None => BindingDoc::default(),
             },
         };
@@ -1064,7 +1067,11 @@ pub struct CombinedBindingDoc {
 
 #[wasm_bindgen]
 impl BindingDoc {
-    pub(crate) fn new(input: BindingDocInput, scope: &mut Scope) -> ResultVec<Self> {
+    pub(crate) fn new(
+        input: BindingDocInput,
+        has_prefix: bool,
+        scope: &mut Scope,
+    ) -> ResultVec<Self> {
         // kind validation
         let kind_span = input.kind.as_ref().map(|x| x.span());
         let kind: Option<String> = resolve!(input, kind, scope)?;
@@ -1074,8 +1081,16 @@ impl BindingDoc {
             }
         };
 
+        let name: String = resolve!(input, name, scope)?;
         return Ok(BindingDoc {
-            name: resolve!(input, name, scope)?,
+            // automated prefixes are generated for bindings like `g g`
+            // we don't want to the `g` prefix to be invisible in documentation
+            // outputs so we give it a generic name.
+            name: if name.is_empty() && has_prefix {
+                "prefix".to_string()
+            } else {
+                name
+            },
             description: resolve!(input, description, scope)?,
             hideInPalette: resolve!(input, hideInPalette, scope)?,
             hideInDocs: resolve!(input, hideInDocs, scope)?,
