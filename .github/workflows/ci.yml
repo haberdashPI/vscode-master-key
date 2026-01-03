@@ -18,7 +18,7 @@ jobs:
         if: '! github.event.pull_request.draft'
         strategy:
             matrix: { environment: ['-web', ''] }
-        runs-on: macos-latest
+        runs-on: ubuntu-latest
         steps:
         - name: Checkout
           uses: actions/checkout@v4
@@ -29,6 +29,10 @@ jobs:
             version: 2025.11.2
             install: true
             cache: true
+        - name: Install Xvfb
+          run: |
+            sudo apt-get update
+            sudo apt-get install -y xvfb
         - name: Setup Node and Cache NPM
           uses: actions/setup-node@v6
           with:
