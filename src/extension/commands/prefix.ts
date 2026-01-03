@@ -5,7 +5,7 @@ import {
     updateCursorAppearance,
     validateInput,
 } from '../utils';
-import { recordedCommand, CommandResult, withState, onSet } from '../state';
+import { recordedCommand, CommandResult, state, onSet } from '../state';
 import { restoreModesCursorState } from './mode';
 import {
     commandMutex,
@@ -45,13 +45,14 @@ const PREFIX_CURSOR = 'prefixCursor';
  *
  * This command is used to implement multi-key sequence bindings in master key. It causes
  * the current key press to be appended to the variable `key.prefix`. This prefix shows up
- * in the status bar in vscode. It can also be used explicitly within a binding file for a
+ * in the status bar in VSCode. It can also be used explicitly within a binding file for a
  * few purposes:
  *
  * - provide helpful documentation for a given key prefix.
  * - define a command that has several possible follow-up key presses (such as operators in
  *   vim).
- * - execute commands in addition to updating the prefix (via `runCommands`)
+ * - execute commands in addition to updating the prefix
+ *   (see [running multiple commands](#running-multiple-commands))
  *
  * **Arguments**
  * - `cursor`: Transiently change the cursor shape until the last key in a multi-key
@@ -78,12 +79,7 @@ const PREFIX_CURSOR = 'prefixCursor';
  * command = "master-key.prefix"
  * ```
  *
- * These prefixes may be explicitly specified in this way so they can be documented. When
- * users do not provide an explicit prefix, Master key implicitly creates these bindings by
- * itself, but without documentation. As such, by the time master keybindings are inserted
- * into `keybinding.json` they have just a single key press, with some conditioned on the
- * specific prefix that must occur beforehand. This is so that master key can explicitly
- * manage state across the key presses of a multi-key sequence keybinding.
+ * The prefix command is used here so that this prefix binding is well documented.
  *
  * ## Prefix Format
  *
@@ -92,8 +88,8 @@ const PREFIX_CURSOR = 'prefixCursor';
  * (though it should rarely be necessary to access the prefix explicitly in a `when`
  * clause). It is stored as a space delimited sequence of keybindings in the same form that
  * the [`key`](/bindings/bind) field is specified (which is the same as the binding format
- * for any VSCode keybinding). It is displayed in a stylized fashion: e.g. Ctrl+J becomes
- * ^J.
+ * for any VSCode keybinding). It is displayed in the status bar in a stylized fashion: e.g.
+ * Ctrl+J becomes ^J.
  *
  * ## Transient State
  *
@@ -143,6 +139,7 @@ const PREFIX_CURSOR = 'prefixCursor';
 
 let oldPrefixCursor: boolean = false;
 async function prefix(args_: unknown): Promise<CommandResult> {
+    // console.profile('master-key-prefix');
     registerPaletteUpdate();
     const args = validateInput('master-key.prefix', args_, prefixArgs);
 
@@ -150,26 +147,18 @@ async function prefix(args_: unknown): Promise<CommandResult> {
         const release = !args.fromDo ? await commandMutex.acquire() : undefined;
         try {
             const a = args;
-            await withState(async (state) => {
-                return state.withMutations((state) => {
-                    const prefix = a.key;
-                    state.set(
-                        PREFIX_CODE,
-                        { transient: { reset: 0 }, public: true },
-                        a.prefix_id,
-                    );
-                    state.set(PREFIX, { transient: { reset: '' }, public: true }, prefix);
+            const prefix = a.key;
+            state.set(PREFIX_CODE, a.prefix_id);
+            state.set(PREFIX, prefix);
 
-                    if (a.cursor) {
-                        const cursorShape = STRING_TO_CURSOR[a.cursor];
-                        state.set(PREFIX_CURSOR, { transient: { reset: false } }, true);
-                        oldPrefixCursor = true;
-                        updateCursorAppearance(vscode.window.activeTextEditor, cursorShape);
-                    }
+            if (a.cursor) {
+                const cursorShape = STRING_TO_CURSOR[a.cursor];
+                state.set(PREFIX_CURSOR, true);
+                oldPrefixCursor = true;
+                updateCursorAppearance(vscode.window.activeTextEditor, cursorShape);
+            }
 
-                    state.resolve();
-                });
-            });
+            state.resolve();
             showPaletteOnDelay();
             await triggerCommandCompleteHooks();
             return args;
@@ -177,26 +166,25 @@ async function prefix(args_: unknown): Promise<CommandResult> {
             if (release) {
                 release();
             }
+            // console.profileEnd('master-key-prefix');
         }
     }
 }
 
 export async function keySuffix(key: string) {
-    await withState(async (state) => {
-        return state.update<string>(
-            PREFIX,
-            { transient: { reset: '' }, public: true, notSetValue: '' },
-            prefix => (prefix.length > 0 ? prefix + ' ' + key : key),
-        );
-    });
+    const prefix: string = state.get(PREFIX) || '';
+    state.set(PREFIX, prefix.length > 0 ? prefix + ' ' + key : key);
+}
+
+export function defineState() {
+    state.define(PREFIX, '', { transient: { reset: '' } });
+    state.define(PREFIX_CODE, 0, { transient: { reset: 0 } });
+    state.define(PREFIX_CURSOR, false, { transient: { reset: false } });
 }
 
 export async function activate(_context: vscode.ExtensionContext) {
-    await withState(async (state) => {
-        return state.set(PREFIX_CODE, { public: true }, 0).resolve();
-    });
-    await onSet(PREFIX_CURSOR, (state) => {
-        if (!state.get(PREFIX_CURSOR, false) && oldPrefixCursor) {
+    onSet(PREFIX_CURSOR, (prefixCursor) => {
+        if (!prefixCursor && oldPrefixCursor) {
             restoreModesCursorState();
         }
         return true;

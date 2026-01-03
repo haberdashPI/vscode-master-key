@@ -1,5 +1,5 @@
 import { CommandState } from '../state';
-import { withState } from '../state';
+import { state, onResolve } from '../state';
 import * as vscode from 'vscode';
 import { MODE } from './mode';
 import { normalizeLayoutIndependentString } from '../keybindings/layout';
@@ -11,7 +11,6 @@ import {
     modifierKey,
     prettifyPrefix,
 } from '../utils';
-import { Map } from 'immutable';
 import { KeyFileResult } from '../../rust/parsing/lib/parsing';
 
 // TODO: use KeyboardLayoutMap to improve behavior
@@ -171,6 +170,8 @@ interface IVisualKeyBinding {
 // generates the webview for a provider
 export class DocViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'masterkey.visualDoc';
+    _mode?: string;
+    _prefixCode?: number;
     _view?: vscode.WebviewView;
     _bindingMap: Record<string, Record<string, IVisualKeyBinding>> = {};
     _currentBindingKey: string = '0:';
@@ -298,16 +299,20 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
         this._bindingMap = bindingMap;
     }
 
-    private updateState(state: CommandState | Map<string, unknown>) {
+    private updateState(state: CommandState) {
         this._modifierIndex = 0;
-        const prefixCode = state.get(PREFIX_CODE);
-        const mode = state.get(MODE);
-        const key = `${prefixCode}:${mode}`;
-        this._currentBindingKey = key;
-        this._modifierOrder = this._modifierOrderMap[key];
-        this._modifierIndex = 0;
-        this.updateKeyHelper(this._bindingMap[key]);
-        this.refresh();
+        const prefixCode: number = state.get(PREFIX_CODE) || 0;
+        const mode: string = state.get(MODE) || '';
+        if (this._prefixCode !== prefixCode || this._mode !== mode) {
+            this._prefixCode = prefixCode;
+            this._mode = mode;
+            const key = `${prefixCode}:${mode}`;
+            this._currentBindingKey = key;
+            this._modifierOrder = this._modifierOrderMap[key];
+            this._modifierIndex = 0;
+            this.updateKeyHelper(this._bindingMap[key]);
+            this.refresh();
+        }
     }
 
     private updateKeyHelper(
@@ -362,17 +367,10 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
         onChangeBindings(async (x) => {
             this.updateKinds(x);
             this.updateKeys(x);
-            await withState(async (state) => {
-                this.updateState(state);
-                return state;
-            });
+            this.updateState(state);
         });
-        state = state.onSet(MODE, (vals) => {
-            this.updateState(vals);
-            return true;
-        });
-        state = state.onSet(PREFIX_CODE, (vals) => {
-            this.updateState(vals);
+        onResolve('visualDocs', () => {
+            this.updateState(state);
             return true;
         });
         return state;
@@ -486,19 +484,13 @@ async function showVisualDoc() {
     return;
 }
 
+export function defineState() {
+}
+
 let docProvider: DocViewProvider | undefined;
 export async function activate(context: vscode.ExtensionContext) {
     docProvider = new DocViewProvider(context.extensionUri);
-    await withState(async (state) => {
-        if (docProvider) {
-            return await docProvider.attach(state);
-        } else {
-            console.error(
-                'Master key visual documentation `docProvider` is unexpectedly `undefined',
-            );
-            return state;
-        }
-    });
+    await docProvider.attach(state);
     vscode.window.registerWebviewViewProvider(DocViewProvider.viewType, docProvider);
     // TODO: only show `command` in os x
     // TODO: make a meta key for linux (and windows for windows)

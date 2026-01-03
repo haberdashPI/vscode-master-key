@@ -28,7 +28,11 @@ export async function activateKeybindings(page: Page, file: string) {
     // open binding file
     await openFile(page, file);
 
-    await runCommand(page, 'Master Key: Toggle automatic display of quick-pick');
+    await runCommand(
+        page,
+        'Master Key: Toggle automatic display of command ' +
+        'suggestions in sidebar',
+    );
 
     // load current file as a keybinding
     await runCommand(page, 'Master Key: Activate Keybindings');

@@ -36,3 +36,6 @@ playwright-report/
 blob-report/
 playwright-temp/
 playwright/.cache/
+
+# profiling
+*.cpuprofile

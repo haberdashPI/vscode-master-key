@@ -1,276 +1,197 @@
 import * as vscode from 'vscode';
 import z from 'zod';
+import { defineState as defineExtensionState } from './index';
 import { validateInput } from './utils';
-import { Map, List, RecordOf, Record as IRecord } from 'immutable';
 import { bindings, onChangeBindings } from './keybindings/config';
-import { KeyFileResult, ParseError } from '../rust/parsing/lib/parsing';
-export type Listener = (states: Map<string, unknown>) => boolean;
+import { ParseError } from '../rust/parsing/lib/parsing';
+import { cloneDeep } from 'lodash';
+export type Listener = (value: unknown) => boolean;
+export type ResolveListener = () => boolean;
 
 interface IStateOptions {
     transient?: { reset: unknown };
-    listeners: List<Listener>;
-    public: boolean;
+    private?: boolean;
 }
-
-const StateOptions = IRecord<IStateOptions>({
-    transient: undefined,
-    listeners: List<Listener>(),
-    public: false,
-});
-type RStateOptions = RecordOf<IStateOptions>;
 
 interface ISetOptions {
-    transient?: { reset: unknown };
-    public?: boolean;
+    namespace?: string;
+    // private property used only in this file
+    // that prevents `bidnings.set_value` from being called
+    // (used for `val` fields that have already been set)
+    __dont_update_bindings__?: boolean;
 }
-
-interface ICommandState {
-    options: Map<string, RStateOptions>;
-    resolveListeners: Map<string, Listener>;
-    values: Map<string, unknown>;
-}
-
-const CommandStateFactory = IRecord({
-    options: Map<string, RStateOptions>(),
-    resolveListeners: Map<string, Listener>(),
-    values: Map<string, unknown>(),
-});
-type RCommandState = RecordOf<ICommandState>;
 
 export class CommandState {
-    private record: RCommandState;
-    constructor(record: RCommandState = CommandStateFactory()) {
-        this.record = record;
+    private options: Record<string, IStateOptions> = {};
+    private resolveListeners: Record<string, ResolveListener> = {};
+    private setListeners: Record<string, Array<Listener>> = {};
+    private defined: Set<string> = new Set();
+    private onSetQueued: Record<string, unknown[]> | undefined;
+
+    clear() {
+        this.defined.clear();
+        this.options = {};
+        // when we clear variables, we only want to trigger onSet values when resolve is
+        // called, because not all variables will be defined until we've run all
+        // `defineState` functions
+        this.onSetQueued = {};
     }
 
-    withMutations(fn: (x: CommandState) => void) {
-        const rec = this.record.withMutations((rec) => {
-            rec.update('values', v => v.asMutable());
-            fn(new CommandState(rec));
-            rec.update('values', v => v.asImmutable());
-        });
-        return new CommandState(rec);
+    define<T>(
+        key: string,
+        initialValue: T,
+        opt: IStateOptions = {},
+        setOpt: ISetOptions = {},
+    ) {
+        const fullKey = (setOpt.namespace || 'key') + '.' + key;
+        if (this.defined.has(fullKey)) {
+            throw Error(`${fullKey} already exists`);
+        }
+        if (key.includes('.')) {
+            throw Error('Variables names can\'t include `.`');
+        }
+        this.defined.add(fullKey);
+        this.options[fullKey] = opt;
+        this.set(key, initialValue, setOpt);
     }
 
-    set<T>(key: string, opt: ISetOptions, val: T): CommandState;
-    set<T>(key: string, val: T): CommandState;
-    set<T>(key: string, optOrVal: ISetOptions | T, val_?: T) {
-        let opt: ISetOptions;
-        let val: T;
-        if (arguments.length === 2) {
-            opt = {};
-            val = <T>optOrVal;
-        } else {
-            opt = <ISetOptions>optOrVal;
-            val = <T>val_;
+    get<T>(key: string, opt: ISetOptions = {}): T | undefined {
+        const namespace = opt.namespace || 'key';
+        const fullKey = namespace + '.' + key;
+        if (!this.defined.has(fullKey)) {
+            throw Error(`\`${fullKey}\` is not defined`);
         }
-
-        if (this.record.values.get(key) !== val) {
-            const values = this.record.values.set(key, val);
-            return this.setHelper_(key, opt, values);
-        } else {
-            return this;
-        }
-    }
-
-    private setHelper_(key: string, opt: ISetOptions, values: Map<string, unknown>) {
-        // console.log(`key: ${key}, values: ${JSON.stringify(values, null, 4)}`);
-        let listeners = this.record.options.get(key, StateOptions()).listeners;
-        listeners = listeners.filter(listener => listener(values));
-
-        const jsValues: Record<string, unknown> = {};
-        for (const k of values.keys()) {
-            // NOTE: expressions already know about `val` entries, and they don't need to be
-            // added here again
-            if (k != 'val') {
-                jsValues[k] = values.get(k);
-            }
-        }
-
         try {
-            bindings.set_value('key', jsValues);
+            const result = bindings.get_value(namespace, key);
+            if (Object.keys(result).length === 0 && result.constructor === Object) {
+                return undefined;
+            }
+            return result;
         } catch (e) {
             if ((<ParseError>e).report_string) {
                 const msg = (<ParseError>e).report_string();
                 vscode.window.showErrorMessage(
-                    `While setting 'key' to '${JSON.stringify(jsValues, null, 4)}' ${msg}.`,
+                    `While getting \`${namespace}.${key}\` ${msg}.`,
                 );
+            } else {
+                throw e;
+            }
+            return undefined;
+        }
+    }
+
+    set<T>(key: string, val: T, opt: ISetOptions = {}) {
+        const namespace = opt.namespace || 'key';
+        const fullKey = namespace + '.' + key;
+        if (!this.defined.has(fullKey)) {
+            throw Error(`\`${fullKey}\` is not defined`);
+        }
+
+        // if we have a queue set up, don't trigger listeners right away
+        if (this.onSetQueued) {
+            let queue: unknown[] = [];
+            if (this.onSetQueued[fullKey]) {
+                queue = this.onSetQueued[fullKey];
+            }
+            queue.push(cloneDeep(val));
+            this.onSetQueued[fullKey] = queue;
+            return;
+        }
+
+        if (this.get(key, opt) !== val) {
+            const listeners = this.setListeners[fullKey] || [];
+            this.setListeners[fullKey] = listeners.filter(listener => listener(val));
+
+            try {
+                if (!opt.__dont_update_bindings__) {
+                    bindings.set_value(namespace, key, val);
+                }
+            } catch (e) {
+                if ((<ParseError>e).report_string) {
+                    const msg = (<ParseError>e).report_string();
+                    vscode.window.showErrorMessage(
+                        `While setting \`${namespace}.${key}\` ${msg}.
+                        Value to assign:\n${JSON.stringify(val, null, 4)}.`,
+                    );
+                } else {
+                    throw e;
+                }
+            }
+            if (!this.options[fullKey].private) {
+                if (namespace === 'val') {
+                    vscode.commands.executeCommand(
+                        'setContext',
+                        'master-key.val.' + key,
+                        val,
+                    );
+                } else if (namespace === 'key') {
+                    vscode.commands.executeCommand(
+                        'setContext',
+                        'master-key.' + key,
+                        val,
+                    );
+                } else {
+                    throw Error(
+                        'All public state must exist in the \`key\` or \`val\` ' +
+                        'namespace.',
+                    );
+                }
             }
         }
-
-        const options = this.record.options.set(
-            key,
-            StateOptions({
-                transient: opt.transient,
-                listeners,
-                public: opt.public,
-            }),
-        );
-
-        const resolveListeners = this.record.resolveListeners;
-        // NOTE: we set `record` in this way so that `update` can be used
-        // both inside and outside of `withMutations`;
-        const record = this.record.
-            set('options', options).
-            set('resolveListeners', resolveListeners).
-            set('values', values);
-        if (record.wasAltered()) {
-            return this;
-        } else {
-            return new CommandState(record);
-        }
-    }
-
-    update<T>(
-        key: string,
-        opt: ISetOptions & { notSetValue?: T },
-        change: (x: T) => T
-    ): CommandState;
-    update<T>(key: string, change: (x: T) => T): CommandState;
-    update<T>(
-        key: string,
-        optOrChange: ISetOptions | ((x: T) => T),
-        change_?: (x: T) => T,
-    ) {
-        let opt: ISetOptions & { notSetValue?: T };
-        let change: (x: T) => T;
-        if (arguments.length === 2) {
-            opt = {};
-            change = <(x: T) => T>optOrChange;
-        } else {
-            opt = <ISetOptions | { notSetValue: T }>optOrChange;
-            change = <(x: T) => T>change_;
-        }
-        const oldValue = this.record.values.get(key);
-        let newValue;
-        const values = this.record.values.update(key, opt.notSetValue, (x) => {
-            newValue = change(<T>x);
-            return newValue;
-        });
-        if (newValue !== oldValue) {
-            return this.setHelper_(key, opt, values);
-        } else {
-            return this;
-        }
-    }
-
-    get<T>(key: string, defaultValue?: T): T | undefined {
-        return <T | undefined> this.record.values.get(key, defaultValue);
     }
 
     reset() {
-        const changedValues = new Set();
-        const values = this.record.values.map((v, k) => {
-            const transient = this.record.options.get(k)?.transient;
-            if (transient && transient.reset !== v) {
-                changedValues.add(k);
-                return transient.reset;
-            } else {
-                return v;
+        for (const fullKey of this.defined.keys()) {
+            const transient = this.options[fullKey]?.transient;
+            // key is guaranteed to not include `.`
+            const [namespace, key] = fullKey.split('.');
+            const value = this.get(key, { namespace });
+            if (transient && transient.reset !== value) {
+                this.set(key, transient.reset, { namespace });
             }
-        });
-
-        const options = this.record.options.withMutations(opt =>
-            opt.map((v, k) =>
-                v.update('listeners', (l) => {
-                    if (changedValues.has(k)) {
-                        return l.filter(listener => listener(values));
-                    } else {
-                        return l;
-                    }
-                }),
-            ),
-        );
-
-        const record = this.record.set('options', options).set('values', values);
-        if (record.wasAltered()) {
-            syncStateWithBindings(this);
-            return this;
-        } else {
-            const result = new CommandState(record);
-            syncStateWithBindings(result);
-            return result;
         }
     }
 
-    onSet(key: string, listener: Listener) {
-        let options = this.record.options.get(key, StateOptions());
-        options = options.update('listeners', ls => ls.push(listener));
-        const record = this.record.setIn(['options', key], options);
-        if (record.wasAltered()) {
-            return this;
-        } else {
-            return new CommandState(record);
+    onSet(key: string, listener: Listener, opt: ISetOptions = {}) {
+        const fullKey = (opt.namespace || 'key') + '.' + key;
+        if (!this.setListeners[fullKey]) {
+            this.setListeners[fullKey] = [];
         }
+        this.setListeners[fullKey].push(listener);
     }
 
-    onResolve(name: string, listener: Listener) {
-        const record = this.record.setIn(['resolveListeners', name], listener);
-        if (record.wasAltered()) {
-            return this;
-        } else {
-            return new CommandState(record);
-        }
+    onResolve(resolveId: string, listener: ResolveListener) {
+        this.resolveListeners[resolveId] = listener;
     }
 
     resolve() {
-        const listeners = this.record.resolveListeners.filter(li => li(this.record.values));
-        this.record.values.forEach((v, k) => {
-            if (this.record.options.get(k)?.public) {
-                vscode.commands.executeCommand('setContext', 'master-key.' + k, v);
+        // if we have a set of queued value updates, trigger those as well
+        const queued = this.onSetQueued;
+        this.onSetQueued = undefined;
+        for (const [fullKey, vals] of Object.entries(queued || {})) {
+            for (const val of vals) {
+                const [namespace, key] = fullKey.split('.', 2);
+                this.set(key, val, { namespace });
             }
-        });
-        const record = this.record.set('resolveListeners', listeners);
-        if (record.wasAltered()) {
-            return this;
-        } else {
-            return new CommandState(record);
         }
-    }
-
-    get values() {
-        return this.record.values.toJS();
-    }
-}
-
-type StateSetter = (x: CommandState) => Promise<CommandState>;
-async function* generateStateStream(): AsyncGenerator<CommandState, void, StateSetter> {
-    let state = new CommandState();
-    while (true) {
-        let newState;
-        try {
-            const setter = yield state;
-            newState = await setter(state);
-            state = newState;
-        } catch (e) {
-            vscode.window.showErrorMessage('Error while processing master-key state: ' + e);
-            console.dir(e);
-        }
+        const listenerResult = Object.entries(this.resolveListeners).
+            map(([k, f]) => [k, f, f()]);
+        this.resolveListeners = Object.fromEntries(
+            listenerResult.
+                filter(([_k, _f, keep]) => keep).
+                map(([k, f, _keep]) => [k, f]),
+        );
     }
 }
-const stateStream = (() => {
-    const stream = generateStateStream();
-    stream.next();
-    return stream;
-})();
 
-export async function onResolve(key: string, listener: Listener) {
-    return await stateStream.next(async state => state.onResolve(key, listener));
+export const state: CommandState = new CommandState();
+
+export function onResolve(resolveId: string, listener: ResolveListener) {
+    state.onResolve(resolveId, listener);
 }
 
-export async function onSet(name: string, listener: Listener) {
-    return await stateStream.next(async state => state.onSet(name, listener));
-}
-
-export async function withState(
-    fn: StateSetter = async x => x,
-): Promise<CommandState | void> {
-    const result = await stateStream.next(fn);
-    if (!result.done) {
-        return result.value;
-    } else {
-        return;
-    }
+export function onSet(name: string, listener: Listener) {
+    state.onSet(name, listener);
 }
 
 const WRAPPED_UUID = '28509bd6-8bde-4eef-8406-afd31ad11b43';
@@ -295,49 +216,10 @@ export function recordedCommand<T extends Array<E>, E>(fn: CommandFn<T, E>) {
     };
 }
 
-function addDefinitions(
-    state: CommandState,
-    definitions: unknown,
-) {
-    return state.withMutations((state) => {
-        state.set('val', { public: true }, definitions);
-        syncStateWithBindings(state);
-    });
-}
-
-function syncStateWithBindings(state: CommandState) {
-    const jsValues: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(state.values)) {
-        // NOTE: expressions already know about `val` entries, and they don't need to be
-        // added here again
-        if (k != 'val') {
-            jsValues[k] = v;
-        }
-    }
-    try {
-        bindings.set_value('key', jsValues);
-        bindings.set_value('code', codeState);
-    } catch (e) {
-        if ((<ParseError>e).report_string) {
-            const msg = (<ParseError>e).report_string();
-            vscode.window.showErrorMessage(
-                `While setting 'key' to '${JSON.stringify(jsValues, null, 4)}'
-                 \nand setting 'code' to '${JSON.stringify(codeState, null, 4)}'
-                 \nerror: ${msg}.`,
-            );
-        }
-    }
-}
-
-async function updateDefinitions(bindings: KeyFileResult) {
-    await withState(async state => addDefinitions(state, bindings.values()));
-}
-
 const setFlagArgs = z.
     object({
         name: z.string(),
         value: z.any(),
-        transient: z.boolean().default(false).optional(),
     }).
     strict();
 
@@ -353,34 +235,14 @@ const setFlagArgs = z.
  * **Arguments**:
  * - `name`: The name of the variable
  * - `value`: any valid json value
- * - `transient`: (default = `false`) whether the variable will reset to its original
- *    value---as defined by`[[define.val]]`---after the current key
- *    sequence is complete. See [`master-key.prefix`](/commands/prefix) for more details.
  */
 async function setValue(args_: unknown): Promise<CommandResult> {
     const args = validateInput('master-key.setValue', args_, setFlagArgs);
     if (args) {
-        const values = bindings.values();
-        values[args.name] = args.value;
-        bindings.set_value('val', values);
-        await withState(async state => addDefinitions(state, bindings.values()));
+        state.set(args.name, args.value, { namespace: 'val' });
     }
     return;
 }
-
-interface ICodeState {
-    editorHasSelection: boolean;
-    editorHasMultipleSelections: boolean;
-    editorLangId: string;
-    firstSelectionOrWord: string;
-}
-
-let codeState: ICodeState = {
-    editorHasSelection: false,
-    editorHasMultipleSelections: false,
-    editorLangId: '',
-    firstSelectionOrWord: '',
-};
 
 function updateCodeVariables(
     e: { textEditor?: vscode.TextEditor;
@@ -417,26 +279,61 @@ function updateCodeVariables(
     if (doc) {
         editorLangId = e?.textEditor?.document?.languageId;
     }
-    codeState = {
-        editorHasSelection: selCount > 0,
-        editorHasMultipleSelections: selCount > 1,
-        editorLangId: editorLangId || '',
-        firstSelectionOrWord,
-    };
-    try {
-        bindings.set_value('code', codeState);
-    } catch (e) {
-        if ((<ParseError>e).report_string) {
-            const msg = (<ParseError>e).report_string();
-            vscode.window.showErrorMessage(
-                `While setting 'code' to '${JSON.stringify(codeState, null, 4)}' ${msg}.`,
+    const opt = { namespace: 'code' };
+    state.set('editorHasSelection', selCount > 0, opt);
+    state.set('editorHasMultipleSelections', selCount > 1, opt);
+    state.set('editorLangId', editorLangId || '', opt);
+    state.set('firstSelectionOrWord', firstSelectionOrWord, opt);
+}
+
+export function defineState() {
+    state.define(
+        'editorHasSelection',
+        false,
+        { private: true },
+        { namespace: 'code' },
+    );
+    state.define(
+        'editorHasMultipleSelections',
+        false,
+        { private: true },
+        { namespace: 'code' },
+    );
+    state.define(
+        'editorLangId',
+        '',
+        { private: true },
+        { namespace: 'code' },
+    );
+    state.define(
+        'firstSelectionOrWord',
+        '',
+        { private: true },
+        { namespace: 'code' },
+    );
+
+    if (bindings) {
+        for (const val of bindings.get_defined_vals()) {
+            state.define(
+                val,
+                bindings.get_value('val', val),
+                {},
+                { namespace: 'val', __dont_update_bindings__: false },
             );
         }
     }
 }
 
 export async function activate(_context: vscode.ExtensionContext) {
-    onChangeBindings(updateDefinitions);
+    onChangeBindings(async (_bindings) => {
+        state.clear();
+        defineExtensionState();
+        state.resolve();
+    });
+
+    // TODO: what else do we need to update in the state when the bindings change??
+    // TODO: I think we at least need to review any default state we might want to
+    // reset
     onChangeBindings(async () => updateCodeVariables({
         textEditor: vscode.window.activeTextEditor,
     }));

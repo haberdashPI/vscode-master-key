@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { onSet } from '../state';
 import { PREFIX } from '../commands/prefix';
 import { COUNT } from '../commands/count';
-import { Map } from 'immutable';
+import { state } from '../state';
 import { prettifyPrefix } from '../utils';
 import { normalizeLayoutIndependentString } from '../keybindings/layout';
 
@@ -12,11 +12,11 @@ const KEY_DISPLAY_DELAY_DEFAULT = 500;
 let keyDisplayDelay: number = KEY_DISPLAY_DELAY_DEFAULT;
 let statusUpdates = Number.MIN_SAFE_INTEGER;
 
-function updateKeyStatus(values: Map<string, unknown>) {
+function updateKeyStatus(_: unknown) {
     if (keyStatusBar !== undefined && keyDisplayDelay > 0) {
-        const count = <number>values.get(COUNT, 0);
+        const count = <number>state.get(COUNT) || 0;
         let plannedUpdate = count ? count + '× ' : '';
-        const keyseq = normalizeLayoutIndependentString(<string>values.get(PREFIX, ''));
+        const keyseq = normalizeLayoutIndependentString(<string>state.get(PREFIX) || '');
         plannedUpdate += prettifyPrefix(keyseq);
         if (plannedUpdate.length > 0) {
             keyStatusBar.text = plannedUpdate;
@@ -53,6 +53,9 @@ function updateConfig(event?: vscode.ConfigurationChangeEvent) {
     }
 }
 
+export function defineState() {
+}
+
 export async function activate(_context: vscode.ExtensionContext) {
     updateConfig();
     vscode.workspace.onDidChangeConfiguration(updateConfig);
@@ -64,8 +67,8 @@ export async function activate(_context: vscode.ExtensionContext) {
     );
     keyStatusBar.accessibilityInformation = { label: 'No Keys Typed' };
     keyStatusBar.show();
-    await onSet(PREFIX, updateKeyStatus);
-    await onSet(COUNT, updateKeyStatus);
+    onSet(PREFIX, updateKeyStatus);
+    onSet(COUNT, updateKeyStatus);
 }
 
 export async function defineCommands(_context: vscode.ExtensionContext) {
