@@ -117,7 +117,13 @@ run = 'tsc -p src/test --outDir out/test'
 depends = ['build-tests']
 shell = 'nu -c'
 run = '''
-if ($env.COVERAGE? | default false | into bool) {
+if $(env.CI | default false | into bool) {
+    # NOTE: CI always has COVERAGE='true'
+    (xvfb-run --auto-servernum --server-args="-screen 0 1280x1024x24" pnpm exec
+        vscode-test --config .vscode-test.mjs --extensionDevelopmentPath=.
+        --version=insiders --coverage --coverage-output coverage/unit
+        --coverage-reporter json)
+} else if ($env.COVERAGE? | default false | into bool) {
     (pnpm exec vscode-test --config .vscode-test.mjs --extensionDevelopmentPath=.
         --version=insiders --coverage --coverage-output coverage/unit
         --coverage-reporter json)
@@ -130,7 +136,8 @@ if ($env.COVERAGE? | default false | into bool) {
 [tasks.test-web]
 depends = ['build --web']
 run = '''
-pnpm exec vscode-test-web --extensionDevelopmentPath=. --extensionTestsPath=./out/browser/webExtensionTests.js
+(pnpm exec vscode-test-web --extensionDevelopmentPath=.
+    --extensionTestsPath=./out/browser/webExtensionTests.js)
 '''
 
 [tasks.run-web]
@@ -157,7 +164,8 @@ depends = ['build', 'build-tests']
 shell = 'nu -c'
 run = '''
 if ($env.CI | default false | into bool) {
-    xvfb-run --auto-servernum --server-args="-screen 0 1280x1024x24" pnpm exec playwright test
+    (xvfb-run --auto-servernum --server-args="-screen 0 1280x1024x24" pnpm exec
+        playwright test)
 } else {
     pnpm exec playwright test
 }
