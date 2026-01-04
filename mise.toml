@@ -129,6 +129,7 @@ if ($env.COVERAGE? | default false | into bool) {
 
 [tasks.test-web]
 depends = ['build --web']
+shell = 'nu -c'
 run = '''
 (pnpm exec vscode-test-web --extensionDevelopmentPath=.
     --extensionTestsPath=./out/browser/webExtensionTests.js)

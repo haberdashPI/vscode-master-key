@@ -50,7 +50,6 @@ test.describe('Basic keypresses', () => {
         // the keys aren't responding as such without pressing 'Escape' above
 
         const cursor = workbox.locator('div[role="presentation"].cursors-layer');
-        await workbox.pause();
         await expect(cursor.first()).toHaveClass(/cursor-block-style/);
         let statusBarMode = workbox.locator(
             'div[aria-label="Keybinding Mode: normal"]',
