@@ -32,7 +32,7 @@ jobs:
         - name: Install Xvfb
           run: |
             sudo apt-get update
-            sudo apt-get install -y xvfb libgbm1 libasound2 libnss3 libatk-bridge2.0-0 libgtk-3-0
+            sudo apt-get install -y xvfb
         - name: Setup Node and Cache NPM
           uses: actions/setup-node@v6
           with:
