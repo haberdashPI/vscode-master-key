@@ -35,16 +35,25 @@ export const test = base.extend<TestFixtures>({
     workbox: async ({ vscodeVersion, createProject, createTempDir }, use) => {
         const defaultCachePath = await createTempDir();
         const vscodePath = await downloadAndUnzipVSCode(vscodeVersion);
-        const coverage = process.env.COVERAGE == 'true';
+        const coverage = process.env.COVERAGE === 'true';
+        const ci = process.env.CI === 'true';
         if (coverage) {
             await fs.promises.mkdir(
                 path.join(__dirname, '../../../coverage/integration/tmp/'),
                 { recursive: true },
             );
         }
+        let env = {}
+        if (coverage) {
+            env = { NODE_V8_COVERAGE: './coverage/integration/tmp/' };
+        }
+        if (ci) {
+            env = { ...env, DISPLAY: ':99' };
+        }
+
         const electronApp = await _electron.launch({
             executablePath: vscodePath,
-            env: coverage ? { NODE_V8_COVERAGE: './coverage/integration/tmp/' } : {},
+            env,
             args: [
                 ...(coverage ? ['--experimental-test-coverage'] : []),
                 // eslint-disable-next-line @stylistic/max-len
