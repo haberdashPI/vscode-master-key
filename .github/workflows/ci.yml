@@ -56,7 +56,6 @@ jobs:
           if: matrix.environment == ''
           env:
             COVERAGE: 'true'
-            DEBUG: pw:browser # Temporary; here to troubleshoot headless setup for playwright
           run: |
             mise run test-integration
         - uses: actions/upload-artifact@v4
