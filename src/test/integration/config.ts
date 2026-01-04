@@ -43,7 +43,7 @@ export const test = base.extend<TestFixtures>({
                 { recursive: true },
             );
         }
-        let env = {}
+        let env = {};
         if (coverage) {
             env = { NODE_V8_COVERAGE: './coverage/integration/tmp/' };
         }
