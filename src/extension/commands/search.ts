@@ -415,13 +415,13 @@ function adjustSearchPosition(
 
     if (offsetType === 'exclusive') {
         showCommandWarnings([
-            '`master-key.search` is using deprecated `"offset"` value' +
+            '`master-key.search` is using deprecated `"offset"` value ' +
             '`"exclusive"` use `"closerBoundary"` instead.',
         ]);
     }
     if (offsetType === 'inclusive') {
         showCommandWarnings([
-            '`master-key.search` is using deprecated `"offset"` value' +
+            '`master-key.search` is using deprecated `"offset"` value ' +
             '`"inclusive"` use `"fatherBoundary"` instead.',
         ]);
     }

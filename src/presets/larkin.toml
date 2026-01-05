@@ -1169,7 +1169,7 @@ doc.combined.description = "Find the next (previous) char (include char in selec
 doc.combined.key = "f (shift+f)"
 args.acceptAfter = 1
 args.skip = "{{key.count-1}}"
-args.offset = "inclusive"
+args.offset = "fartherBoundary"
 
 [[bind]]
 default = "{{bind.edit_motion_search}}"
@@ -1178,7 +1178,7 @@ doc.name = "find char back"
 doc.description = "Find the previous char (include char in selection)"
 doc.combined.name = "find char (back)"
 args.acceptAfter = 1
-args.offset = "inclusive"
+args.offset = "fartherBoundary"
 args.backwards = true
 args.skip = "{{key.count-1}}"
 

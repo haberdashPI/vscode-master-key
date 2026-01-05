@@ -52,11 +52,18 @@ export function showExpressionMessages(command: CommandOutput) {
     }
 }
 
+let warningsShown = false;
 export function showCommandWarnings(warnings: string[]) {
     for (const warn of warnings) {
         expressionMessages.appendLine(
-            `[WARN: ${new Date().toLocaleTimeString}] ${warn}`,
+            `[WARN: ${new Date().toLocaleTimeString()}] ${warn}` +
+            ' (If you are using a default binding set, consider reactivating ' +
+            'your Master Key bindings.)',
         );
+    }
+    if (warnings.length > 0 && !warningsShown) {
+        warningsShown = false;
+        expressionMessages.show(true);
     }
 }
 
