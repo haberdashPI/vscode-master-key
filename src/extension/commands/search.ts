@@ -5,7 +5,7 @@ import { state as keyState, CommandResult, recordedCommand } from '../state';
 import { MODE } from './mode';
 import { captureKeys } from './capture';
 import { bindings } from '../keybindings/config';
-import { onCommandComplete } from './do';
+import { onCommandComplete, showCommandWarnings } from './do';
 
 /**
  * @command search
@@ -27,17 +27,32 @@ import { onCommandComplete } from './do';
  * - `wrapAround`: (default=false): If true search will wrap back to the top of the file
  *    when hitting the end of the file, and back to the bottom when hitting the top.
  * - `selectTillMatch` (default=false): If true, all text from the current cursor position
- *   up until the searched-to position will be highlighted.
+ *   up until the searched-to position will be highlighted. (Technically this means that the
+ *   final character position of the cursor is one character further)
  * - `highlightMatches` (default=true): If true search-string matches visible in the editor
  *   will be highlighted.
- * - `offset` (default='exclusive'): determines where the cursor will land with respect to
- *   the search match. The possible values are:
- *   - `inclusive`: when search is moving forward the cursor will land right before the
- *      first character and otherwise it will land right after the last character
- *   - `exclusive`: like inclusive` except the cursor lands directly on the target character
- *      rather than to one side or the other
- *   - `start`: cursor will land on the first character of the match
- *   - `end`: cursor will land on the last character of the match
+ * - `offset` (default=`'closerBoundary'`): determines where the cursor will land with
+ *   respect to the search match. The possible values are:
+ *   - `'closerBoundary'`: move selection or cursor to the boundary of the search term which
+ *      is closer to the starting position. When moving forward this is at the
+ *      start of the search term, and when moving backwards this is at the end of the search
+ *      term.
+ *   - `'fartherBoundary'`: move selection or cursor to the boundary of the search term that
+ *      is farther from the starting position. When moving forward this is at
+ *      the end of the search term, and when moving backwards this is at the start of the
+ *      search term.
+ *   - `'start'`: cursor will land on the first character of the match
+ *   - `'end'`: cursor will land on the last character of the match
+ *   - `{'from': [string], by: [number]}`: land on the character that is `by` steps away
+ *     from the offset specified in 'from'. When `by` is 0, this is identical to specifying
+ *     `from` as the `offset` (e.g. `{'from': 'start', 'by': 0}` is the same as `'start'`).
+ *     The direction of movement implied by a positive value depends on the offset
+ *     specified. The two boundary offsets (`closertBoundary` and `fartherBoundary`) imply
+ *     an offset where positive values move in the same direction as search moved. `start`
+ *     and `end` imply an offset where positive values move forward in the file and negative
+ *     backwards.
+ *   - `exclusive`: **deprecated**: equivalent to `closerBoundary`
+ *   - `inclusive`: **deprecated**: equivalent to `fartherBoundary`.
  * - `register` (default="default"): A unique name determining where search state will be
  *    stored. Calls to (`nextMatch`/`previousMatch`) use this state to determine where to
  *    jump. If you have multiple search commands you can use registers to avoid the two
@@ -45,6 +60,14 @@ import { onCommandComplete } from './do';
  * - `skip` (default=0): the number of matches to skip before stopping.
  */
 
+const offsets = z.enum([
+    'inclusive', // deprecated
+    'exclusive', // deprecated
+    'fartherBoundary',
+    'closerBoundary',
+    'start',
+    'end',
+]);
 export const searchArgs = z.
     object({
         text: z.string().min(1).optional(),
@@ -55,7 +78,10 @@ export const searchArgs = z.
         wrapAround: z.boolean().optional(),
         selectTillMatch: z.boolean().optional(),
         highlightMatches: z.boolean().default(true).optional(),
-        offset: z.enum(['inclusive', 'exclusive', 'start', 'end']).default('exclusive'),
+        offset: offsets.default('closerBoundary').or(z.object({
+            from: offsets,
+            by: z.number(),
+        })),
         register: z.string().default('default'),
         skip: z.number().optional().default(0),
     }).
@@ -384,24 +410,52 @@ function adjustSearchPosition(
 ) {
     let offset = 0;
     const forward = !args.backwards;
-    if (args.offset === 'exclusive') {
-        offset = forward ? -len : len;
+    const offsetType = typeof args.offset === 'string' ? args.offset : args.offset.from;
+    const offsetAdjust = typeof args.offset === 'string' ? 0 : args.offset.by;
+
+    if (offsetType === 'exclusive') {
+        showCommandWarnings([
+            '`master-key.search` is using deprecated `"offset"` value' +
+            '`"exclusive"` use `"closerBoundary"` instead.',
+        ]);
+    }
+    if (offsetType === 'inclusive') {
+        showCommandWarnings([
+            '`master-key.search` is using deprecated `"offset"` value' +
+            '`"inclusive"` use `"fatherBoundary"` instead.',
+        ]);
+    }
+
+    if (offsetType === 'closerBoundary' || offsetType === 'exclusive') {
+        const dir = forward ? 1 : -1;
+        offset = -dir * len;
         if (!args.selectTillMatch) {
+            // WHY: because we want the *selection* to be at the boundary, not the cursor,
+            // and when moving forward the cursor is at the start of a search term while the
+            // selection is one before the start of the search term
             offset += forward ? -1 : 0;
         }
-    } else if (args.offset === 'start') {
+        offset += offsetAdjust * dir;
+    } else if (offsetType === 'start') {
         if (forward) {
             offset = -len;
         }
-    } else if (args.offset === 'end') {
+        offset += offsetAdjust;
+    } else if (offsetType === 'end') {
         if (!forward) {
             offset = len;
         }
+        offset += offsetAdjust;
     } else {
-        // args.offset === 'inclusive' (default)
+        // offsetType === 'inclusive' || offsetType === 'fartherBoundary'
+        const dir = forward ? 1 : -1;
         if (!args.selectTillMatch) {
+            // WHY: because we want the *selection* to be at the boundary, not the cursor,
+            // and when moving forward the cursor is at the start of a search term while the
+            // selection is one before the start of the search term
             offset += forward ? -1 : 0;
         }
+        offset += offsetAdjust * dir;
     }
 
     if (offset !== 0) {

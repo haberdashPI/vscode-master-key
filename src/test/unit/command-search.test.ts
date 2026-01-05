@@ -82,17 +82,18 @@ labore elit occaecat cupidatat non POINT_B.`);
                 text: 'POINT_A',
                 selectTillMatch: true,
             });
+
             assert.equal(editor.selection.anchor.character, 0);
             assert.equal(editor.selection.anchor.line, 0);
         });
     });
 
-    test('Can adjust position using `offset: "inclusive"`', async () => {
+    test('Can adjust position using `offset: "fartherBoundary"`', async () => {
         cursorToStart(editor);
         await assertCursorMovesBy(editor, { line: 0, character: 17 }, async () => {
             await vscode.commands.executeCommand('master-key.search', {
                 text: 'POINT_A',
-                offset: 'inclusive',
+                offset: 'fartherBoundary',
             });
         });
 
@@ -101,6 +102,55 @@ labore elit occaecat cupidatat non POINT_B.`);
             await vscode.commands.executeCommand('master-key.previousMatch');
         });
     });
+
+    test('Can adjust position using `offset: "closerBoundary"`', async () => {
+        cursorToStart(editor);
+        await assertCursorMovesBy(editor, { line: 0, character: 10 }, async () => {
+            await vscode.commands.executeCommand('master-key.search', {
+                text: 'POINT_A',
+                offset: 'closerBoundary',
+            });
+        });
+
+        await assertCursorMovesBy(editor, { line: 0, character: 8 }, async () => {
+            await vscode.commands.executeCommand('master-key.nextMatch');
+            await vscode.commands.executeCommand('master-key.previousMatch');
+        });
+    });
+
+    test('Can adjust position using `offset: { from: "fartherBoundary", by: 1 }`',
+        async () => {
+            cursorToStart(editor);
+            await assertCursorMovesBy(editor, { line: 0, character: 18 }, async () => {
+                await vscode.commands.executeCommand('master-key.search', {
+                    text: 'POINT_A',
+                    offset: { from: 'fartherBoundary', by: 1 },
+                });
+            });
+
+            await assertCursorMovesBy(editor, { line: 0, character: -8 }, async () => {
+                await vscode.commands.executeCommand('master-key.nextMatch');
+                await vscode.commands.executeCommand('master-key.previousMatch');
+            });
+        },
+    );
+
+    test('Can adjust position using `offset: { from: "closerBoundary", by: 1 }`',
+        async () => {
+            cursorToStart(editor);
+            await assertCursorMovesBy(editor, { line: 0, character: 11 }, async () => {
+                await vscode.commands.executeCommand('master-key.search', {
+                    text: 'POINT_A',
+                    offset: { from: 'closerBoundary', by: 1 },
+                });
+            });
+
+            await assertCursorMovesBy(editor, { line: 0, character: 6 }, async () => {
+                await vscode.commands.executeCommand('master-key.nextMatch');
+                await vscode.commands.executeCommand('master-key.previousMatch');
+            });
+        },
+    );
 
     test('Can adjust position using `offset: "start"`', async () => {
         cursorToStart(editor);

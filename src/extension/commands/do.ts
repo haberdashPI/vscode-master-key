@@ -52,6 +52,14 @@ export function showExpressionMessages(command: CommandOutput) {
     }
 }
 
+export function showCommandWarnings(warnings: string[]) {
+    for (const warn of warnings) {
+        expressionMessages.appendLine(
+            `[WARN: ${new Date().toLocaleTimeString}] ${warn}`,
+        );
+    }
+}
+
 export function showExpressionErrors(fallable: { errors?: string[]; error?: string[] }) {
     if (fallable.errors || fallable.error) {
         const errors = (fallable.errors || fallable.error || []);
