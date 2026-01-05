@@ -111,11 +111,11 @@ pub struct BindingInput {
     pub mode: Option<Spanned<TypedValue<Plural<String>>>>,
     /// @forBindingField bind
     ///
-    /// - `priority`: The ordering of the keybinding relative to others when inserted into
-    ///   `keybinding.json`; determines which bindings trigger for a given key press. Higher
-    ///   priorities trigger over lower priorities because they are ordered later in
-    ///   `keybindings.json`. Defaults to 0. When ordering bindings with same priority the
-    ///   order is determined by the binding's order in the TOML file.
+    /// - `priority`: (default=0) The ordering of the keybinding relative to others when
+    ///   inserted into `keybinding.json`; determines which bindings trigger for a given key
+    ///   press. Higher priorities trigger over lower priorities because they are occur
+    ///   later in `keybindings.json`. Bindings with same priority are follow the same order
+    ///   as provided in the master key TOML file.
     pub priority: Option<Spanned<TypedValue<f64>>>,
     /// @forBindingField bind
     ///
@@ -132,13 +132,14 @@ pub struct BindingInput {
 
     /// @forBindingField bind
     ///
-    /// - `prefixes`: expresses the allowed key sequences that can occur *before* this
-    /// keybinding. Explicit prefixes listed here should be define elsewhere with a
-    /// [`master-key.prefix`](/commands/prefix) command or they will raise an error. The
-    /// value is an object with only one of the following three keys:
+    /// - `prefixes`: (default `prefixes.any=false`) expresses the allowed key sequences that
+    /// can occur *before* this keybinding. Explicit prefixes listed here should be define
+    /// elsewhere with a [`master-key.prefix`](/commands/prefix) command or they will raise
+    /// an error. The value is an object with only one of the following three keys:
     ///   - `any`: when `true` any prefix defined elsewhere in the file is allowed before
     ///   the binding. This includes the implicit prefixes of any other keybinding. `false`
-    ///   means no other key sequence can occur prior to this binding (this is the default behavior).
+    ///   means no other key sequence can occur prior to this binding (this is the default
+    ///   behavior).
     ///   - `anyOf`: A single string or an array of strings, each an allowed prefix
     ///   - `allBut`: A single string or an array of strings; all prefixes *except* those
     ///   specified here are valid
@@ -146,20 +147,19 @@ pub struct BindingInput {
 
     /// @forBindingField bind
     ///
-    /// - `finalKey`: (boolean, default=true unless `master-key.prefix` is one of the
-    ///   commands run by this binding) Whether this key should clear any transient state
+    /// - `finalKey`: (default=true, unless `master-key.prefix` is one of the
+    ///   commands being run). Whether this key should clear any transient state
     ///   associated with the pending keybinding prefix. See
-    ///   [`master-key.prefix`](/commands/prefix) for details. When `master-key.prefix` is
-    ///   one of the commands in this binding, this field defaults to `false`.
+    ///   [`master-key.prefix`](/commands/prefix) for details.
     pub finalKey: Option<Spanned<TypedValue<bool>>>,
 
     /// @forBindingField bind
     ///
-    /// - ⚡ `repeat`: The number of times to repeat the command; this can be a runtime
-    ///   [expression](/expressions/index). This defaults to zero: one repeat means the
-    ///   command is run twice. The most common use case here is to set this to <span
-    ///   v-pre>`'{{(max(key.count, 1))-1}}'`</span> for a command that does not accept a count value as
-    ///   an argument.
+    /// - ⚡ `repeat` (default=0): The number of times to repeat the command; this can be a
+    ///   runtime [expression](/expressions/index). This defaults to zero: one repeat means
+    ///   the command is run twice. The most common use case here is to set this to
+    ///   <span v-pre>`'{{(max(key.count, 1))-1}}'`</span> for a command that does not
+    ///   accept a count value as an argument.
     repeat: Option<Spanned<TypedValue<i32>>>,
 
     /// @forBindingField bind
@@ -390,19 +390,20 @@ pub struct BindingDocInput {
     ///
     /// The documentation object `bind.doc` is composed of the following fields
     ///
-    /// - `name`: A very brief description for the command; this must fit in the visual
-    ///   documentation of keybindings so it shouldn't be much longer than five characters for most
-    ///   keys. Favor unicode symbols such as →/← over text like left/right.
-    ///   For bindings that include [`master-key.prefix`](/commands/prefix) `name`
-    ///   defaults to `prefix`. This ensures that all key prefixes show up in documentation,
-    ///   thereby maintaining visibility of the suffixes' documentation.
+    /// - `name`: (default='' unless binding is a prefix) A very brief description for the
+    ///   command; this must fit in the visual documentation of keybindings so it shouldn't
+    ///   be much longer than five characters for most keys. Favor unicode symbols such as
+    ///   →/← over text like left/right. For bindings that include
+    ///   [`master-key.prefix`](/commands/prefix) `name` defaults to `prefix`. This ensures
+    ///   that all key prefixes show up in documentation, thereby maintaining visibility of
+    ///   the suffixes' documentation.
     #[serde(default)]
     pub name: Option<Spanned<TypedValue<String>>>,
 
     /// @forBindingField bind
     /// @order 10
     ///
-    /// - `description`: A sentence or two about the command. Save more detailed descriptions
+    /// - `description`: (default='') A sentence or two about the command. Save more detailed descriptions
     ///   for the comments around your keybindings: the keybinding file is a literate
     ///   document and all users can see these comments when reviewing the textual documentation.
     #[serde(default)]
@@ -410,9 +411,9 @@ pub struct BindingDocInput {
     /// @forBindingField bind
     /// @order 10
     ///
-    /// - `hideInPalette/hideInDocs`: whether to show the keys in the sidebar suggestions
-    ///   and the documentation. These both default to false. Note that if the `name`
-    ///   of a key is not defined it does not show up in the palette or documentation.
+    /// - `hideInPalette/hideInDocs`: (default=false) whether to show the keys in the
+    ///   sidebar suggestions and the documentation. Note that if the `name` of a key is not
+    ///   defined it does not show up in the palette or documentation.
     #[serde(default)]
     pub hideInPalette: Option<Spanned<TypedValue<bool>>>,
     #[serde(default)]
@@ -423,7 +424,7 @@ pub struct BindingDocInput {
     ///
     /// - `combined.name/combined.key/combined.description`: in the suggestion palette and
     ///   textual documentation, keys that have the same `combined.name` will be
-    ///   represented as single entry, using the `combined.key` and `combined.description`
+    ///   represented as a single entry, using the `combined.key` and `combined.description`
     ///   instead of `key` and `description`. The `combined.key` for a multi-key sequence
     ///   should only include the suffix key. You need only define `combined.key` and
     ///   `combined.description` once across keys that share the same `combined.name`

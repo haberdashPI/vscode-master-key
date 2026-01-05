@@ -58,7 +58,7 @@ pub struct CommandInput {
     /// @forBindingField bind
     /// @order 15
     ///
-    /// - ⚡ `skipWhen`: an [expression](/expressions/index) evaluated at run-time. When
+    /// - ⚡ `skipWhen`: (default=false) an [expression](/expressions/index) evaluated at run-time. When
     ///    `true` the command will not be run.
     pub skipWhen: Option<Spanned<TypedValue<bool>>>,
 
