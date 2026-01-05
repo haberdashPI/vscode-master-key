@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import z from 'zod';
 import { validateInput } from '../utils';
-import { withState, CommandResult, recordedCommand } from '../state';
+import { state, CommandResult, recordedCommand } from '../state';
 import { bindings } from '../keybindings/config';
 import { documentIdentifiers } from './do';
 import { ReifiedBinding } from '../../rust/parsing/lib/parsing';
@@ -313,9 +313,7 @@ async function record(args_: unknown): Promise<CommandResult> {
     const args = validateInput('master-key.record', args_, recordArgs);
     if (args) {
         const a = args;
-        await withState(async (state) => {
-            return state.set(RECORD, { public: true }, a.on);
-        });
+        state.set(RECORD, a.on);
     }
     return;
 }
@@ -331,6 +329,10 @@ function updateConfig(event?: vscode.ConfigurationChangeEvent) {
             maxTextHistory = configMaxHistory;
         }
     }
+}
+
+export function defineState() {
+    state.define(RECORD, false);
 }
 
 export async function activate(_context: vscode.ExtensionContext) {

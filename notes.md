@@ -729,54 +729,69 @@ Follow-up:
 - [X] generate literate docs for each preset within the documentation website
 - [X] release 0.4
 - [X] automated upload the extension to marketplaces
-- [ ] improvement doc display and content
-    - [ ] fix larkin docs on webset to use pretified, `<key>`ified key bindings
+- [X] initial profiling; identify any obvious optimization targets
+    - FINDINGS: there isn't much latency introduced by the actual calls in master-key.do
+      or master-key.profile. The latency is mostly spent in the callback trampoline,
+      This suggestions that the design of `state.ts` is at fault.
+      I have been wanting to clean this up anyways (for legibility/maintainability)
+    - ALTERNATIVE: aysnc-mutex is the direct culprit
+      - I think this still points to state.ts refactoring as a good place to start
+- [X] improve doc display and content
     - [X] prettify docs for inline docs is not using unicode chars
     - [X] revise the larkin literate docs to make it more beginner friendly
         (include less in basic motions and move basic actions higher up, so
         all of the basic commands can be see at a glance)
-    - [ ] proof-read larking docs
-    - [ ] fix section headings
-- [ ] organize additional priorities before release 1.0 (including the below follow-ups)
+    - [X] proof-read larkin docs
+    - [X] fix section headings
 - [X] make a command that activates the current file directly
-- [ ] make some features more discoverable
-    - [x] create "tour" section for vscode's start window
-    - add a button to edit a copy of a binding file from the activate binding menu
-        - make sure editing is prominently in the documentation for Larkin
-          (and an future binding files)
-        - make sure it is prominently in the getting started section
-- [ ] visual documentation improvements
-    - [X] the visual documentation could show a hint about the command
-    to toggle between binding modifiers (and show the default key binding)
-    - [X] currently keybindings are sorted from highest to lowest frequency
-    modifiers across all modes. This should really be a feature per mode,
-    so that the most relevant bindings for a given mode are visible
-    immediately.
-    - [ ] visual documentation could highlight the most recently pressed
-    key in the same way that status bar shows the most recently pressed binding
-- [ ] improve key suggestions
-    - [X] use section headers (and their level) to create tree for the key suggestions
-    - [ ] add command to search and filter the key suggestions
-- [ ] rename from Master Key to Key Atlas (keep the same extension name, to avoid
-    confusion, but do make a new git repository)
-    - [ ] I should wait until I'm ready for a larger audience before renaming
-    - [ ] rename references of Master key in Selection Utilities
-- [ ] reimplement storeNamed? (or make it more specific to macros; I'm not
-    convinced the generic tool is really useful)
-- [ ] implement binding feature `source` which adds an existing predefined
-      binding set to the current binding set. (this will replace the user
-      binding features)
-- [ ] profile mater-key.do performance
-    - [ ] define separate bindings for multi-keys when there is no mode defined
-        - these bindings are for the entire sequence, not each key separately
-        - we loose the ability to show a pop-up menu (for the first keybinding only)
-        - but we avoid errors in the execution of the very first binding
-        - not clear this is the right trade off yet 🤔
-- [ ] insert accepts a count: replicating vim's behavior
-    - [ ] this probably needs to be per mode configurable
-
-- [ ] update extension utilities
-    - [ ] TODO: decorators aren't working
-    - [ ] migrate to the same build and test setup
-    - [ ] get tests working again
-    - [ ] get CI working
+- [ ] refactor `state.ts`:
+    - [X] simplify implementation, using rust as the backing state container
+    - [X] re-read through logic in `state.ts`, make sure I didn't miss anything
+    - [X] refactor all callers of `state.ts`
+    - [X] simple debug testing
+    - NOTE: a cursory review of latency in typing does seem to corroborate that this
+      was a good place to start
+    - [ ] integration testing
+        - [X] `press-keybindings.tests.ts`: cursor shape doesn't change
+            - we cannot yet reproduce during a debug run, only integration run
+            - in the process of tooling out code path with `console.log`
+              and comparing their outputs across debug and integration run
+            - this is a race condition -- in the integration test the `MODE` state
+              is still equal to normal by the time the cursor is being updated
+            - resolution: we needed to clean up how and when variables are set;
+              we have to sometimes delay setting values so they aren't set
+              before they're defined (happens when new bindings are loaded)
+        - [X] `press-replay-binding.tests.ts` several tests failing
+            - [X] 'Replays search with canceled input': this is a bug in
+                  being able to cancel a search. (I've noticed this in
+                  the current release as well).
+                - the problem is that mode-changing commands do not release the mutex
+                - solution: rather than hold a mutex we want to immediately cancel
+                  bindings that depend on a particular change (mode and prefix separately)
+                - we need to encode that some bindings don't depend on one or both
+                  of these state changes and let them run even when they're async.
+                - additionally: we're reaching a point where we probably want
+                  some kind of trait system for  our commands so we don't have
+                  to special case so much. e.g. `changes binding state`
+                - OR: do we just need something special for capturing-keys related commands
+                  (think of exmaples that aren't this and see if the same logic makes sense)
+                  - I think this is probably key: in most cases we want bindings to
+                    run, one-by-one in an orderly fashion; hence the mutex.
+                    The only case where this doesn't make sense are when we
+                    request user facing input.
+                  - probably the more general point is that we want *long* running
+                    bindings to release the lock, not just user facing bindings
+                    (e.g. running code in the background should release)
+                    anything else should hold on to the binding to ensure, e.g.
+                    word selection is complete before running delete for `w d`.
+                    these long running bindings should cancel any pre-existing
+                    bindings and allow future bindings to run
+        - [X] `show-binding-palette.test.ts`
+            - [X] 'shows all bindings': debug
+                - we had to fix the PREFIX_CODE update to use 0 instead of -1
+        - [X] `open-visual-docs.test.ts`
+            - [X] 'Labels Keys': debug
+                - we had to fix the PREFIX_CODE update to use 0 instead of -1
+- [X] organize additional priorities before release 1.0 (including the below follow-ups)
+    - [X] review issues listed on repo / project board
+    - [X] add below issues to project board

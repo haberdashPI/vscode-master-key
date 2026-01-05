@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { getRequiredMode, getRequiredPrefixCode, prettifyPrefix } from '../utils';
-import { onSet, withState } from '../state';
+import { state, onResolve } from '../state';
 import { bindings, onChangeBindings } from '../keybindings/config';
 import { PREFIX_CODE } from './prefix';
 import { MODE } from './mode';
@@ -201,13 +201,17 @@ function updateKeys(bindings: KeyFileResult) {
             continue;
         }
         const docs = bindings.docs(i);
-        if (docs?.hideInPalette || !(docs?.name)) {
+        let docName = docs?.name;
+        if (binding.command === 'master-key.prefix' && !docName) {
+            docName = 'prefix';
+        }
+        if (docs?.hideInPalette || !docName) {
             continue;
         }
 
         const paletteEntry = {
+            name: docs?.combined?.name || docName,
             key: docs?.combined?.key || binding.key,
-            name: docs?.combined?.name || binding.args.name,
             description: docs?.combined?.description || binding.args.description,
             combinedKey: docs?.combined?.key,
             combinedDescription: docs?.combined?.description,
@@ -250,6 +254,9 @@ function updateKeys(bindings: KeyFileResult) {
 let treeDataProvider: MasterKeyDataProvider;
 let treeView: vscode.TreeView<IPaletteBinding>;
 
+export function defineState() {
+}
+
 export async function activate(context: vscode.ExtensionContext) {
     treeDataProvider = new MasterKeyDataProvider();
     treeView = vscode.window.createTreeView('masterKeySidePanel', {
@@ -264,11 +271,8 @@ export async function activate(context: vscode.ExtensionContext) {
         treeDataProvider.refresh();
     });
 
-    await withState(async (state) => {
-        treeDataProvider.mode = <string>state.get(MODE, bindings.default_mode());
-        treeDataProvider.prefixCode = <number>state.get(PREFIX_CODE, 0) || 0;
-        return state;
-    });
+    treeDataProvider.mode = <string>state.get(MODE) || bindings.default_mode();
+    treeDataProvider.prefixCode = <number>state.get(PREFIX_CODE) || 0;
 }
 
 export async function commandPalette() {
@@ -323,13 +327,12 @@ export async function defineCommands(context: vscode.ExtensionContext) {
             'master-key.executePaletteItem',
             async (binding: IPaletteBinding) => {
                 // Reconstruct the 'pick' object your doCommandsCmd expects
-                const state = await withState(async s => s);
                 await doCommandsCmd({
                     label: binding.combinedKey || binding.key || '',
                     command_id: binding.command_id,
                     prefix_id: binding.prefix_id,
-                    mode: state?.get(MODE, '') || '',
-                    old_prefix_id: state?.get(PREFIX_CODE, 0) || 0,
+                    mode: state.get(MODE) || '',
+                    old_prefix_id: state.get(PREFIX_CODE) || 0,
                 });
             },
         ),
@@ -337,13 +340,9 @@ export async function defineCommands(context: vscode.ExtensionContext) {
 
     vscode.workspace.onDidChangeConfiguration(updateConfig);
 
-    onSet(MODE, (state) => {
-        treeDataProvider.mode = <string>state.get(MODE, bindings.default_mode());
-        return true;
-    });
-
-    onSet(PREFIX_CODE, (state) => {
-        treeDataProvider.prefixCode = <number>state.get(PREFIX_CODE, 0) || 0;
+    onResolve('palette', () => {
+        treeDataProvider.mode = state.get<string>(MODE) || '';
+        treeDataProvider.prefixCode = state.get<number>(PREFIX_CODE) || 0;
         return true;
     });
 }

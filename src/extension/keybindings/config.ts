@@ -204,3 +204,6 @@ export async function activate(context: vscode.ExtensionContext) {
 export async function defineCommands(_context: vscode.ExtensionContext) {
     return;
 }
+
+export function defineState() {
+}

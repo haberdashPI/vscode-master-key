@@ -735,25 +735,16 @@ impl KeyFileResult {
         return Ok(());
     }
 
-    pub fn set_value(&mut self, name: &str, value: JsValue) -> Result<()> {
-        return self.scope.set(name, value);
+    pub fn set_value(&mut self, namespace: &str, name: &str, value: JsValue) -> Result<()> {
+        return self.scope.set(namespace, name, value);
     }
 
-    pub fn values(&self) -> std::result::Result<JsValue, JsValue> {
-        if let Some(rhai_value) = self.scope.state.get_value::<rhai::Dynamic>("val") {
-            let value: Value = match rhai_value.try_into() {
-                Ok(x) => x,
-                Err(e) => {
-                    return Err(format!("{e}"))?;
-                }
-            };
-            let toml: toml::Value = value.into();
-            let to_json = serde_wasm_bindgen::Serializer::json_compatible();
-            let js_val = toml.serialize(&to_json)?;
-            return Ok(js_val);
-        } else {
-            return Ok(js_sys::Object::new().into());
-        }
+    pub fn get_value(&self, namespace: &str, name: &str) -> Result<JsValue> {
+        return self.scope.get(namespace, name);
+    }
+
+    pub fn get_defined_vals(&self) -> Result<Vec<String>> {
+        return self.scope.get_defined_vals();
     }
 
     pub fn kinds(&self) -> Vec<Kind> {

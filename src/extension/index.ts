@@ -1,13 +1,32 @@
+import * as state from './state';
 import * as vscode from 'vscode';
 import * as keybindings from './keybindings/index';
 import * as commands from './commands/index';
 import * as status from './status/index';
-import * as state from './state';
 import * as config from './keybindings/config';
+import initParsing from '../rust/parsing/lib';
+
+export function defineState() {
+    keybindings.defineState();
+    config.defineState();
+    state.defineState();
+    commands.defineState();
+    status.defineState();
+}
 
 export async function activate(context: vscode.ExtensionContext) {
-    await keybindings.activate(context);
+    // initialize rust WASM module for parsing keybinding files
+    const filename = vscode.Uri.joinPath(context.extensionUri, 'out', 'parsing_bg.wasm');
+    const bits = await vscode.workspace.fs.readFile(filename);
+    await initParsing(bits);
+
+    // defineState needs `bindings` to exists, defined in `config.activate`
     await config.activate(context);
+    defineState();
+
+    // the remaining `activate` functions require state-related methods to exist
+    // e.g. `onSet` and `onResolve`
+    await keybindings.activate(context);
     await state.activate(context);
     await commands.activate(context);
     await status.activate(context);
