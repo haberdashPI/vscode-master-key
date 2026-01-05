@@ -185,3 +185,11 @@ command = "master-key.executeStoredCommand"
 args.register = 'test'
 args.args.value = '{{val.foo}}'
 args.args.to = "right"
+
+[[bind]]
+key = "f"
+command = "master-key.search"
+args.acceptAfter = 1
+args.offset.from = "exclusive"
+args.offset.by = 0
+args.backwards = true
