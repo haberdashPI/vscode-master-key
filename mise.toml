@@ -117,13 +117,7 @@ run = 'tsc -p src/test --outDir out/test'
 depends = ['build-tests']
 shell = 'nu -c'
 run = '''
-if ($env.CI | default false | into bool) {
-    # NOTE: CI always has COVERAGE='true'
-    (xvfb-run --auto-servernum --server-args="-screen 0 1280x1024x24" pnpm exec
-        vscode-test --config .vscode-test.mjs --extensionDevelopmentPath=.
-        --version=insiders --coverage --coverage-output coverage/unit
-        --coverage-reporter json)
-} else if ($env.COVERAGE? | default false | into bool) {
+if ($env.COVERAGE? | default false | into bool) {
     (pnpm exec vscode-test --config .vscode-test.mjs --extensionDevelopmentPath=.
         --version=insiders --coverage --coverage-output coverage/unit
         --coverage-reporter json)
@@ -135,6 +129,7 @@ if ($env.CI | default false | into bool) {
 
 [tasks.test-web]
 depends = ['build --web']
+shell = 'nu -c'
 run = '''
 (pnpm exec vscode-test-web --extensionDevelopmentPath=.
     --extensionTestsPath=./out/browser/webExtensionTests.js)
@@ -161,15 +156,7 @@ lcov-summary coverage/lcov.info
 
 [tasks.test-integration]
 depends = ['build', 'build-tests']
-shell = 'nu -c'
-run = '''
-if ($env.CI | default false | into bool) {
-    (xvfb-run --auto-servernum --server-args="-screen 0 1280x1024x24" pnpm exec
-        playwright test)
-} else {
-    pnpm exec playwright test
-}
-'''
+run = 'pnpm exec playwright test'
 
 [tasks.extract-docs]
 sources = ['README.md', 'src/extension/**/*.ts', 'src/rust/**/*.rs', 'src/docs/**/*.md']
