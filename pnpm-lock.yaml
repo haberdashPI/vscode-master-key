@@ -83,9 +83,6 @@ importers:
       istanbul-merge:
         specifier: ^2.0.0
         version: 2.0.0
-      jsonc-simple-parser:
-        specifier: ^3.0.0
-        version: 3.0.0
       lodash:
         specifier: ^4.17.21
         version: 4.17.21
@@ -111,8 +108,8 @@ importers:
         specifier: ^7.7.2
         version: 7.7.2
       smol-toml:
-        specifier: ^1.4.1
-        version: 1.4.1
+        specifier: ^1.6.0
+        version: 1.6.0
       string.prototype.replaceall:
         specifier: ^1.0.10
         version: 1.0.10
@@ -2350,9 +2347,6 @@ packages:
     engines: {node: '>=6'}
     hasBin: true
 
-  jsonc-simple-parser@3.0.0:
-    resolution: {integrity: sha512-0qi9Kuj4JPar4/3b9wZteuPZrTeFzXsQyOZj7hksnReCZN3Vr17Doz7w/i3E9XH7vRkVTHhHES+r1h97I+hfww==}
-
   jszip@3.10.1:
     resolution: {integrity: sha512-xXDvecyTpGLrqFrvkrUSoxxfJI5AH7U8zxxtVclpsUtMCq4JQ290LY8AW5c7Ggnr/Y/oK+bQMbqK2qmtk3pN4g==}
 
@@ -2799,9 +2793,6 @@ packages:
     resolution: {integrity: sha512-dYqgNSZbDwkaJ2ceRd9ojCGjBq+mOm9LmtXnAnEGyHhN/5R7iDW2TRw3h+o/jCFxus3P2LfWIIiwowAjANm7IA==}
     engines: {node: '>= 0.4'}
 
-  reghex@3.0.2:
-    resolution: {integrity: sha512-Zb9DJ5u6GhgqRSBnxV2QSnLqEwcKxHWFA1N2yUa4ZUAO1P8jlWKYtWZ6/ooV6yylspGXJX0O/uNzEv0xrCtwaA==}
-
   release-zalgo@1.0.0:
     resolution: {integrity: sha512-gUAyHVHPPC5wdqX/LG4LWtRYtgjxyX78oanFNTMMyFEfOqdC54s3eE82imuWKbOeqYht2CrNf64Qb8vgmmtZGA==}
     engines: {node: '>=4'}
@@ -2946,8 +2937,8 @@ packages:
     resolution: {integrity: sha512-bzyZ1e88w9O1iNJbKnOlvYTrWPDl46O1bG0D3XInv+9tkPrxrN8jUUTiFlDkkmKWgn1M6CfIA13SuGqOa9Korw==}
     engines: {node: '>=14'}
 
-  smol-toml@1.4.1:
-    resolution: {integrity: sha512-CxdwHXyYTONGHThDbq5XdwbFsuY4wlClRGejfE2NtwUtiHYsP1QtNsHb/hnj31jKYSchztJsaA8pSQoVzkfCFg==}
+  smol-toml@1.6.0:
+    resolution: {integrity: sha512-4zemZi0HvTnYwLfrpk/CF9LOd9Lt87kAt50GnqhMpyF9U3poDAP2+iukq2bZsO/ufegbYehBkqINbsWxj4l4cw==}
     engines: {node: '>= 18'}
 
   source-map-js@1.2.1:
@@ -5642,10 +5633,6 @@ snapshots:
 
   json5@2.2.3: {}
 
-  jsonc-simple-parser@3.0.0:
-    dependencies:
-      reghex: 3.0.2
-
   jszip@3.10.1:
     dependencies:
       lie: 3.3.0
@@ -6181,8 +6168,6 @@ snapshots:
       gopd: 1.2.0
       set-function-name: 2.0.2
 
-  reghex@3.0.2: {}
-
   release-zalgo@1.0.0:
     dependencies:
       es6-error: 4.1.1
@@ -6361,7 +6346,7 @@ snapshots:
 
   signal-exit@4.1.0: {}
 
-  smol-toml@1.4.1: {}
+  smol-toml@1.6.0: {}
 
   source-map-js@1.2.1: {}
 

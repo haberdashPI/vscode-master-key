@@ -13,7 +13,6 @@ import {
 } from './config';
 import * as config from './config';
 import { toLayoutIndependentString } from './layout';
-import JSONC from 'jsonc-simple-parser';
 import TOML from 'smol-toml';
 import { marked } from 'marked';
 
@@ -165,7 +164,7 @@ async function removeKeybindings(context: vscode.ExtensionContext) {
 export const vscodeBinding = z.object({
     key: z.string(),
     command: z.string(),
-    args: z.object({}).optional(),
+    args: z.object({}).passthrough().optional(),
     when: z.string().optional(),
 });
 
@@ -184,7 +183,8 @@ async function copyCommandResultIntoBindingFile(command: string) {
             /^.*AUTOMATED BINDINGS START(.|\n|\r)+AUTOMATED BINDINGS END.*$/m,
             '',
         );
-        const keys = vscodeBinding.array().safeParse(JSONC.parse(text));
+        text = replaceAll(text, /\/\/.*$/gm, '');
+        const keys = vscodeBinding.array().safeParse(JSON.parse(text));
         if (!keys.success) {
             for (const issue of keys.error.issues.slice(0, 3)) {
                 const message = fromZodIssue(issue).message;
