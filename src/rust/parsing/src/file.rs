@@ -3428,7 +3428,7 @@ pub(crate) mod tests {
         let mut warnings = Vec::new();
         let mut scope = Scope::new();
         let result = parse_bytes_helper(&data, &mut warnings, &mut scope).unwrap();
-        assert_eq!(result.bind.len(), 308);
+        assert_eq!(result.bind.len(), 309);
 
         assert!(FileDocSection::write_markdown(&result.docs, true).len() > 0);
         // info!(
