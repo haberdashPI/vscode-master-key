@@ -99,9 +99,6 @@ export class CommandState {
         }
 
         if (this.get(key, opt) !== val) {
-            const listeners = this.setListeners[fullKey] || [];
-            this.setListeners[fullKey] = listeners.filter(listener => listener(val));
-
             try {
                 if (!opt.__dont_update_bindings__) {
                     bindings.set_value(namespace, key, val);
@@ -137,6 +134,8 @@ export class CommandState {
                     );
                 }
             }
+            const listeners = this.setListeners[fullKey] || [];
+            this.setListeners[fullKey] = listeners.filter(listener => listener(val));
         }
     }
 
