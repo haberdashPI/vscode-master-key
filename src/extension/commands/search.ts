@@ -422,7 +422,7 @@ function adjustSearchPosition(
     if (offsetType === 'inclusive') {
         showCommandWarnings([
             '`master-key.search` is using deprecated `"offset"` value ' +
-            '`"inclusive"` use `"fatherBoundary"` instead.',
+            '`"inclusive"` use `"fartherBoundary"` instead.',
         ]);
     }
 
