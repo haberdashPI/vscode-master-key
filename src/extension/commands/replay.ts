@@ -6,94 +6,6 @@ import { bindings } from '../keybindings/config';
 import { documentIdentifiers } from './do';
 import { ReifiedBinding } from '../../rust/parsing/lib/parsing';
 
-const selectHistoryArgs = z.
-    object({
-        range: z.object({ from: z.number(), to: z.number() }).optional(),
-        index: z.number().optional(),
-        value: z.unknown(), // always a ReifiedBinding[], but we bypass validation
-        register: z.string().optional(),
-    }).
-    strict().
-    refine(x =>
-        (x.index != undefined ? 1 : 0) +
-        (x.range != undefined ? 1 : 0) +
-        (x.value != undefined ? 1 : 0) == 1, {
-        message:
-            'Exactly one of `index`, `range` or `value` must be non null',
-    });
-
-function commandsFromHistory(command: string, args_: unknown) {
-    const args = validateInput(command, args_, selectHistoryArgs);
-    if (args) {
-        let value;
-        // extract this into a function for anything wanting to process `selectHistoryArgs`
-        if (args.value) {
-            value = <ReifiedBinding[]>args.value;
-        } else {
-            let from;
-            let to;
-            if (args.index) {
-                from = args.index;
-                to = args.index;
-            } else {
-                from = args.range?.from;
-                to = args.range?.to;
-            }
-            // `!` is safe given XOR constraint for `selectHistoryArgs`
-            value = bindings.history_at(from!, to!);
-        }
-        return { value, register: args.register };
-    }
-    return;
-}
-
-function cleanupEdit(edit: vscode.TextDocumentChangeEvent) {
-    let result = '';
-    const strings = edit.contentChanges.map(x => x.text);
-    // NOTE: if there are multiple locations where edits happened, this implies we'd need to
-    // infer how insertion with a new set of text should "move the cursor" between edits
-    // "like before". It's not clear how to do this, in general, so these kind of edit
-    // events are simply ignored. Such non-trivial situations in the edit events are
-    // avoidable for many uses cases we intend to cover here. The way the multiple edit
-    // locations would arise would normally would be via calls to multiple commands that
-    // each run `master-key.do` for which we would not see these multiple edit locations in
-    // a single event recorded by the same command)
-    if (strings.length === 1) {
-        result += strings[0];
-    }
-    return result;
-}
-
-const REPLAY_DELAY = 50;
-// TODO: does `commands` require the `RunCommandsArgs` type?
-export async function runCommands(
-    macro: ReifiedBinding[],
-): Promise<void> {
-    for (const binding of macro) {
-        for (let i = 0; i < binding.repeat + 1; i++) {
-            for (const command of binding.commands) {
-                if (command.command !== 'master-key.ignore') {
-                    await vscode.commands.executeCommand(command.command, command.args);
-                }
-                const editor = vscode.window.activeTextEditor;
-                const edits = binding.edit_text;
-                if (edits && editor) {
-                    const ed = editor;
-                    editor.edit((e) => {
-                        for (const sel of ed.selections) {
-                            e.insert(sel.anchor, edits);
-                        }
-                    });
-                } else if (edits) {
-                    vscode.window.showErrorMessage(`Command includes edits to the
-                        active text editor, but there is currently no active editor.`);
-                }
-            }
-        }
-        await new Promise(res => setTimeout(res, REPLAY_DELAY));
-    }
-}
-
 /**
  * @command replayFromHistory
  * @section Recording and Replaying Commands
@@ -197,6 +109,94 @@ async function replayFromHistory(args_: unknown): Promise<CommandResult> {
     }
     // return commands;
     return;
+}
+
+const selectHistoryArgs = z.
+    object({
+        range: z.object({ from: z.number(), to: z.number() }).optional(),
+        index: z.number().optional(),
+        value: z.unknown(), // always a ReifiedBinding[], but we bypass validation
+        register: z.string().optional(),
+    }).
+    strict().
+    refine(x =>
+        (x.index != undefined ? 1 : 0) +
+        (x.range != undefined ? 1 : 0) +
+        (x.value != undefined ? 1 : 0) == 1, {
+        message:
+            'Exactly one of `index`, `range` or `value` must be non null',
+    });
+
+function commandsFromHistory(command: string, args_: unknown) {
+    const args = validateInput(command, args_, selectHistoryArgs);
+    if (args) {
+        let value;
+        // extract this into a function for anything wanting to process `selectHistoryArgs`
+        if (args.value) {
+            value = <ReifiedBinding[]>args.value;
+        } else {
+            let from;
+            let to;
+            if (args.index) {
+                from = args.index;
+                to = args.index;
+            } else {
+                from = args.range?.from;
+                to = args.range?.to;
+            }
+            // `!` is safe given XOR constraint for `selectHistoryArgs`
+            value = bindings.history_at(from!, to!);
+        }
+        return { value, register: args.register };
+    }
+    return;
+}
+
+function cleanupEdit(edit: vscode.TextDocumentChangeEvent) {
+    let result = '';
+    const strings = edit.contentChanges.map(x => x.text);
+    // NOTE: if there are multiple locations where edits happened, this implies we'd need to
+    // infer how insertion with a new set of text should "move the cursor" between edits
+    // "like before". It's not clear how to do this, in general, so these kind of edit
+    // events are simply ignored. Such non-trivial situations in the edit events are
+    // avoidable for many uses cases we intend to cover here. The way the multiple edit
+    // locations would arise would normally would be via calls to multiple commands that
+    // each run `master-key.do` for which we would not see these multiple edit locations in
+    // a single event recorded by the same command)
+    if (strings.length === 1) {
+        result += strings[0];
+    }
+    return result;
+}
+
+const REPLAY_DELAY = 50;
+// TODO: does `commands` require the `RunCommandsArgs` type?
+export async function runCommands(
+    macro: ReifiedBinding[],
+): Promise<void> {
+    for (const binding of macro) {
+        for (let i = 0; i < binding.repeat + 1; i++) {
+            for (const command of binding.commands) {
+                if (command.command !== 'master-key.ignore') {
+                    await vscode.commands.executeCommand(command.command, command.args);
+                }
+                const editor = vscode.window.activeTextEditor;
+                const edits = binding.edit_text;
+                if (edits && editor) {
+                    const ed = editor;
+                    editor.edit((e) => {
+                        for (const sel of ed.selections) {
+                            e.insert(sel.anchor, edits);
+                        }
+                    });
+                } else if (edits) {
+                    vscode.window.showErrorMessage(`Command includes edits to the
+                        active text editor, but there is currently no active editor.`);
+                }
+            }
+        }
+        await new Promise(res => setTimeout(res, REPLAY_DELAY));
+    }
 }
 
 /**
@@ -318,6 +318,7 @@ async function record(args_: unknown): Promise<CommandResult> {
     return;
 }
 
+// keep `maxTextHistory` up-to-date with user configuration
 let maxTextHistory = 1024;
 function updateConfig(event?: vscode.ConfigurationChangeEvent) {
     if (!event || event?.affectsConfiguration('master-key')) {
@@ -330,6 +331,9 @@ function updateConfig(event?: vscode.ConfigurationChangeEvent) {
         }
     }
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////
+// activation
 
 export function defineState() {
     state.define(RECORD, false);

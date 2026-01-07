@@ -41,8 +41,11 @@ export async function updateBindings(context: vscode.ExtensionContext) {
 // Throughout the code base we need each of these three elements. We store all of them in a
 // `KeyFileData`, lazily computing each step as needed. This way we don't compute or load
 // the values of one stage unless we need to.
-type KeyFileBytes = { bytes: Uint8Array; checksum?: string }; // the raw byte content of the file
-type KeyFileCompressed = { base64: string; checksum: string }; // the compressed file data: stored in the globalState
+
+// the raw byte content of the file
+type KeyFileBytes = { bytes: Uint8Array; checksum?: string };
+// the compressed file data: stored in the globalState
+type KeyFileCompressed = { base64: string; checksum: string };
 type KeyFileContent = KeyFileBytes | KeyFileCompressed;
 
 export class KeyFileData {

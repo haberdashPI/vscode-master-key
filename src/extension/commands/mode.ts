@@ -34,6 +34,13 @@ async function setMode(args_: unknown): Promise<CommandResult> {
     }
     return args;
 }
+
+export function restoreModesCursorState() {
+    const shape = bindings.mode(currentResolvedMode)?.cursorShape || CursorShape.Line;
+    updateCursorAppearance(vscode.window.activeTextEditor, shape);
+}
+
+
 async function updateModes(bindings: KeyFileResult) {
     const newDefault = bindings.default_mode();
     console.log(`newDefault: ${newDefault}`);
@@ -41,13 +48,12 @@ async function updateModes(bindings: KeyFileResult) {
     state.resolve();
 }
 
-export function restoreModesCursorState() {
-    const shape = bindings.mode(currentResolvedMode)?.cursorShape || CursorShape.Line;
-    updateCursorAppearance(vscode.window.activeTextEditor, shape);
-}
+////////////////////////////////////////////////////////////////////////////////////////////
+// activation
 
 export function defineState() {
     state.define(MODE, 'default');
+
 }
 
 let currentResolvedMode = '';
@@ -69,7 +75,7 @@ export async function activate(_context: vscode.ExtensionContext) {
         // `currentMode` directly but not doing it prevents this function from detecting
         // changes to the mode state (something about how closures interact with scopes and
         // async that I don't understand???)
-        // TODO: this might not be necessary now that we've changed how `state` works
+        // TODO: this might not be necessary now that we've changed how `state.ts` works
         const newMode = <string>state.get(MODE) || bindings.default_mode() || 'default';
         const mode = bindings.mode(newMode);
         if (_currentMode !== newMode) {

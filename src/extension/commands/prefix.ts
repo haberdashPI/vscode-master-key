@@ -9,7 +9,7 @@ import { recordedCommand, CommandResult, state, onSet } from '../state';
 import { restoreModesCursorState } from './mode';
 import {
     commandMutex,
-    registerPaletteUpdate,
+    registerKeyPress,
     showPaletteOnDelay,
     triggerCommandCompleteHooks,
 } from './do';
@@ -140,7 +140,7 @@ const PREFIX_CURSOR = 'prefixCursor';
 let oldPrefixCursor: boolean = false;
 async function prefix(args_: unknown): Promise<CommandResult> {
     // console.profile('master-key-prefix');
-    registerPaletteUpdate();
+    registerKeyPress();
     const args = validateInput('master-key.prefix', args_, prefixArgs);
 
     if (args !== undefined) {

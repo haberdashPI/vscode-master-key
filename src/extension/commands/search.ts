@@ -89,12 +89,18 @@ export const searchArgs = z.
 export type SearchArgs = z.infer<typeof searchArgs>;
 
 export function* searchMatches(
+    // the document to search
     doc: vscode.TextDocument,
+    // the starting position to search from
     start: vscode.Position,
+    // the limit on how far we can search to
     end: vscode.Position | undefined,
+    // the string or regex we're searching for
     target: string,
+    // arguments that configure the search behavior (as per `master-key.search` docs)
     args: SearchArgs,
 ) {
+    // define what counts as a search match
     let matchesFn: (
         line: string,
         offset: number | undefined
@@ -108,6 +114,7 @@ export function* searchMatches(
             stringMatches(matcher, !!args.caseSensitive, line, !args.backwards, offset);
     }
 
+    // loop through the document, finding matches and yielding them
     let offset: number | undefined = start.character;
     for (const [line, i] of linesOf(
         doc,
@@ -140,10 +147,15 @@ function* mapIter<T, R>(iter: Iterable<T>, fn: (x: T) => R) {
     }
 }
 
+// returns lines of the text document, with their line numbers
 function* linesOf(
+    // the document to process
     doc: vscode.TextDocument,
+    // the position to start from
     pos: vscode.Position,
+    // whether to wrap to the other side of a document when hitting the start or end
     wrap: boolean,
+    // which direction to search
     forward: boolean,
 ): Generator<[string, number]> {
     yield [doc.lineAt(pos).text, pos.line];
@@ -161,10 +173,16 @@ function* linesOf(
     }
 }
 
+// extract regex matches from a line of text, returning the range of character indices
+// on that line
 function* regexMatches(
+    // regex to match
     matcher: RegExp,
+    // text to match to
     line: string,
+    // direction to move
     forward: boolean,
+    // from which character to start form (undefined implies we use match.index)
     offset: number | undefined,
 ): Generator<[number, number]> {
     matcher.lastIndex = 0;
@@ -185,11 +203,18 @@ function* regexMatches(
     }
 }
 
+// extract regex matches from a line of text, returning the range of character indices
+// on that line
 function* stringMatches(
+    // string to match
     matcher: string,
+    // whether matching is case sensitive
     caseSensitive: boolean,
+    // text to match to
     line: string,
+    // direction to move
     forward: boolean,
+    // from which character to start form (undefined implies we use match.index)
     offset: number | undefined,
 ): Generator<[number, number]> {
     let searchMe =
@@ -212,11 +237,18 @@ function* stringMatches(
 let searchDecorator: vscode.TextEditorDecorationType;
 let searchOtherDecorator: vscode.TextEditorDecorationType;
 
+// holds state we need between steps of searching (e.g. for next and previous match)
 class SearchState {
+    // the original arguments used to search
     args: SearchArgs;
+    // text to search by (maybe interpreted as a regex)
     _text: string = '';
+    // where to start searching from next time
     _searchFrom: readonly vscode.Selection[] = [];
+    // the keybinding mode prior to executing a search the mode during search execution may
+    // be changed to `captured`, but when we're done searching we should revert to `oldMode`
     oldMode: string;
+    // has the state changed? we use this to determine when to clear search decorators
     modified = false;
     constructor(args: SearchArgs, mode: string) {
         this.args = args;
@@ -242,6 +274,10 @@ class SearchState {
     }
 }
 
+// state is specific to the editor we're using
+//
+// TODO: does this really work well? I think using the hash here didn't help us much when we
+// were trying to store edit state, so it may just never work for search either
 const searchStates: Map<vscode.TextEditor, Record<string, SearchState>> = new Map();
 let currentSearch: string = 'default';
 function getSearchState(
@@ -263,6 +299,7 @@ function getSearchState(
     }
 }
 
+// find the right search state for a given editor
 function getOldSearchState(
     editor: vscode.TextEditor,
     register: string,
@@ -271,33 +308,30 @@ function getOldSearchState(
     statesForEditor = statesForEditor ? statesForEditor : {};
     return statesForEditor[register];
 }
-function navigateTo(
+
+// actually executes a search and updates decorators for that search as needed
+function navigateToNextMatch(
     state: SearchState,
     editor: vscode.TextEditor,
     updateSearchFrom: boolean = true,
 ) {
     if (state.text === '') {
-        /**
-         * If search string is empty, we return to the start positions.
-         * (clearing the decorators)
-         */
+        // clear decorators that no longer apply
         editor.selections = state.searchFrom;
-        editor.setDecorations(searchDecorator, []);
-        editor.setDecorations(searchOtherDecorator, []);
+        clearSearchDecorations(editor);
     } else {
         state.modified = true;
         const doc = editor.document;
 
-        /**
-         * searchRanges keeps track of where the searches land
-         * (so we can highlight them later on)
-         */
+        // NOTE: searching operates on all cursors simultaneously; so we track a range where
+        // the search landed for each cursor
         const searchRanges: vscode.Range[] = [];
 
         if (updateSearchFrom) {
             state.searchFrom = editor.selections;
         }
 
+        // for each cursor...
         editor.selections = state.searchFrom.map((sel) => {
             const matches = searchMatches(
                 doc,
@@ -376,6 +410,7 @@ function navigateTo(
     }
 }
 
+// the actual updates for search decorators
 function updateSearchHighlights(event?: vscode.ConfigurationChangeEvent) {
     if (!event || event.affectsConfiguration('master-key')) {
         const config = vscode.workspace.getConfiguration('master-key');
@@ -402,10 +437,17 @@ function updateSearchHighlights(event?: vscode.ConfigurationChangeEvent) {
     }
 }
 
+// the exact location where the cursor/selection lands relative to the search match depends
+// on the field `offset`. This is implemented by adjusting the search position given a
+// search match
 function adjustSearchPosition(
+    // the current selection, prior to adjusting the search position
     sel: vscode.Selection,
+    // the document where search is happening
     doc: vscode.TextDocument,
+    // the length of the match
     len: number,
+    // the original arguments for search
     args: SearchArgs,
 ) {
     let offset = 0;
@@ -470,16 +512,18 @@ function clearSearchDecorations(editor: vscode.TextEditor) {
     editor.setDecorations(searchOtherDecorator, []);
 }
 
-function skipTo(state: SearchState, editor: vscode.TextEditor) {
+// search can skip 0 or more matches, so we need to repeatedly jump to matches until we have
+// skipped enough
+function navigatePastSkippedMatches(state: SearchState, editor: vscode.TextEditor) {
     const skip = state.args.skip || 0;
     if (skip > 0) {
         for (let i = 0; i < skip; i++) {
-            navigateTo(state, editor);
+            navigateToNextMatch(state, editor);
         }
     }
 }
 
-export function searchDecorationCheck() {
+export function clearDecoratorsIfUnchanged() {
     const editor = vscode.window.activeTextEditor;
     if (editor) {
         const searchState = getOldSearchState(editor, currentSearch);
@@ -493,6 +537,7 @@ export function searchDecorationCheck() {
     return true;
 }
 
+// the actual search command
 async function search(args_: unknown[]): Promise<CommandResult> {
     const editor_ = vscode.window.activeTextEditor;
     if (!editor_) {
@@ -513,8 +558,8 @@ async function search(args_: unknown[]): Promise<CommandResult> {
     state.searchFrom = editor.selections;
 
     if (state.text.length > 0) {
-        navigateTo(state, editor);
-        skipTo(state, editor);
+        navigateToNextMatch(state, editor);
+        navigatePastSkippedMatches(state, editor);
         state.searchFrom = editor.selections;
     } else {
         // when there are a fixed number of keys use `type` command
@@ -527,7 +572,7 @@ async function search(args_: unknown[]): Promise<CommandResult> {
                 } else {
                     result += char;
                     state.text = result;
-                    navigateTo(state, editor, false);
+                    navigateToNextMatch(state, editor, false);
                     if (state.text.length >= acceptAfter) {
                         stop = true;
                     }
@@ -539,7 +584,7 @@ async function search(args_: unknown[]): Promise<CommandResult> {
             if (!state.text) {
                 return 'cancel';
             }
-            skipTo(state, editor);
+            navigatePastSkippedMatches(state, editor);
         } else {
             keyState.set(MODE, 'capture');
             keyState.resolve();
@@ -556,7 +601,7 @@ async function search(args_: unknown[]): Promise<CommandResult> {
                     }
                     inputBox.onDidChangeValue(async (str: string) => {
                         state.text = str;
-                        navigateTo(state, editor, false);
+                        navigateToNextMatch(state, editor, false);
                     });
                     inputBox.onDidAccept(() => {
                         state.searchFrom = editor.selections;
@@ -575,7 +620,7 @@ async function search(args_: unknown[]): Promise<CommandResult> {
                 }
             });
             await inputResult;
-            await skipTo(state, editor);
+            await navigatePastSkippedMatches(state, editor);
         }
         keyState.set(MODE, state.oldMode);
         keyState.resolve();
@@ -631,7 +676,7 @@ async function nextMatch(
     const state = getSearchState(editor, mode, args!.register);
     if (state.text) {
         for (let i = 0; i < (args.repeat || 1); i++) {
-            navigateTo(state, editor);
+            navigateToNextMatch(state, editor);
         }
         revealActive(editor);
     }
@@ -665,13 +710,16 @@ async function previousMatch(
     if (state.text) {
         state.args.backwards = !state.args.backwards;
         for (let i = 0; i < (args.repeat || 1); i++) {
-            navigateTo(state, editor);
+            navigateToNextMatch(state, editor);
         }
         revealActive(editor);
         state.args.backwards = !state.args.backwards;
     }
     return;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////
+// activation
 
 export function defineState() {
 }
@@ -681,7 +729,11 @@ export async function activate(_context: vscode.ExtensionContext) {
     vscode.workspace.onDidChangeConfiguration(updateSearchHighlights);
 
     onCommandComplete(async () => {
-        searchDecorationCheck();
+        // after any command that does nothing to affect search state, we want to stop
+        // displaying the matched search terms (e.g. `t s` will jump to the first `s`
+        // character and `j` will move down a line. At that point no `s` characters should
+        // be highlighted)
+        clearDecoratorsIfUnchanged();
         return true;
     });
 }

@@ -17,7 +17,8 @@ import * as storeCommand from './storeCommand';
 import * as replay from './replay';
 // commands related to searching for text
 import * as search from './search';
-// commands related to setting the keybinding prefix (`g` is the prefix to the binding `g g`)
+// commands related to setting the keybinding prefix (`g` is the prefix to the binding `g
+// g`)
 import * as prefix from './prefix';
 // commands related to showing keybinding suggestions in the sidebar
 import * as palette from './palette';
@@ -94,7 +95,7 @@ export async function defineCommands(context: vscode.ExtensionContext) {
             // reset any transient state because the user has hit some key that doesn't
             // actually define a binding. We want to prevent this from triggering an actual
             // command e.g. `gg` goes to the top of the buffer but `gog` should do nothing.
-            doCommand.registerPaletteUpdate();
+            doCommand.registerKeyPress();
             state.reset();
             state.resolve();
             await doCommand.triggerCommandCompleteHooks();

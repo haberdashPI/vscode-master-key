@@ -566,7 +566,7 @@ impl KeyFileResult {
         };
     }
 
-    pub fn do_binding(&mut self, id: i32) -> ReifiedBinding {
+    pub fn prepare_binding_to_run(&mut self, id: i32) -> ReifiedBinding {
         if id == -1 {
             return ReifiedBinding::noop(&mut self.scope);
         } else {

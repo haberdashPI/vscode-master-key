@@ -731,7 +731,7 @@ export async function defineCommands(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand(
             'master-key.editPreset',
-            openFileWithContentOfPreset
+            openFileWithContentOfPreset,
         ),
     );
     /**
@@ -742,7 +742,9 @@ export async function defineCommands(context: vscode.ExtensionContext) {
      */
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.importUserBindings', () =>
-            importCommandJSONFileIntoTOMLBindings('workbench.action.openGlobalKeybindingsFile'),
+            importCommandJSONFileIntoTOMLBindings(
+                'workbench.action.openGlobalKeybindingsFile',
+            ),
         ),
     );
     /**
@@ -753,7 +755,9 @@ export async function defineCommands(context: vscode.ExtensionContext) {
      */
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.importDefaultBindings', () =>
-            importCommandJSONFileIntoTOMLBindings('workbench.action.openDefaultKeybindingsFile'),
+            importCommandJSONFileIntoTOMLBindings(
+                'workbench.action.openDefaultKeybindingsFile',
+            ),
         ),
     );
 

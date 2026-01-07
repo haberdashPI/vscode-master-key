@@ -44,7 +44,7 @@ export async function runCommandsForMode(mode: Mode) {
                     showErrorMessage(
                         `Master key failed to capture keyboard input. You
                         might have an extension that is already listening to type events
-                        (e.g. vscodevim).`
+                        (e.g. vscodevim).`,
                     );
             }
         }
@@ -101,7 +101,7 @@ export async function captureKeys(onUpdate: UpdateFn): Promise<string> {
                 showErrorMessage(
                     `Master key failed to capture keyboard input. You
                     might have an extension that is already listening to type events
-                    (e.g. vscodevim).`
+                    (e.g. vscodevim).`,
                 );
         }
     }
@@ -138,8 +138,8 @@ export async function captureKeys(onUpdate: UpdateFn): Promise<string> {
             state.set(MODE, oldMode);
             state.resolve();
 
-            // if the old mode wasn't 'capture', `captureValue` will have already been called
-            // (in the `onSet` block above)
+            // if the old mode wasn't 'capture', `captureValue` will have already been
+            // called (in the `onSet` block above)
             if (!isCaptured) {
                 isCaptured = true;
                 captureValue(stringResult);

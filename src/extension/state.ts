@@ -13,15 +13,17 @@ export type SetListener = (value: unknown) => boolean;
 export type ResolveListener = () => boolean;
 
 interface IStateOptions {
-    transient?: { reset: unknown }; // does the state reset once a complete keybinding has been pressed
-    private?: boolean; // is the state visible to when clauses?
+    // does the state reset once a complete keybinding has been pressed
+    transient?: { reset: unknown };
+    // is the state visible to when clauses?
+    private?: boolean;
 }
 
 interface ISetOptions {
-    namespace?: string; // determines parent object in an expression: one of `key.`, `code.` or `val.`
-    // private property used only in this file
-    // that prevents `bidnings.set_value` from being called
-    // (used for `val.` fields, which have already been set)
+    // determines parent object in an expression: one of `key.`, `code.` or `val.`
+    namespace?: string;
+    // private property used only in this file that prevents `bidnings.set_value` from being
+    // called (used for `val.` fields, which have already been set)
     __dont_update_bindings__?: boolean;
 }
 
