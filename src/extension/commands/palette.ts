@@ -1,11 +1,11 @@
 import * as vscode from 'vscode';
 import { getRequiredMode, getRequiredPrefixCode, prettifyPrefix } from '../utils';
 import { state, onResolve } from '../state';
-import { bindings, onChangeBindings } from '../keybindings/config';
+import { bindings, onSetBindings } from '../keybindings/config';
 import { PREFIX_CODE } from './prefix';
 import { MODE } from './mode';
 import {
-    normalizeLayoutIndependentString,
+    simplifyLayoutIndependentString,
 } from '../keybindings/layout';
 import { KeyFileResult } from '../../rust/parsing/lib/parsing';
 import { doCommandsCmd, paletteEnabled } from './do';
@@ -218,9 +218,9 @@ function updateKeys(bindings: KeyFileResult) {
             order: binding.args.command_id,
         };
         let key = prettifyPrefix(paletteEntry.key);
-        key = normalizeLayoutIndependentString(key, { noBrackets: true });
+        key = simplifyLayoutIndependentString(key, { noBrackets: true });
         let combinedKey = prettifyPrefix(paletteEntry.combinedKey || '');
-        combinedKey = normalizeLayoutIndependentString(combinedKey, { noBrackets: true });
+        combinedKey = simplifyLayoutIndependentString(combinedKey, { noBrackets: true });
 
         const prefixCode = getRequiredPrefixCode(binding.when);
         const mode = getRequiredMode(binding.when);
@@ -266,7 +266,7 @@ export async function activate(context: vscode.ExtensionContext) {
     });
     context.subscriptions.push(treeView);
 
-    onChangeBindings(async (x) => {
+    onSetBindings(async (x) => {
         updateKeys(x);
         treeDataProvider.refresh();
     });

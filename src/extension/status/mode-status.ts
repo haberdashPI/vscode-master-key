@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { onResolve, state } from '../state';
 import { RECORD } from '../commands/replay';
 import { MODE } from '../commands/mode';
-import { onChangeBindings } from '../keybindings/config';
+import { onSetBindings } from '../keybindings/config';
 import { bindings } from '../keybindings/config';
 import { ModeHighlight } from '../../rust/parsing/lib/parsing';
 
@@ -45,7 +45,7 @@ export async function activate(_context: vscode.ExtensionContext) {
 
     updateModeStatus();
     onResolve('modeStatus', updateModeStatus);
-    await onChangeBindings(async (_) => {
+    await onSetBindings(async (_) => {
         updateModeStatus();
     });
 }

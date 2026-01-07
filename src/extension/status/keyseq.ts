@@ -4,7 +4,7 @@ import { PREFIX } from '../commands/prefix';
 import { COUNT } from '../commands/count';
 import { state } from '../state';
 import { prettifyPrefix } from '../utils';
-import { normalizeLayoutIndependentString } from '../keybindings/layout';
+import { simplifyLayoutIndependentString } from '../keybindings/layout';
 
 let keyStatusBar: vscode.StatusBarItem | undefined = undefined;
 
@@ -16,7 +16,7 @@ function updateKeyStatus(_: unknown) {
     if (keyStatusBar !== undefined && keyDisplayDelay > 0) {
         const count = <number>state.get(COUNT) || 0;
         let plannedUpdate = count ? count + '× ' : '';
-        const keyseq = normalizeLayoutIndependentString(<string>state.get(PREFIX) || '');
+        const keyseq = simplifyLayoutIndependentString(<string>state.get(PREFIX) || '');
         plannedUpdate += prettifyPrefix(keyseq);
         if (plannedUpdate.length > 0) {
             keyStatusBar.text = plannedUpdate;

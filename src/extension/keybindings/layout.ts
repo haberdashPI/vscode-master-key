@@ -1,7 +1,9 @@
 import replaceAll from 'string.prototype.replaceall';
 import { Binding } from '../../rust/parsing/lib/parsing';
 
-// linting disabled for legibility of an unusual constant
+// this file provides the support to understand how to make keybindings layout independent
+
+// mapping from layout independent keys to standard keys
 /* eslint-disable */
 export const LI_KEY_TO_KEY = {
     "\\[F1\\]": "f1", "\\[F2\\]": "f2", "\\[F3\\]": "f3", "\\[F4\\]": "f4", "\\[F5\\]": "f5", "\\[F6\\]": "f6",
@@ -36,7 +38,7 @@ export const LI_KEY_TO_KEY = {
 }
 /* eslint-enable */
 
-// linting disabled for legibility of an unusual constant
+// mapping from standard keys to layout independent keys
 /* eslint-disable */
 export const KEY_TO_LI_KEY = {
     "f1": "[F1]", "f2": "[F2]", "f3": "[F3]", "f4": "[F4]", "f5": "[F5]", "f6": "[F6]",
@@ -71,16 +73,21 @@ export const KEY_TO_LI_KEY = {
 }
 /* eslint-enable */
 
-export function normalizeLayoutIndependentBindings(
+// translate the layout dependent bindings to a more simple representation better for
+// display, e.g [KeyW] becomes [W] or W.
+//
+// `noBrackets` removes the disambiguating brackets
+export function simplifyLayoutIndependentBindings(
     curBindings: Binding[],
     opts: { noBrackets: boolean } = { noBrackets: false },
 ): Binding[] {
     for (const bind of curBindings) {
-        bind.key = bind.key.map(key => normalizeLayoutIndependentString(key, opts));
+        bind.key = bind.key.map(key => simplifyLayoutIndependentString(key, opts));
     }
     return curBindings;
 }
 
+// turn a layout specific binding to a layout independent binding, e.g. W becomes [KeyW].
 export function toLayoutIndependentString(key: string) {
     for (const [fromKey, toLiKey] of Object.entries(KEY_TO_LI_KEY)) {
         key = replaceAll(
@@ -92,7 +99,11 @@ export function toLayoutIndependentString(key: string) {
     return key;
 }
 
-export function normalizeLayoutIndependentString(
+// translate string of layout independent key binding to a more simple representation e.g.
+// [KeyW] becomes [W] or W.
+//
+// `noBrackets` removes the disambiguating brackets
+export function simplifyLayoutIndependentString(
     key: string,
     opts: { noBrackets: boolean } = { noBrackets: false },
 ) {

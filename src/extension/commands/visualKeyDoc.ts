@@ -2,8 +2,8 @@ import { CommandState } from '../state';
 import { state, onResolve } from '../state';
 import * as vscode from 'vscode';
 import { MODE } from './mode';
-import { normalizeLayoutIndependentString } from '../keybindings/layout';
-import { onChangeBindings } from '../keybindings/config';
+import { simplifyLayoutIndependentString } from '../keybindings/layout';
+import { onSetBindings } from '../keybindings/config';
 import { PREFIX_CODE } from './prefix';
 import {
     getRequiredMode,
@@ -274,7 +274,7 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
                 continue;
             }
             let label = prettifyPrefix(binding.key);
-            label = normalizeLayoutIndependentString(label, { noBrackets: true });
+            label = simplifyLayoutIndependentString(label, { noBrackets: true });
             const prefixCode = getRequiredPrefixCode(binding.when);
             const mode = getRequiredMode(binding.when);
             const key = `${prefixCode}:${mode}`;
@@ -364,7 +364,7 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
     }
 
     public async attach(state: CommandState) {
-        onChangeBindings(async (x) => {
+        onSetBindings(async (x) => {
             this.updateKinds(x);
             this.updateKeys(x);
             this.updateState(state);

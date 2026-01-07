@@ -6,7 +6,7 @@ import { debounce } from 'lodash';
 import replaceAll from 'string.prototype.replaceall';
 import { Utils } from 'vscode-uri';
 import {
-    createBindings,
+    setBindings,
     getBindings,
     KeyFileData,
     bindings,
@@ -26,6 +26,8 @@ import { prettifyPrefix, replaceMatchesWith } from '../utils';
 ////////////////////////////////////////////////////////////////////////////////////////////
 // Keybinding Generation
 
+// these strings are inserted around the bindings added to `keybindings.json` to
+// highlight that they have been manually inserted
 const AUTOMATED_COMMENT_START_PREFIX = `
     // AUTOMATED BINDINGS START`;
 
@@ -46,6 +48,7 @@ const AUTOMATED_COMMENT_END = `
     // AUTOMATED BINDINGS END: Master Key Bindings
 `;
 
+// find what position in a file we first see `text`
 function findText(doc: vscode.TextDocument, text: string) {
     const matches = searchMatches(
         doc,
@@ -65,6 +68,8 @@ function findText(doc: vscode.TextDocument, text: string) {
 let layoutIndependence = false;
 
 let layoutIndependenceUpdateCount = 0;
+// `updateConfig` responds to changes to `master-key.layoutIndependence`, transforming keys
+// from layout dependent to layout independent names as needed
 async function updateConfig(
     event: vscode.ConfigurationChangeEvent | undefined,
     context: vscode.ExtensionContext,
@@ -78,9 +83,8 @@ async function updateConfig(
             const data = await getBindings(context);
             if (data) {
                 // NOTE: since this is an expensive operation that modifies GUI elements,
-                // and the user is probably interacting with GUI elements, we want to delay
-                // this effect a bit, and only implement the change if it is the most
-                // recent call to `updateConfig`
+                // and the user may be interacting with GUI elements to change the config,
+                // we want to delay this effect a bit
                 const myCount = ++layoutIndependenceUpdateCount;
                 await sleep(250);
                 if (myCount === layoutIndependenceUpdateCount) {
@@ -97,6 +101,7 @@ async function updateConfig(
     }
 }
 
+// generate output to insert into `keybindings.json`
 function formatBindings(name: string, bindings: KeyFileResult) {
     let json = '';
     for (let i = 0; i < bindings.n_bindings(); i++) {
@@ -120,7 +125,7 @@ function formatBindings(name: string, bindings: KeyFileResult) {
     );
 }
 
-async function copyBindings(file: vscode.Uri) {
+async function openFileInTomlEditor(file: vscode.Uri) {
     const fileData = await vscode.workspace.fs.readFile(file);
     const fileText = new TextDecoder().decode(fileData);
     const document = await vscode.workspace.openTextDocument({
@@ -130,37 +135,6 @@ async function copyBindings(file: vscode.Uri) {
     await vscode.window.showTextDocument(document);
 }
 
-async function removeKeybindings(context: vscode.ExtensionContext) {
-    await vscode.commands.executeCommand('workbench.action.openGlobalKeybindingsFile');
-    const ed = vscode.window.activeTextEditor;
-    if (ed) {
-        await createBindings(context);
-        const oldBindingsStart = findText(ed.document, 'AUTOMATED BINDINGS START');
-        const oldBindingsEnd = findText(ed.document, 'AUTOMATED BINDINGS END');
-        if (oldBindingsStart && oldBindingsEnd) {
-            const range = new vscode.Range(
-                new vscode.Position(
-                    oldBindingsStart.start.line - 1,
-                    ed.document.lineAt(oldBindingsStart.start.line - 1).range.end.character,
-                ),
-                new vscode.Position(oldBindingsEnd.end.line + 1, 0),
-            );
-            await ed.edit((builder) => {
-                builder.delete(range);
-            });
-            ed.revealRange(new vscode.Range(range.start, range.start));
-            await vscode.commands.executeCommand('workbench.action.files.save');
-            vscode.window.showInformationMessage(`Your master keybindings have
-                been updated in \`keybindings.json\`.`);
-        } else {
-            vscode.window.showErrorMessage(
-                'Master Key tried to remove bindings but there ' +
-                'were no master key bindings to remove.',
-            );
-        }
-    }
-}
-
 export const vscodeBinding = z.object({
     key: z.string(),
     command: z.string(),
@@ -168,7 +142,9 @@ export const vscodeBinding = z.object({
     when: z.string().optional(),
 });
 
-async function copyCommandResultIntoBindingFile(command: string) {
+// inserts JSON bindings as TOML data into current TOML file
+// `command` should be a command that opens a JSON file with keybindings
+async function importCommandJSONFileIntoTOMLBindings(command: string) {
     const oldEd = vscode.window.activeTextEditor;
     const oldDocument = oldEd?.document;
     if (oldEd?.document.languageId !== 'toml') {
@@ -179,11 +155,14 @@ async function copyCommandResultIntoBindingFile(command: string) {
     const ed = vscode.window.activeTextEditor;
     if (ed && oldEd) {
         let text = ed.document.getText();
+        // exclude any master keybindings inserted into this file
         text = text.replace(
             /^.*AUTOMATED BINDINGS START(.|\n|\r)+AUTOMATED BINDINGS END.*$/m,
             '',
         );
         text = replaceAll(text, /\/\/.*$/gm, '');
+
+        // JSON -> TOML
         const keys = vscodeBinding.array().safeParse(JSON.parse(text));
         if (!keys.success) {
             for (const issue of keys.error.issues.slice(0, 3)) {
@@ -218,6 +197,7 @@ function sleep(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+// inserts master keybinding data into `keybindings.json`
 async function insertKeybindingsIntoConfig(data: KeyFileData) {
     const bindings = await data.bindings();
     const name = bindings.name() || Utils.basename(data.uri);
@@ -302,7 +282,7 @@ async function insertKeybindingsIntoConfig(data: KeyFileData) {
                         'Show Documentation',
                     ).then(async (selection) => {
                         if (selection == 'Install Extensions') {
-                            await handleRequireExtensions(data);
+                            await listExtensionsToInstall(data);
                         }
                         if (selection == 'Show Documentation') {
                             vscode.commands.executeCommand(
@@ -319,14 +299,176 @@ async function insertKeybindingsIntoConfig(data: KeyFileData) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-// User-facing commands and helpers
+// text documentation
+
+function snakeCase(str: string) {
+    return replaceAll(str, /\s+/g, '-').toLowerCase();
+}
+
+// generates the html file to render in a webview
+async function getWebviewContent(
+    context: vscode.ExtensionContext,
+    renderedHtml: string,
+): Promise<string> {
+    let styleContent = '';
+    try {
+        const docStyle = vscode.Uri.joinPath(
+            context.extensionUri,
+            'src',
+            'webview',
+            'text-doc.css',
+        );
+        const data = await vscode.workspace.fs.readFile(docStyle);
+        styleContent = new TextDecoder().decode(data);
+    } catch (e) {
+        console.error('Could not read text-doc.css file:', e);
+    }
+    return `<!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Rendered Content</title>
+        <style>
+            ${styleContent}
+        </style>
+    </head>
+    <body>
+        ${renderedHtml}
+    </body>
+    </html>`;
+}
+
+/**
+ * @userCommand showTextDoc
+ * @name Show Text Documentation
+ * @order 10
+ *
+ * Show documentation for the current master keybindings in a rendered markdown file.
+ */
+async function showTextDocumentation(context: vscode.ExtensionContext) {
+    const content = bindings.text_docs();
+    if (content) {
+        const regex = /<key-bind>(.*?)<\/key-bind>/gs;
+        const prettyKey = replaceMatchesWith(content, regex, (str) => {
+            return prettifyPrefix(str);
+        });
+        const html = await marked(prettyKey);
+        const header = /<h[1-3]>(.*?)<\/h[1-3]>/gs;
+        const headerAnchors = replaceMatchesWith(html, header, (str) => {
+            return `
+                <a id="${snakeCase(str)}">${str}</a>
+            `;
+        });
+        const panel = vscode.window.createWebviewPanel(
+            'master-key.documentation',
+            `${bindings.name()} Documentation`,
+            vscode.ViewColumn.Beside,
+            {
+                enableScripts: false,
+                enableFindWidget: true,
+                enableCommandUris: true,
+            },
+        );
+        panel.webview.html = await getWebviewContent(context, headerAnchors);
+        panel.iconPath = vscode.Uri.joinPath(context.extensionUri, 'logo.png');
+        panel.reveal();
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+// keybinding validation
+
+let diagnostics: vscode.DiagnosticCollection;
+
+interface ValidationOptions {
+    // when true, errors will always show up. When false, they will only show up if the
+    // `#:master-keybindings` comment exists at the top of the file
+    explicit?: boolean;
+    // if true, no errors will be shown to the user
+    silent?: boolean;
+}
+
+// display any errors from parsing the keybindings (the rust code's job) as diagnostics:
+// these show up in the problems pane and in the linting annotations of a file.
+export async function validateKeybindings(
+    data: KeyFileData, opts: ValidationOptions = {},
+) {
+    const parsed = await data.bindings();
+    if (!opts.explicit &&
+        parsed.n_errors() > 0 &&
+        parsed.error(0).message &&
+        /#:master-keybindings/.test(parsed.error(0).message)) {
+        if (!opts.silent) {
+            diagnostics.delete(data.uri);
+        }
+        return false;
+    }
+    let isValid = true;
+    if (parsed.n_errors() > 0) {
+        const diagnosticItems: vscode.Diagnostic[] = [];
+        for (let i = 0; i < parsed.n_errors(); i++) {
+            const error = parsed.error(i);
+            if (error.level == ErrorLevel.Error) {
+                isValid = false;
+            }
+            if (!opts.silent) {
+                diagnosticItems.push(
+                    new vscode.Diagnostic(
+                        new vscode.Range(
+                            new vscode.Position(
+                                error.range.start.line,
+                                error.range.start.col,
+                            ),
+                            new vscode.Position(
+                                error.range.end.line,
+                                error.range.end.col,
+                            ),
+                        ),
+                        error.message,
+                        error.level == ErrorLevel.Error ?
+                            vscode.DiagnosticSeverity.Error :
+                            error.level == ErrorLevel.Warn ?
+                                vscode.DiagnosticSeverity.Warning :
+                                vscode.DiagnosticSeverity.Hint,
+                    ),
+                );
+            }
+        }
+        if (!opts.silent) {
+            diagnostics.set(data.uri, diagnosticItems);
+        }
+    } else {
+        if (!opts.silent) {
+            diagnostics.delete(data.uri);
+        }
+    }
+    return isValid;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+// Commands concerning keybinding files
+
+// a list of all presets
+let extensionPresetsDir: vscode.Uri;
+const presetFiles = ['larkin.toml'];
+function listPresets() {
+    // special case this directory (so it works (??) in the web context)
+    const presets = [];
+    for (const preset of presetFiles) {
+        const uri = Utils.joinPath(extensionPresetsDir, preset);
+        presets.push(new KeyFileData(uri));
+    }
+    return presets;
+}
 
 interface PresetPick extends vscode.QuickPickItem {
     preset?: KeyFileData;
     command?: string;
 }
 
-async function makeQuickPicksFromPresets(
+// show a list of available presets to the user
+async function quickPickOfPresets(
     presets: KeyFileData[],
 ): Promise<PresetPick[]> {
     const result = [];
@@ -343,6 +485,7 @@ async function makeQuickPicksFromPresets(
     return result;
 }
 
+// master-keybinding parsing of current file
 function parseCurrentFile() {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
@@ -358,22 +501,8 @@ function parseCurrentFile() {
     }
 }
 
-export async function queryPreset(): Promise<KeyFileData | undefined> {
-    const options = await makeQuickPicksFromPresets(listPresets());
-    options.push(
-        { label: 'Current File', command: 'current' },
-    );
-    const picked = await vscode.window.showQuickPick(options);
-    if (picked?.command === 'current') {
-        return parseCurrentFile();
-    } else {
-        return picked?.preset;
-    }
-    return undefined;
-}
-
-async function copyBindingsToNewFile(args?: { preset?: number }) {
-    const options = await makeQuickPicksFromPresets(listPresets());
+async function openFileWithContentOfPreset(args?: { preset?: number }) {
+    const options = await quickPickOfPresets(listPresets());
     let picked;
     if (args?.preset !== undefined) {
         picked = options[args?.preset];
@@ -381,11 +510,11 @@ async function copyBindingsToNewFile(args?: { preset?: number }) {
         picked = await vscode.window.showQuickPick(options);
     }
     if (picked?.preset) {
-        copyBindings(picked.preset.uri);
+        openFileInTomlEditor(picked.preset.uri);
     }
 }
 
-async function handleRequireExtensions(data?: KeyFileData) {
+async function listExtensionsToInstall(data?: KeyFileData) {
     const bindings = config.bindings || await data?.bindings();
     if (!bindings || (bindings?.n_bindings() || 0) == 0) {
         return;
@@ -460,11 +589,21 @@ async function activateBindings(
     context: vscode.ExtensionContext,
     data?: KeyFileData | 'CurrentFile',
 ) {
-    if (!data) {
-        data = await queryPreset();
-    }
     if (data === 'CurrentFile') {
         data = parseCurrentFile();
+    }
+    if (!data) {
+        const options = await quickPickOfPresets(listPresets());
+        options.push(
+            { label: 'Current File', command: 'current' },
+        );
+
+        const picked = await vscode.window.showQuickPick(options);
+        if (picked?.command === 'current') {
+            data = parseCurrentFile();
+        } else {
+            data = picked?.preset;
+        }
     }
     if (data) {
         if (!(await validateKeybindings(data, { explicit: true }))) {
@@ -473,146 +612,44 @@ async function activateBindings(
             );
             return;
         }
-        await createBindings(context, data);
+        await setBindings(context, data);
         await insertKeybindingsIntoConfig(data);
     }
 }
 
-// TODO: reimplement
-// async function deactivateUserBindings() {
-//     const bindings = await clearUserBindings();
-//     if (bindings) {
-//         insertKeybindingsIntoConfig(bindings);
-//     }
-// }
-
-// async function activateUserBindings(file?: vscode.Uri) {
-//     if (!file) {
-//         const currentUri = vscode.window.activeTextEditor?.document.fileName;
-//         file = vscode.Uri.from({ scheme: 'file', path: currentUri });
-//     }
-//     if (file) {
-//         const fileData = await vscode.workspace.fs.readFile(file);
-//         const bindings = await createUserBindings(data);
-//         if (bindings) {
-//             await insertKeybindingsIntoConfig(bindings);
-//         }
-//     } else {
-//         vscode.window.showErrorMessage('Open document must be saved to a file first.');
-//     }
-// }
-
-let extensionPresetsDir: vscode.Uri;
-const presetFiles = ['larkin.toml'];
-
-function listPresets() {
-    // special case this directory (so it works (??) in the web context)
-    const presets = [];
-    for (const preset of presetFiles) {
-        const uri = Utils.joinPath(extensionPresetsDir, preset);
-        presets.push(new KeyFileData(uri));
-    }
-    return presets;
-}
-
-interface ValidationOptions {
-    explicit?: boolean;
-    silent?: boolean;
-}
-
-export async function validateKeybindings(
-    data: KeyFileData, opts: ValidationOptions = {},
-) {
-    const parsed = await data.bindings();
-    if (!opts.explicit &&
-        parsed.n_errors() > 0 &&
-        parsed.error(0).message &&
-        /#:master-keybindings/.test(parsed.error(0).message)) {
-        if (!opts.silent) {
-            diagnostics.delete(data.uri);
-        }
-        return false;
-    }
-    let isValid = true;
-    if (parsed.n_errors() > 0) {
-        const diagnosticItems: vscode.Diagnostic[] = [];
-        for (let i = 0; i < parsed.n_errors(); i++) {
-            const error = parsed.error(i);
-            if (error.level == ErrorLevel.Error) {
-                isValid = false;
-            }
-            if (!opts.silent) {
-                diagnosticItems.push(
-                    new vscode.Diagnostic(
-                        new vscode.Range(
-                            new vscode.Position(
-                                error.range.start.line,
-                                error.range.start.col,
-                            ),
-                            new vscode.Position(
-                                error.range.end.line,
-                                error.range.end.col,
-                            ),
-                        ),
-                        error.message,
-                        error.level == ErrorLevel.Error ?
-                            vscode.DiagnosticSeverity.Error :
-                            error.level == ErrorLevel.Warn ?
-                                vscode.DiagnosticSeverity.Warning :
-                                vscode.DiagnosticSeverity.Hint,
-                    ),
-                );
-            }
-        }
-        if (!opts.silent) {
-            diagnostics.set(data.uri, diagnosticItems);
-        }
-    } else {
-        if (!opts.silent) {
-            diagnostics.delete(data.uri);
+async function deactivateBindings(context: vscode.ExtensionContext) {
+    await vscode.commands.executeCommand('workbench.action.openGlobalKeybindingsFile');
+    const ed = vscode.window.activeTextEditor;
+    if (ed) {
+        await setBindings(context);
+        const oldBindingsStart = findText(ed.document, 'AUTOMATED BINDINGS START');
+        const oldBindingsEnd = findText(ed.document, 'AUTOMATED BINDINGS END');
+        if (oldBindingsStart && oldBindingsEnd) {
+            const range = new vscode.Range(
+                new vscode.Position(
+                    oldBindingsStart.start.line - 1,
+                    ed.document.lineAt(oldBindingsStart.start.line - 1).range.end.character,
+                ),
+                new vscode.Position(oldBindingsEnd.end.line + 1, 0),
+            );
+            await ed.edit((builder) => {
+                builder.delete(range);
+            });
+            ed.revealRange(new vscode.Range(range.start, range.start));
+            await vscode.commands.executeCommand('workbench.action.files.save');
+            vscode.window.showInformationMessage(`Your master keybindings have
+                been updated in \`keybindings.json\`.`);
+        } else {
+            vscode.window.showErrorMessage(
+                'Master Key tried to remove bindings but there ' +
+                'were no master key bindings to remove.',
+            );
         }
     }
-    return isValid;
 }
 
-async function getWebviewContent(
-    context: vscode.ExtensionContext,
-    renderedHtml: string,
-): Promise<string> {
-    let styleContent = '';
-    try {
-        const docStyle = vscode.Uri.joinPath(
-            context.extensionUri,
-            'src',
-            'webview',
-            'text-doc.css',
-        );
-        const data = await vscode.workspace.fs.readFile(docStyle);
-        styleContent = new TextDecoder().decode(data);
-    } catch (e) {
-        console.error('Could not read text-doc.css file:', e);
-    }
-    return `<!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Rendered Content</title>
-        <style>
-            ${styleContent}
-        </style>
-    </head>
-    <body>
-        ${renderedHtml}
-    </body>
-    </html>`;
-}
-
-function snakeCase(str: string) {
-    return replaceAll(str, /\s+/g, '-').toLowerCase();
-}
-
-let diagnostics: vscode.DiagnosticCollection;
+////////////////////////////////////////////////////////////////////////////////////////////
+// activation
 
 export function defineState() {
 }
@@ -682,7 +719,7 @@ export async function defineCommands(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand(
             'master-key.deactivateBindings',
-            () => removeKeybindings(context),
+            () => deactivateBindings(context),
         ),
     );
     /**
@@ -692,7 +729,10 @@ export async function defineCommands(context: vscode.ExtensionContext) {
      * Edit a new copy of a given master keybinding preset.
      */
     context.subscriptions.push(
-        vscode.commands.registerCommand('master-key.editPreset', copyBindingsToNewFile),
+        vscode.commands.registerCommand(
+            'master-key.editPreset',
+            openFileWithContentOfPreset
+        ),
     );
     /**
      * @userCommand importUserBindings
@@ -702,7 +742,7 @@ export async function defineCommands(context: vscode.ExtensionContext) {
      */
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.importUserBindings', () =>
-            copyCommandResultIntoBindingFile('workbench.action.openGlobalKeybindingsFile'),
+            importCommandJSONFileIntoTOMLBindings('workbench.action.openGlobalKeybindingsFile'),
         ),
     );
     /**
@@ -713,50 +753,14 @@ export async function defineCommands(context: vscode.ExtensionContext) {
      */
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.importDefaultBindings', () =>
-            copyCommandResultIntoBindingFile('workbench.action.openDefaultKeybindingsFile'),
+            importCommandJSONFileIntoTOMLBindings('workbench.action.openDefaultKeybindingsFile'),
         ),
     );
 
-    /**
-     * @userCommand showTextDoc
-     * @name Show Text Documentation
-     * @order 10
-     *
-     * Show documentation for the current master keybindings in a rendered markdown file.
-     */
-    async function showTextDoc() {
-        const content = bindings.text_docs();
-        if (content) {
-            const regex = /<key-bind>(.*?)<\/key-bind>/gs;
-            const prettyKey = replaceMatchesWith(content, regex, (str) => {
-                return prettifyPrefix(str);
-            });
-            const html = await marked(prettyKey);
-            const header = /<h[1-3]>(.*?)<\/h[1-3]>/gs;
-            const headerAnchors = replaceMatchesWith(html, header, (str) => {
-                return `
-                    <a id="${snakeCase(str)}">${str}</a>
-                `;
-            });
-            const panel = vscode.window.createWebviewPanel(
-                'master-key.documentation',
-                `${bindings.name()} Documentation`,
-                vscode.ViewColumn.Beside,
-                {
-                    enableScripts: false,
-                    enableFindWidget: true,
-                    enableCommandUris: true,
-                },
-            );
-            panel.webview.html = await getWebviewContent(context, headerAnchors);
-            panel.iconPath = vscode.Uri.joinPath(context.extensionUri, 'logo.png');
-            panel.reveal();
-        }
-    }
     context.subscriptions.push(
         vscode.commands.registerCommand(
             'master-key.showTextDoc',
-            showTextDoc,
+            () => showTextDocumentation(context),
         ),
     );
 
@@ -770,7 +774,7 @@ export async function defineCommands(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand(
             'master-key.installRequiredExtensions',
-            handleRequireExtensions,
+            listExtensionsToInstall,
         ),
     );
 }

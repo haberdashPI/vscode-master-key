@@ -4,7 +4,7 @@ import { onResolve } from '../state';
 import { updateCursorAppearance, validateInput } from '../utils';
 import { state, recordedCommand, CommandResult } from '../state';
 import { runCommandsForMode } from './capture';
-import { onChangeBindings } from '../keybindings/config';
+import { onSetBindings } from '../keybindings/config';
 import { CursorShape, KeyFileResult } from '../../rust/parsing/lib/parsing';
 import { bindings } from '../keybindings/config';
 
@@ -52,7 +52,7 @@ export function defineState() {
 
 let currentResolvedMode = '';
 export async function activate(_context: vscode.ExtensionContext) {
-    onChangeBindings(updateModes);
+    onSetBindings(updateModes);
 
     vscode.window.onDidChangeActiveTextEditor((e) => {
         const shape = bindings.mode(currentResolvedMode)?.cursorShape || CursorShape.Line;

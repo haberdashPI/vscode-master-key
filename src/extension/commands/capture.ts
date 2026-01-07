@@ -9,6 +9,8 @@ import { Mode, WhenNoBindingHeader } from '../../rust/parsing/lib/parsing';
 import { bindings } from '../keybindings/config';
 import { maxHistory, showExpressionErrors, showExpressionMessages } from './do';
 
+// the `typeSubscription` tracks a hook on vscode's `type` event, which triggers an event
+// for every keypress, and prevent the user's input from inserting characters in a file
 let typeSubscription: vscode.Disposable | undefined;
 let onTypeFn: (text: string) => void = async function (_text: string) {
     return;
@@ -17,6 +19,7 @@ async function onType(event: { text: string }) {
     return await onTypeFn(event.text);
 }
 
+// the `key.captured` value stores the content of type events
 export const CAPTURE = 'captured';
 
 function clearTypeSubscription() {
@@ -26,21 +29,23 @@ function clearTypeSubscription() {
     }
 }
 
+// for each key press run a sequence of commands associated with `mode`
+// (ala `mode.whenNoBinding.run`)
 export async function runCommandsForMode(mode: Mode) {
     if (mode.name !== 'capture') {
         clearTypeSubscription();
     }
     if (mode.whenNoBinding() === WhenNoBindingHeader.Run) {
-        // we await on state to avoid race conditions here (rather than
-        // to change or read anything about the state)
         if (!typeSubscription) {
             try {
                 typeSubscription = vscode.commands.registerCommand('type', onType);
             } catch (_) {
                 vscode.window.
-                    showErrorMessage(`Master key failed to capture keyboard input. You
-                    might have an extension that is already listening to type events
-                    (e.g. vscodevim).`);
+                    showErrorMessage(
+                        `Master key failed to capture keyboard input. You
+                        might have an extension that is already listening to type events
+                        (e.g. vscodevim).`
+                    );
             }
         }
         onTypeFn = async (typed: string) => {
@@ -73,8 +78,18 @@ export async function runCommandsForMode(mode: Mode) {
     }
 }
 
+// captureKeys requests input from the user by subscribing to `type` events `onUpdate` is
+// called for every key press, it receives two values, `result` containing the entire
+// sequence of previous keys pressed and `char` containing the current key press. It should
+// return the final result (usually result + char) and a boolean indicating whether to stop
+// capturing keys. The return value of `captureKeys` contains the entire sequence of keys
+// captured, as computed by `onUpdate`.
+
+// TODO: `onUpdate` is needlessly complicated. We can handle updating the text inside
+// `captureKeys`, we can have an `acceptsAfter` implemented in `captureKeys` and we can
+// handle cancel keys via the ability to define commands inside the `capture` mode.
 type UpdateFn = (captured: string, nextChar: string) => [string, boolean];
-export async function captureKeys(onUpdate: UpdateFn) {
+export async function captureKeys(onUpdate: UpdateFn): Promise<string> {
     const oldMode = state.get<string>(MODE)!;
     if (!typeSubscription) {
         try {
@@ -83,50 +98,56 @@ export async function captureKeys(onUpdate: UpdateFn) {
             state.resolve();
         } catch (_) {
             vscode.window.
-                showErrorMessage(`Master key failed to capture keyboard input. You
-                might have an extension that is already listening to type events
-                (e.g. vscodevim).`);
+                showErrorMessage(
+                    `Master key failed to capture keyboard input. You
+                    might have an extension that is already listening to type events
+                    (e.g. vscodevim).`
+                );
         }
     }
 
+    // setup a promise that we'll fulfill within the `onType` function
     let stringResult = '';
-    let isResolved = false;
-    let resolveFn: (str: string) => void;
-    const stringPromise = new Promise<string>((res, _rej) => {
-        resolveFn = res;
+    let isCaptured = false;
+    let captureValue: (str: string) => void;
+    const returnValue = new Promise<string>((res, _rej) => {
+        captureValue = res;
     });
 
+    // if a keybinding is defined that changes the key mode, we want to stop capturing keys
+    // at this point
     onSet(MODE, (mode) => {
         if (mode !== 'capture') {
             clearTypeSubscription();
-            if (!isResolved) {
-                isResolved = true;
-                resolveFn(stringResult);
+            if (!isCaptured) {
+                isCaptured = true;
+                captureValue(stringResult);
                 return false;
             }
         }
-        return !isResolved;
+        return !isCaptured;
     });
 
+    // actually handle key presses
     onTypeFn = async (str: string) => {
         let stop;
         [stringResult, stop] = onUpdate(stringResult, str);
         if (stop) {
             clearTypeSubscription();
-            // setting the mode will call `resolveFn`
+            // setting the mode will call `captureValue`
             state.set(MODE, oldMode);
             state.resolve();
 
-            // if the old mode wasn't 'capture', `resolveFn` will have already been called
+            // if the old mode wasn't 'capture', `captureValue` will have already been called
             // (in the `onSet` block above)
-            if (!isResolved) {
-                isResolved = true;
-                resolveFn(stringResult);
+            if (!isCaptured) {
+                isCaptured = true;
+                captureValue(stringResult);
             }
         }
     };
 
-    return stringPromise;
+    return returnValue;
 }
 
 const captureKeysArgs = z.object({
@@ -253,6 +274,9 @@ async function insertChar(args_: unknown): Promise<CommandResult> {
     }
     return args;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////
+// activation
 
 export function defineState() {
     state.define(CAPTURE, '');
