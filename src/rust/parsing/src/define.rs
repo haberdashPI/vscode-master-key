@@ -188,7 +188,7 @@ pub struct DefineInput {
     other_fields: HashMap<String, toml::Value>,
 }
 
-#[derive(Clone, Debug, Default, Serialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Define {
     #[serde(skip)]
     pub bind: HashMap<String, BindingInput>,

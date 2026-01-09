@@ -42,7 +42,7 @@ export async function updateBindings(context: vscode.ExtensionContext) {
 // `KeyFileData`, lazily computing each step as needed. This way we don't compute or load
 // the values of one stage unless we need to.
 
-// the raw byte content of the file
+// the raw byte content of the keybinding data
 type KeyFileBytes = { bytes: Uint8Array; checksum?: string };
 // the compressed file data: stored in the globalState
 type KeyFileCompressed = { base64: string; checksum: string };
@@ -50,6 +50,7 @@ type KeyFileContent = KeyFileBytes | KeyFileCompressed;
 
 export class KeyFileData {
     uri: vscode.Uri;
+    _fileData?: Uint8Array;
     _content?: KeyFileContent;
     _parsed?: KeyFileResult;
     constructor(uri: vscode.Uri, content?: KeyFileContent) {
@@ -62,9 +63,17 @@ export class KeyFileData {
         return (<KeyFileCompressed> this._content)?.checksum;
     }
 
-    async data(): Promise<Uint8Array> {
+    async fileData(): Promise<Uint8Array> {
+        if (!this._fileData) {
+            this._fileData = await vscode.workspace.fs.readFile(this.uri);
+        }
+        return this._fileData;
+    }
+
+    async bindingData(): Promise<Uint8Array> {
         if (!this._content) {
-            const result = await vscode.workspace.fs.readFile(this.uri);
+            const bindings = await this.bindings();
+            const result = bindings.write();
             this._content = { bytes: result };
             return result;
         } else if ((<KeyFileBytes> this._content)?.bytes) {
@@ -83,10 +92,15 @@ export class KeyFileData {
             if (this.checksum === bindingChecksum) {
                 return bindings;
             }
-            const data = await this.data();
-            const result = parse_keybinding_bytes(data);
-            this._parsed = result;
-            return result;
+            let data;
+            if (this._content) {
+                const serialized = await this.bindingData();
+                data = KeyFileResult.read(serialized);
+            } else {
+                data = parse_keybinding_bytes(await this.fileData());
+            }
+            this._parsed = data;
+            return data;
         } else {
             return this._parsed;
         }
@@ -125,7 +139,7 @@ export async function setBindings(
     const storage: IStorage = {};
 
     if (newBindings) {
-        const [compressed, checksum] = await toZipBase64(await newBindings.data());
+        const [compressed, checksum] = await toZipBase64(await newBindings.bindingData());
         storage.data = compressed;
         storage.file = newBindings.uri.toString();
 

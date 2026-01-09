@@ -3,7 +3,7 @@ use log::info;
 
 use core::ops::Range;
 use regex::Regex;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::LazyLock;
 
@@ -21,7 +21,7 @@ pub(crate) struct FileDocLine {
 
 // a section of documentation; "section" is a single block of documentation that falls
 // between `[[bind]]` definitions
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub(crate) struct FileDocSection {
     index: usize,
     doc: String,
@@ -30,7 +30,7 @@ pub(crate) struct FileDocSection {
 }
 
 // a single `[[bind]]` item's documentation-related data
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 struct FileDocTableRow {
     key: Vec<String>,
     mode: String,
