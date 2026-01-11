@@ -6,10 +6,14 @@ import { onSetBindings } from '../keybindings/config';
 import { bindings } from '../keybindings/config';
 import { ModeHighlight } from '../../rust/parsing/lib/parsing';
 
+// revise the content of the status bar used to indicate what keybinding mode we're in
 function updateModeStatus() {
     if (modeStatusBar) {
+        // the name of the mode
         const mode = <string>state.get(MODE) || bindings.default_mode();
+        // the coloring of the mode name
         const highlight = bindings.mode(mode)?.highlight || 'NoHighlight';
+        // an indicator of whether `master-key.record === true`
         const rec = state.get<boolean>(RECORD) || false;
         modeStatusBar.text = (rec ? 'rec: ' : '') + mode;
         modeStatusBar.accessibilityInformation = {
@@ -29,6 +33,9 @@ function updateModeStatus() {
     }
     return true;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////
+// activation
 
 export function defineState() {
 }
