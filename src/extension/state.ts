@@ -2,34 +2,45 @@ import * as vscode from 'vscode';
 import z from 'zod';
 import { defineState as defineExtensionState } from './index';
 import { validateInput } from './utils';
-import { bindings, onChangeBindings } from './keybindings/config';
+import { bindings, onSetBindings } from './keybindings/config';
 import { ParseError } from '../rust/parsing/lib/parsing';
 import { cloneDeep } from 'lodash';
-export type Listener = (value: unknown) => boolean;
+
+// A listener triggered when a value is set
+export type SetListener = (value: unknown) => boolean;
+// A listener triggered when `resolve` is called, at the completion/cancelation of a
+// sequence of commands for a single keybinding (see `do.ts` and `prefix.ts`)
 export type ResolveListener = () => boolean;
 
 interface IStateOptions {
+    // does the state reset once a complete keybinding has been pressed
     transient?: { reset: unknown };
+    // is the state visible to when clauses?
     private?: boolean;
 }
 
 interface ISetOptions {
+    // determines parent object in an expression: one of `key.`, `code.` or `val.`
     namespace?: string;
-    // private property used only in this file
-    // that prevents `bidnings.set_value` from being called
-    // (used for `val` fields that have already been set)
+    // private property used only in this file that prevents `bidnings.set_value` from being
+    // called (used for `val.` fields, which have already been set)
     __dont_update_bindings__?: boolean;
 }
 
 export class CommandState {
+    // record key: `namespace:variable-name`
     private options: Record<string, IStateOptions> = {};
+    // record key: a unique string specific to the listener
     private resolveListeners: Record<string, ResolveListener> = {};
-    private setListeners: Record<string, Array<Listener>> = {};
-    private defined: Set<string> = new Set();
+    // record key: `namespace:variable-name`
+    private setListeners: Record<string, Array<SetListener>> = {};
+    private definedValues: Set<string> = new Set();
+    // a queue of values to set. When bootstrapping the initial setup of keybinding state,
+    // we need to wait before actually setting values until `resolve` is called
     private onSetQueued: Record<string, unknown[]> | undefined;
 
     clear() {
-        this.defined.clear();
+        this.definedValues.clear();
         this.options = {};
         // when we clear variables, we only want to trigger onSet values when resolve is
         // called, because not all variables will be defined until we've run all
@@ -37,6 +48,7 @@ export class CommandState {
         this.onSetQueued = {};
     }
 
+    // define that a value exists in `state`; should only be called from `defineState`
     define<T>(
         key: string,
         initialValue: T,
@@ -44,21 +56,22 @@ export class CommandState {
         setOpt: ISetOptions = {},
     ) {
         const fullKey = (setOpt.namespace || 'key') + '.' + key;
-        if (this.defined.has(fullKey)) {
+        if (this.definedValues.has(fullKey)) {
             throw Error(`${fullKey} already exists`);
         }
         if (key.includes('.')) {
             throw Error('Variables names can\'t include `.`');
         }
-        this.defined.add(fullKey);
+        this.definedValues.add(fullKey);
         this.options[fullKey] = opt;
         this.set(key, initialValue, setOpt);
     }
 
+    // gets a value defined in the state, must be `define`ed
     get<T>(key: string, opt: ISetOptions = {}): T | undefined {
         const namespace = opt.namespace || 'key';
         const fullKey = namespace + '.' + key;
-        if (!this.defined.has(fullKey)) {
+        if (!this.definedValues.has(fullKey)) {
             throw Error(`\`${fullKey}\` is not defined`);
         }
         try {
@@ -80,10 +93,11 @@ export class CommandState {
         }
     }
 
+    // sets the value, triggering all set listeners, must be `define`ed
     set<T>(key: string, val: T, opt: ISetOptions = {}) {
         const namespace = opt.namespace || 'key';
         const fullKey = namespace + '.' + key;
-        if (!this.defined.has(fullKey)) {
+        if (!this.definedValues.has(fullKey)) {
             throw Error(`\`${fullKey}\` is not defined`);
         }
 
@@ -139,8 +153,9 @@ export class CommandState {
         }
     }
 
+    // returns all transient values back to their default value (see IStateOptions)
     reset() {
-        for (const fullKey of this.defined.keys()) {
+        for (const fullKey of this.definedValues.keys()) {
             const transient = this.options[fullKey]?.transient;
             // key is guaranteed to not include `.`
             const [namespace, key] = fullKey.split('.');
@@ -151,7 +166,8 @@ export class CommandState {
         }
     }
 
-    onSet(key: string, listener: Listener, opt: ISetOptions = {}) {
+    // add a `set` listener
+    onSet(key: string, listener: SetListener, opt: ISetOptions = {}) {
         const fullKey = (opt.namespace || 'key') + '.' + key;
         if (!this.setListeners[fullKey]) {
             this.setListeners[fullKey] = [];
@@ -159,10 +175,12 @@ export class CommandState {
         this.setListeners[fullKey].push(listener);
     }
 
+    // add a `resolve` listener
     onResolve(resolveId: string, listener: ResolveListener) {
         this.resolveListeners[resolveId] = listener;
     }
 
+    // called at the completion of a key sequence (see `do.ts` and `prefix.ts`)
     resolve() {
         // if we have a set of queued value updates, trigger those as well
         const queued = this.onSetQueued;
@@ -185,19 +203,31 @@ export class CommandState {
 
 export const state: CommandState = new CommandState();
 
+// TODO: remove these two functions
 export function onResolve(resolveId: string, listener: ResolveListener) {
     state.onResolve(resolveId, listener);
 }
 
-export function onSet(name: string, listener: Listener) {
+export function onSet(name: string, listener: SetListener) {
     state.onSet(name, listener);
 }
 
+// PROBLEM: we want to our commands to return any user-entered data so that this can be
+// stored as part of the history of the command
+//
+// SOLUTION: we return this value when `do` calls `vscode.commands.executeCommand`. Since
+// `master-key.do` can run any command we could receive any arbitrary data from other
+// extensions when reading the return value of `executeCommand`, we therefor use a unique
+// tag when reading the result of a command.
+//
+// TODO: move this code to another file; it is unrelated and is really a pun on the word
+// "state"
 const WRAPPED_UUID = '28509bd6-8bde-4eef-8406-afd31ad11b43';
 export type WrappedCommandResult = {
     id: '28509bd6-8bde-4eef-8406-afd31ad11b43';
     args?: object | 'cancel';
 };
+// extract the arguments returned by our command
 export function commandArgs(x: unknown): undefined | object | 'cancel' {
     if ((<WrappedCommandResult>x)?.id === WRAPPED_UUID) {
         return (<WrappedCommandResult>x).args;
@@ -206,6 +236,7 @@ export function commandArgs(x: unknown): undefined | object | 'cancel' {
     }
 }
 
+// wrap a function so that it properly returns the `WrappedCommandResult` object above
 export type CommandResult = object | undefined | 'cancel';
 type CommandFn<T extends Array<E>, E> = (...args: T) => Promise<CommandResult>;
 export function recordedCommand<T extends Array<E>, E>(fn: CommandFn<T, E>) {
@@ -243,6 +274,8 @@ async function setValue(args_: unknown): Promise<CommandResult> {
     return;
 }
 
+// `code.` variables are read-only values that expressions can inspect to know something
+// about the current editor state
 function updateCodeVariables(
     e: { textEditor?: vscode.TextEditor;
         selections?: readonly vscode.Selection[]; },
@@ -324,16 +357,14 @@ export function defineState() {
 }
 
 export async function activate(_context: vscode.ExtensionContext) {
-    onChangeBindings(async (_bindings) => {
+    onSetBindings(async (_bindings) => {
+        // redefine all state so it is newly set in the updated, global `bindings` variable
         state.clear();
         defineExtensionState();
         state.resolve();
     });
 
-    // TODO: what else do we need to update in the state when the bindings change??
-    // TODO: I think we at least need to review any default state we might want to
-    // reset
-    onChangeBindings(async () => updateCodeVariables({
+    onSetBindings(async () => updateCodeVariables({
         textEditor: vscode.window.activeTextEditor,
     }));
 

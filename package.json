@@ -16,6 +16,9 @@
         "Other",
         "Keymaps"
     ],
+    "extensionKind": [
+        "ui"
+    ],
     "activationEvents": [
         "onCommand:master-key.do",
         "onCommand:master-key.prefix",
@@ -220,24 +223,6 @@
                     "type": "boolean",
                     "description": "When enabled, bindings do not match the keys on your keyboard, instead matching the keys on the default US layout.",
                     "default": false
-                },
-                "master-key.presetDirectories": {
-                    "title": "Directory to search for Master Key presets",
-                    "type": "array",
-                    "description": "A list of directories where additional Master Key presets can be found.",
-                    "default": []
-                },
-                "master-key.defaultLineNumbers": {
-                    "title": "Default Line Numbering",
-                    "type": "string",
-                    "default": "on",
-                    "enum": [
-                        "on",
-                        "off",
-                        "relative",
-                        "interval"
-                    ],
-                    "description": "The default line numbering setting, when not explicitly specified by a binding mode. This and the mode's line numbering overwrites the global VSCode setting"
                 },
                 "master-key.maxCommandHistory": {
                     "title": "Command History Maximum",

@@ -23,6 +23,7 @@ use crate::bind::UNKNOWN_RANGE;
 
 #[derive(Debug, Error, Clone)]
 pub enum RawError {
+    // some errors already exist in our error list, and should be skipped
     #[error("previously reported error")]
     RepeatError,
     #[error("conversion error: {0}")]
@@ -35,8 +36,10 @@ pub enum RawError {
     Serialization(#[from] toml::ser::Error),
     #[error("while parsing regex: {0}")]
     Regex(#[from] regex::Error),
+    // general errors described by a dynamically allocated string
     #[error("{0}")]
     Dynamic(String),
+    // general errors that use a static string
     #[error("{0}")]
     Static(&'static str),
 }
@@ -94,8 +97,12 @@ pub fn err(msg: &'static str) -> RawError {
 #[derive(Debug, Error, Clone)]
 pub struct ParseError {
     #[source]
+    // the source of the error, sometimes from other crates, sometimes internal
     pub(crate) error: RawError,
+    // a list of additional context about the cause of the error, added using `with_message`
+    // or `with_range`
     pub(crate) contexts: SmallVec<[Context; 8]>,
+    // is it a real error or some other kind of message we're propagating
     pub(crate) level: ErrorLevel,
 }
 
@@ -113,7 +120,7 @@ pub enum Context {
     Message(String),        // additional message content to include
     Range(Range<usize>),    // the location of an error in a file
     ExpRange(Range<usize>), // location of expression being evaluated (can be merged with a rhai::Position)
-    RefRange(Range<usize>), // another location mentioned in the error message
+    RefRange(Range<usize>), // another location mentioned in the error message (cannot be merged)
 }
 
 /// A `Spannable` can be interpreted as a range of byte offsets
@@ -218,6 +225,7 @@ impl<E: Into<RawError>> From<E> for ParseError {
     }
 }
 
+// Box<EvalAltResult> is the error returned by Rhai expression evaluation
 impl From<Box<EvalAltResult>> for RawError {
     fn from(value: Box<EvalAltResult>) -> RawError {
         return RawError::Dynamic(value.to_string());
@@ -330,6 +338,8 @@ impl fmt::Display for ParseError {
     }
 }
 
+// use `StringOffsets` to get an actual human readable line and character position
+// from a byte offset
 fn range_to_pos(range: &Range<usize>, offsets: &StringOffsets) -> CharRange {
     let start;
     let end;
@@ -343,10 +353,9 @@ fn range_to_pos(range: &Range<usize>, offsets: &StringOffsets) -> CharRange {
     CharRange { start, end }
 }
 
-fn resolve_rhai_pos_from_expression_range(
-    rhai_pos: rhai::Position,
-    char_line_range: CharRange,
-) -> CharRange {
+// given the position of an expression in a file and the position *within* the expression of
+// an error, get the position of the expression *error* in a file
+fn expression_error_position(rhai_pos: rhai::Position, char_line_range: CharRange) -> CharRange {
     if let Some(line) = rhai_pos.line() {
         if line >= 1 {
             let char_line_start = Pos {
@@ -371,18 +380,26 @@ impl ParseError {
     pub fn report_string(&self) -> String {
         return format!("{self}");
     }
-    /// `report` is how we generate legible annotations
-    /// of *.mk.toml file errors in typescript
+    /// `report` is how we generate legible annotations of *.toml file errors in typescript.
+    /// It translates ErrorSets into messages that contain a line and character position for
+    /// each error (`ErrorReport`)
     pub fn report(&self, content: &[u8]) -> Option<ErrorReport> {
         return self.report_helper(Some(content));
     }
     fn report_helper(&self, content: Option<&[u8]>) -> Option<ErrorReport> {
         let offsets: Option<StringOffsets> = content.map(|c| StringOffsets::from_bytes(c));
+        // the final error message
         let mut message_buf = String::new();
+        // the raw byte offset location of the error in a file
         let mut range = UNKNOWN_RANGE;
+        // the raw byte offset of a secondary location, referenced in the error message
         let mut ref_range = UNKNOWN_RANGE;
+        // the line and character position in a file of the error
         let mut char_line_range = None;
+        // the position of an error in a rhai expression
         let mut rhai_pos = None;
+
+        // extract position and message info from the RawError
         match &self.error {
             RawError::TomlParsing(toml) => {
                 message_buf.push_str(toml.message());
@@ -403,14 +420,16 @@ impl ParseError {
                 message_buf.push_str(&msg);
             }
         };
+        // extract position and message info from each context item
         for context in &self.contexts {
             match context {
                 Context::Message(str) => message_buf.push_str(str),
                 Context::Range(new_range) => {
                     if let Some(off) = &offsets {
-                        // usually the old range is the one we want to use *but* if the new
-                        // range is strictly more specific than the new one, we use the new
-                        // range
+                        // usually the first we find (startin with RawError and going
+                        // through context items) is the one we want to use. *But* if the
+                        // new range is strictly more specific than the old one, we use the
+                        // new range
                         if range.contains(&new_range.start) && range.contains(&new_range.end) {
                             range = new_range.clone();
                             char_line_range = Some(range_to_pos(&new_range, &off));
@@ -419,22 +438,25 @@ impl ParseError {
                 }
                 Context::ExpRange(new_range) => {
                     if let Some(off) = &offsets {
-                        // a range reported via ExpRange is one that specifically matches the
-                        // span of an expression, and so we know its safe to merge it with the
-                        // position reported by a rhai position
+                        // a range reported via ExpRange is one that specifically matches
+                        // the span of an expression, and so we know that when we merge it
+                        // with the position reported by a rhai position we'll get a
+                        // meaningful file position; any other ranges, not related to the
+                        // expression will use `Range` instead of `ExpRange`
                         range = new_range.clone();
                         let new_char_line_range = range_to_pos(&new_range, &off);
                         if let Some(pos) = rhai_pos {
-                            char_line_range = Some(resolve_rhai_pos_from_expression_range(
-                                pos,
-                                new_char_line_range,
-                            ));
+                            char_line_range =
+                                Some(expression_error_position(pos, new_char_line_range));
                             rhai_pos = None;
                         } else {
                             char_line_range = Some(new_char_line_range);
                         }
                     }
                 }
+                // the reference range is for referring to a secondary position related to
+                // the location of the error (e.g. this item has a duplicate id, and here's
+                // where the id was originally defined)
                 Context::RefRange(new_range) => {
                     if new_range != &UNKNOWN_RANGE {
                         ref_range = new_range.clone();

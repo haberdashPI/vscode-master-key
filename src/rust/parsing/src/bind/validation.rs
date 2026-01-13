@@ -15,6 +15,8 @@ use crate::util::{Merging, Resolving};
 // ---------------- Keybinding Validation ----------------
 //
 
+// ensure that all keybindings have a valid vscode keybinding format
+
 lazy_static! {
     static ref MODIFIER_REGEX: Regex = Regex::new(r"(?i)Ctrl|Shift|Alt|Cmd|Win|Meta").unwrap();
     static ref KEY_REGEXS: Vec<Regex> = vec![
@@ -257,7 +259,7 @@ impl TryFrom<String> for BindingReference {
 }
 
 // This implementation of `Expanding` may seem unintuitive, but we don't actually use
-// `map-expressions` to expand `BindingReference`. Instead we review these values during a
+// `map_expressions` to expand `BindingReference`. Instead we review these values during a
 // separate `BindingInput` resolution phase (see file.rs). During variable expansion, we
 // simply want to ignore the `{{bind.}}` expression present in `BindingReference`
 impl Expanding for BindingReference {

@@ -18,6 +18,15 @@ use crate::expression::value::{Expanding, Expression, Value};
 use crate::util::{Merging, Resolving};
 use crate::{err, wrn};
 
+// DESIGN NOTE: the rust code follows a pattern across several TOML-defined top level
+// fields. There is a `[Type]Input` and `[Type]` object where `[Type]Input` contains useful
+// information for generating error messages and may have partially defined fields. These
+// are then merged/resolved with information from other sections of the parsed file and the
+// final data is passed to a constructor for `[Type]`. This constructor will return `Err`
+// objects if required fields are missing and the final result is in a format that is
+// relatively ergonomic for accessing field values, because the values have already been
+// validated
+
 /// @bindingField define
 /// @description object of arbitrary fields which can be used in
 /// computed arguments.
@@ -204,6 +213,7 @@ impl Define {
         let mut resolved_var = HashMap::<String, Value>::new();
         let mut errors: Vec<ParseError> = Vec::new();
 
+        // handle `[[define.val]]`
         for def_block in input.val.into_iter().flatten() {
             for (val, value) in def_block.into_iter() {
                 let span = value.span().clone();
@@ -229,6 +239,7 @@ impl Define {
             }
         }
 
+        // handle `[[define.command]]`
         for def in input.command.into_iter().flatten() {
             let id = def.get_ref().id.clone();
             let span = id
@@ -253,6 +264,7 @@ impl Define {
             }
         }
 
+        // handle `[[define.bind]]`
         for def in input.bind.into_iter().flatten() {
             let id = def.get_ref().id.clone();
             let span = id
@@ -316,6 +328,10 @@ impl Define {
         return Ok(());
     }
 
+    // Apply definitions to a binding by:
+    // - apply `default = {{bind.[id]}}`, merging the default values with the
+    //   values in `binding`
+    // - expand `{{command.[id]}}` within the command arguments
     pub fn expand(&mut self, binding: BindingInput) -> ResultVec<BindingInput> {
         // resolve default values
         let binding = if let Some(ref default) = binding.default {
@@ -339,6 +355,7 @@ impl Define {
             binding
         };
 
+        // resolve any `{{command.[id]}}` references in the command list
         return binding.map_expressions(&mut |exp: Expression| {
             let command = COMMAND_REF.captures(&exp.content);
             if let Some(captures) = command {

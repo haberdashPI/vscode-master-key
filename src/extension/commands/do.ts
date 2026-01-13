@@ -36,7 +36,12 @@ export const documentIdentifiers = new WeakMap();
 // visible; user-configurable
 let paletteDelay: number = 0;
 export let paletteEnabled = true;
-let paletteUpdate = Number.MIN_SAFE_INTEGER;
+let keyPressCount = Number.MIN_SAFE_INTEGER;
+
+////////////////////////////////////////////////////////////////////////////////////////////
+// command related output
+
+// TODO: should probably move to another file
 
 let expressionMessages: vscode.OutputChannel;
 export function showExpressionMessages(command: CommandOutput) {
@@ -86,9 +91,14 @@ export function showExpressionErrors(fallable: { errors?: string[]; error?: stri
     return false;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////
+// command execution
+
 type CommandEventHook = () => Promise<boolean>;
 let commandCompletedHooks: CommandEventHook[] = [];
 
+// we need some way to know that a command has completed, as certain state / behaviors are
+// canceled upon command completion (see `search.ts`).
 export function onCommandComplete(hook: CommandEventHook) {
     commandCompletedHooks.push(hook);
 }
@@ -111,7 +121,7 @@ function commandChangesModeOrPrefix(command: ReifiedBinding) {
         command.has_command('master-key.enterNormal');
 }
 
-// TODO: we could also probably use Mutex to improve the legibility of `state.ts`
+// used to ensure orderly execution of commands within `master-key.do`
 export const commandMutex = new Mutex();
 
 /**
@@ -132,17 +142,18 @@ export const commandMutex = new Mutex();
  * such as [expressions](/expressions/index).
  */
 export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
+    // see extension-profiles/README.md for details
     // console.profile('master-key-do');
     // register that a key was pressed (cancelling the display of the quick pick for
     // prefixes of this keypress
-    registerPaletteUpdate();
+    registerKeyPress();
 
     // we should execute a single do command at a time
     const release = await commandMutex.acquire();
     try {
         const args = validateInput('master-key.do', args_, masterBinding);
         if (args) {
-            const toRun = bindings.do_binding(args.command_id);
+            const toRun = bindings.prepare_binding_to_run(args.command_id);
             showExpressionErrors(toRun);
 
             // if the current binding state, after obtaining a lock, doesn't match what's
@@ -225,15 +236,32 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
                     showPaletteOnDelay();
                 }
 
+                // command history needs to record edits to the current document; however we
+                // only want to track those edits that occur within a single document. We
+                // avoid the complexity of storing edits across multiple documents.
+                // Therefore each recorded command needds to know which editor it is
+                // recording edits for.
                 if (!canceled && toRun.finalKey) {
                     const editor = vscode.window.activeTextEditor;
                     let id = 0;
                     if (editor) {
+                        // we rely on the URI to identify documents, this does mean that the
+                        // user can switch between different *views* of the same document
+                        // and the edits will get recorded all the same. We accept this as a
+                        // limitation. Ideally the user employs a master-key defined binding
+                        // to switch between windows so the edits are recorded correctly for
+                        // replay, with the two parts of the edit (before and after the
+                        // window switch) getting recorded on separate command items in the
+                        // history
                         id = documentIdentifiers.get(editor.document.uri);
                         if (!id) {
                             id = documentIdentifierCount++;
                             documentIdentifiers.set(editor.document.uri, id);
                         }
+                        // we only record edits if the keybinding mode is supposed to
+                        // respond to typed keys. Other sorts of edits that occur to the
+                        // document would be do to executed commands, which we are already
+                        // recording
                         const mode: string = state.get(MODE) || bindings.default_mode();
                         if (bindings.mode(mode)?.whenNoBinding() ==
                             WhenNoBindingHeader.InsertCharacters) {
@@ -242,6 +270,8 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
                     }
                 }
 
+                // Actually save the commands we ran. Any subsequent edits to the document
+                // will be stored to the binding using `store_edit` (see `replay.ts`).
                 if (!canceled) {
                     bindings.store_binding(toRun, maxHistory);
                 }
@@ -270,23 +300,28 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
     }
 }
 
+// the palette shows suggested keybindings: if no additional keys are pressed
+// we show the palette on a delay. We register key presses using `registerPaletteUpdate`
 export function showPaletteOnDelay() {
     if (paletteEnabled) {
-        const currentPaletteUpdate = paletteUpdate;
+        const currentKeyPressCount = keyPressCount;
         setTimeout(async () => {
-            if (currentPaletteUpdate === paletteUpdate) {
-                registerPaletteUpdate();
+            if (currentKeyPressCount === keyPressCount) {
+                registerKeyPress();
                 commandPalette();
             }
         }, paletteDelay);
     }
 }
 
-export function registerPaletteUpdate() {
-    if (paletteUpdate < Number.MAX_SAFE_INTEGER) {
-        paletteUpdate += 1;
+// the palette shows suggested keybindings: each time a key is pressed we want to udpate
+// this counter. We show the palette for a given key press if there has been a sufficient
+// delay before completing another key press.
+export function registerKeyPress() {
+    if (keyPressCount < Number.MAX_SAFE_INTEGER) {
+        keyPressCount += 1;
     } else {
-        paletteUpdate = Number.MIN_SAFE_INTEGER;
+        keyPressCount = Number.MIN_SAFE_INTEGER;
     }
 }
 

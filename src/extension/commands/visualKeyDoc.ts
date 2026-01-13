@@ -2,8 +2,8 @@ import { CommandState } from '../state';
 import { state, onResolve } from '../state';
 import * as vscode from 'vscode';
 import { MODE } from './mode';
-import { normalizeLayoutIndependentString } from '../keybindings/layout';
-import { onChangeBindings } from '../keybindings/config';
+import { simplifyLayoutIndependentString } from '../keybindings/layout';
+import { onSetBindings } from '../keybindings/config';
 import { PREFIX_CODE } from './prefix';
 import {
     getRequiredMode,
@@ -16,21 +16,34 @@ import { KeyFileResult } from '../../rust/parsing/lib/parsing';
 // TODO: use KeyboardLayoutMap to improve behavior
 // across different layouts
 
+// properties of each key board key
 interface IKeyTemplate {
+    // the key name (e.g. A)
     name?: string;
+    // the length (e.g. space is longer)
     length?: string;
+    // what modifier does this key position have (e.g. shift, ctrl?)
     modifier?: boolean;
+    // is this key on the first row? (it only has one binding instead of two for top and
+    // bottom like the other rows)
     firstRow?: boolean;
+    // the height of the key
     height?: string;
 }
 
-interface IKeyRow {
+// the labels on individual keys
+interface IKey {
+    // what documentation is on the top half
     top?: string;
+    // what documentation is on the bottom half
     bottom?: string;
+    // the length of the key (e.g. space is longer)
     length?: string;
+    // how tall is the key
     height?: string;
 }
 
+// define the keyboard
 const keyRowsTemplate: IKeyTemplate[][] = [
     [
         { name: 'ESC', height: '0-5', firstRow: true },
@@ -122,10 +135,11 @@ const keyRowsTemplate: IKeyTemplate[][] = [
     ],
 ];
 
+// given the modifiers for each row, generate the keys
 function keyRows(
     topModifier?: readonly string[],
     bottomModifier?: readonly string[],
-): IKeyRow[][] {
+): IKey[][] {
     return keyRowsTemplate.map(row =>
         row.map((key) => {
             if (key.name && !key.modifier && !key.firstRow) {
@@ -146,6 +160,7 @@ function keyRows(
     );
 }
 
+// get the key from x if it exists, otherwise return def
 function get<T extends object, K extends keyof T>(x: T, key: K, def: T[K]) {
     if (key in x && x[key] !== undefined) {
         return x[key];
@@ -154,12 +169,17 @@ function get<T extends object, K extends keyof T>(x: T, key: K, def: T[K]) {
     }
 }
 
+// [[kind]] information
 interface KindDocEl {
+    // the name of this `kind`
     name: string;
+    // the longer description of this `kind`
     description: string;
+    // the order in the TOML file of this `kind`
     index: number;
 }
 
+// the details of the binding as extracted from `[[bind]]`
 interface IVisualKeyBinding {
     name?: string;
     description?: string;
@@ -173,18 +193,24 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
     _mode?: string;
     _prefixCode?: number;
     _view?: vscode.WebviewView;
+    // nested map of prefix:mode -> key -> [[bind]] details
     _bindingMap: Record<string, Record<string, IVisualKeyBinding>> = {};
     _currentBindingKey: string = '0:';
+    //  array of key descriptions as currently shown on the keyboard
     _keymap?: (IVisualKeyBinding | { empty: true })[] = [];
     _kinds?: Record<string, KindDocEl> = {};
+    // modifiers are listed from most to least common, and the index indicates which of
+    // these shows up first in the currently display of keybindings
     _modifierIndex: number = 0;
-    _oldBindings: IVisualKeyBinding[] = [];
-    _modifierSetIndex: number = -1;
+    // tracks the order of all modifiers for a given `prefix:mode` setting
     _modifierOrderMap: Record<string, string[][]> = {};
+    // the ordering for the current `prefix:mode` (one of the values
+    // of the above bindings)
     _modifierOrder: string[][] = [];
 
     constructor(private readonly _extensionUri: vscode.Uri) {}
 
+    // let the webview know about updated bindings
     private refresh() {
         if (this._view?.webview) {
             this._view?.webview.postMessage({
@@ -195,6 +221,7 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
         }
     }
 
+    // the modifiers that should show up on the top of the key
     public get topModifier(): readonly string[] {
         // get modifiers for current context
         const modifiers = this._modifierOrder || [[''], ['⇧']];
@@ -209,6 +236,7 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
         }
     }
 
+    // the modifiers that should show up on the bottom of the key
     public get bottomModifier(): readonly string[] {
         // get modifiers for current context
         const modifiers = this._modifierOrder || [[''], ['⇧']];
@@ -223,12 +251,13 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
         }
     }
 
+    // change which modifiers to show; we cycle from most to least common modifiers
     public toggleModifier() {
         this._modifierIndex = (this._modifierIndex + 2) % this._modifierOrder.length;
 
         // if there are an odd number of available modifiers the top / bottom will show both
         // the last key and the first key. So when we wrap around again we want to reset
-        // back to the start (otherwise there will be a redundant odd parity cycle through
+        // back to the start (otherwise there will be a redundant, odd parity cycle through
         // all modifiers)
         if (this._modifierIndex % 2 == 1) {
             this._modifierIndex = 0;
@@ -237,9 +266,12 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
         this.refresh();
     }
 
+    // update all the private properties of this object to be consistent with
+    // the newly defined `bindings`
     private updateKeys(bindings: KeyFileResult) {
-        this._modifierSetIndex = 0;
         const modifierCounts: Record<string, Record<string, number>> = {};
+        // compute the frequency of each combination of modifiers
+        // conditioned on each `prefix:mode`
         for (let i = 0; i < bindings.n_bindings(); i++) {
             const binding = bindings.binding(i);
             if (binding?.command == 'master-key.ignore') {
@@ -254,6 +286,7 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
             countsForContext[key] = get(countsForContext, key, 0) + 1;
             modifierCounts[countKey] = countsForContext;
         }
+        // use the frequencies to construct an order
         this._modifierOrderMap = {};
         for (const [key, counts] of Object.entries(modifierCounts)) {
             let modifiers = Object.keys(counts);
@@ -267,6 +300,7 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
         }
         this._modifierIndex = 0;
 
+        // scan through all bindings to construct key binding documentation to visualize
         const bindingMap: Record<string, Record<string, IVisualKeyBinding>> = {};
         for (let i = 0; i < bindings.n_bindings(); i++) {
             const binding = bindings.binding(i);
@@ -274,7 +308,7 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
                 continue;
             }
             let label = prettifyPrefix(binding.key);
-            label = normalizeLayoutIndependentString(label, { noBrackets: true });
+            label = simplifyLayoutIndependentString(label, { noBrackets: true });
             const prefixCode = getRequiredPrefixCode(binding.when);
             const mode = getRequiredMode(binding.when);
             const key = `${prefixCode}:${mode}`;
@@ -299,6 +333,7 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
         this._bindingMap = bindingMap;
     }
 
+    // adjust visual display with changes to the prefix and mode
     private updateState(state: CommandState) {
         this._modifierIndex = 0;
         const prefixCode: number = state.get(PREFIX_CODE) || 0;
@@ -315,6 +350,8 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
         }
     }
 
+    // scan through all visualized keys and update them with any newly changed documentation
+    // state
     private updateKeyHelper(
         bindingMap: Record<string, IVisualKeyBinding> =
             this._bindingMap[this._currentBindingKey],
@@ -349,6 +386,7 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
         }
     }
 
+    // change what `[[kind]]` data is visible
     private updateKinds(bindings: KeyFileResult) {
         this._kinds = {};
         let index = 0;
@@ -363,8 +401,9 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
         this.refresh();
     }
 
+    // make sure this object response to changes in the state of the binding
     public async attach(state: CommandState) {
-        onChangeBindings(async (x) => {
+        onSetBindings(async (x) => {
             this.updateKinds(x);
             this.updateKeys(x);
             this.updateState(state);
@@ -376,10 +415,12 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
         return state;
     }
 
+    // can the user see these bindings?
     public visible() {
         return this._view?.visible;
     }
 
+    // actually render the view, loading the html and javascript we need
     public resolveWebviewView(
         webviewView: vscode.WebviewView,
         _context: vscode.WebviewViewResolveContext,
@@ -396,6 +437,7 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
         this.refresh();
     }
 
+    // render the html needed to show the keyboard
     public _getHtml(webview: vscode.Webview) {
         const style = webview.asWebviewUri(
             vscode.Uri.joinPath(this._extensionUri, 'src', 'webview', 'keys', 'style.css'),
@@ -416,7 +458,7 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
                     map(row => `
                     <div class="keyboard-row">
                         ${row.
-                            map((key: IKeyRow) => {
+                            map((key: IKey) => {
                                 const topId = num++;
                                 const bottomId = num++;
                                 const topLabel = get(key, 'top', '');
@@ -483,6 +525,9 @@ async function showVisualDoc() {
     }
     return;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////
+// activation
 
 export function defineState() {
 }

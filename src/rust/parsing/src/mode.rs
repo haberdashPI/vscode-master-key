@@ -19,6 +19,15 @@ use crate::resolve;
 use crate::util::{LeafValue, Resolving};
 use crate::{err, wrn};
 
+// DESIGN NOTE: the rust code follows a pattern across several TOML-defined top level
+// fields. There is a `[Type]Input` and `[Type]` object where `[Type]Input` contains useful
+// information for generating error messages and may have partially defined fields. These
+// are then merged/resolved with information from other sections of the parsed file and the
+// final data is passed to a constructor for `[Type]`. This constructor will return `Err`
+// objects if required fields are missing and the final result is in a format that is
+// relatively ergonomic for accessing field values, because the values have already been
+// validated
+
 /// @bindingField mode
 /// @order -1
 /// @description array describing behavior of keybinding modes
@@ -57,7 +66,6 @@ use crate::{err, wrn};
 ///
 /// The only required field for a mode is its name (marked with "❗") but there are a number
 /// of optional fields that impact the behavior of the mode.
-
 #[allow(non_snake_case)]
 #[derive(Deserialize, Clone, Debug)]
 pub struct ModeInput {
@@ -140,6 +148,10 @@ pub enum WhenNoBindingInput {
     Run(Vec<CommandInput>),
 }
 
+// we use a custom serializer here to improve the error messages; use the default untagged
+// enum deserializer causes fairly generic messages, because the automated boilplate it
+// produces doesn't know how to say which of a given set of enums is really responsible for
+// the error
 impl<'de> serde::de::Deserialize<'de> for WhenNoBindingInput {
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
@@ -245,7 +257,6 @@ pub enum CursorShape {
 }
 impl LeafValue for CursorShape {}
 
-// TODO: get wasm interface worked out
 #[derive(Clone, Debug, Serialize)]
 #[allow(non_snake_case)]
 #[wasm_bindgen(getter_with_clone)]
@@ -257,6 +268,7 @@ pub struct Mode {
     pub(crate) whenNoBinding: WhenNoBinding,
 }
 
+// this is only run in the typescript code, so we ignore coverage
 #[wasm_bindgen]
 #[cfg_attr(coverage_nightly, coverage(off))]
 impl Mode {
@@ -298,8 +310,6 @@ pub enum WhenNoBindingHeader {
     UseMode,
     Run,
 }
-
-// TODO: figure out type script interface to WhenNoBinding
 
 impl LeafValue for WhenNoBinding {}
 
@@ -348,6 +358,8 @@ impl Mode {
         });
     }
 
+    // this generates a sequence of commands used to ignore types characters in a mode
+    // using `whenNoBinding = "ignoreCharacters"`.
     fn create_ignore_characters(name: &str, scope: &Scope, result: &mut Vec<BindingOutput>) {
         for k in all_characters() {
             let when: String;
@@ -380,7 +392,11 @@ impl Modes {
         scope: &mut Scope,
         warnings: &mut Vec<ParseError>,
     ) -> ResultVec<Self> {
-        // define the set of available modes
+        // define the set of available modes and check that:
+        // 1. there is one default mode,
+        // 2. all modes are unique
+        // 3. at least one mode allows the user to type keys
+        // 4. no mode is == "capture": this is a reserved mode used internally
         let mut all_mode_names = HashSet::new();
         let mut default_mode = None;
         let mut first_mode_span = UNKNOWN_RANGE;
@@ -465,6 +481,7 @@ impl Modes {
             }
         }
 
+        // define expression related functions that need to know the set of available modes
         let all_modes_fn_data = scope.modes.clone();
         scope.engine.register_fn("all_modes", move || {
             all_modes_fn_data
@@ -522,6 +539,8 @@ impl Modes {
         return self.map.get(x);
     }
 
+    // helps to generated the `ignore` bindings when a mode doesn't allow the user to insert
+    // characters
     fn ignore_character_bindings_helper(
         &self,
         mode: &str,        // the mode whose whenNoBinding we're looking up
@@ -560,6 +579,7 @@ impl Modes {
         return result;
     }
 
+    // implements `whenNoBindings.useMode = "otherMode"`
     pub(crate) fn insert_implicit_mode_bindings(
         &self,
         bindings: &Vec<Binding>,
@@ -585,8 +605,6 @@ impl Modes {
             }
         }
 
-        // TODO: this logic is reversed: we need to propagate e.g. normal keys to a mode
-        // that fall back to normal, not propagate back that modes keys to normal
         for (id, bind) in bindings.iter().enumerate() {
             let mut implicit_modes = Vec::new();
             for mode in &bind.mode {
