@@ -247,6 +247,7 @@ const ALL_KEYS: [&'static str; 191] = [
     "[NumpadDivide]",
 ];
 
+// this function is access within expressions as `keys([regex])`.
 #[allow(non_snake_case)]
 pub fn expression_fn__keys(
     val: ImmutableString,
@@ -282,11 +283,11 @@ pub fn all_characters() -> Vec<String> {
     return result;
 }
 
-pub fn expand_keys(
+// search through the values of a `foreach` field and expand any expressions present
+pub fn expand_expressions(
     items: IndexMap<String, Vec<Spanned<Value>>>,
     scope: &mut Scope,
 ) -> ResultVec<IndexMap<String, Vec<Value>>> {
-    // expand any `{{key(`regex`)}}` expressions (these are arrays of possible keys)
     let items = scope.expand(&items)?;
 
     // flatten any arrays
@@ -313,9 +314,12 @@ impl BindingInput {
         return false;
     }
 
+    // create a list of `BindingInput` objects from a single `BindingInput` with a `foreach`
+    // clause. Each new object has a scope defined around its expressions that defines the
+    // value of the `foreach` variable for the given "iteration"
     pub fn expand_foreach(self, scope: &mut Scope) -> ResultVec<Vec<BindingInput>> {
         if self.has_foreach() {
-            let foreach = expand_keys(self.foreach.clone().unwrap(), scope)?;
+            let foreach = expand_expressions(self.foreach.clone().unwrap(), scope)?;
             foreach.require_constant()?;
 
             let values = expand_foreach_values(foreach).into_iter().map(|values| {

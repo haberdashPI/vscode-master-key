@@ -22,6 +22,15 @@ use crate::{
     wrn,
 };
 
+// DESIGN NOTE: the rust code follows a pattern across several TOML-defined top level
+// fields. There is a `[Type]Input` and `[Type]` object where `[Type]Input` contains useful
+// information for generating error messages and may have partially defined fields. These
+// are then merged/resolved with information from other sections of the parsed file and the
+// final data is passed to a constructor for `[Type]`. This constructor will return `Err`
+// objects if required fields are missing and the final result is in a format that is
+// relatively ergonomic for accessing field values, because the values have already been
+// validated
+
 /// @forBindingField bind
 /// @order 14
 ///
@@ -141,15 +150,24 @@ impl From<CommandInput> for Value {
     }
 }
 
+// there are a number of different structures that we want to be able to treat as commands.
+// This is because we regularize commands across several disparate sources, turning them
+// into the final `Vec<Command>` value.
+
 pub(crate) trait CommandInputLike {
+    // command like objects provide a name for the command (fallibly)
     fn command(&self, scope: &mut Scope) -> ResultVec<String>;
+    // they optionally provide a list of values
     fn args(&self) -> Option<Spanned<Value>>;
+    // and the provide a runtime-expression that evaluates to a boolean for skipping
     #[allow(non_snake_case)]
     fn skipWhen(&self) -> TypedValue<bool> {
+        // this defaults to false if there is no such `skipWhen` field
         return TypedValue::Constant(false);
     }
 }
 
+// we can munge things into the command like format using this structure
 pub(crate) struct CommandValue<'a> {
     pub(crate) command: String,
     pub(crate) args: Option<&'a Value>,
@@ -168,6 +186,7 @@ impl<'a> CommandInputLike for CommandValue<'a> {
     }
 }
 
+// a BindingInput is itself command like, because some bindings have just a single command
 impl CommandInputLike for BindingInput {
     fn command(&self, scope: &mut Scope) -> ResultVec<String> {
         return Ok(self.command.clone().resolve("command", scope)?);
@@ -199,6 +218,8 @@ fn maybe_span(spans: Option<HashMap<String, Range<usize>>>, key: &str) -> Option
     return None;
 }
 
+// accept something that looks like a command (or list of commands if it uses `runCommands`)
+// and regularize it into a Vec<Command> object.
 pub(crate) fn regularize_commands(
     input: &impl CommandInputLike,
     scope: &mut Scope,
@@ -206,6 +227,7 @@ pub(crate) fn regularize_commands(
 ) -> ResultVec<Vec<Command>> {
     let command: String = input.command(scope)?;
     if command != "runCommands" {
+        // we have just a single command
         let commands = vec![Command {
             command,
             args: match input.args() {
@@ -216,6 +238,9 @@ pub(crate) fn regularize_commands(
         }];
         return Ok(commands);
     } else {
+        // we have multiple commands listed under `runCommands`; we have to manually
+        // validate the fields of the commands, because in general `args` is an arbitrary
+        // value
         let args = input.args();
         let spanned = args
             .as_ref()
@@ -414,6 +439,9 @@ impl Resolving<Command> for CommandInput {
 
 #[wasm_bindgen]
 impl Command {
+    // create a concrete CommandOutput that can be read in `do.ts` and related typescript
+    // files, to execute the command; this should occur at the last possible moment to
+    // ensure the variable scope is up-to-date
     pub fn resolve(&self, result: &mut KeyFileResult) -> CommandOutput {
         return match self.resolve_helper(&mut result.scope) {
             Ok(x) => x,
@@ -454,8 +482,10 @@ impl Command {
             Ok(x) => Ok(x),
         };
     }
+
     pub(crate) fn new(input: CommandInput, scope: &mut Scope) -> ResultVec<Self> {
         if let Some(_) = input.id {
+            // id field should only exist when defining commands through `[[define]]`
             return Err(err("`id` field is reserved"))?;
         }
         return Ok(Command {
