@@ -76,19 +76,7 @@ async function executedStoredCommand(args_: unknown): Promise<CommandResult> {
                 showExpressionMessages(resolved_command);
 
                 if (resolved_command.command === 'master-key.ignore') {
-                    let count = 0;
-                    for (const error of (resolved_command.errors || [])) {
-                        count++;
-                        if (count >= 3) {
-                            vscode.window.showErrorMessage(
-                                'There were additional errors when running a \
-                                key binding; they have been ignored to maintain \
-                                a reasonable number of notifications ',
-                            );
-                        } else {
-                            vscode.window.showErrorMessage(error);
-                        }
-                    }
+                    showExpressionErrors(resolved_command)
                 } else {
                     const result = await vscode.commands.
                         executeCommand<WrappedCommandResult | void>(
@@ -106,6 +94,9 @@ async function executedStoredCommand(args_: unknown): Promise<CommandResult> {
     }
     return undefined;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////
+// activation
 
 export function defineState() {
 }

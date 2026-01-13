@@ -1,11 +1,26 @@
-import * as state from './state';
 import * as vscode from 'vscode';
+
+// state: this manages all of the values that can be accessed
+// from expressions (e.g. `key.count`) and contexts (e.g. `master-key.count`).
+import * as state from './state';
+// keybindings: handlings the parsing and activation of keybinding files and the evaluation
+// of expressions, all of which are defined within the keybindings
 import * as keybindings from './keybindings/index';
+// commands: defines all of the commands created by master key
 import * as commands from './commands/index';
+// status: implements the UI elements visible in the status bar
 import * as status from './status/index';
+// config: handles the storing of configuration data defined by a master keybinding file
 import * as config from './keybindings/config';
+// parsing: the rust module used that supports keybindings, it is used as a part of
+// `keybindings` above
 import initParsing from '../rust/parsing/lib';
 
+// Each file has a `defineState` function which initializes the variables stored in the
+// `state` object. It is executed first to ensure that all hooks that respond to
+// changes---which are defined in `activate`---can occur after the values are defined. This
+// ensures preemptive errors can be raised if we create a hook for a value that doesn't
+// exist by checking that it has been defined.
 export function defineState() {
     keybindings.defineState();
     config.defineState();
@@ -20,7 +35,9 @@ export async function activate(context: vscode.ExtensionContext) {
     const bits = await vscode.workspace.fs.readFile(filename);
     await initParsing(bits);
 
-    // defineState needs `bindings` to exists, defined in `config.activate`
+    // state is stored in `bindings` which represents the currently loaded set of key
+    // bindings. This is defined inside `config` and so before we can define the state
+    // variables wee need to activate `config`.
     await config.activate(context);
     defineState();
 
@@ -32,6 +49,7 @@ export async function activate(context: vscode.ExtensionContext) {
     await status.activate(context);
     await config.updateBindings(context);
 
+    // check for and warn about legacy data
     const settings = vscode.workspace.getConfiguration('master-key');
     const storage = settings.get('storage');
     if (storage) {
@@ -51,6 +69,8 @@ export async function activate(context: vscode.ExtensionContext) {
         });
     }
 
+    // commands must be defined after activation, as the commands sometimes depend on hooks
+    // initialized during `activate`.
     await keybindings.defineCommands(context);
     await config.defineCommands(context);
     await state.defineCommands(context);
@@ -59,5 +79,4 @@ export async function activate(context: vscode.ExtensionContext) {
     await config.defineCommands(context);
 }
 
-// This method is called when your extension is deactivated
 export function deactivate() {}

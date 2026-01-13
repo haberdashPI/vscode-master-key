@@ -1,19 +1,47 @@
 import * as vscode from 'vscode';
 import { getRequiredMode, getRequiredPrefixCode, prettifyPrefix } from '../utils';
 import { state, onResolve } from '../state';
-import { bindings, onChangeBindings } from '../keybindings/config';
+import { bindings, onSetBindings } from '../keybindings/config';
 import { PREFIX_CODE } from './prefix';
 import { MODE } from './mode';
 import {
-    normalizeLayoutIndependentString,
+    simplifyLayoutIndependentString,
 } from '../keybindings/layout';
 import { KeyFileResult } from '../../rust/parsing/lib/parsing';
 import { doCommandsCmd, paletteEnabled } from './do';
 import { isEqual } from 'lodash';
 
-/**
- * Represents an individual command in the sidebar tree.
- */
+// the representation of a single palette item
+interface IPaletteBinding {
+    // fields from [[bind.doc]]
+    name?: string;
+    description?: string;
+    key?: string;
+    combinedDescription?: string;
+    combinedKey?: string;
+    // represents the bindings position relative to markdown sections
+    // each item in the array is an additional level of subsections
+    // e.g. the item under `# Title`, `## Section 1`, `### Subsection 1.2`
+    // will have three values in this field `["Title", "Section 1", "Section 1.2"]`
+    sections: string[];
+    // indicates whether the current item is a section label rather than an actual binding
+    isSection?: boolean;
+    // indicates whether this is just a setting toggle rather than an actual binding
+    isToggle?: boolean;
+    // determines the ordering of the binding in this view
+    order: number;
+    // the command associated with this binding (used to execute it when clicked)
+    command_id?: number;
+    // the prefix for this binding, used when executing the binding (if it's a prefix
+    // related binding)
+    prefix_id?: number;
+}
+
+// the list of all palette entries organized by the binding mode and prefix it should show
+// up under
+const paletteEntries: Record<string, IPaletteBinding[]> = {};
+
+// Represents an individual command in the sidebar tree.
 class CommandTreeItem extends vscode.TreeItem {
     constructor(public readonly binding: IPaletteBinding) {
         // Label shows the keybinding; description shows the command name
@@ -48,7 +76,12 @@ class CommandTreeItem extends vscode.TreeItem {
     }
 }
 
+// represents the global variable `paletteEntries` to our TreeView
 export class MasterKeyDataProvider implements vscode.TreeDataProvider<IPaletteBinding> {
+    // TODO: this is a bit of cargo culting mumbo jumbo that I'm fairly certain we don't
+    // need that I copied from an example. I don't have the time/bandwidth to clean this up
+    // right now, but we can probably do something more idiomatic to trigger changes when
+    // set call the setters
     private _onDidChangeTreeData: vscode.EventEmitter<IPaletteBinding | undefined | void> =
         new vscode.EventEmitter<IPaletteBinding | undefined | void>();
 
@@ -116,22 +149,7 @@ export class MasterKeyDataProvider implements vscode.TreeDataProvider<IPaletteBi
     }
 }
 
-interface IPaletteBinding {
-    name?: string;
-    description?: string;
-    key?: string;
-    combinedDescription?: string;
-    combinedKey?: string;
-    sections: string[];
-    isSection?: boolean;
-    isToggle?: boolean;
-    order: number;
-    command_id?: number;
-    prefix_id?: number;
-}
-
-const paletteEntries: Record<string, IPaletteBinding[]> = {};
-
+// use the `.sections` field of each binding item to generate section headers
 function addSections(items: IPaletteBinding[]) {
     let currentSections: string[] = [];
     let sectionCounts: number[] = [];
@@ -139,6 +157,7 @@ function addSections(items: IPaletteBinding[]) {
     let firstSection = true;
 
     for (const item of items) {
+        // when the sections change we introduce a new header
         if (!isEqual(currentSections, item.sections)) {
             if (firstSection) {
                 firstSection = false;
@@ -193,6 +212,7 @@ function addSections(items: IPaletteBinding[]) {
     return result;
 }
 
+// when the bindings are first set or change we need to set `paletteEntries`
 function updateKeys(bindings: KeyFileResult) {
     const bindingMap: Record<string, Record<string, IPaletteBinding>> = {};
     for (let i = 0; i < bindings.n_bindings(); i++) {
@@ -218,9 +238,9 @@ function updateKeys(bindings: KeyFileResult) {
             order: binding.args.command_id,
         };
         let key = prettifyPrefix(paletteEntry.key);
-        key = normalizeLayoutIndependentString(key, { noBrackets: true });
+        key = simplifyLayoutIndependentString(key, { noBrackets: true });
         let combinedKey = prettifyPrefix(paletteEntry.combinedKey || '');
-        combinedKey = normalizeLayoutIndependentString(combinedKey, { noBrackets: true });
+        combinedKey = simplifyLayoutIndependentString(combinedKey, { noBrackets: true });
 
         const prefixCode = getRequiredPrefixCode(binding.when);
         const mode = getRequiredMode(binding.when);
@@ -254,27 +274,6 @@ function updateKeys(bindings: KeyFileResult) {
 let treeDataProvider: MasterKeyDataProvider;
 let treeView: vscode.TreeView<IPaletteBinding>;
 
-export function defineState() {
-}
-
-export async function activate(context: vscode.ExtensionContext) {
-    treeDataProvider = new MasterKeyDataProvider();
-    treeView = vscode.window.createTreeView('masterKeySidePanel', {
-        treeDataProvider,
-        showCollapseAll: true,
-        canSelectMany: false,
-    });
-    context.subscriptions.push(treeView);
-
-    onChangeBindings(async (x) => {
-        updateKeys(x);
-        treeDataProvider.refresh();
-    });
-
-    treeDataProvider.mode = <string>state.get(MODE) || bindings.default_mode();
-    treeDataProvider.prefixCode = <number>state.get(PREFIX_CODE) || 0;
-}
-
 export async function commandPalette() {
     const items = await treeDataProvider.getChildren();
     if (items.length > 0) {
@@ -292,7 +291,33 @@ function updateConfig(event?: vscode.ConfigurationChangeEvent) {
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////
+// activation
+
+export function defineState() {
+}
+
+export async function activate(context: vscode.ExtensionContext) {
+    treeDataProvider = new MasterKeyDataProvider();
+    treeView = vscode.window.createTreeView('masterKeySidePanel', {
+        treeDataProvider,
+        showCollapseAll: true,
+        canSelectMany: false,
+    });
+    context.subscriptions.push(treeView);
+
+    onSetBindings(async (x) => {
+        updateKeys(x);
+        treeDataProvider.refresh();
+    });
+
+    treeDataProvider.mode = <string>state.get(MODE) || bindings.default_mode();
+    treeDataProvider.prefixCode = <number>state.get(PREFIX_CODE) || 0;
+}
+
 export async function defineCommands(context: vscode.ExtensionContext) {
+    vscode.workspace.onDidChangeConfiguration(updateConfig);
+
     /**
      * @userCommand commandSuggestions
      * @name Key Suggestions...
@@ -337,8 +362,6 @@ export async function defineCommands(context: vscode.ExtensionContext) {
             },
         ),
     );
-
-    vscode.workspace.onDidChangeConfiguration(updateConfig);
 
     onResolve('palette', () => {
         treeDataProvider.mode = state.get<string>(MODE) || '';

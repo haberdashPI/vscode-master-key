@@ -231,8 +231,9 @@ pub struct KeyFile {
 }
 
 impl KeyFile {
-    // TODO: refactor to have each section's processing in corresponding module
-    // for that section
+    // TODO: refactor to have each section's processing in corresponding module for that
+    // section, this would improve legibility here and keep more of the logic related to a
+    // given section in one place
     fn new(
         input: KeyFileInput,
         doc_lines: Vec<FileDocLine>,
@@ -348,6 +349,7 @@ impl KeyFile {
             .parse_asts(&bind_input)
             .map_err(|mut es| errors.append(&mut es.errors));
 
+        // `foreach` expansion
         let (mut bind, bind_span): (Vec<_>, Vec<_>) = bind_input
             .into_iter()
             .flat_map(|x| {
@@ -495,11 +497,14 @@ impl KeyFileResult {
         };
     }
 
+    // the actual bindings we want to store in `keybindings.json`
+    // (see `keybindings/index.ts` and related files)
     pub fn binding(&self, i: usize) -> JsValue {
         return serde_wasm_bindgen::to_value(&self.file.as_ref().unwrap().key_bind[i])
             .expect("keybinding object");
     }
 
+    // documentation output for `showTextDocumentation` (see `keybindings/index.ts`)
     pub fn docs(&self, i: usize) -> Option<BindingDoc> {
         let command_id = match &self.file.as_ref().unwrap().key_bind[i] {
             BindingOutput::Do {
@@ -525,6 +530,7 @@ impl KeyFileResult {
         return None;
     }
 
+    // the documentation section a binding is located in (see commands/palette.ts)
     pub fn binding_section(&self, command_id: i32) -> Option<BindSection> {
         return match &self.file {
             Some(KeyFile { bind, .. }) => {
@@ -538,6 +544,8 @@ impl KeyFileResult {
         };
     }
 
+    // used to inform the user about layout independent bindings (see
+    // `keybindings/index.ts`)
     pub fn has_layout_independent_bindings(&self) -> bool {
         return match &self.file {
             Some(KeyFile { bind, .. }) => bind
@@ -547,12 +555,7 @@ impl KeyFileResult {
         };
     }
 
-    pub fn modes(&self) -> Vec<String> {
-        return match &self.file {
-            Some(KeyFile { mode, .. }) => mode.map.keys().map(String::from).collect(),
-            Option::None => Modes::default().map.keys().map(String::from).collect(),
-        };
-    }
+    // get information about a given binding mode (e.g. mode.ts and mode-status.ts)
     pub fn mode(&self, name: &str) -> Option<Mode> {
         return match &self.file {
             Some(KeyFile { mode, .. }) => mode.get(name).map(Mode::clone),
@@ -566,7 +569,9 @@ impl KeyFileResult {
         };
     }
 
-    pub fn do_binding(&mut self, id: i32) -> ReifiedBinding {
+    // the first step of running bindings is to a get a list of `ReifiedBindings` (see
+    // do.ts)
+    pub fn prepare_binding_to_run(&mut self, id: i32) -> ReifiedBinding {
         if id == -1 {
             return ReifiedBinding::noop(&mut self.scope);
         } else {
@@ -583,6 +588,8 @@ impl KeyFileResult {
         }
     }
 
+    // when we store commands they can be executed at a later date using this
+    // function (see storeCommand.ts)
     fn do_stored_command_helper(&mut self, value: JsValue) -> ResultVec<ReifiedBinding> {
         let toml: toml::Value = match serde_wasm_bindgen::from_value(value) {
             Err(e) => Err(err!("{e} while serializing command value"))?,
@@ -638,6 +645,7 @@ impl KeyFileResult {
         };
     }
 
+    // when we store commands, this is where they end up (see `storeCommands.ts`)
     pub fn store_binding(
         &mut self,
         cmd: &ReifiedBinding,
@@ -657,6 +665,7 @@ impl KeyFileResult {
         };
     }
 
+    // save a macro for future use; see `replay.ts`
     pub fn push_macro(
         &mut self,
         recording: Vec<ReifiedBinding>,
@@ -673,6 +682,7 @@ impl KeyFileResult {
         return Ok(());
     }
 
+    // get a macro so we can run it
     pub fn get_macro(&self, i: usize) -> std::result::Result<Option<Vec<ReifiedBinding>>, JsError> {
         if let Some(values) = self.scope.state.get_value::<MacroStack>("macros") {
             let macros = values.try_borrow()?;
@@ -684,6 +694,8 @@ impl KeyFileResult {
         };
     }
 
+    // get the sequence of bindings executed within a given range of ranges in the command
+    // history see `replay.ts`
     pub fn history_at(
         &self,
         from: i32,
@@ -705,6 +717,7 @@ impl KeyFileResult {
         return Ok(None);
     }
 
+    // check if we are currently recording edits for a given document id see `replay.ts`
     pub fn is_recording_edits_for(
         &self,
         id: i32,
@@ -719,6 +732,7 @@ impl KeyFileResult {
         return Ok(false);
     }
 
+    // store an document edit in the current command (see `replay.ts`)
     pub fn store_edit(
         &mut self,
         text: String,
@@ -735,18 +749,22 @@ impl KeyFileResult {
         return Ok(());
     }
 
+    // set a variable value in a given name space (see `state.ts`)
     pub fn set_value(&mut self, namespace: &str, name: &str, value: JsValue) -> Result<()> {
         return self.scope.set(namespace, name, value);
     }
 
+    // get a variable value in a given name space (see `state.ts`)
     pub fn get_value(&self, namespace: &str, name: &str) -> Result<JsValue> {
         return self.scope.get(namespace, name);
     }
 
+    // list all values defined under `val.` (ala `[[define.val]]`).
     pub fn get_defined_vals(&self) -> Result<Vec<String>> {
         return self.scope.get_defined_vals();
     }
 
+    // list all keybinding kinds (from [[kind]])
     pub fn kinds(&self) -> Vec<Kind> {
         if let Some(KeyFile { kind, .. }) = &self.file {
             return kind.clone();
@@ -755,6 +773,7 @@ impl KeyFileResult {
         }
     }
 
+    // get the actual text documentation as a string of markdown
     pub fn text_docs(&self) -> Option<String> {
         if let Some(KeyFile { docs, mode, .. }) = &self.file {
             return Some(FileDocSection::write_markdown(&docs, mode.map.len() > 1));
@@ -3395,28 +3414,6 @@ pub(crate) mod tests {
                 .as_str(),
             &"k"
         );
-    }
-
-    #[test]
-    fn playground() {
-        let data =
-            std::fs::read("../../test/integration/test-workspace/textDocExample.toml").unwrap();
-        let result = parse_keybinding_data(&data);
-
-        for i in 0..result.n_bindings() {
-            let bind = result.file.as_ref().unwrap().key_bind[i].clone();
-            if let BindingOutput::Do {
-                args: BindingOutputArgs { command_id, .. },
-                ..
-            } = bind
-            {
-                let section = result.binding_section(command_id);
-                info!("command_id: {command_id}");
-                info!("section: {section:#?}");
-            }
-        }
-
-        // info!("result: {:#?}", result);
     }
 
     #[test]

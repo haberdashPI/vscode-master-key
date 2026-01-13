@@ -69,10 +69,16 @@ impl PartialEq for Value {
 /// describes any locally resolved values, such as from the `foreach` field of `[[bind]]`
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Expression {
+    // we just hold the string content of the expression. `parse_asts` is used to generate
+    // and store the abstract syntax tree of each expression
     pub content: String,
+    // parsing-time error that we want to report after deserializing
     #[serde(skip)]
-    pub error: Option<ParseError>, // parsing-time error that we want to report after deserializing
+    pub error: Option<ParseError>,
+    // where was the expression defined in the file?
     pub span: Range<usize>,
+    // any local scope that should be applied to the expression when it's evaluated (used by
+    // `foreach`)
     pub scope: SmallVec<[(String, BareValue); 8]>,
 }
 
@@ -90,7 +96,7 @@ impl PartialEq for Expression {
         if self.content != other.content {
             return false;
         }
-        // TODO: make this more efficient
+        // TODO: make this more efficient?
         let self_scope: HashMap<_, _> = self.scope.clone().into_iter().collect();
         let other_scope: HashMap<_, _> = other.scope.clone().into_iter().collect();
         return self_scope == other_scope;
@@ -100,6 +106,10 @@ impl PartialEq for Expression {
 //
 // ---------------- Value: Deserialization ----------------
 //
+
+// deserialization is a bit involved for `Value` because we want to be able to capture the
+// `span` where each expression was defined. This is passed to `deserialize` methods when
+// inside a `Table` object, and so we need to capture this information from there.
 
 impl<'de> Deserialize<'de> for Value {
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
@@ -116,6 +126,8 @@ impl<'de> Deserialize<'de> for Value {
     }
 }
 
+// BareValue simple captures everything a normal TOML value does + the span of
+// each value in a `Table`
 #[derive(Serialize, Debug, Clone, PartialEq)]
 pub enum BareValue {
     Integer(i32),
@@ -128,11 +140,11 @@ pub enum BareValue {
 }
 
 // Manual implementation of `Deserialize` is required here to capture `Spanned` within
-// `Table` values. Note: `toml`'s has a limitation that it cannot have `Spanned` `Array`
+// `Table` values. Note: `toml` has a limitation that it cannot have `Spanned` `Array`
 // values in a dynamic type like `BareValue`. To work around this limitation we would
 // probably need to use a different deserialization approach that did not use `serde`
-// directly. Instead we simply accept that error messages for expressions will be
-// less precise when they occur as a direct child of an array.
+// directly. Instead we simply accept that error messages for expressions will be less
+// precise when they occur as a direct child of an array (this is somewhat rare anyways)
 impl<'de> serde::de::Deserialize<'de> for BareValue {
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
@@ -260,7 +272,11 @@ lazy_static! {
     pub static ref EXPRESSION: Regex = Regex::new(r"\{\{((.|\r|\n)*?)\}\}").unwrap();
 }
 
+// construct the actual value (which contains expressions) from a `BareValue`; this is where
+// each string is parsed to find expressions
 impl Value {
+    // `range` is passed on to a child `Value` when the range is known
+    // (directly inside a `Table`)
     pub fn new(value: BareValue, range: Option<Range<usize>>) -> Result<Self> {
         return Ok(match value {
             BareValue::Boolean(x) => Value::Boolean(x),
@@ -289,6 +305,9 @@ impl Value {
     }
 }
 
+// given a match of an expression regex (`{{.*}}` in simplified form), convert the current
+// match to a `Value::Expression` or flag an error. This is one place where we check that
+// there aren't unexpected `{{` or `}}` character sequences in a string
 fn match_to_expression(maybe_parent_span: &Option<Range<usize>>, m: regex::Match) -> Result<Value> {
     if let Some(parent_span) = maybe_parent_span {
         let r = m.range();
@@ -327,6 +346,7 @@ fn match_to_expression(maybe_parent_span: &Option<Range<usize>>, m: regex::Match
     }
 }
 
+// check the rust of a string for unmatched `{{` and `}}` sequences
 fn check_unmatched_braces(x: String, span: Option<Range<usize>>) -> Value {
     if x.contains("{{") {
         let mut error: ParseError = err("unexpected `{{`").into();
@@ -354,12 +374,14 @@ fn check_unmatched_braces(x: String, span: Option<Range<usize>>) -> Value {
     return Value::String(x);
 }
 
+// scan through a string and find all expressions; converting to either an interpolated
+// value (array of string and expression `Value`s) or a single expression
 fn string_to_expression(x: String, span: Option<Range<usize>>) -> Result<Value> {
     let exprs = EXPRESSION.captures_iter(&x);
-    // there are multiple expressions interpolated into the string
+    // there can be multiple expressions interpolated into the string
     let mut interps = Vec::new();
-    // NOTE: rust-analyzer raises some spurious errors here because it infers the wrong
-    // type even though its explicitly set ???
+    // NOTE: rust-analyzer sometimes raises some spurious errors here because it infers the
+    // wrong type even though its explicitly set ???
     let mut last_match: std::ops::Range<usize> = 0..0;
     // push rest
     for expr in exprs {
@@ -386,6 +408,8 @@ fn string_to_expression(x: String, span: Option<Range<usize>>) -> Result<Value> 
     return Ok(Value::Interp(interps));
 }
 
+// convert a sequence of `Value::String` and `Value::Expression` to the original string that
+// it this interpolation would have been parsed from; used for generating error messages
 fn interp_to_string(interps: Vec<Value>) -> String {
     let mut result = String::new();
     for v in interps {
@@ -412,7 +436,11 @@ fn interp_to_string(interps: Vec<Value>) -> String {
 // ---------------- Value: Conversion ----------------
 //
 
-// this code is only covered by KeyFileResult which is run during integration tests
+// BareValue::new(:toml::Value) - in some cases we process `toml::Value` as BareValue; in
+// this case there is no known span for the expressions
+
+// note that this code is only covered by KeyFileResult which is run during integration
+// tests
 #[cfg_attr(coverage_nightly, coverage(off))]
 impl BareValue {
     pub(crate) fn new(value: toml::Value) -> ResultVec<Self> {
@@ -506,7 +534,7 @@ impl From<Value> for toml::Value {
     }
 }
 
-impl From<Value> for Dynamic {
+impl From<Value> for rhai::Dynamic {
     fn from(value: Value) -> Self {
         return match value {
             Value::Float(x) => Dynamic::from(x),
@@ -848,7 +876,7 @@ impl<T: Expanding> Expanding for Option<T> {
 //
 
 /// A `TypedValue` wraps `Value`, requiring it to evaluate to an object that can be
-/// converted into the given type `T`.
+/// converted into the given type `T`, returning an `Err` otherwise.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(try_from = "toml::Value")]
 pub enum TypedValue<T>
