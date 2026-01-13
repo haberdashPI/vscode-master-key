@@ -76,7 +76,7 @@ async function executedStoredCommand(args_: unknown): Promise<CommandResult> {
                 showExpressionMessages(resolved_command);
 
                 if (resolved_command.command === 'master-key.ignore') {
-                    showExpressionErrors(resolved_command)
+                    showExpressionErrors(resolved_command);
                 } else {
                     const result = await vscode.commands.
                         executeCommand<WrappedCommandResult | void>(
