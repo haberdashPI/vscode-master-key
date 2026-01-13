@@ -347,8 +347,11 @@ impl<T> Required<T> {
 #[derive(Deserialize, Debug, Clone)]
 #[serde(untagged)]
 pub enum RawPlural<T> {
+    // key doesn't exist
     Zero,
+    // the key maps to a value of type T
     One(T),
+    // the key maps to a value of type Vec<T>
     Many(Vec<T>),
 }
 

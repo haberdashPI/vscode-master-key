@@ -5,6 +5,17 @@ use crate::util::{LeafValue, Merging, Plural, Resolving};
 
 use serde::{Deserialize, Serialize};
 
+// see the documentation for the `prefix` field in `BindingInput`
+
+// DESIGN NOTE: the rust code follows a pattern across several TOML-defined top level
+// fields. There is a `[Type]Input` and `[Type]` object where `[Type]Input` contains useful
+// information for generating error messages and may have partially defined fields. These
+// are then merged/resolved with information from other sections of the parsed file and the
+// final data is passed to a constructor for `[Type]`. This constructor will return `Err`
+// objects if required fields are missing and the final result is in a format that is
+// relatively ergonomic for accessing field values, because the values have already been
+// validated
+
 // TODO: we could improve error messages here by implementing Deserialize ourselves
 #[derive(Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -13,12 +24,6 @@ pub enum PrefixInput {
     AllBut(Plural<TypedValue<String>>),
     Any(TypedValue<bool>),
 }
-
-// impl Default for PrefixInput {
-//     fn default() -> Self {
-//         return PrefixInput::Any(TypedValue::Constant(false));
-//     }
-// }
 
 #[derive(Serialize, Clone, Debug)]
 pub enum Prefix {

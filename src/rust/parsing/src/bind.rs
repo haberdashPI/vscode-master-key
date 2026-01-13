@@ -29,6 +29,8 @@ use crate::resolve;
 use crate::util::{Merging, Plural, Required, Resolving};
 use crate::{err, wrn};
 
+// `UNKNOWN_RANGE` serves as a sentinel value in cases where we must have a byte range
+// but don't know what it is
 pub const UNKNOWN_RANGE: core::ops::Range<usize> = usize::MIN..usize::MAX;
 
 fn span_required_default<T>() -> Spanned<Required<T>> {
@@ -45,6 +47,15 @@ where
 //
 // ================ `[[bind]]` parsing ================
 //
+
+// DESIGN NOTE: the rust code follows a pattern across several TOML-defined top level
+// fields. There is a `[Type]Input` and `[Type]` object where `[Type]Input` contains useful
+// information for generating error messages and may have partially defined fields. These
+// are then merged/resolved with information from other sections of the parsed file and the
+// final data is passed to a constructor for `[Type]`. This constructor will return `Err`
+// objects if required fields are missing and the final result is in a format that is
+// relatively ergonomic for accessing field values, because the values have already been
+// validated
 
 /// @bindingField bind
 /// @description an actual keybinding; extends the schema used by VSCode's `keybindings.json`
@@ -243,6 +254,8 @@ impl BindingInput {
         };
     }
 
+    // it is not an error to include additional fields; this makes parsing forwards
+    // compatible so long as the file `version` is non-breaking
     pub(crate) fn check_other_fields(&self, warnings: &mut Vec<ParseError>) {
         // warning about unknown fields
         for (key, _) in &self.other_fields {
@@ -257,6 +270,7 @@ impl BindingInput {
     }
 }
 
+// see `util.rs`
 impl Merging for BindingInput {
     fn coalesce(self, new: Self) -> Self {
         return new;
@@ -287,6 +301,7 @@ impl Merging for BindingInput {
     }
 }
 
+// see `value.rs`
 impl Expanding for BindingInput {
     fn is_constant(&self) -> bool {
         [
@@ -614,8 +629,8 @@ impl Expanding for CombinedBindingDocInput {
 // ================ Legacy `[[bind]]` warnings ================
 //
 
-// tracks fields that used to exist in [[bind]] in file format 1.0
-// so that we can generate warnings
+// tracks fields that used to exist in [[bind]] in file format 1.0 so that we can generate
+// more specific warnings for the user
 #[allow(non_snake_case)]
 #[derive(Deserialize, Clone, Debug)]
 pub struct LegacyBindingInput {
@@ -770,6 +785,8 @@ impl LegacyBindingInput {
 #[allow(non_snake_case)]
 #[wasm_bindgen(getter_with_clone)]
 pub struct Binding {
+    // the `section` of a binding is computed using `assign_binding_headings` in `docs.rs`
+    // this value is initially empty
     pub section: Option<BindSection>,
     pub key: Vec<String>,
     pub(crate) commands: Vec<Command>,
@@ -799,13 +816,24 @@ lazy_static! {
 }
 
 impl Binding {
+    // compute value of `repeat` field, after resolving any `expression` contained in it
     pub fn repeat(&self, scope: &mut Scope) -> ResultVec<i32> {
         return scope
             .expand(&self.repeat.clone())?
             .resolve("`repeat`", scope);
     }
 
+    // partial resolution of the commands of a binding: the arguments are not resolved (this
+    // happens at the last possible moment),
+    // - we ensure that the command *name* is defined at this point
+    // - we flatten any static calls to `runCommands` into a list of commands; it is
+    //   possible, though unlikely, that an expression dynamically defines a call to
+    //   `runCommands`, so this expansion may not be complete.
+    // - we validate `finalKey` (since this validation depends on whether the
+    //   command `master-key.prefix` is executed by the command or one of the subcommands in
+    //   `runCommands`)
     pub fn commands(&self, scope: &mut Scope) -> ResultVec<Vec<Command>> {
+        // resolve the name of the commands
         let mut commands = scope.expand(&self.commands)?;
         for _ in 1..10 {
             if commands.is_constant() {
@@ -816,6 +844,7 @@ impl Binding {
         }
         commands.require_constant()?;
 
+        // regularize the command as far as we can in this 'static' context
         let mut regular_commands = Vec::new();
         for command in commands {
             let mut warnings = Vec::new();
@@ -840,6 +869,8 @@ impl Binding {
         return Ok(commands);
     }
 
+    // given parsed input, generate a new, resolved `Binding`, posting any warnings to
+    // `warnings`. `scope` provides info needed for validation
     pub(crate) fn new(
         input: BindingInput,
         scope: &mut Scope,
@@ -847,6 +878,7 @@ impl Binding {
     ) -> ResultVec<Self> {
         let commands = regularize_commands(&input, scope, warnings)?;
 
+        // are there other fields, not defined by the spec?
         input.check_other_fields(warnings);
 
         // id validation
@@ -854,7 +886,8 @@ impl Binding {
             return Err(err("`id` field is reserved"))?;
         }
 
-        // foreach validation
+        // foreach validation: `foreach` should have been expanded before calling this
+        // method
         if let Some(_) = input.foreach {
             // we do not expect this to ever happen, `expand_foreach`
             // should always be executed before `new`
@@ -895,14 +928,14 @@ impl Binding {
             .with_range(&mode_span)?;
         }
 
-        // require that bare keybindings (those without a modifier key)
-        // be specific to `textEditorFocus`
+        // resolve the keybinding
         let key_string: String = resolve!(input, key, scope)?;
         let key: Vec<_> = WHITESPACE.split(&key_string).map(String::from).collect();
         let mut when: Option<String> = resolve!(input, when, scope)?;
 
-        // add text focus if the binding doesn't have a modifier, we cannot expect reliable
-        // behavior outside of a editor window for such binding
+        // require that bare keybindings (those without a modifier key) be specific to
+        // `textEditorFocus` by adding text focus if the binding doesn't have a modifier, we
+        // cannot expect reliable behavior outside of a editor window for such binding
         let has_modifier = KEY_WITH_MODIFIER.is_match(&key[0]);
         when = if !has_modifier {
             if let Some(w) = when {
@@ -936,6 +969,9 @@ impl Binding {
         return Ok(result);
     }
 
+    // given a list of bindings and their spans (for error reporting)
+    // - validate the prefixes and return an `Err` as needed
+    // - expand prefixes specified using `Any`, `AllBut` to a concrete list of prefixes
     pub(crate) fn resolve_prefixes(
         mut binds: Vec<Binding>,
         spans: &Vec<Range<usize>>,
@@ -1070,7 +1106,7 @@ pub struct CombinedBindingDoc {
 impl BindingDoc {
     pub(crate) fn new(
         input: BindingDocInput,
-        has_prefix: bool,
+        has_prefix: bool, // we fill in the docs for automated prefixes
         scope: &mut Scope,
     ) -> ResultVec<Self> {
         // kind validation
@@ -1120,10 +1156,10 @@ impl CombinedBindingDoc {
 // ================ `[[bind]]` output to keybinding.json ================
 //
 
-// The `Binding` objects are serialized separately (in `settings.json`) and loaded into
-// memory when the extension loads. To associate each with a keybinding we serialize an
-// associated `KeyBinding` object that makes a call to `master-key.do`; `do` then looks
-// up the right `Binding` object based on the `id` field of `KeyBinding`
+// The `Binding` objects are serialized separately (in globalState) and loaded into memory
+// when the extension loads. To associate each with a keybinding we serialize an associated
+// `KeyBinding` object that makes a call to `master-key.do`; `do` then looks up the right
+// `Binding` object based on the `command_id` field of `KeyBinding`
 
 // object is a valid JSON object to store in `keybinding.json`; extra metadata is
 // stored in the arguments of `master-key.do`
@@ -1146,6 +1182,7 @@ pub enum BindingOutput {
     Ignore { key: String, when: Option<String> },
 }
 
+// the priority of a binding determines how it will be sorted in `keybindings.json`
 impl BindingOutput {
     pub fn cmp_priority(&self, other: &Self) -> std::cmp::Ordering {
         return match (self, other) {
@@ -1231,8 +1268,9 @@ pub struct BindingOutputArgs {
     // this identifies the prefix that should be present prior to this key press
     // (which is also encoded in the when clause for this binding)
     pub(crate) old_prefix_id: i32,
-    // this uniquely identifiers the command that runs after pressing a binding
-    // (which is retrieved by `master-key.do`)
+    // this uniquely identifiers the command that runs after pressing a binding (which is
+    // retrieved by `master-key.do`); there can be multiple `command_id` values per
+    // `key_id`, because `key_id` does not account for all `when` clause contexts
     pub(crate) command_id: i32,
     // these fields help us track and order binding outputs, we don't need them serialized
     #[serde(skip)]
@@ -1270,7 +1308,7 @@ pub struct PrefixArgs {
     // automatically generated bindings, which is what this type is for
 }
 
-// BindingId uniquely identifies a the triggers the distinguish different bindings
+// BindingId uniquely is used to distinguish different bindings
 // if these three fields are the same, there are conflicts in the keybinding file
 #[derive(Clone, Debug, PartialEq, Hash)]
 struct BindingId {
@@ -1326,6 +1364,8 @@ impl BindingCodes {
             count: 0,
         };
     }
+
+    // the prefix code is used to differentiate unique sequences of keys for each mode
     pub(crate) fn prefix_code(&mut self, key: &Vec<impl ToString>, mode: &str) -> i32 {
         let key = BindingId {
             key: key.iter().map(ToString::to_string).collect(),
@@ -1339,6 +1379,8 @@ impl BindingCodes {
         return self.prefixes[&key];
     }
 
+    // the key code is used to differentiate unique pairings of key
+    // press, mode and when clause
     pub(crate) fn key_code(
         &mut self,
         key: &Vec<impl ToString>,
@@ -1451,6 +1493,7 @@ impl BindingCodes {
     }
 }
 
+// represent a vector of when clauses as a single clause (using `&&`)
 fn join_when_vec(when: &Vec<String>) -> Option<String> {
     if when.len() == 0 {
         return None;
@@ -1677,19 +1720,26 @@ impl Binding {
 // ================ `[[bind]]` resolved for execution ================
 //
 
+// A reified binding is created when running `master-key.do` it has everything but the
+// arguments of the individual commands resolved. It is also the type of object a rhai
+// expression has access to when reviewing the history of commands that have been run.
+
 #[allow(non_snake_case)]
 #[wasm_bindgen(getter_with_clone)]
 #[derive(Clone, Debug, CustomType)]
 pub struct ReifiedBinding {
     #[rhai_type(skip)]
     pub error: Option<Vec<String>>,
-    raw_commands: Vec<Command>,
     #[rhai_type(skip)]
     pub finalKey: bool,
     #[rhai_type(skip)]
     pub key: String,
+    // pre-resolved commands (arguments are still defined by expressions)
+    raw_commands: Vec<Command>,
+    // as commands are resolved, one by run, they get stored here
     #[rhai_type(skip)]
     pub commands: Vec<CommandOutput>,
+    // the keybinding mode active when this binding was reified
     pub mode: String,
     pub repeat: i32,
     #[wasm_bindgen(skip)]
@@ -1761,6 +1811,8 @@ impl ReifiedBinding {
         };
     }
 
+    // transform a list of commands into a reified binding, used to run stored commands (see
+    // `storeCommand.ts`)
     pub fn from_commands(commands: Vec<Command>, scope: &Scope) -> ReifiedBinding {
         let mode = match scope.state.get("mode") {
             Some(m) => match m.clone().into_immutable_string() {
@@ -1785,6 +1837,8 @@ impl ReifiedBinding {
         };
     }
 
+    // no-op: a command that does nothing, and may contain some information about possible
+    // errors that were raised
     pub fn noop(scope: &Scope) -> Self {
         let mode = match scope.state.get("mode") {
             Some(m) => match m.clone().into_immutable_string() {

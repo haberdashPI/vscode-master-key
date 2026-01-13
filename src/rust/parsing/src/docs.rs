@@ -9,11 +9,18 @@ use std::sync::LazyLock;
 
 use crate::bind::{BindSection, Binding, BindingDoc, CombinedBindingDoc};
 
+// we use `docs.rs` to parse the comments of a TOML value as a literate document with tables
+// showing the bindings that fall between each section of the markdown document. this is
+// displayed in `showTextDocumentation` of `keybindings/index.ts`
+
+// captured line of literate documentation
 pub(crate) struct FileDocLine {
     offset: usize,
     data: String,
 }
 
+// a section of documentation; "section" is a single block of documentation that falls
+// between `[[bind]]` definitions
 #[derive(Clone, Debug, Serialize)]
 pub(crate) struct FileDocSection {
     index: usize,
@@ -22,6 +29,7 @@ pub(crate) struct FileDocSection {
     bindings: HashMap<String, FileDocTableRow>,
 }
 
+// a single `[[bind]]` item's documentation-related data
 #[derive(Clone, Debug, Serialize)]
 struct FileDocTableRow {
     key: Vec<String>,
@@ -31,6 +39,8 @@ struct FileDocTableRow {
 }
 
 impl FileDocTableRow {
+    // there is a single row in the documentation per `key` some individual [[bind]] values
+    // have the same `key`, and this is how the bind items get merged
     fn key(&self) -> String {
         if let Some(combined) = &self.doc.combined {
             return combined.name.clone();
@@ -46,6 +56,8 @@ impl FileDocTableRow {
             combine_count: 1,
         }
     }
+    // figure out how to combine multiple [[bind]] items when the share the same key
+    // this is largely about leveraged the `combined` fields of the documentation
     fn merge(&mut self, other: &Self) {
         self.doc.combined = if let Some(combined) = &self.doc.combined {
             Some(CombinedBindingDoc {
@@ -75,6 +87,7 @@ impl FileDocTableRow {
         self.combine_count += other.combine_count;
     }
 
+    // the actual markdown representation of this keybinding table row
     fn as_markdown_row(&self, show_mode: bool) -> String {
         let newlines = regex::Regex::new(r"[\n\r]+").unwrap();
         let key = if let Some(combined) = &self.doc.combined
@@ -122,6 +135,7 @@ impl FileDocTableRow {
 }
 
 impl FileDocLine {
+    // the actual parsing of the literate documentation
     pub(crate) fn read(content: &[u8]) -> Vec<FileDocLine> {
         // NOTE: we know this byte stream is safe because it was converted from our own code
         // in typescript
@@ -183,6 +197,10 @@ impl FileDocSection {
         };
     }
 
+    // this is called during file parsing, and uses two data sources: (1) the TOML-parsed
+    // `[[bind]]` items---along with their byte offsets---and (2) the literare file
+    // documentation lines (created using the `read` method above). These are sorted based
+    // on their byte offsets to create the final markdown output
     pub(crate) fn assemble(
         bind: &Vec<Binding>,
         bind_span: &Vec<Range<usize>>,
@@ -244,6 +262,9 @@ impl FileDocSection {
         return result;
     }
 
+    // in the keybinding sidebar palette we want to show heading, to keep the listed
+    // bindings organized. These are pulled from the literate documentation. To do this, we
+    // assign section information to each binding.
     pub(crate) fn assign_binding_headings(bind: &mut Vec<Binding>, docs: &Vec<FileDocSection>) {
         let mut last_bind_section = BindSection {
             names: Vec::new(),
