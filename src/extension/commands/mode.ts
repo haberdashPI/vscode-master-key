@@ -40,7 +40,6 @@ export function restoreModesCursorState() {
     updateCursorAppearance(vscode.window.activeTextEditor, shape);
 }
 
-
 async function updateModes(bindings: KeyFileResult) {
     const newDefault = bindings.default_mode();
     console.log(`newDefault: ${newDefault}`);
@@ -53,7 +52,6 @@ async function updateModes(bindings: KeyFileResult) {
 
 export function defineState() {
     state.define(MODE, 'default');
-
 }
 
 let currentResolvedMode = '';
