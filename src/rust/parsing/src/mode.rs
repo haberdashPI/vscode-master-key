@@ -257,7 +257,7 @@ pub enum CursorShape {
 }
 impl LeafValue for CursorShape {}
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[allow(non_snake_case)]
 #[wasm_bindgen(getter_with_clone)]
 pub struct Mode {
@@ -294,7 +294,7 @@ impl Mode {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Default, PartialEq)]
+#[derive(Clone, Debug, Serialize, Default, PartialEq, Deserialize)]
 pub enum WhenNoBinding {
     #[default]
     IgnoreCharacters,
@@ -379,7 +379,7 @@ impl Mode {
     }
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Clone, Debug, Deserialize)]
 #[wasm_bindgen(getter_with_clone)]
 pub struct Modes {
     pub(crate) map: HashMap<String, Mode>,
@@ -481,6 +481,28 @@ impl Modes {
             }
         }
 
+        // add the implicit `capture` mode
+        modes.insert(
+            "capture".to_string(),
+            Mode {
+                name: "capture".to_string(),
+                default: false,
+                highlight: ModeHighlight::NoHighlight,
+                cursorShape: CursorShape::Underline,
+                whenNoBinding: WhenNoBinding::InsertCharacters,
+            },
+        );
+
+        let modes = Modes {
+            map: modes,
+            default: default_mode.unwrap(),
+        };
+        modes.add_to_scope(scope)?;
+
+        return Ok(modes);
+    }
+
+    pub(crate) fn add_to_scope(&self, scope: &mut Scope) -> ResultVec<()> {
         // define expression related functions that need to know the set of available modes
         let all_modes_fn_data = scope.modes.clone();
         scope.engine.register_fn("all_modes", move || {
@@ -517,22 +539,23 @@ impl Modes {
             },
         );
 
-        // add the implicit `capture` mode
-        modes.insert(
-            "capture".to_string(),
-            Mode {
-                name: "capture".to_string(),
-                default: false,
-                highlight: ModeHighlight::NoHighlight,
-                cursorShape: CursorShape::Underline,
-                whenNoBinding: WhenNoBinding::InsertCharacters,
-            },
-        );
+        let mut errors = Vec::new();
+        for (_, mode) in &self.map {
+            if let WhenNoBinding::Run(commands) = &mode.whenNoBinding {
+                match scope.parse_asts(commands) {
+                    Err(mut es) => {
+                        errors.append(&mut es.errors);
+                    }
+                    Ok(_) => (),
+                }
+            }
+        }
 
-        return Ok(Modes {
-            map: modes,
-            default: default_mode.unwrap(),
-        });
+        if errors.len() > 0 {
+            return Err(errors.into());
+        } else {
+            return Ok(());
+        }
     }
 
     pub fn get(&self, x: &str) -> Option<&Mode> {

@@ -215,7 +215,7 @@ struct Header {
     requiredExtensions: Option<Vec<String>>,
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[wasm_bindgen(getter_with_clone)]
 #[allow(non_snake_case)]
 pub struct KeyFile {
@@ -224,13 +224,66 @@ pub struct KeyFile {
     define: Define,
     mode: Modes,
     bind: Vec<Binding>,
+    bind_spans: Vec<core::ops::Range<usize>>,
     docs: Vec<FileDocSection>,
     pub kind: Vec<Kind>,
     // TODO: avoid storing `key_bind` to make serialization smaller
+    #[serde(skip)]
     key_bind: Vec<BindingOutput>,
 }
 
 impl KeyFile {
+    // define the `key_bind` outputs used to create `keybindings.json` items from the
+    // binding data; this data need not be serialized, since it can be easily recomputed
+    // from the parsed data
+    fn resolve_key_bindings(&mut self, scope: &Scope) -> ResultVec<()> {
+        if self.key_bind.is_empty() && !self.bind.is_empty() {
+            // create outputs to store in `keybindings.json`
+            let mut key_bind = Vec::new();
+            let mut codes = BindingCodes::new();
+            for (i, (bind_item, span)) in self
+                .bind
+                .iter_mut()
+                .zip(self.bind_spans.clone().into_iter())
+                .enumerate()
+            {
+                key_bind.append(&mut bind_item.outputs(
+                    i as i32,
+                    &scope,
+                    Some(span),
+                    &mut codes,
+                )?);
+            }
+            self.mode
+                .insert_implicit_mode_bindings(&self.bind, &scope, &mut codes, &mut key_bind);
+
+            // sort all bindings by their priority
+            key_bind.sort_by(BindingOutput::cmp_priority);
+
+            // remove key_bind values with the exact same `key_id`, keeping the one with the
+            // highest priority (last items); such collisions should only happen between
+            // implicit keybindings, because we check and error on collisions between any two
+            // explicitly defined bindings with the same implied id (same when clause, key and
+            // mode)
+            let mut seen_codes = HashSet::new();
+            let mut final_key_bind = VecDeque::with_capacity(key_bind.len());
+            for key in key_bind.into_iter().rev() {
+                if key.key_id() == -1 {
+                    // the -1 id is special, and used in all bindings added by
+                    // `Modes::ignore_letter_bindings`
+                    final_key_bind.push_front(key)
+                } else if !seen_codes.contains(&key.key_id()) {
+                    seen_codes.insert(key.key_id());
+                    final_key_bind.push_front(key);
+                }
+            }
+            self.key_bind = final_key_bind.into();
+        }
+        return Ok(());
+    }
+
+    // TODO: regenerate or serialize the scope (stopped here)
+
     // TODO: refactor to have each section's processing in corresponding module for that
     // section, this would improve legibility here and keep more of the logic related to a
     // given section in one place
@@ -313,16 +366,6 @@ impl KeyFile {
             }
             Ok(x) => x,
         };
-        for (_, mode) in &modes.map {
-            if let WhenNoBinding::Run(commands) = &mode.whenNoBinding {
-                match scope.parse_asts(commands) {
-                    Err(mut es) => {
-                        errors.append(&mut es.errors);
-                    }
-                    Ok(_) => (),
-                }
-            }
-        }
 
         // [[kind]]
         let kind = Kind::process(&input.kind, &mut scope, warnings)?;
@@ -350,7 +393,7 @@ impl KeyFile {
             .map_err(|mut es| errors.append(&mut es.errors));
 
         // `foreach` expansion
-        let (mut bind, bind_span): (Vec<_>, Vec<_>) = bind_input
+        let (mut bind, bind_spans): (Vec<_>, Vec<_>) = bind_input
             .into_iter()
             .flat_map(|x| {
                 let span = x.span().clone();
@@ -394,42 +437,13 @@ impl KeyFile {
             })
             .unzip();
 
-        let docs = FileDocSection::assemble(&bind, &bind_span, doc_lines);
+        let docs = FileDocSection::assemble(&bind, &bind_spans, doc_lines);
         FileDocSection::assign_binding_headings(&mut bind, &docs);
 
-        // create outputs to store in `keybindings.json`
-        // TODO: store spans so we can do avoid serializing `key_bind`?
-        let mut key_bind = Vec::new();
-        bind = Binding::resolve_prefixes(bind, &bind_span)?;
-        let mut codes = BindingCodes::new();
-        for (i, (bind_item, span)) in bind.iter_mut().zip(bind_span.into_iter()).enumerate() {
-            key_bind.append(&mut bind_item.outputs(i as i32, &scope, Some(span), &mut codes)?);
-        }
-        modes.insert_implicit_mode_bindings(&bind, &scope, &mut codes, &mut key_bind);
-
-        // sort all bindings by their priority
-        key_bind.sort_by(BindingOutput::cmp_priority);
-
-        // remove key_bind values with the exact same `key_id`, keeping the one with the
-        // highest priority (last items); such collisions should only happen between
-        // implicit keybindings, because we check and error on collisions between any two
-        // explicitly defined bindings with the same implied id (same when clause, key and
-        // mode)
-        let mut seen_codes = HashSet::new();
-        let mut final_key_bind = VecDeque::with_capacity(key_bind.len());
-        for key in key_bind.into_iter().rev() {
-            if key.key_id() == -1 {
-                // the -1 id is special, and used in all bindings added by
-                // `Modes::ignore_letter_bindings`
-                final_key_bind.push_front(key)
-            } else if !seen_codes.contains(&key.key_id()) {
-                seen_codes.insert(key.key_id());
-                final_key_bind.push_front(key);
-            }
-        }
+        bind = Binding::resolve_prefixes(bind, &bind_spans)?;
 
         if errors.len() == 0 {
-            return Ok(KeyFile {
+            let mut result = KeyFile {
                 name,
                 requiredExtensions,
                 define,
@@ -437,17 +451,19 @@ impl KeyFile {
                 docs,
                 mode: modes,
                 kind,
-                key_bind: final_key_bind.into(),
-            });
+                bind_spans,
+                key_bind: Vec::new(),
+            };
+            result.resolve_key_bindings(&scope)?;
+            return Ok(result);
         } else {
             return Err(errors.into());
         }
     }
 }
 
-// TODO: don't use clone on `file`
 #[derive(Default, Debug)]
-#[wasm_bindgen(getter_with_clone)]
+#[wasm_bindgen]
 pub struct KeyFileResult {
     file: Option<KeyFile>,
     errors: Option<Vec<ErrorReport>>,
@@ -462,6 +478,52 @@ impl KeyFileResult {
     pub fn new() -> Self {
         return KeyFileResult::default();
     }
+
+    // read_helper and read extract serialized bytes to a `KeyFileResult` (used in
+    // `keybindings/config.ts`)
+    fn read_helper(bytes: Box<[u8]>) -> ResultVec<(KeyFile, Scope)> {
+        let (file, mut scope) = match bitcode::deserialize::<(KeyFile, Scope)>(&bytes) {
+            Err(e) => Err(err!("Error loading bindings from config file: {e}"))?,
+            Ok(x) => x,
+        };
+        scope.init();
+        for bind in &file.bind {
+            scope.parse_asts(&bind.commands)?;
+            scope.parse_asts(&bind.repeat)?;
+        }
+        file.define.add_to_scope(&mut scope)?;
+        file.mode.add_to_scope(&mut scope)?;
+        return Ok((file, scope));
+    }
+
+    pub fn read(bytes: Box<[u8]>) -> KeyFileResult {
+        match KeyFileResult::read_helper(bytes) {
+            Ok((file, scope)) => {
+                return KeyFileResult {
+                    file: Some(file),
+                    scope,
+                    errors: None,
+                };
+            }
+            Err(e) => {
+                return KeyFileResult {
+                    file: None,
+                    scope: Scope::new(),
+                    errors: Some(e.report_without_file()),
+                };
+            }
+        }
+    }
+
+    // write the bindings to a byte array that will be stored in a globalState
+    // (see `keybindings/config.ts`)
+    pub fn write(&self) -> Result<Vec<u8>> {
+        return match bitcode::serialize(&self.file) {
+            Ok(x) => Ok(x),
+            Err(e) => Err(err!("Error writing bindings to config file: {e}"))?,
+        };
+    }
+
     pub fn name(&self) -> String {
         match &self.file {
             Some(KeyFile { name: Some(x), .. }) => x.clone(),
@@ -490,22 +552,34 @@ impl KeyFileResult {
         return self.errors.as_ref().unwrap()[i].clone();
     }
 
-    pub fn n_bindings(&self) -> usize {
-        return match &self.file {
-            Some(x) => x.key_bind.len(),
+    pub fn n_bindings(&mut self) -> usize {
+        return match &mut self.file {
+            Some(x) => {
+                x.resolve_key_bindings(&self.scope);
+                x.key_bind.len()
+            }
             Option::None => 0,
         };
     }
 
     // the actual bindings we want to store in `keybindings.json`
     // (see `keybindings/index.ts` and related files)
-    pub fn binding(&self, i: usize) -> JsValue {
-        return serde_wasm_bindgen::to_value(&self.file.as_ref().unwrap().key_bind[i])
-            .expect("keybinding object");
+    pub fn binding(&mut self, i: usize) -> JsValue {
+        return match &mut self.file {
+            Some(x) => {
+                x.resolve_key_bindings(&self.scope);
+                serde_wasm_bindgen::to_value(&x.key_bind[i]).expect("keybinding object")
+            }
+            Option::None => JsValue::undefined(),
+        };
     }
 
     // documentation output for `showTextDocumentation` (see `keybindings/index.ts`)
-    pub fn docs(&self, i: usize) -> Option<BindingDoc> {
+    pub fn docs(&mut self, i: usize) -> Option<BindingDoc> {
+        self.file
+            .as_mut()
+            .unwrap()
+            .resolve_key_bindings(&self.scope);
         let command_id = match &self.file.as_ref().unwrap().key_bind[i] {
             BindingOutput::Do {
                 args: BindingOutputArgs { command_id, .. },

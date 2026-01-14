@@ -491,6 +491,38 @@ impl ParseError {
             });
         }
     }
+
+    fn report_without_file(&self) -> Option<ErrorReport> {
+        let mut message_buf = String::new();
+        // extract the main message
+        match &self.error {
+            RawError::RepeatError => return None,
+            RawError::TomlParsing(toml) => {
+                message_buf.push_str(toml.message());
+            }
+            _ => {
+                let msg = &self.error.to_string();
+                message_buf.push_str(&msg);
+            }
+        };
+
+        // extract message info from each context item
+        for context in &self.contexts {
+            match context {
+                Context::Message(str) => message_buf.push_str(str),
+                // we don't have any file to compute file position from
+                Context::Range(_) => {}
+                Context::ExpRange(_) => {}
+                Context::RefRange(_) => {}
+            };
+        }
+
+        return Some(ErrorReport {
+            message: message_buf,
+            range: CharRange::default(),
+            level: self.level.clone(),
+        });
+    }
 }
 
 #[wasm_bindgen]
@@ -501,6 +533,18 @@ impl ErrorSet {
             .iter()
             .map(|e| e.report(content))
             .filter(Option::is_some)
+            .map(Option::unwrap)
+            .collect();
+        result.dedup();
+        return result;
+    }
+
+    pub fn report_without_file(&self) -> Vec<ErrorReport> {
+        let mut result: Vec<_> = self
+            .errors
+            .iter()
+            .map(|e| e.report_without_file())
+            .filter(Option::is_none)
             .map(Option::unwrap)
             .collect();
         result.dedup();

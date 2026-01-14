@@ -28,6 +28,7 @@ smallvec = { version = "1.15.1", features = ["serde"] }
 serde_spanned = "1.0.2"
 toml_datetime = "0.7.2"
 semver = { version = "1.0.27", features = ["serde"] }
+bitcode = { version = "0.6.9", features = ["serde"] }
 
 [lib]
 crate-type = ["cdylib", "rlib"]

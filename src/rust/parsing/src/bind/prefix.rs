@@ -25,7 +25,7 @@ pub enum PrefixInput {
     Any(TypedValue<bool>),
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Clone, Debug, Deserialize)]
 pub enum Prefix {
     AnyOf(Vec<String>),
     AllBut(Vec<String>),

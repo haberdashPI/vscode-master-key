@@ -781,7 +781,7 @@ impl LegacyBindingInput {
 // ================ `[[bind]]` object ================
 //
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[allow(non_snake_case)]
 #[wasm_bindgen(getter_with_clone)]
 pub struct Binding {
@@ -801,7 +801,7 @@ pub struct Binding {
     pub(crate) implicit: bool,
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[wasm_bindgen(getter_with_clone)]
 pub struct BindSection {
     pub names: Vec<String>,
@@ -1081,7 +1081,7 @@ impl Binding {
 // ---------------- `bind.doc` object ----------------
 //
 
-#[derive(Clone, Debug, Serialize, Default, CustomType)]
+#[derive(Clone, Debug, Serialize, Default, CustomType, Deserialize)]
 #[allow(non_snake_case)]
 #[wasm_bindgen(getter_with_clone)]
 pub struct BindingDoc {
@@ -1093,7 +1093,7 @@ pub struct BindingDoc {
     pub kind: Option<String>,
 }
 
-#[derive(Clone, Debug, Serialize, Default, CustomType)]
+#[derive(Clone, Debug, Serialize, Default, CustomType, Deserialize)]
 #[allow(non_snake_case)]
 #[wasm_bindgen(getter_with_clone)]
 pub struct CombinedBindingDoc {
