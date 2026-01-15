@@ -20,8 +20,17 @@ const listeners: ConfigListener[] = [];
 // these two variables are where the bindings and bindingChecksum are stored to; these
 // values are stored in the globalSate, and marked as variables to be synced across
 // machines.
-const CONFIG_STORAGE = 'master-key.activeBindings';
-const CONFIG_CHECKSUM = 'master-key.activeChecksum';
+
+// NOTE we bumped to these names to V2 to avoid confusion with older sync'ed state that did
+// not use the `CURRENT_STORAGE_VERSION` mechanism. These older versions will simply be
+// blind to the newer synced data and vice version which seems like a better failure mode
+// than seeing weird errors when trying to read an incorrectly formatted source of data
+const CONFIG_STORAGE = 'master-key.activeBindingsV2';
+const CONFIG_CHECKSUM = 'master-key.activeChecksumV2';
+const CURRENT_STORAGE_VERSION = 1;
+
+// used to delete old extension data
+const OLD_CONFIG_STORAGE = 'master-key.activeBindingsV2';
 
 export async function updateBindings(context: vscode.ExtensionContext) {
     const checksum = context.globalState.get<string>(CONFIG_CHECKSUM);
@@ -65,7 +74,12 @@ export class KeyFileData {
 
     async fileData(): Promise<Uint8Array> {
         if (!this._fileData) {
-            this._fileData = await vscode.workspace.fs.readFile(this.uri);
+            try {
+                this._fileData = await vscode.workspace.fs.readFile(this.uri);
+            } catch (e) {
+                vscode.window.showErrorMessage(`Failed to read ${this.uri}: ${e}`);
+                throw e;
+            }
         }
         return this._fileData;
     }
@@ -110,6 +124,7 @@ export class KeyFileData {
 interface IStorage {
     data?: string;
     file?: string;
+    version?: number;
 }
 
 async function toZipBase64(data: Uint8Array): Promise<[string, string]> {
@@ -142,6 +157,7 @@ export async function setBindings(
         const [compressed, checksum] = await toZipBase64(await newBindings.bindingData());
         storage.data = compressed;
         storage.file = newBindings.uri.toString();
+        storage.version = CURRENT_STORAGE_VERSION;
 
         bindings = await newBindings.bindings();
         bindingChecksum = checksum;
@@ -152,9 +168,11 @@ export async function setBindings(
 
         context.globalState.update(CONFIG_STORAGE, storage);
         context.globalState.update(CONFIG_CHECKSUM, checksum);
+        context.globalState.update(OLD_CONFIG_STORAGE, {});
     } else {
         context.globalState.update(CONFIG_STORAGE, {});
         context.globalState.update(CONFIG_CHECKSUM, '');
+        context.globalState.update(OLD_CONFIG_STORAGE, {});
         bindings = new KeyFileResult();
         for (const fn of listeners || []) {
             await fn(bindings);
@@ -167,7 +185,25 @@ export async function setBindings(
 export async function getBindings(context: vscode.ExtensionContext) {
     const checksum = context.globalState.get<string>(CONFIG_CHECKSUM) || '';
     const storage = context.globalState.get<IStorage>(CONFIG_STORAGE) || {};
+
+    // clear any deprecated data (these values were quite large by sync setting standards
+    // (~20KB), and so we don't want to leave it lying around)
+    context.globalState.update(OLD_CONFIG_STORAGE, {});
+
     if (storage.file && storage.data) {
+        if (storage.version === undefined ||
+            storage.version < CURRENT_STORAGE_VERSION) {
+            vscode.window.showWarningMessage(
+                'Your master keybindings were stored in an outdated format.',
+            );
+            return new KeyFileData(vscode.Uri.parse(storage.file));
+        } else if (storage.version > CURRENT_STORAGE_VERSION) {
+            vscode.window.showWarningMessage(
+                'Your master keybindings were stored using a more recent version of ' +
+                'Master Key.',
+            );
+            return new KeyFileData(vscode.Uri.parse(storage.file));
+        }
         return new KeyFileData(
             vscode.Uri.parse(storage.file),
             { base64: storage.data, checksum: checksum },

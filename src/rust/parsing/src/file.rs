@@ -148,8 +148,8 @@ use crate::error::{
 };
 use crate::expression::value::{BareValue, Value};
 use crate::expression::{HistoryQueue, MacroStack, Scope};
-use crate::kind::Kind;
-use crate::mode::{Mode, ModeInput, Modes, WhenNoBinding};
+use crate::kind::{Kind, KindInput};
+use crate::mode::{Mode, ModeInput, Modes};
 use crate::{err, resolve, wrn};
 
 use lazy_static::lazy_static;
@@ -167,7 +167,7 @@ struct KeyFileInput {
     define: Option<DefineInput>,
     mode: Option<Vec<Spanned<ModeInput>>>,
     bind: Option<Vec<Spanned<BindingInput>>>,
-    kind: Option<Vec<Spanned<Kind>>>,
+    kind: Option<Vec<Spanned<KindInput>>>,
     #[serde(flatten)]
     other_fields: HashMap<String, toml::Value>,
 }
@@ -215,7 +215,7 @@ struct Header {
     requiredExtensions: Option<Vec<String>>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[wasm_bindgen(getter_with_clone)]
 #[allow(non_snake_case)]
 pub struct KeyFile {
@@ -227,7 +227,6 @@ pub struct KeyFile {
     bind_spans: Vec<core::ops::Range<usize>>,
     docs: Vec<FileDocSection>,
     pub kind: Vec<Kind>,
-    // TODO: avoid storing `key_bind` to make serialization smaller
     #[serde(skip)]
     key_bind: Vec<BindingOutput>,
 }
@@ -368,7 +367,7 @@ impl KeyFile {
         };
 
         // [[kind]]
-        let kind = Kind::process(&input.kind, &mut scope, warnings)?;
+        let kind = Kind::new(&input.kind, &mut scope, warnings)?;
 
         // [[bind]]
         let input_iter = input.bind.into_iter().flatten().map(|x| {
@@ -462,10 +461,11 @@ impl KeyFile {
     }
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Serialize, Deserialize)]
 #[wasm_bindgen]
 pub struct KeyFileResult {
     file: Option<KeyFile>,
+    #[serde(skip)]
     errors: Option<Vec<ErrorReport>>,
     pub(crate) scope: Scope,
 }
@@ -481,29 +481,28 @@ impl KeyFileResult {
 
     // read_helper and read extract serialized bytes to a `KeyFileResult` (used in
     // `keybindings/config.ts`)
-    fn read_helper(bytes: Box<[u8]>) -> ResultVec<(KeyFile, Scope)> {
-        let (file, mut scope) = match bitcode::deserialize::<(KeyFile, Scope)>(&bytes) {
+    fn read_helper(bytes: &[u8]) -> ResultVec<KeyFileResult> {
+        let mut result = match pot::from_slice::<KeyFileResult>(bytes) {
             Err(e) => Err(err!("Error loading bindings from config file: {e}"))?,
             Ok(x) => x,
         };
-        scope.init();
-        for bind in &file.bind {
-            scope.parse_asts(&bind.commands)?;
-            scope.parse_asts(&bind.repeat)?;
+
+        if let Some(file) = &mut result.file {
+            result.scope.init();
+            for bind in &file.bind {
+                result.scope.parse_asts(&bind.commands)?;
+                result.scope.parse_asts(&bind.repeat)?;
+            }
+            file.define.add_to_scope(&mut result.scope)?;
+            file.mode.add_to_scope(&mut result.scope)?;
         }
-        file.define.add_to_scope(&mut scope)?;
-        file.mode.add_to_scope(&mut scope)?;
-        return Ok((file, scope));
+        return Ok(result);
     }
 
     pub fn read(bytes: Box<[u8]>) -> KeyFileResult {
-        match KeyFileResult::read_helper(bytes) {
-            Ok((file, scope)) => {
-                return KeyFileResult {
-                    file: Some(file),
-                    scope,
-                    errors: None,
-                };
+        match KeyFileResult::read_helper(&bytes) {
+            Ok(result) => {
+                return result;
             }
             Err(e) => {
                 return KeyFileResult {
@@ -518,7 +517,7 @@ impl KeyFileResult {
     // write the bindings to a byte array that will be stored in a globalState
     // (see `keybindings/config.ts`)
     pub fn write(&self) -> Result<Vec<u8>> {
-        return match bitcode::serialize(&self.file) {
+        return match pot::to_vec(&self) {
             Ok(x) => Ok(x),
             Err(e) => Err(err!("Error writing bindings to config file: {e}"))?,
         };
@@ -552,34 +551,34 @@ impl KeyFileResult {
         return self.errors.as_ref().unwrap()[i].clone();
     }
 
-    pub fn n_bindings(&mut self) -> usize {
+    pub fn n_bindings(&mut self) -> ResultVec<usize> {
         return match &mut self.file {
             Some(x) => {
-                x.resolve_key_bindings(&self.scope);
-                x.key_bind.len()
+                x.resolve_key_bindings(&self.scope)?;
+                Ok(x.key_bind.len())
             }
-            Option::None => 0,
+            Option::None => Ok(0),
         };
     }
 
     // the actual bindings we want to store in `keybindings.json`
     // (see `keybindings/index.ts` and related files)
-    pub fn binding(&mut self, i: usize) -> JsValue {
+    pub fn binding(&mut self, i: usize) -> ResultVec<JsValue> {
         return match &mut self.file {
             Some(x) => {
-                x.resolve_key_bindings(&self.scope);
-                serde_wasm_bindgen::to_value(&x.key_bind[i]).expect("keybinding object")
+                x.resolve_key_bindings(&self.scope)?;
+                Ok(serde_wasm_bindgen::to_value(&x.key_bind[i]).expect("keybinding object"))
             }
-            Option::None => JsValue::undefined(),
+            Option::None => Ok(JsValue::undefined()),
         };
     }
 
     // documentation output for `showTextDocumentation` (see `keybindings/index.ts`)
-    pub fn docs(&mut self, i: usize) -> Option<BindingDoc> {
+    pub fn docs(&mut self, i: usize) -> ResultVec<Option<BindingDoc>> {
         self.file
             .as_mut()
             .unwrap()
-            .resolve_key_bindings(&self.scope);
+            .resolve_key_bindings(&self.scope)?;
         let command_id = match &self.file.as_ref().unwrap().key_bind[i] {
             BindingOutput::Do {
                 args: BindingOutputArgs { command_id, .. },
@@ -598,10 +597,10 @@ impl KeyFileResult {
                 });
                 let mut result = docs.clone();
                 result.combined = Some(combined);
-                return Some(result);
+                return Ok(Some(result));
             }
         }
-        return None;
+        return Ok(None);
     }
 
     // the documentation section a binding is located in (see commands/palette.ts)
@@ -1209,7 +1208,7 @@ pub(crate) mod tests {
                         content: "val.foo_string".into(),
                         span: UNKNOWN_RANGE,
                         error: None,
-                        scope: SmallVec::new(),
+                        scope: Vec::new(),
                     })
                 ),
             ])
@@ -1269,7 +1268,7 @@ pub(crate) mod tests {
                         content: "val.foo_string".into(),
                         span: UNKNOWN_RANGE,
                         error: None,
-                        scope: SmallVec::new(),
+                        scope: Vec::new(),
                     })
                 ),
             ])
@@ -3506,6 +3505,21 @@ pub(crate) mod tests {
         //     "docs: {}",
         //     FileDocSection::write_markdown(&result.docs, true)
         // )
+    }
+
+    #[test]
+    fn read_write_roundtrip() {
+        let data = std::fs::read("../../presets/larkin.toml").unwrap();
+        let result = parse_keybinding_data(&data);
+        let serialized = result.write().unwrap();
+        let after_trip = KeyFileResult::read_helper(&serialized).unwrap();
+        let before_trip_file = result.file.unwrap();
+        let before_trip_scope = result.scope;
+        let after_trip_file = after_trip.file.unwrap();
+        let after_trip_scope = after_trip.scope;
+        assert_eq!(before_trip_file.bind.len(), after_trip_file.bind.len());
+        assert_eq!(before_trip_scope.asts.len(), after_trip_scope.asts.len());
+        assert_eq!(before_trip_scope.state.len(), after_trip_scope.state.len());
     }
     // TODO: write unit tests for `debug` function
 }

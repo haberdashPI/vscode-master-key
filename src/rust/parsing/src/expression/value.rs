@@ -79,7 +79,7 @@ pub struct Expression {
     pub span: Range<usize>,
     // any local scope that should be applied to the expression when it's evaluated (used by
     // `foreach`)
-    pub scope: SmallVec<[(String, BareValue); 8]>,
+    pub scope: Vec<(String, Value)>,
 }
 
 impl std::fmt::Display for Expression {
@@ -325,7 +325,7 @@ fn match_to_expression(maybe_parent_span: &Option<Range<usize>>, m: regex::Match
             content,
             span: exp_span,
             error,
-            scope: SmallVec::new(),
+            scope: Vec::new(),
         }));
     } else {
         let content: String = m.as_str().into();
@@ -333,7 +333,7 @@ fn match_to_expression(maybe_parent_span: &Option<Range<usize>>, m: regex::Match
         if content.contains("{{") {
             error = Some(ParseError {
                 error: err("unexpected `{{`"),
-                contexts: smallvec![],
+                contexts: SmallVec::new(),
                 level: crate::error::ErrorLevel::Error,
             });
         }
@@ -341,7 +341,7 @@ fn match_to_expression(maybe_parent_span: &Option<Range<usize>>, m: regex::Match
             content,
             span: UNKNOWN_RANGE,
             error,
-            scope: SmallVec::new(),
+            scope: Vec::new(),
         }));
     }
 }
@@ -357,7 +357,7 @@ fn check_unmatched_braces(x: String, span: Option<Range<usize>>) -> Value {
             content: x,
             error: Some(error),
             span: span.unwrap_or_else(|| UNKNOWN_RANGE),
-            scope: SmallVec::new(),
+            scope: Vec::new(),
         });
     } else if x.contains("}}") {
         let mut error: ParseError = err("unexpected `}}`").into();
@@ -368,7 +368,7 @@ fn check_unmatched_braces(x: String, span: Option<Range<usize>>) -> Value {
             content: x,
             span: span.unwrap_or_else(|| UNKNOWN_RANGE),
             error: Some(error),
-            scope: SmallVec::new(),
+            scope: Vec::new(),
         });
     }
     return Value::String(x);
