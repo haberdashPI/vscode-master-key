@@ -577,7 +577,7 @@ mod tests {
                 content: "key.count > 2".to_string(),
                 span: UNKNOWN_RANGE,
                 error: None,
-                scope: smallvec::SmallVec::new(),
+                scope: Vec::new(),
             }))
         );
     }
@@ -658,7 +658,7 @@ mod tests {
                             content: "braces[captured].?after ?? captured".to_string(),
                             error: None,
                             span: UNKNOWN_RANGE,
-                            scope: smallvec::smallvec![],
+                            scope: vec![],
                         }),
                     ),
                     (
@@ -667,7 +667,7 @@ mod tests {
                             content: "braces[captured].?before ?? captured".to_string(),
                             error: None,
                             span: UNKNOWN_RANGE,
-                            scope: smallvec::smallvec![],
+                            scope: vec![],
                         }),
                     ),
                     ("followCursor".to_string(), Value::Boolean(true)),

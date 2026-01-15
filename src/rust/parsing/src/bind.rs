@@ -396,7 +396,7 @@ impl Expanding for BindingInput {
 //
 
 #[allow(non_snake_case)]
-#[derive(Deserialize, Serialize, Clone, Debug)]
+#[derive(Deserialize, Clone, Debug)]
 pub struct BindingDocInput {
     /// @forBindingField bind
     /// @order 10
@@ -461,7 +461,7 @@ pub struct BindingDocInput {
 }
 
 #[allow(non_snake_case)]
-#[derive(Deserialize, Serialize, Clone, Debug)]
+#[derive(Deserialize, Clone, Debug)]
 pub struct CombinedBindingDocInput {
     #[serde(default)]
     pub name: Option<Spanned<TypedValue<String>>>,
@@ -1258,7 +1258,7 @@ impl KeyId for BindingOutput {
     }
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct BindingOutputArgs {
     // this uniquely identifies the key sequence used pressed for this binding
     // (used by nested calls to `master-key.prefix`)

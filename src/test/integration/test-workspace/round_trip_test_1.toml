@@ -1,0 +1,10 @@
+#:master-keybindings
+
+[header]
+version = "2.0.0"
+
+[[bind]]
+doc.name = "right"
+key = "ctrl+r"
+command = "cursorMove"
+args.to = "down"

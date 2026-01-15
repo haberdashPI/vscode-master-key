@@ -38,18 +38,24 @@ use crate::{err, wrn};
 /// command = "cursorLeft"
 /// ```
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[wasm_bindgen(getter_with_clone)]
-pub struct Kind {
+#[derive(Deserialize, Clone, Debug)]
+pub struct KindInput {
     pub name: String,
     pub description: String,
     #[serde(flatten)]
     other_fields: HashMap<String, toml::Value>,
 }
 
+#[wasm_bindgen(getter_with_clone)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub struct Kind {
+    pub name: String,
+    pub description: String,
+}
+
 impl Kind {
-    pub(crate) fn process(
-        input: &Option<Vec<Spanned<Kind>>>,
+    pub(crate) fn new(
+        input: &Option<Vec<Spanned<KindInput>>>,
         scope: &mut Scope,
         warnings: &mut Vec<ParseError>,
     ) -> ResultVec<Vec<Kind>> {
@@ -75,7 +81,13 @@ impl Kind {
                 known_kinds.insert(kind_input.name.clone());
             }
             scope.kinds = input.iter().map(|x| x.as_ref().name.clone()).collect();
-            return Ok(input.iter().map(|x| x.as_ref().clone()).collect());
+            return Ok(input
+                .iter()
+                .map(|x| Kind {
+                    name: x.get_ref().name.clone(),
+                    description: x.get_ref().description.clone(),
+                })
+                .collect());
         } else {
             return Ok(Vec::new());
         }

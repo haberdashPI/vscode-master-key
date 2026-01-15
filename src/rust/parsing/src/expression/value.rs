@@ -79,7 +79,7 @@ pub struct Expression {
     pub span: Range<usize>,
     // any local scope that should be applied to the expression when it's evaluated (used by
     // `foreach`)
-    pub scope: SmallVec<[(String, BareValue); 8]>,
+    pub scope: Vec<(String, Value)>,
 }
 
 impl std::fmt::Display for Expression {
@@ -116,12 +116,44 @@ impl<'de> Deserialize<'de> for Value {
     where
         D: serde::Deserializer<'de>,
     {
-        let bare_value = BareValue::deserialize(deserializer)?;
-        match Value::new(bare_value, None) {
-            // TODO: could improve error handling here once we have a proper
-            // error type for the kinds of errors we expect to show here
-            Err(e) => Err(serde::de::Error::custom(e.to_string())),
-            Ok(x) => Ok(x),
+        // If we are reading from Bincode/Postcard/etc, skip BareValue.
+        if !deserializer.is_human_readable() {
+            #[derive(Deserialize)]
+            pub enum ValueShadow {
+                Integer(i32),
+                Float(f64),
+                String(String),
+                Boolean(bool),
+                Array(Vec<Value>),
+                Table(
+                    HashMap<String, Value>,
+                    Option<HashMap<String, Range<usize>>>,
+                ),
+                Interp(Vec<Value>),
+                Exp(Expression),
+            }
+
+            return match ValueShadow::deserialize(deserializer)? {
+                ValueShadow::Integer(v) => Ok(Value::Integer(v)),
+                ValueShadow::Float(v) => Ok(Value::Float(v)),
+                ValueShadow::String(v) => Ok(Value::String(v)),
+                ValueShadow::Boolean(v) => Ok(Value::Boolean(v)),
+                ValueShadow::Array(v) => Ok(Value::Array(v)),
+                ValueShadow::Table(map, spans) => Ok(Value::Table(map, spans)),
+                ValueShadow::Interp(v) => Ok(Value::Interp(v)),
+                ValueShadow::Exp(v) => Ok(Value::Exp(v)),
+            };
+        } else {
+            // XXX: if we ever end up using another "human readable" format
+            // (like JSON) I will need to change this; anything but TOML
+            // will break
+            let bare_value = BareValue::deserialize(deserializer)?;
+            return match Value::new(bare_value, None) {
+                // TODO: could improve error handling here once we have a proper
+                // error type for the kinds of errors we expect to show here
+                Err(e) => Err(serde::de::Error::custom(e.to_string())),
+                Ok(x) => Ok(x),
+            };
         }
     }
 }
@@ -325,7 +357,7 @@ fn match_to_expression(maybe_parent_span: &Option<Range<usize>>, m: regex::Match
             content,
             span: exp_span,
             error,
-            scope: SmallVec::new(),
+            scope: Vec::new(),
         }));
     } else {
         let content: String = m.as_str().into();
@@ -333,7 +365,7 @@ fn match_to_expression(maybe_parent_span: &Option<Range<usize>>, m: regex::Match
         if content.contains("{{") {
             error = Some(ParseError {
                 error: err("unexpected `{{`"),
-                contexts: smallvec![],
+                contexts: SmallVec::new(),
                 level: crate::error::ErrorLevel::Error,
             });
         }
@@ -341,7 +373,7 @@ fn match_to_expression(maybe_parent_span: &Option<Range<usize>>, m: regex::Match
             content,
             span: UNKNOWN_RANGE,
             error,
-            scope: SmallVec::new(),
+            scope: Vec::new(),
         }));
     }
 }
@@ -357,7 +389,7 @@ fn check_unmatched_braces(x: String, span: Option<Range<usize>>) -> Value {
             content: x,
             error: Some(error),
             span: span.unwrap_or_else(|| UNKNOWN_RANGE),
-            scope: SmallVec::new(),
+            scope: Vec::new(),
         });
     } else if x.contains("}}") {
         let mut error: ParseError = err("unexpected `}}`").into();
@@ -368,7 +400,7 @@ fn check_unmatched_braces(x: String, span: Option<Range<usize>>) -> Value {
             content: x,
             span: span.unwrap_or_else(|| UNKNOWN_RANGE),
             error: Some(error),
-            scope: SmallVec::new(),
+            scope: Vec::new(),
         });
     }
     return Value::String(x);
@@ -877,7 +909,7 @@ impl<T: Expanding> Expanding for Option<T> {
 
 /// A `TypedValue` wraps `Value`, requiring it to evaluate to an object that can be
 /// converted into the given type `T`, returning an `Err` otherwise.
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Debug, Clone, PartialEq)]
 #[serde(try_from = "toml::Value")]
 pub enum TypedValue<T>
 where
@@ -885,6 +917,32 @@ where
 {
     Variable(Value),
     Constant(T),
+}
+
+impl<'de, T> Deserialize<'de> for TypedValue<T>
+where
+    T: Serialize + Deserialize<'de> + std::fmt::Debug,
+{
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::de::Deserializer<'de>,
+    {
+        if deserializer.is_human_readable() {
+            let value = toml::Value::deserialize(deserializer)?;
+            Self::try_from(value).map_err(serde::de::Error::custom)
+        } else {
+            #[derive(Deserialize)]
+            enum ShadowTypedValue<U> {
+                Variable(Value),
+                Constant(U),
+            }
+
+            match ShadowTypedValue::<T>::deserialize(deserializer)? {
+                ShadowTypedValue::Variable(v) => Ok(TypedValue::Variable(v)),
+                ShadowTypedValue::Constant(c) => Ok(TypedValue::Constant(c)),
+            }
+        }
+    }
 }
 
 impl<T> Default for TypedValue<T>

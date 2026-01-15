@@ -291,7 +291,7 @@ impl Scope {
             if let Some(ast) = self.asts.get(&expr.content) {
                 let rewind_to = self.state.len();
                 for (k, v) in &expr.scope {
-                    let val: Dynamic = From::<Value>::from(Value::new(v.clone(), None)?);
+                    let val: Dynamic = v.clone().into();
                     self.state.push_dynamic(k, val);
                 }
                 let dynamic: Dynamic = self

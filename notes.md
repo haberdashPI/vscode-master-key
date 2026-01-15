@@ -12,9 +12,25 @@ x. parsing the asts in `mode.whenNoBinding.run` (process)
 x. adding the `kinds` to the scope (ser)
 x. adding `val.` variables to scope via `add_to_scope` (process)
 
+- [X] TODO: remove BareValue from expression scope, since it uses spanned
+- [ ] TODO: test round tripping of bindings in a rust unit test
+    - [X] debug individual components of the KeyFile
+    - [ ] switch to bitecode after round trip works and see if it works
+TODO: verify that outdated bindings are handled properly
+
+Observation: though there is debugging left to do, I've gotten the storage down to
+approximately 1-2KB of serialized/compressed data, so this effort is probably well worth the
+effort (since that should be closer to the assumptions of the settings sync support in
+VSCode)
+
+WHOOPS: actually this was a smaller file I was testing. turns out its about 38Kb
+in binary format after compression. Not really that different. We could
+try the tip below, that could also be implemented by just stripping comments.
 
 ALSO: to reduce the size of the synced data further we could require that the binding docs
 be re-parsed from the original file, and only populate it when the file exists (offering to
 show the online docs when those are available). This would allow developers to use this
 feature to review their output, but for most users the website outputs would suffice and for
 users with their own custom bindings, they can always point to those said bindings
+
+probably not necessary given the much smaller size we're seeing after serialization
