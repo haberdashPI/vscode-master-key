@@ -12,8 +12,10 @@ x. parsing the asts in `mode.whenNoBinding.run` (process)
 x. adding the `kinds` to the scope (ser)
 x. adding `val.` variables to scope via `add_to_scope` (process)
 
-TODO: remove BareValue from expression scope, since it uses spanned
-TODO: test round tripping of bindings in a rust unit test
+- [X] TODO: remove BareValue from expression scope, since it uses spanned
+- [ ] TODO: test round tripping of bindings in a rust unit test
+    - [ ] debug individual components of the KeyFile
+    - [ ] switch to bitecode after round trip works and see if it works
 TODO: verify that outdated bindings are handled properly
 
 Observation: though there is debugging left to do, I've gotten the storage down to

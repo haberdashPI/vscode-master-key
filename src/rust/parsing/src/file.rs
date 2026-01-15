@@ -482,7 +482,9 @@ impl KeyFileResult {
     // read_helper and read extract serialized bytes to a `KeyFileResult` (used in
     // `keybindings/config.ts`)
     fn read_helper(bytes: &[u8]) -> ResultVec<KeyFileResult> {
-        let mut result = match pot::from_slice::<KeyFileResult>(bytes) {
+        // TODO: debug problems using ciborium, then maybe go back to using pot
+        // or even by
+        let mut result: KeyFileResult = match ciborium::from_reader(bytes) {
             Err(e) => Err(err!("Error loading bindings from config file: {e}"))?,
             Ok(x) => x,
         };
@@ -517,8 +519,9 @@ impl KeyFileResult {
     // write the bindings to a byte array that will be stored in a globalState
     // (see `keybindings/config.ts`)
     pub fn write(&self) -> Result<Vec<u8>> {
-        return match pot::to_vec(&self) {
-            Ok(x) => Ok(x),
+        let mut bytes = Vec::new();
+        return match ciborium::into_writer(&self, &mut bytes) {
+            Ok(_) => Ok(bytes),
             Err(e) => Err(err!("Error writing bindings to config file: {e}"))?,
         };
     }
@@ -3509,8 +3512,11 @@ pub(crate) mod tests {
 
     #[test]
     fn read_write_roundtrip() {
-        let data = std::fs::read("../../presets/larkin.toml").unwrap();
+        // TODO: replace with larkin
+        let data =
+            std::fs::read("../../test/integration/test-workspace/round_trip_test_1.toml").unwrap();
         let result = parse_keybinding_data(&data);
+        // TODO: try serializing each individual piece of the KeyFile
         let serialized = result.write().unwrap();
         let after_trip = KeyFileResult::read_helper(&serialized).unwrap();
         let before_trip_file = result.file.unwrap();
