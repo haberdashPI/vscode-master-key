@@ -1,0 +1,936 @@
+#:master-keybindings
+
+## # Vim Bindings
+
+# This VIM binding set serves as a starting place to define your own bindings using Master
+# Key. Rather than being a comprehensive implementation of VIM it aims to be instructional.
+# Users seeking Vim parity should consider vscode-neovim or VSCodeVim. The selected binding
+# set was pulled from the MIT licenced bindings located at https://vim.rtorr.com/. When you
+# are ready to revise the bindings for your own needs, you can call `Master Key: New
+# Keybinding Copy` to edit a copy of these bindings.
+
+[header]
+name = "Vim"
+version = "2.0.0"
+requiredExtensions = [
+    "haberdashPI.vscode-select-by-indent",
+    "haberdashPI.selection-utilities",
+    "pustelto.bracketeer",
+    "wmaurer.change-case",
+]
+
+# support updating the count during the operator command *or* during the motion command e.g.
+# 2dw or d2w
+[[define.val]]
+op_mult = 1
+
+# =============================================================================
+## ## Modes
+# =============================================================================
+
+[[mode]]
+name = "insert"
+whenNoBinding = "insertCharacters"
+
+[[mode]]
+name = "normal"
+default = true
+cursorShape = "Block"
+
+[[mode]]
+name = "visual"
+cursorShape = "Block"
+
+[[mode]]
+name = "visualLine"
+cursorShape = "Block"
+
+[[mode]]
+name = "visualBlock"
+cursorShape = "BlockOutline"
+
+[[mode]]
+name = "operator"
+cursorShape = "Underline"
+
+# =============================================================================
+## ## Global / General
+# =============================================================================
+
+[[bind]]
+foreach.key = ["escape", "ctrl+["]
+key = "{{key}}"
+mode = ["insert", "visual", "visualLine", "visualBlock", "operator"]
+command = "runCommands"
+args.commands = [
+    "cancelSelection",
+    { command = "master-key.setMode", args = { value = "normal" } },
+]
+doc.name = "exit"
+doc.description = "exit insert/visual mode"
+doc.combined.name = "exit"
+doc.combined.key = "Esc/Ctrl+["
+doc.combined.description = "exit insert/visual mode"
+
+# TODO: move lower
+[[bind]]
+key = "shift+k"
+mode = "normal"
+command = "editor.action.showHover"
+doc.name = "hover"
+doc.description = "open man page for word under the cursor"
+
+# =============================================================================
+## ## Counts (0-9)
+# =============================================================================
+
+[[bind]]
+foreach.num = ['{{keys(`[1-9]`)}}']
+key = "{{num}}"
+mode = ["normal", "visual", "visualLine", "visualBlock", "operator"]
+command = "master-key.updateCount"
+args.value = "{{num}}"
+doc.name = "count {{num}}"
+doc.description = "Add digit {{num}} to the count argument of a command"
+doc.combined.key = "0-9"
+doc.combined.name = "count 0-9"
+doc.combined.description = "Add digit 0-9 to count argument of a command"
+
+# 0 means go to the start of the line *unless* we have already entered a count and then its
+# used to update the count
+[[bind]]
+key = "0"
+mode = ["normal", "visual", "visualLine", "visualBlock", "operator"]
+command = "master-key.updateCount"
+when = "master-key.count > 0"
+args.value = "0"
+doc.name = "count 0"
+doc.description = "Add digit 0 to the count argument of a command"
+doc.combined.key = "0-9"
+doc.combined.name = "count 0-9"
+doc.combined.description = "Add digit 0-9 to count argument of a command"
+
+# =============================================================================
+## ## Cursor Movement (Normal, Visual, Operator)
+# =============================================================================
+
+# -- Templates for Motions --
+
+[[define.bind]]
+id = "motion_normal"
+mode = "normal"
+command = "cursorMove"
+args.select = false
+args.value = "{{max(key.count, 1)}}"
+
+[[define.bind]]
+id = "motion_visual"
+mode = ["visual", "visualLine"]
+command = "cursorMove"
+args.select = true
+args.value = "{{max(key.count, 1)}}"
+
+# -- h, j, k, l --
+
+# h
+[[bind]]
+default = "{{bind.motion_normal}}"
+key = "h"
+args.to = "left"
+doc.name = "←"
+doc.description = "move cursor left"
+doc.combined.name = "←/→"
+doc.combined.key = "h/l"
+doc.combined.description = "move cursor left/right"
+
+[[bind]]
+default = "{{bind.motion_visual}}"
+mode = ["visual", "visualLine", "visualBlock"]
+key = "h"
+args.to = "left"
+doc.name = "←"
+doc.description = "move cursor left"
+
+[[bind]]
+key = "h"
+mode = "operator"
+command = "runCommands"
+args.commands = [
+    { command = "cursorMove", args = { to = "left", select = true, value = "{{val.op_mult * max(key.count, 1)}}" } },
+    { command = "master-key.executeStoredCommand", args = { register = "op" } },
+    { command = "master-key.setMode", args = { value = "normal" } },
+]
+
+# l
+[[bind]]
+default = "{{bind.motion_normal}}"
+key = "l"
+args.to = "right"
+doc.name = "→"
+doc.description = "move cursor right"
+
+[[bind]]
+default = "{{bind.motion_visual}}"
+mode = ["visual", "visualLine", "visualBlock"]
+key = "l"
+args.to = "right"
+doc.name = "→"
+doc.description = "move cursor right"
+
+[[bind]]
+key = "l"
+mode = "operator"
+command = "runCommands"
+args.commands = [
+    { command = "cursorMove", args = { to = "right", select = true, value = "{{val.op_mult * max(key.count, 1)}}" } },
+    { command = "master-key.executeStoredCommand", args = { register = "op" } },
+    { command = "master-key.setMode", args = { value = "normal" } },
+]
+
+# j
+[[bind]]
+default = "{{bind.motion_normal}}"
+key = "j"
+args.to = "down"
+args.by = "wrappedLine"
+doc.name = "↓"
+doc.description = "move cursor down"
+doc.combined.name = "↓/↑"
+doc.combined.key = "j/k"
+doc.combined.description = "move cursor down/up"
+
+[[bind]]
+default = "{{bind.motion_visual}}"
+key = "j"
+args.to = "down"
+args.by = "wrappedLine"
+doc.name = "↓"
+doc.description = "move cursor down"
+
+[[bind]]
+key = "j"
+mode = "visualBlock"
+command = "cursorColumnSelectDown"
+doc.name = "↓ block"
+doc.description = "move cursor down (block)"
+
+[[bind]]
+key = "j"
+mode = "operator"
+command = "runCommands"
+args.commands = [
+    { command = "cursorMove", args = { to = "down", by = "wrappedLine", select = true, value = "{{val.op_mult * max(key.count, 1)}}" } },
+    { command = "master-key.executeStoredCommand", args = { register = "op" } },
+    { command = "master-key.setMode", args = { value = "normal" } },
+]
+
+# k
+[[bind]]
+default = "{{bind.motion_normal}}"
+key = "k"
+args.to = "up"
+args.by = "wrappedLine"
+doc.name = "↑"
+doc.description = "move cursor up"
+
+[[bind]]
+default = "{{bind.motion_visual}}"
+key = "k"
+args.to = "up"
+args.by = "wrappedLine"
+doc.name = "↑"
+doc.description = "move cursor up"
+
+[[bind]]
+key = "k"
+mode = "visualBlock"
+command = "cursorColumnSelectUp"
+doc.name = "↑ block"
+doc.description = "move cursor up (block)"
+
+[[bind]]
+key = "k"
+mode = "operator"
+command = "runCommands"
+args.commands = [
+    { command = "cursorMove", args = { to = "up", by = "wrappedLine", select = true, value = "{{val.op_mult * max(key.count, 1)}}" } },
+    { command = "master-key.executeStoredCommand", args = { register = "op" } },
+    { command = "master-key.setMode", args = { value = "normal" } },
+]
+
+# gj / gk (multi-line text) - wrapped line
+# Mapped j/k to wrappedLine as per VSCode standard 'cursorDown'.
+# For strict VIM, 'j' should be 'line' and 'gj' should be 'wrappedLine'.
+# But in VSCode editor, lines are wrapped visually.
+
+[[bind]]
+key = "g j"
+mode = "normal"
+command = "cursorMove"
+args = { to = "down", by = "wrappedLine", value = "{{max(key.count, 1)}}" }
+doc.name = "↓ wrap"
+doc.description = "move cursor down (multi-line text)"
+doc.combined.name = "↓/↑ wrap"
+doc.combined.key = "gj/gk"
+doc.combined.description = "move cursor down/up (multi-line text)"
+
+[[bind]]
+key = "g k"
+mode = "normal"
+command = "cursorMove"
+args = { to = "up", by = "wrappedLine", value = "{{max(key.count, 1)}}" }
+doc.name = "↑ wrap"
+doc.description = "move cursor up (multi-line text)"
+
+# -- Word Motions (w, W, e, E, b, B) --
+
+# w (start of word)
+[[bind]]
+key = "w"
+mode = "normal"
+command = "selection-utilities.moveBy"
+args = { unit = "subword", value = "{{max(key.count, 1)}}", boundary = "start" }
+doc.name = "word →"
+doc.description = "jump forwards to the start of a word"
+doc.combined.name = "word →/←"
+doc.combined.key = "w/b"
+doc.combined.description = "jump forwards/backwards to the start of a word"
+
+[[bind]]
+key = "w"
+mode = ["visual", "visualLine", "operator"]
+command = "runCommands"
+args.commands = [
+    { command = "selection-utilities.moveBy", args = { unit = "subword", value = "{{val.op_mult * max(key.count, 1)}}", boundary = "start", select = true } },
+    { skipWhen = '{{key.mode != "operator"}}', command = "master-key.executeStoredCommand", args = { register = "op" } },
+    { skipWhen = '{{key.mode != "operator"}}', command = "master-key.setMode", args = { value = "normal" } },
+]
+doc.name = "word →"
+doc.description = "jump forwards to the start of a word"
+
+# W (start of WORD)
+[[bind]]
+key = "shift+w"
+mode = "normal"
+command = "selection-utilities.moveBy"
+args = { unit = "word", value = "{{max(key.count, 1)}}", boundary = "start" }
+doc.name = "WORD →"
+doc.description = "jump forwards to the start of a word (words can contain punctuation)"
+doc.combined.name = "WORD →/←"
+doc.combined.key = "W/B"
+doc.combined.description = "jump forwards/backwards to the start of a word (words can contain punctuation)"
+
+
+[[bind]]
+key = "shift+w"
+mode = ["visual", "visualLine", "operator"]
+command = "runCommands"
+args.commands = [
+    { command = "selection-utilities.moveBy", args = { unit = "word", value = "{{val.op_mult * max(key.count, 1)}}", boundary = "start", select = true } },
+    { skipWhen = '{{key.mode != "operator"}}', command = "master-key.executeStoredCommand", args = { register = "op" } },
+    { skipWhen = '{{key.mode != "operator"}}', command = "master-key.setMode", args = { value = "normal" } },
+]
+doc.name = "WORD →"
+doc.description = "jump forwards to the start of a word (words can contain punctuation)"
+
+# e (end of word)
+[[bind]]
+key = "e"
+mode = "normal"
+command = "selection-utilities.moveBy"
+args = { unit = "subword", value = "{{max(key.count, 1)}}", boundary = "end" }
+doc.name = "word end"
+doc.description = "jump forwards to the end of a word"
+doc.combined.name = "word end"
+doc.combined.key = "e/E"
+doc.combined.description = "jump forwards to the end of a word"
+
+[[bind]]
+key = "e"
+mode = ["visual", "visualLine", "operator"]
+command = "runCommands"
+args.commands = [
+    { command = "selection-utilities.moveBy", args = { unit = "subword", value = "{{val.op_mult * max(key.count, 1)}}", boundary = "end", select = true } },
+    { skipWhen = '{{key.mode != "operator"}}', command = "master-key.executeStoredCommand", args = { register = "op" } },
+    { skipWhen = '{{key.mode != "operator"}}', command = "master-key.setMode", args = { value = "normal" } },
+]
+doc.name = "word end"
+doc.description = "jump forwards to the end of a word"
+
+# E (end of WORD)
+[[bind]]
+key = "shift+e"
+mode = "normal"
+command = "selection-utilities.moveBy"
+args = { unit = "word", value = "{{max(key.count, 1)}}", boundary = "end" }
+doc.name = "WORD end"
+doc.description = "jump forwards to the end of a word (words can contain punctuation)"
+
+[[bind]]
+key = "shift+e"
+mode = ["visual", "visualLine", "operator"]
+command = "runCommands"
+args.commands = [
+    { command = "selection-utilities.moveBy", args = { unit = "word", value = "{{val.op_mult * max(key.count, 1)}}", boundary = "end", select = true } },
+    { skipWhen = '{{key.mode != "operator"}}', command = "master-key.executeStoredCommand", args = { register = "op" } },
+    { skipWhen = '{{key.mode != "operator"}}', command = "master-key.setMode", args = { value = "normal" } },
+]
+doc.name = "WORD end"
+doc.description = "jump forwards to the end of a word (words can contain punctuation)"
+
+# b (back start of word)
+[[bind]]
+key = "b"
+mode = "normal"
+command = "selection-utilities.moveBy"
+args = { unit = "subword", value = "{{-max(key.count, 1)}}", boundary = "start" }
+doc.name = "word ←"
+doc.description = "jump backwards to the start of a word"
+
+[[bind]]
+key = "b"
+mode = ["visual", "visualLine", "operator"]
+command = "runCommands"
+args.commands = [
+    { command = "selection-utilities.moveBy", args = { unit = "subword", value = "{{-1 * val.op_mult * max(key.count, 1)}}", boundary = "start", select = true } },
+    { skipWhen = '{{key.mode != "operator"}}', command = "master-key.executeStoredCommand", args = { register = "op" } },
+    { skipWhen = '{{key.mode != "operator"}}', command = "master-key.setMode", args = { value = "normal" } },
+]
+doc.name = "word ←"
+doc.description = "jump backwards to the start of a word"
+
+# B (back start of WORD)
+[[bind]]
+key = "shift+b"
+mode = "normal"
+command = "selection-utilities.moveBy"
+args = { unit = "word", value = "{{-max(key.count, 1)}}", boundary = "start" }
+doc.name = "WORD ←"
+doc.description = "jump backwards to the start of a word (words can contain punctuation)"
+
+[[bind]]
+key = "shift+b"
+mode = ["visual", "visualLine", "operator"]
+command = "runCommands"
+args.commands = [
+    { command = "selection-utilities.moveBy", args = { unit = "word", value = "{{-1 * val.op_mult * max(key.count, 1)}}", boundary = "start", select = true } },
+    { skipWhen = '{{key.mode != "operator"}}', command = "master-key.executeStoredCommand", args = { register = "op" } },
+    { skipWhen = '{{key.mode != "operator"}}', command = "master-key.setMode", args = { value = "normal" } },
+]
+doc.name = "WORD ←"
+doc.description = "jump backwards to the start of a word (words can contain punctuation)"
+
+# -- Line Motions (0, ^, $, g_, gg, G) --
+
+# 0 (start of line)
+[[bind]]
+key = "0"
+mode = "normal"
+command = "cursorLineStart"
+doc.name = "line start"
+doc.description = "jump to the start of the line"
+doc.combined.name = "line start/end"
+doc.combined.key = "0/$"
+doc.combined.description = "jump to the start/end of the line"
+
+[[bind]]
+key = "0"
+mode = ["visual", "visualLine", "operator"]
+command = "runCommands"
+args.commands = [
+    { command = "cursorLineStart", args = { select = true } },
+    { skipWhen = '{{key.mode != "operator"}}', command = "master-key.executeStoredCommand", args = { register = "op" } },
+    { skipWhen = '{{key.mode != "operator"}}', command = "master-key.setMode", args = { value = "normal" } },
+]
+doc.name = "line start"
+doc.description = "jump to the start of the line"
+
+
+# ^ (first non-blank)
+[[bind]]
+key = "shift+6"
+mode = "normal"
+command = "cursorHome"
+doc.name = "first non-blank"
+doc.description = "jump to the first non-blank character of the line"
+
+[[bind]]
+key = "shift+6"
+mode = ["visual", "visualLine", "operator"]
+command = "runCommands"
+args.commands = [
+    { command = "cursorHome", args = { select = true } },
+    { skipWhen = '{{key.mode != "operator"}}', command = "master-key.executeStoredCommand", args = { register = "op" } },
+    { skipWhen = '{{key.mode != "operator"}}', command = "master-key.setMode", args = { value = "normal" } },
+]
+doc.name = "first non-blank"
+doc.description = "jump to the first non-blank character of the line"
+
+# $ (end of line)
+[[bind]]
+key = "shift+4"
+mode = "normal"
+command = "cursorEnd"
+doc.name = "line end"
+doc.description = "jump to the end of the line"
+
+[[bind]]
+key = "shift+4"
+mode = ["visual", "visualLine", "operator"]
+command = "runCommands"
+args.commands = [
+    { command = "cursorEnd", args = { select = true } },
+    { skipWhen = '{{key.mode != "operator"}}', command = "master-key.executeStoredCommand", args = { register = "op" } },
+    { skipWhen = '{{key.mode != "operator"}}', command = "master-key.setMode", args = { value = "normal" } },
+]
+doc.name = "line end"
+doc.description = "jump to the end of the line"
+
+# gg (start of doc)
+[[bind]]
+key = "g g"
+mode = "normal"
+command = "cursorTop"
+doc.name = "doc start"
+doc.description = "go to the first line of the document"
+doc.combined.name = "doc start/end"
+doc.combined.key = "gg/G"
+doc.combined.description = "go to the first/last line of the document"
+
+[[bind]]
+key = "g g"
+mode = ["visual", "visualLine", "operator"]
+command = "runCommands"
+args.commands = [
+    { command = "cursorTop", args = { select = true } },
+    { skipWhen = '{{key.mode != "operator"}}', command = "master-key.executeStoredCommand", args = { register = "op" } },
+    { skipWhen = '{{key.mode != "operator"}}', command = "master-key.setMode", args = { value = "normal" } },
+]
+doc.name = "doc start"
+doc.description = "go to the first line of the document"
+
+
+# G (end of doc)
+[[bind]]
+key = "shift+g"
+mode = "normal"
+command = "cursorBottom"
+doc.name = "doc end"
+doc.description = "go to the last line of the document"
+
+[[bind]]
+key = "shift+g"
+mode = ["visual", "visualLine", "operator"]
+command = "runCommands"
+args.commands = [
+    { command = "cursorBottom", args = { select = true } },
+    { skipWhen = '{{key.mode != "operator"}}', command = "master-key.executeStoredCommand", args = { register = "op" } },
+    { skipWhen = '{{key.mode != "operator"}}', command = "master-key.setMode", args = { value = "normal" } },
+]
+doc.name = "doc end"
+doc.description = "go to the last line of the document"
+
+# -- Find Characters (f, t) --
+
+[[bind]]
+key = "f"
+mode = "normal"
+command = "master-key.search"
+args = { offset = "fartherBoundary", skip = "{{key.count-1}}", acceptAfter = 1 }
+doc.name = "find char"
+doc.description = "jump to next occurrence of character x"
+
+[[bind]]
+key = "f"
+mode = ["visual", "visualLine", "operator"]
+command = "runCommands"
+args.commands = [
+    { command = "master-key.search", args = { offset = "fartherBoundary", skip = "{{val.op_mult * max(key.count, 1) - 1}}", acceptAfter = 1, select = true } },
+]
+doc.name = "find char"
+doc.description = "jump to next occurrence of character x"
+
+# =============================================================================
+## ## Text Objects (aw, iw, etc.)
+# =============================================================================
+
+# iw (inner word)
+[[bind]]
+key = "i w"
+mode = ["visual", "visualLine", "operator"]
+command = "runCommands"
+args.commands = [
+    { command = "selection-utilities.moveBy", args = { unit = "subword", boundary = "both", select = true } },
+    { skipWhen = '{{key.mode != "operator"}}', command = "master-key.executeStoredCommand", args = { register = "op" } },
+    { skipWhen = '{{key.mode != "operator"}}', command = "master-key.setMode", args = { value = "normal" } },
+]
+doc.name = "inner word"
+doc.description = "change (replace) inner word"
+doc.combined.name = "inner/around word"
+doc.combined.key = "iw/aw"
+doc.combined.description = "inner/around word"
+
+# aw (around word)
+[[bind]]
+key = "a w"
+mode = ["visual", "visualLine", "operator"]
+command = "runCommands"
+args.commands = [
+    # Approximation of 'around word' (word + space)
+    { command = "selection-utilities.moveBy", args = { unit = "subword", boundary = "both", select = true } },
+    # TODO: extend selection to include trailing space?
+    { skipWhen = '{{key.mode != "operator"}}', command = "master-key.executeStoredCommand", args = { register = "op" } },
+    { skipWhen = '{{key.mode != "operator"}}', command = "master-key.setMode", args = { value = "normal" } },
+]
+doc.name = "around word"
+doc.description = "change (replace) entire word"
+
+# =============================================================================
+## ## Insert Mode
+# =============================================================================
+
+[[bind]]
+key = "i"
+mode = "normal"
+command = "master-key.enterInsert"
+doc.name = "insert"
+doc.description = "insert before the cursor"
+doc.combined.name = "insert start/line"
+doc.combined.key = "i/I"
+doc.combined.description = "insert before the cursor / at the beginning of the line"
+
+
+[[bind]]
+key = "shift+i"
+mode = "normal"
+command = "runCommands"
+args.commands = ["cursorLineStart", "master-key.enterInsert"]
+doc.name = "insert start"
+doc.description = "insert at the beginning of the line"
+
+[[bind]]
+key = "a"
+mode = "normal"
+command = "runCommands"
+args.commands = ["cursorRight", "master-key.enterInsert"]
+doc.name = "append"
+doc.description = "insert (append) after the cursor"
+doc.combined.name = "append end/line"
+doc.combined.key = "a/A"
+doc.combined.description = "insert (append) after the cursor / at the end of the line"
+
+
+[[bind]]
+key = "shift+a"
+mode = "normal"
+command = "runCommands"
+args.commands = ["cursorLineEnd", "master-key.enterInsert"]
+doc.name = "append end"
+doc.description = "insert (append) at the end of the line"
+
+[[bind]]
+key = "o"
+mode = "normal"
+command = "runCommands"
+args.commands = ["editor.action.insertLineAfter", "master-key.enterInsert"]
+doc.name = "open below"
+doc.description = "append (open) a new line below the current line"
+doc.combined.name = "open below/above"
+doc.combined.key = "o/O"
+doc.combined.description = "append (open) a new line below/above the current line"
+
+[[bind]]
+key = "shift+o"
+mode = "normal"
+command = "runCommands"
+args.commands = ["editor.action.insertLineBefore", "master-key.enterInsert"]
+doc.name = "open above"
+doc.description = "append (open) a new line above the current line"
+
+# =============================================================================
+## ## Editing / Operators
+# =============================================================================
+
+# d (Delete / Cut)
+[[bind]]
+key = "d"
+mode = "normal"
+command = "runCommands"
+args.commands = [
+    { command = "master-key.setValue", args = { name = "op_mult", value = "{{max(key.count, 1)}}" } },
+    { command = "master-key.storeCommand", args = { register = "op", command = "editor.action.clipboardCutAction" } },
+    { command = "master-key.prefix", args = { cursor = "Underline" } },
+    { command = "master-key.setMode", args = { value = "operator" } },
+]
+doc.name = "delete"
+doc.description = "delete marked text"
+
+[[bind]]
+key = "d"
+mode = ["visual", "visualLine", "visualBlock"]
+command = "runCommands"
+args.commands = [
+    "editor.action.clipboardCutAction",
+    { command = "master-key.setMode", args = { value = "normal" } },
+]
+doc.name = "delete"
+doc.description = "delete marked text"
+
+# dd (Delete line)
+[[bind]]
+key = "d"
+mode = "operator"
+command = "runCommands"
+args.commands = [
+    # Select N lines
+    "selection-utilities.shrinkToActive",
+    { command = "cursorMove", args = { to = "down", by = "wrappedLine", select = true, value = "{{val.op_mult * max(key.count, 1)}}" } },
+    "expandLineSelection",
+    # Execute op (cut)
+    "master-key.executeStoredCommand",
+    { command = "master-key.setMode", args = { value = "normal" } },
+]
+doc.name = "delete line"
+doc.description = "delete (cut) a line"
+
+# y (Yank / Copy)
+[[bind]]
+key = "y"
+mode = "normal"
+command = "runCommands"
+args.commands = [
+    { command = "master-key.setValue", args = { name = "op_mult", value = "{{max(key.count, 1)}}" } },
+    { command = "master-key.storeCommand", args = { register = "op", command = "editor.action.clipboardCopyAction" } },
+    { command = "master-key.prefix", args = { cursor = "Underline" } },
+    { command = "master-key.setMode", args = { value = "operator" } },
+]
+doc.name = "yank"
+doc.description = "yank (copy) marked text"
+
+[[bind]]
+key = "y"
+mode = ["visual", "visualLine"]
+command = "runCommands"
+args.commands = [
+    "editor.action.clipboardCopyAction",
+    { command = "master-key.setMode", args = { value = "normal" } },
+]
+doc.name = "yank"
+doc.description = "yank (copy) marked text"
+
+# yy (Yank line)
+[[bind]]
+key = "y"
+mode = "operator"
+command = "runCommands"
+args.commands = [
+    "selection-utilities.shrinkToActive",
+    { command = "cursorMove", args = { to = "down", by = "wrappedLine", select = true, value = "{{val.op_mult * max(key.count, 1)}}" } },
+    "expandLineSelection",
+    "master-key.executeStoredCommand",
+    { command = "master-key.setMode", args = { value = "normal" } },
+]
+doc.name = "yank line"
+doc.description = "yank (copy) a line"
+
+# c (Change)
+[[bind]]
+key = "c"
+mode = "normal"
+command = "runCommands"
+args.commands = [
+    { command = "master-key.setValue", args = { name = "op_mult", value = "{{max(key.count, 1)}}" } },
+    { command = "master-key.storeCommand", args = { register = "op", command = "runCommands", args = { commands = [
+        "editor.action.clipboardCutAction",
+        "master-key.enterInsert",
+    ] } } },
+    { command = "master-key.prefix", args = { cursor = "Underline" } },
+    { command = "master-key.setMode", args = { value = "operator" } },
+]
+doc.name = "change"
+doc.description = "change"
+
+# cc (Change line)
+[[bind]]
+key = "c"
+mode = "operator"
+command = "runCommands"
+args.commands = [
+    "selection-utilities.shrinkToActive",
+    { command = "cursorMove", args = { to = "down", by = "wrappedLine", select = true, value = "{{val.op_mult * max(key.count, 1)}}" } },
+    "expandLineSelection",
+    "editor.action.clipboardCutAction",
+    "master-key.enterInsert",
+    { command = "master-key.setMode", args = { value = "normal" } },
+]
+doc.name = "change line"
+doc.description = "change (replace) entire line"
+
+# x (delete char)
+[[bind]]
+key = "x"
+mode = "normal"
+command = "runCommands"
+args.commands = [
+    { command = "cursorMove", args = { to = "right", select = true, value = "{{max(key.count, 1)}}" } },
+    "editor.action.clipboardCutAction",
+]
+doc.name = "del char"
+doc.description = "delete (cut) character"
+
+# p (paste)
+[[bind]]
+key = "p"
+mode = "normal"
+command = "editor.action.clipboardPasteAction"
+doc.name = "paste"
+doc.description = "put (paste) the clipboard after cursor"
+
+# u (undo)
+[[bind]]
+key = "u"
+mode = "normal"
+command = "undo"
+doc.name = "undo"
+doc.description = "undo"
+
+# Ctrl+r (redo)
+[[bind]]
+key = "ctrl+r"
+mode = "normal"
+command = "redo"
+doc.name = "redo"
+doc.description = "redo"
+
+# =============================================================================
+## ## Visual Mode Toggles
+# =============================================================================
+
+[[bind]]
+key = "v"
+mode = "normal"
+command = "master-key.setMode"
+args.value = "visual"
+doc.name = "visual"
+doc.description = "start visual mode"
+doc.combined.name = "visual mode/line/block"
+doc.combined.key = "v/V/Ctrl+v"
+doc.combined.description = "start visual mode / linewise / block"
+
+[[bind]]
+key = "shift+v"
+mode = "normal"
+command = "runCommands"
+args.commands = [
+    "expandLineSelection",
+    { command = "master-key.setMode", args = { value = "visualLine" } },
+]
+doc.name = "visual line"
+doc.description = "start linewise visual mode"
+
+[[bind]]
+key = "ctrl+v"
+mode = "normal"
+command = "master-key.setMode"
+args.value = "visualBlock"
+doc.name = "visual block"
+doc.description = "start visual block mode"
+
+# =============================================================================
+## ## Search
+# =============================================================================
+
+[[bind]]
+key = "/"
+mode = "normal"
+command = "master-key.search"
+args = { offset = "start", select = true }
+doc.name = "search"
+doc.description = "search for pattern"
+
+[[bind]]
+key = "n"
+mode = "normal"
+command = "master-key.nextMatch"
+doc.name = "next"
+doc.description = "repeat search in same direction"
+doc.combined.name = "next/prev match"
+doc.combined.key = "n/N"
+doc.combined.description = "repeat search in same/opposite direction"
+
+[[bind]]
+key = "shift+n"
+mode = "normal"
+command = "master-key.previousMatch"
+doc.name = "previous"
+doc.description = "repeat search in opposite direction"
+
+# =============================================================================
+## ## Window Commands (Ctrl+w)
+# =============================================================================
+
+[[bind]]
+key = "ctrl+w s"
+mode = "normal"
+command = "workbench.action.splitEditorDown"
+doc.name = "split window"
+doc.description = "split window"
+
+[[bind]]
+key = "ctrl+w v"
+mode = "normal"
+command = "workbench.action.splitEditorRight"
+doc.name = "split vertical"
+doc.description = "split window vertically"
+
+[[bind]]
+key = "ctrl+w w"
+mode = "normal"
+command = "workbench.action.navigateEditorGroups"
+doc.name = "switch window"
+doc.description = "switch windows"
+
+[[bind]]
+key = "ctrl+w q"
+mode = "normal"
+command = "workbench.action.closeActiveEditor"
+doc.name = "quit window"
+doc.description = "quit a window"
+
+[[bind]]
+key = "ctrl+w h"
+mode = "normal"
+command = "workbench.action.navigateLeft"
+doc.name = "window left"
+doc.description = "move cursor to the left window (vertical split)"
+doc.combined.name = "window left/right/down/up"
+doc.combined.key = "h/l/j/k"
+doc.combined.description = "move cursor to the window left/right/down/up"
+
+[[bind]]
+key = "ctrl+w l"
+mode = "normal"
+command = "workbench.action.navigateRight"
+doc.name = "window right"
+doc.description = "move cursor to the right window (vertical split)"
+
+[[bind]]
+key = "ctrl+w j"
+mode = "normal"
+command = "workbench.action.navigateDown"
+doc.name = "window down"
+doc.description = "move cursor to the window below (horizontal split)"
+
+[[bind]]
+key = "ctrl+w k"
+mode = "normal"
+command = "workbench.action.navigateUp"
+doc.name = "window up"
+doc.description = "move cursor to the window above (horizontal split)"
+
+[[bind]]
+key = "ctrl+w ="
+mode = "normal"
+command = "workbench.action.evenEditorWidths"
+doc.name = "equalize"
+doc.description = "make all windows equal height & width"
