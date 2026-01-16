@@ -61,8 +61,8 @@ The easiest way to get started is to activate the built-in keybindings that come
 1. Install this extension
 2. On windows only: restart VSCode — there is an [active investigation to avoid this workaround](https://github.com/haberdashPI/vscode-master-key/issues/51).
 3. Run the command `Master Key: Activate Keybindings`
-4. Select the built-in binding set "Larkin"
-5. Review [Larkin's documentation](https://haberdashpi.github.io/vscode-master-key/presets/larkin) (e.g. using `Master Key: Show Text Documentation`)
+4. Select one of the built-in binding sets (e.g. "Simple Vim")
+5. Review the binding set's documentation using `Master Key: Show Text Documentation`
 
 <!-- STOP_DOCS -->
 
