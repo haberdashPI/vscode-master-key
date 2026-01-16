@@ -190,6 +190,6 @@ args.args.to = "right"
 key = "f"
 command = "master-key.search"
 args.acceptAfter = 1
-args.offset.from = "exclusive"
+args.offset.from = "closerBoundary"
 args.offset.by = 0
 args.backwards = true
