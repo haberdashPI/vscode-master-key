@@ -4,14 +4,18 @@
 
 ## # Simple Vim Bindings
 
-## This Vim binding set serves as a starting place to define your own bindings using Master
-## Key. Rather than being a comprehensive implementation of VIM it aims to be instructional.
-## Users seeking Vim parity should consider vscode-neovim or VSCodeVim. The selected binding
-## set was pulled from the MIT licensed bindings located at https://vim.rtorr.com/. When you
-## are ready to revise the bindings for your own needs, you can call `Master Key: New
-## Keybinding Copy` to edit a copy of these bindings.
+## This Vim binding set serves as a starting place to get started learning Master Key for
+## users comfortable with Vim. Vim parity is not the goal here (vscode-neovim or VSCodeVim
+## already do that quite well): Master Key is intended to be an evolution of modal bindings
+## in the spirit of more recent editors like Kakaune and Helix. When you are ready to revise
+## the bindings for your own needs, you can call `Master Key: New Keybinding Copy` to edit a
+## copy of these bindings. Also note that the Larkin binding set is much larger
+## and will be of interest to those wishing to leverage more of Master Key's features.
 ##
-## Contributions to improve these keybindings are welcome and can be submitted via a
+## This binding set was generated from the MIT licensed bindings located at
+## https://vim.rtorr.com/ using AI and then cleaned and curated by hand.
+##
+## Contributions to improve the keybindings are welcome and can be submitted via a
 ## [PR](https://github.com/haberdashPI/vscode-master-key/pulls)
 
 # NOTE: this file is used to generate both keybindings and to generate a markdown file that
