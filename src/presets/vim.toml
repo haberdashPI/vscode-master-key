@@ -1,16 +1,25 @@
 #:master-keybindings
+# author: David Little
+# license: MIT https://github.com/haberdashPI/vscode-master-key/blob/main/LICENSE.md
 
-## # Vim Bindings
+## # Simple Vim Bindings
 
-## This VIM binding set serves as a starting place to define your own bindings using Master
+## This Vim binding set serves as a starting place to define your own bindings using Master
 ## Key. Rather than being a comprehensive implementation of VIM it aims to be instructional.
 ## Users seeking Vim parity should consider vscode-neovim or VSCodeVim. The selected binding
-## set was pulled from the MIT licenced bindings located at https://vim.rtorr.com/. When you
+## set was pulled from the MIT licensed bindings located at https://vim.rtorr.com/. When you
 ## are ready to revise the bindings for your own needs, you can call `Master Key: New
 ## Keybinding Copy` to edit a copy of these bindings.
+##
+## Contributions to improve these keybindings are welcome and can be submitted via a
+## [PR](https://github.com/haberdashPI/vscode-master-key/pulls)
+
+# NOTE: this file is used to generate both keybindings and to generate a markdown file that
+# documents the bindings. When comments are prefixed `##` they are included in the final
+# markdown output. All other comments will be ignored.
 
 [header]
-name = "Vim"
+name = "Simple Vim"
 version = "2.1.0"
 requiredExtensions = [
     "haberdashPI.vscode-select-by-indent",
@@ -59,7 +68,7 @@ doc.combined.description = "exit insert/visual mode"
 # -- Templates for Motions --
 
 [[define.val]]
-operatorCount = 0
+operatorPending = false
 operatorPrefixes = ["d", "y", "c"]
 
 [[define.bind]]
@@ -71,7 +80,7 @@ foreach.item = ['''{{[
 ]}}''']
 mode = '{{item.mode}}'
 prefixes.anyOf = '{{ if item.operator { val.operatorPrefixes } else { [""] } }}'
-when = '{{ if item.operator { "master-key.val.operatorCount > 0" } else { "true" } }}'
+when = '{{ if item.operator { "master-key.val.operatorPending" } else { "true" } }}'
 
 [[define.bind.after]]
 skipWhen = '{{!item.operator}}'
@@ -80,20 +89,16 @@ args.register = "op"
 
 [[define.bind.after]]
 skipWhen = '{{!item.operator}}'
-command = "master-key.enterNormal"
-
-[[define.bind.after]]
-skipWhen = '{{!item.operator}}'
 command = "master-key.setValue"
-args.name = "operatorCount"
-args.value = 0
+args.name = "operatorPending"
+args.value = false
 
 [[define.bind]]
 id = "cursor_motion"
 default = "{{bind.motion}}"
 command = "cursorMove"
-args.value = '{{max(val.operatorCount, 1) * max(key.count, 1)}}'
-args.select = '{{mode != "normal"}}'
+args.value = '{{max(key.count, 1)}}'
+args.select = '{{item.mode == "visual" || item.operator}}'
 
 # -- h, j, k, l --
 
@@ -112,6 +117,7 @@ doc.combined.description = "move cursor left/right"
 [[bind]]
 default = "{{bind.cursor_motion}}"
 key = "l"
+args.to = "right"
 doc.name = "→"
 doc.description = "move cursor right"
 doc.combined.name = "←/→"
@@ -167,7 +173,8 @@ doc.combined.name = "↓/↑ wrap"
 id = "object_motion"
 default = '{{bind.motion}}'
 command = "selection-utilities.moveBy"
-args.value = '{{max(key.count, 1) * max(val.opCount, 1)}}'
+args.value = '{{max(key.count, 1)}}'
+args.select = '{{item.mode == "visual" || item.operator}}'
 
 # w (start of word)
 [[bind]]
@@ -187,7 +194,7 @@ default = '{{bind.object_motion}}'
 key = "b"
 args.unit = "subword"
 args.boundary = "start"
-args.value = '{{-1 * max(val.opCount,1) * max(key.count, 1)}}'
+args.value = '{{-max(key.count, 1)}}'
 doc.name = "word ←"
 doc.description = "jump backwards to the start of a word"
 doc.combined.name = "word →/←"
@@ -210,7 +217,7 @@ default = '{{bind.object_motion}}'
 key = "shift+b"
 args.unit = "BigWord"
 args.boundary = "start"
-args.value = '{{-1 * max(val.opCount,1) * max(key.count, 1)}}'
+args.value = '{{-max(key.count, 1)}}'
 doc.name = "WORD ←"
 doc.description = "jump backwards to the start of a word (including punctuation)"
 doc.combined.name = "WORD →/←"
@@ -256,7 +263,7 @@ key = "shift+["
 args.unit = "paragraph"
 args.boundary = "start"
 doc.name = "par. ←"
-args.value = '{{-1 * max(key.count, 1) * max(val.opCount, 1)}}'
+args.value = '{{-max(key.count, 1)}}'
 doc.description = "jump backwards to the start of a paragraph (contiguous lines)"
 doc.combined.name = "paragraph →/←"
 doc.combined.key = "shift+]/shift+["
@@ -317,8 +324,8 @@ key = "f"
 default = '{{bind.motion}}'
 command = "master-key.search"
 args.offset = "fartherBoundary"
-args.skip = "{{(max(key.count,1) * max(val.operatorCount, 1))-1}}"
-args.selectTillMatch = '{{item.mode != "normal"}}'
+args.skip = "{{(max(key.count,1))-1}}"
+args.selectTillMatch = '{{item.mode == "visual" || item.operator}}'
 args.acceptAfter = 1
 doc.name = "find →"
 doc.description = "jump to next occurrence of character x"
@@ -331,7 +338,7 @@ key = "shift+f"
 default = '{{bind.motion}}'
 command = "master-key.search"
 args.offset = "fartherBoundary"
-args.skip = "{{(max(key.count,1) * max(val.operatorCount, 1))-1}}"
+args.skip = "{{(max(key.count,1))-1}}"
 args.reverse = true
 args.selectTillMatch = '{{item.mode != "normal"}}'
 args.acceptAfter = 1
@@ -344,8 +351,8 @@ key = "t"
 default = '{{bind.motion}}'
 command = "master-key.search"
 args.offset = "closerBoundary"
-args.skip = "{{(max(key.count,1) * max(val.operatorCount, 1))-1}}"
-args.selectTillMatch = '{{item.mode != "normal"}}'
+args.skip = "{{(max(key.count,1))-1}}"
+args.selectTillMatch = '{{item.mode == "visual" || item.operator}}'
 args.acceptAfter = 1
 doc.name = "to →"
 doc.description = "jump to just before the next occurrence of character x"
@@ -358,8 +365,8 @@ key = "shift+t"
 default = '{{bind.motion}}'
 command = "master-key.search"
 args.offset = "closerBoundary"
-args.skip = "{{(max(key.count,1) * max(val.operatorCount, 1))-1}}"
-args.selectTillMatch = '{{item.mode != "normal"}}'
+args.skip = "{{(max(key.count,1))-1}}"
+args.selectTillMatch = '{{item.mode == "visual" || item.operator}}'
 args.acceptAfter = 1
 doc.name = "to ←"
 doc.description = "jump to just before the previous occurrence of character x"
@@ -374,8 +381,8 @@ doc.combined.key = "t/shift+t"
 [[define.bind]]
 id = "object"
 mode = 'normal'
-prefix.anyOf = ['{{operatorPrefixes}}']
-when = "master-key.val.operatorCount > 0"
+prefixes.anyOf = '{{val.operatorPrefixes}}'
+when = "master-key.val.operatorPending"
 
 [[define.bind.after]]
 command = "master-key.executeStoredCommand"
@@ -386,15 +393,15 @@ command = "master-key.enterNormal"
 
 [[define.bind.after]]
 command = "master-key.setValue"
-args.name = "operatorCount"
-args.value = 0
+args.name = "operatorPending"
+args.value = false
 
 # iw (inner word)
 [[bind]]
 default = '{{bind.object}}'
 key = "i w"
 command = "selection-utilities.moveBy"
-args = { unit = "subword", boundary = "both", select = true }
+args = { unit = "subword", boundary = "both", selectWhole = true }
 doc.name = "in word"
 doc.description = "operate on entire word"
 
@@ -403,7 +410,7 @@ doc.description = "operate on entire word"
 default = '{{bind.object}}'
 key = "a w"
 command = "selection-utilities.moveBy"
-args = { unit = "subword", boundary = "start", select = true }
+args = { unit = "subword", boundary = "start", selectWhole = true }
 doc.name = "around word"
 doc.description = "operate on entire word and space"
 
@@ -412,7 +419,7 @@ doc.description = "operate on entire word and space"
 default = '{{bind.object}}'
 key = "i shift+w"
 command = "selection-utilities.moveBy"
-args = { unit = "paragraph", boundary = "both", select = true }
+args = { unit = "BigWord", boundary = "both", selectWhole = true }
 doc.name = "in WORD"
 doc.description = "operate on entire word (including punctuation)"
 
@@ -421,7 +428,7 @@ doc.description = "operate on entire word (including punctuation)"
 default = '{{bind.object}}'
 key = "a shift+w"
 command = "selection-utilities.moveBy"
-args = { unit = "paragraph", boundary = "start", select = true }
+args = { unit = "BigWord", boundary = "start", selectWhole = true }
 doc.name = "ard WORD"
 doc.description = "operate around entire word (including punctuation)"
 
@@ -430,7 +437,7 @@ doc.description = "operate around entire word (including punctuation)"
 default = '{{bind.object}}'
 key = "i p"
 command = "selection-utilities.moveBy"
-args = { unit = "paragraph", boundary = "both", select = true }
+args = { unit = "paragraph", boundary = "both", selectWhole = true }
 doc.name = "in paragraph"
 doc.description = "operate on entire paragraph"
 
@@ -439,7 +446,7 @@ doc.description = "operate on entire paragraph"
 default = '{{bind.object}}'
 key = "a p"
 command = "selection-utilities.moveBy"
-args = { unit = "paragraph", boundary = "start", select = true }
+args = { unit = "paragraph", boundary = "start", selectWhole = true }
 doc.name = "around paragraph"
 doc.description = "operate on entire paragraph and spacing"
 
@@ -550,7 +557,7 @@ key = "d"
 mode = "normal"
 command = "runCommands"
 args.commands = [
-    { command = "master-key.setValue", args = { name = "operatorCount", value = "{{max(key.count, 1)}}" } },
+    { command = "master-key.setValue", args = { name = "operatorPending", value = true } },
     { command = "master-key.storeCommand", args = { register = "op", command = "editor.action.clipboardCutAction" } },
     { command = "master-key.prefix", args = { cursor = "Underline" } },
 ]
@@ -578,7 +585,7 @@ args.commands = [
     "selection-utilities.shrinkToActive",
     "expandLineSelection",
     # Execute op (cut)
-    "master-key.executeStoredCommand",
+    { command = "master-key.executeStoredCommand", args.register = "op" },
 ]
 doc.name = "delete line"
 doc.description = "delete (cut) a line"
@@ -589,7 +596,7 @@ key = "y"
 mode = "normal"
 command = "runCommands"
 args.commands = [
-    { command = "master-key.setValue", args = { name = "operatorCount", value = "{{max(key.count, 1)}}" } },
+    { command = "master-key.setValue", args = { name = "operatorPending", value = true } },
     { command = "master-key.storeCommand", args = { register = "op", command = "editor.action.clipboardCopyAction" } },
     { command = "master-key.prefix", args = { cursor = "Underline" } },
 ]
@@ -627,7 +634,7 @@ key = "c"
 mode = "normal"
 command = "runCommands"
 args.commands = [
-    { command = "master-key.setValue", args = { name = "operatorCount", value = "{{max(key.count, 1)}}" } },
+    { command = "master-key.setValue", args = { name = "operatorPending", value = true } },
     { command = "master-key.storeCommand", args = { register = "op", command = "runCommands", args = { commands = [
         "editor.action.clipboardCutAction",
         "master-key.enterInsert",
