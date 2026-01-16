@@ -5,7 +5,7 @@ import { state as keyState, CommandResult, recordedCommand } from '../state';
 import { MODE } from './mode';
 import { captureKeys } from './capture';
 import { bindings } from '../keybindings/config';
-import { onCommandComplete, showCommandWarnings } from './do';
+import { onCommandComplete } from './do';
 
 /**
  * @command search
@@ -51,8 +51,6 @@ import { onCommandComplete, showCommandWarnings } from './do';
  *     an offset where positive values move in the same direction as search moved. `start`
  *     and `end` imply an offset where positive values move forward in the file and negative
  *     backwards.
- *   - `exclusive`: **deprecated**: equivalent to `closerBoundary`
- *   - `inclusive`: **deprecated**: equivalent to `fartherBoundary`.
  * - `register` (default="default"): A unique name determining where search state will be
  *    stored. Calls to (`nextMatch`/`previousMatch`) use this state to determine where to
  *    jump. If you have multiple search commands you can use registers to avoid the two
@@ -61,8 +59,6 @@ import { onCommandComplete, showCommandWarnings } from './do';
  */
 
 const offsets = z.enum([
-    'inclusive', // deprecated
-    'exclusive', // deprecated
     'fartherBoundary',
     'closerBoundary',
     'start',
@@ -455,20 +451,7 @@ function adjustSearchPosition(
     const offsetType = typeof args.offset === 'string' ? args.offset : args.offset.from;
     const offsetAdjust = typeof args.offset === 'string' ? 0 : args.offset.by;
 
-    if (offsetType === 'exclusive') {
-        showCommandWarnings([
-            '`master-key.search` is using deprecated `"offset"` value ' +
-            '`"exclusive"` use `"closerBoundary"` instead.',
-        ]);
-    }
-    if (offsetType === 'inclusive') {
-        showCommandWarnings([
-            '`master-key.search` is using deprecated `"offset"` value ' +
-            '`"inclusive"` use `"fartherBoundary"` instead.',
-        ]);
-    }
-
-    if (offsetType === 'closerBoundary' || offsetType === 'exclusive') {
+    if (offsetType === 'closerBoundary') {
         const dir = forward ? 1 : -1;
         offset = -dir * len;
         if (!args.selectTillMatch) {
@@ -489,7 +472,7 @@ function adjustSearchPosition(
         }
         offset += offsetAdjust;
     } else {
-        // offsetType === 'inclusive' || offsetType === 'fartherBoundary'
+        // offsetType === 'fartherBoundary'
         const dir = forward ? 1 : -1;
         if (!args.selectTillMatch) {
             // WHY: because we want the *selection* to be at the boundary, not the cursor,
