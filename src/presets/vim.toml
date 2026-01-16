@@ -32,6 +32,18 @@ requiredExtensions = [
     "wmaurer.change-case",
 ]
 
+[[kind]]
+name = "motion"
+description = "These commands move the cursor and/or selections."
+
+[[kind]]
+name = "action"
+description = "Actions do something with the selected text (e.g. delete it)."
+
+[[kind]]
+name = "util"
+description = "Utility commands like help, mode switching, etc."
+
 [[mode]]
 name = "insert"
 whenNoBinding = "insertCharacters"
@@ -61,6 +73,7 @@ args.commands = [
     "cancelSelection",
     { command = "master-key.setMode", args = { value = "normal" } },
 ]
+doc.kind = "util"
 doc.name = "exit"
 doc.description = "exit insert/visual mode"
 doc.combined.name = "exit"
@@ -71,6 +84,7 @@ doc.combined.description = "exit insert/visual mode"
 
 [[bind]]
 key = "ctrl+;"
+doc.kind = "util"
 doc.name = "suggest"
 finalKey = false
 prefixes.any = true
@@ -84,6 +98,7 @@ command = "master-key.toggleSuggestions"
 
 [[bind]]
 key = "ctrl+/"
+doc.kind = "util"
 doc.name = "text docs"
 priority = -1
 mode = "normal"
@@ -92,6 +107,7 @@ command = "master-key.showTextDoc"
 
 [[bind]]
 key = "ctrl+shift+/"
+doc.kind = "util"
 doc.name = "visual doc"
 priority = -1
 mode = "normal"
@@ -143,6 +159,8 @@ args.select = '{{item.mode == "visual" || item.operator}}'
 [[bind]]
 default = "{{bind.cursor_motion}}"
 key = "h"
+tags = ["motion"]
+doc.kind = "motion"
 args.to = "left"
 doc.name = "←"
 doc.description = "move cursor left"
@@ -154,6 +172,8 @@ doc.combined.description = "move cursor left/right"
 [[bind]]
 default = "{{bind.cursor_motion}}"
 key = "l"
+tags = ["motion"]
+doc.kind = "motion"
 args.to = "right"
 doc.name = "→"
 doc.description = "move cursor right"
@@ -166,6 +186,8 @@ args.to = "right"
 [[bind]]
 default = "{{bind.motion}}"
 key = "j"
+tags = ["motion"]
+doc.kind = "motion"
 command = "runCommands"
 doc.name = "↓"
 doc.description = "move cursor down"
@@ -192,6 +214,8 @@ command = "expandLineSelection"
 [[bind]]
 default = "{{bind.motion}}"
 key = "k"
+tags = ["motion"]
+doc.kind = "motion"
 command = "runCommands"
 doc.name = "↑"
 doc.description = "move cursor up"
@@ -220,6 +244,7 @@ command = "selection-utilities.exchangeAnchorActive"
 [[bind]]
 default = "{{bind.motion}}"
 key = "g j"
+doc.kind = "motion"
 command = "runCommands"
 doc.name = "↓ wrap"
 doc.description = "move cursor down (multi-line text)"
@@ -245,6 +270,7 @@ command = "expandLineSelection"
 [[bind]]
 default = "{{bind.motion}}"
 key = "g k"
+doc.kind = "motion"
 command = "runCommands"
 doc.name = "↑ wrap"
 doc.description = "move cursor up (multi-line text)"
@@ -273,6 +299,7 @@ command = "selection-utilities.exchangeAnchorActive"
 
 [[bind]]
 key = "ctrl+d"
+doc.kind = "motion"
 doc.name = "pg ↓"
 doc.combined.name = "pg ↓/↑"
 doc.combined.key = "ctrl+d/ctrl+u"
@@ -286,6 +313,7 @@ args.select = '{{key.mode == "visual"}}'
 
 [[bind]]
 key = "ctrl+u"
+doc.kind = "motion"
 doc.name = "pg ↑"
 doc.combined.name = "pg ↓/↑"
 doc.description = "select up, relative to page size"
@@ -308,6 +336,8 @@ args.select = '{{item.mode == "visual" || item.operator}}'
 [[bind]]
 default = "{{bind.object_motion}}"
 key = "w"
+tags = ["motion"]
+doc.kind = "motion"
 args.unit = "subword"
 args.boundary = "start"
 doc.name = "word →"
@@ -320,6 +350,8 @@ doc.combined.description = "jump forwards/backwards to the start of a word"
 [[bind]]
 default = '{{bind.object_motion}}'
 key = "b"
+tags = ["motion"]
+doc.kind = "motion"
 args.unit = "subword"
 args.boundary = "start"
 args.value = '{{-max(key.count, 1)}}'
@@ -331,6 +363,8 @@ doc.combined.name = "word →/←"
 [[bind]]
 default = "{{bind.object_motion}}"
 key = "shift+w"
+tags = ["motion"]
+doc.kind = "motion"
 args.unit = "BigWord"
 args.boundary = "start"
 doc.name = "WORD →"
@@ -343,6 +377,8 @@ doc.combined.description = "jump forwards/backwards to the start of a word (word
 [[bind]]
 default = '{{bind.object_motion}}'
 key = "shift+b"
+tags = ["motion"]
+doc.kind = "motion"
 args.unit = "BigWord"
 args.boundary = "start"
 args.value = '{{-max(key.count, 1)}}'
@@ -355,6 +391,8 @@ doc.combined.key = "shift+w/shift+b"
 [[bind]]
 default = '{{bind.object_motion}}'
 key = "e"
+tags = ["motion"]
+doc.kind = "motion"
 args.unit = "subword"
 args.boundary = "end"
 doc.name = "word end"
@@ -367,6 +405,8 @@ doc.combined.description = "jump forwards to the end of a word"
 [[bind]]
 default = '{{bind.object_motion}}'
 key = "shift+e"
+tags = ["motion"]
+doc.kind = "motion"
 args.unit = "BigWord"
 args.boundary = "end"
 doc.name = "WORD end"
@@ -377,6 +417,8 @@ doc.combined.name = "word/WORD end"
 [[bind]]
 default = "{{bind.object_motion}}"
 key = "shift+]"
+tags = ["motion"]
+doc.kind = "motion"
 args.unit = "paragraph"
 args.boundary = "start"
 doc.name = "par. →"
@@ -388,6 +430,8 @@ doc.combined.description = "jump forwards/backwards to the start of a paragraph 
 [[bind]]
 default = "{{bind.object_motion}}"
 key = "shift+["
+tags = ["motion"]
+doc.kind = "motion"
 args.unit = "paragraph"
 args.boundary = "start"
 doc.name = "par. ←"
@@ -403,6 +447,8 @@ doc.combined.description = "jump forwards/backwards to the start of a paragraph 
 [[bind]]
 default = '{{bind.motion}}'
 key = "0"
+tags = ["motion"]
+doc.kind = "motion"
 command = '{{if item.mode == "normal" { "cursorLineStart" } else { "cursorLineStartSelect" } }}'
 doc.name = "line start"
 doc.description = "jump to the start of the line"
@@ -414,6 +460,8 @@ doc.combined.description = "jump to the start/end of the line"
 [[bind]]
 default = '{{bind.motion}}'
 key = "shift+6"
+tags = ["motion"]
+doc.kind = "motion"
 command = '{{if item.mode == "normal" { "cursorHome" } else { "cursorHomeSelect" } }}'
 doc.name = "first non-blank"
 doc.description = "jump to the first non-blank character of the line"
@@ -422,6 +470,8 @@ doc.description = "jump to the first non-blank character of the line"
 [[bind]]
 default = '{{bind.motion}}'
 key = "shift+4"
+tags = ["motion"]
+doc.kind = "motion"
 command = '{{if item.mode == "normal" { "cursorLineEnd" } else { "cursorLineEndSelect" } }}'
 doc.name = "line end"
 doc.description = "jump to the end of the line"
@@ -430,6 +480,8 @@ doc.description = "jump to the end of the line"
 [[bind]]
 default = '{{bind.motion}}'
 key = "g g"
+tags = ["motion"]
+doc.kind = "motion"
 command = '{{if item.mode == "normal" { "cursorTop" } else { "cursorTopSelect" } }}'
 doc.name = "doc start"
 doc.description = "go to the first line of the document"
@@ -441,6 +493,8 @@ doc.combined.description = "go to the first/last line of the document"
 [[bind]]
 default = '{{bind.motion}}'
 key = "shift+g"
+tags = ["motion"]
+doc.kind = "motion"
 command = '{{if item.mode == "normal" { "cursorBottom" } else { "cursorBottomSelect" } }}'
 doc.name = "doc end"
 doc.description = "go to the last line of the document"
@@ -449,6 +503,8 @@ doc.description = "go to the last line of the document"
 
 [[bind]]
 key = "f"
+tags = ["motion"]
+doc.kind = "motion"
 default = '{{bind.motion}}'
 command = "master-key.search"
 args.offset = "fartherBoundary"
@@ -463,6 +519,8 @@ doc.combined.key = "f/shift+f"
 
 [[bind]]
 key = "shift+f"
+tags = ["motion"]
+doc.kind = "motion"
 default = '{{bind.motion}}'
 command = "master-key.search"
 args.offset = "fartherBoundary"
@@ -476,6 +534,8 @@ doc.combined.name = "find →/←"
 
 [[bind]]
 key = "t"
+tags = ["motion"]
+doc.kind = "motion"
 default = '{{bind.motion}}'
 command = "master-key.search"
 args.offset = "closerBoundary"
@@ -490,6 +550,8 @@ doc.combined.key = "t/shift+t"
 
 [[bind]]
 key = "shift+t"
+tags = ["motion"]
+doc.kind = "motion"
 default = '{{bind.motion}}'
 command = "master-key.search"
 args.offset = "closerBoundary"
@@ -525,6 +587,7 @@ args.value = false
 [[bind]]
 default = '{{bind.object}}'
 key = "i w"
+doc.kind = "motion"
 command = "selection-utilities.moveBy"
 args = { unit = "subword", boundary = "both", selectWhole = true }
 doc.name = "in word"
@@ -534,6 +597,7 @@ doc.description = "operate on entire word"
 [[bind]]
 default = '{{bind.object}}'
 key = "a w"
+doc.kind = "motion"
 command = "selection-utilities.moveBy"
 args = { unit = "subword", boundary = "start", selectWhole = true }
 doc.name = "around word"
@@ -543,6 +607,7 @@ doc.description = "operate on entire word and space"
 [[bind]]
 default = '{{bind.object}}'
 key = "i shift+w"
+doc.kind = "motion"
 command = "selection-utilities.moveBy"
 args = { unit = "BigWord", boundary = "both", selectWhole = true }
 doc.name = "in WORD"
@@ -552,6 +617,7 @@ doc.description = "operate on entire word (including punctuation)"
 [[bind]]
 default = '{{bind.object}}'
 key = "a shift+w"
+doc.kind = "motion"
 command = "selection-utilities.moveBy"
 args = { unit = "BigWord", boundary = "start", selectWhole = true }
 doc.name = "ard WORD"
@@ -561,6 +627,7 @@ doc.description = "operate around entire word (including punctuation)"
 [[bind]]
 default = '{{bind.object}}'
 key = "i p"
+doc.kind = "motion"
 command = "selection-utilities.moveBy"
 args = { unit = "paragraph", boundary = "both", selectWhole = true }
 doc.name = "in paragraph"
@@ -570,6 +637,7 @@ doc.description = "operate on entire paragraph"
 [[bind]]
 default = '{{bind.object}}'
 key = "a p"
+doc.kind = "motion"
 command = "selection-utilities.moveBy"
 args = { unit = "paragraph", boundary = "start", selectWhole = true }
 doc.name = "around paragraph"
@@ -589,6 +657,7 @@ mode = '{{all_modes()}}'
 command = "master-key.updateCount"
 finalKey = false
 args.value = "{{num}}"
+doc.kind = "util"
 doc.name = "count {{num}}"
 doc.description = "Add digit {{num}} to the count argument of a command"
 doc.combined.key = "0-9"
@@ -604,6 +673,7 @@ command = "master-key.updateCount"
 when = "master-key.count > 0"
 finalKey = false
 args.value = "0"
+doc.kind = "util"
 doc.name = "count 0"
 doc.description = "Add digit 0 to the count argument of a command"
 doc.combined.key = "0-9"
@@ -617,6 +687,8 @@ doc.combined.description = "Add digit 0-9 to count argument of a command"
 [[bind]]
 key = "i"
 mode = "normal"
+tags = ["action"]
+doc.kind = "action"
 command = "master-key.enterInsert"
 doc.name = "insert"
 doc.description = "insert before the cursor"
@@ -628,6 +700,8 @@ doc.combined.description = "insert before the cursor / at the beginning of the l
 [[bind]]
 key = "shift+i"
 mode = "normal"
+tags = ["action"]
+doc.kind = "action"
 command = "runCommands"
 args.commands = ["cursorLineStart", "master-key.enterInsert"]
 doc.name = "insert start"
@@ -636,6 +710,8 @@ doc.description = "insert at the beginning of the line"
 [[bind]]
 key = "a"
 mode = "normal"
+tags = ["action"]
+doc.kind = "action"
 command = "runCommands"
 args.commands = ["cursorRight", "master-key.enterInsert"]
 doc.name = "append"
@@ -648,6 +724,8 @@ doc.combined.description = "insert (append) after the cursor / at the end of the
 [[bind]]
 key = "shift+a"
 mode = "normal"
+tags = ["action"]
+doc.kind = "action"
 command = "runCommands"
 args.commands = ["cursorLineEnd", "master-key.enterInsert"]
 doc.name = "append end"
@@ -656,6 +734,8 @@ doc.description = "insert (append) at the end of the line"
 [[bind]]
 key = "o"
 mode = "normal"
+tags = ["action"]
+doc.kind = "action"
 command = "runCommands"
 args.commands = ["editor.action.insertLineAfter", "master-key.enterInsert"]
 doc.name = "open below"
@@ -667,6 +747,8 @@ doc.combined.description = "append (open) a new line below/above the current lin
 [[bind]]
 key = "shift+o"
 mode = "normal"
+tags = ["action"]
+doc.kind = "action"
 command = "runCommands"
 args.commands = ["editor.action.insertLineBefore", "master-key.enterInsert"]
 doc.name = "open above"
@@ -680,6 +762,8 @@ doc.description = "append (open) a new line above the current line"
 [[bind]]
 key = "d"
 mode = "normal"
+tags = ["action"]
+doc.kind = "action"
 command = "runCommands"
 args.commands = [
     { command = "master-key.setValue", args = { name = "operatorPending", value = true } },
@@ -692,6 +776,8 @@ doc.description = "delete marked text"
 [[bind]]
 key = "d"
 mode = "visual"
+tags = ["action"]
+doc.kind = "action"
 command = "runCommands"
 args.commands = [
     "editor.action.clipboardCutAction",
@@ -705,6 +791,8 @@ doc.description = "delete marked text"
 key = "d"
 prefixes.anyOf = "d"
 mode = "normal"
+tags = ["action"]
+doc.kind = "action"
 command = "runCommands"
 args.commands = [
     "selection-utilities.shrinkToActive",
@@ -719,6 +807,8 @@ doc.description = "delete (cut) a line"
 [[bind]]
 key = "y"
 mode = "normal"
+tags = ["action"]
+doc.kind = "action"
 command = "runCommands"
 doc.name = "yank"
 doc.description = "yank (copy) marked text"
@@ -743,6 +833,8 @@ args = { cursor = "Underline" }
 [[bind]]
 key = "y"
 mode = "visual"
+tags = ["action"]
+doc.kind = "action"
 command = "runCommands"
 args.commands = [
     "editor.action.clipboardCopyAction",
@@ -756,6 +848,8 @@ doc.description = "yank (copy) marked text"
 key = "y"
 prefixes.anyOf = "y"
 mode = "normal"
+tags = ["action"]
+doc.kind = "action"
 command = "runCommands"
 args.commands = [
     "selection-utilities.shrinkToActive",
@@ -769,6 +863,8 @@ doc.description = "yank (copy) a line"
 [[bind]]
 key = "c"
 mode = "normal"
+tags = ["action"]
+doc.kind = "action"
 command = "runCommands"
 args.commands = [
     { command = "master-key.setValue", args = { name = "operatorPending", value = true } },
@@ -786,6 +882,8 @@ doc.description = "change"
 key = "c"
 prefixes.anyOf = "c"
 mode = "normal"
+tags = ["action"]
+doc.kind = "action"
 command = "runCommands"
 args.commands = [
     "selection-utilities.shrinkToActive",
@@ -800,6 +898,8 @@ doc.description = "change (replace) entire line"
 [[bind]]
 key = "x"
 mode = "normal"
+tags = ["action"]
+doc.kind = "action"
 command = "runCommands"
 args.commands = [
     { command = "cursorMove", args = { to = "right", select = true, value = "{{max(key.count, 1)}}" } },
@@ -812,6 +912,8 @@ doc.description = "delete (cut) character"
 [[bind]]
 key = "p"
 mode = "normal"
+tags = ["action"]
+doc.kind = "action"
 command = "editor.action.clipboardPasteAction"
 doc.name = "paste"
 doc.description = "put (paste) the clipboard after cursor"
@@ -820,6 +922,8 @@ doc.description = "put (paste) the clipboard after cursor"
 [[bind]]
 key = "u"
 mode = "normal"
+tags = ["action"]
+doc.kind = "action"
 command = "runCommands"
 args.commands = ["undo", "selection-utilities.shrinkToActive"]
 doc.name = "undo"
@@ -829,6 +933,8 @@ doc.description = "undo"
 [[bind]]
 key = "ctrl+r"
 mode = "normal"
+tags = ["action"]
+doc.kind = "action"
 command = "runCommands"
 args.commands = ["redo", "selection-utilities.shrinkToActive"]
 doc.name = "redo"
@@ -841,6 +947,7 @@ doc.description = "redo"
 [[bind]]
 key = "v"
 mode = "normal"
+doc.kind = "util"
 command = "master-key.setMode"
 args.value = "visual"
 doc.name = "visual"
@@ -853,6 +960,7 @@ doc.description = "start visual mode"
 [[bind]]
 key = "/"
 mode = ["normal", "visual"]
+doc.kind = "motion"
 command = "master-key.search"
 args = { offset = "start", selectTillMatch = '{{key.mode == "visual"}}' }
 doc.name = "search"
@@ -861,6 +969,7 @@ doc.description = "search for pattern"
 [[bind]]
 key = "shift+/"
 mode = ["normal", "visual"]
+doc.kind = "motion"
 command = "master-key.search"
 args = { offset = "start", backwards = true, selectTillMatch = '{{key.mode == "visual"}}' }
 doc.name = "search"
@@ -869,6 +978,7 @@ doc.description = "search for pattern"
 [[bind]]
 key = "n"
 mode = ["normal", "visual"]
+doc.kind = "motion"
 command = "master-key.nextMatch"
 args.selectTillMatch = '{{key.mode == "visual"}}'
 doc.name = "next"
@@ -880,10 +990,35 @@ doc.combined.description = "repeat search in same/opposite direction"
 [[bind]]
 key = "shift+n"
 mode = ["normal", "visual"]
+doc.kind = "motion"
 command = "master-key.previousMatch"
 args.selectTillMatch = '{{key.mode == "visual"}}'
 doc.name = "previous"
 doc.description = "repeat search in opposite direction"
+
+# =============================================================================
+## ## Repeating Actions
+# =============================================================================
+
+[[bind]]
+key = "."
+mode = "normal"
+doc.kind = "util"
+doc.name = "repeat"
+doc.description = "repeat last change"
+command = "runCommands"
+repeat = "{{key.count}}"
+
+[[bind.args.commands]]
+command = "master-key.replayFromHistory"
+args.index = """{{
+last_history_index(|i|
+    history[i]?.tags.contains("action") &&
+    history[i]?.command != "master-key.replayFromHistory"
+)}}"""
+
+[[bind.args.commands]]
+command = "master-key.enterNormal"
 
 # =============================================================================
 ## ## Window Commands (Ctrl+w)
@@ -892,6 +1027,7 @@ doc.description = "repeat search in opposite direction"
 [[bind]]
 key = "g h"
 mode = "normal"
+doc.kind = "util"
 command = "editor.action.showHover"
 doc.name = "hover"
 doc.description = "open hover for word under the cursor"
@@ -899,6 +1035,7 @@ doc.description = "open hover for word under the cursor"
 [[bind]]
 key = "ctrl+w s"
 mode = "normal"
+doc.kind = "util"
 command = "workbench.action.splitEditorDown"
 doc.name = "split window"
 doc.description = "split window"
@@ -906,6 +1043,7 @@ doc.description = "split window"
 [[bind]]
 key = "ctrl+w v"
 mode = "normal"
+doc.kind = "util"
 command = "workbench.action.splitEditorRight"
 doc.name = "split vertical"
 doc.description = "split window vertically"
@@ -913,6 +1051,7 @@ doc.description = "split window vertically"
 [[bind]]
 key = "ctrl+w w"
 mode = "normal"
+doc.kind = "util"
 command = "workbench.action.navigateEditorGroups"
 doc.name = "switch window"
 doc.description = "switch windows"
@@ -920,6 +1059,7 @@ doc.description = "switch windows"
 [[bind]]
 key = "ctrl+w q"
 mode = "normal"
+doc.kind = "util"
 command = "workbench.action.closeActiveEditor"
 doc.name = "quit window"
 doc.description = "quit a window"
@@ -927,6 +1067,7 @@ doc.description = "quit a window"
 [[bind]]
 key = "ctrl+w h"
 mode = "normal"
+doc.kind = "util"
 command = "workbench.action.navigateLeft"
 doc.name = "window left"
 doc.description = "move cursor to the left window (vertical split)"
@@ -937,6 +1078,7 @@ doc.combined.description = "move cursor to the window left/right/down/up"
 [[bind]]
 key = "ctrl+w l"
 mode = "normal"
+doc.kind = "util"
 command = "workbench.action.navigateRight"
 doc.name = "window right"
 doc.description = "move cursor to the right window (vertical split)"
@@ -945,6 +1087,7 @@ doc.combined.name = "window left/right/down/up"
 [[bind]]
 key = "ctrl+w j"
 mode = "normal"
+doc.kind = "util"
 command = "workbench.action.navigateDown"
 doc.name = "window down"
 doc.description = "move cursor to the window below (horizontal split)"
@@ -953,6 +1096,7 @@ doc.combined.name = "window left/right/down/up"
 [[bind]]
 key = "ctrl+w k"
 mode = "normal"
+doc.kind = "util"
 command = "workbench.action.navigateUp"
 doc.name = "window up"
 doc.description = "move cursor to the window above (horizontal split)"
@@ -961,6 +1105,7 @@ doc.combined.name = "window left/right/down/up"
 [[bind]]
 key = "ctrl+w ="
 mode = "normal"
+doc.kind = "util"
 command = "workbench.action.evenEditorWidths"
 doc.name = "equalize"
 doc.combined.name = "window left/right/down/up"
