@@ -202,7 +202,7 @@ export async function runCommands(
                 } else if (edits) {
                     vscode.window.showErrorMessage(
                         `Command includes edits to the active text editor, but there
-                        is currently no active editor.`
+                        is currently no active editor.`,
                     );
                 }
             }
