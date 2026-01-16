@@ -19,18 +19,7 @@ The steps are:
 
 ## Roadmap
 
-Master Key is quite stable for everyday use, but it remains a work in progress.
-
-- Release 0.4.y (you are here): precise binding errors: use VSCode to get detailed line and character error indicators for any problems with your bindings
-- Release 0.4.z: source code documentation — may involve substantial refactor to improve legibility / clarity of code
-- Release 1.0.0:
-    - code should be legible
-    - test coverage should be satisfactory
-    - documentation should be largely complete
-- Release 1.x: upwards and onwards...
-  - additional keybinding presets: e.g. vim, emacs
-  - search: `showCount` displays movement count overlaid with each highlight
-  - any API improvements important for Vim and Emacs binding presets
+Master Key has reached a relatively stable state. There are no immediate plans to introduce major breaking changes. The major effort remaining is to create additional keybinding presets for Emacs, Vim and Helix.
 
 ## Related Work
 
