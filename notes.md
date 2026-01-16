@@ -18,8 +18,11 @@ commands to debug:
     - [X] dW (currently deletes paragraph)
     - [X] dd, dw, dp
     - [X] dip, daw, etc...
-    - [ ] 9dj
-    - [ ] undo clears selection
-    - [ ] yaw clears selection
-    - [ ] yy
-    - [ ] ? searches backwards
+    - [X] undo clears selection
+    - [X] ctrl-d/u move up down (or whatever motion it is)
+    - [X] search works in visual mode
+    - [X] ? searches backwards
+    - [X] 9dj (and dk, dgj, dgk)
+    - [X] yaw clears selection
+    - [X] yy copies a line and clears selection
+    - [ ] `caw` enters insert mode (probably worth debugging)

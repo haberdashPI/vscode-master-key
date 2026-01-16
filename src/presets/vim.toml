@@ -41,8 +41,10 @@ cursorShape = "Block"
 name = "visual"
 cursorShape = "Block"
 
+## ## Normal Mode
+
 ## Normal mode is the default mode in VIM. In this mode each key issues a command,
-## even when there is no modifier like control. To insert text you issue
+## even when there is no modifier, like control. To insert text you issue
 ## an insert command (like `i`), see [Insert Mode](#insert-mode) for more ways
 ## to insert text.
 
@@ -127,45 +129,136 @@ args.to = "right"
 
 # j
 [[bind]]
-default = "{{bind.cursor_motion}}"
+default = "{{bind.motion}}"
 key = "j"
-args.to = "down"
-args.by = "wrappedLine"
+command = "runCommands"
 doc.name = "↓"
 doc.description = "move cursor down"
 doc.combined.name = "↓/↑"
 doc.combined.key = "j/k"
 doc.combined.description = "move cursor down/up"
 
+[[bind.args.commands]]
+skipWhen = '{{!item.operator}}'
+command = "selection-utilities.shrinkToActive"
+
+[[bind.args.commands]]
+command = "cursorMove"
+args.value = '{{max(key.count, 1)}}'
+args.select = '{{item.mode == "visual" || item.operator}}'
+args.to = "down"
+args.by = "wrappedLine"
+
+[[bind.args.commands]]
+skipWhen = '{{!item.operator}}'
+command = "expandLineSelection"
+
 # k
 [[bind]]
-default = "{{bind.cursor_motion}}"
+default = "{{bind.motion}}"
 key = "k"
-args.to = "up"
-args.by = "wrappedLine"
+command = "runCommands"
 doc.name = "↑"
 doc.description = "move cursor up"
 doc.combined.name = "↓/↑"
 
+[[bind.args.commands]]
+skipWhen = '{{!item.operator}}'
+command = "selection-utilities.shrinkToActive"
+
+[[bind.args.commands]]
+command = "cursorMove"
+args.value = '{{max(key.count, 1)}}'
+args.select = '{{item.mode == "visual" || item.operator}}'
+args.to = "up"
+args.by = "wrappedLine"
+
+[[bind.args.commands]]
+skipWhen = '{{!item.operator}}'
+command = "expandLineSelection"
+
+[[bind.args.commands]]
+skipWhen = '{{!item.operator}}'
+command = "selection-utilities.exchangeAnchorActive"
+
+# g j
 [[bind]]
-default = "{{bind.cursor_motion}}"
+default = "{{bind.motion}}"
 key = "g j"
-args.by = "line"
-args.to = "down"
+command = "runCommands"
 doc.name = "↓ wrap"
 doc.description = "move cursor down (multi-line text)"
 doc.combined.name = "↓/↑ wrap"
 doc.combined.key = "gj/gk"
 doc.combined.description = "move cursor down/up (multi-line text)"
 
+[[bind.args.commands]]
+skipWhen = '{{!item.operator}}'
+command = "selection-utilities.shrinkToActive"
+
+[[bind.args.commands]]
+command = "cursorMove"
+args.value = '{{max(key.count, 1)}}'
+args.select = '{{item.mode == "visual" || item.operator}}'
+args.to = "down"
+args.by = "wrappedLine"
+
+[[bind.args.commands]]
+skipWhen = '{{!item.operator}}'
+command = "expandLineSelection"
+
 [[bind]]
-default = "{{bind.cursor_motion}}"
+default = "{{bind.motion}}"
 key = "g k"
-args.by = "line"
-args.to = "up"
+command = "runCommands"
 doc.name = "↑ wrap"
 doc.description = "move cursor up (multi-line text)"
 doc.combined.name = "↓/↑ wrap"
+
+[[bind.args.commands]]
+skipWhen = '{{!item.operator}}'
+command = "selection-utilities.shrinkToActive"
+
+[[bind.args.commands]]
+command = "cursorMove"
+args.value = '{{max(key.count, 1)}}'
+args.select = '{{item.mode == "visual" || item.operator}}'
+args.to = "up"
+args.by = "wrappedLine"
+
+[[bind.args.commands]]
+skipWhen = '{{!item.operator}}'
+command = "expandLineSelection"
+
+[[bind.args.commands]]
+skipWhen = '{{!item.operator}}'
+command = "selection-utilities.exchangeAnchorActive"
+
+# -- page up/down
+
+[[bind]]
+key = "ctrl+d"
+doc.name = "pg ↓"
+doc.combined.name = "pg ↓/↑"
+doc.combined.key = "ctrl+d/ctrl+u"
+doc.combined.description = "move down/up, relative to page size"
+doc.description = "move down, relative to page size"
+mode = ["normal", "visual", "insert"]
+command = "selection-utilities.activePageMove"
+args.dir = "down"
+args.value = "{{max(key.count, 1)/2}}"
+args.select = '{{key.mode == "visual"}}'
+
+[[bind]]
+key = "ctrl+u"
+doc.name = "pg ↑"
+doc.combined.name = "pg ↓/↑"
+doc.description = "select up, relative to page size"
+mode = ["normal", "visual", "insert"]
+command = "selection-utilities.activePageMove"
+args.dir = "up"
+args.count = "{{(max(key.count, 1))/2}}"
+args.select = '{{key.mode == "visual"}}'
 
 # -- Word Motions (w, W, e, E, b, B) --
 
@@ -389,9 +482,6 @@ command = "master-key.executeStoredCommand"
 args.register = "op"
 
 [[define.bind.after]]
-command = "master-key.enterNormal"
-
-[[define.bind.after]]
 command = "master-key.setValue"
 args.name = "operatorPending"
 args.value = false
@@ -595,13 +685,25 @@ doc.description = "delete (cut) a line"
 key = "y"
 mode = "normal"
 command = "runCommands"
-args.commands = [
-    { command = "master-key.setValue", args = { name = "operatorPending", value = true } },
-    { command = "master-key.storeCommand", args = { register = "op", command = "editor.action.clipboardCopyAction" } },
-    { command = "master-key.prefix", args = { cursor = "Underline" } },
-]
 doc.name = "yank"
 doc.description = "yank (copy) marked text"
+
+[[bind.args.commands]]
+command = "master-key.setValue"
+args = { name = "operatorPending", value = true }
+
+[[bind.args.commands]]
+command = "master-key.storeCommand"
+args.register = "op"
+args.command = "runCommands"
+args.args.commands = [
+    "editor.action.clipboardCopyAction",
+    "selection-utilities.shrinkToActive",
+]
+
+[[bind.args.commands]]
+command = "master-key.prefix"
+args = { cursor = "Underline" }
 
 [[bind]]
 key = "y"
@@ -623,7 +725,7 @@ command = "runCommands"
 args.commands = [
     "selection-utilities.shrinkToActive",
     "expandLineSelection",
-    "master-key.executeStoredCommand",
+    { command = "master-key.executeStoredCommand", args.register = "op" },
 ]
 doc.name = "yank line"
 doc.description = "yank (copy) a line"
@@ -654,6 +756,7 @@ args.commands = [
     "selection-utilities.shrinkToActive",
     "expandLineSelection",
     "editor.action.clipboardCutAction",
+    "master-key.enterInsert",
 ]
 doc.name = "change line"
 doc.description = "change (replace) entire line"
@@ -682,7 +785,8 @@ doc.description = "put (paste) the clipboard after cursor"
 [[bind]]
 key = "u"
 mode = "normal"
-command = "undo"
+command = "runCommands"
+args.commands = ["undo", "selection-utilities.shrinkToActive"]
 doc.name = "undo"
 doc.description = "undo"
 
@@ -690,7 +794,8 @@ doc.description = "undo"
 [[bind]]
 key = "ctrl+r"
 mode = "normal"
-command = "redo"
+command = "runCommands"
+args.commands = ["redo", "selection-utilities.shrinkToActive"]
 doc.name = "redo"
 doc.description = "redo"
 
@@ -712,16 +817,25 @@ doc.description = "start visual mode"
 
 [[bind]]
 key = "/"
-mode = "normal"
+mode = ["normal", "visual"]
 command = "master-key.search"
-args = { offset = "start", selectTillMatch = '{{key.mode != "normal"}}' }
+args = { offset = "start", selectTillMatch = '{{key.mode == "visual"}}' }
+doc.name = "search"
+doc.description = "search for pattern"
+
+[[bind]]
+key = "shift+/"
+mode = ["normal", "visual"]
+command = "master-key.search"
+args = { offset = "start", backwards = true, selectTillMatch = '{{key.mode == "visual"}}' }
 doc.name = "search"
 doc.description = "search for pattern"
 
 [[bind]]
 key = "n"
-mode = "normal"
+mode = ["normal", "visual"]
 command = "master-key.nextMatch"
+args.selectTillMatch = '{{key.mode == "visual"}}'
 doc.name = "next"
 doc.description = "repeat search in same direction"
 doc.combined.name = "next/prev match"
@@ -730,8 +844,9 @@ doc.combined.description = "repeat search in same/opposite direction"
 
 [[bind]]
 key = "shift+n"
-mode = "normal"
+mode = ["normal", "visual"]
 command = "master-key.previousMatch"
+args.selectTillMatch = '{{key.mode == "visual"}}'
 doc.name = "previous"
 doc.description = "repeat search in opposite direction"
 
