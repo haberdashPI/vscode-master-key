@@ -13,7 +13,7 @@
 ## and will be of interest to those wishing to leverage more of Master Key's features.
 ##
 ## This binding set was generated from the MIT licensed bindings located at
-## https://vim.rtorr.com/ using AI and then cleaned and curated by hand.
+## https://vim.rtorr.com/ using AI (Gemini CLI) and then cleaned and curated by hand.
 ##
 ## Contributions to improve the keybindings are welcome and can be submitted via a
 ## [PR](https://github.com/haberdashPI/vscode-master-key/pulls)
@@ -66,6 +66,37 @@ doc.description = "exit insert/visual mode"
 doc.combined.name = "exit"
 doc.combined.key = "Esc/Ctrl+["
 doc.combined.description = "exit insert/visual mode"
+
+## ## Getting Help
+
+[[bind]]
+key = "ctrl+;"
+doc.name = "suggest"
+finalKey = false
+prefixes.any = true
+mode = '{{all_modes()}}'
+doc.description = """
+show command suggestions within the context of the current mode and keybinding prefix
+(if any). E.g. `g, ^;` in `normal` mode will show all `normal` command suggestions that
+start with `g`.
+"""
+command = "master-key.toggleSuggestions"
+
+[[bind]]
+key = "ctrl+/"
+doc.name = "text docs"
+priority = -1
+mode = "normal"
+doc.description = "Show text documentation for keybindings"
+command = "master-key.showTextDoc"
+
+[[bind]]
+key = "ctrl+shift+/"
+doc.name = "visual doc"
+priority = -1
+mode = "normal"
+doc.description = "Show visual documentation for keybindings"
+command = "master-key.showVisualDoc"
 
 # =============================================================================
 ## ## Cursor Movement (Normal, Visual, Operator)
