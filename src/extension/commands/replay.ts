@@ -14,17 +14,17 @@ import { ReifiedBinding } from '../../rust/parsing/lib/parsing';
  * Replay both previously run commands via master keybindings as well simple textual edits
  * to a buffer.
  *
- * > [!WARNING] Recording Limitations API limitations mean this command cannot replay
- * > everything. Master key has no knowledge of commands or keybindings outside of master
- * > key. This is because `replay` uses a history of commands updated when calling into
- * > commands like [`master-key.do`](/commands/do). Furthermore while Master Key records
- * > text edits for modes where `whenNoBinding = 'insertCharacters'` these textual edits are
- * > limited. A maximum number of characters are stored between each call to a master-key
- * > command (determined by the setting `Text History Maximum`) and only simple insertion of
- * > text is handled. Given the limits of the VSCode API for observing edits, this will miss
- * > some automated insertions such as code completion and automated parentheses insertion.
- * > Also note that any edits that occur *before* the extension is activated are not
- * > recorded.
+ * > [!WARNING] Recording Limitations
+ * > API limitations mean this command cannot replay everything. Master key has no knowledge
+ * > of commands or keybindings outside of master key. This is because `replay` uses a
+ * > history of commands updated when calling into commands like
+ * > [`master-key.do`](/commands/do). Furthermore while Master Key records text edits for
+ * > modes where `whenNoBinding = 'insertCharacters'` these textual edits are limited. A
+ * > maximum number of characters are stored between each call to a master-key command
+ * > (determined by the setting `Text History Maximum`) and only simple insertion of text is
+ * > handled. Given the limits of the VSCode API for observing edits, this will miss some
+ * > automated insertions such as code completion and automated parentheses insertion. Also
+ * > note that any edits that occur *before* the extension is activated are not recorded.
  *
  * Excluding the aforementioned limitations, both commands and textual edits are recorded,
  * up until the the history limit (defined by the `Command History Maximum`). When selecting
@@ -202,7 +202,7 @@ export async function runCommands(
                 } else if (edits) {
                     vscode.window.showErrorMessage(
                         `Command includes edits to the active text editor, but there
-                        is currently no active editor.`,
+                        is currently no active editor.`
                     );
                 }
             }
