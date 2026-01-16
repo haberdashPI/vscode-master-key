@@ -57,20 +57,23 @@ export function showExpressionMessages(command: CommandOutput) {
     }
 }
 
-let warningsShown = false;
-export function showCommandWarnings(warnings: string[]) {
-    for (const warn of warnings) {
-        expressionMessages.appendLine(
-            `[WARN: ${new Date().toLocaleTimeString()}] ${warn}` +
-            ' (If you are using a default binding set, consider reactivating ' +
-            'your Master Key bindings.)',
-        );
-    }
-    if (warnings.length > 0 && !warningsShown) {
-        warningsShown = false;
-        expressionMessages.show(true);
-    }
-}
+// `showCommandWarnings` is currently unused; it can be uncommented and applied in cases
+// where we want to deprecate command fields
+
+// let warningsShown = false;
+// export function showCommandWarnings(warnings: string[]) {
+//     for (const warn of warnings) {
+//         expressionMessages.appendLine(
+//             `[WARN: ${new Date().toLocaleTimeString()}] ${warn}` +
+//             ' (If you are using a default binding set, consider reactivating ' +
+//             'your Master Key bindings.)',
+//         );
+//     }
+//     if (warnings.length > 0 && !warningsShown) {
+//         warningsShown = false;
+//         expressionMessages.show(true);
+//     }
+// }
 
 export function showExpressionErrors(fallable: { errors?: string[]; error?: string[] }) {
     if (fallable.errors || fallable.error) {

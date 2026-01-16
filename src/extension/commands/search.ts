@@ -5,7 +5,7 @@ import { state as keyState, CommandResult, recordedCommand } from '../state';
 import { MODE } from './mode';
 import { captureKeys } from './capture';
 import { bindings } from '../keybindings/config';
-import { onCommandComplete, showCommandWarnings } from './do';
+import { onCommandComplete } from './do';
 
 /**
  * @command search
