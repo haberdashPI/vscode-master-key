@@ -14,8 +14,7 @@ import { ReifiedBinding } from '../../rust/parsing/lib/parsing';
  * Replay both previously run commands via master keybindings as well simple textual edits
  * to a buffer.
  *
- * > [!WARNING] Recording Limitations
- * > API limitations mean this command cannot replay
+ * > [!WARNING] Recording Limitations API limitations mean this command cannot replay
  * > everything. Master key has no knowledge of commands or keybindings outside of master
  * > key. This is because `replay` uses a history of commands updated when calling into
  * > commands like [`master-key.do`](/commands/do). Furthermore while Master Key records
@@ -100,6 +99,12 @@ import { ReifiedBinding } from '../../rust/parsing/lib/parsing';
  * The key argument of relevance here is the expression defined in `args.index` where we
  * select the most recent command that has the tag `"action"`, excluding those actions that
  * are related to manipulating the history of commands.
+ *
+ * > [!INFO] Avoid Self-references
+ * > Replay commands should normally avoid replaying themselves. Follow the examples in
+ * > Larkin to avoid this. Confusing behavior can arise from the self-referencing of replay
+ * > commands. Sometimes nesting is desirable however: we want to be able to replay a
+ * > command sequence that includes the 'repeat action' command.
  */
 async function replayFromHistory(args_: unknown): Promise<CommandResult> {
     const result = commandsFromHistory('master-key.replayFromHistory', args_);
@@ -175,10 +180,15 @@ export async function runCommands(
     macro: ReifiedBinding[],
 ): Promise<void> {
     for (const binding of macro) {
+        let hasNestedRepeat = false;
         for (let i = 0; i < binding.repeat + 1; i++) {
             for (const command of binding.commands) {
                 if (command.command !== 'master-key.ignore') {
                     await vscode.commands.executeCommand(command.command, command.args);
+                }
+                if (command.command === 'master-key.replayFromHistory' ||
+                    command.command === 'master-key.replayFromStack') {
+                    hasNestedRepeat = true;
                 }
                 const editor = vscode.window.activeTextEditor;
                 const edits = binding.edit_text;
@@ -190,12 +200,18 @@ export async function runCommands(
                         }
                     });
                 } else if (edits) {
-                    vscode.window.showErrorMessage(`Command includes edits to the
-                        active text editor, but there is currently no active editor.`);
+                    vscode.window.showErrorMessage(
+                        `Command includes edits to the active text editor, but there
+                        is currently no active editor.`,
+                    );
                 }
             }
         }
-        await new Promise(res => setTimeout(res, REPLAY_DELAY));
+        // we don't add a delay when calling nested repeats; this ensures that deep nesting
+        // doesn't lead to excessive delays
+        if (!hasNestedRepeat) {
+            await new Promise(res => setTimeout(res, REPLAY_DELAY));
+        }
     }
 }
 
