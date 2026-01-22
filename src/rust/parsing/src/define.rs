@@ -153,6 +153,19 @@ pub struct DefineInput {
     /// directly. The remaining fields are set to the default value when not specified
     /// (i.e. there is no deep merging for the other fields).
     ///
+    /// ### Additional Fields
+    ///
+    /// There are two additional fields not available in `[[bind]]` that can be used with
+    /// `[[define.bind]]`.
+    ///
+    /// - ⚡ `before/after`: a sequence of commands to run before/after the `command` of a
+    /// binding. These follow the same format as described under [running multiple
+    /// commands](/bindings/bind#running-multiple-commands).
+    ///
+    /// Note that, unlike `args`, these fields are not merged across defaults: defining a
+    /// new value for one of these arguments overwrites any existing default value (e.g.
+    /// when using nested defaults).
+    ///
     /// ### Example
     ///
     /// Larkin makes extensive use of default keys for the simple cursor motions. The
