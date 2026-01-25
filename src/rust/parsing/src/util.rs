@@ -119,6 +119,23 @@ impl<T: Merging> Merging for Required<T> {
     }
 }
 
+impl<T: Merging> Merging for Vec<T>
+where
+    T: Clone + std::fmt::Debug,
+{
+    fn merge(self, _: Self) -> Self {
+        panic!("Not yet implemented (we don't yet need this function)")
+    }
+
+    fn coalesce(self, new: Self) -> Self {
+        if new.is_empty() {
+            return self;
+        } else {
+            return new;
+        }
+    }
+}
+
 // impl<T: Merging> Merging for Plural<T>
 // where
 //     T: Clone + std::fmt::Debug,
