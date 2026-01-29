@@ -4,8 +4,8 @@
 ///
 /// # Master Keybindings
 ///
-/// This defines version 2.0 of the master keybinding file format. Breaking changes from
-/// version 1.0 are [described below](#breaking-changes)
+/// This defines version 2.1 of the master keybinding file format. All changes (including
+/// breaking) are [described below](#breaking-changes)
 ///
 /// Master keybindings are [TOML](https://toml.io/en/) files that begin with a line
 /// containing `#:master-keybindings` and include the following top-level
@@ -101,6 +101,25 @@
 /// ```
 /// ## Breaking Changes
 ///
+/// ### 2.1
+///
+/// The following, non-breaking changes were introduced in this version
+///
+/// - `define.bind.before/after`: Default binding definitions can now include a sequence of
+/// commands to execute before or after the command or commands executed with
+/// `bind.command`.
+/// - expression evaluation within optional string arrays changed: when using an expression
+/// for a fields that can be a string or an array of strings (e.g. `mode`), the expression
+/// must be a string not a array of strings, and that expression can return either a string
+/// or a array of strings. This was the originally intended behavior though untested and
+/// undocumented. It previously worked this way in some cases (`mode` and `tags`) but not
+/// others (`prefixes.anyOf` and `prefixes.allBut`). This inconsistency has been fixed and
+/// is now tested for, and the intended behavior documented. While technically a breaking
+/// change, the change is small enough and its impact minor enough that it was decided not
+/// to bump the major version of the file format.
+///
+/// ### 2.0
+///
 /// The following changes were made from version 1.0 of the file format.
 ///
 /// - `header.version` is now 2.0
@@ -133,6 +152,11 @@
 ///   - removed `(re)storeNamed` commands
 ///   - replay-related command fields have changed their semantics, see examples
 ///     under [replayFromHistory](/commands/replayFromHistory)
+///
+/// ### 1.0
+///
+/// THis was the original file format version
+///
 #[allow(unused_imports)]
 use log::{error, info};
 
@@ -255,7 +279,7 @@ impl KeyFile {
         let version = input.header.version.as_ref();
         if !VersionReq::parse("2.0").unwrap().matches(version) {
             let r: Result<()> = Err(wrn!(
-                "This version of master key is only compatible with the 2.0 file format."
+                "This version of master key is only compatible version 2 of the file format."
             ))
             .with_range(&input.header.version.span());
             errors.push(r.unwrap_err().into());
@@ -291,7 +315,7 @@ impl KeyFile {
             }
         };
         let mut define = if !skip_define {
-            match Define::new(define_input, &mut scope, warnings) {
+            match Define::new(define_input, &mut scope, warnings, version) {
                 Err(mut es) => {
                     errors.append(&mut es.errors);
                     Define::default()
@@ -329,7 +353,23 @@ impl KeyFile {
 
         // [[bind]]
         let input_iter = input.bind.into_iter().flatten().map(|x| {
+            // validate `before/after`
             let span = x.span().clone();
+            if !x.as_ref().before.is_none() {
+                errors.push(
+                    Result::<()>::Err(err!("`before` is reserved for `[[defined.bind]]`").into())
+                        .with_range(&span)
+                        .unwrap_err(),
+                );
+            }
+            if !x.as_ref().before.is_none() {
+                errors.push(
+                    Result::<()>::Err(err!("`before` is reserved for `[[defined.bind]]`").into())
+                        .with_range(&span)
+                        .unwrap_err(),
+                );
+            }
+
             return Ok(Spanned::new(
                 span.clone(),
                 define.expand(x.into_inner()).with_range(&span)?,
@@ -3340,6 +3380,35 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn before_after_commands() {
+        let data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.0.0"
+
+        [[define.bind]]
+        id = "add_commands"
+
+        [[define.bind.after]]
+        command = "foo"
+
+        [[define.bind.before]]
+        command = "bar"
+
+        [[bind]]
+        default = "{{bind.add_commands}}"
+        key = "cmd+b"
+        command = "biz"
+        "#;
+        let result = parse_keybinding_data(&data);
+        let commands = result.file.unwrap().bind[0].clone().commands;
+        assert_eq!(commands[0].command, "bar");
+        assert_eq!(commands[1].command, "biz");
+        assert_eq!(commands[2].command, "foo");
+    }
+
+    #[test]
     fn text_doc_parsing() {
         let data = std::fs::read("src/test_files/text-docs.toml").unwrap();
         let result = parse_keybinding_data(&data);
@@ -3414,6 +3483,18 @@ pub(crate) mod tests {
                 .as_str(),
             &"k"
         );
+    }
+
+    #[test]
+    fn test_plural_expressions() {
+        let data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.1.0"
+
+        "#;
+        let result = parse_keybinding_data(&data);
     }
 
     #[test]
