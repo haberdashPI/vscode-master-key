@@ -18,7 +18,7 @@ use crate::{
     },
     file::KeyFileResult,
     resolve,
-    util::{Required, Resolving},
+    util::{Merging, Required, Resolving},
     wrn,
 };
 
@@ -75,43 +75,44 @@ pub struct CommandInput {
     other_fields: HashMap<String, toml::Value>,
 }
 
-// impl Expanding for CommandInput {
-//     fn is_constant(&self) -> bool {
-//         if self.command.is_constant() {
-//             return false;
-//         }
-//         if self.args.is_constant() {
-//             return false;
-//         }
-//         return true;
-//     }
-//     fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
-//     where
-//         F: FnMut(Expression) -> Result<Value>,
-//     {
-//         let mut errors = Vec::new();
-//         let result = CommandInput {
-//             id: self.id,
-//             command: self.command.map_expressions(f).unwrap_or_else(|mut e| {
-//                 errors.append(&mut e.errors);
-//                 Spanned::new(UNKNOWN_RANGE, Required::DefaultValue)
-//             }),
-//             args: self.args.map_expressions(f).unwrap_or_else(|mut e| {
-//                 errors.append(&mut e.errors);
-//                 None
-//             }),
-//             skipWhen: self.skipWhen.map_expressions(f).unwrap_or_else(|mut e| {
-//                 errors.append(&mut e.errors);
-//                 None
-//             }),
-//         };
-//         if errors.len() > 0 {
-//             return Err(errors.into());
-//         } else {
-//             return Ok(result);
-//         }
-//     }
-// }
+impl Expanding for CommandInput {
+    fn is_constant(&self) -> bool {
+        if self.command.is_constant() {
+            return false;
+        }
+        if self.args.is_constant() {
+            return false;
+        }
+        return true;
+    }
+    fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
+    where
+        F: FnMut(Expression) -> Result<Value>,
+    {
+        let mut errors = Vec::new();
+        let result = CommandInput {
+            id: self.id,
+            command: self.command.map_expressions(f).unwrap_or_else(|mut e| {
+                errors.append(&mut e.errors);
+                Spanned::new(UNKNOWN_RANGE, Required::DefaultValue)
+            }),
+            args: self.args.map_expressions(f).unwrap_or_else(|mut e| {
+                errors.append(&mut e.errors);
+                None
+            }),
+            skipWhen: self.skipWhen.map_expressions(f).unwrap_or_else(|mut e| {
+                errors.append(&mut e.errors);
+                None
+            }),
+            other_fields: self.other_fields,
+        };
+        if errors.len() > 0 {
+            return Err(errors.into());
+        } else {
+            return Ok(result);
+        }
+    }
+}
 
 impl CommandInput {
     pub(crate) fn without_id(&self) -> Self {
@@ -431,9 +432,27 @@ impl Resolving<Vec<Command>> for Vec<CommandInput> {
     }
 }
 
+impl Resolving<Vec<Command>> for Vec<Spanned<CommandInput>> {
+    fn resolve(self, name: &'static str, scope: &mut Scope) -> ResultVec<Vec<Command>> {
+        Ok(flatten_errors(self.into_iter().map(|x| {
+            let span = x.span().clone();
+            return Ok(x.into_inner().resolve(name, scope).with_range(&span)?);
+        }))?)
+    }
+}
+
 impl Resolving<Command> for CommandInput {
     fn resolve(self, _name: &'static str, scope: &mut Scope) -> ResultVec<Command> {
         return Ok(Command::new(self, scope)?);
+    }
+}
+
+impl Merging for CommandInput {
+    fn merge(self, _new: Self) -> Self {
+        panic!("Not yet implemented")
+    }
+    fn coalesce(self, new: Self) -> Self {
+        return new;
     }
 }
 
