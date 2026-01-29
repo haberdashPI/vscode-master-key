@@ -70,7 +70,7 @@ foreach.item = ['''{{[
     #{mode: "visual", operator: false},
 ]}}''']
 mode = '{{item.mode}}'
-prefixes.anyOf = ['{{ if item.operator { val.operatorPrefixes } else { [""] } }}']
+prefixes.anyOf = '{{ if item.operator { val.operatorPrefixes } else { [""] } }}'
 when = '{{ if item.operator { "master-key.val.operatorCount > 0" } else { "true" } }}'
 
 [[define.bind.after]]

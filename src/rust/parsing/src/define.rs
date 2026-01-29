@@ -220,6 +220,7 @@ impl Define {
         input: DefineInput,
         scope: &mut Scope,
         warnings: &mut Vec<ParseError>,
+        version: Version,
     ) -> ResultVec<Define> {
         let mut resolved_bind = HashMap::<String, BindingInput>::new();
         let mut resolved_command = HashMap::<String, CommandInput>::new();
@@ -283,6 +284,24 @@ impl Define {
             let span = id
                 .ok_or_else(|| err("requires `id` field"))
                 .with_range(&def.span());
+            if version < semver::VersionReq::parse("2.1").unwrap() {
+                if !def.get_ref().before.is_none() {
+                    let err: Result<()> = Err(wrn!(
+                        "`before` was introduced in version 2.1, header specifies\
+                         version {version}",
+                    ))
+                    .with_range(&def.span());
+                    warnings.push(err.unwrap_err());
+                }
+                if !def.get_ref().after.is_none() {
+                    let err: Result<()> = Err(wrn!(
+                        "`after` was introduced in version 2.1, header specifies\
+                         version {version}",
+                    ))
+                    .with_range(&def.span());
+                    warnings.push(err.unwrap_err());
+                }
+            }
             match span {
                 Err(e) => errors.push(e.into()),
                 Ok(x) => match x.resolve("`id`", scope) {

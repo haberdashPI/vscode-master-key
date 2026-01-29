@@ -2,6 +2,11 @@
 - implement before/after fields for `[[bind]]`
     - [x] add check to validate that `before/after` aren't explicitly specified
       outside of `[[define.bind]]`
+    - [X] fix handling of expressions in plurals
+        - [X] implement
+        - [X] document
+        - [ ] test
     - [x] expand `before/after` into `commands` inside of `Command::new`
-    - [ ] add rust unit tests
-        - [ ] final bindings include before and after commands
+    - [X] add rust unit tests
+        - [X] final bindings include before and after commands
+        - [ ] tests for 2.1 warnings
