@@ -108,15 +108,6 @@
 /// - `define.bind.before/after`: Default binding definitions can now include a sequence of
 /// commands to execute before or after the command or commands executed with
 /// `bind.command`.
-/// - expression evaluation within optional string arrays changed: when using an expression
-/// for a fields that can be a string or an array of strings (e.g. `mode`), the expression
-/// must be a string not a array of strings, and that expression can return either a string
-/// or a array of strings. This was the originally intended behavior though untested and
-/// undocumented. It previously worked this way in some cases (`mode` and `tags`) but not
-/// others (`prefixes.anyOf` and `prefixes.allBut`). This inconsistency has been fixed and
-/// is now tested for, and the intended behavior documented. While technically a breaking
-/// change, the change is small enough and its impact minor enough that it was decided not
-/// to bump the major version of the file format.
 ///
 /// ### 2.0
 ///
@@ -3487,14 +3478,87 @@ pub(crate) mod tests {
 
     #[test]
     fn test_plural_expressions() {
-        let data = r#"
+        let outside_expressions = r#"
         #:master-keybindings
 
         [header]
         version = "2.1.0"
 
+        [[mode]]
+        name = "a"
+        default = true
+        whenNoBinding = 'insertCharacters'
+
+        [[mode]]
+        name = "b"
+
+        [[bind]]
+        key = "h"
+        command = "master-key.prefix"
+
+        [[bind]]
+        key = "x"
+        mode = '{{["a"]}}'
+        tags = '{{["k", "h"]}}'
+        prefixes.anyOf = '{{["h"]}}'
+        command = "foo"
+
+        [[bind]]
+        key = "u"
+        command = "biz"
+        prefixes.allBut = '{{["h"]}}'
         "#;
-        let result = parse_keybinding_data(&data);
+
+        let inside_expressions = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.1.0"
+
+        [[mode]]
+        name = "a"
+        default = true
+        whenNoBinding = 'insertCharacters'
+
+        [[mode]]
+        name = "b"
+
+        [[bind]]
+        key = "h"
+        command = "master-key.prefix"
+
+        [[bind]]
+        key = "y"
+        command = "bar"
+        mode = ['{{"a"}}']
+        tags = ['{{"k"}}', '{{"h"}}']
+        prefixes.anyOf = ['{{"h"}}']
+
+        [[bind]]
+        key = "v"
+        command = "baz"
+        prefixes.allBut = ['{{"h"}}']
+        "#;
+
+        let outside_result = parse_keybinding_data(&outside_expressions);
+        let bind = outside_result.file.unwrap().bind;
+        assert_eq!(bind[1].mode, ["a".to_string()]);
+        assert_eq!(bind[1].tags, ["k".to_string(), "h".to_string()]);
+        if let Prefix::AnyOf(prefixes) = bind[1].prefixes.clone() {
+            assert_eq!(prefixes, ["h".to_string()]);
+        } else {
+            assert!(false);
+        }
+
+        let inside_result = parse_keybinding_data(&inside_expressions);
+        let bind = inside_result.file.unwrap().bind;
+        assert_eq!(bind[1].mode, ["a".to_string()]);
+        assert_eq!(bind[1].tags, ["k".to_string(), "h".to_string()]);
+        if let Prefix::AnyOf(prefixes) = bind[1].prefixes.clone() {
+            assert_eq!(prefixes, ["h".to_string()]);
+        } else {
+            assert!(false);
+        }
     }
 
     #[test]
