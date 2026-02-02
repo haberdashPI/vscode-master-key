@@ -18,7 +18,7 @@ pub mod foreach;
 pub mod prefix;
 pub mod validation;
 
-use crate::bind::command::{Command, CommandInput, CommandOutput, regularize_commands};
+use crate::bind::command::{Command, CommandOutput, regularize_commands};
 use crate::bind::prefix::{Prefix, PrefixInput};
 use crate::bind::validation::{BindingReference, KeyBinding};
 use crate::error::{ErrorContext, ParseError, Result, ResultVec, err};
@@ -116,7 +116,7 @@ pub struct BindingInput {
     ///
     /// - `mode`: The key mode (or modes) for which the binding is active. Can be a string
     ///   or an array of strings. The default mode is used when this field is not specified.
-    ///   when using an [expression](/expressions/index) there are two available functions
+    ///   When using an [expression](/expressions/index) there are two available functions
     ///   of use here: [`all_modes`](/expressions/#read-time-evaluation) and
     ///   [`not_modes`](/expressions/#read-time-evaluation)
     pub mode: Option<Spanned<TypedValue<Plural<String>>>>,
@@ -151,13 +151,9 @@ pub struct BindingInput {
     ///   the binding. This includes the implicit prefixes of any other keybinding. `false`
     ///   means no other key sequence can occur prior to this binding (this is the default
     ///   behavior).
-    ///   - `anyOf`: A single string or an array of strings, each an allowed prefix. When
-    ///      using an expression this value must be a string (not an array of strings) and
-    ///      the expression can return either a string or an array of strings
+    ///   - `anyOf`: A single string or an array of strings, each an allowed prefix.
     ///   - `allBut`: A single string or an array of strings; all prefixes *except* those
-    ///      specified here are valid. When using an expression this value must be a string
-    ///      (not an array of strings) and the expression can return either a string or an
-    ///      array of strings
+    ///      specified here are valid.
     pub prefixes: Option<Spanned<PrefixInput>>,
 
     /// @forBindingField bind
@@ -177,17 +173,11 @@ pub struct BindingInput {
     ///   accept a count value as an argument.
     repeat: Option<Spanned<TypedValue<i32>>>,
 
-    // NOTE: these fields are documented in `define.rs`
-    pub before: Option<Vec<Spanned<command::CommandInput>>>,
-    pub after: Option<Vec<Spanned<command::CommandInput>>>,
-
     /// @forBindingField bind
     ///
     /// - `tags`: An array of strings used to characterize the behavior of the binding. They
     /// have no inherent meaning but are often used when filtering which commands in a call
     /// to [`master-key.replayFromHistory`](/commands/replayFromHistory) can be replayed.
-    /// When using an expression this value must be a string (not an array of strings) and
-    /// the expression can return either a string or an array of strings
     #[serde(default = "span_plural_default")]
     tags: Spanned<TypedValue<Plural<String>>>,
 
@@ -247,8 +237,6 @@ impl BindingInput {
     pub(crate) fn without_id(&self) -> Self {
         return BindingInput {
             id: None,
-            before: self.before.clone(),
-            after: self.after.clone(),
             command: self.command.clone(),
             args: self.args.clone(),
             key: self.key.clone(),
@@ -292,8 +280,6 @@ impl Merging for BindingInput {
         BindingInput {
             id: y.id,
             command: self.command.coalesce(y.command),
-            before: self.before.coalesce(y.before),
-            after: self.after.coalesce(y.after),
             args: self.args.merge(y.args),
             key: self.key.coalesce(y.key),
             when: self.when.coalesce(y.when),
@@ -343,14 +329,6 @@ impl Expanding for BindingInput {
         let mut errors = Vec::new();
         let result = BindingInput {
             id: self.id,
-            before: self.before.map_expressions(f).unwrap_or_else(|mut e| {
-                errors.append(&mut e.errors);
-                None
-            }),
-            after: self.after.map_expressions(f).unwrap_or_else(|mut e| {
-                errors.append(&mut e.errors);
-                None
-            }),
             foreach: self.foreach.map_expressions(f).unwrap_or_else(|mut e| {
                 errors.append(&mut e.errors);
                 None
@@ -898,30 +876,7 @@ impl Binding {
         scope: &mut Scope,
         warnings: &mut Vec<ParseError>,
     ) -> ResultVec<Self> {
-        let mut errors = Vec::new();
-
-        let mut commands = regularize_commands(&input, scope, warnings)?;
-
-        // before/after expansion
-        if let Some(before) = input.before.clone() {
-            match before.resolve("before", scope) {
-                Err(mut e) => {
-                    errors.append(&mut e.errors);
-                }
-                Ok(mut before) => {
-                    before.append(&mut commands);
-                    commands = before;
-                }
-            };
-        }
-        if let Some(after) = input.after.clone() {
-            match after.resolve("after", scope) {
-                Err(mut e) => {
-                    errors.append(&mut e.errors);
-                }
-                Ok(mut after) => commands.append(&mut after),
-            }
-        }
+        let commands = regularize_commands(&input, scope, warnings)?;
 
         // are there other fields, not defined by the spec?
         input.check_other_fields(warnings);
@@ -1021,8 +976,6 @@ impl Binding {
         mut binds: Vec<Binding>,
         spans: &Vec<Range<usize>>,
     ) -> ResultVec<Vec<Binding>> {
-        let mut errors = Vec::new();
-
         let mut all_prefixes_to_spans = HashMap::new();
         let mut implicit_prefixes = HashSet::new();
         all_prefixes_to_spans.insert("".to_string(), UNKNOWN_RANGE);
@@ -1072,6 +1025,8 @@ impl Binding {
                 }
             };
         }
+
+        let mut errors = Vec::new();
 
         // check the prefixes; are there any explicit prefixes (defined by `AnyOf`) that
         // aren't defined elsewhere (via `key`?); this is is an error
