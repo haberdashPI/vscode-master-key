@@ -3417,6 +3417,91 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn test_plural_expressions() {
+        let outside_expressions = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.1.0"
+
+        [[mode]]
+        name = "a"
+        default = true
+        whenNoBinding = 'insertCharacters'
+
+        [[mode]]
+        name = "b"
+
+        [[bind]]
+        key = "h"
+        command = "master-key.prefix"
+
+        [[bind]]
+        key = "x"
+        mode = '{{["a"]}}'
+        tags = '{{["k", "h"]}}'
+        prefixes.anyOf = '{{["h"]}}'
+        command = "foo"
+
+        [[bind]]
+        key = "u"
+        command = "biz"
+        prefixes.allBut = '{{["h"]}}'
+        "#;
+
+        let inside_expressions = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.1.0"
+
+        [[mode]]
+        name = "a"
+        default = true
+        whenNoBinding = 'insertCharacters'
+
+        [[mode]]
+        name = "b"
+
+        [[bind]]
+        key = "h"
+        command = "master-key.prefix"
+
+        [[bind]]
+        key = "y"
+        command = "bar"
+        mode = ['{{"a"}}']
+        tags = ['{{"k"}}', '{{"h"}}']
+        prefixes.anyOf = ['{{"h"}}']
+
+        [[bind]]
+        key = "v"
+        command = "baz"
+        prefixes.allBut = ['{{"h"}}']
+        "#;
+
+        let outside_result = parse_keybinding_data(&outside_expressions);
+        let bind = outside_result.file.unwrap().bind;
+        assert_eq!(bind[1].mode, ["a".to_string()]);
+        assert_eq!(bind[1].tags, ["k".to_string(), "h".to_string()]);
+        if let Prefix::AnyOf(prefixes) = bind[1].prefixes.clone() {
+            assert_eq!(prefixes, ["h".to_string()]);
+        } else {
+            assert!(false);
+        }
+
+        let inside_result = parse_keybinding_data(&inside_expressions);
+        let bind = inside_result.file.unwrap().bind;
+        assert_eq!(bind[1].mode, ["a".to_string()]);
+        assert_eq!(bind[1].tags, ["k".to_string(), "h".to_string()]);
+        if let Prefix::AnyOf(prefixes) = bind[1].prefixes.clone() {
+            assert_eq!(prefixes, ["h".to_string()]);
+        } else {
+            assert!(false);
+        }
+    }
+
+    #[test]
     fn larkin_test() {
         // the default presets should be parseable (also a good "integration" test to ensure
         // our parsing works at scale)
