@@ -4,7 +4,6 @@ use crate::expression::value::{Expanding, Expression, TypedValue, Value};
 use crate::util::{LeafValue, Merging, Plural, Resolving};
 
 use serde::{Deserialize, Serialize};
-use toml::Spanned;
 
 // see the documentation for the `prefix` field in `BindingInput`
 
@@ -21,8 +20,8 @@ use toml::Spanned;
 #[derive(Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub enum PrefixInput {
-    AnyOf(Spanned<TypedValue<Plural<String>>>),
-    AllBut(Spanned<TypedValue<Plural<String>>>),
+    AnyOf(Plural<TypedValue<String>>),
+    AllBut(Plural<TypedValue<String>>),
     Any(TypedValue<bool>),
 }
 

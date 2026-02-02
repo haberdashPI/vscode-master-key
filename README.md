@@ -210,7 +210,7 @@ args.acceptAfter = 1
 [[bind.args.commands]]
 command = "selection-utilities.selectBetween"
 args.str = "{{key.captured}}"
-args.inclusive = false
+args.fartherBoundary = false
 ```
 
 ### Record and Repeat Commands
