@@ -220,7 +220,7 @@ impl Define {
         input: DefineInput,
         scope: &mut Scope,
         warnings: &mut Vec<ParseError>,
-        version: Version,
+        version: &semver::Version,
     ) -> ResultVec<Define> {
         let mut resolved_bind = HashMap::<String, BindingInput>::new();
         let mut resolved_command = HashMap::<String, CommandInput>::new();
@@ -284,7 +284,7 @@ impl Define {
             let span = id
                 .ok_or_else(|| err("requires `id` field"))
                 .with_range(&def.span());
-            if version < semver::VersionReq::parse("2.1").unwrap() {
+            if semver::VersionReq::parse("<2.1").unwrap().matches(&version) {
                 if !def.get_ref().before.is_none() {
                     let err: Result<()> = Err(wrn!(
                         "`before` was introduced in version 2.1, header specifies\
@@ -453,6 +453,7 @@ mod tests {
             toml::from_str::<DefineInput>(data).unwrap(),
             &mut scope,
             &mut warnings,
+            &semver::Version::parse("2.1.0").unwrap(),
         )
         .unwrap();
 
