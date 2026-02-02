@@ -945,7 +945,6 @@ where
             TypedValue::Variable(v) => {
                 let result = v.map_expressions(f)?;
                 if result.is_constant() {
-                    // TODO: WIP debugging
                     let toml: toml::Value = result.into();
                     let x = TypedValue::Constant(toml.try_into()?);
                     x

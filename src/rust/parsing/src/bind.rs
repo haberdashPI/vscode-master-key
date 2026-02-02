@@ -143,17 +143,17 @@ pub struct BindingInput {
 
     /// @forBindingField bind
     ///
-    /// - `prefixes`: (default `prefixes.any=false`) expresses the allowed key sequences that
-    /// can occur *before* this keybinding. Explicit prefixes listed here should be define
-    /// elsewhere with a [`master-key.prefix`](/commands/prefix) command or they will raise
-    /// an error. The value is an object with only one of the following three keys:
+    /// - `prefixes`: (default `prefixes.any=false`) expresses the allowed key sequences
+    /// that can occur *before* this keybinding. Explicit prefixes listed here should be
+    /// define elsewhere with a [`master-key.prefix`](/commands/prefix) command or they will
+    /// raise an error. The value is an object with only one of the following three keys:
     ///   - `any`: when `true` any prefix defined elsewhere in the file is allowed before
     ///   the binding. This includes the implicit prefixes of any other keybinding. `false`
     ///   means no other key sequence can occur prior to this binding (this is the default
     ///   behavior).
-    ///   - `anyOf`: A single string or an array of strings, each an allowed prefix
+    ///   - `anyOf`: A single string or an array of strings, each an allowed prefix.
     ///   - `allBut`: A single string or an array of strings; all prefixes *except* those
-    ///   specified here are valid
+    ///      specified here are valid.
     pub prefixes: Option<Spanned<PrefixInput>>,
 
     /// @forBindingField bind
