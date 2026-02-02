@@ -18,7 +18,7 @@ pub mod foreach;
 pub mod prefix;
 pub mod validation;
 
-use crate::bind::command::{Command, CommandInput, CommandOutput, regularize_commands};
+use crate::bind::command::{Command, CommandOutput, regularize_commands};
 use crate::bind::prefix::{Prefix, PrefixInput};
 use crate::bind::validation::{BindingReference, KeyBinding};
 use crate::error::{ErrorContext, ParseError, Result, ResultVec, err};
@@ -116,7 +116,7 @@ pub struct BindingInput {
     ///
     /// - `mode`: The key mode (or modes) for which the binding is active. Can be a string
     ///   or an array of strings. The default mode is used when this field is not specified.
-    ///   when using an [expression](/expressions/index) there are two available functions
+    ///   When using an [expression](/expressions/index) there are two available functions
     ///   of use here: [`all_modes`](/expressions/#read-time-evaluation) and
     ///   [`not_modes`](/expressions/#read-time-evaluation)
     pub mode: Option<Spanned<TypedValue<Plural<String>>>>,
@@ -151,13 +151,9 @@ pub struct BindingInput {
     ///   the binding. This includes the implicit prefixes of any other keybinding. `false`
     ///   means no other key sequence can occur prior to this binding (this is the default
     ///   behavior).
-    ///   - `anyOf`: A single string or an array of strings, each an allowed prefix. When
-    ///      using an expression this value must be a string (not an array of strings) and
-    ///      the expression can return either a string or an array of strings
+    ///   - `anyOf`: A single string or an array of strings, each an allowed prefix.
     ///   - `allBut`: A single string or an array of strings; all prefixes *except* those
-    ///      specified here are valid. When using an expression this value must be a string
-    ///      (not an array of strings) and the expression can return either a string or an
-    ///      array of strings
+    ///      specified here are valid.
     pub prefixes: Option<Spanned<PrefixInput>>,
 
     /// @forBindingField bind
@@ -186,8 +182,6 @@ pub struct BindingInput {
     /// - `tags`: An array of strings used to characterize the behavior of the binding. They
     /// have no inherent meaning but are often used when filtering which commands in a call
     /// to [`master-key.replayFromHistory`](/commands/replayFromHistory) can be replayed.
-    /// When using an expression this value must be a string (not an array of strings) and
-    /// the expression can return either a string or an array of strings
     #[serde(default = "span_plural_default")]
     tags: Spanned<TypedValue<Plural<String>>>,
 
