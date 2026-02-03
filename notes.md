@@ -5,8 +5,8 @@
     - [X] fix handling of expressions in plurals
         - [X] implement
         - [X] document
-        - [ ] test
+        - [X] test
     - [x] expand `before/after` into `commands` inside of `Command::new`
     - [X] add rust unit tests
         - [X] final bindings include before and after commands
-        - [ ] tests for 2.1 warnings
+        - [X] tests for 2.1 warnings
