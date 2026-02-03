@@ -3397,6 +3397,40 @@ pub(crate) mod tests {
         assert_eq!(commands[0].command, "bar");
         assert_eq!(commands[1].command, "biz");
         assert_eq!(commands[2].command, "foo");
+
+        assert!(
+            result.errors.as_ref().unwrap()[0]
+                .message
+                .contains("`before`")
+        );
+        assert!(
+            result.errors.as_ref().unwrap()[1]
+                .message
+                .contains("`after`")
+        );
+
+        let data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.1.0"
+
+        [[define.bind]]
+        id = "add_commands"
+
+        [[define.bind.after]]
+        command = "foo"
+
+        [[define.bind.before]]
+        command = "bar"
+
+        [[bind]]
+        default = "{{bind.add_commands}}"
+        key = "cmd+b"
+        command = "biz"
+        "#;
+        let result = parse_keybinding_data(&data);
+        assert_eq!(result.errors.unwrap().len(), 0)
     }
 
     #[test]
