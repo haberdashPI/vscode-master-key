@@ -1049,15 +1049,7 @@ impl Binding {
                     let prefixes = list_prefixes(seq);
                     let mut prefix_index = 0;
                     for s in prefixes[0..(prefixes.len() - offset)].iter() {
-                        // if the first listed prefix is "" we need to skip it when joining
-                        // (e.g. to avoid ["", "g"] becoming " g")
-                        let joined = if let Some(x) = s.first()
-                            && x.len() == 0
-                        {
-                            s[1..].join(" ")
-                        } else {
-                            s.join(" ")
-                        };
+                        let joined = s.join(" ");
                         if prefix_index >= explicit_len {
                             implicit_prefixes.insert(joined.clone());
                         }
@@ -1664,10 +1656,8 @@ impl Binding {
         let prefix_seq = explicit_seq
             .into_iter()
             .chain(self.key.iter().map(String::as_str));
-
         // generate a keybindings.json entry for each listed prefix of this Binding
         let prefixes = list_prefixes(prefix_seq);
-
         let mut old_prefix_code = 0; // 0 is never returned by `key_code` method
         let mut old_prefix_str = "".to_string();
         let mut prefix_index = 0;
