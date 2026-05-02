@@ -451,7 +451,7 @@ export async function validateKeybindings(
 
 // a list of all presets
 let extensionPresetsDir: vscode.Uri;
-const presetFiles = ['larkin.toml'];
+const presetFiles = ['larkin.toml', 'vim.toml'];
 function listPresets() {
     // special case this directory (so it works (??) in the web context)
     const presets = [];

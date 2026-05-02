@@ -2,7 +2,7 @@
 use log::info;
 
 use core::ops::Range;
-use rhai::{CustomType, TypeBuilder};
+use rhai::{CustomType, Dynamic, TypeBuilder};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use toml::Spanned;
@@ -449,7 +449,7 @@ impl Resolving<Command> for CommandInput {
 
 impl Merging for CommandInput {
     fn merge(self, _new: Self) -> Self {
-        panic!("Not yet implemented")
+        panic!("Not yet implemented");
     }
     fn coalesce(self, new: Self) -> Self {
         return new;
