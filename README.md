@@ -9,10 +9,13 @@
 Master Key is a tool for becoming a power-user of your [VSCode](https://code.visualstudio.com/) keybindings. Features include:
 
 - extensive documentation of your bindings (sidebar suggestions, visual guide and inline text documentation)
-- predefined keybinding sets
-- modal bindings (ala Vim),
+- modal bindings
 - recording of keyboard input (a.k.a. keyboard macros)
 - a powerful TOML-based keybinding specification
+- several predefined keybinding sets:
+    - **Simple Vim**: a modest Vim binding set, focused on keybindings from [this cheatsheet](https://vim.rtorr.com/). A good place to get started with Master Key for user's comfortable with Vim.
+    - **Larkin**: @haberdashPI's daily driver, inspired by Kakaune/Helix. A large
+      binding set that shows off all of the available features.
 
 This curated snippet from the Master Key's Larkin preset defines a VIM-like feature to update a count argument along with a downward motion that uses the count argument:
 
@@ -61,8 +64,8 @@ The easiest way to get started is to activate the built-in keybindings that come
 1. Install this extension
 2. On windows only: restart VSCode — there is an [active investigation to avoid this workaround](https://github.com/haberdashPI/vscode-master-key/issues/51).
 3. Run the command `Master Key: Activate Keybindings`
-4. Select the built-in binding set "Larkin"
-5. Review [Larkin's documentation](https://haberdashpi.github.io/vscode-master-key/presets/larkin) (e.g. using `Master Key: Show Text Documentation`)
+4. Select one of the built-in binding sets (e.g. "Simple Vim")
+5. Review the binding set's documentation using `Master Key: Show Text Documentation`
 
 <!-- STOP_DOCS -->
 
