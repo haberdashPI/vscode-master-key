@@ -29,6 +29,7 @@ export default defineConfig({
             { text: 'Bindings',
                 items: [
                     { text: 'Larkin', link: '/presets/larkin' },
+                    { text: 'Vim', link: '/presets/vim' },
                 ]
             },
             {
