@@ -3612,5 +3612,23 @@ pub(crate) mod tests {
         //     FileDocSection::write_markdown(&result.docs, true)
         // )
     }
+
+    #[test]
+    fn vim_test() {
+        // the default presets should be parseable (also a good "integration" test to ensure
+        // our parsing works at scale)
+        let data = std::fs::read("../../presets/vim.toml").unwrap();
+
+        let mut warnings = Vec::new();
+        let mut scope = Scope::new();
+        let result = parse_bytes_helper(&data, &mut warnings, &mut scope).unwrap();
+        assert_eq!(result.bind.len(), 126);
+
+        assert!(FileDocSection::write_markdown(&result.docs, true).len() > 0);
+        // info!(
+        //     "docs: {}",
+        //     FileDocSection::write_markdown(&result.docs, true)
+        // )
+    }
     // TODO: write unit tests for `debug` function
 }
