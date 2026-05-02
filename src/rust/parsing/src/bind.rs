@@ -1786,7 +1786,6 @@ pub struct ReifiedBinding {
     // pre-resolved commands (arguments are still defined by expressions)
     raw_commands: Vec<Command>,
     // as commands are resolved, one by run, they get stored here
-    #[rhai_type(skip)]
     pub commands: Vec<CommandOutput>,
     // the keybinding mode active when this binding was reified
     pub mode: String,
