@@ -4,22 +4,17 @@
 
 ## Keybinding Customization
 
-There are two ways to start customizing bindings:
-
-- Review the built-in `Larkin` presets: run the command `Master key: New Keybinding Copy` to start editing a copy of this preset. This is a toml file which has comments throughout.
-- Review the [binding file format](/bindings/index) and [command documentation](/commands/index), and start creating your own TOML file.
-
-The steps are:
+To start creating your own bindings:
 
 1. Create a new a toml file
 2. Optional: copy a preset into the file using `Master key: New Keybinding Copy`
 3. Optional: import any existing user bindings, from `keyindings.json`, by calling `Master Key: Import User Keybindings` in this new toml file
-4. Add bindings, as per the [binding format](./bindings/) and [command documentation](./commands/).
+4. Add/edit bindings, using the [binding format](./bindings/) and [command documentation](./commands/) as a guide.
 5. Activate the bindings with `Master Key: Activate Keybindings` at any time.
 
 ## Roadmap
 
-Master Key has reached a relatively stable state. There are no immediate plans to introduce major breaking changes. The major effort remaining is to create additional keybinding presets for Emacs, Vim and Helix.
+Master Key has reached a relatively stable state. There are no immediate plans to introduce major breaking changes. The major effort remaining is to improve the Vim bindings and create additional keybinding presets for Emacs and Helix.
 
 ## Related Work
 
