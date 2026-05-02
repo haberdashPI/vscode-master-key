@@ -226,22 +226,6 @@ impl Scope {
             },
         );
 
-        // Handle indexing of command output (used in the command history)
-        engine.register_indexer_get(
-            |v: &mut Vec<CommandOutput>,
-             index: i64|
-             -> std::result::Result<CommandOutput, Box<EvalAltResult>> {
-                if index < 0 || index as usize >= v.len() {
-                    Err(
-                        EvalAltResult::ErrorIndexNotFound(index.into(), rhai::Position::NONE)
-                            .into(),
-                    )
-                } else {
-                    Ok(v[index as usize].clone())
-                }
-            },
-        );
-
         let mut scope = Scope {
             asts: HashMap::new(),
             engine: engine,
@@ -451,15 +435,15 @@ fn last_index_of_history(
     context: rhai::NativeCallContext, // implicit argument, required to call a closure
     queue: HistoryQueue,
     f: rhai::FnPtr,
-) -> std::result::Result<i64, Box<EvalAltResult>> {
+) -> std::result::Result<usize, Box<EvalAltResult>> {
     let n = queue.borrow().len();
     let indices = 0..n;
     for i in indices.rev() {
         if f.call_within_context(&context, (i as i64,))? {
-            return Ok(i as i64);
+            return Ok(i);
         }
     }
-    return Ok(n as i64);
+    return Ok(n);
 }
 
 impl Default for Scope {
