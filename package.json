@@ -16,6 +16,13 @@
         "Other",
         "Keymaps"
     ],
+    "keywords": [
+        "keybindings",
+        "vim",
+        "modal",
+        "kakoune",
+        "helix"
+    ],
     "extensionKind": [
         "ui"
     ],
