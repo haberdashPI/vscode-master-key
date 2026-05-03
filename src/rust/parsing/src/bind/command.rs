@@ -449,7 +449,7 @@ impl Resolving<Command> for CommandInput {
 
 impl Merging for CommandInput {
     fn merge(self, _new: Self) -> Self {
-        panic!("Not yet implemented")
+        panic!("Not yet implemented");
     }
     fn coalesce(self, new: Self) -> Self {
         return new;
