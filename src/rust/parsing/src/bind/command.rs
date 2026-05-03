@@ -2,7 +2,7 @@
 use log::info;
 
 use core::ops::Range;
-use rhai::{CustomType, Dynamic, TypeBuilder};
+use rhai::{CustomType, TypeBuilder};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use toml::Spanned;
