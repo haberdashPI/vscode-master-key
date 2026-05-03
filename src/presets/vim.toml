@@ -4,16 +4,13 @@
 
 ## # Simple Vim Bindings
 
-## This Vim binding set serves as a starting place to get started learning Master Key for
-## users comfortable with Vim. Vim parity is not the goal here (vscode-neovim or VSCodeVim
-## already do that quite well): Master Key is intended to be an evolution of modal bindings
-## in the spirit of more recent editors like Kakaune and Helix. When you are ready to revise
-## the bindings for your own needs, you can call `Master Key: New Keybinding Copy` to edit a
-## copy of these bindings. Also note that the Larkin binding set is much larger
-## and will be of interest to those wishing to leverage more of Master Key's features.
+## This Vim binding set serves as a starting place to learn Master Key. Note that the goal of
+## Master Key is to create modern modal keybinding configurations, rather than achieving
+## perfect Vim parity (VSCodeVim and vscode-neovim already do this quite well). These
+## bindings can be expanded on using `Master Key: New Keybinding Copy`.
 ##
 ## This binding set was generated from the MIT licensed bindings located at
-## https://vim.rtorr.com/ using AI (Gemini CLI) and then cleaned and curated by hand.
+## https://vim.rtorr.com/ using an LLM (Gemini CLI) and then cleaned and curated by hand.
 ##
 ## Contributions to improve the keybindings are welcome and can be submitted via a
 ## [PR](https://github.com/haberdashPI/vscode-master-key/pulls)
@@ -647,8 +644,8 @@ doc.description = "operate on entire paragraph and spacing"
 ## ## Counts (0-9)
 # =============================================================================
 
-# Counts can be prefixed to commands to repeat them the given number of times.
-# e.g. `9dj` deletes 9 lines
+## Counts can be prefixed to commands to repeat them the given number of times.
+## e.g. `9dj` deletes 9 lines
 
 [[bind]]
 foreach.num = ['{{keys(`[1-9]`)}}']
@@ -659,7 +656,7 @@ finalKey = false
 args.value = "{{num}}"
 doc.kind = "util"
 doc.name = "count {{num}}"
-doc.description = "Add digit {{num}} to the count argument of a command"
+doc.description = "Add digit {{num}} to the count argument of a command."
 doc.combined.key = "0-9"
 doc.combined.name = "count 0-9"
 doc.combined.description = "Add digit 0-9 to count argument of a command"
@@ -943,6 +940,9 @@ doc.description = "redo"
 # =============================================================================
 ## ## Visual Mode
 # =============================================================================
+
+## In visual mode there is an ongoing selection that is modified by motions.
+## Commands (like `d`) operate on the selected text.
 
 [[bind]]
 key = "v"

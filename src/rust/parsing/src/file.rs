@@ -3630,5 +3630,4 @@ pub(crate) mod tests {
         //     FileDocSection::write_markdown(&result.docs, true)
         // )
     }
-    // TODO: write unit tests for `debug` function
 }
