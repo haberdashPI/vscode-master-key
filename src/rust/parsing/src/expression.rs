@@ -451,15 +451,15 @@ fn last_index_of_history(
     context: rhai::NativeCallContext, // implicit argument, required to call a closure
     queue: HistoryQueue,
     f: rhai::FnPtr,
-) -> std::result::Result<usize, Box<EvalAltResult>> {
+) -> std::result::Result<i64, Box<EvalAltResult>> {
     let n = queue.borrow().len();
     let indices = 0..n;
     for i in indices.rev() {
         if f.call_within_context(&context, (i as i64,))? {
-            return Ok(i);
+            return Ok(i as i64);
         }
     }
-    return Ok(n);
+    return Ok(n as i64);
 }
 
 impl Default for Scope {
