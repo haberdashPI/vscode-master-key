@@ -3052,15 +3052,11 @@ Use a count to specify an alternate register
 """
 key = "c"
 command = "runCommands"
-
-[[bind.args.commands]]
-command = "selection-utilities.appendToMemory"
-args.register = '{{if key.count > 0 { key.count } else { "default" } }}'
-
-[[bind.args.commands]]
-command = "selection-utilities.shrinkToActive"
-[[bind.args.commands]]
-command = "master-key.enterNormal"
+args.commands = [
+    { command = "selection-utilities.appendToMemory", args = { register = "count || 'default'" } },
+    "selection-utilities.shrinkToActive",
+    "master-key.enterNormal",
+]
 
 [[bind]]
 default = "{{bind.edit_select_edit}}"
@@ -3070,26 +3066,23 @@ load previously saved selections in the default register.
 Use a count to specify an alternate register
 """
 key = "v"
-command = "selection-utilities.restoreAndClear"
-args.register = '{{if key.count > 0 { key.count } else { "default" } }}'
+command = "runCommands"
+args.commands = [
+    { command = "selection-utilities.restoreAndClear", args = { register = "count || 'default'" } },
+]
 
 [[bind]]
 default = "{{bind.edit_select_edit}}"
 doc.name = "exchange sel"
 doc.description = """
-exchange selections: with no saved selection, saves the selection, with saved selections
-exchanges text of current selections with those of the saved selections (number of
-selections must match). Use a count to specify an alternate register.
+exchange selections: with no saved selection, saves the selection, with saved selections exchanges text of current selections with those of the saved selections (number of selections must match). Use a count to specify an alternate register.
 """
 key = "x"
 command = "runCommands"
-
-[[bind.args.commands]]
-command = "selection-utilities.swapWithMemory"
-args.register = '{{if key.count > 0 { key.count } else { "default" } }}'
-
-[[bind.args.commands]]
-command = "master-key.enterNormal"
+args.commands = [
+    { command = "selection-utilities.swapWithMemory", args = { register = "count || 'default'" } },
+    "master-key.enterNormal",
+]
 
 [[bind]]
 default = "{{bind.edit_select_edit}}"
@@ -3099,13 +3092,10 @@ remove the most recently saved selection from the list of saved selections
 """
 command = "runCommands"
 key = "n"
-
-[[bind.args.commands]]
-command = "selection-utilities.deleteLastSaved"
-args.register = '{{if key.count > 0 { key.count } else { "default" } }}'
-
-[[bind.args.commands]]
-command = "master-key.enterNormal"
+args.commands = [
+    { command = "selection-utilities.deleteLastSaved", args = { register = "count || 'default'" } },
+    "master-key.enterNormal",
+]
 
 [[bind]]
 default = "{{bind.edit_select_edit}}"
