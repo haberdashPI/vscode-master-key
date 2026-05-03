@@ -226,6 +226,22 @@ impl Scope {
             },
         );
 
+        // Handle indexing of command output (used in the command history)
+        engine.register_indexer_get(
+            |v: &mut Vec<CommandOutput>,
+             index: i64|
+             -> std::result::Result<CommandOutput, Box<EvalAltResult>> {
+                if index < 0 || index as usize >= v.len() {
+                    Err(
+                        EvalAltResult::ErrorIndexNotFound(index.into(), rhai::Position::NONE)
+                            .into(),
+                    )
+                } else {
+                    Ok(v[index as usize].clone())
+                }
+            },
+        );
+
         let mut scope = Scope {
             asts: HashMap::new(),
             engine: engine,
