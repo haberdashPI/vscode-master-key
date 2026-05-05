@@ -68,7 +68,7 @@ class CommandTreeItem extends vscode.TreeItem {
         }
 
         this.iconPath = binding.isSection ?
-            new vscode.ThemeIcon('primitive-square') :
+                new vscode.ThemeIcon('primitive-square') :
             undefined;
 
         // Optional: Add icons or context values for styling

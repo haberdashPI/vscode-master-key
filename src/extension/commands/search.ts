@@ -99,7 +99,7 @@ export function* searchMatches(
     // define what counts as a search match
     let matchesFn: (
         line: string,
-        offset: number | undefined
+        offset: number | undefined,
     ) => Generator<[number, number]>;
     if (args.regex) {
         const matcher = RegExp(target, 'g' + (args.caseSensitive ? '' : 'i'));
