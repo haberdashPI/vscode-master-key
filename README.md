@@ -14,7 +14,7 @@ Master Key is a tool for becoming a power-user of your [VSCode](https://code.vis
 - a powerful TOML-based keybinding specification
 - several predefined keybinding sets:
     - **Simple Vim**: a modest Vim binding set, focused on keybindings from [this cheatsheet](https://vim.rtorr.com/). A good place to get started with Master Key for user's comfortable with Vim.
-    - **Larkin**: @haberdashPI's daily driver, inspired by Kakoune/Helix. A large
+    - **Larkin**: @haberdashPI's daily driver, inspired by Kakaune/Helix. A large
       binding set that shows off all of the available features.
 
 This curated snippet from the Master Key's Larkin preset defines a VIM-like feature to update a count argument along with a downward motion that uses the count argument:
