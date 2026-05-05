@@ -132,7 +132,6 @@ depends = ['build --web']
 shell = 'nu -c'
 run = '''
 (pnpm exec vscode-test-web --extensionDevelopmentPath=.
-    --commit 7f08f95ad54782bd242f5536470b330282197333
     --extensionTestsPath=./out/browser/webExtensionTests.js)
 '''
 
