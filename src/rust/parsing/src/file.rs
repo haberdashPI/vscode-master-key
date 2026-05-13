@@ -3622,7 +3622,7 @@ pub(crate) mod tests {
         let mut warnings = Vec::new();
         let mut scope = Scope::new();
         let result = parse_bytes_helper(&data, &mut warnings, &mut scope).unwrap();
-        assert_eq!(result.bind.len(), 125);
+        assert_eq!(result.bind.len(), 126);
 
         assert!(FileDocSection::write_markdown(&result.docs, true).len() > 0);
         // info!(
@@ -3630,5 +3630,4 @@ pub(crate) mod tests {
         //     FileDocSection::write_markdown(&result.docs, true)
         // )
     }
-    // TODO: write unit tests for `debug` function
 }
