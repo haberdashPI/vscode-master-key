@@ -536,6 +536,7 @@ async function search(args_: unknown[]): Promise<CommandResult> {
 
     const mode: string = keyState.get(MODE) || bindings.default_mode();
     const state = getSearchState(editor, mode, currentSearch);
+    const oldSearchText = state.text;
     state.args = args;
     state.text = args.text || '';
     state.searchFrom = editor.selections;
@@ -582,6 +583,7 @@ async function search(args_: unknown[]): Promise<CommandResult> {
                         inputBox.title = 'Search';
                         inputBox.prompt = 'Enter text to search for';
                     }
+                    inputBox.value = oldSearchText;
                     inputBox.onDidChangeValue(async (str: string) => {
                         state.text = str;
                         navigateToNextMatch(state, editor, false);
