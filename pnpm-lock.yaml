@@ -101,9 +101,6 @@ importers:
       pako:
         specifier: ^2.1.0
         version: 2.1.0
-      safe-expression:
-        specifier: ^1.1.0
-        version: 1.1.0
       semver:
         specifier: ^7.7.4
         version: 7.7.4
@@ -2844,9 +2841,6 @@ packages:
 
   safe-buffer@5.2.1:
     resolution: {integrity: sha512-rp3So07KcdmmKbGvgaNxQSJr7bGVSVk5S9Eq1F+ppbRo70+YeaDxkw5Dd8NPN+GD6bjnYm2VuPuCXmpuYvmCXQ==}
-
-  safe-expression@1.1.0:
-    resolution: {integrity: sha512-29uxgQATmFYT9bboYJfURP9dDXqSRTBUmi4BDEjI13FwoHAkA31iHbWPGgNLqfCgiiz8ffd7gZYe5Zc5Gti3xA==}
 
   safe-push-apply@1.0.0:
     resolution: {integrity: sha512-iKE9w/Z7xCzUMIZqdBsp6pEQvwuEebH4vdpjcDWnyzaI6yl6O9FHvVpmGelvEHNsoY6wGblkxR6Zty/h00WiSA==}
@@ -6202,8 +6196,6 @@ snapshots:
   safe-buffer@5.1.2: {}
 
   safe-buffer@5.2.1: {}
-
-  safe-expression@1.1.0: {}
 
   safe-push-apply@1.0.0:
     dependencies:
