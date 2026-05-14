@@ -27,7 +27,7 @@ use crate::expression::value::{Expanding, Expression, TypedValue, Value};
 use crate::file::KeyFileResult;
 use crate::resolve;
 use crate::util::{Merging, Plural, Required, Resolving};
-use crate::{err, wrn};
+use crate::{err, note, wrn};
 
 // `UNKNOWN_RANGE` serves as a sentinel value in cases where we must have a byte range
 // but don't know what it is
@@ -1392,6 +1392,9 @@ pub(crate) enum InsertReason {
     ImplicitPrefix,
     // the last key in value of `key` (in `key = "a b c"`, `"c"` is the terminal key)
     TerminalKey,
+    // a terminal key inserted in a source binding defined in `[[head]]`: unlike bindings in
+    // the current file, a source file's bindings can be overwritten
+    SourceTerminalKey,
 }
 
 // tracks all unique bindings
@@ -1435,6 +1438,7 @@ impl BindingCodes {
         mode: &str,
         when: &Option<impl ToString>,
         span: &Option<Range<usize>>,
+        warnings: &mut Vec<ParseError>,
         reason: InsertReason,
     ) -> ResultVec<(i32, bool)> {
         // Return value:
@@ -1456,7 +1460,7 @@ impl BindingCodes {
         // do we need to insert this code into self.codes?
         let insert_into_codes;
         match reason {
-            // terminal keys must be inserted or they must raise an error
+            // terminal keys from this file must be inserted or they must raise an error
             InsertReason::TerminalKey => {
                 if self.codes.contains_key(&id) {
                     let old = self.codes[&id].clone();
@@ -1479,6 +1483,14 @@ impl BindingCodes {
                             .into_iter()
                             .map(Result::unwrap_err)
                             .collect::<Vec<_>>())?;
+                    } else if old.reason == InsertReason::SourceTerminalKey {
+                        warnings.push(
+                            Err(note!("Key binding is also defined in the source file."))
+                                .with_range(span)?,
+                        );
+                        code = old.code;
+                        output_binding = true;
+                        insert_into_codes = true;
                     } else {
                         code = old.code;
                         output_binding = true;
@@ -1489,6 +1501,19 @@ impl BindingCodes {
                     insert_into_codes = true;
                     code = self.count;
                     output_binding = true;
+                }
+            }
+            // terminal keys from a source file can be overwritten
+            InsertReason::SourceTerminalKey => {
+                if self.codes.contains_key(&id) {
+                    output_binding = false;
+                    insert_into_codes = false;
+                    code = self.codes[&id].code;
+                } else {
+                    output_binding = true;
+                    insert_into_codes = true;
+                    self.count += 1;
+                    code = self.count;
                 }
             }
             // we never generate an output for an explicit prefix but we might need to
@@ -1572,8 +1597,10 @@ impl Binding {
         &self,
         command_id: i32,
         scope: &Scope,
+        is_source: bool,
         span: Option<Range<usize>>,
         codes: &mut BindingCodes,
+        warnings: &mut Vec<ParseError>,
     ) -> ResultVec<Vec<BindingOutput>> {
         let mut result = Vec::new();
 
@@ -1598,12 +1625,14 @@ impl Binding {
             for prefix in prefixes {
                 self.outputs_for_mode_and_prefix(
                     command_id,
+                    is_source,
                     &span,
                     &mode,
                     &prefix,
                     &when_with_mode,
                     codes,
                     &mut result,
+                    warnings,
                 )?;
             }
         }
@@ -1648,12 +1677,14 @@ impl Binding {
     fn outputs_for_mode_and_prefix(
         &self,
         command_id: i32,
+        is_source: bool,
         span: &Option<Range<usize>>,
         mode: &str,
         explicit_prefix: &str,
         when_with_mode: &Vec<String>,
         codes: &mut BindingCodes,
         result: &mut Vec<BindingOutput>,
+        warnings: &mut Vec<ParseError>,
     ) -> ResultVec<()> {
         // split the current explicit prefix into individual keys and then prepend
         // it to the key sequence for this binding
@@ -1680,7 +1711,7 @@ impl Binding {
                 InsertReason::ExplicitPrefix
             };
             let (key_code, generate_output) =
-                codes.key_code(&prefix, &mode, &self.when, span, reason)?;
+                codes.key_code(&prefix, &mode, &self.when, span, warnings, reason)?;
             let prefix_code = codes.prefix_code(&prefix, &mode);
 
             when = when_with_mode.clone();
@@ -1733,7 +1764,12 @@ impl Binding {
             &mode,
             &self.when,
             span,
-            InsertReason::TerminalKey,
+            warnings,
+            if is_source {
+                InsertReason::SourceTerminalKey
+            } else {
+                InsertReason::TerminalKey
+            },
         )?;
         let prefix_code = if !self.finalKey {
             codes.prefix_code(&self.key, &mode)

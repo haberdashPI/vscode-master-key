@@ -458,16 +458,26 @@ impl KeyFile {
                 key_bind.append(&mut source_bind_item.outputs(
                     i as i32,
                     &scope,
+                    true,
                     Option::None,
                     &mut codes,
+                    warnings,
                 )?);
             }
         }
         // add the bindings defined directly in this file
+
         for (i, (bind_item, span)) in bind.iter_mut().zip(bind_span.into_iter()).enumerate() {
-            key_bind.append(&mut bind_item.outputs(i as i32, &scope, Some(span), &mut codes)?);
+            key_bind.append(&mut bind_item.outputs(
+                i as i32,
+                &scope,
+                false,
+                Some(span),
+                &mut codes,
+                warnings,
+            )?);
         }
-        modes.insert_implicit_mode_bindings(&bind, &scope, &mut codes, &mut key_bind);
+        modes.insert_implicit_mode_bindings(&bind, &scope, &mut codes, &mut key_bind, warnings);
 
         // sort all bindings by their priority
         key_bind.sort_by(BindingOutput::cmp_priority);
