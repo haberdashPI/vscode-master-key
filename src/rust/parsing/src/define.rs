@@ -218,6 +218,7 @@ lazy_static! {
 impl Define {
     pub fn new(
         input: DefineInput,
+        source: Option<&crate::file::KeyFile>,
         scope: &mut Scope,
         warnings: &mut Vec<ParseError>,
         version: &semver::Version,
@@ -226,11 +227,21 @@ impl Define {
         let mut resolved_command = HashMap::<String, CommandInput>::new();
         let mut resolved_var = HashMap::<String, Value>::new();
         let mut errors: Vec<ParseError> = Vec::new();
+        let source_define = source.map(|x| &x.define);
 
         // handle `[[define.val]]`
         for def_block in input.val.into_iter().flatten() {
             for (val, value) in def_block.into_iter() {
                 let span = value.span().clone();
+                if let Some(def) = &source_define
+                    && def.val.contains_key(&val)
+                {
+                    errors.push(
+                        Err(err!("Variable `{val}` already defined in source file."))
+                            .with_range(&span)?,
+                    );
+                    continue;
+                }
                 match value.resolve("`define.val`", scope) {
                     Ok::<Value, _>(x) => {
                         match x.require_constant().with_range(&span) {
@@ -252,6 +263,11 @@ impl Define {
                 }
             }
         }
+        if let Some(def) = &source_define {
+            for (val, value) in def.val.iter() {
+                resolved_var.insert(val.clone(), value.clone());
+            }
+        }
 
         // handle `[[define.command]]`
         for def in input.command.into_iter().flatten() {
@@ -266,6 +282,15 @@ impl Define {
                         errors.append(&mut e.errors);
                     }
                     Ok(id) => {
+                        if let Some(d) = &source_define
+                            && d.command.contains_key(&id)
+                        {
+                            errors.push(
+                                Err(err!("Command `{id}` already defined in source file."))
+                                    .with_range(&def.span())?,
+                            );
+                            continue;
+                        }
                         let mut command_warnings = Vec::new();
                         def.as_ref().check_other_fields(&mut command_warnings);
                         command_warnings
@@ -275,6 +300,11 @@ impl Define {
                         resolved_command.insert(id, def.into_inner());
                     }
                 },
+            }
+        }
+        if let Some(def) = &source_define {
+            for (id, command) in def.command.iter() {
+                resolved_command.insert(id.clone(), command.clone());
             }
         }
 
@@ -304,20 +334,37 @@ impl Define {
             }
             match span {
                 Err(e) => errors.push(e.into()),
-                Ok(x) => match x.resolve("`id`", scope) {
-                    Err(mut e) => {
-                        errors.append(&mut e.errors);
+                Ok(x) => {
+                    match x.resolve("`id`", scope) {
+                        Err(mut e) => {
+                            errors.append(&mut e.errors);
+                        }
+                        Ok(x) => {
+                            if let Some(d) = &source_define
+                                && d.bind.contains_key(&x)
+                            {
+                                errors.push(
+                                Err(err!("`define.bind` with id = `{x}` already exists in source file."))
+                                    .with_range(&def.span())?,
+                            );
+                                continue;
+                            }
+
+                            let mut bind_warnings = Vec::new();
+                            def.as_ref().check_other_fields(&mut bind_warnings);
+                            bind_warnings
+                                .iter_mut()
+                                .for_each(|w| w.contexts.push(Context::Range(def.span())));
+                            warnings.append(&mut bind_warnings);
+                            resolved_bind.insert(x, def.into_inner());
+                        }
                     }
-                    Ok(x) => {
-                        let mut bind_warnings = Vec::new();
-                        def.as_ref().check_other_fields(&mut bind_warnings);
-                        bind_warnings
-                            .iter_mut()
-                            .for_each(|w| w.contexts.push(Context::Range(def.span())));
-                        warnings.append(&mut bind_warnings);
-                        resolved_bind.insert(x, def.into_inner());
-                    }
-                },
+                }
+            }
+        }
+        if let Some(def) = &source_define {
+            for (id, bind) in def.bind.iter() {
+                resolved_bind.insert(id.clone(), bind.clone());
             }
         }
 
@@ -451,6 +498,7 @@ mod tests {
         let mut warnings = Vec::new();
         let result = Define::new(
             toml::from_str::<DefineInput>(data).unwrap(),
+            None,
             &mut scope,
             &mut warnings,
             &semver::Version::parse("2.1.0").unwrap(),

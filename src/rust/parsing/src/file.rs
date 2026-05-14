@@ -325,7 +325,13 @@ impl KeyFile {
             }
         };
         let mut define = if !skip_define {
-            match Define::new(define_input, &mut scope, warnings, version) {
+            match Define::new(
+                define_input,
+                source.map(|x| *x),
+                &mut scope,
+                warnings,
+                version,
+            ) {
                 Err(mut es) => {
                     errors.append(&mut es.errors);
                     Define::default()
