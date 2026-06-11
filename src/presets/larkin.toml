@@ -424,8 +424,8 @@ default = "{{bind.edit_action}}"
 key = "p"
 doc.name = "paste after"
 doc.description = "Paste clipboard after the cursor/selection"
-doc.combined.name = "paste before/after/in"
-doc.combined.description = "Paste clipboard before/after/at the cursor/selection"
+doc.combined.name = "paste after/before/in"
+doc.combined.description = "Paste clipboard after/before/at the cursor/selection"
 doc.combined.key = "p/shift+p/ctrl+p"
 when = "editorHasSelection"
 command = "runCommands"
@@ -439,26 +439,16 @@ args.commands = [
 default = "{{bind.edit_action}}"
 key = "p"
 doc.name = "paste after"
-doc.combined.name = "paste before/after/in"
 when = "!editorHasSelection"
 command = "runCommands"
+doc.combined.name = "paste after/before/in"
 args.commands = ["cursorRight", "editor.action.clipboardPasteAction"]
-
-[[bind]]
-default = "{{bind.edit_action}}"
-key = "ctrl+p"
-when = "!suggestWidgetVisible && !inQuickInput"
-mode = ["normal", "insert"]
-doc.name = "paste in"
-doc.combined.name = "paste before/after/in"
-doc.description = "Paste clipboard at location"
-command = "editor.action.clipboardPasteAction"
 
 [[bind]]
 default = "{{bind.edit_action}}"
 key = "shift+p"
 doc.name = "paste before"
-doc.combined.name = "paste before/after/in"
+doc.combined.name = "paste after/before/in"
 doc.description = "Paste before the cursor/selection"
 when = "editorHasSelection"
 command = "runCommands"
@@ -467,6 +457,23 @@ args.commands = [
     "selection-utilities.shrinkToActive",
     "editor.action.clipboardPasteAction",
 ]
+
+[[bind]]
+default = "{{bind.edit_action}}"
+key = "shift+p"
+when = "!editorHasSelection"
+doc.combined.name = "paste after/before/in"
+command = "editor.action.clipboardPasteAction"
+
+[[bind]]
+default = "{{bind.edit_action}}"
+key = "ctrl+p"
+when = "!suggestWidgetVisible && !inQuickInput"
+mode = ["normal", "insert"]
+doc.combined.name = "paste after/before/in"
+doc.name = "paste in"
+doc.description = "Paste clipboard at location"
+command = "editor.action.clipboardPasteAction"
 
 [[bind]]
 default = "{{bind.edit_action}}"
@@ -479,14 +486,6 @@ key = "x"
 mode = "normal"
 doc.name = "delete char"
 command = "runCommands"
-
-[[bind]]
-default = "{{bind.edit_action}}"
-key = "shift+p"
-doc.combined.name = "paste before/after/in"
-when = "!editorHasSelection"
-command = "runCommands"
-args.commands = ["cursorRight", "editor.action.clipboardPasteAction"]
 
 ## ### Repeating Motions and Actions
 
