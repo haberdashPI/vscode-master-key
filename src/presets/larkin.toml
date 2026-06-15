@@ -298,6 +298,19 @@ args.value = "{{num}}"
 finalKey = false
 mode = '{{not_modes(["insert"])}}'
 
+[[bind]]
+foreach.num = ['{{keys(`[0-9]`)}}']
+doc.name = "count {{num}}"
+key = "numpad{{num}}"
+command = "master-key.updateCount"
+doc.description = "Add digit {{num}} to the count argument of a command"
+doc.combined.key = "0-9"
+doc.combined.name = "count 0-9"
+doc.combined.description = "Add digit 0-9 to count argument of a command"
+args.value = "{{num}}"
+finalKey = false
+mode = '{{not_modes(["insert"])}}'
+
 ## ### Simple Actions
 
 ## Basic actions available in Larkin that can be used to edit text in relation to either the current line or the currently selected text.
