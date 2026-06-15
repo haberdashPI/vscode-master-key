@@ -353,9 +353,9 @@ impl KeyFile {
                         .unwrap_err(),
                 );
             }
-            if !x.as_ref().before.is_none() {
+            if !x.as_ref().after.is_none() {
                 errors.push(
-                    Result::<()>::Err(err!("`before` is reserved for `[[defined.bind]]`").into())
+                    Result::<()>::Err(err!("`after` is reserved for `[[defined.bind]]`").into())
                         .with_range(&span)
                         .unwrap_err(),
                 );
