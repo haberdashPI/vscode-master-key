@@ -667,7 +667,7 @@ mod tests {
 
     #[test]
     fn tags_resolve_command() {
-        let data = Command {
+        let _data = Command {
             command: "selection-utilities.insertAround".to_string(),
             args: Value::Table(
                 HashMap::from([

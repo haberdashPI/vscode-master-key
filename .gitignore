@@ -39,3 +39,6 @@ playwright/.cache/
 
 # profiling
 *.cpuprofile
+
+# AI
+.antigravitycli/

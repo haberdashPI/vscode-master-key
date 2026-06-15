@@ -298,6 +298,19 @@ args.value = "{{num}}"
 finalKey = false
 mode = '{{not_modes(["insert"])}}'
 
+[[bind]]
+foreach.num = ['{{keys(`[0-9]`)}}']
+doc.name = "count {{num}}"
+key = "numpad{{num}}"
+command = "master-key.updateCount"
+doc.description = "Add digit {{num}} to the count argument of a command"
+doc.combined.key = "0-9"
+doc.combined.name = "count 0-9"
+doc.combined.description = "Add digit 0-9 to count argument of a command"
+args.value = "{{num}}"
+finalKey = false
+mode = '{{not_modes(["insert"])}}'
+
 ## ### Simple Actions
 
 ## Basic actions available in Larkin that can be used to edit text in relation to either the current line or the currently selected text.
@@ -335,7 +348,7 @@ default = "{{bind.edit_action}}"
 key = "c"
 doc.name = "change"
 doc.description = """
-Without a count: change selected region or all text from cursor to end of line if there is
+Without a count: change selected region or all text on the current line if there is
 no selection. With a count: change up to `count` lines.
 """
 when = "editorHasMultilineSelection"
@@ -379,8 +392,8 @@ default = "{{bind.edit_action}}"
 key = "d"
 doc.name = "delete"
 doc.description = """
-Without a count: delete selected text (and store to clipboard). With a
-count, delete up to the next `count` lines and store to clipboard.
+Without a count: delete selected text (and store to clipboard) or the current line if no
+selection exists. With a count, delete up to the next `count` lines and store to clipboard.
 """
 when = "!editorHasSelection"
 command = "runCommands"
@@ -404,7 +417,10 @@ args.commands = [
 default = "{{bind.edit_action}}"
 key = "y"
 doc.name = "copy"
-doc.description = "copy selected text to clipboard"
+doc.description = """
+Without a count: copy selected region or all text on the current line if there is
+no selection. With a count: copy up to `count` lines.
+"""
 command = "runCommands"
 args.commands = ["editor.action.clipboardCopyAction", "selection-utilities.shrinkToActive"]
 
@@ -984,7 +1000,9 @@ args.commands = ["redo", "selection-utilities.shrinkToActive"]
 default = "{{bind.edit_action}}"
 key = "shift+y"
 doc.name = "copy (eol/up)"
-doc.description = "without a count: copy to end of line; with a count: copy this and the previous N lines"
+doc.description = """
+without a count: copy to end of line; with a count: copy this and the previous N lines
+"""
 command = "runCommands"
 args.commands = [
     "selection-utilities.shrinkToActive",
