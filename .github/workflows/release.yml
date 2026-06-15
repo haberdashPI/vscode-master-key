@@ -14,7 +14,7 @@ jobs:
         uses: jdx/mise-action@v3
         with:
           experimental: true # enables postinstall hooks
-          version: 2025.11.2
+          version: 2026.06.14
           install: true
           cache: true
       - name: Setup Node and Cache NPM
