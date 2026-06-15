@@ -661,6 +661,20 @@ doc.combined.key = "0-9"
 doc.combined.name = "count 0-9"
 doc.combined.description = "Add digit 0-9 to count argument of a command"
 
+[[bind]]
+foreach.num = ['{{keys(`[1-9]`)}}']
+key = "numpad{{num}}"
+mode = '{{all_modes()}}'
+command = "master-key.updateCount"
+finalKey = false
+args.value = "{{num}}"
+doc.kind = "util"
+doc.name = "count {{num}}"
+doc.description = "Add digit {{num}} to the count argument of a command."
+doc.combined.key = "0-9"
+doc.combined.name = "count 0-9"
+doc.combined.description = "Add digit 0-9 to count argument of a command"
+
 # 0 means go to the start of the line *unless* we have already entered a count and then its
 # used to update the count
 [[bind]]
