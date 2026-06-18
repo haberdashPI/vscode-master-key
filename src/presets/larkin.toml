@@ -348,7 +348,7 @@ default = "{{bind.edit_action}}"
 key = "c"
 doc.name = "change"
 doc.description = """
-Without a count: change selected region or all text from cursor to end of line if there is
+Without a count: change selected region or all text on the current line if there is
 no selection. With a count: change up to `count` lines.
 """
 when = "editorHasMultilineSelection"
@@ -392,8 +392,8 @@ default = "{{bind.edit_action}}"
 key = "d"
 doc.name = "delete"
 doc.description = """
-Without a count: delete selected text (and store to clipboard). With a
-count, delete up to the next `count` lines and store to clipboard.
+Without a count: delete selected text (and store to clipboard) or the current line if no
+selection exists. With a count, delete up to the next `count` lines and store to clipboard.
 """
 when = "!editorHasSelection"
 command = "runCommands"
@@ -417,7 +417,10 @@ args.commands = [
 default = "{{bind.edit_action}}"
 key = "y"
 doc.name = "copy"
-doc.description = "copy selected text to clipboard"
+doc.description = """
+Without a count: copy selected region or all text on the current line if there is
+no selection. With a count: copy up to `count` lines.
+"""
 command = "runCommands"
 args.commands = ["editor.action.clipboardCopyAction", "selection-utilities.shrinkToActive"]
 
@@ -997,7 +1000,9 @@ args.commands = ["redo", "selection-utilities.shrinkToActive"]
 default = "{{bind.edit_action}}"
 key = "shift+y"
 doc.name = "copy (eol/up)"
-doc.description = "without a count: copy to end of line; with a count: copy this and the previous N lines"
+doc.description = """
+without a count: copy to end of line; with a count: copy this and the previous N lines
+"""
 command = "runCommands"
 args.commands = [
     "selection-utilities.shrinkToActive",
