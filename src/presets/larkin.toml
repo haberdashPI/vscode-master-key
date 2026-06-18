@@ -2385,20 +2385,6 @@ command = "extension.changeCase.upperFirst"
 ## These actions include miscellaneous utilities.
 
 [[bind]]
-default = "{{bind.window}}"
-key = "shift+ctrl+;"
-doc.name = "palette"
-finalKey = false
-doc.hideInPalette = true
-mode = "{{all_modes()}}"
-prefixes.any = true
-doc.description = """
-show command suggestions within the context of the current mode and keybinding prefix
-(if any keys have already been typed)
-"""
-command = "master-key.commandPalette"
-
-[[bind]]
 default = "{{bind.util}}"
 doc.name = "git..."
 doc.description = "git commands"
@@ -2450,7 +2436,7 @@ command = "git.revertSelectedRanges"
 [[bind]]
 default = "{{bind.util}}"
 doc.name = "revert range"
-doc.description = "revert unstaged changes in selected range"
+doc.description = "stage changes in selected range"
 key = "tab g s"
 command = "git.stageSelectedRanges"
 

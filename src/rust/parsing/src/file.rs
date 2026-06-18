@@ -3354,7 +3354,7 @@ pub(crate) mod tests {
         let result = parse_keybinding_data(data);
 
         let result = result.file.unwrap();
-        assert_eq!(result.bind.len(), 319);
+        assert_eq!(result.bind.len(), 318);
 
         assert!(FileDocSection::write_markdown(&result.docs, true).len() > 0);
         // info!(
