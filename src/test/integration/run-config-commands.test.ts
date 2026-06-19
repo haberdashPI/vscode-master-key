@@ -15,7 +15,10 @@ test.describe('Configuration Updates', () => {
         await expect(activateMessage).toBeAttached();
         await runCommand(workbox, 'Master Key: Deactivate Keybindings');
         // NOTE: used to be required here
-        // await workbox.getByRole('button', { name: 'Close Modal Editor (Escape)' }).click();
+        // await workbox.getByRole(
+        //   'button',
+        //   { name: 'Close Modal Editor (Escape)' }
+        // ).click();
 
         const cursor = workbox.locator('div[role="presentation"].cursors-layer');
         await expect(cursor.first()).toHaveClass(/cursor-line-style/);
