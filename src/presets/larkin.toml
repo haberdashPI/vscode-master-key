@@ -592,6 +592,8 @@ command = "master-key.enterNormal"
 
 ## Selection behavior uses the following logic: motions that move more than one character generally select the text "under" the motion. If a selection already exists (e.g. from a previous motion) additional motions extend that selection. You can always reset the selection using `v`, and several commands (e.g. `x`) operate on the next character rather than the current selection.
 
+## Word and section motions are defined using [Selection Utilities](https://haberdashpi.github.io/vscode-selection-utilities/)'s unit definitions for [moveBy](https://haberdashpi.github.io/vscode-selection-utilities/commands/moveBy.html), and can be configured per language.
+
 [[bind]]
 default = "{{bind.edit_motion_prim}}"
 key = "ctrl+d"
@@ -1273,6 +1275,8 @@ args.backwards = true
 
 ## Goto motions all begin with the mnemonic prefix key `g`. They are additional motion commands that compliment the simple and standard actions.
 
+## Word and section motions are defined using [Selection Utilities](https://haberdashpi.github.io/vscode-selection-utilities/)'s unit definitions for [moveBy](https://haberdashpi.github.io/vscode-selection-utilities/commands/moveBy.html), and can be configured per language.
+
 [[bind]]
 default = "{{bind.edit_motion}}"
 key = "g"
@@ -1521,6 +1525,8 @@ args.commands = ["jupyter.gotoPrevCellInFile", "jupyter.selectCell"]
 ## Match motions select some syntactical region of text, e.g. in or around parenthesis, brackets, indent level etc... Where the `g` prefixed commands move forward or backward, these commands move both the start and the end of the selection away from the active cursor position. Repeating the command moves to the next (or previous) match, depending on the command.
 
 ## If you accidentally select `around` instead of `in`, you can revise your selection using `R` to narrow to non-white space or `z` to narrow to a subword (e.g. excludes `_`)
+
+## Many of the motions here are defined using [Selection Utilities](https://haberdashpi.github.io/vscode-selection-utilities/)'s unit definitions for [moveBy](https://haberdashpi.github.io/vscode-selection-utilities/commands/moveBy.html), and can be configured per language.
 
 [[define.bind]]
 id = "edit_motion_match_obj"
