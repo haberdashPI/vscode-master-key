@@ -2441,7 +2441,7 @@ command = "git.revertSelectedRanges"
 
 [[bind]]
 default = "{{bind.util}}"
-doc.name = "revert range"
+doc.name = "stage range"
 doc.description = "stage changes in selected range"
 key = "tab g s"
 command = "git.stageSelectedRanges"
