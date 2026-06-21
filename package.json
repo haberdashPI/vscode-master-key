@@ -132,6 +132,11 @@
                 "title": "Toggle Key Suggestions"
             },
             {
+                "command": "master-key.toggleSuggestionsInAuxiliarySidebar",
+                "category": "Master Key",
+                "title": "Toggle Key Suggestions (Auxiliary Sidebar)"
+            },
+            {
                 "command": "master-key.showVisualDoc",
                 "category": "Master Key",
                 "title": "Show Visual Documentation"

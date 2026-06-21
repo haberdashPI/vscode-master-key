@@ -713,6 +713,9 @@ impl KeyFileResult {
         cmd: &ReifiedBinding,
         max_history: i32,
     ) -> std::result::Result<(), JsError> {
+        // TODO: handle binding sequences that should be treated as a single
+        // entry in the command history (for commands that use an explicit `prefix`
+        // field)
         if let Some(value) = self.scope.state.get_value::<HistoryQueue>("history") {
             let mut history = value.try_borrow_mut()?;
             history.push_back(cmd.clone());
