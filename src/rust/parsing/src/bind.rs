@@ -59,6 +59,7 @@ where
 
 /// @bindingField bind
 /// @description an actual keybinding; extends the schema used by VSCode's `keybindings.json`
+/// @order 10
 ///
 /// **Example**
 ///
