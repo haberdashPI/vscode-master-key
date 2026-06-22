@@ -164,7 +164,11 @@ run = 'pnpm exec playwright test'
 [tasks.extract-docs]
 sources = ['README.md', 'src/extension/**/*.ts', 'src/rust/**/*.rs', 'src/docs/**/*.md']
 outputs = ['docs/**/*.md']
-run = ['simple-src-docs -d docs src README.md', 'cp src/docs/index.md docs/']
+shell = 'nu -c'
+run = [
+    'simple-src-docs -d docs src/extension/**/*.ts src/rust/**/*.rs src/docs/**/*.md README.md',
+    'cp src/docs/index.md docs/',
+]
 
 [tasks.extract-preset-docs]
 sources = ['../../presets/**/*.toml', 'src/**/*.rs']

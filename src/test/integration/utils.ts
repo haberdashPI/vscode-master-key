@@ -45,8 +45,13 @@ export async function activateKeybindings(page: Page, file: string) {
     await selectMethod.press('Enter');
 
     await expect(page.getByText('// AUTOMATED BINDINGS START').first()).toBeVisible();
-    // More recently, VSCode now shows the the bindings in a pop-up modal editor that needs
+    // NOTE: for a time VSCode showed the the bindings in a pop-up modal editor that needed
     // to be closed before interacting with the other files
-    await page.getByRole('button', { name: 'Close Modal Editor (Escape)' }).click();
+    //
+    // BUT: in subsequent versions this modal was disabled. This code is left here to make
+    // it more discoverable, in case this command or something like it becomes necessary
+    // again
+    //
+    // await page.getByRole('button', { name: 'Close Modal Editor (Escape)' }).click();
     return;
 }

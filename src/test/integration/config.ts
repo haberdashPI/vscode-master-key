@@ -73,6 +73,7 @@ export const test = base.extend<TestFixtures>({
                 await createProject(),
             ],
         });
+
         const workbox = await electronApp.firstWindow();
         await workbox.context().tracing.start({
             screenshots: true,
@@ -116,10 +117,9 @@ export const test = base.extend<TestFixtures>({
     createTempDir: async ({ }, use) => {
         const tempDirs: string[] = [];
         await use(async () => {
-            const tempDirPrefix = path.join(__dirname, '../../../playwright-temp');
-            await fs.promises.mkdir(tempDirPrefix, { recursive: true });
+            const tempDirPrefix = '/tmp/pwtest-';
             const tempDir = await fs.promises.realpath(
-                await fs.promises.mkdtemp(path.join(tempDirPrefix, 'pwtest-')),
+                await fs.promises.mkdtemp(tempDirPrefix),
             );
             tempDirs.push(tempDir);
             return tempDir;

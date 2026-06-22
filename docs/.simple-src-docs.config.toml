@@ -92,7 +92,7 @@ output = """
 """
 
 [[template.foreach]]
-tags = ["bindingField", "description"]
+tags = ["bindingField"]
 file = "bindings/{{bindingField}}.md"
 output = """
 
