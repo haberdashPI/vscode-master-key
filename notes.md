@@ -39,9 +39,9 @@ want to replace `Span` with something like `(Source, Span)`
     - [X] fix `last_history_index` return error bug
         - [X] add unit tests to ensure we can add integers to `last_history_index` output
         - [X] split into small patch fix PR
-    - [ ] fix `finalKey = false` grouping bug
-        - [~] add integration tests to ensure `finalKey = false` bindings get grouped
-        - [ ] unit test for merged reified bindings
+    - [X] fix `finalKey = false` grouping bug
+        - [X] add integration tests to ensure `finalKey = false` bindings get grouped
+        - [X] unit test for merged reified bindings
         - [X] split into small patch fix PR
     - [ ] add repeat action to the vim.toml bindings (after fixing the bugs above)
 

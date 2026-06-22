@@ -2439,6 +2439,54 @@ mod tests {
         assert!(err.to_string().contains("default must"));
     }
 
+    #[test]
+    fn test_reified_binding_merge() {
+        let binding1 = ReifiedBinding {
+            error: Some(vec!["error1".to_string()]),
+            finalKey: false,
+            key: "ctrl+k".to_string(),
+            raw_commands: Vec::new(),
+            commands: Vec::new(),
+            mode: "normal".to_string(),
+            repeat: 1,
+            tags: vec![Dynamic::from("tag1".to_string())],
+            doc: BindingDoc::default(),
+            edit_document_id: 10,
+            edit_text: "edit1".to_string(),
+        };
+
+        let binding2 = ReifiedBinding {
+            error: Some(vec!["error2".to_string()]),
+            finalKey: true,
+            key: "ctrl+j".to_string(),
+            raw_commands: Vec::new(),
+            commands: Vec::new(),
+            mode: "insert".to_string(),
+            repeat: 2,
+            tags: vec![Dynamic::from("tag2".to_string())],
+            doc: BindingDoc {
+                name: "merged_doc".to_string(),
+                ..BindingDoc::default()
+            },
+            edit_document_id: 20,
+            edit_text: "edit2".to_string(),
+        };
+
+        let merged = binding1.merge(&binding2);
+
+        assert_eq!(merged.error, Some(vec!["error1".to_string(), "error2".to_string()]));
+        assert_eq!(merged.finalKey, true);
+        assert_eq!(merged.key, "ctrl+k ctrl+j");
+        assert_eq!(merged.mode, "insert");
+        assert_eq!(merged.repeat, 2);
+        assert_eq!(merged.tags.len(), 2);
+        assert_eq!(merged.tags[0].clone().into_string().unwrap(), "tag1");
+        assert_eq!(merged.tags[1].clone().into_string().unwrap(), "tag2");
+        assert_eq!(merged.doc.name, "merged_doc");
+        assert_eq!(merged.edit_document_id, 20);
+        assert_eq!(merged.edit_text, "edit1edit2");
+    }
+
     // TODO: are there any edge cases / failure modes I want to look at in the tests
     // (most of the things seem likely to be covered by serde / toml parsing, and the
     // stuff I would want to check should be done at a higher level when I'm working

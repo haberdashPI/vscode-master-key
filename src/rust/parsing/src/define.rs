@@ -451,6 +451,7 @@ mod tests {
         let mut warnings = Vec::new();
         let result = Define::new(
             toml::from_str::<DefineInput>(data).unwrap(),
+            None,
             &mut scope,
             &mut warnings,
             &semver::Version::parse("2.1.0").unwrap(),
