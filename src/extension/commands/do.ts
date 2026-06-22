@@ -147,7 +147,6 @@ export const commandMutex = new Mutex();
 export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
     // see extension-profiles/README.md for details
     // console.profile('master-key-do');
-
     // register that a key was pressed (cancelling the display of the quick pick for
     // prefixes of this keypress
     registerKeyPress();
