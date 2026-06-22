@@ -298,6 +298,19 @@ args.value = "{{num}}"
 finalKey = false
 mode = '{{not_modes(["insert"])}}'
 
+[[bind]]
+foreach.num = ['{{keys(`[0-9]`)}}']
+doc.name = "count {{num}}"
+key = "numpad{{num}}"
+command = "master-key.updateCount"
+doc.description = "Add digit {{num}} to the count argument of a command"
+doc.combined.key = "0-9"
+doc.combined.name = "count 0-9"
+doc.combined.description = "Add digit 0-9 to count argument of a command"
+args.value = "{{num}}"
+finalKey = false
+mode = '{{not_modes(["insert"])}}'
+
 ## ### Simple Actions
 
 ## Basic actions available in Larkin that can be used to edit text in relation to either the current line or the currently selected text.
@@ -335,7 +348,7 @@ default = "{{bind.edit_action}}"
 key = "c"
 doc.name = "change"
 doc.description = """
-Without a count: change selected region or all text from cursor to end of line if there is
+Without a count: change selected region or all text on the current line if there is
 no selection. With a count: change up to `count` lines.
 """
 when = "editorHasMultilineSelection"
@@ -379,8 +392,8 @@ default = "{{bind.edit_action}}"
 key = "d"
 doc.name = "delete"
 doc.description = """
-Without a count: delete selected text (and store to clipboard). With a
-count, delete up to the next `count` lines and store to clipboard.
+Without a count: delete selected text (and store to clipboard) or the current line if no
+selection exists. With a count, delete up to the next `count` lines and store to clipboard.
 """
 when = "!editorHasSelection"
 command = "runCommands"
@@ -404,7 +417,10 @@ args.commands = [
 default = "{{bind.edit_action}}"
 key = "y"
 doc.name = "copy"
-doc.description = "copy selected text to clipboard"
+doc.description = """
+Without a count: copy selected region or all text on the current line if there is
+no selection. With a count: copy up to `count` lines.
+"""
 command = "runCommands"
 args.commands = ["editor.action.clipboardCopyAction", "selection-utilities.shrinkToActive"]
 
@@ -424,8 +440,8 @@ default = "{{bind.edit_action}}"
 key = "p"
 doc.name = "paste after"
 doc.description = "Paste clipboard after the cursor/selection"
-doc.combined.name = "paste before/after/in"
-doc.combined.description = "Paste clipboard before/after/at the cursor/selection"
+doc.combined.name = "paste after/before/in"
+doc.combined.description = "Paste clipboard after/before/at the cursor/selection"
 doc.combined.key = "p/shift+p/ctrl+p"
 when = "editorHasSelection"
 command = "runCommands"
@@ -439,26 +455,16 @@ args.commands = [
 default = "{{bind.edit_action}}"
 key = "p"
 doc.name = "paste after"
-doc.combined.name = "paste before/after/in"
 when = "!editorHasSelection"
 command = "runCommands"
+doc.combined.name = "paste after/before/in"
 args.commands = ["cursorRight", "editor.action.clipboardPasteAction"]
-
-[[bind]]
-default = "{{bind.edit_action}}"
-key = "ctrl+p"
-when = "!suggestWidgetVisible && !inQuickInput"
-mode = ["normal", "insert"]
-doc.name = "paste in"
-doc.combined.name = "paste before/after/in"
-doc.description = "Paste clipboard at location"
-command = "editor.action.clipboardPasteAction"
 
 [[bind]]
 default = "{{bind.edit_action}}"
 key = "shift+p"
 doc.name = "paste before"
-doc.combined.name = "paste before/after/in"
+doc.combined.name = "paste after/before/in"
 doc.description = "Paste before the cursor/selection"
 when = "editorHasSelection"
 command = "runCommands"
@@ -467,6 +473,23 @@ args.commands = [
     "selection-utilities.shrinkToActive",
     "editor.action.clipboardPasteAction",
 ]
+
+[[bind]]
+default = "{{bind.edit_action}}"
+key = "shift+p"
+when = "!editorHasSelection"
+doc.combined.name = "paste after/before/in"
+command = "editor.action.clipboardPasteAction"
+
+[[bind]]
+default = "{{bind.edit_action}}"
+key = "ctrl+p"
+when = "!suggestWidgetVisible && !inQuickInput"
+mode = ["normal", "insert"]
+doc.combined.name = "paste after/before/in"
+doc.name = "paste in"
+doc.description = "Paste clipboard at location"
+command = "editor.action.clipboardPasteAction"
 
 [[bind]]
 default = "{{bind.edit_action}}"
@@ -479,14 +502,6 @@ key = "x"
 mode = "normal"
 doc.name = "delete char"
 command = "runCommands"
-
-[[bind]]
-default = "{{bind.edit_action}}"
-key = "shift+p"
-doc.combined.name = "paste before/after/in"
-when = "!editorHasSelection"
-command = "runCommands"
-args.commands = ["cursorRight", "editor.action.clipboardPasteAction"]
 
 ## ### Repeating Motions and Actions
 
@@ -576,6 +591,8 @@ command = "master-key.enterNormal"
 ## These are relatively common motions that compliment the [Basic Motions](#basic-motions).
 
 ## Selection behavior uses the following logic: motions that move more than one character generally select the text "under" the motion. If a selection already exists (e.g. from a previous motion) additional motions extend that selection. You can always reset the selection using `v`, and several commands (e.g. `x`) operate on the next character rather than the current selection.
+
+## Word and section motions are defined using [Selection Utilities](https://haberdashpi.github.io/vscode-selection-utilities/)'s unit definitions for [moveBy](https://haberdashpi.github.io/vscode-selection-utilities/commands/moveBy.html), and can be configured per language.
 
 [[bind]]
 default = "{{bind.edit_motion_prim}}"
@@ -984,7 +1001,9 @@ args.commands = ["redo", "selection-utilities.shrinkToActive"]
 default = "{{bind.edit_action}}"
 key = "shift+y"
 doc.name = "copy (eol/up)"
-doc.description = "without a count: copy to end of line; with a count: copy this and the previous N lines"
+doc.description = """
+without a count: copy to end of line; with a count: copy this and the previous N lines
+"""
 command = "runCommands"
 args.commands = [
     "selection-utilities.shrinkToActive",
@@ -1256,6 +1275,8 @@ args.backwards = true
 
 ## Goto motions all begin with the mnemonic prefix key `g`. They are additional motion commands that compliment the simple and standard actions.
 
+## Word and section motions are defined using [Selection Utilities](https://haberdashpi.github.io/vscode-selection-utilities/)'s unit definitions for [moveBy](https://haberdashpi.github.io/vscode-selection-utilities/commands/moveBy.html), and can be configured per language.
+
 [[bind]]
 default = "{{bind.edit_motion}}"
 key = "g"
@@ -1504,6 +1525,8 @@ args.commands = ["jupyter.gotoPrevCellInFile", "jupyter.selectCell"]
 ## Match motions select some syntactical region of text, e.g. in or around parenthesis, brackets, indent level etc... Where the `g` prefixed commands move forward or backward, these commands move both the start and the end of the selection away from the active cursor position. Repeating the command moves to the next (or previous) match, depending on the command.
 
 ## If you accidentally select `around` instead of `in`, you can revise your selection using `R` to narrow to non-white space or `z` to narrow to a subword (e.g. excludes `_`)
+
+## Many of the motions here are defined using [Selection Utilities](https://haberdashpi.github.io/vscode-selection-utilities/)'s unit definitions for [moveBy](https://haberdashpi.github.io/vscode-selection-utilities/commands/moveBy.html), and can be configured per language.
 
 [[define.bind]]
 id = "edit_motion_match_obj"
@@ -2368,20 +2391,6 @@ command = "extension.changeCase.upperFirst"
 ## These actions include miscellaneous utilities.
 
 [[bind]]
-default = "{{bind.window}}"
-key = "shift+ctrl+;"
-doc.name = "palette"
-finalKey = false
-doc.hideInPalette = true
-mode = "{{all_modes()}}"
-prefixes.any = true
-doc.description = """
-show command suggestions within the context of the current mode and keybinding prefix
-(if any keys have already been typed)
-"""
-command = "master-key.commandPalette"
-
-[[bind]]
 default = "{{bind.util}}"
 doc.name = "git..."
 doc.description = "git commands"
@@ -2432,8 +2441,8 @@ command = "git.revertSelectedRanges"
 
 [[bind]]
 default = "{{bind.util}}"
-doc.name = "revert range"
-doc.description = "revert unstaged changes in selected range"
+doc.name = "stage range"
+doc.description = "stage changes in selected range"
 key = "tab g s"
 command = "git.stageSelectedRanges"
 

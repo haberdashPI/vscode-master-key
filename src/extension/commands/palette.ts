@@ -334,7 +334,16 @@ export async function defineCommands(context: vscode.ExtensionContext) {
      * @name Toggle Key Suggestions
      *
      * Display or hide a list of possible key presses which follow from the current prefix
-     * of keys pressed so far.
+     * of keys pressed so far. Assumes the primary sidebar is used to display the bindings
+     * (the bar on the left side).
+     *
+     * When hidden, this makes the binding visible. When already visible, this command hides
+     * the sidebar, which is where the key suggestions are placed by default.
+     *
+     * Extensions do not control where tree views show up. The user is able to explicitly
+     * move these views around as they see fit, and Master Key has no visibility into this
+     * choice. Users wishing to keep the key suggestions in the right pane, can use the
+     * command `master-key.toggleSuggestionsInAuxiliaryBar`.
      */
     context.subscriptions.push(
         vscode.commands.registerCommand('master-key.toggleSuggestions', async () => {
@@ -344,6 +353,36 @@ export async function defineCommands(context: vscode.ExtensionContext) {
                 await commandPalette();
             }
         }),
+    );
+
+    /**
+     * @userCommand toggleSuggestionsInAuxiliaryBar
+     * @name Toggle Key Suggestions
+     *
+     * Display or hide a list of possible key presses which follow from the current prefix
+     * of keys pressed so far. Assumes the auxiliary sidebar is used to display the bindings
+     * (the bar on the right side).
+     *
+     * When hidden, this makes the binding visible. When already visible, this command hides
+     * the auxiliary sidebar. Users wishing to use this command to toggle suggestions should
+     * first move the key suggestions over to the auxiliary bar.
+     *
+     * Extensions do not control where tree views show up. The user is able to explicitly
+     * move these views around as they see fit, and Master Key has no visibility into this
+     * choice. Users wishing to keep the key suggestions in the left pane, can use the
+     * command `master-key.toggleSuggestions`.
+     */
+    context.subscriptions.push(
+        vscode.commands.registerCommand('master-key.toggleSuggestionsInAuxiliaryBar',
+            async () => {
+                if (treeView.visible) {
+                    await vscode.commands.executeCommand(
+                        'workbench.action.toggleAuxiliaryBar',
+                    );
+                } else {
+                    await commandPalette();
+                }
+            }),
     );
 
     // Command to handle clicking an item in the tree

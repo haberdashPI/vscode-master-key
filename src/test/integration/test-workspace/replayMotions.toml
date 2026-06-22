@@ -212,3 +212,17 @@ command = "cursorWordEndRightSelect"
 [[bind.args.commands]]
 command = "master-key.executeStoredCommand"
 args.register = "operation"
+
+[[bind]]
+doc.name = "prefix_motion"
+key = "z"
+command = "cursorMove"
+args.to = "down"
+finalKey = false
+
+[[bind]]
+doc.name = "suffix_motion"
+key = "x"
+command = "cursorMove"
+args.to = "right"
+
