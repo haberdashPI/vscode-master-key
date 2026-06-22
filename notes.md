@@ -31,17 +31,18 @@ want to replace `Span` with something like `(Source, Span)`
 
 - [ ] we're getting some kind of error trying to repeat actions (looks like an untested edge case)
     - [X] fix getter for `commands[i].command`
-    - [ ] D doesn't look like it behaves the way I woul dexpect a finalKey = true to behave
+    - [X] D doesn't look like it behaves the way I woul dexpect a finalKey = true to behave
         - [X] if we cheat and select to commands the repeat action works
-        - [ ] command doesn't get grouped with "w" action in the history
-        - [ ] keys don't show up in sequence in the status bar
-    - [ ] release vim.toml without `repeat` command
-    - [ ] fix `last_history_index` return error bug
-        - [ ] add unit tests to ensure we can add integers to `last_history_index` output
-        - [ ] split into small patch fix PR
+        - [X] command doesn't get grouped with "w" action in the history
+        - [X] keys don't show up in sequence in the status bar
+    - [X] release vim.toml without `repeat` command
+    - [X] fix `last_history_index` return error bug
+        - [X] add unit tests to ensure we can add integers to `last_history_index` output
+        - [X] split into small patch fix PR
     - [ ] fix `finalKey = false` grouping bug
-        - [ ] add integration tests to ensure `finalKey = false` bindings get grouped
-        - [ ] split into small patch fix PR
+        - [~] add integration tests to ensure `finalKey = false` bindings get grouped
+        - [ ] unit test for merged reified bindings
+        - [X] split into small patch fix PR
     - [ ] add repeat action to the vim.toml bindings (after fixing the bugs above)
 
 ## MISSING DOCUMENTATION

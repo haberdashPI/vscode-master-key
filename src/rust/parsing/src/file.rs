@@ -713,11 +713,23 @@ impl KeyFileResult {
         cmd: &ReifiedBinding,
         max_history: i32,
     ) -> std::result::Result<(), JsError> {
-        // TODO: handle binding sequences that should be treated as a single
-        // entry in the command history (for commands that use an explicit `prefix`
-        // field)
         if let Some(value) = self.scope.state.get_value::<HistoryQueue>("history") {
             let mut history = value.try_borrow_mut()?;
+            // do we need to merge the last item with this new item? this is necessary any
+            // time we have `finalKey = false`. This ensures that multiple keybindings that
+            // are part of the some key sequence are treated as a single command (see for
+            // example `vim.toml` where we implement `d w` as two keybindings; whereas
+            // conceptually this is a single keybinding. Anyone using `master-key.replay` to
+            // re-run such a command will expect `d w` to be stored as a single item in the
+            // history)
+            if history.len() > 0 {
+                let n = history.len() - 1;
+                let last_item = &history[n];
+                if !last_item.finalKey {
+                    history[n] = last_item.merge(cmd);
+                    return Ok(());
+                }
+            }
             history.push_back(cmd.clone());
             if history.len() > (max_history as usize) {
                 history.pop_front();

@@ -1860,6 +1860,48 @@ impl ReifiedBinding {
         };
     }
 
+    pub fn merge(&self, other: &ReifiedBinding) -> ReifiedBinding {
+        return ReifiedBinding {
+            error: {
+                if let Some(self_error) = &self.error {
+                    if let Some(other_error) = &other.error {
+                        Some(
+                            self_error
+                                .iter()
+                                .chain(other_error.iter())
+                                .cloned()
+                                .collect(),
+                        )
+                    } else {
+                        Some(self_error.clone())
+                    }
+                } else {
+                    other.error.clone()
+                }
+            },
+            finalKey: other.finalKey,
+            key: format!("{} {}", self.key, other.key),
+            raw_commands: self
+                .raw_commands
+                .iter()
+                .chain(other.raw_commands.iter())
+                .cloned()
+                .collect(),
+            commands: self
+                .commands
+                .iter()
+                .chain(other.commands.iter())
+                .cloned()
+                .collect(),
+            mode: other.mode.clone(),
+            repeat: other.repeat,
+            tags: self.tags.iter().chain(other.tags.iter()).cloned().collect(),
+            doc: other.doc.clone(),
+            edit_document_id: other.edit_document_id,
+            edit_text: self.edit_text.clone() + other.edit_text.as_str(),
+        };
+    }
+
     // transform a list of commands into a reified binding, used to run stored commands (see
     // `storeCommand.ts`)
     pub fn from_commands(commands: Vec<Command>, scope: &Scope) -> ReifiedBinding {
