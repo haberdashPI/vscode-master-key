@@ -41,6 +41,17 @@ test.describe('Recorded keypresses', () => {
         await expect(pos).toHaveText('Ln 3, Col 2');
     });
 
+    test('Replays `finalKey = false` sequence as single command', async ({ workbox }) => {
+        const { editor, pos } = await setup(workbox);
+
+        await editor.press('z');
+        await editor.press('x');
+        await expect(pos).toHaveText('Ln 2, Col 2');
+        await editor.press('q');
+        await editor.press('l');
+        await expect(pos).toHaveText('Ln 3, Col 3');
+    });
+
     if (process.env.CI !== 'true') {
         test('Replays counts', async ({ workbox }) => {
             const { editor, pos } = await setup(workbox);

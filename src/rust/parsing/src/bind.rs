@@ -1860,6 +1860,48 @@ impl ReifiedBinding {
         };
     }
 
+    pub fn merge(&self, other: &ReifiedBinding) -> ReifiedBinding {
+        return ReifiedBinding {
+            error: {
+                if let Some(self_error) = &self.error {
+                    if let Some(other_error) = &other.error {
+                        Some(
+                            self_error
+                                .iter()
+                                .chain(other_error.iter())
+                                .cloned()
+                                .collect(),
+                        )
+                    } else {
+                        Some(self_error.clone())
+                    }
+                } else {
+                    other.error.clone()
+                }
+            },
+            finalKey: other.finalKey,
+            key: format!("{} {}", self.key, other.key),
+            raw_commands: self
+                .raw_commands
+                .iter()
+                .chain(other.raw_commands.iter())
+                .cloned()
+                .collect(),
+            commands: self
+                .commands
+                .iter()
+                .chain(other.commands.iter())
+                .cloned()
+                .collect(),
+            mode: other.mode.clone(),
+            repeat: other.repeat,
+            tags: self.tags.iter().chain(other.tags.iter()).cloned().collect(),
+            doc: other.doc.clone(),
+            edit_document_id: other.edit_document_id,
+            edit_text: self.edit_text.clone() + other.edit_text.as_str(),
+        };
+    }
+
     // transform a list of commands into a reified binding, used to run stored commands (see
     // `storeCommand.ts`)
     pub fn from_commands(commands: Vec<Command>, scope: &Scope) -> ReifiedBinding {
@@ -2395,6 +2437,54 @@ mod tests {
 
         let err = toml::from_str::<BindingInput>(data).unwrap_err();
         assert!(err.to_string().contains("default must"));
+    }
+
+    #[test]
+    fn test_reified_binding_merge() {
+        let binding1 = ReifiedBinding {
+            error: Some(vec!["error1".to_string()]),
+            finalKey: false,
+            key: "ctrl+k".to_string(),
+            raw_commands: Vec::new(),
+            commands: Vec::new(),
+            mode: "normal".to_string(),
+            repeat: 1,
+            tags: vec![Dynamic::from("tag1".to_string())],
+            doc: BindingDoc::default(),
+            edit_document_id: 10,
+            edit_text: "edit1".to_string(),
+        };
+
+        let binding2 = ReifiedBinding {
+            error: Some(vec!["error2".to_string()]),
+            finalKey: true,
+            key: "ctrl+j".to_string(),
+            raw_commands: Vec::new(),
+            commands: Vec::new(),
+            mode: "insert".to_string(),
+            repeat: 2,
+            tags: vec![Dynamic::from("tag2".to_string())],
+            doc: BindingDoc {
+                name: "merged_doc".to_string(),
+                ..BindingDoc::default()
+            },
+            edit_document_id: 20,
+            edit_text: "edit2".to_string(),
+        };
+
+        let merged = binding1.merge(&binding2);
+
+        assert_eq!(merged.error, Some(vec!["error1".to_string(), "error2".to_string()]));
+        assert_eq!(merged.finalKey, true);
+        assert_eq!(merged.key, "ctrl+k ctrl+j");
+        assert_eq!(merged.mode, "insert");
+        assert_eq!(merged.repeat, 2);
+        assert_eq!(merged.tags.len(), 2);
+        assert_eq!(merged.tags[0].clone().into_string().unwrap(), "tag1");
+        assert_eq!(merged.tags[1].clone().into_string().unwrap(), "tag2");
+        assert_eq!(merged.doc.name, "merged_doc");
+        assert_eq!(merged.edit_document_id, 20);
+        assert_eq!(merged.edit_text, "edit1edit2");
     }
 
     // TODO: are there any edge cases / failure modes I want to look at in the tests
