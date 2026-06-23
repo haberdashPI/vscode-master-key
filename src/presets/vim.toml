@@ -650,7 +650,7 @@ doc.description = "operate on entire paragraph and spacing"
 [[bind]]
 foreach.num = ['{{keys(`[1-9]`)}}']
 key = "{{num}}"
-mode = '{{all_modes()}}'
+mode = '{{not_modes(["insert"])}}'
 command = "master-key.updateCount"
 finalKey = false
 args.value = "{{num}}"
@@ -664,7 +664,7 @@ doc.combined.description = "Add digit 0-9 to count argument of a command"
 [[bind]]
 foreach.num = ['{{keys(`[1-9]`)}}']
 key = "numpad{{num}}"
-mode = '{{all_modes()}}'
+mode = '{{not_modes(["insert"])}}'
 command = "master-key.updateCount"
 finalKey = false
 args.value = "{{num}}"
@@ -1028,7 +1028,8 @@ command = "master-key.replayFromHistory"
 args.index = """{{
 last_history_index(|i|
     history[i]?.tags.contains("action") &&
-    history[i]?.commands[0]?.command != "master-key.replayFromHistory"
+    history[i]?.commands[0]?.command != "master-key.replayFromHistory" &&
+    history[i]?.doc.name != "undo"
 )}}"""
 
 [[bind.args.commands]]

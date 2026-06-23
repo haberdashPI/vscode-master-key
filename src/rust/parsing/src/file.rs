@@ -809,7 +809,7 @@ impl KeyFileResult {
         return Ok(false);
     }
 
-    // store an document edit in the current command (see `replay.ts`)
+    // store a document edit in the current command (see `replay.ts`)
     pub fn store_edit(
         &mut self,
         text: String,
