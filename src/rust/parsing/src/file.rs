@@ -809,7 +809,7 @@ impl KeyFileResult {
         return Ok(false);
     }
 
-    // store an document edit in the current command (see `replay.ts`)
+    // store a document edit in the current command (see `replay.ts`)
     pub fn store_edit(
         &mut self,
         text: String,
@@ -3387,7 +3387,7 @@ pub(crate) mod tests {
         let result = parse_keybinding_data(data);
 
         let result = result.file.unwrap();
-        assert_eq!(result.bind.len(), 134);
+        assert_eq!(result.bind.len(), 135);
 
         assert!(FileDocSection::write_markdown(&result.docs, true).len() > 0);
         // info!(

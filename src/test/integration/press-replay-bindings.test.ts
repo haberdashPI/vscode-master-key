@@ -229,16 +229,15 @@ test.describe('Recorded keypresses', () => {
         editor = workbox.getByLabel('macro.md').
             filter({ has: workbox.getByText('b c ') }).
             filter({ has: workbox.getByRole('code') });
-        await editor.press('l');
-        await expect(pos).toHaveText('Ln 1, Col 2');
+        await expect(pos).toHaveText('Ln 1, Col 1');
         await editor.press('Shift+q');
         macroIsNotRecording(workbox);
 
         await editor.press('q');
         await editor.press('q');
-        await expect(pos).toHaveText('Ln 1, Col 3');
+        await expect(pos).toHaveText('Ln 1, Col 1');
         editor = workbox.getByLabel('macro.md').
-            filter({ has: workbox.getByText('  c d') }).
+            filter({ has: workbox.getByText('c d') }).
             filter({ has: workbox.getByRole('code') });
         expect(editor).toBeVisible();
     });

@@ -1011,6 +1011,31 @@ doc.name = "previous"
 doc.description = "repeat search in opposite direction"
 
 # =============================================================================
+## ## Repeating Actions
+# =============================================================================
+
+[[bind]]
+key = "."
+mode = "normal"
+doc.kind = "util"
+doc.name = "repeat"
+doc.description = "repeat last action"
+command = "runCommands"
+repeat = "{{key.count}}"
+
+[[bind.args.commands]]
+command = "master-key.replayFromHistory"
+args.index = """{{
+last_history_index(|i|
+    history[i]?.tags.contains("action") &&
+    history[i]?.commands[0]?.command != "master-key.replayFromHistory" &&
+    history[i]?.doc.name != "undo"
+)}}"""
+
+[[bind.args.commands]]
+command = "master-key.enterNormal"
+
+# =============================================================================
 ## ## Window Commands (Ctrl+w)
 # =============================================================================
 

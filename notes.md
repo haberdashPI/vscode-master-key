@@ -1,5 +1,3 @@
-Current tasks: working through some simple QOL improvements in the task board (any low hanging fruit before the improvement to Vim and the addition of Emacs)
-
 ## Merge File
 
 notes: the trickiest bit will be providing useful errors for duplicate bindings that
@@ -29,7 +27,7 @@ want to replace `Span` with something like `(Source, Span)`
 
 ## Vim Repeat Debug
 
-- [ ] we're getting some kind of error trying to repeat actions (looks like an untested edge case)
+- [X] we're getting some kind of error trying to repeat actions (looks like an untested edge case)
     - [X] fix getter for `commands[i].command`
     - [X] D doesn't look like it behaves the way I woul dexpect a finalKey = true to behave
         - [X] if we cheat and select to commands the repeat action works
@@ -44,6 +42,15 @@ want to replace `Span` with something like `(Source, Span)`
         - [X] unit test for merged reified bindings
         - [X] split into small patch fix PR
     - [ ] add repeat action to the vim.toml bindings (after fixing the bugs above)
+        - [X] basic repeat actions for `d w` work
+        - [x] yw works
+        - [X] cw[text] can be repeated
+            - [X] why is all be the "delete" text component of the command repeated?
+                - [X] ANSWER: store_edits is attached to the moveBy instead of the
+                      executeStoredCommand. Guessing this is related to the fact
+                      that it is part of the `bind.after` sequenc
+        - [ ] scrutinized integration tests:
+            - [ ] investigate "Replay search with canceled input"; failed 3 times
 
 ## MISSING DOCUMENTATION
 

@@ -207,7 +207,7 @@ command = "runCommands"
 when = "editorTextFocus"
 
 [[bind.args.commands]]
-command = "cursorWordEndRightSelect"
+command = "cursorWordStartRightSelect"
 
 [[bind.args.commands]]
 command = "master-key.executeStoredCommand"
@@ -225,4 +225,3 @@ doc.name = "suffix_motion"
 key = "x"
 command = "cursorMove"
 args.to = "right"
-
