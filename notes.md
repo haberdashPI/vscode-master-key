@@ -41,14 +41,16 @@ want to replace `Span` with something like `(Source, Span)`
         - [X] add integration tests to ensure `finalKey = false` bindings get grouped
         - [X] unit test for merged reified bindings
         - [X] split into small patch fix PR
-    - [X] add repeat action to the vim.toml bindings (after fixing the bugs above)
+    - [ ] add repeat action to the vim.toml bindings (after fixing the bugs above)
         - [X] basic repeat actions for `d w` work
         - [x] yw works
         - [X] cw[text] can be repeated
             - [X] why is all be the "delete" text component of the command repeated?
                 - [X] ANSWER: store_edits is attached to the moveBy instead of the
                       executeStoredCommand. Guessing this is related to the fact
-                      that it is part of the `bind.after` sequence
+                      that it is part of the `bind.after` sequenc
+        - [ ] scrutinized integration tests:
+            - [ ] investigate "Replay search with canceled input"; failed 3 times
 
 ## MISSING DOCUMENTATION
 
