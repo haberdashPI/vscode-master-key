@@ -10,7 +10,8 @@ use crate::error::{ErrorContext, ParseError, Result, ResultVec};
 use crate::expression::Scope;
 use crate::{err, wrn};
 
-/// @forBindingField kind
+/// @bindingField kind
+/// @description a category used to visually label keybindings
 ///
 /// Kind is a broad category for keybindings that is displayed as part of the visual
 /// documentation for key bindings. There should be no more than 5 or so kinds, since they are

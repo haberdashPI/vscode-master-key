@@ -228,6 +228,7 @@ struct Header {
     name: Option<Spanned<String>>,
     version: Spanned<Version>,
     requiredExtensions: Option<Vec<String>>,
+    source: Option<Spanned<String>>,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -236,10 +237,10 @@ struct Header {
 pub struct KeyFile {
     pub name: Option<String>,
     pub requiredExtensions: Vec<String>,
-    define: Define,
-    mode: Modes,
-    bind: Vec<Binding>,
-    docs: Vec<FileDocSection>,
+    pub(crate) define: Define,
+    pub(crate) mode: Modes,
+    pub(crate) bind: Vec<Binding>,
+    pub(crate) docs: Vec<FileDocSection>,
     pub kind: Vec<Kind>,
     // TODO: avoid storing `key_bind` to make serialization smaller
     key_bind: Vec<BindingOutput>,
@@ -252,6 +253,7 @@ impl KeyFile {
     fn new(
         input: KeyFileInput,
         doc_lines: Vec<FileDocLine>,
+        sources: &HashMap<String, &KeyFile>,
         mut scope: &mut Scope,
         warnings: &mut Vec<ParseError>,
     ) -> ResultVec<KeyFile> {
@@ -289,6 +291,23 @@ impl KeyFile {
             .into_iter()
             .flatten()
             .collect();
+
+        let source = match input.header.source {
+            Some(source_name) => {
+                if !sources.contains_key(source_name.as_ref()) {
+                    let err: Result<()> = Err(err!(
+                        "There is no source file named {}.",
+                        source_name.as_ref()
+                    ))
+                    .with_range(&source_name);
+                    errors.push(err.unwrap_err());
+                    Option::None
+                } else {
+                    sources.get(source_name.as_ref())
+                }
+            }
+            Option::None => Option::None,
+        };
 
         // [[define]]
         let mut define_input = input.define.unwrap_or_default();
@@ -353,9 +372,9 @@ impl KeyFile {
                         .unwrap_err(),
                 );
             }
-            if !x.as_ref().before.is_none() {
+            if !x.as_ref().after.is_none() {
                 errors.push(
-                    Result::<()>::Err(err!("`before` is reserved for `[[defined.bind]]`").into())
+                    Result::<()>::Err(err!("`after` is reserved for `[[defined.bind]]`").into())
                         .with_range(&span)
                         .unwrap_err(),
                 );
@@ -433,6 +452,18 @@ impl KeyFile {
         let mut key_bind = Vec::new();
         bind = Binding::resolve_prefixes(bind, &bind_span)?;
         let mut codes = BindingCodes::new();
+        // add any bindings defined in the source file
+        if let Some(s) = source {
+            for (i, source_bind_item) in s.bind.iter().enumerate() {
+                key_bind.append(&mut source_bind_item.outputs(
+                    i as i32,
+                    &scope,
+                    Option::None,
+                    &mut codes,
+                )?);
+            }
+        }
+        // add the bindings defined directly in this file
         for (i, (bind_item, span)) in bind.iter_mut().zip(bind_span.into_iter()).enumerate() {
             key_bind.append(&mut bind_item.outputs(i as i32, &scope, Some(span), &mut codes)?);
         }
@@ -443,9 +474,9 @@ impl KeyFile {
 
         // remove key_bind values with the exact same `key_id`, keeping the one with the
         // highest priority (last items); such collisions should only happen between
-        // implicit keybindings, because we check and error on collisions between any two
-        // explicitly defined bindings with the same implied id (same when clause, key and
-        // mode)
+        // implicit keybindings or between the source file and the current file, because we
+        // check and error on collisions between any two explicitly defined bindings with
+        // the same implied id (same when clause, key and mode)
         let mut seen_codes = HashSet::new();
         let mut final_key_bind = VecDeque::with_capacity(key_bind.len());
         for key in key_bind.into_iter().rev() {
@@ -480,8 +511,8 @@ impl KeyFile {
 #[derive(Default, Debug)]
 #[wasm_bindgen(getter_with_clone)]
 pub struct KeyFileResult {
-    file: Option<KeyFile>,
-    errors: Option<Vec<ErrorReport>>,
+    pub(crate) file: Option<KeyFile>,
+    pub(crate) errors: Option<Vec<ErrorReport>>,
     pub(crate) scope: Scope,
 }
 
@@ -684,6 +715,21 @@ impl KeyFileResult {
     ) -> std::result::Result<(), JsError> {
         if let Some(value) = self.scope.state.get_value::<HistoryQueue>("history") {
             let mut history = value.try_borrow_mut()?;
+            // do we need to merge the last item with this new item? this is necessary any
+            // time we have `finalKey = false`. This ensures that multiple keybindings that
+            // are part of the some key sequence are treated as a single command (see for
+            // example `vim.toml` where we implement `d w` as two keybindings; whereas
+            // conceptually this is a single keybinding. Anyone using `master-key.replay` to
+            // re-run such a command will expect `d w` to be stored as a single item in the
+            // history)
+            if history.len() > 0 {
+                let n = history.len() - 1;
+                let last_item = &history[n];
+                if !last_item.finalKey {
+                    history[n] = last_item.merge(cmd);
+                    return Ok(());
+                }
+            }
             history.push_back(cmd.clone());
             if history.len() > (max_history as usize) {
                 history.pop_front();
@@ -763,7 +809,7 @@ impl KeyFileResult {
         return Ok(false);
     }
 
-    // store an document edit in the current command (see `replay.ts`)
+    // store a document edit in the current command (see `replay.ts`)
     pub fn store_edit(
         &mut self,
         text: String,
@@ -831,7 +877,13 @@ where
 {
     let mut warnings = Vec::new();
     let mut scope = Scope::new();
-    let result = parse_bytes_helper(file_content.as_ref(), &mut warnings, &mut scope);
+    let result = parse_bytes_helper(
+        file_content.as_ref(),
+        // TODO: setup a map of source files that can be passed in here
+        &HashMap::new(),
+        &mut warnings,
+        &mut scope,
+    );
     return match result {
         Ok(result) => KeyFileResult {
             scope,
@@ -856,6 +908,7 @@ where
 
 pub fn parse_bytes_helper(
     file_content: &[u8],
+    sources: &HashMap<String, &KeyFile>,
     warnings: &mut Vec<ParseError>,
     scope: &mut Scope,
 ) -> ResultVec<KeyFile> {
@@ -893,7 +946,7 @@ pub fn parse_bytes_helper(
     let parsed = toml::from_slice::<KeyFileInput>(file_content)?;
     let docs = FileDocLine::read(file_content);
 
-    let result = KeyFile::new(parsed, docs, scope, warnings);
+    let result = KeyFile::new(parsed, docs, sources, scope, warnings);
     warnings.append(&mut identify_legacy_warnings(file_content));
 
     return result;
@@ -995,9 +1048,8 @@ pub(crate) mod tests {
         command = "cursorLeft"
         "#;
 
-        let mut warnings = Vec::new();
-        let mut scope = Scope::new();
-        let result = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope).unwrap();
+        let result = parse_keybinding_data(data);
+        let result = result.file.unwrap();
 
         assert_eq!(result.bind[0].key[0], "l");
         assert_eq!(result.bind[0].commands[0].command, "cursorRight");
@@ -1024,10 +1076,8 @@ pub(crate) mod tests {
         command = "bizbaz"
         "#;
 
-        let mut warnings = Vec::new();
-        let mut scope = Scope::new();
-        let result = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope);
-        assert_eq!(result.unwrap().bind.len(), 2)
+        let result = parse_keybinding_data(data);
+        assert_eq!(result.file.unwrap().bind.len(), 2)
     }
 
     #[test]
@@ -1044,11 +1094,10 @@ pub(crate) mod tests {
         command = "foobar"
         "#;
 
-        let mut warnings = Vec::new();
-        let mut scope = Scope::new();
-        let result = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope);
-        assert!(result.is_ok());
-        let error_str = format!("{}", warnings.first().unwrap().error);
+        let result = parse_keybinding_data(data);
+        assert!(result.file.is_some());
+        let report = result.errors.unwrap();
+        let error_str = format!("{}", report.first().unwrap().message);
         assert!(error_str.contains("section `[[bink]]`"));
     }
 
@@ -1063,10 +1112,8 @@ pub(crate) mod tests {
         [[define.val
         "#;
 
-        let mut warnings = Vec::new();
-        let mut scope = Scope::new();
-        let result = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope).unwrap_err();
-        let report = result.report(data.as_bytes());
+        let result = parse_keybinding_data(data);
+        let report = result.errors.unwrap();
         assert!(report[0].message.contains("expected `]]`"));
         assert_eq!(report[0].range.start.line, 6);
         assert_eq!(report[0].range.end.line, 6);
@@ -1074,7 +1121,7 @@ pub(crate) mod tests {
 
     #[test]
     fn validate_version() {
-        let data = r#"
+        let data = r#"#:master-keybindings
         [header]
         version = "1.0.0"
 
@@ -1083,16 +1130,8 @@ pub(crate) mod tests {
         command = "foo"
         "#;
 
-        let mut scope = Scope::new();
-        let mut warnings = Vec::new();
-        let err = KeyFile::new(
-            toml::from_str::<KeyFileInput>(data).unwrap(),
-            Vec::new(),
-            &mut scope,
-            &mut warnings,
-        )
-        .unwrap_err();
-        let report = err.report(data.as_bytes());
+        let result = parse_keybinding_data(data);
+        let report = result.errors.unwrap();
         assert!(report[0].message.contains("version"));
         assert_eq!(report[0].range.start.line, 2);
     }
@@ -1108,17 +1147,15 @@ pub(crate) mod tests {
         command = "b"
         "#;
 
-        let mut warnings = Vec::new();
-        let mut scope = Scope::new();
-        let err = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope).unwrap_err();
-        let report = err.report(data.as_bytes());
+        let result = parse_keybinding_data(data);
+        let report = result.errors.unwrap();
         assert!(report[0].message.contains("directive"));
         assert_eq!(report[0].range.start.line, 0);
     }
 
     #[test]
     fn resolve_bind_and_command() {
-        let data = r#"
+        let data = r#"#:master-keybindings
         [header]
         version = "2.0.0"
 
@@ -1143,15 +1180,9 @@ pub(crate) mod tests {
         key = "a"
         "#;
 
-        let mut scope = Scope::new();
-        let mut warnings = Vec::new();
-        let result = KeyFile::new(
-            toml::from_str::<KeyFileInput>(data).unwrap(),
-            Vec::new(),
-            &mut scope,
-            &mut warnings,
-        )
-        .unwrap();
+        let result = parse_keybinding_data(data);
+
+        let result = result.file.unwrap();
 
         assert_eq!(result.bind[0].doc.name, "the whole shebang");
         assert_eq!(result.bind[0].key[0], "a");
@@ -1176,7 +1207,7 @@ pub(crate) mod tests {
 
     #[test]
     fn resolve_nested_command() {
-        let data = r#"
+        let data = r#"#:master-keybindings
         [header]
         version = "2.0.0"
 
@@ -1203,15 +1234,9 @@ pub(crate) mod tests {
         key = "a"
         "#;
 
-        let mut scope = Scope::new();
-        let mut warnings = Vec::new();
-        let result = KeyFile::new(
-            toml::from_str::<KeyFileInput>(data).unwrap(),
-            Vec::new(),
-            &mut scope,
-            &mut warnings,
-        )
-        .unwrap();
+        let result = parse_keybinding_data(data);
+
+        let result = result.file.unwrap();
 
         assert_eq!(result.bind[0].doc.name, "the whole shebang");
         assert_eq!(result.bind[0].key[0], "a");
@@ -1236,7 +1261,7 @@ pub(crate) mod tests {
 
     #[test]
     fn expand_foreach() {
-        let data = r#"
+        let data = r#"#:master-keybindings
         [header]
         version = "2.0.0"
 
@@ -1255,15 +1280,11 @@ pub(crate) mod tests {
         args.value = "{{key}}"
         "#;
 
-        let mut scope = Scope::new();
-        let mut warnings = Vec::new();
-        let result = KeyFile::new(
-            toml::from_str::<KeyFileInput>(data).unwrap(),
-            Vec::new(),
-            &mut scope,
-            &mut warnings,
-        )
-        .unwrap();
+        let result = parse_keybinding_data(data);
+
+        let mut scope = result.scope;
+
+        let result = result.file.unwrap();
 
         let expected_name: Vec<String> =
             (0..9).into_iter().map(|n| format!("update {n}")).collect();
@@ -1292,7 +1313,7 @@ pub(crate) mod tests {
 
     #[test]
     fn foreach_error() {
-        let data = r#"
+        let data = r#"#:master-keybindings
         [header]
         version = "2.0.0"
 
@@ -1304,15 +1325,8 @@ pub(crate) mod tests {
         "#;
 
         // TODO: ensure that a proper span is shown here
-        let mut scope = Scope::new();
-        let mut warnings = Vec::new();
-        let result = KeyFile::new(
-            toml::from_str::<KeyFileInput>(data).unwrap(),
-            Vec::new(),
-            &mut scope,
-            &mut warnings,
-        );
-        let report = result.unwrap_err().report(data.as_bytes());
+        let result = parse_keybinding_data(data);
+        let report = result.errors.unwrap();
         assert_eq!(report[0].message, "`key` field is required".to_string());
         assert_eq!(report[0].range.start.line, 4);
         assert_eq!(report[0].range.end.line, 4);
@@ -1320,7 +1334,7 @@ pub(crate) mod tests {
 
     #[test]
     fn foreach_regex_error() {
-        let data = r#"
+        let data = r#"#:master-keybindings
         [header]
         version = "2.0.0"
 
@@ -1333,15 +1347,8 @@ pub(crate) mod tests {
         "#;
 
         // TODO: ensure that a proper span is shown here
-        let mut scope = Scope::new();
-        let mut warnings = Vec::new();
-        let result = KeyFile::new(
-            toml::from_str::<KeyFileInput>(data).unwrap(),
-            Vec::new(),
-            &mut scope,
-            &mut warnings,
-        );
-        let report = result.unwrap_err().report(data.as_bytes());
+        let result = parse_keybinding_data(data);
+        let report = result.errors.unwrap();
         assert!(report[0].message.contains("regex parse error"));
         assert!(!report[0].message.contains("(line"));
         assert_eq!(report[0].range.start.line, 5);
@@ -1350,7 +1357,7 @@ pub(crate) mod tests {
 
     #[test]
     fn define_val_at_read() {
-        let data = r#"
+        let data = r#"#:master-keybindings
         [header]
         version = "2.0.0"
 
@@ -1364,15 +1371,9 @@ pub(crate) mod tests {
         args.val = 2
         "#;
 
-        let mut scope = Scope::new();
-        let mut warnings = Vec::new();
-        let result = KeyFile::new(
-            toml::from_str::<KeyFileInput>(data).unwrap(),
-            Vec::new(),
-            &mut scope,
-            &mut warnings,
-        )
-        .unwrap();
+        let result = parse_keybinding_data(data);
+
+        let result = result.file.unwrap();
         assert_eq!(result.bind[0].commands[0].command, "bar");
         assert_eq!(
             result.define.val["biz"],
@@ -1382,7 +1383,7 @@ pub(crate) mod tests {
 
     #[test]
     fn just_one_default_mode() {
-        let data = r#"
+        let data = r#"#:master-keybindings
         [header]
         version = "2.0.0"
 
@@ -1400,23 +1401,15 @@ pub(crate) mod tests {
         command = "foo"
         "#;
 
-        let mut scope = Scope::new();
-        let mut warnings = Vec::new();
-        let err = KeyFile::new(
-            toml::from_str::<KeyFileInput>(data).unwrap(),
-            Vec::new(),
-            &mut scope,
-            &mut warnings,
-        )
-        .unwrap_err();
-        let report = err.report(data.as_bytes());
+        let result = parse_keybinding_data(data);
+        let report = result.errors.unwrap();
         assert!(report[0].message.contains("default mode already set"));
         assert_eq!(report[0].range.start.line, 9)
     }
 
     #[test]
     fn includes_default_mode() {
-        let data = r#"
+        let data = r#"#:master-keybindings
         [header]
         version = "2.0.0"
 
@@ -1432,16 +1425,8 @@ pub(crate) mod tests {
         command = "foo"
         "#;
 
-        let mut scope = Scope::new();
-        let mut warnings = Vec::new();
-        let err = KeyFile::new(
-            toml::from_str::<KeyFileInput>(data).unwrap(),
-            Vec::new(),
-            &mut scope,
-            &mut warnings,
-        )
-        .unwrap_err();
-        let report = err.report(data.as_bytes());
+        let result = parse_keybinding_data(data);
+        let report = result.errors.unwrap();
         assert!(
             report[0]
                 .message
@@ -1452,7 +1437,7 @@ pub(crate) mod tests {
 
     #[test]
     fn unique_mode_name() {
-        let data = r#"
+        let data = r#"#:master-keybindings
         [header]
         version = "2.0.0"
 
@@ -1468,23 +1453,15 @@ pub(crate) mod tests {
         command = "foo"
         "#;
 
-        let mut scope = Scope::new();
-        let mut warnings = Vec::new();
-        let err = KeyFile::new(
-            toml::from_str::<KeyFileInput>(data).unwrap(),
-            Vec::new(),
-            &mut scope,
-            &mut warnings,
-        )
-        .unwrap_err();
-        let report = err.report(data.as_bytes());
+        let result = parse_keybinding_data(data);
+        let report = result.errors.unwrap();
         assert!(report[0].message.contains("mode name is not unique"));
         assert_eq!(report[0].range.start.line, 8)
     }
 
     #[test]
     fn parse_use_mode() {
-        let data = r#"
+        let data = r#"#:master-keybindings
         [header]
         version = "2.0.0"
 
@@ -1501,15 +1478,9 @@ pub(crate) mod tests {
         whenNoBinding.useMode = "a"
         "#;
 
-        let mut scope = Scope::new();
-        let mut warnings = Vec::new();
-        let result = KeyFile::new(
-            toml::from_str::<KeyFileInput>(data).unwrap(),
-            Vec::new(),
-            &mut scope,
-            &mut warnings,
-        )
-        .unwrap();
+        let result = parse_keybinding_data(data);
+
+        let result = result.file.unwrap();
         assert_eq!(
             result.mode.get("b").unwrap().whenNoBinding,
             crate::mode::WhenNoBinding::UseMode("a".to_string())
@@ -1518,7 +1489,7 @@ pub(crate) mod tests {
 
     #[test]
     fn validate_use_mode() {
-        let data = r#"
+        let data = r#"#:master-keybindings
         [header]
         version = "2.0.0"
 
@@ -1532,16 +1503,8 @@ pub(crate) mod tests {
         whenNoBinding.useMode = "c"
         "#;
 
-        let mut scope = Scope::new();
-        let mut warnings = Vec::new();
-        let err = KeyFile::new(
-            toml::from_str::<KeyFileInput>(data).unwrap(),
-            Vec::new(),
-            &mut scope,
-            &mut warnings,
-        )
-        .unwrap_err();
-        let report = err.report(data.as_bytes());
+        let result = parse_keybinding_data(data);
+        let report = result.errors.unwrap();
         assert!(report[0].message.contains("mode `c` is not defined"));
         assert_eq!(report[0].range.start.line, 11)
     }
@@ -1563,10 +1526,8 @@ pub(crate) mod tests {
         name = "capture"
         "#;
 
-        let mut warnings = Vec::new();
-        let mut scope = Scope::new();
-        let err = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope).unwrap_err();
-        let report = err.report(data.as_bytes());
+        let result = parse_keybinding_data(data);
+        let report = result.errors.unwrap();
         assert!(report[0].message.contains("`capture` is implicit"));
         assert_eq!(report[0].range.start.line, 11);
         assert_eq!(report[0].range.end.line, 11);
@@ -1574,7 +1535,7 @@ pub(crate) mod tests {
 
     #[test]
     fn eval_mode_expressions() {
-        let data = r#"
+        let data = r#"#:master-keybindings
         [header]
         version = "2.0.0"
 
@@ -1600,15 +1561,9 @@ pub(crate) mod tests {
         mode = '{{not_modes(["c"])}}'
         "#;
 
-        let mut scope = Scope::new();
-        let mut warnings = Vec::new();
-        let result = KeyFile::new(
-            toml::from_str::<KeyFileInput>(data).unwrap(),
-            Vec::new(),
-            &mut scope,
-            &mut warnings,
-        )
-        .unwrap();
+        let result = parse_keybinding_data(data);
+
+        let result = result.file.unwrap();
         assert!(result.bind[0].mode.iter().any(|x| x == "a"));
         assert!(result.bind[0].mode.iter().any(|x| x == "b"));
         assert!(result.bind[0].mode.iter().any(|x| x == "c"));
@@ -1619,7 +1574,7 @@ pub(crate) mod tests {
 
     #[test]
     fn validate_mode_expressions() {
-        let data = r#"
+        let data = r#"#:master-keybindings
         [header]
         version = "2.0.0"
 
@@ -1640,16 +1595,8 @@ pub(crate) mod tests {
         mode = '{{not_modes(["d"])}}'
         "#;
 
-        let mut scope = Scope::new();
-        let mut warnings = Vec::new();
-        let err = KeyFile::new(
-            toml::from_str::<KeyFileInput>(data).unwrap(),
-            Vec::new(),
-            &mut scope,
-            &mut warnings,
-        )
-        .unwrap_err();
-        let report = err.report(data.as_bytes());
+        let result = parse_keybinding_data(data);
+        let report = result.errors.unwrap();
         assert!(report[0].message.contains("mode `d`"));
         assert_eq!(report[0].range.start.line, 18)
     }
@@ -1663,7 +1610,7 @@ pub(crate) mod tests {
 
     #[test]
     fn eval_prefix_expressions() {
-        let data = r#"
+        let data = r#"#:master-keybindings
         [header]
         version = "2.0.0"
 
@@ -1691,15 +1638,9 @@ pub(crate) mod tests {
         finalKey = false
         "#;
 
-        let mut scope = Scope::new();
-        let mut warnings = Vec::new();
-        let result = KeyFile::new(
-            toml::from_str::<KeyFileInput>(data).unwrap(),
-            Vec::new(),
-            &mut scope,
-            &mut warnings,
-        )
-        .unwrap();
+        let result = parse_keybinding_data(data);
+
+        let result = result.file.unwrap();
 
         assert!(
             unwrap_prefixes(&result.bind[2].prefixes)
@@ -1760,7 +1701,7 @@ pub(crate) mod tests {
 
     #[test]
     fn validate_prefix_expressions() {
-        let data = r#"
+        let data = r#"#:master-keybindings
         [header]
         version = "2.0.0"
 
@@ -1778,16 +1719,8 @@ pub(crate) mod tests {
         prefixes.allBut = ["d k"]
         "#;
 
-        let mut scope = Scope::new();
-        let mut warnings = Vec::new();
-        let err = KeyFile::new(
-            toml::from_str::<KeyFileInput>(data).unwrap(),
-            Vec::new(),
-            &mut scope,
-            &mut warnings,
-        )
-        .unwrap_err();
-        let report = err.report(data.as_bytes());
+        let result = parse_keybinding_data(data);
+        let report = result.errors.unwrap();
         assert!(report[0].message.contains("undefined: `d k`"));
 
         assert_eq!(report[0].range.start.line, 12)
@@ -1795,7 +1728,7 @@ pub(crate) mod tests {
 
     #[test]
     fn command_expansion() {
-        let data = r#"
+        let data = r#"#:master-keybindings
         [header]
         version = "2.0.0"
 
@@ -1826,15 +1759,11 @@ pub(crate) mod tests {
         args.commands = ["j", "k", "{{command.foo}}"]
         "#;
 
-        let mut scope = Scope::new();
-        let mut warnings = Vec::new();
-        let result = KeyFile::new(
-            toml::from_str::<KeyFileInput>(data).unwrap(),
-            Vec::new(),
-            &mut scope,
-            &mut warnings,
-        )
-        .unwrap();
+        let result = parse_keybinding_data(data);
+
+        let mut scope = result.scope;
+
+        let result = result.file.unwrap();
         let commands = result.bind[0].commands(&mut scope).unwrap();
         assert_eq!(commands[0].command, "x");
         assert_eq!(commands[1].command, "j");
@@ -1847,7 +1776,7 @@ pub(crate) mod tests {
 
     #[test]
     fn command_expansion_validates_final_key() {
-        let data = r#"
+        let data = r#"#:master-keybindings
         [header]
         version = "2.0.0"
 
@@ -1879,23 +1808,15 @@ pub(crate) mod tests {
         args.commands = ["j", "k", "{{command.foo}}"]
         "#;
 
-        let mut scope = Scope::new();
-        let mut warnings = Vec::new();
-        let err = KeyFile::new(
-            toml::from_str::<KeyFileInput>(data).unwrap(),
-            Vec::new(),
-            &mut scope,
-            &mut warnings,
-        )
-        .unwrap_err();
-        let report = err.report(data.as_bytes());
+        let result = parse_keybinding_data(data);
+        let report = result.errors.unwrap();
         assert!(report[0].message.contains("`finalKey`"));
         assert_eq!(report[0].range.start.line, 13);
     }
 
     #[test]
     fn command_expansion_dynamically_validates_final_key() {
-        let data = r#"
+        let data = r#"#:master-keybindings
         [header]
         version = "2.0.0"
 
@@ -1926,22 +1847,18 @@ pub(crate) mod tests {
         args.commands = ["j", "k", "{{command.foo}}"]
         "#;
 
-        let mut scope = Scope::new();
-        let mut warnings = Vec::new();
-        let result = KeyFile::new(
-            toml::from_str::<KeyFileInput>(data).unwrap(),
-            Vec::new(),
-            &mut scope,
-            &mut warnings,
-        )
-        .unwrap();
+        let result = parse_keybinding_data(data);
+
+        let mut scope = result.scope;
+
+        let result = result.file.unwrap();
         let err = result.bind[0].commands(&mut scope).unwrap_err();
         assert!(format!("{err}").contains("`finalKey`"))
     }
 
     #[test]
     fn output_bindings_overwrite_implicit_prefix() {
-        let data = r#"
+        let data = r#"#:master-keybindings
         [header]
         version = "2.0.0"
 
@@ -1961,15 +1878,9 @@ pub(crate) mod tests {
         command = "bar"
         "#;
 
-        let mut scope = Scope::new();
-        let mut warnings = Vec::new();
-        let result = KeyFile::new(
-            toml::from_str::<KeyFileInput>(data).unwrap(),
-            Vec::new(),
-            &mut scope,
-            &mut warnings,
-        )
-        .unwrap();
+        let result = parse_keybinding_data(data);
+
+        let result = result.file.unwrap();
         assert_eq!(result.key_bind.len(), 3);
         if let BindingOutput::Do {
             key,
@@ -2013,7 +1924,7 @@ pub(crate) mod tests {
 
     #[test]
     fn output_bindings_identify_duplicates() {
-        let data = r#"
+        let data = r#"#:master-keybindings
         [header]
         version = "2.0.0"
 
@@ -2031,16 +1942,8 @@ pub(crate) mod tests {
         command = "duplicate"
         "#;
 
-        let mut scope = Scope::new();
-        let mut warnings = Vec::new();
-        let err = KeyFile::new(
-            toml::from_str::<KeyFileInput>(data).unwrap(),
-            Vec::new(),
-            &mut scope,
-            &mut warnings,
-        )
-        .unwrap_err();
-        let report = err.report(data.as_bytes());
+        let result = parse_keybinding_data(data);
+        let report = result.errors.unwrap();
 
         assert!(report[0].message.contains("Duplicate key"));
         assert_eq!(report[0].range.start.line, 13);
@@ -2049,7 +1952,7 @@ pub(crate) mod tests {
 
     #[test]
     fn output_bindings_expand_prefixes() {
-        let data = r#"
+        let data = r#"#:master-keybindings
         [header]
         version = "2.0.0"
 
@@ -2067,21 +1970,15 @@ pub(crate) mod tests {
         prefixes.anyOf = ["x y", "h k"]
         "#;
 
-        let mut scope = Scope::new();
-        let mut warnings = Vec::new();
-        let result = KeyFile::new(
-            toml::from_str::<KeyFileInput>(data).unwrap(),
-            Vec::new(),
-            &mut scope,
-            &mut warnings,
-        )
-        .unwrap();
+        let result = parse_keybinding_data(data);
+
+        let result = result.file.unwrap();
         assert_eq!(result.key_bind.len(), 10)
     }
 
     #[test]
     fn explicit_prefixes_must_be_defined_elsewhere() {
-        let data = r#"
+        let data = r#"#:master-keybindings
         [header]
         version = "2.0.0"
 
@@ -2100,25 +1997,13 @@ pub(crate) mod tests {
         prefixes.allBut = ["k", "y z"]
         "#;
 
-        let mut scope = Scope::new();
-        let mut warnings = Vec::new();
-        let result = KeyFile::new(
-            toml::from_str::<KeyFileInput>(data).unwrap(),
-            Vec::new(),
-            &mut scope,
-            &mut warnings,
-        )
-        .unwrap_err();
+        let result = parse_keybinding_data(data);
         let undefined_prefixes = result
             .errors
+            .unwrap()
             .iter()
-            .filter(|e| match e {
-                ParseError {
-                    error: crate::error::RawError::Dynamic(m),
-                    ..
-                } => m.contains("Prefix") && m.contains("undefined"),
-                _ => false,
-            })
+            .filter(|e| e.message.contains("Prefix") && e.message.contains("undefined"))
+            .cloned()
             .collect::<Vec<_>>();
         assert_eq!(undefined_prefixes.len(), 4)
     }
@@ -2161,11 +2046,8 @@ pub(crate) mod tests {
         ags.value = "k"
         "#;
 
-        let mut warnings = Vec::new();
-        let mut scope = Scope::new();
-        let _result = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope);
-        let warnings: ErrorSet = warnings.into();
-        let report = warnings.report(data.as_bytes());
+        let result = parse_keybinding_data(data);
+        let report = result.errors.unwrap();
         let unrecognized: Vec<_> = report
             .iter()
             .filter(|x| x.message.contains("is unrecognized"))
@@ -2200,11 +2082,8 @@ pub(crate) mod tests {
         cmd = "beep"
         "#;
 
-        let mut warnings = Vec::new();
-        let mut scope = Scope::new();
-        let _result = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope);
-        let warnings: ErrorSet = warnings.into();
-        let report = warnings.report(data.as_bytes());
+        let result = parse_keybinding_data(data);
+        let report = result.errors.unwrap();
         assert!(report[0].message.contains("The field `ags`"));
         assert_eq!(report[0].range.start.line, 6);
         assert_eq!(report[0].range.end.line, 6);
@@ -2260,7 +2139,7 @@ pub(crate) mod tests {
 
     #[test]
     fn validate_kind() {
-        let data = r#"
+        let data = r#"#:master-keybindings
         [header]
         version = "2.0.0"
 
@@ -2279,16 +2158,8 @@ pub(crate) mod tests {
         doc.kind = "bleep"
         "#;
 
-        let mut scope = Scope::new();
-        let mut warnings = Vec::new();
-        let err = KeyFile::new(
-            toml::from_str::<KeyFileInput>(data).unwrap(),
-            Vec::new(),
-            &mut scope,
-            &mut warnings,
-        )
-        .unwrap_err();
-        let report = err.report(data.as_bytes());
+        let result = parse_keybinding_data(data);
+        let report = result.errors.unwrap();
 
         assert!(report[0].message.contains("`bleep`"));
         assert_eq!(report[0].range.start.line, 16);
@@ -2296,7 +2167,7 @@ pub(crate) mod tests {
 
     #[test]
     fn expression_error_resolves_to_field_in_array() {
-        let data = r#"
+        let data = r#"#:master-keybindings
         [header]
         version = "2.0.0"
 
@@ -2306,16 +2177,8 @@ pub(crate) mod tests {
         args.names = ["{{1+2}}", "{{(1+2}}"]
         "#;
 
-        let mut scope = Scope::new();
-        let mut warnings = Vec::new();
-        let err = KeyFile::new(
-            toml::from_str::<KeyFileInput>(data).unwrap(),
-            Vec::new(),
-            &mut scope,
-            &mut warnings,
-        )
-        .unwrap_err();
-        let report = err.report(data.as_bytes());
+        let result = parse_keybinding_data(data);
+        let report = result.errors.unwrap();
         assert!(report[0].message.contains("Expecting ')'"));
         assert_eq!(report[0].range.start.line, 7);
         assert_eq!(report[0].range.end.line, 7);
@@ -2325,7 +2188,7 @@ pub(crate) mod tests {
 
     #[test]
     fn unmatched_bracket_error_resolves_to_field_in_array() {
-        let data = r#"
+        let data = r#"#:master-keybindings
         [header]
         version = "2.0.0"
 
@@ -2335,16 +2198,8 @@ pub(crate) mod tests {
         args.names = ["{{1+2}}", "{{1+2"]
         "#;
 
-        let mut scope = Scope::new();
-        let mut warnings = Vec::new();
-        let err = KeyFile::new(
-            toml::from_str::<KeyFileInput>(data).unwrap(),
-            Vec::new(),
-            &mut scope,
-            &mut warnings,
-        )
-        .unwrap_err();
-        let report = err.report(data.as_bytes());
+        let result = parse_keybinding_data(data);
+        let report = result.errors.unwrap();
         assert!(report[0].message.contains("unexpected `{{`"));
         assert_eq!(report[0].range.start.line, 7);
         assert_eq!(report[0].range.end.line, 7);
@@ -2354,7 +2209,7 @@ pub(crate) mod tests {
 
     #[test]
     fn invalid_key_modifier_error() {
-        let data = r#"
+        let data = r#"#:master-keybindings
         [header]
         version = "2.0.0"
 
@@ -2363,19 +2218,18 @@ pub(crate) mod tests {
         key = "crd+x"
         "#;
 
-        let err = toml::from_str::<KeyFileInput>(data).unwrap_err();
-        let err: ParseError = err.into();
-        let report = err.report(data.as_bytes()).unwrap();
-        assert!(report.message.contains("invalid modifier"));
-        assert_eq!(report.range.start.line, 6);
-        assert_eq!(report.range.end.line, 6);
-        assert_eq!(report.range.start.col, 14);
-        assert_eq!(report.range.end.col, 21);
+        let result = parse_keybinding_data(data);
+        let report = result.errors.unwrap();
+        assert!(report[0].message.contains("invalid modifier"));
+        assert_eq!(report[0].range.start.line, 6);
+        assert_eq!(report[0].range.end.line, 6);
+        assert_eq!(report[0].range.start.col, 14);
+        assert_eq!(report[0].range.end.col, 21);
     }
 
     #[test]
     fn invalid_key_name_error() {
-        let data = r#"
+        let data = r#"#:master-keybindings
         [header]
         version = "2.0.0"
 
@@ -2384,19 +2238,18 @@ pub(crate) mod tests {
         key = "xyz"
         "#;
 
-        let err = toml::from_str::<KeyFileInput>(data).unwrap_err();
-        let err: ParseError = err.into();
-        let report = err.report(data.as_bytes()).unwrap();
-        assert!(report.message.contains("invalid key"));
-        assert_eq!(report.range.start.line, 6);
-        assert_eq!(report.range.end.line, 6);
-        assert_eq!(report.range.start.col, 14);
-        assert_eq!(report.range.end.col, 19);
+        let result = parse_keybinding_data(data);
+        let report = result.errors.unwrap();
+        assert!(report[0].message.contains("invalid key"));
+        assert_eq!(report[0].range.start.line, 6);
+        assert_eq!(report[0].range.end.line, 6);
+        assert_eq!(report[0].range.start.col, 14);
+        assert_eq!(report[0].range.end.col, 19);
     }
 
     #[test]
     fn invariant_key_name_parses() {
-        let data = r#"
+        let data = r#"#:master-keybindings
         [header]
         version = "2.0.0"
 
@@ -2405,20 +2258,13 @@ pub(crate) mod tests {
         key = "[KeyX]"
         "#;
 
-        let mut scope = Scope::new();
-        let mut warnings = Vec::new();
-        let result = KeyFile::new(
-            toml::from_str::<KeyFileInput>(data).unwrap(),
-            Vec::new(),
-            &mut scope,
-            &mut warnings,
-        );
-        assert!(result.is_ok());
+        let result = parse_keybinding_data(data);
+        assert!(result.file.is_some());
     }
 
     #[test]
     fn non_string_key_eval_errors() {
-        let data = r#"
+        let data = r#"#:master-keybindings
         [header]
         version = "2.0.0"
 
@@ -2427,17 +2273,8 @@ pub(crate) mod tests {
         key = "{{1+2}}"
         "#;
 
-        let mut scope = Scope::new();
-        let mut warnings = Vec::new();
-        let err = KeyFile::new(
-            toml::from_str::<KeyFileInput>(data).unwrap(),
-            Vec::new(),
-            &mut scope,
-            &mut warnings,
-        )
-        .unwrap_err();
-
-        let report = err.report(data.as_bytes());
+        let result = parse_keybinding_data(data);
+        let report = result.errors.unwrap();
         assert!(report[0].message.contains("expected a string"));
         assert_eq!(report[0].range.start.line, 6);
         assert_eq!(report[0].range.end.line, 6);
@@ -2445,11 +2282,9 @@ pub(crate) mod tests {
         assert_eq!(report[0].range.end.col, 23);
     }
 
-    // TODO: something is up with how this is being parsed... 🤔
-
     #[test]
     fn expression_error_val() {
-        let data = r#"
+        let data = r#"#:master-keybindings
         [header]
         version = "2.0.0"
 
@@ -2457,17 +2292,8 @@ pub(crate) mod tests {
         x = "1+2}}"
         "#;
 
-        let mut scope = Scope::new();
-        let mut warnings = Vec::new();
-        let err = KeyFile::new(
-            toml::from_str::<KeyFileInput>(data).unwrap(),
-            Vec::new(),
-            &mut scope,
-            &mut warnings,
-        )
-        .unwrap_err();
-
-        let report = err.report(data.as_bytes());
+        let result = parse_keybinding_data(data);
+        let report = result.errors.unwrap();
         assert_eq!(report[0].message, "unexpected `}}`");
         assert_eq!(report[0].range.start.line, 5);
         assert_eq!(report[0].range.end.line, 5);
@@ -2477,7 +2303,7 @@ pub(crate) mod tests {
 
     #[test]
     fn define_command_error() {
-        let data = r#"
+        let data = r#"#:master-keybindings
         [header]
         version = "2.0.0"
 
@@ -2485,16 +2311,15 @@ pub(crate) mod tests {
         args.value = 2
         "#;
 
-        let err = toml::from_str::<KeyFileInput>(data).unwrap_err();
-        let err: ParseError = err.into();
-        let report = err.report(data.as_bytes()).unwrap();
-        assert_eq!(report.range.start.line, 4);
-        assert_eq!(report.range.end.line, 4);
+        let result = parse_keybinding_data(data);
+        let report = result.errors.unwrap();
+        assert_eq!(report[0].range.start.line, 4);
+        assert_eq!(report[0].range.end.line, 4);
     }
 
     #[test]
     fn define_bind_error() {
-        let data = r#"
+        let data = r#"#:master-keybindings
         [header]
         version = "2.0.0"
 
@@ -2502,16 +2327,15 @@ pub(crate) mod tests {
         key = "xyz"
         "#;
 
-        let err = toml::from_str::<KeyFileInput>(data).unwrap_err();
-        let err: ParseError = err.into();
-        let report = err.report(data.as_bytes()).unwrap();
-        assert_eq!(report.range.start.line, 5);
-        assert_eq!(report.range.end.line, 5);
+        let result = parse_keybinding_data(data);
+        let report = result.errors.unwrap();
+        assert_eq!(report[0].range.start.line, 5);
+        assert_eq!(report[0].range.end.line, 5);
     }
 
     #[test]
     fn default_is_undefined() {
-        let data = r#"
+        let data = r#"#:master-keybindings
         [header]
         version = "2.0.0"
 
@@ -2521,17 +2345,8 @@ pub(crate) mod tests {
         default = "{{bind.foo}}"
         "#;
 
-        let mut scope = Scope::new();
-        let mut warnings = Vec::new();
-        let err = KeyFile::new(
-            toml::from_str::<KeyFileInput>(data).unwrap(),
-            Vec::new(),
-            &mut scope,
-            &mut warnings,
-        )
-        .unwrap_err();
-
-        let report = err.report(data.as_bytes());
+        let result = parse_keybinding_data(data);
+        let report = result.errors.unwrap();
         assert!(report[0].message.contains("undefined value"));
         assert_eq!(report[0].range.start.line, 4);
         assert_eq!(report[0].range.end.line, 4);
@@ -2539,7 +2354,7 @@ pub(crate) mod tests {
 
     #[test]
     fn bind_reference_misplaced() {
-        let data = r#"
+        let data = r#"#:master-keybindings
         [header]
         version = "2.0.0"
 
@@ -2552,17 +2367,8 @@ pub(crate) mod tests {
         command = "bar"
         "#;
 
-        let mut scope = Scope::new();
-        let mut warnings = Vec::new();
-        let err = KeyFile::new(
-            toml::from_str::<KeyFileInput>(data).unwrap(),
-            Vec::new(),
-            &mut scope,
-            &mut warnings,
-        )
-        .unwrap_err();
-
-        let report = err.report(data.as_bytes());
+        let result = parse_keybinding_data(data);
+        let report = result.errors.unwrap();
 
         assert!(report[0].message.contains("unexpected `bind.`"));
         assert_eq!(report[0].range.start.line, 9);
@@ -2571,7 +2377,7 @@ pub(crate) mod tests {
 
     #[test]
     fn expression_error_points_to_line() {
-        let data = r#"
+        let data = r#"#:master-keybindings
         [header]
         version = "2.0.0"
 
@@ -2583,17 +2389,8 @@ pub(crate) mod tests {
         doc.combined.name = "{{(3+4}}"
         "#;
 
-        let mut scope = Scope::new();
-        let mut warnings = Vec::new();
-        let err = KeyFile::new(
-            toml::from_str::<KeyFileInput>(data).unwrap(),
-            Vec::new(),
-            &mut scope,
-            &mut warnings,
-        )
-        .unwrap_err();
-
-        let report = err.report(data.as_bytes());
+        let result = parse_keybinding_data(data);
+        let report = result.errors.unwrap();
 
         assert!(report[0].message.contains("Expecting ')'"));
         assert_eq!(report[0].range.start.line, 7);
@@ -2623,10 +2420,8 @@ pub(crate) mod tests {
         description = "beep"
         "#;
 
-        let mut warnings = Vec::new();
-        let mut scope = Scope::new();
-        let result = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope);
-        let report = result.unwrap_err().report(data.as_bytes());
+        let result = parse_keybinding_data(data);
+        let report = result.errors.unwrap();
         assert!(report[0].message.contains("`name` must be unique"));
         assert_eq!(report[0].range.start.line, 10);
         assert_eq!(report[0].range.end.line, 10);
@@ -2646,10 +2441,8 @@ pub(crate) mod tests {
         args = [1,2,3]
         "#;
 
-        let mut warnings = Vec::new();
-        let mut scope = Scope::new();
-        let result = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope);
-        let report = result.unwrap_err().report(data.as_bytes());
+        let result = parse_keybinding_data(data);
+        let report = result.errors.unwrap();
         assert!(report[0].message.contains("`args`"));
         assert_eq!(report[0].range.start.line, 6);
         assert_eq!(report[0].range.end.line, 6);
@@ -2669,10 +2462,8 @@ pub(crate) mod tests {
         args.commands.x = 1
         "#;
 
-        let mut warnings = Vec::new();
-        let mut scope = Scope::new();
-        let result = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope);
-        let report = result.unwrap_err().report(data.as_bytes());
+        let result = parse_keybinding_data(data);
+        let report = result.errors.unwrap();
         assert!(report[0].message.contains("`args.commands`"));
         assert_eq!(report[0].range.start.line, 9);
         assert_eq!(report[0].range.end.line, 9);
@@ -2694,10 +2485,8 @@ pub(crate) mod tests {
         command = 2
         "#;
 
-        let mut warnings = Vec::new();
-        let mut scope = Scope::new();
-        let result = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope);
-        let report = result.unwrap_err().report(data.as_bytes());
+        let result = parse_keybinding_data(data);
+        let report = result.errors.unwrap();
         assert!(report[0].message.contains("`command`"));
         assert_eq!(report[0].range.start.line, 11);
         assert_eq!(report[0].range.end.line, 11);
@@ -2721,10 +2510,8 @@ pub(crate) mod tests {
         args.commands = ["a", "b"]
         "#;
 
-        let mut warnings = Vec::new();
-        let mut scope = Scope::new();
-        let result = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope);
-        let report = result.unwrap_err().report(data.as_bytes());
+        let result = parse_keybinding_data(data);
+        let report = result.errors.unwrap();
         assert!(report[0].message.contains("`skipWhen`"));
         assert_eq!(report[0].range.start.line, 12);
         assert_eq!(report[0].range.end.line, 12);
@@ -2747,10 +2534,8 @@ pub(crate) mod tests {
         args = 2
         "#;
 
-        let mut warnings = Vec::new();
-        let mut scope = Scope::new();
-        let result = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope);
-        let report = result.unwrap_err().report(data.as_bytes());
+        let result = parse_keybinding_data(data);
+        let report = result.errors.unwrap();
         assert!(report[0].message.contains("`args`"));
         assert_eq!(report[0].range.start.line, 12);
         assert_eq!(report[0].range.end.line, 12);
@@ -2770,10 +2555,8 @@ pub(crate) mod tests {
         args.commands = ["a", 1]
         "#;
 
-        let mut warnings = Vec::new();
-        let mut scope = Scope::new();
-        let result = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope);
-        let report = result.unwrap_err().report(data.as_bytes());
+        let result = parse_keybinding_data(data);
+        let report = result.errors.unwrap();
         assert!(report[0].message.contains("`commands`"));
         assert_eq!(report[0].range.start.line, 9);
         assert_eq!(report[0].range.end.line, 9);
@@ -2792,10 +2575,8 @@ pub(crate) mod tests {
         default = true
         "#;
 
-        let mut warnings = Vec::new();
-        let mut scope = Scope::new();
-        let result = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope);
-        let report = result.unwrap_err().report(data.as_bytes());
+        let result = parse_keybinding_data(data);
+        let report = result.errors.unwrap();
         assert!(
             report[0]
                 .message
@@ -2830,9 +2611,9 @@ pub(crate) mod tests {
         args.followCursor = true
         "#;
 
-        let mut warnings = Vec::new();
-        let mut scope = Scope::new();
-        let result = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope).unwrap();
+        let result = parse_keybinding_data(data);
+
+        let result = result.file.unwrap();
         let run_commands = result.mode.map["syminsert"].whenNoBinding.clone();
         if let WhenNoBinding::Run(commands) = run_commands {
             assert_eq!(commands.len(), 1);
@@ -2865,10 +2646,8 @@ pub(crate) mod tests {
         args.followCursor = true
         "#;
 
-        let mut warnings = Vec::new();
-        let mut scope = Scope::new();
-        let err = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope).unwrap_err();
-        let report = err.report(data.as_bytes());
+        let result = parse_keybinding_data(data);
+        let report = result.errors.unwrap();
         assert!(report[0].message.contains("missing field"));
         assert_eq!(report[0].range.start.line, 16);
         assert_eq!(report[0].range.end.line, 16);
@@ -2898,10 +2677,8 @@ pub(crate) mod tests {
         args.followCursor = true
         "#;
 
-        let mut warnings = Vec::new();
-        let mut scope = Scope::new();
-        let err = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope).unwrap_err();
-        let report = err.report(data.as_bytes());
+        let result = parse_keybinding_data(data);
+        let report = result.errors.unwrap();
 
         assert!(report[0].message.contains("`rub`"));
         assert_eq!(report[0].range.start.line, 16);
@@ -2928,10 +2705,8 @@ pub(crate) mod tests {
         whenNoBinding = 'insrt'
         "#;
 
-        let mut warnings = Vec::new();
-        let mut scope = Scope::new();
-        let err = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope).unwrap_err();
-        let report = err.report(data.as_bytes());
+        let result = parse_keybinding_data(data);
+        let report = result.errors.unwrap();
 
         assert!(report[0].message.contains("insrt"));
         assert_eq!(report[0].range.start.line, 15);
@@ -2959,10 +2734,8 @@ pub(crate) mod tests {
         whenNoBinding.x = "foo"
         "#;
 
-        let mut warnings = Vec::new();
-        let mut scope = Scope::new();
-        let err = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope).unwrap_err();
-        let report = err.report(data.as_bytes());
+        let result = parse_keybinding_data(data);
+        let report = result.errors.unwrap();
 
         assert!(report[0].message.contains("`x`"));
         assert_eq!(report[0].range.start.line, 15);
@@ -3004,9 +2777,9 @@ pub(crate) mod tests {
         mode = 'special'
         "#;
 
-        let mut warnings = Vec::new();
-        let mut scope = Scope::new();
-        let result = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope).unwrap();
+        let result = parse_keybinding_data(data);
+
+        let result = result.file.unwrap();
 
         // verify that all ignore bindings are present
         let ignore_bindings = result.key_bind.iter().filter(|x| match x {
@@ -3074,9 +2847,9 @@ pub(crate) mod tests {
         command = "left"
         "#;
 
-        let mut warnings = Vec::new();
-        let mut scope = Scope::new();
-        let result = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope).unwrap();
+        let result = parse_keybinding_data(data);
+
+        let result = result.file.unwrap();
         if let BindingOutput::Do {
             args: BindingOutputArgs { command_id, .. },
             ..
@@ -3151,9 +2924,9 @@ pub(crate) mod tests {
         when = "editorTextFocus" # this line is crucial to what we're testing here
         "#;
 
-        let mut warnings = Vec::new();
-        let mut scope = Scope::new();
-        let result = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope).unwrap();
+        let result = parse_keybinding_data(data);
+
+        let result = result.file.unwrap();
 
         let a_bind_id = result
             .key_bind
@@ -3231,9 +3004,9 @@ pub(crate) mod tests {
         when = "editorTextFocus"
         "#;
 
-        let mut warnings = Vec::new();
-        let mut scope = Scope::new();
-        let result = parse_bytes_helper(data.as_bytes(), &mut warnings, &mut scope).unwrap();
+        let result = parse_keybinding_data(data);
+
+        let result = result.file.unwrap();
 
         result.key_bind.iter().for_each(|k| match k {
             BindingOutput::Prefix {
@@ -3273,10 +3046,9 @@ pub(crate) mod tests {
         args.value = '{{show("sum: ", 1+2)}}'
         "#;
 
-        let mut warnings = Vec::new();
-        let mut scope = Scope::new();
-        let _ = parse_bytes_helper(&data.as_bytes(), &mut warnings, &mut scope).unwrap();
-        let report = ErrorSet { errors: warnings }.report(data.as_bytes());
+        let result = parse_keybinding_data(data);
+
+        let report = result.errors.unwrap();
 
         assert!(report[0].message.contains("string: "))
     }
@@ -3309,9 +3081,9 @@ pub(crate) mod tests {
         command = "bar"
         "#;
 
-        let mut warnings = Vec::new();
-        let mut scope = Scope::new();
-        let result = parse_bytes_helper(&data.as_bytes(), &mut warnings, &mut scope).unwrap();
+        let result = parse_keybinding_data(data);
+
+        let result = result.file.unwrap();
         assert_eq!(result.bind[0].tags.len(), 2);
         assert_eq!(result.bind[1].tags.len(), 2);
     }
@@ -3356,9 +3128,9 @@ pub(crate) mod tests {
         args.to = "right"
         "#;
 
-        let mut warnings = Vec::new();
-        let mut scope = Scope::new();
-        let result = parse_bytes_helper(&data.as_bytes(), &mut warnings, &mut scope).unwrap();
+        let result = parse_keybinding_data(data);
+
+        let result = result.file.unwrap();
         let prefixes: Vec<_> = result
             .key_bind
             .iter()
@@ -3392,22 +3164,15 @@ pub(crate) mod tests {
         key = "cmd+b"
         command = "biz"
         "#;
-        let result = parse_keybinding_data(&data);
-        let commands = result.file.unwrap().bind[0].clone().commands;
+        let result = parse_keybinding_data(data);
+        let key_file = result.file.as_ref().unwrap();
+        let commands = key_file.bind[0].clone().commands;
         assert_eq!(commands[0].command, "bar");
         assert_eq!(commands[1].command, "biz");
         assert_eq!(commands[2].command, "foo");
-
-        assert!(
-            result.errors.as_ref().unwrap()[0]
-                .message
-                .contains("`before`")
-        );
-        assert!(
-            result.errors.as_ref().unwrap()[1]
-                .message
-                .contains("`after`")
-        );
+        let errors = result.errors.unwrap();
+        assert!(errors[0].message.contains("`before`"));
+        assert!(errors[1].message.contains("`after`"));
 
         let data = r#"
         #:master-keybindings
@@ -3429,8 +3194,8 @@ pub(crate) mod tests {
         key = "cmd+b"
         command = "biz"
         "#;
-        let result = parse_keybinding_data(&data);
-        assert_eq!(result.errors.unwrap().len(), 0)
+        let result = parse_keybinding_data(data);
+        assert_eq!(result.n_errors(), 0);
     }
 
     #[test]
@@ -3574,8 +3339,8 @@ pub(crate) mod tests {
         prefixes.allBut = ['{{"h"}}']
         "#;
 
-        let outside_result = parse_keybinding_data(&outside_expressions);
-        let bind = outside_result.file.unwrap().bind;
+        let outside_file = parse_keybinding_data(outside_expressions).file.unwrap();
+        let bind = outside_file.bind;
         assert_eq!(bind[1].mode, ["a".to_string()]);
         assert_eq!(bind[1].tags, ["k".to_string(), "h".to_string()]);
         if let Prefix::AnyOf(prefixes) = bind[1].prefixes.clone() {
@@ -3584,8 +3349,8 @@ pub(crate) mod tests {
             assert!(false);
         }
 
-        let inside_result = parse_keybinding_data(&inside_expressions);
-        let bind = inside_result.file.unwrap().bind;
+        let inside_file = parse_keybinding_data(inside_expressions).file.unwrap();
+        let bind = inside_file.bind;
         assert_eq!(bind[1].mode, ["a".to_string()]);
         assert_eq!(bind[1].tags, ["k".to_string(), "h".to_string()]);
         if let Prefix::AnyOf(prefixes) = bind[1].prefixes.clone() {
@@ -3601,10 +3366,10 @@ pub(crate) mod tests {
         // our parsing works at scale)
         let data = std::fs::read("../../presets/larkin.toml").unwrap();
 
-        let mut warnings = Vec::new();
-        let mut scope = Scope::new();
-        let result = parse_bytes_helper(&data, &mut warnings, &mut scope).unwrap();
-        assert_eq!(result.bind.len(), 309);
+        let result = parse_keybinding_data(data);
+
+        let result = result.file.unwrap();
+        assert_eq!(result.bind.len(), 318);
 
         assert!(FileDocSection::write_markdown(&result.docs, true).len() > 0);
         // info!(
@@ -3619,10 +3384,10 @@ pub(crate) mod tests {
         // our parsing works at scale)
         let data = std::fs::read("../../presets/vim.toml").unwrap();
 
-        let mut warnings = Vec::new();
-        let mut scope = Scope::new();
-        let result = parse_bytes_helper(&data, &mut warnings, &mut scope).unwrap();
-        assert_eq!(result.bind.len(), 126);
+        let result = parse_keybinding_data(data);
+
+        let result = result.file.unwrap();
+        assert_eq!(result.bind.len(), 135);
 
         assert!(FileDocSection::write_markdown(&result.docs, true).len() > 0);
         // info!(
