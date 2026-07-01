@@ -340,7 +340,7 @@ impl fmt::Display for ParseError {
 
 // use `StringOffsets` to get an actual human readable line and character position
 // from a byte offset
-fn range_to_pos(range: &Range<usize>, offsets: &StringOffsets) -> CharRange {
+pub fn range_to_pos(range: &Range<usize>, offsets: &StringOffsets) -> CharRange {
     let start;
     let end;
     if range == &UNKNOWN_RANGE {

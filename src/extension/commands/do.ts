@@ -26,6 +26,7 @@ const masterBinding = z.object({
     prefix_id: z.number().int().min(-1),
     command_id: z.number().int().min(0).default(-1),
     old_prefix_id: z.number().int().min(-1),
+    prefix: z.string(),
     mode: z.string(),
 });
 
@@ -127,6 +128,14 @@ function commandChangesModeOrPrefix(command: ReifiedBinding) {
 // used to ensure orderly execution of commands within `master-key.do`
 export const commandMutex = new Mutex();
 
+function prependPrefix(prefix: string, suffix: string) {
+    if (prefix.length > 0) {
+        return prefix + ' ' + suffix;
+    } else {
+        return suffix;
+    }
+}
+
 /**
  * @command do
  * @section Performing Actions
@@ -147,6 +156,7 @@ export const commandMutex = new Mutex();
 export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
     // see extension-profiles/README.md for details
     // console.profile('master-key-do');
+
     // register that a key was pressed (cancelling the display of the quick pick for
     // prefixes of this keypress
     registerKeyPress();
@@ -202,7 +212,7 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
                         if (command.command !== 'master-key.ignore') {
                             if (command.command === 'master-key.prefix') {
                                 command.args.prefix_id = args.prefix_id;
-                                command.args.key = toRun.key;
+                                command.args.key = prependPrefix(args.prefix, toRun.key);
                                 command.args.mode = args.mode;
                                 command.args.command_id = args.command_id;
                                 // we need to know we're calling it from `master-key.do` so
@@ -224,6 +234,10 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
                             if (resolvedArgs) {
                                 command.args = resolvedArgs;
                             }
+                            // TODO: do we need to chunk commands so they are stored per
+                            // finalKey?? or accept this limitation in they way we describe
+                            // command history??
+
                             // update the command arguments based on any user input
                             // collected during the call to run the command (e.g. for
                             // master-key.search).
@@ -283,7 +297,7 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
                     // this will be immediately cleared by `reset` but
                     // its display will persist in the status bar for a little bit
                     // (see `status/keyseq.ts`)
-                    const prefix = toRun.key;
+                    const prefix = prependPrefix(args.prefix, toRun.key);
                     state.set(PREFIX, prefix);
                     // here is where we clear the key sequence displayed by setting `PREFIX`
                     // above by calling `reset()`

@@ -174,7 +174,7 @@ function cleanupEdit(edit: vscode.TextDocumentChangeEvent) {
     return result;
 }
 
-const REPLAY_DELAY = 50;
+export const REPLAY_DELAY = 50;
 // TODO: does `commands` require the `RunCommandsArgs` type?
 export async function runCommands(
     macro: ReifiedBinding[],
@@ -190,21 +190,21 @@ export async function runCommands(
                     command.command === 'master-key.replayFromStack') {
                     hasNestedRepeat = true;
                 }
-                const editor = vscode.window.activeTextEditor;
-                const edits = binding.edit_text;
-                if (edits && editor) {
-                    const ed = editor;
-                    editor.edit((e) => {
-                        for (const sel of ed.selections) {
-                            e.insert(sel.anchor, edits);
-                        }
-                    });
-                } else if (edits) {
-                    vscode.window.showErrorMessage(
-                        `Command includes edits to the active text editor, but there
-                        is currently no active editor.`,
-                    );
-                }
+            }
+            const editor = vscode.window.activeTextEditor;
+            const edits = binding.edit_text;
+            if (edits && editor) {
+                const ed = editor;
+                editor.edit((e) => {
+                    for (const sel of ed.selections) {
+                        e.insert(sel.anchor, edits);
+                    }
+                });
+            } else if (edits) {
+                vscode.window.showErrorMessage(
+                    `Command includes edits to the active text editor, but there
+                    is currently no active editor.`,
+                );
             }
         }
         // we don't add a delay when calling nested repeats; this ensures that deep nesting

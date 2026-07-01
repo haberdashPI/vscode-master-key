@@ -31,10 +31,10 @@ jobs:
         with:
           fetch-depth: 0 # Not needed if lastUpdated is not enabled
       - name: Install Dev Environment
-        uses: jdx/mise-action@v3
+        uses: jdx/mise-action@v4
         with:
           experimental: true # enables postinstall hooks
-          version: 2025.11.2
+          version: 2026.6.10
           install: true
           cache: true
       - name: Setup Node and Cache NPM

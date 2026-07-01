@@ -2,6 +2,20 @@ import { test, expect } from './config';
 import { activateKeybindings, openFile } from './utils';
 import { Page } from '@playwright/test';
 
+async function macroIsRecording(workbox: Page) {
+    const statusBarMode = workbox.locator(
+        'div[aria-label="Keybinding Mode: rec: normal"]',
+    );
+    await expect(statusBarMode).toHaveClass(/error-kind/);
+}
+
+async function macroIsNotRecording(workbox: Page) {
+    const statusBarMode = workbox.locator(
+        'div[aria-label="Keybinding Mode: normal"]',
+    );
+    await expect(statusBarMode).toBeAttached();
+}
+
 test.describe('Recorded keypresses', () => {
     async function setup(workbox: Page) {
         await activateKeybindings(workbox, 'replayMotions.toml');
@@ -21,10 +35,15 @@ test.describe('Recorded keypresses', () => {
     test('Handles basic recording', async ({ workbox }) => {
         const { editor, pos } = await setup(workbox);
         await editor.press('Shift+q');
+        macroIsRecording(workbox);
+
         await editor.press('l');
         await editor.press('j');
         await expect(pos).toHaveText('Ln 2, Col 2');
+
         await editor.press('Shift+q');
+        macroIsNotRecording(workbox);
+
         await editor.press('q');
         await editor.press('q');
         await expect(pos).toHaveText('Ln 3, Col 3');
@@ -41,15 +60,30 @@ test.describe('Recorded keypresses', () => {
         await expect(pos).toHaveText('Ln 3, Col 2');
     });
 
+    test('Replays `finalKey = false` sequence as single command', async ({ workbox }) => {
+        const { editor, pos } = await setup(workbox);
+
+        await editor.press('z');
+        await editor.press('x');
+        await expect(pos).toHaveText('Ln 2, Col 2');
+        await editor.press('q');
+        await editor.press('l');
+        await expect(pos).toHaveText('Ln 3, Col 3');
+    });
+
     if (process.env.CI !== 'true') {
         test('Replays counts', async ({ workbox }) => {
             const { editor, pos } = await setup(workbox);
 
             await editor.press('Shift+q');
+            macroIsRecording(workbox);
+
             await editor.press('Shift+3');
             await editor.press('l');
             await expect(pos).toHaveText('Ln 1, Col 4');
             await editor.press('Shift+q');
+            macroIsNotRecording(workbox);
+
             await editor.press('q');
             await editor.press('q');
             await expect(pos).toHaveText('Ln 1, Col 7');
@@ -60,12 +94,16 @@ test.describe('Recorded keypresses', () => {
         test('Replays search', async ({ workbox }) => {
             const { editor, pos } = await setup(workbox);
             await editor.press('Shift+q');
+            macroIsRecording(workbox);
+
             await editor.press('/');
             const search = workbox.getByRole('textbox', { name: 'Search' });
             await search.pressSequentially('c d');
             await search.press('Enter');
             await expect(pos).toHaveText('Ln 1, Col 4');
             await editor.press('Shift+q');
+            macroIsNotRecording(workbox);
+
             await editor.press('Shift+3');
             await editor.press('h');
             await editor.press('q');
@@ -78,10 +116,14 @@ test.describe('Recorded keypresses', () => {
         test('Replays search with `acceptAfter`', async ({ workbox }) => {
             const { editor, pos } = await setup(workbox);
             await editor.press('Shift+q');
+            macroIsRecording(workbox);
+
             await editor.press('t');
             await editor.press('c');
             await expect(pos).toHaveText('Ln 1, Col 4');
             await editor.press('Shift+q');
+            macroIsNotRecording(workbox);
+
             await editor.press('Shift+3');
             await editor.press('h');
             await editor.press('q');
@@ -94,12 +136,16 @@ test.describe('Recorded keypresses', () => {
         test('Replays search with canceled input', async ({ workbox }) => {
             const { editor, pos } = await setup(workbox);
             await editor.press('Shift+q');
+            macroIsRecording(workbox);
+
             await editor.press('t');
             await editor.press('Escape');
             await editor.press('t');
             await editor.press('c');
             await expect(pos).toHaveText('Ln 1, Col 4');
             await editor.press('Shift+q');
+            macroIsNotRecording(workbox);
+
             await editor.press('Shift+3');
             await editor.press('h');
             await editor.press('q');
@@ -112,11 +158,15 @@ test.describe('Recorded keypresses', () => {
         test('Replays captures keys', async ({ workbox }) => {
             const { editor, pos } = await setup(workbox);
             await editor.press('Shift+q');
+            macroIsRecording(workbox);
+
             await editor.press('s');
             await editor.press('c');
             await editor.press(' ');
             await expect(pos).toHaveText('Ln 1, Col 4');
             await editor.press('Shift+q');
+            macroIsNotRecording(workbox);
+
             await editor.press('Shift+3');
             await editor.press('h');
             await editor.press('q');
@@ -129,6 +179,8 @@ test.describe('Recorded keypresses', () => {
         test('Replays captures keys with cancel', async ({ workbox }) => {
             const { editor, pos } = await setup(workbox);
             await editor.press('Shift+q');
+            macroIsRecording(workbox);
+
             await editor.press('s');
             await editor.press('Escape');
             await editor.press('s');
@@ -136,6 +188,8 @@ test.describe('Recorded keypresses', () => {
             await editor.press(' ');
             await expect(pos).toHaveText('Ln 1, Col 4');
             await editor.press('Shift+q');
+            macroIsNotRecording(workbox);
+
             await editor.press('Shift+3');
             await editor.press('h');
             await editor.press('q');
@@ -148,9 +202,13 @@ test.describe('Recorded keypresses', () => {
         test('Repeats replay using count', async ({ workbox }) => {
             const { editor, pos } = await setup(workbox);
             await editor.press('Shift+q');
+            macroIsRecording(workbox);
+
             await editor.press('l');
             await expect(pos).toHaveText('Ln 1, Col 2');
             await editor.press('Shift+q');
+            macroIsNotRecording(workbox);
+
             await editor.press('Shift+2');
             await editor.press('q');
             await editor.press('c');
@@ -164,19 +222,22 @@ test.describe('Recorded keypresses', () => {
         let editor = result.editor;
 
         await editor.press('Shift+q');
+        macroIsRecording(workbox);
+
         await editor.press('d');
         await editor.press('w');
         editor = workbox.getByLabel('macro.md').
             filter({ has: workbox.getByText('b c ') }).
             filter({ has: workbox.getByRole('code') });
-        await editor.press('l');
-        await expect(pos).toHaveText('Ln 1, Col 2');
+        await expect(pos).toHaveText('Ln 1, Col 1');
         await editor.press('Shift+q');
+        macroIsNotRecording(workbox);
+
         await editor.press('q');
         await editor.press('q');
-        await expect(pos).toHaveText('Ln 1, Col 3');
+        await expect(pos).toHaveText('Ln 1, Col 1');
         editor = workbox.getByLabel('macro.md').
-            filter({ has: workbox.getByText('  c d') }).
+            filter({ has: workbox.getByText('c d') }).
             filter({ has: workbox.getByRole('code') });
         expect(editor).toBeVisible();
     });
@@ -187,12 +248,16 @@ test.describe('Recorded keypresses', () => {
         let editor = result.editor;
 
         await editor.press('Shift+q');
+        macroIsRecording(workbox);
+
         await editor.press('i');
         await editor.press('x');
         editor = workbox.locator('[id="workbench.parts.editor"]').
             getByRole('textbox', { name: 'The editor is not accessible' });
         await editor.press('Escape');
         await editor.press('Shift+q');
+        macroIsNotRecording(workbox);
+
         await editor.press('q');
         await editor.press('q');
         await expect(pos).toHaveText('Ln 1, Col 3');
@@ -202,11 +267,15 @@ test.describe('Recorded keypresses', () => {
     test('Can nest replay', async ({ workbox }) => {
         const { editor, pos } = await setup(workbox);
         await editor.press('Shift+q');
+        macroIsRecording(workbox);
+
         await editor.press('l');
         await editor.press('q');
         await editor.press('l');
         await expect(pos).toHaveText('Ln 1, Col 3');
         await editor.press('Shift+q');
+        macroIsNotRecording(workbox);
+
         await editor.press('q');
         await editor.press('q');
         await expect(pos).toHaveText('Ln 1, Col 5');

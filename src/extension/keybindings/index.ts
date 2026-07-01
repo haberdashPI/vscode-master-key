@@ -450,14 +450,34 @@ export async function validateKeybindings(
 // Commands concerning keybinding files
 
 // a list of all presets
-let extensionPresetsDir: vscode.Uri;
+export const presetOrder: string[] = [];
+const bindingPresets = new Map<string, KeyFileData>();
+
+let extensionPresetsDir: vscode.Uri; // populated in `activate`
 const presetFiles = ['larkin.toml', 'vim.toml'];
-function listPresets() {
-    // special case this directory (so it works (??) in the web context)
+export function loadPresets() {
+    if (bindingPresets.size == 0) {
+        // NOTE: we cannot simply list files in the given directory
+        // because this API is not available for Web applications
+        for (const preset of presetFiles) {
+            const uri = Utils.joinPath(extensionPresetsDir, preset);
+            const data = new KeyFileData(uri);
+            const name = data.bindings.name;
+            bindingPresets.set(name, data);
+            presetOrder.push(name);
+        }
+    }
+    return bindingPresets;
+}
+
+function listPresets(): KeyFileData[] {
+    const namedPresets = loadPresets();
     const presets = [];
-    for (const preset of presetFiles) {
-        const uri = Utils.joinPath(extensionPresetsDir, preset);
-        presets.push(new KeyFileData(uri));
+    for (const preset of presetOrder) {
+        const data = namedPresets.get(preset);
+        if (data) {
+            presets.push(data);
+        }
     }
     return presets;
 }
@@ -486,7 +506,7 @@ async function quickPickOfPresets(
 }
 
 // master-keybinding parsing of current file
-function parseCurrentFile() {
+async function parseCurrentFile() {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
         vscode.window.showErrorMessage('There is no current file');
@@ -590,7 +610,7 @@ async function activateBindings(
     data?: KeyFileData | 'CurrentFile',
 ) {
     if (data === 'CurrentFile') {
-        data = parseCurrentFile();
+        data = await parseCurrentFile();
     }
     if (!data) {
         const options = await quickPickOfPresets(listPresets());
@@ -600,7 +620,7 @@ async function activateBindings(
 
         const picked = await vscode.window.showQuickPick(options);
         if (picked?.command === 'current') {
-            data = parseCurrentFile();
+            data = await parseCurrentFile();
         } else {
             data = picked?.preset;
         }

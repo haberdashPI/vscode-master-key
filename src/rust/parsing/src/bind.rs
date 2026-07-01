@@ -27,7 +27,7 @@ use crate::expression::value::{Expanding, Expression, TypedValue, Value};
 use crate::file::KeyFileResult;
 use crate::resolve;
 use crate::util::{Merging, Plural, Required, Resolving};
-use crate::{err, wrn};
+use crate::{err, note, wrn};
 
 // `UNKNOWN_RANGE` serves as a sentinel value in cases where we must have a byte range
 // but don't know what it is
@@ -59,6 +59,7 @@ where
 
 /// @bindingField bind
 /// @description an actual keybinding; extends the schema used by VSCode's `keybindings.json`
+/// @order 10
 ///
 /// **Example**
 ///
@@ -1391,6 +1392,9 @@ pub(crate) enum InsertReason {
     ImplicitPrefix,
     // the last key in value of `key` (in `key = "a b c"`, `"c"` is the terminal key)
     TerminalKey,
+    // a terminal key inserted in a source binding defined in `[[head]]`: unlike bindings in
+    // the current file, a source file's bindings can be overwritten
+    SourceTerminalKey,
 }
 
 // tracks all unique bindings
@@ -1434,6 +1438,7 @@ impl BindingCodes {
         mode: &str,
         when: &Option<impl ToString>,
         span: &Option<Range<usize>>,
+        warnings: &mut Vec<ParseError>,
         reason: InsertReason,
     ) -> ResultVec<(i32, bool)> {
         // Return value:
@@ -1455,7 +1460,7 @@ impl BindingCodes {
         // do we need to insert this code into self.codes?
         let insert_into_codes;
         match reason {
-            // terminal keys must be inserted or they must raise an error
+            // terminal keys from this file must be inserted or they must raise an error
             InsertReason::TerminalKey => {
                 if self.codes.contains_key(&id) {
                     let old = self.codes[&id].clone();
@@ -1478,6 +1483,16 @@ impl BindingCodes {
                             .into_iter()
                             .map(Result::unwrap_err)
                             .collect::<Vec<_>>())?;
+                    } else if old.reason == InsertReason::SourceTerminalKey {
+                        let error: Result<()> =
+                            Err(note!("Key binding is also defined in the source file."))
+                                .with_range(span);
+                        if let Err(e) = error {
+                            warnings.push(e);
+                        }
+                        code = old.code;
+                        output_binding = true;
+                        insert_into_codes = true;
                     } else {
                         code = old.code;
                         output_binding = true;
@@ -1488,6 +1503,19 @@ impl BindingCodes {
                     insert_into_codes = true;
                     code = self.count;
                     output_binding = true;
+                }
+            }
+            // terminal keys from a source file can be overwritten
+            InsertReason::SourceTerminalKey => {
+                if self.codes.contains_key(&id) {
+                    output_binding = false;
+                    insert_into_codes = false;
+                    code = self.codes[&id].code;
+                } else {
+                    output_binding = true;
+                    insert_into_codes = true;
+                    self.count += 1;
+                    code = self.count;
                 }
             }
             // we never generate an output for an explicit prefix but we might need to
@@ -1571,8 +1599,10 @@ impl Binding {
         &self,
         command_id: i32,
         scope: &Scope,
+        is_source: bool,
         span: Option<Range<usize>>,
         codes: &mut BindingCodes,
+        warnings: &mut Vec<ParseError>,
     ) -> ResultVec<Vec<BindingOutput>> {
         let mut result = Vec::new();
 
@@ -1597,12 +1627,14 @@ impl Binding {
             for prefix in prefixes {
                 self.outputs_for_mode_and_prefix(
                     command_id,
+                    is_source,
                     &span,
                     &mode,
                     &prefix,
                     &when_with_mode,
                     codes,
                     &mut result,
+                    warnings,
                 )?;
             }
         }
@@ -1647,12 +1679,14 @@ impl Binding {
     fn outputs_for_mode_and_prefix(
         &self,
         command_id: i32,
+        is_source: bool,
         span: &Option<Range<usize>>,
         mode: &str,
         explicit_prefix: &str,
         when_with_mode: &Vec<String>,
         codes: &mut BindingCodes,
         result: &mut Vec<BindingOutput>,
+        warnings: &mut Vec<ParseError>,
     ) -> ResultVec<()> {
         // split the current explicit prefix into individual keys and then prepend
         // it to the key sequence for this binding
@@ -1679,7 +1713,7 @@ impl Binding {
                 InsertReason::ExplicitPrefix
             };
             let (key_code, generate_output) =
-                codes.key_code(&prefix, &mode, &self.when, span, reason)?;
+                codes.key_code(&prefix, &mode, &self.when, span, warnings, reason)?;
             let prefix_code = codes.prefix_code(&prefix, &mode);
 
             when = when_with_mode.clone();
@@ -1732,7 +1766,12 @@ impl Binding {
             &mode,
             &self.when,
             span,
-            InsertReason::TerminalKey,
+            warnings,
+            if is_source {
+                InsertReason::SourceTerminalKey
+            } else {
+                InsertReason::TerminalKey
+            },
         )?;
         let prefix_code = if !self.finalKey {
             codes.prefix_code(&self.key, &mode)
@@ -1856,6 +1895,48 @@ impl ReifiedBinding {
             raw_commands: binding.commands.iter().map(Command::clone).collect(),
             edit_text: String::new(),
             edit_document_id: -1,
+        };
+    }
+
+    pub fn merge(&self, other: &ReifiedBinding) -> ReifiedBinding {
+        return ReifiedBinding {
+            error: {
+                if let Some(self_error) = &self.error {
+                    if let Some(other_error) = &other.error {
+                        Some(
+                            self_error
+                                .iter()
+                                .chain(other_error.iter())
+                                .cloned()
+                                .collect(),
+                        )
+                    } else {
+                        Some(self_error.clone())
+                    }
+                } else {
+                    other.error.clone()
+                }
+            },
+            finalKey: other.finalKey,
+            key: format!("{} {}", self.key, other.key),
+            raw_commands: self
+                .raw_commands
+                .iter()
+                .chain(other.raw_commands.iter())
+                .cloned()
+                .collect(),
+            commands: self
+                .commands
+                .iter()
+                .chain(other.commands.iter())
+                .cloned()
+                .collect(),
+            mode: other.mode.clone(),
+            repeat: other.repeat,
+            tags: self.tags.iter().chain(other.tags.iter()).cloned().collect(),
+            doc: other.doc.clone(),
+            edit_document_id: other.edit_document_id,
+            edit_text: self.edit_text.clone() + other.edit_text.as_str(),
         };
     }
 
@@ -2394,6 +2475,57 @@ mod tests {
 
         let err = toml::from_str::<BindingInput>(data).unwrap_err();
         assert!(err.to_string().contains("default must"));
+    }
+
+    #[test]
+    fn test_reified_binding_merge() {
+        let binding1 = ReifiedBinding {
+            error: Some(vec!["error1".to_string()]),
+            finalKey: false,
+            key: "ctrl+k".to_string(),
+            raw_commands: Vec::new(),
+            commands: Vec::new(),
+            mode: "normal".to_string(),
+            repeat: 1,
+            tags: vec![Dynamic::from("tag1".to_string())],
+            doc: BindingDoc::default(),
+            edit_document_id: 10,
+            edit_text: "edit1".to_string(),
+        };
+
+        let binding2 = ReifiedBinding {
+            error: Some(vec!["error2".to_string()]),
+            finalKey: true,
+            key: "ctrl+j".to_string(),
+            raw_commands: Vec::new(),
+            commands: Vec::new(),
+            mode: "insert".to_string(),
+            repeat: 2,
+            tags: vec![Dynamic::from("tag2".to_string())],
+            doc: BindingDoc {
+                name: "merged_doc".to_string(),
+                ..BindingDoc::default()
+            },
+            edit_document_id: 20,
+            edit_text: "edit2".to_string(),
+        };
+
+        let merged = binding1.merge(&binding2);
+
+        assert_eq!(
+            merged.error,
+            Some(vec!["error1".to_string(), "error2".to_string()])
+        );
+        assert_eq!(merged.finalKey, true);
+        assert_eq!(merged.key, "ctrl+k ctrl+j");
+        assert_eq!(merged.mode, "insert");
+        assert_eq!(merged.repeat, 2);
+        assert_eq!(merged.tags.len(), 2);
+        assert_eq!(merged.tags[0].clone().into_string().unwrap(), "tag1");
+        assert_eq!(merged.tags[1].clone().into_string().unwrap(), "tag2");
+        assert_eq!(merged.doc.name, "merged_doc");
+        assert_eq!(merged.edit_document_id, 20);
+        assert_eq!(merged.edit_text, "edit1edit2");
     }
 
     // TODO: are there any edge cases / failure modes I want to look at in the tests
