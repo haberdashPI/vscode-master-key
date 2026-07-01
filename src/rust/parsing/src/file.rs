@@ -150,6 +150,7 @@
 ///
 #[allow(unused_imports)]
 use log::{error, info};
+use string_offsets::StringOffsets;
 
 use crate::bind::command::{CommandValue, regularize_commands};
 use crate::bind::{
@@ -159,7 +160,8 @@ use crate::bind::{
 use crate::define::{Define, DefineInput};
 use crate::docs::{FileDocLine, FileDocSection};
 use crate::error::{
-    Context, ErrorContext, ErrorReport, ErrorSet, ParseError, Result, ResultVec, flatten_errors,
+    CharRange, Context, ErrorContext, ErrorLevel, ErrorReport, ErrorSet, ParseError, Result,
+    ResultVec, flatten_errors,
 };
 use crate::expression::value::{BareValue, Value};
 use crate::expression::{HistoryQueue, MacroStack, Scope};
@@ -253,7 +255,7 @@ impl KeyFile {
     fn new(
         input: KeyFileInput,
         doc_lines: Vec<FileDocLine>,
-        sources: &HashMap<String, &KeyFile>,
+        source: Option<&KeyFile>,
         mut scope: &mut Scope,
         warnings: &mut Vec<ParseError>,
     ) -> ResultVec<KeyFile> {
@@ -291,23 +293,6 @@ impl KeyFile {
             .into_iter()
             .flatten()
             .collect();
-
-        let source = match input.header.source {
-            Some(source_name) => {
-                if !sources.contains_key(source_name.as_ref()) {
-                    let err: Result<()> = Err(err!(
-                        "There is no source file named {}.",
-                        source_name.as_ref()
-                    ))
-                    .with_range(&source_name);
-                    errors.push(err.unwrap_err());
-                    Option::None
-                } else {
-                    sources.get(source_name.as_ref())
-                }
-            }
-            Option::None => Option::None,
-        };
 
         // [[define]]
         let mut define_input = input.define.unwrap_or_default();
@@ -453,24 +438,43 @@ impl KeyFile {
         bind = Binding::resolve_prefixes(bind, &bind_span)?;
         let mut codes = BindingCodes::new();
         // add any bindings defined in the source file
+        let mut source_offset = 0;
         if let Some(s) = source {
+            source_offset += s.bind.len();
             for (i, source_bind_item) in s.bind.iter().enumerate() {
                 key_bind.append(&mut source_bind_item.outputs(
                     i as i32,
                     &scope,
+                    true,
                     Option::None,
                     &mut codes,
+                    warnings,
                 )?);
             }
         }
         // add the bindings defined directly in this file
         for (i, (bind_item, span)) in bind.iter_mut().zip(bind_span.into_iter()).enumerate() {
-            key_bind.append(&mut bind_item.outputs(i as i32, &scope, Some(span), &mut codes)?);
+            key_bind.append(&mut bind_item.outputs(
+                (i + source_offset) as i32,
+                &scope,
+                false,
+                Some(span),
+                &mut codes,
+                warnings,
+            )?);
         }
-        modes.insert_implicit_mode_bindings(&bind, &scope, &mut codes, &mut key_bind);
+        modes.insert_implicit_mode_bindings(&bind, &scope, &mut codes, &mut key_bind, warnings);
 
         // sort all bindings by their priority
         key_bind.sort_by(BindingOutput::cmp_priority);
+
+        // now that we've properly expanded this files bindings and any source
+        // bindings we can combine them into a single vector
+        let bind = if let Some(s) = source {
+            s.bind.iter().cloned().chain(bind.into_iter()).collect()
+        } else {
+            bind
+        };
 
         // remove key_bind values with the exact same `key_id`, keeping the one with the
         // highest priority (last items); such collisions should only happen between
@@ -514,6 +518,21 @@ pub struct KeyFileResult {
     pub(crate) file: Option<KeyFile>,
     pub(crate) errors: Option<Vec<ErrorReport>>,
     pub(crate) scope: Scope,
+}
+
+#[wasm_bindgen]
+impl KeyFileResult {
+    pub fn from_error(message: String, range: CharRange, level: ErrorLevel) -> KeyFileResult {
+        return KeyFileResult {
+            file: None,
+            errors: Some(vec![ErrorReport {
+                message,
+                range,
+                level,
+            }]),
+            scope: Scope::new(),
+        };
+    }
 }
 
 // These lines are tested during integration tests with the typescript code
@@ -867,23 +886,52 @@ lazy_static! {
 // These lines are tested during integration tests with the typescript code
 #[wasm_bindgen]
 #[cfg_attr(coverage_nightly, coverage(off))]
-pub fn parse_keybinding_bytes(file_content: Box<[u8]>) -> KeyFileResult {
-    return parse_keybinding_data(&file_content);
+pub fn parse_keybinding_bytes_with_source(
+    file_content: Box<[u8]>,
+    source: &KeyFileResult,
+) -> KeyFileResult {
+    return parse_keybinding_data(&file_content, Some(source));
 }
 
-pub fn parse_keybinding_data<T>(file_content: T) -> KeyFileResult
+// These lines are tested during integration tests with the typescript code
+#[wasm_bindgen]
+#[cfg_attr(coverage_nightly, coverage(off))]
+pub fn parse_keybinding_bytes(file_content: Box<[u8]>) -> KeyFileResult {
+    return parse_keybinding_data(&file_content, None);
+}
+
+#[wasm_bindgen(getter_with_clone)]
+pub struct SourceParsing {
+    pub name: String,
+    pub pos: crate::error::CharRange,
+}
+
+#[wasm_bindgen]
+#[cfg_attr(coverage_nightly, coverage(off))]
+pub fn parse_source_from_keybinding_bytes(file_content: Box<[u8]>) -> Option<SourceParsing> {
+    let offsets = StringOffsets::from_bytes(&file_content);
+    match toml::from_slice::<KeyFileInput>(file_content.as_ref()) {
+        Ok(parsed) => {
+            if let Some(spanned_name) = parsed.header.source {
+                let char_range = crate::error::range_to_pos(&spanned_name.span(), &offsets);
+                return Some(SourceParsing {
+                    name: spanned_name.as_ref().to_string(),
+                    pos: char_range,
+                });
+            }
+            return Option::None;
+        }
+        Err(_) => return Option::None,
+    }
+}
+
+pub fn parse_keybinding_data<T>(file_content: T, source: Option<&KeyFileResult>) -> KeyFileResult
 where
     T: AsRef<[u8]>,
 {
     let mut warnings = Vec::new();
     let mut scope = Scope::new();
-    let result = parse_bytes_helper(
-        file_content.as_ref(),
-        // TODO: setup a map of source files that can be passed in here
-        &HashMap::new(),
-        &mut warnings,
-        &mut scope,
-    );
+    let result = parse_bytes_helper(file_content.as_ref(), source, &mut warnings, &mut scope);
     return match result {
         Ok(result) => KeyFileResult {
             scope,
@@ -908,7 +956,7 @@ where
 
 pub fn parse_bytes_helper(
     file_content: &[u8],
-    sources: &HashMap<String, &KeyFile>,
+    source: Option<&KeyFileResult>,
     warnings: &mut Vec<ParseError>,
     scope: &mut Scope,
 ) -> ResultVec<KeyFile> {
@@ -946,7 +994,11 @@ pub fn parse_bytes_helper(
     let parsed = toml::from_slice::<KeyFileInput>(file_content)?;
     let docs = FileDocLine::read(file_content);
 
-    let result = KeyFile::new(parsed, docs, sources, scope, warnings);
+    let source_file = match source {
+        Some(x) => x.file.as_ref(),
+        Option::None => None,
+    };
+    let result = KeyFile::new(parsed, docs, source_file, scope, warnings);
     warnings.append(&mut identify_legacy_warnings(file_content));
 
     return result;
@@ -1048,7 +1100,7 @@ pub(crate) mod tests {
         command = "cursorLeft"
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let result = result.file.unwrap();
 
         assert_eq!(result.bind[0].key[0], "l");
@@ -1076,7 +1128,7 @@ pub(crate) mod tests {
         command = "bizbaz"
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         assert_eq!(result.file.unwrap().bind.len(), 2)
     }
 
@@ -1094,7 +1146,7 @@ pub(crate) mod tests {
         command = "foobar"
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         assert!(result.file.is_some());
         let report = result.errors.unwrap();
         let error_str = format!("{}", report.first().unwrap().message);
@@ -1112,7 +1164,7 @@ pub(crate) mod tests {
         [[define.val
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let report = result.errors.unwrap();
         assert!(report[0].message.contains("expected `]]`"));
         assert_eq!(report[0].range.start.line, 6);
@@ -1130,7 +1182,7 @@ pub(crate) mod tests {
         command = "foo"
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let report = result.errors.unwrap();
         assert!(report[0].message.contains("version"));
         assert_eq!(report[0].range.start.line, 2);
@@ -1147,7 +1199,7 @@ pub(crate) mod tests {
         command = "b"
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let report = result.errors.unwrap();
         assert!(report[0].message.contains("directive"));
         assert_eq!(report[0].range.start.line, 0);
@@ -1180,7 +1232,7 @@ pub(crate) mod tests {
         key = "a"
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
 
         let result = result.file.unwrap();
 
@@ -1234,7 +1286,7 @@ pub(crate) mod tests {
         key = "a"
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
 
         let result = result.file.unwrap();
 
@@ -1280,7 +1332,7 @@ pub(crate) mod tests {
         args.value = "{{key}}"
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
 
         let mut scope = result.scope;
 
@@ -1325,7 +1377,7 @@ pub(crate) mod tests {
         "#;
 
         // TODO: ensure that a proper span is shown here
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let report = result.errors.unwrap();
         assert_eq!(report[0].message, "`key` field is required".to_string());
         assert_eq!(report[0].range.start.line, 4);
@@ -1347,7 +1399,7 @@ pub(crate) mod tests {
         "#;
 
         // TODO: ensure that a proper span is shown here
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let report = result.errors.unwrap();
         assert!(report[0].message.contains("regex parse error"));
         assert!(!report[0].message.contains("(line"));
@@ -1371,7 +1423,7 @@ pub(crate) mod tests {
         args.val = 2
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
 
         let result = result.file.unwrap();
         assert_eq!(result.bind[0].commands[0].command, "bar");
@@ -1401,7 +1453,7 @@ pub(crate) mod tests {
         command = "foo"
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let report = result.errors.unwrap();
         assert!(report[0].message.contains("default mode already set"));
         assert_eq!(report[0].range.start.line, 9)
@@ -1425,7 +1477,7 @@ pub(crate) mod tests {
         command = "foo"
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let report = result.errors.unwrap();
         assert!(
             report[0]
@@ -1453,7 +1505,7 @@ pub(crate) mod tests {
         command = "foo"
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let report = result.errors.unwrap();
         assert!(report[0].message.contains("mode name is not unique"));
         assert_eq!(report[0].range.start.line, 8)
@@ -1478,7 +1530,7 @@ pub(crate) mod tests {
         whenNoBinding.useMode = "a"
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
 
         let result = result.file.unwrap();
         assert_eq!(
@@ -1503,7 +1555,7 @@ pub(crate) mod tests {
         whenNoBinding.useMode = "c"
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let report = result.errors.unwrap();
         assert!(report[0].message.contains("mode `c` is not defined"));
         assert_eq!(report[0].range.start.line, 11)
@@ -1526,7 +1578,7 @@ pub(crate) mod tests {
         name = "capture"
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let report = result.errors.unwrap();
         assert!(report[0].message.contains("`capture` is implicit"));
         assert_eq!(report[0].range.start.line, 11);
@@ -1561,7 +1613,7 @@ pub(crate) mod tests {
         mode = '{{not_modes(["c"])}}'
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
 
         let result = result.file.unwrap();
         assert!(result.bind[0].mode.iter().any(|x| x == "a"));
@@ -1595,7 +1647,7 @@ pub(crate) mod tests {
         mode = '{{not_modes(["d"])}}'
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let report = result.errors.unwrap();
         assert!(report[0].message.contains("mode `d`"));
         assert_eq!(report[0].range.start.line, 18)
@@ -1638,7 +1690,7 @@ pub(crate) mod tests {
         finalKey = false
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
 
         let result = result.file.unwrap();
 
@@ -1719,7 +1771,7 @@ pub(crate) mod tests {
         prefixes.allBut = ["d k"]
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let report = result.errors.unwrap();
         assert!(report[0].message.contains("undefined: `d k`"));
 
@@ -1759,7 +1811,7 @@ pub(crate) mod tests {
         args.commands = ["j", "k", "{{command.foo}}"]
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
 
         let mut scope = result.scope;
 
@@ -1808,7 +1860,7 @@ pub(crate) mod tests {
         args.commands = ["j", "k", "{{command.foo}}"]
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let report = result.errors.unwrap();
         assert!(report[0].message.contains("`finalKey`"));
         assert_eq!(report[0].range.start.line, 13);
@@ -1847,7 +1899,7 @@ pub(crate) mod tests {
         args.commands = ["j", "k", "{{command.foo}}"]
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
 
         let mut scope = result.scope;
 
@@ -1878,7 +1930,7 @@ pub(crate) mod tests {
         command = "bar"
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
 
         let result = result.file.unwrap();
         assert_eq!(result.key_bind.len(), 3);
@@ -1942,7 +1994,7 @@ pub(crate) mod tests {
         command = "duplicate"
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let report = result.errors.unwrap();
 
         assert!(report[0].message.contains("Duplicate key"));
@@ -1970,7 +2022,7 @@ pub(crate) mod tests {
         prefixes.anyOf = ["x y", "h k"]
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
 
         let result = result.file.unwrap();
         assert_eq!(result.key_bind.len(), 10)
@@ -1997,7 +2049,7 @@ pub(crate) mod tests {
         prefixes.allBut = ["k", "y z"]
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let undefined_prefixes = result
             .errors
             .unwrap()
@@ -2046,7 +2098,7 @@ pub(crate) mod tests {
         ags.value = "k"
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let report = result.errors.unwrap();
         let unrecognized: Vec<_> = report
             .iter()
@@ -2082,7 +2134,7 @@ pub(crate) mod tests {
         cmd = "beep"
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let report = result.errors.unwrap();
         assert!(report[0].message.contains("The field `ags`"));
         assert_eq!(report[0].range.start.line, 6);
@@ -2158,7 +2210,7 @@ pub(crate) mod tests {
         doc.kind = "bleep"
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let report = result.errors.unwrap();
 
         assert!(report[0].message.contains("`bleep`"));
@@ -2177,7 +2229,7 @@ pub(crate) mod tests {
         args.names = ["{{1+2}}", "{{(1+2}}"]
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let report = result.errors.unwrap();
         assert!(report[0].message.contains("Expecting ')'"));
         assert_eq!(report[0].range.start.line, 7);
@@ -2198,7 +2250,7 @@ pub(crate) mod tests {
         args.names = ["{{1+2}}", "{{1+2"]
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let report = result.errors.unwrap();
         assert!(report[0].message.contains("unexpected `{{`"));
         assert_eq!(report[0].range.start.line, 7);
@@ -2218,7 +2270,7 @@ pub(crate) mod tests {
         key = "crd+x"
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let report = result.errors.unwrap();
         assert!(report[0].message.contains("invalid modifier"));
         assert_eq!(report[0].range.start.line, 6);
@@ -2238,7 +2290,7 @@ pub(crate) mod tests {
         key = "xyz"
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let report = result.errors.unwrap();
         assert!(report[0].message.contains("invalid key"));
         assert_eq!(report[0].range.start.line, 6);
@@ -2258,7 +2310,7 @@ pub(crate) mod tests {
         key = "[KeyX]"
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         assert!(result.file.is_some());
     }
 
@@ -2273,7 +2325,7 @@ pub(crate) mod tests {
         key = "{{1+2}}"
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let report = result.errors.unwrap();
         assert!(report[0].message.contains("expected a string"));
         assert_eq!(report[0].range.start.line, 6);
@@ -2292,7 +2344,7 @@ pub(crate) mod tests {
         x = "1+2}}"
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let report = result.errors.unwrap();
         assert_eq!(report[0].message, "unexpected `}}`");
         assert_eq!(report[0].range.start.line, 5);
@@ -2311,7 +2363,7 @@ pub(crate) mod tests {
         args.value = 2
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let report = result.errors.unwrap();
         assert_eq!(report[0].range.start.line, 4);
         assert_eq!(report[0].range.end.line, 4);
@@ -2327,7 +2379,7 @@ pub(crate) mod tests {
         key = "xyz"
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let report = result.errors.unwrap();
         assert_eq!(report[0].range.start.line, 5);
         assert_eq!(report[0].range.end.line, 5);
@@ -2345,7 +2397,7 @@ pub(crate) mod tests {
         default = "{{bind.foo}}"
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let report = result.errors.unwrap();
         assert!(report[0].message.contains("undefined value"));
         assert_eq!(report[0].range.start.line, 4);
@@ -2367,7 +2419,7 @@ pub(crate) mod tests {
         command = "bar"
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let report = result.errors.unwrap();
 
         assert!(report[0].message.contains("unexpected `bind.`"));
@@ -2389,7 +2441,7 @@ pub(crate) mod tests {
         doc.combined.name = "{{(3+4}}"
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let report = result.errors.unwrap();
 
         assert!(report[0].message.contains("Expecting ')'"));
@@ -2420,7 +2472,7 @@ pub(crate) mod tests {
         description = "beep"
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let report = result.errors.unwrap();
         assert!(report[0].message.contains("`name` must be unique"));
         assert_eq!(report[0].range.start.line, 10);
@@ -2441,7 +2493,7 @@ pub(crate) mod tests {
         args = [1,2,3]
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let report = result.errors.unwrap();
         assert!(report[0].message.contains("`args`"));
         assert_eq!(report[0].range.start.line, 6);
@@ -2462,7 +2514,7 @@ pub(crate) mod tests {
         args.commands.x = 1
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let report = result.errors.unwrap();
         assert!(report[0].message.contains("`args.commands`"));
         assert_eq!(report[0].range.start.line, 9);
@@ -2485,7 +2537,7 @@ pub(crate) mod tests {
         command = 2
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let report = result.errors.unwrap();
         assert!(report[0].message.contains("`command`"));
         assert_eq!(report[0].range.start.line, 11);
@@ -2510,7 +2562,7 @@ pub(crate) mod tests {
         args.commands = ["a", "b"]
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let report = result.errors.unwrap();
         assert!(report[0].message.contains("`skipWhen`"));
         assert_eq!(report[0].range.start.line, 12);
@@ -2534,7 +2586,7 @@ pub(crate) mod tests {
         args = 2
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let report = result.errors.unwrap();
         assert!(report[0].message.contains("`args`"));
         assert_eq!(report[0].range.start.line, 12);
@@ -2555,7 +2607,7 @@ pub(crate) mod tests {
         args.commands = ["a", 1]
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let report = result.errors.unwrap();
         assert!(report[0].message.contains("`commands`"));
         assert_eq!(report[0].range.start.line, 9);
@@ -2575,7 +2627,7 @@ pub(crate) mod tests {
         default = true
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let report = result.errors.unwrap();
         assert!(
             report[0]
@@ -2592,7 +2644,7 @@ pub(crate) mod tests {
         #:master-keybindings
 
         [header]
-        version = "2.0.0"
+        version = "2.1.0"
 
         [[mode]]
         name = "insert"
@@ -2611,7 +2663,7 @@ pub(crate) mod tests {
         args.followCursor = true
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
 
         let result = result.file.unwrap();
         let run_commands = result.mode.map["syminsert"].whenNoBinding.clone();
@@ -2646,7 +2698,7 @@ pub(crate) mod tests {
         args.followCursor = true
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let report = result.errors.unwrap();
         assert!(report[0].message.contains("missing field"));
         assert_eq!(report[0].range.start.line, 16);
@@ -2677,7 +2729,7 @@ pub(crate) mod tests {
         args.followCursor = true
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let report = result.errors.unwrap();
 
         assert!(report[0].message.contains("`rub`"));
@@ -2705,7 +2757,7 @@ pub(crate) mod tests {
         whenNoBinding = 'insrt'
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let report = result.errors.unwrap();
 
         assert!(report[0].message.contains("insrt"));
@@ -2734,7 +2786,7 @@ pub(crate) mod tests {
         whenNoBinding.x = "foo"
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let report = result.errors.unwrap();
 
         assert!(report[0].message.contains("`x`"));
@@ -2777,7 +2829,7 @@ pub(crate) mod tests {
         mode = 'special'
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
 
         let result = result.file.unwrap();
 
@@ -2847,7 +2899,7 @@ pub(crate) mod tests {
         command = "left"
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
 
         let result = result.file.unwrap();
         if let BindingOutput::Do {
@@ -2924,7 +2976,7 @@ pub(crate) mod tests {
         when = "editorTextFocus" # this line is crucial to what we're testing here
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
 
         let result = result.file.unwrap();
 
@@ -3004,7 +3056,7 @@ pub(crate) mod tests {
         when = "editorTextFocus"
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
 
         let result = result.file.unwrap();
 
@@ -3046,7 +3098,7 @@ pub(crate) mod tests {
         args.value = '{{show("sum: ", 1+2)}}'
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
 
         let report = result.errors.unwrap();
 
@@ -3081,7 +3133,7 @@ pub(crate) mod tests {
         command = "bar"
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
 
         let result = result.file.unwrap();
         assert_eq!(result.bind[0].tags.len(), 2);
@@ -3128,7 +3180,7 @@ pub(crate) mod tests {
         args.to = "right"
         "#;
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
 
         let result = result.file.unwrap();
         let prefixes: Vec<_> = result
@@ -3164,7 +3216,7 @@ pub(crate) mod tests {
         key = "cmd+b"
         command = "biz"
         "#;
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         let key_file = result.file.as_ref().unwrap();
         let commands = key_file.bind[0].clone().commands;
         assert_eq!(commands[0].command, "bar");
@@ -3194,14 +3246,14 @@ pub(crate) mod tests {
         key = "cmd+b"
         command = "biz"
         "#;
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
         assert_eq!(result.n_errors(), 0);
     }
 
     #[test]
     fn text_doc_parsing() {
         let data = std::fs::read("src/test_files/text-docs.toml").unwrap();
-        let result = parse_keybinding_data(&data);
+        let result = parse_keybinding_data(&data, None);
         let output = std::fs::read("src/test_files/text-docs.md").unwrap();
 
         assert_eq!(
@@ -3339,7 +3391,9 @@ pub(crate) mod tests {
         prefixes.allBut = ['{{"h"}}']
         "#;
 
-        let outside_file = parse_keybinding_data(outside_expressions).file.unwrap();
+        let outside_file = parse_keybinding_data(outside_expressions, None)
+            .file
+            .unwrap();
         let bind = outside_file.bind;
         assert_eq!(bind[1].mode, ["a".to_string()]);
         assert_eq!(bind[1].tags, ["k".to_string(), "h".to_string()]);
@@ -3349,7 +3403,9 @@ pub(crate) mod tests {
             assert!(false);
         }
 
-        let inside_file = parse_keybinding_data(inside_expressions).file.unwrap();
+        let inside_file = parse_keybinding_data(inside_expressions, None)
+            .file
+            .unwrap();
         let bind = inside_file.bind;
         assert_eq!(bind[1].mode, ["a".to_string()]);
         assert_eq!(bind[1].tags, ["k".to_string(), "h".to_string()]);
@@ -3361,12 +3417,96 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn merge_source_bind() {
+        let source_data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.1.0"
+        name = "Source"
+
+        [[bind]]
+        key = "cmd+x"
+        command = "foobar"
+
+        [[bind]]
+        key = "cmd+y"
+        command = "bizbaz"
+        "#;
+
+        let data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.2.0"
+        name = "User"
+        source = "Source"
+
+        [[bind]]
+        key = "cmd+x"
+        command = "buzybuz"
+
+        [[bind]]
+        key = "cmd+z"
+        command = "bopbeep"
+
+        [[bind]]
+        key = "cmd+y"
+        when = "!editorHasSelection"
+        command = "specialBizbaz"
+        "#;
+
+        let source = parse_keybinding_data(source_data, None);
+        let source_file = source.file.clone().unwrap();
+        assert_eq!(source_file.bind.len(), 2);
+
+        // all the expected bindings are present
+        let result = parse_keybinding_data(data, Some(&source));
+        let result_file = result.file.unwrap();
+        assert_eq!(result_file.key_bind.len(), 4);
+        let commands: Vec<_> = result_file
+            .key_bind
+            .iter()
+            .map(|key_bind| {
+                if let BindingOutput::Do {
+                    args: BindingOutputArgs { command_id, .. },
+                    ..
+                } = key_bind
+                {
+                    result_file.bind[*command_id as usize].commands.clone()
+                } else {
+                    vec![]
+                }
+            })
+            .collect();
+        assert_eq!(commands[0][0].command, "bizbaz");
+        assert_eq!(commands[1][0].command, "buzybuz");
+        assert_eq!(commands[2][0].command, "bopbeep");
+        assert_eq!(commands[3][0].command, "specialBizbaz");
+
+        // warning about conflicting binding is present
+        if let Some(report) = result.errors {
+            assert_eq!(report.len(), 1);
+            assert_eq!(
+                report[0].message,
+                "Key binding is also defined in the source file."
+            );
+            assert_eq!(report[0].range.start.line, 8);
+        } else {
+            assert!(false);
+        }
+        // TODO: extract list of warnings and verify that we get a warning about
+        // the duplicate binding
+        // with the expect results
+    }
+
+    #[test]
     fn larkin_test() {
         // the default presets should be parseable (also a good "integration" test to ensure
         // our parsing works at scale)
         let data = std::fs::read("../../presets/larkin.toml").unwrap();
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
 
         let result = result.file.unwrap();
         assert_eq!(result.bind.len(), 318);
@@ -3384,7 +3524,7 @@ pub(crate) mod tests {
         // our parsing works at scale)
         let data = std::fs::read("../../presets/vim.toml").unwrap();
 
-        let result = parse_keybinding_data(data);
+        let result = parse_keybinding_data(data, None);
 
         let result = result.file.unwrap();
         assert_eq!(result.bind.len(), 135);

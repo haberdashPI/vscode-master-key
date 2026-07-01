@@ -586,6 +586,7 @@ impl Modes {
         scope: &Scope,
         codes: &mut BindingCodes,
         key_bind: &mut Vec<BindingOutput>,
+        warnings: &mut Vec<ParseError>,
     ) {
         // and keybindings to ignore characters if the mode (or its fallback) requests it
         key_bind.append(&mut self.ignore_character_bindings(scope)); // fallback bindings: these are the
@@ -617,11 +618,12 @@ impl Modes {
             let mut implicit_bind = bind.clone();
             implicit_bind.mode = implicit_modes;
             implicit_bind.implicit = true;
-            let mut output = match implicit_bind.outputs(id as i32, &scope, None, codes) {
-                Ok(x) => x,
-                // silently ignore errors; these will be reported for the explicit bindings
-                Err(_) => Vec::new(),
-            };
+            let mut output =
+                match implicit_bind.outputs(id as i32, &scope, false, None, codes, warnings) {
+                    Ok(x) => x,
+                    // silently ignore errors; these will be reported for the explicit bindings
+                    Err(_) => Vec::new(),
+                };
             key_bind.append(&mut output);
         }
     }
