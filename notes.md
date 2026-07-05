@@ -12,9 +12,9 @@ Strategy: get `[[bind]]` working first, as it's the messiest part
         - [X] error about keybinding being duplicate
               still terminates parsing, we need into to be added to warnings list
         - [X] source binding gets used for codes, but not part of final output
-- [ ] implement `[[define]]` merge
-    - [ ] implement it
-    - [ ] test it
+- [X] implement `[[define]]` merge
+    - [X] implement it
+    - [X] test it
 - [ ] implement `[[mode]]` merge
     - [ ] implement it
     - [ ] test it
@@ -22,6 +22,7 @@ Strategy: get `[[bind]]` working first, as it's the messiest part
     - [ ] implement it
     - [ ] test it
 - [ ] ask agy to setup some additional unit tests
+- [ ] checks for version <2.2.0 and the use of `header.source`
 - [ ] setup typescript harness to properly handle `source` semantics
     - [X] remind myself how KeyFile's are current stored, is the some redundancy we
           can avoid?
@@ -31,7 +32,6 @@ Strategy: get `[[bind]]` working first, as it's the messiest part
         - [X] one solution: parse until we see "source" and then return back to javascript
               to get the right source
         - [X] callback? Doesn't seem to work (according to Gemini)
-    - [ ] checks for version <2.2.0 and the use of `header.source`
     - [ ] checks for duplicate `name` (can't overlap with Preset names)
         - [ ] pass reserved names to `parse_keybinding_data`
         - [ ] or: maybe we do need some initial parsing function that we

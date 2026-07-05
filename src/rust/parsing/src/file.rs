@@ -310,7 +310,7 @@ impl KeyFile {
             }
         };
         let mut define = if !skip_define {
-            match Define::new(define_input, &mut scope, warnings, version) {
+            match Define::new(define_input, source, &mut scope, warnings, version) {
                 Err(mut es) => {
                     errors.append(&mut es.errors);
                     Define::default()
@@ -3498,6 +3498,137 @@ pub(crate) mod tests {
         // TODO: extract list of warnings and verify that we get a warning about
         // the duplicate binding
         // with the expect results
+    }
+
+    #[test]
+    fn merge_define_bind_errors() {
+        let source_data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.1.0"
+        name = "Source"
+
+        [[define.val]]
+        x = "foo"
+
+        [[define.command]]
+        id = "biz"
+        command = "boz"
+
+        [[define.bind]]
+        id = "bog"
+        command = "big"
+        "#;
+
+        let bad_data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.2.0"
+        name = "User"
+        source = "Source"
+
+        [[define.val]]
+        x = "bar"
+        y = "baz"
+
+        [[define.command]]
+        id = "biz"
+        command = "beep"
+
+        [[define.command]]
+        id = "bim"
+        command = "bam"
+
+        [[define.bind]]
+        id = "bog"
+        command = "bag"
+
+        [[define.bind]]
+        id = "fob"
+        command = "gog"
+        "#;
+
+        let source = parse_keybinding_data(source_data, None);
+        let source_file = source.file.clone().unwrap();
+        assert_eq!(source_file.define.val.len(), 1);
+
+        // we can't override variables
+        let result = parse_keybinding_data(bad_data, Some(&source));
+        if let Some(report) = result.errors {
+            assert_eq!(report.len(), 3);
+            assert!(report[0].message.contains("Variable `x` already defined"));
+            assert_eq!(report[0].range.start.line, 9);
+            assert!(report[1].message.contains("Command `biz` already defined"));
+            assert_eq!(report[1].range.start.line, 12);
+            assert!(report[2].message.contains("`bog` already exists"));
+            assert_eq!(report[2].range.start.line, 20);
+        } else {
+            assert!(false);
+        }
+    }
+
+    #[test]
+    fn merge_define_bind() {
+        let source_data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.1.0"
+        name = "Source"
+
+        [[define.val]]
+        x = "foo"
+
+        [[define.command]]
+        id = "biz"
+        command = "boz"
+
+        [[define.bind]]
+        id = "bog"
+        command = "big"
+        "#;
+
+        let data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.2.0"
+        name = "User"
+        source = "Source"
+
+        [[define.val]]
+        z = "bar"
+        y = "baz"
+
+        [[define.command]]
+        id = "bix"
+        command = "beep"
+
+        [[define.command]]
+        id = "bim"
+        command = "bam"
+
+        [[define.bind]]
+        id = "box"
+        command = "bag"
+
+        [[define.bind]]
+        id = "fob"
+        command = "gog"
+        "#;
+
+        let source = parse_keybinding_data(source_data, None);
+        let source_file = source.file.clone().unwrap();
+        assert_eq!(source_file.define.val.len(), 1);
+
+        // we can't override variables
+        let result = parse_keybinding_data(data, Some(&source));
+        let result_file = result.file.unwrap();
+        assert_eq!(result_file.define.val.len(), 3);
+        assert_eq!(result_file.define.command.len(), 3);
+        assert_eq!(result_file.define.bind.len(), 3);
     }
 
     #[test]
