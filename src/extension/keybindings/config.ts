@@ -1,8 +1,15 @@
 import * as vscode from 'vscode';
-import { validateKeybindings } from '.';
+import { loadPresets, validateKeybindings } from '.';
 import { inflate, deflate } from 'pako';
+import { presetOrder } from '.';
 
-import { KeyFileResult, parse_keybinding_bytes } from '../../rust/parsing/lib/parsing';
+import {
+    KeyFileResult,
+    ErrorLevel,
+    parse_keybinding_bytes,
+    parse_keybinding_bytes_with_source,
+    parse_source_from_keybinding_bytes,
+} from '../../rust/parsing/lib/parsing';
 
 // this globally accessible variable drives most interactions with the key bindings data it
 // is the main entry point to most of the functionality defined in rust. A KeyFileResult
@@ -78,15 +85,35 @@ export class KeyFileData {
         }
     }
 
-    async bindings() {
+    async bindings(): Promise<KeyFileResult> {
         if (!this._parsed) {
             if (this.checksum === bindingChecksum) {
                 return bindings;
             }
             const data = await this.data();
-            const result = parse_keybinding_bytes(data);
-            this._parsed = result;
-            return result;
+            const bindingPresets = loadPresets();
+            const source = parse_source_from_keybinding_bytes(data);
+            if (source && source.name) {
+                const sourceData = bindingPresets.get(source.name);
+                if (sourceData) {
+                    const result = parse_keybinding_bytes_with_source(
+                        data,
+                        await sourceData.bindings(),
+                    );
+                    this._parsed = result;
+                    return result;
+                } else {
+                    const message = `
+                        Source '${source.name}' does not exist. You must use
+                        one of the presets defined by Master Key: ${presetOrder.join(', ')}
+                    `;
+                    return KeyFileResult.from_error(message, source.pos, ErrorLevel.Error);
+                }
+            } else {
+                const result = parse_keybinding_bytes(data);
+                this._parsed = result;
+                return result;
+            }
         } else {
             return this._parsed;
         }
@@ -163,7 +190,9 @@ export async function getBindings(context: vscode.ExtensionContext) {
 
 // use the bindings stored in the global state, setting them as the current global
 // `bindings`
-async function useBindings(context: vscode.ExtensionContext) {
+async function useBindings(
+    context: vscode.ExtensionContext,
+) {
     const newBindings = await getBindings(context);
     if (!newBindings) {
         bindings = new KeyFileResult();
