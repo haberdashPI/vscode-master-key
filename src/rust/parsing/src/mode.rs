@@ -388,7 +388,8 @@ pub struct Modes {
 
 impl Modes {
     pub(crate) fn new(
-        input: Vec<Spanned<ModeInput>>,
+        input: Option<Vec<Spanned<ModeInput>>>,
+        source: Option<&crate::file::KeyFile>,
         scope: &mut Scope,
         warnings: &mut Vec<ParseError>,
     ) -> ResultVec<Self> {
@@ -400,63 +401,98 @@ impl Modes {
         let mut all_mode_names = HashSet::new();
         let mut default_mode = None;
         let mut first_mode_span = UNKNOWN_RANGE;
-        for mode in &input {
+
+        if let Some(source_file) = source {
+            default_mode = Some(source_file.mode.default.clone());
+            for mode in source_file.mode.map.keys() {
+                all_mode_names.insert(mode.clone());
+            }
+        }
+        let mut errors = Vec::new();
+
+        for mode in input.iter().flatten() {
             if first_mode_span == UNKNOWN_RANGE {
                 first_mode_span = mode.span().clone();
             }
             let mode_name = mode.as_ref().name.clone();
             if all_mode_names.contains(&mode_name) {
-                Err(err("mode name is not unique")).with_range(&mode.span())?;
+                let result: Result<()> =
+                    Err(err("mode name is not unique")).with_range(&mode.span());
+                errors.push(result.unwrap_err());
             }
             if mode.as_ref().default.unwrap_or_default() {
                 if let Some(old_default) = default_mode {
-                    return Err(err!("default mode already set to `{old_default}"))
-                        .with_range(&mode.span())?;
+                    let result: Result<()> =
+                        Err(err!("default mode already set to `{old_default}"))
+                            .with_range(&mode.span());
+                    errors.push(result.unwrap_err());
                 }
                 default_mode = Some(mode_name.clone());
             }
             if mode_name == "capture" {
-                return Err(err!(
+                let result: Result<()> = Err(err!(
                     "The mode `capture` is implicitly defined, and should never \
                                 be defined by the user."
                 ))
-                .with_range(&mode.span())?;
+                .with_range(&mode.span());
+                errors.push(result.unwrap_err());
             }
             all_mode_names.insert(mode_name);
-        }
-        if let Option::None = default_mode {
-            // we `unwrap` here because we do not expect vec to ever get an
-            // empty vector (the default contains a single mode)
-            Err(err("exactly one mode must be the default")).with_range(&first_mode_span)?
         }
 
         let old_modes = scope.modes.clone();
         let old_default_mode = scope.default_mode.clone();
         scope.modes = all_mode_names;
-        scope.default_mode = default_mode.clone().unwrap();
+        scope.default_mode = default_mode.clone().unwrap_or_else(|| String::new());
 
         // create `Mode` objects
         let mut modes = HashMap::new();
-        for mode in input {
+        for mode in input.into_iter().flatten() {
             let span = mode.span().clone();
+            let mode_name = mode.as_ref().name.clone();
             let mut mode_warnings = Vec::new();
-            modes.insert(
-                mode.as_ref().name.clone(),
-                match Mode::new(mode.into_inner(), scope, &mut mode_warnings).with_range(&span) {
-                    Ok(x) => x,
-                    Err(e) => {
-                        // if we fail to define the modes revert the mode information stored
-                        // in scope
-                        scope.modes = old_modes;
-                        scope.default_mode = old_default_mode;
-                        return Err(e);
-                    }
-                },
-            );
+            match Mode::new(mode.into_inner(), scope, &mut mode_warnings).with_range(&span) {
+                Ok(x) => {
+                    modes.insert(mode_name, x);
+                }
+                Err(e) => {
+                    // if we fail to define the modes revert the mode information stored
+                    // in scope
+                    scope.modes = old_modes.clone();
+                    scope.default_mode = old_default_mode.clone();
+                    errors.append(&mut e.errors.clone());
+                }
+            };
+
             mode_warnings
                 .iter_mut()
                 .for_each(|w| w.contexts.push(Context::Range(span.clone())));
             warnings.append(&mut mode_warnings)
+        }
+        if let Some(source_file) = source {
+            modes.extend(source_file.mode.map.clone());
+        } else if modes.len() == 0 {
+            // there are no modes explicitly specified in either a source file or the
+            // current file, we use the default set of modes
+            let default_modes = Modes::default();
+            modes = default_modes.map;
+            default_mode = Some(default_modes.default.clone());
+            scope.modes = modes.keys().cloned().collect();
+            scope.default_mode = default_modes.default.clone();
+        }
+
+        // validate that we have a default mode
+        if let Option::None = default_mode {
+            // if we fail to define the modes revert the mode information stored
+            // in scope
+            scope.modes = old_modes.clone();
+            scope.default_mode = old_default_mode.clone();
+
+            // we `unwrap` here because we do not expect vec to ever get an
+            // empty vector (the default contains a single mode)
+            let result: Result<()> =
+                Err(err("exactly one mode must be the default")).with_range(&first_mode_span);
+            errors.push(result.unwrap_err());
         }
 
         // validate that at least one mode allows the user to type keys
@@ -474,9 +510,9 @@ impl Modes {
                 Err(e) => {
                     // if we fail to define the modes revert the mode information stored
                     // in scope
-                    scope.modes = old_modes;
-                    scope.default_mode = old_default_mode;
-                    return Err(e.into());
+                    scope.modes = old_modes.clone();
+                    scope.default_mode = old_default_mode.clone();
+                    errors.push(e);
                 }
             }
         }
@@ -517,7 +553,8 @@ impl Modes {
             },
         );
 
-        // add the implicit `capture` mode
+        // add the implicit `capture` mode, it should not be known to functions above
+        // (hence it being inserted after these functions)
         modes.insert(
             "capture".to_string(),
             Mode {
@@ -528,6 +565,10 @@ impl Modes {
                 whenNoBinding: WhenNoBinding::InsertCharacters,
             },
         );
+
+        if errors.len() > 0 {
+            return Err(errors.into());
+        }
 
         return Ok(Modes {
             map: modes,

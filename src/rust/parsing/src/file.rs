@@ -322,10 +322,7 @@ impl KeyFile {
         };
 
         // [[mode]]
-        let mode_input = input
-            .mode
-            .unwrap_or_else(|| vec![Spanned::new(UNKNOWN_RANGE, ModeInput::default())]);
-        let modes = match Modes::new(mode_input, &mut scope, warnings) {
+        let modes = match Modes::new(input.mode, source, &mut scope, warnings) {
             Err(mut es) => {
                 errors.append(&mut es.errors);
                 Modes::default()
@@ -3501,7 +3498,7 @@ pub(crate) mod tests {
     }
 
     #[test]
-    fn merge_define_bind_errors() {
+    fn merge_source_define_errors() {
         let source_data = r#"
         #:master-keybindings
 
@@ -3570,7 +3567,7 @@ pub(crate) mod tests {
     }
 
     #[test]
-    fn merge_define_bind() {
+    fn merge_source_define() {
         let source_data = r#"
         #:master-keybindings
 
@@ -3629,6 +3626,102 @@ pub(crate) mod tests {
         assert_eq!(result_file.define.val.len(), 3);
         assert_eq!(result_file.define.command.len(), 3);
         assert_eq!(result_file.define.bind.len(), 3);
+    }
+
+    #[test]
+    fn merge_source_mode_error() {
+        let source_data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.1.0"
+        name = "Source"
+
+        [[mode]]
+        name = "insert"
+        whenNoBinding = "insertCharacters"
+        default = true
+
+        [[mode]]
+        name = "a"
+        "#;
+
+        let data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.2.0"
+        name = "User"
+        source = "Source"
+
+        [[mode]]
+        name = "a"
+
+        [[mode]]
+        name = "b"
+        default = true
+        "#;
+
+        let source = parse_keybinding_data(source_data, None);
+        let source_file = source.file.clone().unwrap();
+        assert_eq!(source_file.mode.map.len(), 3);
+
+        // we can't override variables
+        let result = parse_keybinding_data(data, Some(&source));
+        if let Some(report) = result.errors {
+            assert_eq!(report.len(), 2);
+            assert!(report[0].message.contains("mode name is not unique"));
+            assert_eq!(report[0].range.start.line, 8);
+            assert!(report[1].message.contains("default mode already set"));
+            assert_eq!(report[1].range.start.line, 11);
+        } else {
+            assert!(false);
+        }
+    }
+
+    #[test]
+    fn merge_source_mode() {
+        let source_data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.1.0"
+        name = "Source"
+
+        [[mode]]
+        name = "insert"
+        whenNoBinding = "insertCharacters"
+        default = true
+
+        [[mode]]
+        name = "a"
+        "#;
+
+        let data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.2.0"
+        name = "User"
+        source = "Source"
+
+        [[mode]]
+        name = "c"
+
+        [[mode]]
+        name = "b"
+        "#;
+
+        let source = parse_keybinding_data(source_data, None);
+        let source_file = source.file.clone().unwrap();
+        assert_eq!(source_file.mode.map.len(), 3);
+
+        let result = parse_keybinding_data(data, Some(&source));
+        let result_file = result.file.unwrap();
+        assert_eq!(result_file.mode.map.len(), 5);
+        for name in vec!["insert", "a", "capture", "c", "b"] {
+            assert!(result_file.mode.map.contains_key(name));
+        }
     }
 
     #[test]

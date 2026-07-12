@@ -15,9 +15,10 @@ Strategy: get `[[bind]]` working first, as it's the messiest part
 - [X] implement `[[define]]` merge
     - [X] implement it
     - [X] test it
-- [ ] implement `[[mode]]` merge
-    - [ ] implement it
-    - [ ] test it
+- [X] implement `[[mode]]` merge
+    - [X] implement it
+    - [X] test it
+        - [X] fix test regressions
 - [ ] implement `[[kind]]` merge
     - [ ] implement it
     - [ ] test it
