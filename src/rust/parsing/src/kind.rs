@@ -8,6 +8,7 @@ use wasm_bindgen::prelude::*;
 
 use crate::error::{ErrorContext, ParseError, Result, ResultVec};
 use crate::expression::Scope;
+use crate::file::KeyFile;
 use crate::{err, wrn};
 
 /// @bindingField kind
@@ -51,16 +52,30 @@ pub struct Kind {
 impl Kind {
     pub(crate) fn process(
         input: &Option<Vec<Spanned<Kind>>>,
+        source: Option<&KeyFile>,
         scope: &mut Scope,
         warnings: &mut Vec<ParseError>,
     ) -> ResultVec<Vec<Kind>> {
+        let mut known_source_kinds = HashSet::new();
+        if let Some(source_file) = source {
+            known_source_kinds.extend(source_file.kind.iter().map(|x| x.name.clone()));
+        }
+
         let mut known_kinds = HashSet::new();
         if let Some(input) = input {
             for kind in input.iter() {
                 let span = kind.span().clone();
                 let kind_input = kind.as_ref();
                 if known_kinds.contains(&kind_input.name) {
-                    return Err(err!("Kind `name` must be unique.")).with_range(&span)?;
+                    return Err(err!("Kind `{}` is not unique.", kind_input.name))
+                        .with_range(&span)?;
+                }
+                if known_source_kinds.contains(&kind_input.name) {
+                    return Err(err!(
+                        "Kind `{}` already exists in the source file.",
+                        kind_input.name
+                    ))
+                    .with_range(&span)?;
                 }
 
                 // warning about unknown fields
@@ -76,7 +91,20 @@ impl Kind {
                 known_kinds.insert(kind_input.name.clone());
             }
             scope.kinds = input.iter().map(|x| x.as_ref().name.clone()).collect();
-            return Ok(input.iter().map(|x| x.as_ref().clone()).collect());
+            let mut result: Vec<_> = input.iter().map(|x| x.as_ref().clone()).collect();
+            if let Some(source_file) = source {
+                scope
+                    .kinds
+                    .extend(source_file.kind.iter().map(|x| x.name.clone()));
+                result = source_file
+                    .kind
+                    .iter()
+                    .cloned()
+                    .chain(result.into_iter())
+                    .collect();
+            }
+
+            return Ok(result);
         } else {
             return Ok(Vec::new());
         }

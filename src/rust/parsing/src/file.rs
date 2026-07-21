@@ -279,6 +279,15 @@ impl KeyFile {
             .with_range(&input.header.version.span());
             errors.push(r.unwrap_err().into());
         }
+        if source.is_some() && !VersionReq::parse("2.2").unwrap().matches(version) {
+            let r: Result<()> = Err(wrn!(
+                "The `source` keybinding was defined in version 2.2. Bump `version`
+                 to be at or above 2.2.0."
+            ))
+            .with_range(&input.header.version.span());
+            errors.push(r.unwrap_err().into());
+        }
+
         let name: Option<String> = match resolve!(input.header, name, scope) {
             Err(mut x) => {
                 errors.append(&mut x.errors);
@@ -341,7 +350,13 @@ impl KeyFile {
         }
 
         // [[kind]]
-        let kind = Kind::process(&input.kind, &mut scope, warnings)?;
+        let kind = match Kind::process(&input.kind, source, &mut scope, warnings) {
+            Ok(x) => x,
+            Err(mut e) => {
+                errors.append(&mut e.errors);
+                Vec::new()
+            }
+        };
 
         // [[bind]]
         let input_iter = input.bind.into_iter().flatten().map(|x| {
@@ -3722,6 +3737,96 @@ pub(crate) mod tests {
         for name in vec!["insert", "a", "capture", "c", "b"] {
             assert!(result_file.mode.map.contains_key(name));
         }
+    }
+
+    #[test]
+    fn merge_source_kind_error() {
+        let source_data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.1.0"
+        name = "Source"
+
+        [[kind]]
+        name = "foo"
+        description = "aa"
+
+        [[kind]]
+        name = "bar"
+        description = "bb"
+        "#;
+
+        let data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.2.0"
+        name = "User"
+        source = "Source"
+
+        [[kind]]
+        name = "foo"
+        description = "cc"
+        "#;
+
+        let source = parse_keybinding_data(source_data, None);
+        let source_file = source.file.clone().unwrap();
+        assert_eq!(source_file.kind.len(), 2);
+
+        // we can't override variables
+        let result = parse_keybinding_data(data, Some(&source));
+        if let Some(report) = result.errors {
+            assert_eq!(report.len(), 1);
+            assert!(report[0].message.contains("already exists"));
+            assert_eq!(report[0].range.start.line, 8);
+        } else {
+            assert!(false);
+        }
+    }
+
+    #[test]
+    fn merge_source_kind() {
+        let source_data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.1.0"
+        name = "Source"
+
+        [[kind]]
+        name = "foo"
+        description = "aa"
+
+        [[kind]]
+        name = "bar"
+        description = "bb"
+        "#;
+
+        let data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.2.0"
+        name = "User"
+        source = "Source"
+
+        [[kind]]
+        name = "biz"
+        description = "cc"
+        "#;
+
+        let source = parse_keybinding_data(source_data, None);
+        let source_file = source.file.clone().unwrap();
+        assert_eq!(source_file.kind.len(), 2);
+
+        // we can't override variables
+        let result = parse_keybinding_data(data, Some(&source));
+        let result_file = result.file.unwrap();
+        assert_eq!(result_file.kind.len(), 3);
+        assert_eq!(result_file.kind[0].name, "foo");
+        assert_eq!(result_file.kind[1].name, "bar");
+        assert_eq!(result_file.kind[2].name, "biz");
     }
 
     #[test]

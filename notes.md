@@ -19,11 +19,11 @@ Strategy: get `[[bind]]` working first, as it's the messiest part
     - [X] implement it
     - [X] test it
         - [X] fix test regressions
-- [ ] implement `[[kind]]` merge
-    - [ ] implement it
-    - [ ] test it
+- [X] implement `[[kind]]` merge
+    - [X] implement it
+    - [X] test it
+- [X] checks for version <2.2.0 and the use of `header.source`
 - [ ] ask agy to setup some additional unit tests
-- [ ] checks for version <2.2.0 and the use of `header.source`
 - [ ] setup typescript harness to properly handle `source` semantics
     - [X] remind myself how KeyFile's are current stored, is the some redundancy we
           can avoid?
