@@ -450,14 +450,47 @@ export async function validateKeybindings(
 // Commands concerning keybinding files
 
 // a list of all presets
-let extensionPresetsDir: vscode.Uri;
+export const presetOrder: string[] = [];
+export let checksumOfAllPresets = '';
+const bindingPresets = new Map<string, KeyFileData>();
+
+let extensionPresetsDir: vscode.Uri; // populated in `activate`
 const presetFiles = ['larkin.toml', 'vim.toml'];
-function listPresets() {
-    // special case this directory (so it works (??) in the web context)
+export async function loadPresets() {
+    if (bindingPresets.size == 0) {
+        // NOTE: we cannot simply list files in the given directory
+        // because this API is not available for Web applications
+        checksumOfAllPresets = '';
+        for (const preset of presetFiles) {
+            const uri = Utils.joinPath(extensionPresetsDir, preset);
+            const data = new KeyFileData(uri);
+            const name = (await data.bindings()).name();
+            bindingPresets.set(name, data);
+            presetOrder.push(name);
+            const checksumBytes = await crypto.subtle.digest(
+                'SHA-256',
+                new Uint8Array(await data.data()),
+            );
+            checksumOfAllPresets += Buffer.from(checksumBytes).toString('base64');
+        }
+        // checksum the checksums (so we have a single constant value; could also just
+        // hash here)
+        const encoder = new TextEncoder();
+        const bytes = encoder.encode(checksumOfAllPresets);
+        const checksumBytes = await crypto.subtle.digest('SHA-256', new Uint8Array(bytes));
+        checksumOfAllPresets = Buffer.from(checksumBytes).toString('base64');
+    }
+    return bindingPresets;
+}
+
+async function listPresets(): Promise<KeyFileData[]> {
+    const namedPresets = await loadPresets();
     const presets = [];
-    for (const preset of presetFiles) {
-        const uri = Utils.joinPath(extensionPresetsDir, preset);
-        presets.push(new KeyFileData(uri));
+    for (const preset of presetOrder) {
+        const data = namedPresets.get(preset);
+        if (data) {
+            presets.push(data);
+        }
     }
     return presets;
 }
@@ -486,7 +519,7 @@ async function quickPickOfPresets(
 }
 
 // master-keybinding parsing of current file
-function parseCurrentFile() {
+async function parseCurrentFile() {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
         vscode.window.showErrorMessage('There is no current file');
@@ -502,7 +535,7 @@ function parseCurrentFile() {
 }
 
 async function openFileWithContentOfPreset(args?: { preset?: number }) {
-    const options = await quickPickOfPresets(listPresets());
+    const options = await quickPickOfPresets(await listPresets());
     let picked;
     if (args?.preset !== undefined) {
         picked = options[args?.preset];
@@ -590,17 +623,17 @@ async function activateBindings(
     data?: KeyFileData | 'CurrentFile',
 ) {
     if (data === 'CurrentFile') {
-        data = parseCurrentFile();
+        data = await parseCurrentFile();
     }
     if (!data) {
-        const options = await quickPickOfPresets(listPresets());
+        const options = await quickPickOfPresets(await listPresets());
         options.push(
             { label: 'Current File', command: 'current' },
         );
 
         const picked = await vscode.window.showQuickPick(options);
         if (picked?.command === 'current') {
-            data = parseCurrentFile();
+            data = await parseCurrentFile();
         } else {
             data = picked?.preset;
         }

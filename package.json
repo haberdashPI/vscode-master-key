@@ -242,6 +242,12 @@
                     "description": "The maximum number of previously run commands that are saved.",
                     "default": 1024
                 },
+                "master-key.ignorePresetUpdates": {
+                    "title": "Ignore Preset Updates",
+                    "type": "boolean",
+                    "description": "When enabled, the user will not be notified of any updates to Mater Key's keybinding presets.",
+                    "default": false
+                },
                 "master-key.suggestionDelay": {
                     "title": "Suggestion Delay",
                     "type": "integer",
@@ -297,8 +303,8 @@
         "@types/web": "^0.0.243",
         "@typescript-eslint/eslint-plugin": "^8.59.2",
         "@typescript-eslint/parser": "^8.59.2",
-        "@vscode/test-cli": "^0.0.11",
-        "@vscode/test-electron": "^2.5.2",
+        "@vscode/test-cli": "^0.0.15",
+        "@vscode/test-electron": "^3.1.0",
         "@vscode/test-web": "^0.0.80",
         "assert": "^2.1.0",
         "async-mutex": "^0.5.0",
