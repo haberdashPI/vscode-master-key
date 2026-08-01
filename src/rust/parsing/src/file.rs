@@ -4,8 +4,8 @@
 ///
 /// # Master Keybindings
 ///
-/// This defines version 2.1 of the master keybinding file format. All changes (including
-/// breaking) are [described below](#breaking-changes)
+/// This defines version 2.2 of the master keybinding file format. All changes (including
+/// breaking) are [described below](#changes)
 ///
 /// Master keybindings are [TOML](https://toml.io/en/) files that begin with a line
 /// containing `#:master-keybindings` and include the following top-level
@@ -36,7 +36,7 @@
 ///
 /// [header]
 /// # this denotes the file-format version, it must be semver compatible with 2.0
-/// version = "2.0.0"
+/// version = "2.2.0"
 /// name = "My Bindings"
 ///
 /// [[mode]]
@@ -99,7 +99,16 @@
 /// args.to = "right"
 /// args.value = "{{foo+1}}"
 /// ```
-/// ## Breaking Changes
+/// ## Changes
+///
+/// ### 2.2
+///
+/// The following, non-breaking changes were introduced in this version
+///
+/// - `header.source` Users can add a 'source' binding file. This name can refer to any of
+/// the built-in bindings sets defined by master key. Entries from the source data (elements
+/// of `bind`, `kind`, `define` and `mode`) are merged with the bindings defined in this
+/// file.
 ///
 /// ### 2.1
 ///
@@ -146,7 +155,7 @@
 ///
 /// ### 1.0
 ///
-/// THis was the original file format version
+/// This was the original file format version
 ///
 #[allow(unused_imports)]
 use log::{error, info};
@@ -207,14 +216,17 @@ struct KeyFileInput {
 /// - `version`: Must be version 2.x.y (typically 2.0.0); only version 2.0.0 currently
 ///   exists, but any future versions of 2 can be parsed by this version of master key, as
 ///   per [semantic versioning](https://semver.org/).
+///
+/// ## Optional Fields
+///
 /// - `name`: The name of this keybinding set; shows up in menus to select keybinding
 ///   presets
+/// - `source`: Append the `kind`, `mode`, `define` and `bind` entries in the current file
+///   to those defined in `source`. The source is the `name` of a Master Key preset. User
+///   defined bindings are not supported as `source` binding files.
 /// - `requiredExtensions`: An array of string identifiers for all extensions used by this
-///   binding set.
-///
-/// In general if you use the commands from an extension in your keybinding file, it is good
-/// to include them in `requiredExtensions` so that others can use your keybindings without
-/// running into errors due to a missing extension.
+///   binding set: identifies can be found using the procedure described below. If you use a
+///   command from an extension, it is best practice to include that extension here.
 ///
 /// ## Finding Extension Identifiers
 ///

@@ -7,7 +7,8 @@
 To start creating your own bindings:
 
 1. Create a new a toml file
-2. Optional: copy a preset into the file using `Master key: New Keybinding Copy`
+2. Optional: copy a preset into the file using `Master key: New Keybinding Copy` OR
+   use [`header.source`](/bindings/header)
 3. Optional: import any existing user bindings, from `keyindings.json`, by calling `Master Key: Import User Keybindings` in this new toml file
 4. Add/edit bindings, using the [binding format](./bindings/) and [command documentation](./commands/) as a guide.
 5. Activate the bindings with `Master Key: Activate Keybindings` at any time.
