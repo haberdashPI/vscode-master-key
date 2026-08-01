@@ -2486,7 +2486,9 @@ pub(crate) mod tests {
 
         let result = parse_keybinding_data(data, None);
         let report = result.errors.unwrap();
-        assert!(report[0].message.contains("`name` must be unique"));
+        info!("report: {:#?}", report);
+        assert!(report[0].message.contains("`biz`"));
+        assert!(report[0].message.contains("unique"));
         assert_eq!(report[0].range.start.line, 10);
         assert_eq!(report[0].range.end.line, 10);
     }

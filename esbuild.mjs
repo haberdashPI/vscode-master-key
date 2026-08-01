@@ -89,6 +89,7 @@ async function main() {
                         polyfill.NodeGlobalsPolyfillPlugin({
                             process: true,
                             buffer: true,
+                            crypto: true,
                         }),
                         webTestBundlePlugin,
                     ] :

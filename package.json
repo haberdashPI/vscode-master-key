@@ -242,6 +242,12 @@
                     "description": "The maximum number of previously run commands that are saved.",
                     "default": 1024
                 },
+                "master-key.ignorePresetUpdates": {
+                    "title": "Ignore Preset Updates",
+                    "type": "boolean",
+                    "description": "When enabled, the user will not be notified of any updates to Mater Key's keybinding presets.",
+                    "default": false
+                },
                 "master-key.suggestionDelay": {
                     "title": "Suggestion Delay",
                     "type": "integer",

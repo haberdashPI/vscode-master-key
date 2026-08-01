@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { loadPresets, validateKeybindings } from '.';
+import { checksumOfAllPresets, loadPresets, validateKeybindings } from '.';
 import { inflate, deflate } from 'pako';
 import { presetOrder } from '.';
 
@@ -17,8 +17,8 @@ import {
 // will be used to execute expressions found within individual keybindings. Refer to
 // `file.rs` for details.
 export let bindings: KeyFileResult;
-// the check sum is used to determine if the saved file matches the currently loaded
-// bindings
+// the checksum is used to determine if the file stored in global state matches the bindings
+// currently loaded into memory
 let bindingChecksum: string = '';
 // a config listener is notified any time a new set of keybindings is loaded
 export type ConfigListener = (x: KeyFileResult) => Promise<void>;
@@ -29,13 +29,48 @@ const listeners: ConfigListener[] = [];
 // machines.
 const CONFIG_STORAGE = 'master-key.activeBindings';
 const CONFIG_CHECKSUM = 'master-key.activeChecksum';
+const CONFIG_PRESET_CHECKSUM = 'master-key.activePresetChecksum';
+
+let userKnowsPresetsAreOutdates = false;
 
 export async function updateBindings(context: vscode.ExtensionContext) {
+    const storedPresetChecksum = context.globalState.get<string>(CONFIG_PRESET_CHECKSUM);
     const checksum = context.globalState.get<string>(CONFIG_CHECKSUM);
     if (bindingChecksum !== checksum) {
         console.log('Loaded checksum: ' + bindingChecksum);
         console.log('Config checksum: ' + checksum);
         useBindings(context);
+    }
+    await loadPresets();
+    // NOTE: we check that `storedPresetChecksum` is a non-empty string. We don't really want to
+    // warn users that their bindings are out of date if they've *never* activated
+    // keybindings with Master Key. In addition, on the first update to master key that has
+    // this block of code, `storedPresetChecksum` will be empty. There are no updates to the
+    // presents in this version of Master Key so we avoid a false positive for this single
+    // update.
+    if (
+        !ignorePresetUpdates && checksumOfAllPresets &&
+        storedPresetChecksum && storedPresetChecksum !== checksumOfAllPresets &&
+        !userKnowsPresetsAreOutdates
+    ) {
+        const ignore = 'Ignore This Update';
+        const ignoreForever = 'Ignore Forever';
+        userKnowsPresetsAreOutdates = true;
+        const response = await vscode.window.showWarningMessage(`
+            Master Key's binding presets have been updated. Re-activate your keybindings
+            if you use a present or depend on a preset (using 'source').
+        `, ignore, ignoreForever);
+        if (response === ignore) {
+            context.globalState.update(CONFIG_PRESET_CHECKSUM, checksumOfAllPresets);
+        } else if (response === ignoreForever) {
+            const config = vscode.workspace.getConfiguration('master-key');
+            config.update('ignorePresetUpdates', true, vscode.ConfigurationTarget.Global);
+            vscode.window.showInformationMessage(`
+                Preset updates will now be ignored forever. Change this by setting
+                'master-key.ignorePresetUpdates' to 'false' in your configuration.
+            `);
+        }
+        return;
     }
 }
 
@@ -91,9 +126,12 @@ export class KeyFileData {
                 return bindings;
             }
             const data = await this.data();
-            const bindingPresets = loadPresets();
             const source = parse_source_from_keybinding_bytes(data);
             if (source && source.name) {
+                // WARNING: calling `loadPresets` outside this conditional creates an
+                // infinite loop (because inside of `loadPresents` we call `bindings()` on
+                // the present files)
+                const bindingPresets = await loadPresets();
                 const sourceData = bindingPresets.get(source.name);
                 if (sourceData) {
                     const result = parse_keybinding_bytes_with_source(
@@ -127,19 +165,17 @@ interface IStorage {
 
 async function toZipBase64(data: Uint8Array): Promise<[string, string]> {
     const bytes = deflate(data, { level: 9 });
-    const byteString = String.fromCharCode.apply(null, Array.from(bytes));
-    const byte64 = btoa(byteString);
+    const byte64 = Buffer.from(bytes).toString('base64');
 
-    const checksumData = await crypto.subtle.digest('SHA-256', new Uint8Array(bytes));
-    const checksumArray = new Uint8Array(checksumData);
-    const checksumString = String.fromCharCode.apply(null, Array.from(checksumArray));
-    const checksum64 = btoa(checksumString);
+    // compute checksum of file data
+    const checksumBytes = await crypto.subtle.digest('SHA-256', new Uint8Array(bytes));
+    const checksum64 = Buffer.from(checksumBytes).toString('base64');
 
     return [byte64, checksum64];
 }
 
 export function fromZipBase64(str: string): Uint8Array {
-    const result = inflate(Uint8Array.from(atob(str), c => c.charCodeAt(0)));
+    const result = inflate(new Uint8Array(Buffer.from(str, 'base64')));
     return result || [];
 }
 
@@ -165,9 +201,11 @@ export async function setBindings(
 
         context.globalState.update(CONFIG_STORAGE, storage);
         context.globalState.update(CONFIG_CHECKSUM, checksum);
+        context.globalState.update(CONFIG_PRESET_CHECKSUM, checksumOfAllPresets);
     } else {
         context.globalState.update(CONFIG_STORAGE, {});
         context.globalState.update(CONFIG_CHECKSUM, '');
+        context.globalState.update(CONFIG_PRESET_CHECKSUM, '');
         bindings = new KeyFileResult();
         for (const fn of listeners || []) {
             await fn(bindings);
@@ -232,8 +270,19 @@ export async function onSetBindings(fn: ConfigListener) {
 export function defineState() {
 }
 
+let ignorePresetUpdates = false;
+function updateConfig(event?: vscode.ConfigurationChangeEvent) {
+    if (!event || event?.affectsConfiguration('master-key')) {
+        const config = vscode.workspace.getConfiguration('master-key');
+        ignorePresetUpdates = config.get<boolean>('ignorePresetUpdates') || false;
+    }
+}
+
 export async function activate(context: vscode.ExtensionContext) {
     context.globalState.setKeysForSync([CONFIG_CHECKSUM, CONFIG_STORAGE]);
+
+    updateConfig();
+    vscode.workspace.onDidChangeConfiguration(updateConfig);
 
     bindings = new KeyFileResult();
     for (const fn of listeners || []) {
