@@ -42,8 +42,8 @@ export async function updateBindings(context: vscode.ExtensionContext) {
         useBindings(context);
     }
     await loadPresets();
-    // NOTE: we check that `storedPresetChecksum` is a non-empty string. We don't really want to
-    // warn users that their bindings are out of date if they've *never* activated
+    // NOTE: we check that `storedPresetChecksum` is a non-empty string. We don't really
+    // want to warn users that their bindings are out of date if they've *never* activated
     // keybindings with Master Key. In addition, on the first update to master key that has
     // this block of code, `storedPresetChecksum` will be empty. There are no updates to the
     // presents in this version of Master Key so we avoid a false positive for this single
