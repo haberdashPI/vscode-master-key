@@ -62,6 +62,7 @@ impl Kind {
         }
 
         let mut known_kinds = HashSet::new();
+        let mut result: Vec<_>;
         if let Some(input) = input {
             for kind in input.iter() {
                 let span = kind.span().clone();
@@ -90,23 +91,25 @@ impl Kind {
 
                 known_kinds.insert(kind_input.name.clone());
             }
-            scope.kinds = input.iter().map(|x| x.as_ref().name.clone()).collect();
-            let mut result: Vec<_> = input.iter().map(|x| x.as_ref().clone()).collect();
-            if let Some(source_file) = source {
-                scope
-                    .kinds
-                    .extend(source_file.kind.iter().map(|x| x.name.clone()));
-                result = source_file
-                    .kind
-                    .iter()
-                    .cloned()
-                    .chain(result.into_iter())
-                    .collect();
-            }
-
-            return Ok(result);
+            scope.kinds.extend(input.iter().map(|x| x.as_ref().name.clone()));
+            result = input.iter().map(|x| x.as_ref().clone()).collect();
         } else {
-            return Ok(Vec::new());
+            result = Vec::new();
         }
+
+        // prepend `source` [[kind]] if needed
+        if let Some(source_file) = source {
+            scope
+                .kinds
+                .extend(source_file.kind.iter().map(|x| x.name.clone()));
+            result = source_file
+                .kind
+                .iter()
+                .cloned()
+                .chain(result.into_iter())
+                .collect();
+        }
+
+        return Ok(result);
     }
 }
