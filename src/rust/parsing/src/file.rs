@@ -3844,6 +3844,93 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn merge_source_kind_no_local_kinds() {
+        let source_data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.1.0"
+        name = "Source"
+
+        [[kind]]
+        name = "motion"
+        description = "movement"
+        "#;
+
+        let data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.2.0"
+        name = "User"
+        source = "Source"
+
+        [[bind]]
+        key = "j"
+        command = "cursorDown"
+        doc.kind = "motion"
+        "#;
+
+        let source = parse_keybinding_data(source_data, None);
+        let result = parse_keybinding_data(data, Some(&source));
+        assert!(
+            result.errors.as_ref().map_or(true, |v| v.is_empty()),
+            "Errors: {:?}",
+            result.errors
+        );
+        let result_file = result.file.unwrap();
+        assert_eq!(result_file.kind.len(), 1);
+        assert_eq!(result_file.kind[0].name, "motion");
+    }
+
+    #[test]
+    fn merge_source_mode_no_local_modes() {
+        let source_data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.1.0"
+        name = "Source"
+
+        [[mode]]
+        name = "normal"
+        default = true
+        cursorShape = "Block"
+        whenNoBinding = "insertCharacters"
+
+        [[mode]]
+        name = "visual"
+        cursorShape = "Line"
+        "#;
+
+        let data = r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.2.0"
+        name = "User"
+        source = "Source"
+
+        [[bind]]
+        key = "j"
+        command = "cursorDown"
+        mode = "visual"
+        "#;
+
+        let source = parse_keybinding_data(source_data, None);
+        let result = parse_keybinding_data(data, Some(&source));
+        assert!(
+            result.errors.as_ref().map_or(true, |v| v.is_empty()),
+            "Errors: {:?}",
+            result.errors
+        );
+        let result_file = result.file.unwrap();
+        assert!(result_file.mode.map.contains_key("visual"));
+    }
+
+
+
+    #[test]
     fn larkin_test() {
         // the default presets should be parseable (also a good "integration" test to ensure
         // our parsing works at scale)
