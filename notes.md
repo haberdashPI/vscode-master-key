@@ -1,3 +1,5 @@
+Current project: fix keybindings so hashing can catch inconsistencies that make `command_id` invalid
+
 ## Bugs in Merge File
 
 - [X] when trying to activate keybindings there's the input window never shows up (something is probably hanging/looping)
