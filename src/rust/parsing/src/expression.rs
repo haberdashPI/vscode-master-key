@@ -271,6 +271,18 @@ impl Scope {
         return scope;
     }
 
+    // transfer AST parsing from one scope to another (use case: 'source')
+    pub fn transfer_asts(&mut self, other: &Scope) -> Result<()> {
+        for (expr, ast) in other.asts.iter() {
+            let ast = self
+                .engine
+                .compile_expression(expr.clone())
+                .with_exp_range(&Some(0..0))?; // TODO: careover range of `source`
+            self.asts.insert(expr.clone(), ast);
+        }
+        return Ok(());
+    }
+
     // access the messages that will be posted to VSCode output window
     pub fn report_messages(&self) -> Vec<String> {
         return self.messages.borrow_mut().drain(..).collect();
