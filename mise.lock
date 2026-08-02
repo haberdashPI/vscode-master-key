@@ -71,7 +71,9 @@ checksum = "sha256:a08b513de673853ca16395ec461a104a99bf0e941ebb7baedb98b30cd221d
 url = "https://nodejs.org/dist/v20.19.5/node-v20.19.5-linux-arm64.tar.gz"
 
 [tools.node."platforms.linux-arm64-musl"]
-url = "https://unofficial-builds.nodejs.org/download/release/v20.19.5/node-v20.19.5-linux-arm64-musl.tar.gz"
+checksum = "sha256:b34d3f57666d91deb6a148b604d7f2f4051d540087e9f6c627dedc1fcb866d5a"
+url = "https://nodejs.org/dist/v20.19.5/node-v20.19.5.tar.gz"
+install = "source"
 
 [tools.node."platforms.linux-x64"]
 checksum = "sha256:4eba5fbe1fb10753bc06e42f001a91c5cec16798b7764a3e9257adc59af47fe1"
