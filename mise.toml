@@ -16,7 +16,7 @@ watchexec = "2.3.2"
 "npm:lcov-summary" = "1.0.1"
 
 [[tools.rust]]
-version = "1.90"
+version = "1.90.0"
 targets = "wasm32-unknown-unknown"
 components = "llvm-tools-preview"
 
