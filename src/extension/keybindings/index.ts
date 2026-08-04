@@ -271,7 +271,7 @@ async function insertKeybindingsIntoConfig(data: KeyFileData) {
                 }
                 vscode.window.
                     showInformationMessage(
-                            'Master keybindings were added to \`keybindings.json\`.',
+                        'Master keybindings were added to \`keybindings.json\`.',
                         {},
                         ...(((bindings.requiredExtensions() || []).length === 0) ?
                                 [] :
