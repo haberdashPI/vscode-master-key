@@ -22,6 +22,7 @@ import {
     ErrorLevel,
 } from '../../rust/parsing/lib';
 import { prettifyPrefix, replaceMatchesWith } from '../utils';
+import { commandMutex } from '../commands/do';
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 // Keybinding Generation
@@ -457,6 +458,7 @@ const bindingPresets = new Map<string, KeyFileData>();
 let extensionPresetsDir: vscode.Uri; // populated in `activate`
 const presetFiles = ['larkin.toml', 'vim.toml'];
 export async function loadPresets() {
+    const release = await commandMutex.acquire();
     if (bindingPresets.size == 0) {
         // NOTE: we cannot simply list files in the given directory
         // because this API is not available for Web applications
@@ -480,6 +482,7 @@ export async function loadPresets() {
         const checksumBytes = await crypto.subtle.digest('SHA-256', new Uint8Array(bytes));
         checksumOfAllPresets = Buffer.from(checksumBytes).toString('base64');
     }
+    release();
     return bindingPresets;
 }
 
