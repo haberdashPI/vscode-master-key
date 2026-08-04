@@ -1019,7 +1019,11 @@ pub fn parse_bytes_helper(
     let docs = FileDocLine::read(file_content);
 
     let source_file = match source {
-        Some(x) => x.file.as_ref(),
+        Some(source_data) => {
+            // make sure any ASTs parsed in 'source' get carried over
+            scope.transfer_asts(&source_data.scope);
+            source_data.file.as_ref()
+        }
         Option::None => None,
     };
     let result = KeyFile::new(parsed, docs, source_file, scope, warnings);
@@ -3927,8 +3931,6 @@ pub(crate) mod tests {
         let result_file = result.file.unwrap();
         assert!(result_file.mode.map.contains_key("visual"));
     }
-
-
 
     #[test]
     fn larkin_test() {
