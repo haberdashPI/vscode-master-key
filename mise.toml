@@ -1,3 +1,7 @@
+[settings]
+lockfile = true
+not_found_auto_install = false
+
 [tools]
 node = "20"
 "npm:typescript" = "5.8.3"
@@ -25,15 +29,8 @@ version = "nightly"
 targets = "wasm32-unknown-unknown"
 components = "llvm-tools-preview"
 
-[settings]
-lockfile = true
-
 [hooks]
 postinstall = '''
-# rustup target add wasm32-unknown-unknown
-# rustup component add llvm-tools-preview
-# rustup target add wasm32-unknown-unknown --toolchain nightly
-# rustup component add llvm-tools-preview --toolchain nightly
 nu -c 'if not ($env.CI? | default false | into bool) {
     # these components are installed separately during CI
     pnpm install --frozen-lockfile
