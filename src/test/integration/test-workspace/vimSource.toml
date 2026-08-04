@@ -1,0 +1,9 @@
+#:master-keybindings
+
+[header]
+version = "2.2.0"
+source = "Simple Vim"
+
+[[bind]]
+key = "shift+k"
+command = "cursorRight"
