@@ -122,9 +122,17 @@ backend = "npm:vsce"
 version = "1.90.0"
 backend = "core:rust"
 
+[tools.rust.options]
+components = "llvm-tools-preview"
+targets = "wasm32-unknown-unknown"
+
 [[tools.rust]]
 version = "nightly"
 backend = "core:rust"
+
+[tools.rust.options]
+components = "llvm-tools-preview"
+targets = "wasm32-unknown-unknown"
 
 [[tools."ubi:haberdashpi/simple-src-docs"]]
 version = "0.6.0"
