@@ -77,10 +77,10 @@ pub struct CommandInput {
 
 impl Expanding for CommandInput {
     fn is_constant(&self) -> bool {
-        if self.command.is_constant() {
+        if !self.command.is_constant() {
             return false;
         }
-        if self.args.is_constant() {
+        if !self.args.is_constant() {
             return false;
         }
         return true;
