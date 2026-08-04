@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { checksumOfAllPresets, loadPresets, validateKeybindings } from '.';
 import { inflate, deflate } from 'pako';
 import { presetOrder } from '.';
+import { clean } from '../utils';
 
 import {
     KeyFileResult,
@@ -56,19 +57,19 @@ export async function updateBindings(context: vscode.ExtensionContext) {
         const ignore = 'Ignore This Update';
         const ignoreForever = 'Ignore Forever';
         userKnowsPresetsAreOutdates = true;
-        const response = await vscode.window.showWarningMessage(`
+        const response = await vscode.window.showWarningMessage(clean(`
             Master Key's binding presets have been updated. Re-activate your keybindings
             if you use a present or depend on a preset (using 'source').
-        `, ignore, ignoreForever);
+        `), ignore, ignoreForever);
         if (response === ignore) {
             context.globalState.update(CONFIG_PRESET_CHECKSUM, checksumOfAllPresets);
         } else if (response === ignoreForever) {
             const config = vscode.workspace.getConfiguration('master-key');
             config.update('ignorePresetUpdates', true, vscode.ConfigurationTarget.Global);
-            vscode.window.showInformationMessage(`
+            vscode.window.showInformationMessage(clean(`
                 Preset updates will now be ignored forever. Change this by setting
                 'master-key.ignorePresetUpdates' to 'false' in your configuration.
-            `);
+            `));
         }
         return;
     }
@@ -141,10 +142,10 @@ export class KeyFileData {
                     this._parsed = result;
                     return result;
                 } else {
-                    const message = `
+                    const message = clean(`
                         Source '${source.name}' does not exist. You must use
                         one of the presets defined by Master Key: ${presetOrder.join(', ')}
-                    `;
+                    `);
                     return KeyFileResult.from_error(message, source.pos, ErrorLevel.Error);
                 }
             } else {

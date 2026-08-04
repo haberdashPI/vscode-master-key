@@ -14,10 +14,16 @@ export function validateInput<T, Def extends z.ZodTypeDef, I>(
     const result = using.safeParse(args_ || {});
     if (!result.success) {
         const msg = fromZodError(result.error);
-        vscode.window.showErrorMessage(`'${command}': ${msg}`);
+        vscode.window.showErrorMessage(clean(`'${command}': ${msg}`));
         return;
     }
     return result.data;
+}
+
+// collapses all runs of whitespace (including newlines/indentation from multi-line
+// template literals) to a single space, so error/info messages read as one line
+export function clean(str: string): string {
+    return str.replace(/\s+/g, ' ').trim();
 }
 
 export function wrappedTranslate(

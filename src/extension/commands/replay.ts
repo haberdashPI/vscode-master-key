@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import z from 'zod';
-import { validateInput } from '../utils';
+import { validateInput, clean } from '../utils';
 import { state, CommandResult, recordedCommand } from '../state';
 import { bindings } from '../keybindings/config';
 import { documentIdentifiers } from './do';
@@ -202,8 +202,8 @@ export async function runCommands(
                 });
             } else if (edits) {
                 vscode.window.showErrorMessage(
-                    `Command includes edits to the active text editor, but there
-                    is currently no active editor.`,
+                    clean(`Command includes edits to the active text editor,
+                    but there is currently no active editor.`),
                 );
             }
         }

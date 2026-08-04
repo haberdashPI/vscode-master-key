@@ -15,6 +15,7 @@ import * as config from './keybindings/config';
 // parsing: the rust module used that supports keybindings, it is used as a part of
 // `keybindings` above
 import initParsing from '../rust/parsing/lib';
+import { clean } from './utils';
 
 // Each file has a `defineState` function which initializes the variables stored in the
 // `state` object. It is executed first to ensure that all hooks that respond to
@@ -53,12 +54,12 @@ export async function activate(context: vscode.ExtensionContext) {
     const settings = vscode.workspace.getConfiguration('master-key');
     const storage = settings.get('storage');
     if (storage) {
-        vscode.window.showWarningMessage(`
+        vscode.window.showWarningMessage(clean(`
             Master Key has detected legacy data in your settings
             (under 'master-key.storage'). There are many breaking changes in the newest
             version of Master Key. Please call 'Master Key: Activate Keybindings',
             to reactivate your bindings and remove the legacy data.
-        `, 'Learn More', 'Reactivate Bindings').then((selection) => {
+        `), 'Learn More', 'Reactivate Bindings').then((selection) => {
             if (selection == 'Learn More') {
                 vscode.env.openExternal(vscode.Uri.parse(
                     'https://haberdashpi.github.io/vscode-master-key/bindings/',

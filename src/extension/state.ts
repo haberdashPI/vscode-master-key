@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import z from 'zod';
 import { defineState as defineExtensionState } from './index';
-import { validateInput } from './utils';
+import { validateInput, clean } from './utils';
 import { bindings, onSetBindings } from './keybindings/config';
 import { ParseError } from '../rust/parsing/lib/parsing';
 import { cloneDeep } from 'lodash';
@@ -57,7 +57,7 @@ export class CommandState {
     ) {
         const fullKey = (setOpt.namespace || 'key') + '.' + key;
         if (this.definedValues.has(fullKey)) {
-            throw Error(`${fullKey} already exists`);
+            throw Error(clean(`${fullKey} already exists`));
         }
         if (key.includes('.')) {
             throw Error('Variables names can\'t include `.`');
@@ -72,7 +72,7 @@ export class CommandState {
         const namespace = opt.namespace || 'key';
         const fullKey = namespace + '.' + key;
         if (!this.definedValues.has(fullKey)) {
-            throw Error(`\`${fullKey}\` is not defined`);
+            throw Error(clean(`\`${fullKey}\` is not defined`));
         }
         try {
             const result = bindings.get_value(namespace, key);
@@ -84,7 +84,7 @@ export class CommandState {
             if ((<ParseError>e).report_string) {
                 const msg = (<ParseError>e).report_string();
                 vscode.window.showErrorMessage(
-                    `While getting \`${namespace}.${key}\` ${msg}.`,
+                    clean(`While getting \`${namespace}.${key}\` ${msg}.`),
                 );
             } else {
                 throw e;
@@ -98,7 +98,7 @@ export class CommandState {
         const namespace = opt.namespace || 'key';
         const fullKey = namespace + '.' + key;
         if (!this.definedValues.has(fullKey)) {
-            throw Error(`\`${fullKey}\` is not defined`);
+            throw Error(clean(`\`${fullKey}\` is not defined`));
         }
 
         // if we have a queue set up, don't trigger listeners right away
@@ -121,8 +121,10 @@ export class CommandState {
                 if ((<ParseError>e).report_string) {
                     const msg = (<ParseError>e).report_string();
                     vscode.window.showErrorMessage(
-                        `While setting \`${namespace}.${key}\` ${msg}.
-                        Value to assign:\n${JSON.stringify(val, null, 4)}.`,
+                        clean(
+                            `While setting \`${namespace}.${key}\` ${msg}.
+                            Value to assign:\n${JSON.stringify(val, null, 4)}.`,
+                        ),
                     );
                 } else {
                     throw e;

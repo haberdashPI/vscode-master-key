@@ -21,7 +21,8 @@ import {
     KeyFileResult,
     ErrorLevel,
 } from '../../rust/parsing/lib';
-import { prettifyPrefix, replaceMatchesWith } from '../utils';
+import { prettifyPrefix, replaceMatchesWith, clean } from '../utils';
+import { commandMutex } from '../commands/do';
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 // Keybinding Generation
@@ -238,9 +239,11 @@ async function insertKeybindingsIntoConfig(data: KeyFileData) {
                 await vscode.commands.executeCommand('workbench.action.files.save');
                 installed = true;
             } else if (oldBindingsEnd || oldBindingsStart) {
-                vscode.window.showErrorMessage(`You appear to have altered the comments
-                    around the automated bindings. Please delete the old, automated
-                    bindings manually and then re-run this command.`);
+                vscode.window.showErrorMessage(
+                    clean(`You appear to have altered the comments around the
+                    automated bindings. Please delete the old, automated bindings manually
+                    and then re-run this command.`),
+                );
             } else {
                 // if there are no old bindings, insert new ones
                 await ed.edit((builder) => {
@@ -259,22 +262,16 @@ async function insertKeybindingsIntoConfig(data: KeyFileData) {
                 // inform the user about the installed bindings
                 if (bindings.has_layout_independent_bindings()) {
                     vscode.window.showInformationMessage(
-                        replaceAll(
+                        clean(
                             `The assigned bindings include layout independent bindings.
                             When you see keys surrounded by "[" and "]", they refer to the
                             U.S. Layout location of these characters.`,
-                            /\s+/g,
-                            ' ',
                         ),
                     );
                 }
                 vscode.window.
                     showInformationMessage(
-                        replaceAll(
                             'Master keybindings were added to \`keybindings.json\`.',
-                            /\s+/g,
-                            ' ',
-                        ),
                         {},
                         ...(((bindings.requiredExtensions() || []).length === 0) ?
                                 [] :
@@ -457,6 +454,7 @@ const bindingPresets = new Map<string, KeyFileData>();
 let extensionPresetsDir: vscode.Uri; // populated in `activate`
 const presetFiles = ['larkin.toml', 'vim.toml'];
 export async function loadPresets() {
+    const release = await commandMutex.acquire();
     if (bindingPresets.size == 0) {
         // NOTE: we cannot simply list files in the given directory
         // because this API is not available for Web applications
@@ -480,6 +478,7 @@ export async function loadPresets() {
         const checksumBytes = await crypto.subtle.digest('SHA-256', new Uint8Array(bytes));
         checksumOfAllPresets = Buffer.from(checksumBytes).toString('base64');
     }
+    release();
     return bindingPresets;
 }
 
@@ -641,7 +640,10 @@ async function activateBindings(
     if (data) {
         if (!(await validateKeybindings(data, { explicit: true }))) {
             vscode.window.showErrorMessage(
-                `There were errors when trying to read the keybinding file: ${data.uri}`,
+                clean(
+                    `There were errors when trying to read the keybinding
+                    file: ${data.uri}`,
+                ),
             );
             return;
         }
@@ -670,8 +672,10 @@ async function deactivateBindings(context: vscode.ExtensionContext) {
             });
             ed.revealRange(new vscode.Range(range.start, range.start));
             await vscode.commands.executeCommand('workbench.action.files.save');
-            vscode.window.showInformationMessage(`Your master keybindings have
-                been updated in \`keybindings.json\`.`);
+            vscode.window.showInformationMessage(
+                clean(`Your master keybindings have been updated in
+                \`keybindings.json\`.`),
+            );
         } else {
             vscode.window.showErrorMessage(
                 'Master Key tried to remove bindings but there ' +
