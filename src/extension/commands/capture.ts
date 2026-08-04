@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import z from 'zod';
-import { validateInput } from '../utils';
+import { validateInput, clean } from '../utils';
 import { commandArgs, CommandResult, WrappedCommandResult } from '../state';
 import { MODE } from './mode';
 import { state, onSet, recordedCommand } from '../state';
@@ -42,9 +42,9 @@ export async function runCommandsForMode(mode: Mode) {
             } catch (_) {
                 vscode.window.
                     showErrorMessage(
-                        `Master key failed to capture keyboard input. You
+                        clean(`Master key failed to capture keyboard input. You
                         might have an extension that is already listening to type events
-                        (e.g. vscodevim).`,
+                        (e.g. vscodevim).`),
                     );
             }
         }
@@ -99,9 +99,9 @@ export async function captureKeys(onUpdate: UpdateFn): Promise<string> {
         } catch (_) {
             vscode.window.
                 showErrorMessage(
-                    `Master key failed to capture keyboard input. You
+                    clean(`Master key failed to capture keyboard input. You
                     might have an extension that is already listening to type events
-                    (e.g. vscodevim).`,
+                    (e.g. vscodevim).`),
                 );
         }
     }
