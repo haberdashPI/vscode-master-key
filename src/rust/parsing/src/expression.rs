@@ -273,7 +273,7 @@ impl Scope {
 
     // transfer AST parsing from one scope to another (use case: 'source')
     pub fn transfer_asts(&mut self, other: &Scope) -> Result<()> {
-        for (expr, ast) in other.asts.iter() {
+        for (expr, _ast) in other.asts.iter() {
             let ast = self
                 .engine
                 .compile_expression(expr.clone())

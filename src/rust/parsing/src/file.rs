@@ -293,7 +293,7 @@ impl KeyFile {
         }
         if source.is_some() && !VersionReq::parse("2.2").unwrap().matches(version) {
             let r: Result<()> = Err(wrn!(
-                "The `source` keybinding was defined in version 2.2. Bump `version`
+                "The `source` keybinding was defined in version 2.2. Bump `version` \
                  to be at or above 2.2.0."
             ))
             .with_range(&input.header.version.span());
@@ -1021,7 +1021,7 @@ pub fn parse_bytes_helper(
     let source_file = match source {
         Some(source_data) => {
             // make sure any ASTs parsed in 'source' get carried over
-            scope.transfer_asts(&source_data.scope);
+            scope.transfer_asts(&source_data.scope)?;
             source_data.file.as_ref()
         }
         Option::None => None,
@@ -2502,7 +2502,6 @@ pub(crate) mod tests {
 
         let result = parse_keybinding_data(data, None);
         let report = result.errors.unwrap();
-        info!("report: {:#?}", report);
         assert!(report[0].message.contains("`biz`"));
         assert!(report[0].message.contains("unique"));
         assert_eq!(report[0].range.start.line, 10);

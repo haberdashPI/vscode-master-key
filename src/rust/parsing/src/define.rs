@@ -317,7 +317,7 @@ impl Define {
             if semver::VersionReq::parse("<2.1").unwrap().matches(&version) {
                 if !def.get_ref().before.is_none() {
                     let err: Result<()> = Err(wrn!(
-                        "`before` was introduced in version 2.1, header specifies\
+                        "`before` was introduced in version 2.1, header specifies \
                          version {version}",
                     ))
                     .with_range(&def.span());
@@ -325,7 +325,7 @@ impl Define {
                 }
                 if !def.get_ref().after.is_none() {
                     let err: Result<()> = Err(wrn!(
-                        "`after` was introduced in version 2.1, header specifies\
+                        "`after` was introduced in version 2.1, header specifies \
                          version {version}",
                     ))
                     .with_range(&def.span());

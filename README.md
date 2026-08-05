@@ -17,7 +17,7 @@ Master Key is a tool for becoming a power-user of your [VSCode](https://code.vis
     - **Larkin**: @haberdashPI's daily driver, inspired by Kakoune/Helix. A large
       binding set that shows off all of the available features.
 
-This curated snippet from the Master Key's Larkin preset defines a VIM-like feature to update a count argument along with a downward motion that uses the count argument:
+This curated snippet from Master Key's Larkin preset defines a VIM-like feature to update a count argument along with a downward motion that uses the count argument:
 
 ```toml
 # front matter...
@@ -59,7 +59,7 @@ Master Key validates this TOML file, providing inline linting of the file as you
 
 ## Getting Started
 
-The easiest way to get started is to activate the built-in keybindings that come with Master Key.
+The easiest way to get started is to activate a built-in keybinding preset that come with Master Key.
 
 1. Install this extension
 2. On windows only: restart VSCode — there is an [active investigation to avoid this workaround](https://github.com/haberdashPI/vscode-master-key/issues/51).

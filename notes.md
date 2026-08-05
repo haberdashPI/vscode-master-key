@@ -1,3 +1,22 @@
+## Bugs in Merge File
+
+- [X] when trying to activate keybindings there's the input window never shows up (something is probably hanging/looping)
+- [X] after activating a binding with `source` values, running keys
+      from the source doesn't work (do keys *not* from the source work? that would
+      be a helpful test)
+    - [X] FOUND: `parse_asts` is not called on the `source` data
+    - [X] we need to refactor `parse_asts` because it runs on `bind_input`
+        - [X] it needs to get source data in several places (not just `bind`)
+    - [X] this is probably something about how trying to access the bindings
+          doesn't quite work. I'm guessing the keybinding data in KeyFile is not
+          properly populated from the source
+    - [X] running angent found a bug in command.rs for `is_constant` that seems
+          unrelated, but lets test and see if it fixes my problems
+    - [X] identify any tests we want to add based on these bug fixes
+    - [X] identify an MWE (e.g. a single command from source and a single
+          command from the current binding file)
+        - [X] NOTE: this will almost certainly be the identified MWE given me root cause analysis
+
 ## Merge File
 
 Strategy: get `[[bind]]` working first, as it's the messiest part
@@ -69,7 +88,3 @@ Strategy: get `[[bind]]` working first, as it's the messiest part
                 - [X] ANSWER: store_edits is attached to the moveBy instead of the
                       executeStoredCommand. Guessing this is related to the fact
                       that it is part of the `bind.after` sequenc
-
-## MISSING DOCUMENTATION
-
-Document `[[kind]]`! (how is this not working already??)
