@@ -28,6 +28,7 @@ const masterBinding = z.object({
     old_prefix_id: z.number().int().min(-1),
     prefix: z.string(),
     mode: z.string(),
+    binding_hash: z.string(),
 });
 
 let documentIdentifierCount = 0;
@@ -166,7 +167,10 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
     try {
         const args = validateInput('master-key.do', args_, masterBinding);
         if (args) {
-            const toRun = bindings.prepare_binding_to_run(args.command_id);
+            const toRun = bindings.prepare_binding_to_run(
+                args.command_id,
+                args.binding_hash,
+            );
             showExpressionErrors(toRun);
 
             // if the current binding state, after obtaining a lock, doesn't match what's

@@ -13,6 +13,7 @@ import {
     showPaletteOnDelay,
     triggerCommandCompleteHooks,
 } from './do';
+import { bindings } from '../keybindings/config';
 
 const prefixArgs = z.
     object({
@@ -23,6 +24,7 @@ const prefixArgs = z.
         prefix_id: z.number(),
         fromDo: z.boolean().default(true),
         key: z.string(),
+        binding_hash: z.string(),
         cursor: z.enum([
             'Line',
             'Block',
@@ -145,6 +147,28 @@ async function prefix(args_: unknown): Promise<CommandResult> {
 
     if (args !== undefined) {
         const release = !args.fromDo ? await commandMutex.acquire() : undefined;
+        // validate that our bindings in `keybindings.json` match the loaded binding
+        // state
+        const result = bindings.check_prefix_hash(args.binding_hash);
+        if (result === undefined) {
+            vscode.window.showErrorMessage(
+                'Internal error: bindings are not properly loaded, re-activate your ' +
+                'master keybindings.',
+            );
+            if (release) {
+                release();
+            }
+            return;
+        } else if (!result) {
+            vscode.window.showErrorMessage(
+                'Internal error: keybinding mismatch. Re-activate your master keybindings.',
+            );
+            if (release) {
+                release();
+            }
+            return;
+        }
+
         try {
             const a = args;
             const prefix = a.key;
