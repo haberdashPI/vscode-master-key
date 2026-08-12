@@ -2289,6 +2289,23 @@ default = "{{bind.edit_action}}"
 mode = ["normal", "selectedit"]
 
 [[bind]]
+default = "{{bind.edit_action}}"
+key = "shift+`"
+doc.name = "swap case"
+doc.description = "swap case of next COUNT characters"
+command = "runCommands"
+
+[[bind.args.commands]]
+command = "selection-utilities.shrinkToActive"
+
+[[bind.args.commands]]
+command = "cursorMove"
+args = { to = "right", select = true, value = "{{key.count}}" }
+
+[[bind.args.commands]]
+command = "extension.changeCase.swap"
+
+[[bind]]
 default = "{{bind.edit_action_capitals}}"
 doc.name = 'camel'
 doc.description = "Swap style to lower camel case (`camelCase`)"
