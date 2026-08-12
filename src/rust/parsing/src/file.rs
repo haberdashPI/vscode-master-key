@@ -487,10 +487,6 @@ impl KeyFile {
                 warnings,
             )?);
         }
-        modes.insert_implicit_mode_bindings(&bind, &scope, &mut codes, &mut key_bind, warnings);
-
-        // sort all bindings by their priority
-        key_bind.sort_by(BindingOutput::cmp_priority);
 
         // now that we've properly expanded this files bindings and any source
         // bindings we can combine them into a single vector
@@ -499,6 +495,11 @@ impl KeyFile {
         } else {
             bind
         };
+
+        modes.insert_implicit_mode_bindings(&bind, &scope, &mut codes, &mut key_bind, warnings);
+
+        // sort all bindings by their priority
+        key_bind.sort_by(BindingOutput::cmp_priority);
 
         // remove key_bind values with the exact same `key_id`, keeping the one with the
         // highest priority (last items); such collisions should only happen between
