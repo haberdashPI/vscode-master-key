@@ -182,6 +182,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::collections::{HashMap, HashSet, VecDeque};
 use toml::Spanned;
 use wasm_bindgen::prelude::*;
@@ -255,6 +256,7 @@ pub struct KeyFile {
     pub(crate) mode: Modes,
     pub(crate) bind: Vec<Binding>,
     pub(crate) docs: Vec<FileDocSection>,
+    pub(crate) hash: [u8; 32],
     pub kind: Vec<Kind>,
     // TODO: avoid storing `key_bind` to make serialization smaller
     key_bind: Vec<BindingOutput>,
@@ -268,6 +270,7 @@ impl KeyFile {
         input: KeyFileInput,
         doc_lines: Vec<FileDocLine>,
         source: Option<&KeyFile>,
+        hasher: Sha256,
         mut scope: &mut Scope,
         warnings: &mut Vec<ParseError>,
     ) -> ResultVec<KeyFile> {
@@ -460,6 +463,12 @@ impl KeyFile {
         // TODO: store spans so we can do avoid serializing `key_bind`?
         let mut key_bind = Vec::new();
         bind = Binding::resolve_prefixes(bind, &bind_span)?;
+        // Compute the hash of this file's bindings before any `BindingOutput` is
+        // generated: every output records this hash so that `prepare_binding_to_run`
+        // can validate `command_id`s at runtime. Source bindings are not hashed here;
+        // the source file's own hash was already folded into `hasher` by
+        // `parse_bytes_helper`.
+        let hash = Self::compute_hash(hasher, bind.iter());
         let mut codes = BindingCodes::new();
         // add any bindings defined in the source file
         let mut source_offset = 0;
@@ -468,6 +477,7 @@ impl KeyFile {
             for (i, source_bind_item) in s.bind.iter().enumerate() {
                 key_bind.append(&mut source_bind_item.outputs(
                     i as i32,
+                    &hash,
                     &scope,
                     true,
                     Option::None,
@@ -480,6 +490,7 @@ impl KeyFile {
         for (i, (bind_item, span)) in bind.iter_mut().zip(bind_span.into_iter()).enumerate() {
             key_bind.append(&mut bind_item.outputs(
                 (i + source_offset) as i32,
+                &hash,
                 &scope,
                 false,
                 Some(span),
@@ -487,7 +498,6 @@ impl KeyFile {
                 warnings,
             )?);
         }
-
         // now that we've properly expanded this files bindings and any source
         // bindings we can combine them into a single vector
         let bind = if let Some(s) = source {
@@ -496,7 +506,7 @@ impl KeyFile {
             bind
         };
 
-        modes.insert_implicit_mode_bindings(&bind, &scope, &mut codes, &mut key_bind, warnings);
+        modes.insert_implicit_mode_bindings(&bind, &hash, &scope, &mut codes, &mut key_bind, warnings);
 
         // sort all bindings by their priority
         key_bind.sort_by(BindingOutput::cmp_priority);
@@ -528,11 +538,28 @@ impl KeyFile {
                 docs,
                 mode: modes,
                 kind,
+                hash,
                 key_bind: final_key_bind.into(),
             });
         } else {
             return Err(errors.into());
         }
+    }
+
+    fn compute_hash<'a>(
+        mut hasher: Sha256,
+        binds: impl Iterator<Item = &'a Binding>,
+    ) -> [u8; 32] {
+        for bind in binds {
+            Digest::update(&mut hasher, bind.key.join(" "));
+            if let Some(when_str) = &bind.when {
+                Digest::update(&mut hasher, when_str);
+            }
+            let mut mode_array = bind.mode.clone();
+            mode_array.sort();
+            Digest::update(&mut hasher, mode_array.join(" "));
+        }
+        hasher.finalize().0
     }
 }
 
@@ -675,21 +702,54 @@ impl KeyFileResult {
         };
     }
 
+    pub fn check_prefix_hash(&self, hash: &str) -> Option<bool> {
+        if let Some(KeyFile {
+            bind,
+            hash: binding_hash,
+            ..
+        }) = &self.file {
+            return Some(hex::encode(binding_hash) == hash)
+        }
+        return None
+    }
+
     // the first step of running bindings is to a get a list of `ReifiedBindings` (see
     // do.ts)
-    pub fn prepare_binding_to_run(&mut self, id: i32) -> ReifiedBinding {
-        if id == -1 {
+    pub fn prepare_binding_to_run(&mut self, command_id: i32, hash: &str) -> ReifiedBinding {
+        if command_id == -1 {
             return ReifiedBinding::noop(&mut self.scope);
         } else {
-            if let Some(KeyFile { bind, .. }) = &self.file {
-                if id < 0 || id as usize >= bind.len() {
-                    return ReifiedBinding::noop(&mut self.scope);
+            if let Some(KeyFile {
+                bind,
+                hash: binding_hash,
+                ..
+            }) = &self.file
+            {
+                if command_id < 0 || command_id as usize >= bind.len() {
+                    return ReifiedBinding::with_error(
+                        &mut self.scope,
+                        "Internal error: `command_id = {command_id}` is invalid. Try \
+                         re-activating your bindings.",
+                    );
                 } else {
-                    let binding = &bind[id as usize];
+                    let binding = &bind[command_id as usize];
+                    // check the hash, to verify that the command_id refers to the right
+                    // binding
+                    if hash != hex::encode(binding_hash) {
+                        return ReifiedBinding::with_error(
+                            &mut self.scope,
+                            "Binding file is out of date, re-activate your bindings",
+                        );
+                    }
+
                     return ReifiedBinding::new(&binding, &mut self.scope);
                 }
             } else {
-                return ReifiedBinding::noop(&mut self.scope);
+                return ReifiedBinding::with_error(
+                    &mut self.scope,
+                    "Internal error: no bindings have been loaded! \
+                     Try re-activating your bindings.",
+                );
             }
         }
     }
@@ -1019,18 +1079,28 @@ pub fn parse_bytes_helper(
     let parsed = toml::from_slice::<KeyFileInput>(file_content)?;
     let docs = FileDocLine::read(file_content);
 
+    // NOTE: we hash the data based on
+    // 1. the raw, un-parsed file contents (to ensure any file changes will change the hash)
+    // 2. the parsed data (to ensure any changes in how `[[bind]]` entries are read will
+    //    change the hash)
+    let mut hasher = Sha256::new();
+    Digest::update(&mut hasher, file_content);
+
     let source_file = match source {
         Some(source_data) => {
             // make sure any ASTs parsed in 'source' get carried over
             scope.transfer_asts(&source_data.scope)?;
+            if let Some(file) = &source_data.file {
+                Digest::update(&mut hasher, file.hash);
+            }
             source_data.file.as_ref()
         }
         Option::None => None,
     };
-    let result = KeyFile::new(parsed, docs, source_file, scope, warnings);
+    let result = KeyFile::new(parsed, docs, source_file, hasher, scope, warnings)?;
     warnings.append(&mut identify_legacy_warnings(file_content));
 
-    return result;
+    return Ok(result);
 }
 
 //

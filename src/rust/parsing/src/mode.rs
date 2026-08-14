@@ -624,6 +624,7 @@ impl Modes {
     pub(crate) fn insert_implicit_mode_bindings(
         &self,
         bindings: &Vec<Binding>,
+        hash: &[u8; 32],
         scope: &Scope,
         codes: &mut BindingCodes,
         key_bind: &mut Vec<BindingOutput>,
@@ -659,12 +660,13 @@ impl Modes {
             let mut implicit_bind = bind.clone();
             implicit_bind.mode = implicit_modes;
             implicit_bind.implicit = true;
-            let mut output =
-                match implicit_bind.outputs(id as i32, &scope, false, None, codes, warnings) {
-                    Ok(x) => x,
-                    // silently ignore errors; these will be reported for the explicit bindings
-                    Err(_) => Vec::new(),
-                };
+            let mut output = match implicit_bind
+                .outputs(id as i32, hash, &scope, false, None, codes, warnings)
+            {
+                Ok(x) => x,
+                // silently ignore errors; these will be reported for the explicit bindings
+                Err(_) => Vec::new(),
+            };
             key_bind.append(&mut output);
         }
     }

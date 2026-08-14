@@ -1325,13 +1325,13 @@ pub struct BindingOutputArgs {
     pub(crate) priority: f64,
     // bindings defined implicitly via `mode` are flagged here
     pub(crate) implicit: bool,
-    // these fields are used in tracking and help improve legibility of the output bindings
-    // in the keybindings.json file, and so they are stored
     pub(crate) name: String,
     pub(crate) description: String,
     pub(crate) kind: String,
     pub(crate) prefix: String,
     pub(crate) mode: String,
+    // a hash used to identify the file used to define the current binding set
+    pub(crate) binding_hash: String,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -1348,10 +1348,11 @@ pub struct PrefixArgs {
     pub(crate) command_id: i32,
     // human readable field displaying the key sequence pressed to reach prefix command
     pub(crate) key: String,
-    // these fields help us track and order binding outputs, we don't need them serialized
     #[serde(skip)]
     pub(crate) priority: f64,
     pub(crate) mode: String,
+    // a hash used to identify the file used to define the current binding set
+    pub(crate) binding_hash: String,
     // NOTE: there are other arguments to `master-key.prefix` but they are not used by
     // automatically generated bindings, which is what this type is for
 }
@@ -1598,6 +1599,7 @@ impl Binding {
     pub(crate) fn outputs(
         &self,
         command_id: i32,
+        binding_hash: &[u8; 32],
         scope: &Scope,
         is_source: bool,
         span: Option<Range<usize>>,
@@ -1605,6 +1607,7 @@ impl Binding {
         warnings: &mut Vec<ParseError>,
     ) -> ResultVec<Vec<BindingOutput>> {
         let mut result = Vec::new();
+        let binding_hash_str = hex::encode(binding_hash);
 
         // create a distinct binding for each mode...
         let mut modes = self.mode.clone();
@@ -1627,6 +1630,7 @@ impl Binding {
             for prefix in prefixes {
                 self.outputs_for_mode_and_prefix(
                     command_id,
+                    &binding_hash_str,
                     is_source,
                     &span,
                     &mode,
@@ -1679,6 +1683,7 @@ impl Binding {
     fn outputs_for_mode_and_prefix(
         &self,
         command_id: i32,
+        binding_hash_str: &str,
         is_source: bool,
         span: &Option<Range<usize>>,
         mode: &str,
@@ -1734,6 +1739,7 @@ impl Binding {
                     when: join_when_vec(&when),
                     args: PrefixArgs {
                         command_id,
+                        binding_hash: binding_hash_str.to_string(),
                         priority: 0.0,
                         key_id: key_code,
                         prefix_id: prefix_code,
@@ -1785,6 +1791,7 @@ impl Binding {
             when: join_when_vec(&when),
             args: BindingOutputArgs {
                 command_id,
+                binding_hash: String::from(binding_hash_str),
                 key_id: code,
                 prefix_id: prefix_code,
                 old_prefix_id: old_prefix_code,
@@ -1964,6 +1971,13 @@ impl ReifiedBinding {
             edit_text: String::new(),
             edit_document_id: -1,
         };
+    }
+
+    // error: a binding that results in some kind of error
+    pub fn with_error(scope: &mut Scope, msg: impl Into<String>) -> ReifiedBinding {
+        let mut result = Self::noop(scope);
+        result.error = Some(vec![msg.into()]);
+        return result;
     }
 
     // no-op: a command that does nothing, and may contain some information about possible
