@@ -7,7 +7,7 @@ import { MODE } from './mode';
 import {
     simplifyLayoutIndependentString,
 } from '../keybindings/layout';
-import { KeyFileResult } from '../../rust/parsing/lib/parsing';
+import { BindingDoc, KeyFileResult } from '../../rust/parsing/lib/parsing';
 import { doCommandsCmd, paletteEnabled } from './do';
 import { isEqual } from 'lodash';
 
@@ -28,6 +28,8 @@ interface IPaletteBinding {
     isSection?: boolean;
     // indicates whether this is just a setting toggle rather than an actual binding
     isToggle?: boolean;
+    // name is a fallback (e.g. "prefix" for undoc'd prefixes)
+    isFallbackName?: boolean;
     // determines the ordering of the binding in this view
     order: number;
     // the command associated with this binding (used to execute it when clicked)
@@ -215,53 +217,63 @@ function addSections(items: IPaletteBinding[]) {
 // when the bindings are first set or change we need to set `paletteEntries`
 function updateKeys(bindings: KeyFileResult) {
     const bindingMap: Record<string, Record<string, IPaletteBinding>> = {};
-    for (let i = 0; i < bindings.n_bindings(); i++) {
-        const binding = bindings.binding(i);
-        if (binding.command === 'master-key.ignore') {
-            continue;
-        }
-        const docs = bindings.docs(i);
-        let docName = docs?.name;
-        if (binding.command === 'master-key.prefix' && !docName) {
-            docName = 'prefix';
-        }
-        if (docs?.hideInPalette || !docName) {
-            continue;
-        }
+    // Track which keys have an explicit (non-fallback) entry so we can
+    // skip fallback entries for keys already claimed.
+    const explicitKeys: Record<string, Set<string>> = {};
 
-        const paletteEntry = {
-            name: docs?.combined?.name || docName,
-            key: docs?.combined?.key || binding.key,
+    // Two-pass: process explicit entries first, then fallback entries.
+
+    // Pass 1: explicit (non-fallback) entries
+    for (const candidate of iterPaletteCandidates(bindings)) {
+        if (candidate.kind !== 'explicit') {
+            continue;
+        }
+        const { binding, docs } = candidate;
+        const key = normalizeKey(candidate.rawKey);
+        const combinedKey = candidate.rawCombinedKey ?
+                normalizeKey(candidate.rawCombinedKey) :
+            '';
+        const context = bindingContext(binding);
+
+        // Track this key so fallback entries for the same key are skipped
+        const keys = explicitKeys[context] || (explicitKeys[context] = new Set());
+        if (key) keys.add(key);
+        if (combinedKey) keys.add(combinedKey);
+
+        storeEntry(bindings, bindingMap, context, candidate.name, {
+            binding,
+            key,
+            name: candidate.name,
             description: docs?.combined?.description || binding.args.description,
-            combinedKey: docs?.combined?.key,
+            combinedKey,
             combinedDescription: docs?.combined?.description,
-            order: binding.args.command_id,
-        };
-        let key = prettifyPrefix(paletteEntry.key);
-        key = simplifyLayoutIndependentString(key, { noBrackets: true });
-        let combinedKey = prettifyPrefix(paletteEntry.combinedKey || '');
-        combinedKey = simplifyLayoutIndependentString(combinedKey, { noBrackets: true });
+            isFallbackName: false,
+        });
+    }
 
-        const prefixCode = getRequiredPrefixCode(binding.when);
-        const mode = getRequiredMode(binding.when);
-        const context = `${prefixCode}:${mode}`;
-        const mapping = bindingMap[context] || {};
-        const name = paletteEntry.name;
-        const section = bindings.binding_section(binding.args.command_id);
-        const oldEntry = mapping[name] || {};
-        mapping[name] = {
-            key: (key || oldEntry.key),
-            name,
-            sections: section?.names || [],
-            description: paletteEntry.description || oldEntry.description,
-            combinedKey: combinedKey || oldEntry.combinedKey,
-            combinedDescription: paletteEntry.combinedDescription ||
-                oldEntry.combinedDescription,
-            order: Math.max(paletteEntry.order || -1, oldEntry.order || -1),
-            command_id: binding.args.command_id || oldEntry.command_id,
-            prefix_id: binding.args.prefix_id || oldEntry.prefix_id,
-        };
-        bindingMap[context] = mapping;
+    // Pass 2: fallback entries (undocumented master-key.prefix)
+    for (const candidate of iterPaletteCandidates(bindings)) {
+        if (candidate.kind !== 'fallback') {
+            continue;
+        }
+        const { binding } = candidate;
+        const key = normalizeKey(binding.key);
+        const context = bindingContext(binding);
+
+        // Skip if an explicit entry already claims this key
+        if (explicitKeys[context]?.has(key)) {
+            continue;
+        }
+
+        storeEntry(bindings, bindingMap, context, `prefix:${key}`, {
+            binding,
+            key,
+            name: 'prefix',
+            description: binding.args.description,
+            combinedKey: '',
+            combinedDescription: undefined,
+            isFallbackName: true,
+        });
     }
 
     for (const [key, bindings] of Object.entries(bindingMap)) {
@@ -269,6 +281,105 @@ function updateKeys(bindings: KeyFileResult) {
         entries.sort((x, y) => x.order - y.order);
         paletteEntries[key] = addSections(entries);
     }
+}
+
+// the wasm lib types `binding(i)` as `any`; this is the shape used here
+interface PaletteKeyBinding {
+    command: string;
+    key: string;
+    when: string;
+    args: {
+        command_id?: number;
+        prefix_id?: number;
+        description?: string;
+    };
+}
+
+// A binding classified for palette display: `explicit` entries have a doc name
+// (possibly with combined docs); `fallback` entries are undocumented
+// `master-key.prefix` bindings shown as "prefix".
+type PaletteCandidate =
+    | {
+        kind: 'explicit';
+        binding: PaletteKeyBinding;
+        docs: BindingDoc | undefined;
+        name: string;
+        rawKey: string;
+        rawCombinedKey: string | undefined;
+    } |
+    { kind: 'fallback'; binding: PaletteKeyBinding };
+
+// Yields each binding eligible for the palette, classified as explicit or
+// fallback. Shared by both passes of `updateKeys` so the skip/classify rules
+// live in exactly one place.
+function* iterPaletteCandidates(keyFile: KeyFileResult): Generator<PaletteCandidate> {
+    for (let i = 0; i < keyFile.n_bindings(); i++) {
+        const binding: PaletteKeyBinding = keyFile.binding(i);
+        if (binding.command === 'master-key.ignore') {
+            continue;
+        }
+        const docs = keyFile.docs(i);
+        if (docs?.hideInPalette) {
+            continue;
+        }
+        const docName = docs?.name;
+        if (binding.command === 'master-key.prefix' && !docName) {
+            yield { kind: 'fallback', binding };
+        } else if (docName) {
+            yield {
+                kind: 'explicit',
+                binding,
+                docs,
+                name: docs?.combined?.name || docName,
+                rawKey: docs?.combined?.key || binding.key,
+                rawCombinedKey: docs?.combined?.key,
+            };
+        }
+    }
+}
+
+// the palette bucket a binding belongs to: its required prefix code and mode
+function bindingContext(binding: PaletteKeyBinding): string {
+    return `${getRequiredPrefixCode(binding.when)}:${getRequiredMode(binding.when)}`;
+}
+
+/** Normalize a key string for palette display. */
+function normalizeKey(raw: string): string {
+    return simplifyLayoutIndependentString(prettifyPrefix(raw), { noBrackets: true });
+}
+
+/** Insert or merge a palette entry into the per-context map. */
+function storeEntry(
+    keyFile: KeyFileResult,
+    bindingMap: Record<string, Record<string, IPaletteBinding>>,
+    context: string,
+    mapKey: string,
+    entry: {
+        binding: PaletteKeyBinding;
+        key: string;
+        name: string;
+        description: string | undefined;
+        combinedKey: string;
+        combinedDescription: string | undefined;
+        isFallbackName: boolean;
+    },
+) {
+    const commandId = entry.binding.args.command_id;
+    const mapping = bindingMap[context] || {};
+    const old = mapping[mapKey] || {};
+    mapping[mapKey] = {
+        key: entry.key || old.key,
+        name: entry.name,
+        sections: keyFile.binding_section(commandId ?? -1)?.names || [],
+        description: entry.description || old.description,
+        combinedKey: entry.combinedKey || old.combinedKey,
+        combinedDescription: entry.combinedDescription || old.combinedDescription,
+        order: Math.max(commandId ?? -1, old.order || -1),
+        command_id: commandId || old.command_id,
+        prefix_id: entry.binding.args.prefix_id || old.prefix_id,
+        isFallbackName: entry.isFallbackName,
+    };
+    bindingMap[context] = mapping;
 }
 
 let treeDataProvider: MasterKeyDataProvider;
