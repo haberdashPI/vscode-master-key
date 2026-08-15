@@ -24,7 +24,7 @@ const prefixArgs = z.
         prefix_id: z.number(),
         fromDo: z.boolean().default(true),
         key: z.string(),
-        binding_hash: z.string(),
+        binding_hash: z.string().default(''),
         cursor: z.enum([
             'Line',
             'Block',
@@ -150,18 +150,10 @@ async function prefix(args_: unknown): Promise<CommandResult> {
         // validate that our bindings in `keybindings.json` match the loaded binding
         // state
         const result = bindings.check_prefix_hash(args.binding_hash);
-        if (result === undefined) {
+        if (result === undefined || !release) {
             vscode.window.showErrorMessage(
-                'Internal error: bindings are not properly loaded, re-activate your ' +
-                'master keybindings.',
-            );
-            if (release) {
-                release();
-            }
-            return;
-        } else if (!result) {
-            vscode.window.showErrorMessage(
-                'Internal error: keybinding mismatch. Re-activate your master keybindings.',
+                "Master Key bindings are inconsistent with this version " +
+                "of Master Key. Re-activate your keybindings.",
             );
             if (release) {
                 release();
