@@ -28,6 +28,8 @@ interface IPaletteBinding {
     isSection?: boolean;
     // indicates whether this is just a setting toggle rather than an actual binding
     isToggle?: boolean;
+    // name is a fallback (e.g. "prefix" for undoc'd prefixes)
+    isFallbackName?: boolean;
     // determines the ordering of the binding in this view
     order: number;
     // the command associated with this binding (used to execute it when clicked)
@@ -222,8 +224,10 @@ function updateKeys(bindings: KeyFileResult) {
         }
         const docs = bindings.docs(i);
         let docName = docs?.name;
+        let isFallbackName = false;
         if (binding.command === 'master-key.prefix' && !docName) {
             docName = 'prefix';
+            isFallbackName = true;
         }
         if (docs?.hideInPalette || !docName) {
             continue;
@@ -248,8 +252,30 @@ function updateKeys(bindings: KeyFileResult) {
         const mapping = bindingMap[context] || {};
         const name = paletteEntry.name;
         const section = bindings.binding_section(binding.args.command_id);
-        const oldEntry = mapping[name] || {};
-        mapping[name] = {
+
+        // Check if an explicit entry already exists for this key sequence
+        const existingExplicitKey = Object.values(mapping).find(
+            entry => !entry.isFallbackName &&
+                (entry.key === key || entry.combinedKey === combinedKey),
+        );
+        if (isFallbackName && existingExplicitKey) {
+            // Skip fallback when explicit prefix already exists for this key
+            continue;
+        }
+
+        // Remove any existing fallback entry when adding explicit entry
+        if (!isFallbackName) {
+            for (const [k, entry] of Object.entries(mapping)) {
+                if (entry.isFallbackName &&
+                    (entry.key === key || entry.combinedKey === combinedKey)) {
+                    delete mapping[k];
+                }
+            }
+        }
+
+        const mapKey = isFallbackName ? `${name}:${key}` : name;
+        const oldEntry = mapping[mapKey] || {};
+        mapping[mapKey] = {
             key: (key || oldEntry.key),
             name,
             sections: section?.names || [],
@@ -260,6 +286,7 @@ function updateKeys(bindings: KeyFileResult) {
             order: Math.max(paletteEntry.order || -1, oldEntry.order || -1),
             command_id: binding.args.command_id || oldEntry.command_id,
             prefix_id: binding.args.prefix_id || oldEntry.prefix_id,
+            isFallbackName,
         };
         bindingMap[context] = mapping;
     }
