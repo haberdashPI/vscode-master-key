@@ -219,6 +219,7 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
                                 command.args.key = prependPrefix(args.prefix, toRun.key);
                                 command.args.mode = args.mode;
                                 command.args.command_id = args.command_id;
+                                command.args.binding_hash = args.binding_hash;
                                 // we need to know we're calling it from `master-key.do` so
                                 // that we don't try to acquire the commandMutex a second
                                 // time
