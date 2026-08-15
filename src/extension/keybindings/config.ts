@@ -59,7 +59,7 @@ export async function updateBindings(context: vscode.ExtensionContext) {
         userKnowsPresetsAreOutdates = true;
         const response = await vscode.window.showWarningMessage(clean(`
             Master Key's binding presets have been updated. Re-activate your keybindings
-            if you use a present or depend on a preset (using 'source').
+            if you use a preset or depend on a preset (using 'source').
         `), ignore, ignoreForever);
         if (response === ignore) {
             context.globalState.update(CONFIG_PRESET_CHECKSUM, checksumOfAllPresets);
