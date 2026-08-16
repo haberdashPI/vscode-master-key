@@ -1,0 +1,18 @@
+{
+    "compilerOptions": {
+        "module": "es2022",
+        "target": "ES2022",
+        "lib": [
+            "ES2022",
+            "dom",
+            "dom.iterable"
+        ],
+        "sourceMap": true,
+        "rootDir": ".",
+        "strict": true,
+        "types": []
+    },
+    "include": [
+        "**/*.ts"
+    ]
+}

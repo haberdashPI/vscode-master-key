@@ -65,7 +65,7 @@ const webTestBundlePlugin = {
 const web = process.argv.includes('--web');
 
 async function main() {
-    const ctx = await context({
+    const extensionCtx = await context({
         entryPoints: web && !release ?
                 ['src/extension/index.ts', 'src/test/unit/webExtensionTests.ts'] :
                 ['src/extension/index.ts'],
@@ -97,11 +97,30 @@ async function main() {
             esbuildProblemMatcherPlugin,
         ],
     });
+
+    const webviewCtx = await context({
+        entryPoints: [
+            'src/webview/keys/script.ts',
+            'src/webview/keys/style.css',
+        ],
+        bundle: true,
+        minify: release,
+        sourcemap: !release,
+        sourcesContent: false,
+        platform: 'browser',
+        entryNames: '[name]',
+        outdir: 'out/webview/keys',
+        logLevel: 'silent',
+        plugins: [
+            esbuildProblemMatcherPlugin,
+        ],
+    });
+
     if (watch) {
-        await ctx.watch();
+        await Promise.all([extensionCtx.watch(), webviewCtx.watch()]);
     } else {
-        await ctx.rebuild();
-        await ctx.dispose();
+        await Promise.all([extensionCtx.rebuild(), webviewCtx.rebuild()]);
+        await Promise.all([extensionCtx.dispose(), webviewCtx.dispose()]);
     }
 }
 

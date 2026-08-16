@@ -21,6 +21,7 @@
         "src/test/unit/extension.test.ts"
     ],
     "exclude": [
+        "src/webview/**",
         "src/test/**/*.ts",
         "out/**/*.js",
         "src/oldtest/**",
