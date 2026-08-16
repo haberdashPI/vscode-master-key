@@ -427,7 +427,7 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
         _token: vscode.CancellationToken,
     ) {
         this._view = webviewView;
-        const keyDir = vscode.Uri.joinPath(this._extensionUri, 'src', 'webview', 'keys');
+        const keyDir = vscode.Uri.joinPath(this._extensionUri, 'out', 'webview', 'keys');
         webviewView.webview.options = {
             enableScripts: true,
             localResourceRoots: [keyDir],
@@ -439,11 +439,12 @@ export class DocViewProvider implements vscode.WebviewViewProvider {
 
     // render the html needed to show the keyboard
     public _getHtml(webview: vscode.Webview) {
+        const keyDir = vscode.Uri.joinPath(this._extensionUri, 'out', 'webview', 'keys');
         const style = webview.asWebviewUri(
-            vscode.Uri.joinPath(this._extensionUri, 'src', 'webview', 'keys', 'style.css'),
+            vscode.Uri.joinPath(keyDir, 'style.css'),
         );
         const script = webview.asWebviewUri(
-            vscode.Uri.joinPath(this._extensionUri, 'src', 'webview', 'keys', 'script.js'),
+            vscode.Uri.joinPath(keyDir, 'script.js'),
         );
         let num = 0;
         /* eslint-disable @stylistic/max-len */
