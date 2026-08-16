@@ -78,3 +78,32 @@ doc.name = "toggle palette"
 key = "p"
 mode = "normal"
 command = "master-key.togglePaletteDelay"
+
+# Test bindings for prefix fallback disambiguation
+[[bind]]
+doc.name = "goto"
+key = "g"
+mode = "normal"
+finalKey = false
+command = "master-key.prefix"
+
+[[bind]]
+default = "{{bind.motion}}"
+doc.name = "goto line start"
+key = "g g"
+mode = "normal"
+args.to = "wrappedLineFirstNonWhitespaceCharacter"
+
+[[bind]]
+default = "{{bind.motion}}"
+doc.name = "left word"
+key = "z z"
+mode = "normal"
+args.to = "wordLeft"
+
+[[bind]]
+default = "{{bind.motion}}"
+doc.name = "right word"
+key = "x x"
+mode = "normal"
+args.to = "wordRight"

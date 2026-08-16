@@ -41,4 +41,19 @@ test.describe('command palette', () => {
             await expect(workbox.getByText('Wfunny right')).toBeVisible();
         });
     }
+
+    if (process.env.CI !== 'true') {
+        test('explicit prefix suppresses fallback for same key', async ({ workbox }) => {
+            const { editor } = await setup(workbox);
+
+            await editor.press('Shift+;');
+            // The explicit prefix entry "Ggoto" should appear
+            await expect(workbox.getByText('Ggoto')).toBeVisible();
+            // The fallback "prefix" entry for key G should NOT appear
+            await expect(workbox.getByText('Gprefix')).not.toBeVisible();
+            // Both implicit prefix entries should appear with key disambiguation
+            await expect(workbox.getByText('Zprefix')).toBeVisible();
+            await expect(workbox.getByText('Xprefix')).toBeVisible();
+        });
+    }
 });
