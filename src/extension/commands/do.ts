@@ -28,7 +28,7 @@ const masterBinding = z.object({
     old_prefix_id: z.number().int().min(-1),
     prefix: z.string(),
     mode: z.string(),
-    binding_hash: z.string(),
+    binding_hash: z.string().default(''),
 });
 
 let documentIdentifierCount = 0;

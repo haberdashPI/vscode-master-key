@@ -738,7 +738,8 @@ impl KeyFileResult {
                     if hash != hex::encode(binding_hash) {
                         return ReifiedBinding::with_error(
                             &mut self.scope,
-                            "Binding file is out of date, re-activate your bindings",
+                            "Master Key bindings are inconsistent with this version \
+                             of Master Key. Re-activate your keybindings.",
                         );
                     }
 
