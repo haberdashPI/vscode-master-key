@@ -43,7 +43,10 @@ run = 'pnpm exec eslint src'
 
 [tasks.check-types]
 depends = ['build-rust']
-run = 'tsc --noEmit --project tsconfig.json'
+run = [
+    'tsc --noEmit --project tsconfig.json',
+    'tsc --noEmit --project src/webview',
+]
 
 # TODO: maybe consider using colons and figure out mise task hierarchies???
 [tasks.build-rust]

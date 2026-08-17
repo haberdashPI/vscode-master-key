@@ -8,6 +8,7 @@
 !out/browser/index.js
 !out/node/index.js
 !out/parsing_bg.wasm
+!out/webview/**/*
 
-!src/webview/**/*
+!src/webview/text-doc.css
 !src/presets/*.toml
