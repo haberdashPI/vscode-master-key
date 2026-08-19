@@ -127,7 +127,7 @@ command = "master-key.showVisualDoc"
 
 ## The default mode in Larkin is Normal mode. In this mode, instead of the keys entering text, all keys are commands that modify selections or perform actions on those selections. To exit normal mode you can use `i` to enter `insert` mode, which returns VSCode keybindings to their normal state (see [Simple actions](#simple-actions) for more ways to enter insert mode).
 
-## While in Normal model you will see a highlighted section with the text "normal" in the lower left hand corner of the status bar.
+## While in Normal mode you will see a highlighted section with the text "normal" in the lower left hand corner of the status bar.
 
 [[bind]]
 default = "{{bind.modes}}"
@@ -623,7 +623,7 @@ args.select = '{{key.mode == "normal"}}'
 [[bind]]
 default = "{{bind.edit_motion_prim}}"
 key = "shift+x"
-doc.name = "exapand"
+doc.name = "expand"
 doc.description = "expand selections to full lines"
 command = "expandLineSelection"
 repeat = "{{key.count}}"
@@ -738,6 +738,7 @@ default = "{{bind.edit_motion_prim}}"
 key = "v"
 doc.name = "shrink selection"
 doc.combined.name = "shrink/hold selection"
+doc.combined.key = "v/shift+v"
 doc.combined.description = """
 reduce selections to zero length / make all commands extend the selection
 """
@@ -874,7 +875,7 @@ args.value = "{{(max(key.count, 1))}}"
 [[bind]]
 default = "{{bind.edit_motion_obj}}"
 doc.name = "← num."
-doc.description = "Move to next number"
+doc.description = "Move to previous number"
 key = "shift+2"
 doc.combined.name = "→/← num."
 args.unit = "number"
@@ -1192,7 +1193,7 @@ key = "shift+7"
 doc.name = "match ←"
 doc.description = "Previous match to object under cursor"
 doc.combined.name = "match →/←"
-args.text = "{{firstSelectionOrWord}}"
+args.text = "{{code.firstSelectionOrWord}}"
 args.offset = "start"
 args.register = "search"
 args.backwards = true
@@ -1374,7 +1375,7 @@ default = "{{bind.edit_motion_prim}}"
 key = "g g"
 priority = 1
 doc.name = "doc top"
-doc.description = "select to top of document"
+doc.description = "select to top (or to line N for count > 0)"
 doc.combined.name = "doc top/bottom"
 doc.combined.description = "select to top/bottom of document"
 doc.combined.key = "g g/shift+g"
@@ -1385,7 +1386,6 @@ default = "{{bind.edit_motion_prim}}"
 key = "g g"
 priority = 1
 doc.name = "doc start"
-doc.description = "select to start (line) of document."
 command = "runCommands"
 when = "master-key.count > 1"
 
@@ -1396,6 +1396,7 @@ command = "cursorTop"
 command = "cursorMove"
 args.to = "down"
 args.by = "wrappedLine"
+args.select = true
 args.value = "{{key.count-1}}"
 
 [[bind.args.commands]]
@@ -1835,7 +1836,6 @@ doc.name = "indent+top"
 doc.description = """
 all text at the same indentation level and the line just above it (ala python syntax)
 """
-doc.combined.name = "in/arnd"
 command = "vscode-select-by-indent.select-outer-top-only"
 
 [[bind]]
@@ -1963,7 +1963,7 @@ doc.description = "Insert a character pair around a character"
 priority = 1
 key = "space i"
 doc.combined.name = "sym insert (mode)"
-doc.combined.description = "Insert characters around pair (switching to syminster mode until hitting  again)"
+doc.combined.description = "Insert characters around pair (switching to syminsert mode until hitting  again)"
 doc.combined.key = "i/shift+i"
 command = "runCommands"
 
@@ -2279,7 +2279,7 @@ doc.description = "Decrement a number by 1 "
 key = "shift+="
 command = "selection-utilities.decrementNumber"
 
-## ### Captilization
+## ### Capitalization
 
 ## These modify the capitalization of letters in some way.
 
@@ -2472,7 +2472,7 @@ command = "gitlens.gitCommands"
 
 ## ### Miscellaneous Commands
 
-## These miscellaneous utility commands are all organized uner the prefix `tab`.
+## These miscellaneous utility commands are all organized under the prefix `tab`.
 
 [[define.bind]]
 id = "util"
@@ -2706,7 +2706,7 @@ doc.name = "move →"
 doc.combined.name = "move →/←"
 doc.combined.description = "move editor to window left/right"
 doc.combined.key = "l/h"
-doc.description = "move editor to window to left"
+doc.description = "move editor to window to right"
 key = "tab w l"
 command = "workbench.action.moveEditorToRightGroup"
 
@@ -2777,7 +2777,7 @@ doc.name = "↑"
 doc.combined.name = "split ↓/↑"
 doc.combined.description = "split editor to window above/below"
 doc.combined.key = "j/k"
-doc.description = "split editor to window below"
+doc.description = "split editor to window above"
 key = "tab w s k"
 command = "workbench.action.splitEditorUp"
 
@@ -3073,7 +3073,7 @@ command = "removeSecondaryCursors"
 default = "{{bind.edit_select_edit}}"
 doc.name = "save sel"
 doc.description = """
-save all selections to the default register.
+save all selections to the default register and return to normal mode.
 Use a count to specify an alternate register
 """
 key = "c"
@@ -3138,7 +3138,7 @@ default = "{{bind.edit_select_edit}}"
 key = "shift+enter"
 doc.name = "split sel"
 doc.description = """
-split selection into multiple selections by new line charactesr
+split selection into multiple selections by new line characters
 """
 command = "selection-utilities.splitByNewline"
 
@@ -3319,7 +3319,7 @@ args.value = "syminsert"
 [[bind]]
 default = "{{bind.edit_action_symmetric}}"
 doc.name = "Normal"
-doc.description = "Return to normal model"
+doc.description = "Return to normal mode"
 key = "enter"
 command = "master-key.setMode"
 mode = "syminsert"
@@ -3328,7 +3328,7 @@ mode = "syminsert"
 doc.name = "esc. char"
 default = "{{bind.edit_action_symmetric}}"
 key = "\\"
-doc.description = "Insert escaped character"
+doc.description = "Insert escaped character before braces you enter to surround the selection (e.g. `\\{` or `\\}`)"
 command = "runCommands"
 
 [[bind.args.commands]]
@@ -3393,12 +3393,18 @@ command = "selection-utilities.activeAtStart"
 [[bind]]
 default = "{{bind.edit_action_symmetric}}"
 doc.name = "undo"
+doc.description = "undo last change"
+doc.combined.name = "undo/redo"
+doc.combined.key = "u/shift+u"
+doc.combined.description = "undo/redo last change"
 key = "u"
 command = "undo"
 
 [[bind]]
 default = "{{bind.edit_action_symmetric}}"
 doc.name = "redo"
+doc.description = "redo last change"
+doc.combined.name = "undo/redo"
 key = "shift+u"
 command = "redo"
 
