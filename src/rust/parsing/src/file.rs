@@ -506,7 +506,14 @@ impl KeyFile {
             bind
         };
 
-        modes.insert_implicit_mode_bindings(&bind, &hash, &scope, &mut codes, &mut key_bind, warnings);
+        modes.insert_implicit_mode_bindings(
+            &bind,
+            &hash,
+            &scope,
+            &mut codes,
+            &mut key_bind,
+            warnings,
+        );
 
         // sort all bindings by their priority
         key_bind.sort_by(BindingOutput::cmp_priority);
@@ -546,10 +553,7 @@ impl KeyFile {
         }
     }
 
-    fn compute_hash<'a>(
-        mut hasher: Sha256,
-        binds: impl Iterator<Item = &'a Binding>,
-    ) -> [u8; 32] {
+    fn compute_hash<'a>(mut hasher: Sha256, binds: impl Iterator<Item = &'a Binding>) -> [u8; 32] {
         for bind in binds {
             Digest::update(&mut hasher, bind.key.join(" "));
             if let Some(when_str) = &bind.when {
@@ -704,13 +708,12 @@ impl KeyFileResult {
 
     pub fn check_prefix_hash(&self, hash: &str) -> Option<bool> {
         if let Some(KeyFile {
-            bind,
-            hash: binding_hash,
-            ..
-        }) = &self.file {
-            return Some(hex::encode(binding_hash) == hash)
+            hash: binding_hash, ..
+        }) = &self.file
+        {
+            return Some(hex::encode(binding_hash) == hash);
         }
-        return None
+        return None;
     }
 
     // the first step of running bindings is to a get a list of `ReifiedBindings` (see
