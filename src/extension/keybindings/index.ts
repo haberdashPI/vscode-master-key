@@ -698,13 +698,14 @@ export async function activate(context: vscode.ExtensionContext) {
     diagnostics = vscode.languages.createDiagnosticCollection('Master Key Bindings');
 
     const encoder = new TextEncoder();
+    const debouncedValidate = debounce((e: vscode.TextDocumentChangeEvent) => {
+        const text = e.document.getText();
+        const bytes = encoder.encode(text);
+        validateKeybindings(new KeyFileData(e.document.uri, { bytes }));
+    }, 1000);
     vscode.workspace.onDidChangeTextDocument(async (e) => {
         if (e.document.languageId == 'toml' || e.document.uri.fsPath.endsWith('.toml')) {
-            debounce(() => {
-                const text = e.document.getText();
-                const bytes = encoder.encode(text);
-                validateKeybindings(new KeyFileData(e.document.uri, { bytes }));
-            }, 1000)();
+            debouncedValidate(e);
         }
     });
 
