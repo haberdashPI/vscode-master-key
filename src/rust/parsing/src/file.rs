@@ -456,7 +456,7 @@ impl KeyFile {
             })
             .unzip();
 
-        let docs = FileDocSection::assemble(&bind, &bind_span, doc_lines);
+        let mut docs = FileDocSection::assemble(&bind, &bind_span, doc_lines);
         FileDocSection::assign_binding_headings(&mut bind, &docs);
 
         // create outputs to store in `keybindings.json`
@@ -485,6 +485,8 @@ impl KeyFile {
                     warnings,
                 )?);
             }
+
+            docs = s.docs.iter().cloned().chain(docs.iter().cloned()).collect();
         }
         // add the bindings defined directly in this file
         for (i, (bind_item, span)) in bind.iter_mut().zip(bind_span.into_iter()).enumerate() {

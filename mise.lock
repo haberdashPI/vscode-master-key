@@ -127,7 +127,7 @@ components = "llvm-tools-preview"
 targets = "wasm32-unknown-unknown"
 
 [[tools.rust]]
-version = "nightly"
+version = "nightly-2026-08-20"
 backend = "core:rust"
 
 [tools.rust.options]
