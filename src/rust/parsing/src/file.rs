@@ -318,6 +318,17 @@ impl KeyFile {
             .flatten()
             .collect();
 
+        #[allow(non_snake_case)]
+        let requiredExtensions = if let Some(s) = source {
+            s.requiredExtensions
+                .iter()
+                .cloned()
+                .chain(requiredExtensions.into_iter())
+                .collect()
+        } else {
+            requiredExtensions
+        };
+
         // [[define]]
         let mut define_input = input.define.unwrap_or_default();
         let mut skip_define = false;
@@ -486,7 +497,7 @@ impl KeyFile {
                 )?);
             }
 
-            docs = s.docs.iter().cloned().chain(docs.iter().cloned()).collect();
+            docs = s.docs.iter().cloned().chain(docs.into_iter()).collect();
         }
         // add the bindings defined directly in this file
         for (i, (bind_item, span)) in bind.iter_mut().zip(bind_span.into_iter()).enumerate() {
