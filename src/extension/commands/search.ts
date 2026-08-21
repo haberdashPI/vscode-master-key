@@ -55,7 +55,10 @@ import { onCommandComplete } from './do';
  *    stored. Calls to (`nextMatch`/`previousMatch`) use this state to determine where to
  *    jump. If you have multiple search commands you can use registers to avoid the two
  *    commands using a shared search state.
- * - `skip` (default=0): the number of matches to skip before stopping.
+ * - `skip` (default=0): the number of matches to skip before stopping. -1 can be used
+ *   to setup search state without advancing the cursor at all; by default
+ *   searching advancing to the first match. After a call with skip -1, running `nextMatch`
+ *   will advance the cursor to the first match.
  */
 
 const offsets = z.enum([
@@ -79,7 +82,7 @@ export const searchArgs = z.
             by: z.number(),
         })),
         register: z.string().default('default'),
-        skip: z.number().optional().default(0),
+        skip: z.number().min(-1).optional().default(0),
     }).
     strict();
 export type SearchArgs = z.infer<typeof searchArgs>;
@@ -542,7 +545,9 @@ async function search(args_: unknown[]): Promise<CommandResult> {
     state.searchFrom = editor.selections;
 
     if (state.text.length > 0) {
-        navigateToNextMatch(state, editor);
+        if (state.args.skip >= 0) {
+            navigateToNextMatch(state, editor);
+        }
         navigatePastSkippedMatches(state, editor);
         state.searchFrom = editor.selections;
     } else {
@@ -556,7 +561,9 @@ async function search(args_: unknown[]): Promise<CommandResult> {
                 } else {
                     result += char;
                     state.text = result;
-                    navigateToNextMatch(state, editor, false);
+                    if (state.args.skip >= 0) {
+                        navigateToNextMatch(state, editor, false);
+                    }
                     if (state.text.length >= acceptAfter) {
                         stop = true;
                     }
@@ -586,7 +593,9 @@ async function search(args_: unknown[]): Promise<CommandResult> {
                     inputBox.value = oldSearchText;
                     inputBox.onDidChangeValue(async (str: string) => {
                         state.text = str;
-                        navigateToNextMatch(state, editor, false);
+                        if (state.args.skip >= 0) {
+                            navigateToNextMatch(state, editor, false);
+                        }
                     });
                     inputBox.onDidAccept(() => {
                         state.searchFrom = editor.selections;
@@ -605,7 +614,7 @@ async function search(args_: unknown[]): Promise<CommandResult> {
                 }
             });
             await inputResult;
-            await navigatePastSkippedMatches(state, editor);
+            navigatePastSkippedMatches(state, editor);
         }
         keyState.set(MODE, state.oldMode);
         keyState.resolve();

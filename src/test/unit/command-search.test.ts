@@ -43,6 +43,22 @@ labore elit occaecat cupidatat non POINT_B.`);
         });
     });
 
+    test('Sets up search state without advancing cursor using `skip: -1`', async () => {
+        cursorToStart(editor);
+        // `skip: -1` stores the search state but does not advance the cursor
+        await assertCursorMovesBy(editor, { line: 0, character: 0 }, async () => {
+            await vscode.commands.executeCommand('master-key.search', {
+                text: 'POINT_A',
+                skip: -1,
+            });
+        });
+
+        // a subsequent `nextMatch` advances to the first match
+        await assertCursorMovesBy(editor, { line: 0, character: 10 }, async () => {
+            await vscode.commands.executeCommand('master-key.nextMatch');
+        });
+    });
+
     test('Can be case sensitive', async () => {
         cursorToStart(editor);
         await assertCursorMovesBy(editor, { line: 2, character: 34 }, async () => {
