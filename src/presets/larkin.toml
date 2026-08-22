@@ -351,14 +351,14 @@ doc.description = """
 Without a count: change selected region or all text on the current line if there is
 no selection. With a count: change up to `count` lines.
 """
-when = "editorHasMultilineSelection"
+when = "selection-utilities.editorHasMultilineSelection"
 command = "runCommands"
 args.commands = ["deleteRight", "editor.action.insertLineBefore", "master-key.enterInsert"]
 
 [[bind]]
 default = "{{bind.edit_action}}"
 key = "c"
-when = "!editorHasMultilineSelection && editorHasSelection"
+when = "!selection-utilities.editorHasMultilineSelection && editorHasSelection"
 command = "runCommands"
 args.commands = ["deleteRight", "master-key.enterInsert"]
 
