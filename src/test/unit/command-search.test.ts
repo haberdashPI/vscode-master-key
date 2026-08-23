@@ -91,6 +91,32 @@ labore elit occaecat cupidatat non POINT_B.`);
         });
     });
 
+    test('Can select the match using `selectMatch`', async () => {
+        cursorToStart(editor);
+        await assertCursorMovesBy(editor, { line: 0, character: 18 }, async () => {
+            await vscode.commands.executeCommand('master-key.search', {
+                text: 'POINT_A',
+                selectMatch: true,
+                offset: 'end',
+            });
+
+            assert.equal(editor.selection.anchor.character, 11);
+            assert.equal(editor.selection.anchor.line, 0);
+        });
+
+        cursorToStart(editor);
+        await assertCursorMovesBy(editor, { line: 0, character: 11 }, async () => {
+            await vscode.commands.executeCommand('master-key.search', {
+                text: 'POINT_A',
+                selectMatch: true,
+                offset: 'start',
+            });
+
+            assert.equal(editor.selection.anchor.character, 18);
+            assert.equal(editor.selection.anchor.line, 0);
+        });
+    });
+
     test('Can select till match', async () => {
         cursorToStart(editor);
         await assertCursorMovesBy(editor, { line: 0, character: 11 }, async () => {
