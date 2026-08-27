@@ -4054,4 +4054,23 @@ pub(crate) mod tests {
         //     FileDocSection::write_markdown(&result.docs, true)
         // )
     }
+
+    #[test]
+    fn emacs_test() {
+        // the default presets should be parseable (also a good "integration" test to ensure
+        // our parsing works at scale)
+        let data = std::fs::read("../../presets/emacs.toml").unwrap();
+
+        let result = parse_keybinding_data(data, None);
+
+        assert!(
+            result.errors.as_ref().map_or(true, |v| v.is_empty()),
+            "Errors: {:?}",
+            result.errors
+        );
+        let result = result.file.unwrap();
+        assert!(result.bind.len() > 50);
+
+        assert!(FileDocSection::write_markdown(&result.docs, true).len() > 0);
+    }
 }
