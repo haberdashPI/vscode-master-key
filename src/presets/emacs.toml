@@ -1,0 +1,1587 @@
+#:master-keybindings
+# author: David Little
+# license: MIT https://github.com/haberdashPI/vscode-master-key/blob/main/LICENSE.md
+
+## # Emacs Keybindings
+
+## This preset provides a modest set of Emacs keybindings for Master Key, covering
+## the essential editing, navigation, selection, window management, search, and buffer
+## manipulation features of Emacs.
+##
+## Emacs uses modeless text insertion with a transient mark (`C-SPC`), rich cursor and
+## structural navigation (`C-f/b/n/p`, `M-f/b`, `C-a/e`, `M-a/e`, `M-{/}`, `C-M-f/b`),
+## universal argument prefixing (`C-u`, `M-0`..`M-9`), kill-ring editing (`C-w`, `M-w`,
+## `C-y`, `M-y`, `C-k`), incremental search (`C-s`, `C-r`), and standard `C-x`, `C-c`,
+## and `C-h` command prefixes.
+##
+## Contributions to improve the keybindings are welcome and can be submitted via a
+## [PR](https://github.com/haberdashPI/vscode-master-key/pulls)
+
+# NOTE: this file is used to generate both keybindings and to generate a markdown file that
+# documents the bindings. When comments are prefixed `##` they are included in the final
+# markdown output. All other comments will be ignored.
+
+[header]
+name = "Emacs"
+version = "2.2.0"
+requiredExtensions = [
+    "haberdashPI.selection-utilities",
+    "haberdashPI.vscode-select-by-indent",
+    "pustelto.bracketeer",
+    "wmaurer.change-case",
+    "dnut.rewrap-revived",
+]
+
+[[kind]]
+name = "motion"
+description = "These commands move the cursor and/or modify selections."
+
+[[kind]]
+name = "action"
+description = "Actions do something with text (e.g. killing, yanking, changing case, formatting)."
+
+[[kind]]
+name = "search"
+description = "Incremental search and replace commands."
+
+[[kind]]
+name = "util"
+description = "Utility commands like help, modes, files, buffers, windows, and macros."
+
+[[mode]]
+name = "emacs"
+default = true
+cursorShape = "Line"
+whenNoBinding = "insertCharacters"
+
+[[define.val]]
+mark = false
+
+# =============================================================================
+## ## Motion Templates
+# =============================================================================
+
+[[define.bind]]
+id = "cursor_motion"
+command = "cursorMove"
+args.value = '{{max(key.count, 1)}}'
+args.select = '{{val.mark}}'
+
+[[define.bind]]
+id = "object_motion"
+command = "selection-utilities.moveBy"
+args.value = '{{max(key.count, 1)}}'
+args.select = '{{val.mark}}'
+
+# =============================================================================
+## ## Cancellation & Help
+# =============================================================================
+
+## `C-g` (`keyboard-quit`) is the universal cancel command in Emacs. It cancels ongoing
+## selections, deactivates mark, closes open widgets, and resets any pending prefixes
+## or count arguments.
+
+[[bind]]
+key = "ctrl+g"
+prefixes.any = true
+command = "runCommands"
+args.commands = [
+    "cancelSelection",
+    { command = "master-key.setValue", args = { name = "mark", value = false } },
+]
+doc.kind = "util"
+doc.name = "quit"
+doc.description = "cancel command / deactivate mark / dismiss widgets"
+doc.combined.name = "quit / cancel"
+doc.combined.key = "C-g / Esc"
+doc.combined.description = "cancel command / deactivate mark / dismiss widgets"
+
+[[bind]]
+foreach.key = ["escape", "ctrl+["]
+key = "{{key}}"
+prefixes.any = true
+command = "runCommands"
+args.commands = [
+    "cancelSelection",
+    { command = "master-key.setValue", args = { name = "mark", value = false } },
+]
+doc.kind = "util"
+doc.name = "escape"
+doc.description = "escape / cancel selection"
+doc.combined.name = "quit / cancel"
+
+# When a user presses in invalid key sequence like `C-c x` (not bound to anything in this
+# file) we want the x key to be ignored. Master Key would normally insert x into the
+# buffer, because `
+[[bind]]
+foreach.key = ['{{keys(`[a-z]`)}}']
+foreach.modifier = ['', 'shift+']
+key = '{{modifier}}{{key}}'
+command = "master-key.ignore"
+prefixes.allBut = [""]
+
+## ### Getting Help (`C-h`)
+##
+## Emacs provides extensive contextual help through the `C-h` prefix.
+
+[[bind]]
+foreach.key = ["ctrl+h b", "ctrl+h t"]
+key = '{{key}}'
+doc.kind = "util"
+doc.name = "describe bindings"
+doc.description = "Show text documentation for keybindings"
+command = "master-key.showTextDoc"
+
+[[bind]]
+foreach.key = ["ctrl+h ctrl+v", "ctrl+h ctrl+t", "ctrl+h ctrl+b"]
+key = '{{key}}'
+doc.kind = "util"
+doc.name = "visual doc"
+priority = -1
+doc.description = "Show visual documentation for keybindings"
+command = "master-key.showVisualDoc"
+
+[[bind]]
+key = "ctrl+h a"
+doc.kind = "util"
+doc.name = "apropos command"
+doc.description = "Search all available commands"
+command = "workbench.action.showCommands"
+
+[[bind]]
+key = "ctrl+h v"
+doc.kind = "util"
+doc.name = "describe variable"
+doc.description = "Open settings editor"
+command = "workbench.action.openSettings"
+
+[[bind]]
+key = "ctrl+h ctrl+q"
+doc.kind = "util"
+doc.name = "suggest"
+finalKey = false
+doc.description = """
+Show all command suggestions."""
+command = "master-key.toggleSuggestions"
+
+# TODO: test edge case prefixes.any = true was marked as valid even though
+# there were other commands above defining ctrl+h prefixed commands
+[[bind]]
+key = "ctrl+h"
+doc.kind = "util"
+doc.name = "suggest"
+finalKey = false
+prefixes.allBut = ["", "ctrl+h"]
+doc.description = """
+Show command suggestions within the context of the current mode and keybinding prefix.
+"""
+command = "master-key.toggleSuggestions"
+
+# =============================================================================
+## ## Mark & Region Management
+# =============================================================================
+
+## The region in Emacs is defined between point (cursor) and mark. Pressing `C-SPC`
+## sets the mark variable (`val.mark = true`), causing subsequent cursor motions to extend
+## the selected region. `C-x C-x` exchanges point and mark.
+
+[[bind]]
+foreach.key = ["ctrl+space", "ctrl+shift+2"]
+key = "{{key}}"
+when = "!master-key.val.mark"
+doc.kind = "util"
+doc.name = "set mark"
+doc.description = "Set mark at point and start selecting"
+doc.combined.name = "set mark"
+doc.combined.key = "C-SPC / C-@"
+doc.combined.description = "Set mark at point and start selecting"
+command = "master-key.setValue"
+args.name = "mark"
+args.value = true
+
+[[bind]]
+foreach.key = ["ctrl+space", "ctrl+shift+2"]
+key = "{{key}}"
+when = "master-key.val.mark"
+doc.kind = "util"
+doc.name = "deactivate mark"
+doc.description = "Deactivate mark and cancel selection"
+doc.combined.name = "set mark"
+command = "runCommands"
+args.commands = [
+    "cancelSelection",
+    { command = "master-key.setValue", args = { name = "mark", value = false } },
+]
+
+[[bind]]
+key = "ctrl+x ctrl+x"
+doc.kind = "motion"
+doc.name = "exchange point & mark"
+doc.description = "Exchange cursor position with mark anchor"
+command = "runCommands"
+args.commands = [
+    "selection-utilities.exchangeAnchorActive",
+    { command = "master-key.setValue", args = { name = "mark", value = true } },
+]
+
+[[bind]]
+key = "ctrl+x h"
+doc.kind = "action"
+doc.name = "mark whole buffer"
+doc.description = "Select entire buffer"
+command = "runCommands"
+args.commands = [
+    "editor.action.selectAll",
+    { command = "master-key.setValue", args = { name = "mark", value = true } },
+]
+
+[[bind]]
+key = "alt+h"
+doc.kind = "action"
+doc.name = "mark paragraph"
+doc.description = "Select current paragraph"
+command = "runCommands"
+args.commands = [
+    { command = "selection-utilities.moveBy", args = { unit = "paragraph", boundary = "both", selectWhole = true } },
+    { command = "master-key.setValue", args = { name = "mark", value = true } },
+]
+
+[[bind]]
+foreach.key = ["ctrl+alt+space", "ctrl+alt+shift+2"]
+key = "{{key}}"
+doc.kind = "action"
+doc.name = "mark sexp"
+doc.description = "Select balanced expression or bracketed block"
+doc.combined.name = "mark sexp"
+doc.combined.key = "C-M-SPC / C-M-@"
+doc.combined.description = "Select balanced expression or bracketed block"
+command = "runCommands"
+args.commands = [
+    "pustelto.bracketeer.selectQuotesAndBrackets",
+    { command = "master-key.setValue", args = { name = "mark", value = true } },
+]
+
+[[bind]]
+key = "ctrl+alt+h"
+doc.kind = "action"
+doc.name = "mark defun"
+doc.description = "Select surrounding function or block"
+command = "runCommands"
+args.commands = [
+    "haberdashPI.vscode-select-by-indent.select-outer-indent",
+    { command = "master-key.setValue", args = { name = "mark", value = true } },
+]
+
+# =============================================================================
+## ## Cursor Movement
+# =============================================================================
+
+## Standard Emacs cursor movements operate character-by-character, line-by-line,
+## and word-by-word. When mark is active, each motion extends the region.
+
+# -- Character & Line Motions (C-f, C-b, C-n, C-p) --
+
+# C-f (Forward char)
+[[bind]]
+default = "{{bind.cursor_motion}}"
+key = "ctrl+f"
+tags = ["motion"]
+doc.kind = "motion"
+args.to = "right"
+doc.name = "char →"
+doc.description = "move cursor forward one character"
+doc.combined.name = "char →/←"
+doc.combined.key = "C-f/C-b"
+doc.combined.description = "move cursor forward/backward one character"
+
+# C-b (Backward char)
+[[bind]]
+default = "{{bind.cursor_motion}}"
+key = "ctrl+b"
+tags = ["motion"]
+doc.kind = "motion"
+args.to = "left"
+doc.name = "char ←"
+doc.description = "move cursor backward one character"
+doc.combined.name = "char →/←"
+
+# C-n (Next line)
+[[bind]]
+default = "{{bind.cursor_motion}}"
+key = "ctrl+n"
+tags = ["motion"]
+doc.kind = "motion"
+args.to = "down"
+args.by = "wrappedLine"
+doc.name = "line ↓"
+doc.description = "move cursor to next line"
+doc.combined.name = "line ↓/↑"
+doc.combined.key = "C-n/C-p"
+doc.combined.description = "move cursor down/up one line"
+
+# C-p (Previous line)
+[[bind]]
+default = "{{bind.cursor_motion}}"
+key = "ctrl+p"
+tags = ["motion"]
+doc.kind = "motion"
+args.to = "up"
+args.by = "wrappedLine"
+doc.name = "line ↑"
+doc.description = "move cursor to previous line"
+doc.combined.name = "line ↓/↑"
+
+# -- Line Boundary Motions (C-a, C-e, M-m) --
+
+# C-a (Beginning of line)
+[[bind]]
+key = "ctrl+a"
+when = "!master-key.val.mark"
+tags = ["motion"]
+doc.kind = "motion"
+command = "cursorLineStart"
+doc.name = "line start"
+doc.description = "move cursor to beginning of line"
+doc.combined.name = "line start/end"
+doc.combined.key = "C-a/C-e"
+doc.combined.description = "move cursor to beginning/end of line"
+
+[[bind]]
+key = "ctrl+a"
+when = "master-key.val.mark"
+tags = ["motion"]
+doc.kind = "motion"
+command = "cursorLineStartSelect"
+doc.name = "line start"
+doc.description = "select to beginning of line"
+doc.combined.name = "line start/end"
+
+# C-e (End of line)
+[[bind]]
+key = "ctrl+e"
+when = "!master-key.val.mark"
+tags = ["motion"]
+doc.kind = "motion"
+command = "cursorLineEnd"
+doc.name = "line end"
+doc.description = "move cursor to end of line"
+doc.combined.name = "line start/end"
+
+[[bind]]
+key = "ctrl+e"
+when = "master-key.val.mark"
+tags = ["motion"]
+doc.kind = "motion"
+command = "cursorLineEndSelect"
+doc.name = "line end"
+doc.description = "select to end of line"
+doc.combined.name = "line start/end"
+
+# M-m (Back to indentation)
+[[bind]]
+key = "alt+m"
+when = "!master-key.val.mark"
+tags = ["motion"]
+doc.kind = "motion"
+command = "cursorHome"
+doc.name = "first non-blank"
+doc.description = "move cursor to first non-blank character of line"
+
+[[bind]]
+key = "alt+m"
+when = "master-key.val.mark"
+tags = ["motion"]
+doc.kind = "motion"
+command = "cursorHomeSelect"
+doc.name = "first non-blank"
+doc.description = "select to first non-blank character of line"
+
+# -- Word Motions (M-f, M-b) --
+
+# M-f (Forward word)
+[[bind]]
+default = "{{bind.object_motion}}"
+key = "alt+f"
+tags = ["motion"]
+doc.kind = "motion"
+args.unit = "subword"
+args.boundary = "end"
+doc.name = "word →"
+doc.description = "move forward to end of word"
+doc.combined.name = "word →/←"
+doc.combined.key = "M-f/M-b"
+doc.combined.description = "move forward/backward by word"
+
+# M-b (Backward word)
+[[bind]]
+default = "{{bind.object_motion}}"
+key = "alt+b"
+tags = ["motion"]
+doc.kind = "motion"
+args.unit = "subword"
+args.boundary = "start"
+args.value = '{{-max(key.count, 1)}}'
+doc.name = "word ←"
+doc.description = "move backward to start of word"
+doc.combined.name = "word →/←"
+
+# -- Sentence & Paragraph Motions (M-a, M-e, M-{, M-}) --
+
+# M-a (Backward sentence)
+[[bind]]
+default = "{{bind.object_motion}}"
+key = "alt+a"
+tags = ["motion"]
+doc.kind = "motion"
+args.unit = "sentence"
+args.boundary = "start"
+args.value = '{{-max(key.count, 1)}}'
+doc.name = "sentence ←"
+doc.description = "move backward to start of sentence"
+doc.combined.name = "sentence ←/→"
+doc.combined.key = "M-a/M-e"
+doc.combined.description = "move backward/forward by sentence"
+
+# M-e (Forward sentence)
+[[bind]]
+default = "{{bind.object_motion}}"
+key = "alt+e"
+tags = ["motion"]
+doc.kind = "motion"
+args.unit = "sentence"
+args.boundary = "end"
+doc.name = "sentence →"
+doc.description = "move forward to end of sentence"
+doc.combined.name = "sentence ←/→"
+
+# M-{ (Backward paragraph)
+[[bind]]
+key = "alt+shift+["
+default = "{{bind.object_motion}}"
+tags = ["motion"]
+doc.kind = "motion"
+args.unit = "paragraph"
+args.boundary = "start"
+args.value = '{{-max(key.count, 1)}}'
+doc.name = "paragraph ←"
+doc.description = "move backward to start of paragraph"
+doc.combined.name = "paragraph ←/→"
+doc.combined.key = "M-{ / M-}"
+doc.combined.description = "move backward/forward by paragraph"
+
+# M-} (Forward paragraph)
+[[bind]]
+key = "alt+shift+]"
+default = "{{bind.object_motion}}"
+tags = ["motion"]
+doc.kind = "motion"
+args.unit = "paragraph"
+args.boundary = "start"
+doc.name = "paragraph →"
+doc.description = "move forward to start of next paragraph"
+doc.combined.name = "paragraph ←/→"
+
+# -- Buffer & Paging Motions (M-<, M->, C-v, M-v, C-l) --
+
+# M-< (Beginning of buffer)
+[[bind]]
+key = "alt+shift+,"
+when = "!master-key.val.mark"
+tags = ["motion"]
+doc.kind = "motion"
+command = "cursorTop"
+doc.name = "buffer start"
+doc.description = "move cursor to beginning of buffer"
+doc.combined.name = "buffer start/end"
+doc.combined.key = "M-< / M->"
+doc.combined.description = "move cursor to beginning/end of buffer"
+
+[[bind]]
+key = "alt+shift+,"
+when = "master-key.val.mark"
+tags = ["motion"]
+doc.kind = "motion"
+command = "cursorTopSelect"
+doc.name = "buffer start"
+doc.description = "select to beginning of buffer"
+doc.combined.name = "buffer start/end"
+
+# M-> (End of buffer)
+[[bind]]
+key = "alt+shift+."
+when = "!master-key.val.mark"
+tags = ["motion"]
+doc.kind = "motion"
+command = "cursorBottom"
+doc.name = "buffer end"
+doc.description = "move cursor to end of buffer"
+doc.combined.name = "buffer start/end"
+
+[[bind]]
+key = "alt+shift+."
+when = "master-key.val.mark"
+tags = ["motion"]
+doc.kind = "motion"
+command = "cursorBottomSelect"
+doc.name = "buffer end"
+doc.description = "select to end of buffer"
+doc.combined.name = "buffer start/end"
+
+# C-v (Scroll page down)
+[[bind]]
+key = "ctrl+v"
+tags = ["motion"]
+doc.kind = "motion"
+doc.name = "page ↓"
+doc.description = "scroll page down (scroll-up-command)"
+doc.combined.name = "page ↓/↑"
+doc.combined.key = "C-v/M-v"
+doc.combined.description = "scroll page down/up"
+command = "selection-utilities.activePageMove"
+args.dir = "down"
+args.value = '{{max(key.count, 1)}}'
+args.select = '{{val.mark}}'
+
+# M-v (Scroll page up)
+[[bind]]
+key = "alt+v"
+tags = ["motion"]
+doc.kind = "motion"
+doc.name = "page ↑"
+doc.description = "scroll page up (scroll-down-command)"
+doc.combined.name = "page ↓/↑"
+command = "selection-utilities.activePageMove"
+args.dir = "up"
+args.value = '{{max(key.count, 1)}}'
+args.select = '{{val.mark}}'
+
+# C-l (Recenter)
+[[bind]]
+key = "ctrl+l"
+tags = ["motion"]
+doc.kind = "motion"
+doc.name = "recenter"
+doc.description = "recenter window around cursor (recenter-top-bottom)"
+command = "editor.action.centerEditorWindow"
+
+# -- Goto Line & Error Navigation (M-g g, M-g n, M-g p) --
+
+[[bind]]
+foreach.key = ["alt+g g", "alt+g alt+g"]
+key = "{{key}}"
+doc.kind = "motion"
+doc.name = "goto line"
+doc.description = "Go to line number"
+doc.combined.name = "goto line"
+doc.combined.key = "M-g g"
+doc.combined.description = "Go to line number"
+command = "workbench.action.gotoLine"
+
+[[bind]]
+foreach.key = ["alt+g n", "alt+g alt+n"]
+key = "{{key}}"
+doc.kind = "motion"
+doc.name = "next error"
+doc.description = "Navigate to next error or diagnostic"
+doc.combined.name = "next/prev error"
+doc.combined.key = "M-g n / M-g p"
+doc.combined.description = "Navigate to next/previous error or diagnostic"
+command = "editor.action.marker.next"
+
+[[bind]]
+foreach.key = ["alt+g p", "alt+g alt+p"]
+key = "{{key}}"
+doc.kind = "motion"
+doc.name = "prev error"
+doc.description = "Navigate to previous error or diagnostic"
+doc.combined.name = "next/prev error"
+command = "editor.action.marker.prev"
+
+# =============================================================================
+## ## Structural / S-Expression Navigation (Paredit)
+# =============================================================================
+
+## Structural motions allow jumping across balanced parentheses, brackets, and
+## language expressions.
+
+# C-M-f (Forward sexp)
+[[bind]]
+key = "ctrl+alt+f"
+tags = ["motion"]
+doc.kind = "motion"
+doc.name = "sexp →"
+doc.description = "move forward across balanced expression (forward-sexp)"
+doc.combined.name = "sexp →/←"
+doc.combined.key = "C-M-f/C-M-b"
+doc.combined.description = "move forward/backward across balanced expression"
+command = "pustelto.bracketeer.jumpToMatching"
+
+# C-M-b (Backward sexp)
+[[bind]]
+key = "ctrl+alt+b"
+tags = ["motion"]
+doc.kind = "motion"
+doc.name = "sexp ←"
+doc.description = "move backward across balanced expression (backward-sexp)"
+doc.combined.name = "sexp →/←"
+command = "pustelto.bracketeer.jumpToMatching"
+
+# C-M-u (Backward up list)
+[[bind]]
+key = "ctrl+alt+u"
+tags = ["motion"]
+doc.kind = "motion"
+doc.name = "up list"
+doc.description = "move up and out of current bracketed structure (backward-up-list)"
+command = "selection-utilities.expandAroundBrackets"
+
+# C-M-d (Down list)
+[[bind]]
+key = "ctrl+alt+d"
+tags = ["motion"]
+doc.kind = "motion"
+doc.name = "down list"
+doc.description = "move down and into next bracketed structure (down-list)"
+command = "selection-utilities.expandWithinBrackets"
+
+# C-M-k (Kill sexp)
+[[bind]]
+key = "ctrl+alt+k"
+tags = ["action"]
+doc.kind = "action"
+doc.name = "kill sexp"
+doc.description = "kill forward balanced expression (kill-sexp)"
+command = "runCommands"
+args.commands = [
+    "pustelto.bracketeer.selectQuotesAndBrackets",
+    "editor.action.clipboardCutAction",
+    { command = "master-key.setValue", args = { name = "mark", value = false } },
+]
+
+# =============================================================================
+## ## Killing & Yanking (Cut, Copy, Paste)
+# =============================================================================
+
+## Text killed in Emacs is placed in the kill-ring (system clipboard). `C-w` kills
+## the active region, `M-w` copies it without killing, `C-y` yanks (pastes), and
+## `C-k` kills from point to end of line.
+
+# C-w (Kill region / Cut)
+[[bind]]
+key = "ctrl+w"
+tags = ["action"]
+doc.kind = "action"
+doc.name = "kill region"
+doc.description = "kill (cut) text in region"
+command = "runCommands"
+args.commands = [
+    "editor.action.clipboardCutAction",
+    { command = "master-key.setValue", args = { name = "mark", value = false } },
+]
+
+# M-w (Kill ring save / Copy)
+[[bind]]
+key = "alt+w"
+tags = ["action"]
+doc.kind = "action"
+doc.name = "copy region"
+doc.description = "copy region to kill ring without deleting (kill-ring-save)"
+command = "runCommands"
+args.commands = [
+    "editor.action.clipboardCopyAction",
+    "selection-utilities.shrinkToActive",
+    { command = "master-key.setValue", args = { name = "mark", value = false } },
+]
+
+# C-y (Yank / Paste)
+[[bind]]
+key = "ctrl+y"
+tags = ["action"]
+doc.kind = "action"
+doc.name = "yank"
+doc.description = "yank (paste) most recent kill from kill ring"
+command = "runCommands"
+args.commands = [
+    "editor.action.clipboardPasteAction",
+    { command = "master-key.setValue", args = { name = "mark", value = false } },
+]
+
+# M-y (Yank pop / Clipboard cycle)
+[[bind]]
+key = "alt+y"
+tags = ["action"]
+doc.kind = "action"
+doc.name = "yank pop"
+doc.description = "replace just-yanked text with previous kill from ring"
+command = "editor.action.clipboardPasteAction"
+
+# C-k (Kill line)
+[[bind]]
+key = "ctrl+k"
+tags = ["action"]
+doc.kind = "action"
+doc.name = "kill line"
+doc.description = "kill from cursor to end of line, or kill newline if at end"
+command = "runCommands"
+args.commands = [
+    { command = "cursorMove", args = { to = "wrappedLineEnd", select = true } },
+    "editor.action.clipboardCutAction",
+    { command = "master-key.setValue", args = { name = "mark", value = false } },
+]
+
+# C-S-backspace (Kill whole line)
+[[bind]]
+key = "ctrl+shift+backspace"
+tags = ["action"]
+doc.kind = "action"
+doc.name = "kill whole line"
+doc.description = "kill entire line including newline"
+command = "editor.action.deleteLines"
+
+# C-d (Delete char forward)
+[[bind]]
+key = "ctrl+d"
+tags = ["action"]
+doc.kind = "action"
+doc.name = "delete char"
+doc.description = "delete character forward without adding to kill ring"
+command = "deleteRight"
+
+# M-d (Kill word forward)
+[[bind]]
+key = "alt+d"
+tags = ["action"]
+doc.kind = "action"
+doc.name = "kill word →"
+doc.description = "kill forward to end of word"
+doc.combined.name = "kill word →/←"
+doc.combined.key = "M-d / M-DEL"
+doc.combined.description = "kill word forward / backward"
+command = "runCommands"
+args.commands = [
+    { command = "selection-utilities.moveBy", args = { unit = "subword", boundary = "end", select = true, value = "{{max(key.count, 1)}}" } },
+    "editor.action.clipboardCutAction",
+    { command = "master-key.setValue", args = { name = "mark", value = false } },
+]
+
+# M-backspace (Backward kill word)
+[[bind]]
+key = "alt+backspace"
+tags = ["action"]
+doc.kind = "action"
+doc.name = "kill word ←"
+doc.description = "kill backward to start of word (backward-kill-word)"
+doc.combined.name = "kill word →/←"
+command = "runCommands"
+args.commands = [
+    { command = "selection-utilities.moveBy", args = { unit = "subword", boundary = "start", select = true, value = "{{-max(key.count, 1)}}" } },
+    "editor.action.clipboardCutAction",
+    { command = "master-key.setValue", args = { name = "mark", value = false } },
+]
+
+# M-k (Kill sentence)
+[[bind]]
+key = "alt+k"
+tags = ["action"]
+doc.kind = "action"
+doc.name = "kill sentence"
+doc.description = "kill from point to end of sentence"
+command = "runCommands"
+args.commands = [
+    { command = "selection-utilities.moveBy", args = { unit = "sentence", boundary = "end", select = true, value = "{{max(key.count, 1)}}" } },
+    "editor.action.clipboardCutAction",
+    { command = "master-key.setValue", args = { name = "mark", value = false } },
+]
+
+# M-z (Zap to char)
+[[bind]]
+key = "alt+z"
+tags = ["action"]
+doc.kind = "action"
+doc.name = "zap to char"
+doc.description = "kill text from point up to and including target character"
+command = "master-key.search"
+args.offset = "fartherBoundary"
+args.selectUntilMatch = true
+args.acceptAfter = 1
+
+# C-x C-o (Delete blank lines)
+[[bind]]
+key = "ctrl+x ctrl+o"
+tags = ["action"]
+doc.kind = "action"
+doc.name = "delete blank lines"
+doc.description = "delete excess blank lines around point"
+command = "selection-utilities.trimSelectionWhitespace"
+
+# M-\ (Delete horizontal space)
+[[bind]]
+key = "alt+\\"
+tags = ["action"]
+doc.kind = "action"
+doc.name = "delete spaces"
+doc.description = "delete all spaces and tabs around point"
+command = "selection-utilities.trimSelectionWhitespace"
+
+# C-o (Open line)
+[[bind]]
+key = "ctrl+o"
+tags = ["action"]
+doc.kind = "action"
+doc.name = "open line"
+doc.description = "insert newline after cursor without moving point"
+command = "editor.action.insertLineAfter"
+
+# =============================================================================
+## ## Transposition
+# =============================================================================
+
+## Transposition commands swap adjacent characters, words, or lines.
+
+# C-t (Transpose characters)
+[[bind]]
+key = "ctrl+t"
+tags = ["action"]
+doc.kind = "action"
+doc.name = "transpose chars"
+doc.description = "transpose two characters before and after cursor"
+command = "editor.action.transposeLetters"
+
+# M-t (Transpose words)
+[[bind]]
+key = "alt+t"
+tags = ["action"]
+doc.kind = "action"
+doc.name = "transpose words"
+doc.description = "transpose two words"
+command = "editor.action.transposeWords"
+
+# C-x C-t (Transpose lines)
+[[bind]]
+key = "ctrl+x ctrl+t"
+tags = ["action"]
+doc.kind = "action"
+doc.name = "transpose lines"
+doc.description = "transpose current line with line above"
+command = "editor.action.moveLinesUpAction"
+
+# =============================================================================
+## ## Case Transformations
+# =============================================================================
+
+## Modify the case of words starting from point.
+
+# M-u (Upcase word)
+[[bind]]
+key = "alt+u"
+tags = ["action"]
+doc.kind = "action"
+doc.name = "upcase word"
+doc.description = "convert word to UPPERCASE from point to end of word"
+command = "runCommands"
+args.commands = [
+    { command = "selection-utilities.moveBy", args = { unit = "subword", boundary = "end", select = true, value = "{{max(key.count, 1)}}" } },
+    "wmaurer.changeCase.upper",
+    "selection-utilities.shrinkToActive",
+    { command = "master-key.setValue", args = { name = "mark", value = false } },
+]
+
+# M-l (Downcase word)
+[[bind]]
+key = "alt+l"
+tags = ["action"]
+doc.kind = "action"
+doc.name = "downcase word"
+doc.description = "convert word to lowercase from point to end of word"
+command = "runCommands"
+args.commands = [
+    { command = "selection-utilities.moveBy", args = { unit = "subword", boundary = "end", select = true, value = "{{max(key.count, 1)}}" } },
+    "wmaurer.changeCase.lower",
+    "selection-utilities.shrinkToActive",
+    { command = "master-key.setValue", args = { name = "mark", value = false } },
+]
+
+# M-c (Capitalize word)
+[[bind]]
+key = "alt+c"
+tags = ["action"]
+doc.kind = "action"
+doc.name = "capitalize word"
+doc.description = "capitalize next word (Title Case) from point to end of word"
+command = "runCommands"
+args.commands = [
+    { command = "selection-utilities.moveBy", args = { unit = "subword", boundary = "end", select = true, value = "{{max(key.count, 1)}}" } },
+    "wmaurer.changeCase.title",
+    "selection-utilities.shrinkToActive",
+    { command = "master-key.setValue", args = { name = "mark", value = false } },
+]
+
+# =============================================================================
+## ## Indentation & Formatting
+# =============================================================================
+
+## Indentation and code formatting commands.
+
+# TAB (Indent line / region)
+[[bind]]
+key = "tab"
+tags = ["action"]
+doc.kind = "action"
+doc.name = "indent"
+doc.description = "indent current line or selected region according to mode"
+command = "editor.action.indentLines"
+
+# C-j (Newline and indent)
+[[bind]]
+key = "ctrl+j"
+tags = ["action"]
+doc.kind = "action"
+doc.name = "newline & indent"
+doc.description = "insert newline and auto-indent next line"
+command = "editor.action.insertLineAfter"
+
+# C-M-\ (Indent region)
+[[bind]]
+key = "ctrl+alt+\\"
+tags = ["action"]
+doc.kind = "action"
+doc.name = "indent region"
+doc.description = "re-indent region or format selection (indent-region)"
+command = "editor.action.formatSelection"
+
+# M-q (Fill paragraph)
+[[bind]]
+key = "alt+q"
+tags = ["action"]
+doc.kind = "action"
+doc.name = "fill paragraph"
+doc.description = "reflow and format current paragraph or comment (fill-paragraph)"
+command = "rewrap.rewrapCommentAt"
+
+# C-c C-c (Comment / Uncomment region)
+[[bind]]
+key = "ctrl+c ctrl+c"
+tags = ["action"]
+doc.kind = "action"
+doc.name = "comment region"
+doc.description = "toggle comment for selected lines or current line"
+command = "editor.action.commentLine"
+
+# =============================================================================
+## ## Undo & Redo
+# =============================================================================
+
+## Standard Emacs undo commands (`C-/`, `C-_`, `C-x u`) and redo (`M-_`).
+
+# C-/ (Undo)
+[[bind]]
+key = "ctrl+/"
+tags = ["action"]
+doc.kind = "action"
+doc.name = "undo"
+doc.description = "undo previous edit"
+doc.combined.name = "undo / redo"
+doc.combined.key = "C-/ / M-_"
+doc.combined.description = "undo / redo previous edit"
+command = "runCommands"
+args.commands = ["undo", "selection-utilities.shrinkToActive"]
+
+# C-_ (Undo)
+[[bind]]
+key = "ctrl+shift+-"
+tags = ["action"]
+doc.kind = "action"
+doc.name = "undo"
+doc.description = "undo previous edit"
+doc.combined.name = "undo / redo"
+command = "runCommands"
+args.commands = ["undo", "selection-utilities.shrinkToActive"]
+
+# C-x u (Undo)
+[[bind]]
+key = "ctrl+x u"
+tags = ["action"]
+doc.kind = "action"
+doc.name = "undo"
+doc.description = "undo previous edit"
+doc.combined.name = "undo / redo"
+command = "runCommands"
+args.commands = ["undo", "selection-utilities.shrinkToActive"]
+
+# M-_ (Redo)
+[[bind]]
+key = "alt+shift+-"
+tags = ["action"]
+doc.kind = "action"
+doc.name = "redo"
+doc.description = "redo previously undone edit"
+doc.combined.name = "undo / redo"
+command = "runCommands"
+args.commands = ["redo", "selection-utilities.shrinkToActive"]
+
+# =============================================================================
+## ## Incremental Search & Replace (I-Search)
+# =============================================================================
+
+## Incremental search (`C-s` forward, `C-r` backward) and interactive query replace (`M-%`).
+
+# C-s (Isearch forward)
+[[bind]]
+key = "ctrl+s"
+doc.kind = "search"
+doc.name = "isearch forward"
+doc.description = "incremental search forward (isearch-forward)"
+doc.combined.name = "isearch forward/backward"
+doc.combined.key = "C-s / C-r"
+doc.combined.description = "incremental search forward/backward"
+command = "master-key.search"
+args.offset = "start"
+args.selectUntilMatch = '{{val.mark}}'
+
+# C-r (Isearch backward)
+[[bind]]
+key = "ctrl+r"
+doc.kind = "search"
+doc.name = "isearch backward"
+doc.description = "incremental search backward (isearch-backward)"
+doc.combined.name = "isearch forward/backward"
+command = "master-key.search"
+args.offset = "start"
+args.backwards = true
+args.selectUntilMatch = '{{val.mark}}'
+
+# M-% (Query replace)
+[[bind]]
+key = "alt+shift+5"
+doc.kind = "search"
+doc.name = "query replace"
+doc.description = "interactively search and replace text (query-replace)"
+command = "editor.action.startFindReplaceAction"
+
+# C-M-% (Query replace regex)
+[[bind]]
+key = "ctrl+alt+shift+5"
+doc.kind = "search"
+doc.name = "regex replace"
+doc.description = "search and replace using regular expressions (query-replace-regexp)"
+command = "editor.action.startFindReplaceAction"
+
+# M-s o (Occur / Find in files)
+[[bind]]
+key = "alt+s o"
+doc.kind = "search"
+doc.name = "occur"
+doc.description = "search pattern across workspace / project files"
+command = "workbench.action.findInFiles"
+
+# =============================================================================
+## ## Prefix Arguments & Counts (C-u, M-0..9)
+# =============================================================================
+
+## Prefix arguments repeat commands a specified number of times. `C-u` supplies a
+## default multiplier of 4, while `M-0` through `M-9` supply exact numeric counts.
+
+# C-u (Universal argument)
+[[bind]]
+key = "ctrl+u"
+command = "master-key.updateCount"
+finalKey = false
+args.value = 4
+doc.kind = "util"
+doc.name = "universal argument"
+doc.description = "Universal argument prefix (default 4x count multiplier)"
+
+# M-0 .. M-9 (Digit arguments)
+[[bind]]
+foreach.num = ['{{keys(`[0-9]`)}}']
+key = "alt+{{num}}"
+command = "master-key.updateCount"
+finalKey = false
+args.value = "{{num}}"
+doc.kind = "util"
+doc.name = "digit {{num}}"
+doc.description = "Add digit {{num}} to prefix argument count"
+doc.combined.key = "M-0-9"
+doc.combined.name = "digit 0-9"
+doc.combined.description = "Add digit 0-9 to prefix argument count"
+
+# =============================================================================
+## ## Registers & Rectangles (`C-x r`)
+# =============================================================================
+
+## Emacs registers allow saving text, positions, and rectangles for quick access.
+## Rectangular editing allows manipulating columns of text.
+
+[[bind]]
+key = "ctrl+x r s"
+doc.kind = "action"
+doc.name = "copy to register"
+doc.description = "copy region text into named register (copy-to-register)"
+command = "master-key.storeCommand"
+args.register = "emacs_reg"
+args.command = "editor.action.clipboardCopyAction"
+
+[[bind]]
+key = "ctrl+x r i"
+doc.kind = "action"
+doc.name = "insert register"
+doc.description = "insert text from named register (insert-register)"
+command = "master-key.executeStoredCommand"
+args.register = "emacs_reg"
+
+[[bind]]
+key = "ctrl+x r space"
+doc.kind = "action"
+doc.name = "point to register"
+doc.description = "record cursor position to register (point-to-register)"
+command = "master-key.storeCommand"
+args.register = "emacs_pos"
+args.command = "noop"
+
+[[bind]]
+key = "ctrl+x r j"
+doc.kind = "action"
+doc.name = "jump to register"
+doc.description = "jump to position saved in register (jump-to-register)"
+command = "master-key.executeStoredCommand"
+args.register = "emacs_pos"
+
+[[bind]]
+key = "ctrl+x space"
+doc.kind = "action"
+doc.name = "rectangle mark mode"
+doc.description = "toggle rectangular column selection mode (rectangle-mark-mode)"
+command = "cursorColumnSelectDown"
+
+[[bind]]
+key = "ctrl+x r k"
+doc.kind = "action"
+doc.name = "kill rectangle"
+doc.description = "kill selected text rectangle (kill-rectangle)"
+command = "runCommands"
+args.commands = [
+    "editor.action.clipboardCutAction",
+    { command = "master-key.setValue", args = { name = "mark", value = false } },
+]
+
+[[bind]]
+key = "ctrl+x r y"
+doc.kind = "action"
+doc.name = "yank rectangle"
+doc.description = "yank last killed rectangle (yank-rectangle)"
+command = "editor.action.clipboardPasteAction"
+
+[[bind]]
+key = "ctrl+x r t"
+doc.kind = "action"
+doc.name = "string rectangle"
+doc.description = "insert text string into rectangle column (string-rectangle)"
+command = "editor.action.insertCursorAtEndOfEachLineSelected"
+
+[[bind]]
+key = "ctrl+x r c"
+doc.kind = "action"
+doc.name = "clear rectangle"
+doc.description = "clear rectangle contents with blank spaces"
+command = "editor.action.clipboardCutAction"
+
+[[bind]]
+key = "ctrl+x r d"
+doc.kind = "action"
+doc.name = "delete rectangle"
+doc.description = "delete rectangle without copying to kill ring"
+command = "deleteRight"
+
+# =============================================================================
+## ## Buffers, Files & Windows (`C-x`)
+# =============================================================================
+
+## Emacs commands for finding files, saving buffers, switching buffers, and
+## managing multi-window / split layout configurations.
+
+# -- Files & Buffers --
+
+# C-x C-f (Find file)
+[[bind]]
+key = "ctrl+x ctrl+f"
+doc.kind = "util"
+doc.name = "find file"
+doc.description = "Open file by path or name (find-file)"
+command = "workbench.action.quickOpen"
+
+# C-x C-s (Save buffer)
+[[bind]]
+key = "ctrl+x ctrl+s"
+doc.kind = "util"
+doc.name = "save buffer"
+doc.description = "Save current file (save-buffer)"
+command = "workbench.action.files.save"
+
+# C-x C-w (Write file / Save as)
+[[bind]]
+key = "ctrl+x ctrl+w"
+doc.kind = "util"
+doc.name = "write file"
+doc.description = "Save current file under a new name (write-file)"
+command = "workbench.action.files.saveAs"
+
+# C-x s (Save some buffers / Save all)
+[[bind]]
+key = "ctrl+x s"
+doc.kind = "util"
+doc.name = "save all"
+doc.description = "Save all open modified buffers (save-some-buffers)"
+command = "workbench.action.files.saveAll"
+
+# C-x b (Switch to buffer)
+[[bind]]
+key = "ctrl+x b"
+doc.kind = "util"
+doc.name = "switch buffer"
+doc.description = "Switch active editor to another buffer (switch-to-buffer)"
+command = "workbench.action.showAllEditorsByMostRecentlyUsed"
+
+# C-x C-b (List buffers)
+[[bind]]
+key = "ctrl+x ctrl+b"
+doc.kind = "util"
+doc.name = "list buffers"
+doc.description = "List all open editors and buffers"
+command = "workbench.action.showAllEditorsByMostRecentlyUsed"
+
+# C-x k (Kill buffer)
+[[bind]]
+key = "ctrl+x k"
+doc.kind = "util"
+doc.name = "kill buffer"
+doc.description = "Close active editor buffer (kill-buffer)"
+command = "workbench.action.closeActiveEditor"
+
+# C-x d (Dired / File explorer)
+[[bind]]
+key = "ctrl+x d"
+doc.kind = "util"
+doc.name = "dired"
+doc.description = "Open file explorer / directory manager (dired)"
+command = "workbench.view.explorer"
+
+# C-x left / right (Previous / Next buffer)
+[[bind]]
+key = "ctrl+x left"
+doc.kind = "util"
+doc.name = "prev buffer"
+doc.description = "Switch to previous editor buffer"
+doc.combined.name = "prev/next buffer"
+doc.combined.key = "C-x ← / C-x →"
+doc.combined.description = "Switch to previous/next editor buffer"
+command = "workbench.action.previousEditor"
+
+[[bind]]
+key = "ctrl+x right"
+doc.kind = "util"
+doc.name = "next buffer"
+doc.description = "Switch to next editor buffer"
+doc.combined.name = "prev/next buffer"
+command = "workbench.action.nextEditor"
+
+# -- Windows & Split Layouts --
+
+# C-x 0 (Delete window)
+[[bind]]
+key = "ctrl+x 0"
+doc.kind = "util"
+doc.name = "delete window"
+doc.description = "Close active editor split group (delete-window)"
+command = "workbench.action.closeEditorsInGroup"
+
+# C-x 1 (Delete other windows)
+[[bind]]
+key = "ctrl+x 1"
+doc.kind = "util"
+doc.name = "single window"
+doc.description = "Close all other editor split groups (delete-other-windows)"
+command = "workbench.action.closeEditorsInOtherGroups"
+
+# C-x 2 (Split window below)
+[[bind]]
+key = "ctrl+x 2"
+doc.kind = "util"
+doc.name = "split below"
+doc.description = "Split editor horizontally below (split-window-below)"
+command = "workbench.action.splitEditorDown"
+
+# C-x 3 (Split window right)
+[[bind]]
+key = "ctrl+x 3"
+doc.kind = "util"
+doc.name = "split right"
+doc.description = "Split editor vertically to the right (split-window-right)"
+command = "workbench.action.splitEditorRight"
+
+# C-x o (Other window)
+[[bind]]
+key = "ctrl+x o"
+doc.kind = "util"
+doc.name = "other window"
+doc.description = "Navigate cursor to other editor window group (other-window)"
+command = "workbench.action.navigateEditorGroups"
+
+# C-x + (Balance windows)
+[[bind]]
+foreach.key = ["ctrl+x shift+=", "ctrl+x ="]
+key = "{{key}}"
+doc.kind = "util"
+doc.name = "balance windows"
+doc.description = "Make all editor windows equal width and height (balance-windows)"
+doc.combined.name = "balance windows"
+doc.combined.key = "C-x +"
+doc.combined.description = "Make all editor windows equal width and height"
+command = "workbench.action.evenEditorWidths"
+
+# C-x 4 f (Find file in other window)
+[[bind]]
+key = "ctrl+x 4 f"
+doc.kind = "util"
+doc.name = "find file other"
+doc.description = "Open file in adjacent split group"
+command = "workbench.action.quickOpen"
+
+# C-x 4 0 (Kill buffer and window)
+[[bind]]
+key = "ctrl+x 4 0"
+doc.kind = "util"
+doc.name = "kill buffer & window"
+doc.description = "Close buffer and split window group"
+command = "workbench.action.closeActiveEditor"
+
+# -- Session & Frame Commands --
+
+# C-x C-c (Save buffers and kill Emacs / Close window)
+[[bind]]
+key = "ctrl+x ctrl+c"
+doc.kind = "util"
+doc.name = "close window"
+doc.description = "Exit editor window (save-buffers-kill-terminal)"
+command = "workbench.action.closeWindow"
+
+# C-x z (Zen mode / Suspend frame)
+[[bind]]
+key = "ctrl+x z"
+doc.kind = "util"
+doc.name = "zen mode"
+doc.description = "Toggle Zen full-screen distraction-free mode"
+command = "workbench.action.toggleZenMode"
+
+# =============================================================================
+## ## Code Navigation & LSP (`M-.`, `M-,`, `M-?`)
+# =============================================================================
+
+## Tag jumping and code intelligence commands.
+
+# M-. (Find definitions)
+[[bind]]
+key = "alt+."
+doc.kind = "motion"
+doc.name = "find definition"
+doc.description = "Jump to definition of symbol at point (xref-find-definitions)"
+command = "editor.action.revealDefinition"
+
+# M-, (Go back)
+[[bind]]
+key = "alt+,"
+doc.kind = "motion"
+doc.name = "pop tag mark"
+doc.description = "Navigate back to previous jump location (xref-go-back)"
+command = "workbench.action.navigateBack"
+
+# C-M-, (Go forward)
+[[bind]]
+key = "ctrl+alt+,"
+doc.kind = "motion"
+doc.name = "tag forward"
+doc.description = "Navigate forward to next jump location (xref-go-forward)"
+command = "workbench.action.navigateForward"
+
+# M-? (Find references)
+[[bind]]
+key = "alt+shift+/"
+doc.kind = "motion"
+doc.name = "find references"
+doc.description = "Find all references to symbol at point (xref-find-references)"
+doc.combined.name = "find references"
+doc.combined.key = "M-?"
+doc.combined.description = "Find all references to symbol at point"
+command = "editor.action.referenceSearch.trigger"
+
+# C-M-i / M-TAB (Complete symbol)
+[[bind]]
+foreach.key = ["ctrl+alt+i", "alt+tab"]
+key = "{{key}}"
+doc.kind = "action"
+doc.name = "complete symbol"
+doc.description = "Trigger autocomplete suggestions (completion-at-point)"
+doc.combined.name = "complete symbol"
+doc.combined.key = "C-M-i / M-TAB"
+doc.combined.description = "Trigger autocomplete suggestions"
+command = "editor.action.triggerSuggest"
+
+# C-c C-d (Describe symbol / Hover)
+[[bind]]
+foreach.key = ["ctrl+c ctrl+d", "ctrl+c d"]
+key = "{{key}}"
+doc.kind = "util"
+doc.name = "hover info"
+doc.description = "Show documentation / type signature for symbol under point"
+doc.combined.name = "hover info"
+doc.combined.key = "C-c C-d"
+doc.combined.description = "Show documentation / type signature for symbol under point"
+command = "editor.action.showHover"
+
+# C-c C-r (Rename symbol)
+[[bind]]
+foreach.key = ["ctrl+c ctrl+r", "ctrl+c r"]
+key = "{{key}}"
+doc.kind = "action"
+doc.name = "rename symbol"
+doc.description = "Refactor and rename symbol across project"
+doc.combined.name = "rename symbol"
+doc.combined.key = "C-c C-r"
+doc.combined.description = "Refactor and rename symbol across project"
+command = "editor.action.rename"
+
+# =============================================================================
+## ## Multi-Cursor Selection
+# =============================================================================
+
+## Quickly add multiple cursors matching the selected word or find match.
+
+# C-> / C-M-n (Mark next like this)
+[[bind]]
+foreach.key = ["ctrl+shift+.", "ctrl+alt+n"]
+key = "{{key}}"
+doc.kind = "action"
+doc.name = "mark next match"
+doc.description = "Add cursor at next matching occurrence (mc/mark-next-like-this)"
+doc.combined.name = "mark next match"
+doc.combined.key = "C-> / C-M-n"
+doc.combined.description = "Add cursor at next matching occurrence"
+command = "editor.action.addSelectionToNextFindMatch"
+
+# C-< / C-M-p (Mark previous like this)
+[[bind]]
+foreach.key = ["ctrl+shift+,", "ctrl+alt+p"]
+key = "{{key}}"
+doc.kind = "action"
+doc.name = "mark prev match"
+doc.description = "Add cursor at previous matching occurrence (mc/mark-previous-like-this)"
+doc.combined.name = "mark prev match"
+doc.combined.key = "C-< / C-M-p"
+doc.combined.description = "Add cursor at previous matching occurrence"
+command = "editor.action.addSelectionToPreviousFindMatch"
+
+# C-c C-< (Mark all like this)
+[[bind]]
+key = "ctrl+c ctrl+shift+,"
+doc.kind = "action"
+doc.name = "mark all matches"
+doc.description = "Add cursors to all matching occurrences (mc/mark-all-like-this)"
+command = "editor.action.selectHighlights"
+
+# =============================================================================
+## ## Version Control (`C-x v`)
+# =============================================================================
+
+## Basic version control commands (VC / Git).
+
+# C-x v d (VC Directory / SCM)
+[[bind]]
+key = "ctrl+x v d"
+doc.kind = "util"
+doc.name = "vc status"
+doc.description = "Open source control / git panel (vc-dir)"
+command = "workbench.view.scm"
+
+# C-x v = (VC Diff)
+[[bind]]
+key = "ctrl+x v ="
+doc.kind = "util"
+doc.name = "vc diff"
+doc.description = "Show diff / file changes (vc-diff)"
+command = "git.openChange"
+
+# C-x v g (VC Annotate / Blame)
+[[bind]]
+key = "ctrl+x v g"
+doc.kind = "util"
+doc.name = "vc annotate"
+doc.description = "Show file blame / annotations (vc-annotate)"
+command = "gitlens.toggleFileBlame"
+
+# C-x v l (VC Log)
+[[bind]]
+key = "ctrl+x v l"
+doc.kind = "util"
+doc.name = "vc log"
+doc.description = "Show commit history log (vc-print-log)"
+command = "git.viewHistory"
+
+# =============================================================================
+## ## Commands & Shell Execution (`M-x`, `M-!`)
+# =============================================================================
+
+## Execute extended commands by name and launch terminal / shell commands.
+
+# M-x (Execute extended command)
+[[bind]]
+key = "alt+x"
+doc.kind = "util"
+doc.name = "execute command"
+doc.description = "Open command palette (execute-extended-command)"
+command = "workbench.action.showCommands"
+
+# M-! (Shell command)
+[[bind]]
+key = "alt+shift+1"
+doc.kind = "util"
+doc.name = "shell command"
+doc.description = "Toggle integrated terminal (shell-command)"
+doc.combined.name = "shell command"
+doc.combined.key = "M-!"
+doc.combined.description = "Toggle integrated terminal"
+command = "workbench.action.terminal.toggleTerminal"
+
+# =============================================================================
+## ## Keyboard Macros (`C-x (`, `C-x )`, `C-x e`)
+# =============================================================================
+
+## Record and replay sequences of key commands.
+
+# C-x ( (Start macro)
+[[bind]]
+key = "ctrl+x shift+9"
+doc.kind = "util"
+doc.name = "start macro"
+doc.description = "Start recording key sequence (kmacro-start-macro)"
+doc.combined.name = "macro record / call"
+doc.combined.key = "C-x ( / C-x ) / C-x e"
+doc.combined.description = "Start, stop, and replay recorded keyboard macro"
+command = "master-key.record"
+
+# C-x ) (End macro)
+[[bind]]
+key = "ctrl+x shift+0"
+doc.kind = "util"
+doc.name = "end macro"
+doc.description = "Stop recording key sequence (kmacro-end-macro)"
+doc.combined.name = "macro record / call"
+command = "noop"
+
+# C-x e (Call last macro)
+[[bind]]
+key = "ctrl+x e"
+doc.kind = "util"
+doc.name = "call macro"
+doc.description = "Replay most recently recorded macro (kmacro-end-and-call-macro)"
+doc.combined.name = "macro record / call"
+command = "master-key.replayFromStack"
+repeat = '{{max(key.count, 1)}}'
