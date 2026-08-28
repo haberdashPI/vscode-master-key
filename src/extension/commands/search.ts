@@ -5,7 +5,7 @@ import { state as keyState, CommandResult, recordedCommand } from '../state';
 import { MODE } from './mode';
 import { captureKeys } from './capture';
 import { bindings } from '../keybindings/config';
-import { onCommandComplete } from './do';
+import { onCommandComplete, showExpressionErrors } from './do';
 
 /**
  * @command search
@@ -26,7 +26,8 @@ import { onCommandComplete } from './do';
  *   regular expression
  * - `wrapAround`: (default=false): If true search will wrap back to the top of the file
  *    when hitting the end of the file, and back to the bottom when hitting the top.
- * - `selectTillMatch` (default=false): If true, all text from the current cursor position
+ * - `selectTillMatch` deprecated (see `selectUntilMatch`)
+ * - `selectUntilMatch`: (default=false): If true, all text from the current cursor position
  *   up until the searched-to position will be highlighted. (Technically this means that the
  *   final character position of the cursor is one character further)
  * - `highlightMatches` (default=true): If true search-string matches visible in the editor
@@ -34,13 +35,11 @@ import { onCommandComplete } from './do';
  * - `offset` (default=`'closerBoundary'`): determines where the cursor will land with
  *   respect to the search match. The possible values are:
  *   - `'closerBoundary'`: move selection or cursor to the boundary of the search term which
- *      is closer to the starting position. When moving forward this is at the
- *      start of the search term, and when moving backwards this is at the end of the search
- *      term.
+ *      is closer to the starting position. When moving forward this is at the start of the
+ *      search term, and when moving backwards this is at the end of the search term.
  *   - `'fartherBoundary'`: move selection or cursor to the boundary of the search term that
- *      is farther from the starting position. When moving forward this is at
- *      the end of the search term, and when moving backwards this is at the start of the
- *      search term.
+ *      is farther from the starting position. When moving forward this is at the end of the
+ *      search term, and when moving backwards this is at the start of the search term.
  *   - `'start'`: cursor will land on the first character of the match
  *   - `'end'`: cursor will land on the last character of the match
  *   - `{'from': [string], by: [number]}`: land on the character that is `by` steps away
@@ -76,6 +75,7 @@ export const searchArgs = z.
         regex: z.boolean().optional(),
         wrapAround: z.boolean().optional(),
         selectTillMatch: z.boolean().optional(),
+        selectUntilMatch: z.boolean().optional(),
         highlightMatches: z.boolean().default(true).optional(),
         offset: offsets.default('closerBoundary').or(z.object({
             from: offsets,
@@ -84,7 +84,16 @@ export const searchArgs = z.
         register: z.string().default('default'),
         skip: z.number().min(-1).optional().default(0),
     }).
-    strict();
+    strict().
+    transform((data) => {
+        if (data.selectTillMatch && !data.selectUntilMatch) {
+            showExpressionErrors({
+                errors: ['`selectTillMatch` is deprecated, use `selectUntilMatch`'],
+            });
+            data.selectUntilMatch = data.selectTillMatch;
+        }
+        return data;
+    });
 export type SearchArgs = z.infer<typeof searchArgs>;
 
 export function* searchMatches(
@@ -351,7 +360,7 @@ function navigateToNextMatch(
                     result.value.end.character - result.value.start.character,
                     state.args,
                 );
-                if (state.args.selectTillMatch) {
+                if (state.args.selectUntilMatch) {
                     newSel = new vscode.Selection(sel.anchor, newSel.active);
                 }
 
@@ -457,7 +466,7 @@ function adjustSearchPosition(
     if (offsetType === 'closerBoundary') {
         const dir = forward ? 1 : -1;
         offset = -dir * len;
-        if (!args.selectTillMatch) {
+        if (!args.selectUntilMatch) {
             // WHY: because we want the *selection* to be at the boundary, not the cursor,
             // and when moving forward the cursor is at the start of a search term while the
             // selection is one before the start of the search term
@@ -477,7 +486,7 @@ function adjustSearchPosition(
     } else {
         // offsetType === 'fartherBoundary'
         const dir = forward ? 1 : -1;
-        if (!args.selectTillMatch) {
+        if (!args.selectUntilMatch) {
             // WHY: because we want the *selection* to be at the boundary, not the cursor,
             // and when moving forward the cursor is at the start of a search term while the
             // selection is one before the start of the search term
@@ -488,7 +497,7 @@ function adjustSearchPosition(
 
     if (offset !== 0) {
         const newpos = wrappedTranslate(sel.active, doc, offset);
-        return new vscode.Selection(args.selectTillMatch ? sel.anchor : newpos, newpos);
+        return new vscode.Selection(args.selectUntilMatch ? sel.anchor : newpos, newpos);
     }
     return sel;
 }

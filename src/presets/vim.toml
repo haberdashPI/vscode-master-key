@@ -506,7 +506,7 @@ default = '{{bind.motion}}'
 command = "master-key.search"
 args.offset = "fartherBoundary"
 args.skip = "{{(max(key.count,1))-1}}"
-args.selectTillMatch = '{{item.mode == "visual" || item.operator}}'
+args.selectUntilMatch = '{{item.mode == "visual" || item.operator}}'
 args.acceptAfter = 1
 doc.name = "find →"
 doc.description = "jump to next occurrence of character x"
@@ -523,7 +523,7 @@ command = "master-key.search"
 args.offset = "fartherBoundary"
 args.skip = "{{(max(key.count,1))-1}}"
 args.reverse = true
-args.selectTillMatch = '{{item.mode != "normal"}}'
+args.selectUntilMatch = '{{item.mode != "normal"}}'
 args.acceptAfter = 1
 doc.name = "find ←"
 doc.description = "jump to previous occurrence of character x"
@@ -537,7 +537,7 @@ default = '{{bind.motion}}'
 command = "master-key.search"
 args.offset = "closerBoundary"
 args.skip = "{{(max(key.count,1))-1}}"
-args.selectTillMatch = '{{item.mode == "visual" || item.operator}}'
+args.selectUntilMatch = '{{item.mode == "visual" || item.operator}}'
 args.acceptAfter = 1
 doc.name = "to →"
 doc.description = "jump to just before the next occurrence of character x"
@@ -553,7 +553,7 @@ default = '{{bind.motion}}'
 command = "master-key.search"
 args.offset = "closerBoundary"
 args.skip = "{{(max(key.count,1))-1}}"
-args.selectTillMatch = '{{item.mode == "visual" || item.operator}}'
+args.selectUntilMatch = '{{item.mode == "visual" || item.operator}}'
 args.acceptAfter = 1
 doc.name = "to ←"
 doc.description = "jump to just before the previous occurrence of character x"
@@ -976,7 +976,7 @@ key = "/"
 mode = ["normal", "visual"]
 doc.kind = "motion"
 command = "master-key.search"
-args = { offset = "start", selectTillMatch = '{{key.mode == "visual"}}' }
+args = { offset = "start", selectUntilMatch = '{{key.mode == "visual"}}' }
 doc.name = "search"
 doc.description = "search for pattern"
 
@@ -985,7 +985,7 @@ key = "shift+/"
 mode = ["normal", "visual"]
 doc.kind = "motion"
 command = "master-key.search"
-args = { offset = "start", backwards = true, selectTillMatch = '{{key.mode == "visual"}}' }
+args = { offset = "start", backwards = true, selectUntilMatch = '{{key.mode == "visual"}}' }
 doc.name = "search"
 doc.description = "search for pattern"
 
@@ -994,7 +994,7 @@ key = "n"
 mode = ["normal", "visual"]
 doc.kind = "motion"
 command = "master-key.nextMatch"
-args.selectTillMatch = '{{key.mode == "visual"}}'
+args.selectUntilMatch = '{{key.mode == "visual"}}'
 doc.name = "next"
 doc.description = "repeat search in same direction"
 doc.combined.name = "next/prev match"
@@ -1006,7 +1006,7 @@ key = "shift+n"
 mode = ["normal", "visual"]
 doc.kind = "motion"
 command = "master-key.previousMatch"
-args.selectTillMatch = '{{key.mode == "visual"}}'
+args.selectUntilMatch = '{{key.mode == "visual"}}'
 doc.name = "previous"
 doc.description = "repeat search in opposite direction"
 

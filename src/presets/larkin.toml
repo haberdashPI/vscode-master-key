@@ -1133,7 +1133,7 @@ default = "{{bind.edit_motion}}"
 command = "master-key.search"
 args.caseSensitive = false
 args.backwards = false
-args.selectTillMatch = true
+args.selectUntilMatch = true
 args.wrapAround = true
 
 [[bind]]

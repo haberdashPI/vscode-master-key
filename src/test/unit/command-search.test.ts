@@ -96,7 +96,7 @@ labore elit occaecat cupidatat non POINT_B.`);
         await assertCursorMovesBy(editor, { line: 0, character: 11 }, async () => {
             await vscode.commands.executeCommand('master-key.search', {
                 text: 'POINT_A',
-                selectTillMatch: true,
+                selectUntilMatch: true,
             });
 
             assert.equal(editor.selection.anchor.character, 0);
