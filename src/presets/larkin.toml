@@ -1207,7 +1207,7 @@ doc.combined.name = "find char (back)"
 doc.combined.description = "Find the next (previous) char (include char in selection)"
 doc.combined.key = "f (shift+f)"
 args.acceptAfter = 1
-args.skip = "{{key.count-1}}"
+args.skip = "{{max(0, key.count-1)}}"
 args.offset = "fartherBoundary"
 
 [[bind]]
@@ -1219,7 +1219,7 @@ doc.combined.name = "find char (back)"
 args.acceptAfter = 1
 args.offset = "fartherBoundary"
 args.backwards = true
-args.skip = "{{key.count-1}}"
+args.skip = "{{max(0, key.count-1)}}"
 
 [[bind]]
 default = "{{bind.edit_motion_search}}"
@@ -1231,7 +1231,7 @@ doc.combined.key = "t (shift+t)"
 doc.combined.description = "Find the next/previous char (exclude char in selection)"
 args.acceptAfter = 1
 args.offset = "start"
-args.skip = "{{key.count-1}}"
+args.skip = "{{max(0, key.count-1)}}"
 
 [[bind]]
 default = "{{bind.edit_motion_search}}"
@@ -1242,7 +1242,7 @@ doc.combined.name = "to char (back)"
 args.acceptAfter = 1
 args.offset = "end"
 args.backwards = true
-args.skip = "{{key.count-1}}"
+args.skip = "{{max(0, key.count-1)}}"
 
 [[bind]]
 default = "{{bind.edit_motion_search}}"
@@ -1254,7 +1254,7 @@ doc.combined.description = "To next character pair"
 doc.combined.key = "s/shift+s"
 args.acceptAfter = 2
 args.offset = "start"
-args.skip = "{{key.count-1}}"
+args.skip = "{{max(0, key.count-1)}}"
 mode = "normal"
 
 [[bind]]
@@ -1265,7 +1265,7 @@ doc.description = "To previous character pair"
 doc.combined.name = "char pair →/←"
 args.acceptAfter = 2
 args.offset = "start"
-args.skip = "{{key.count-1}}"
+args.skip = "{{max(0, key.count-1)}}"
 args.backwards = true
 
 ## ## Advanced Commands
@@ -1397,7 +1397,7 @@ command = "cursorMove"
 args.to = "down"
 args.by = "wrappedLine"
 args.select = true
-args.value = "{{key.count-1}}"
+args.value = "{{max(0, key.count-1)}}"
 
 [[bind.args.commands]]
 command = "revealLine"
