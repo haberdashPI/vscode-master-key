@@ -26,10 +26,13 @@ import { onCommandComplete, showExpressionErrors } from './do';
  *   regular expression
  * - `wrapAround`: (default=false): If true search will wrap back to the top of the file
  *    when hitting the end of the file, and back to the bottom when hitting the top.
+ * - `selectMatch` (default=false): If true, the search match will be selected. This setting
+ *    cannot be `true` when `selectUntilMatch=true`.
  * - `selectTillMatch` deprecated (see `selectUntilMatch`)
  * - `selectUntilMatch`: (default=false): If true, all text from the current cursor position
  *   up until the searched-to position will be highlighted. (Technically this means that the
- *   final character position of the cursor is one character further)
+ *   final character position of the cursor is one character further).  This setting cannot
+ *   be `true` when `selectMatch=true`.
  * - `highlightMatches` (default=true): If true search-string matches visible in the editor
  *   will be highlighted.
  * - `offset` (default=`'closerBoundary'`): determines where the cursor will land with
@@ -49,15 +52,15 @@ import { onCommandComplete, showExpressionErrors } from './do';
  *     specified. The two boundary offsets (`closertBoundary` and `fartherBoundary`) imply
  *     an offset where positive values move in the same direction as search moved. `start`
  *     and `end` imply an offset where positive values move forward in the file and negative
- *     backwards.
+ *     backwards. **This setting is not valid when `selectMatch=true`.
  * - `register` (default="default"): A unique name determining where search state will be
  *    stored. Calls to (`nextMatch`/`previousMatch`) use this state to determine where to
  *    jump. If you have multiple search commands you can use registers to avoid the two
  *    commands using a shared search state.
- * - `skip` (default=0): the number of matches to skip before stopping. -1 can be used
- *   to setup search state without advancing the cursor at all; by default
- *   searching advancing to the first match. After a call with skip -1, running `nextMatch`
- *   will advance the cursor to the first match.
+ * - `skip` (default=0): the number of matches to skip before stopping. -1 can be used to
+ *   setup search state without advancing the cursor at all; by default searching advancing
+ *   to the first match. After a call with skip -1, running `nextMatch` will advance the
+ *   cursor to the first match.
  */
 
 const offsets = z.enum([
@@ -74,6 +77,7 @@ export const searchArgs = z.
         caseSensitive: z.boolean().optional(),
         regex: z.boolean().optional(),
         wrapAround: z.boolean().optional(),
+        selectMatch: z.boolean().optional(),
         selectTillMatch: z.boolean().optional(),
         selectUntilMatch: z.boolean().optional(),
         highlightMatches: z.boolean().default(true).optional(),
@@ -93,7 +97,22 @@ export const searchArgs = z.
             data.selectUntilMatch = data.selectTillMatch;
         }
         return data;
-    });
+    }).
+    refine(data => !(data.selectMatch && data.selectUntilMatch), {
+        message: '`selectMatch` and `selectUntilMatch` cannot both be true',
+        path: ['selectMatch'],
+    }).
+    refine(
+        (data) => {
+            return !(data.selectMatch && typeof data.offset !== 'string' &&
+                typeof data.offset.from === 'string' && data.offset.by != 0);
+        },
+        {
+            message: 'non-zero numerical offset is not consistent with `selectMatch`',
+            path: ['offset', 'by'],
+        },
+    );
+
 export type SearchArgs = z.infer<typeof searchArgs>;
 
 export function* searchMatches(
@@ -355,15 +374,12 @@ function navigateToNextMatch(
                         [result.value.start, result.value.end] :
                         [result.value.end, result.value.start];
                 newSel = adjustSearchPosition(
+                    sel,
                     new vscode.Selection(anchor, active),
                     doc,
                     result.value.end.character - result.value.start.character,
                     state.args,
                 );
-                if (state.args.selectUntilMatch) {
-                    newSel = new vscode.Selection(sel.anchor, newSel.active);
-                }
-
                 if (!newSel.start.isEqual(sel.start) || !newSel.end.isEqual(sel.end)) {
                     break;
                 }
@@ -371,7 +387,7 @@ function navigateToNextMatch(
                 result = matches.next();
             }
             if (result.done) {
-                // TODO: have a discreted place to say "Pattern not found"
+                // TODO: have a discrete place to say "Pattern not found"
                 // this is what gets called when there is no match
                 return sel;
             } else {
@@ -449,8 +465,10 @@ function updateSearchHighlights(event?: vscode.ConfigurationChangeEvent) {
 // on the field `offset`. This is implemented by adjusting the search position given a
 // search match
 function adjustSearchPosition(
-    // the current selection, prior to adjusting the search position
+    // the current selection
     sel: vscode.Selection,
+    // the current match expressed as a selection, prior to adjusting the search position
+    match: vscode.Selection,
     // the document where search is happening
     doc: vscode.TextDocument,
     // the length of the match
@@ -466,7 +484,7 @@ function adjustSearchPosition(
     if (offsetType === 'closerBoundary') {
         const dir = forward ? 1 : -1;
         offset = -dir * len;
-        if (!args.selectUntilMatch) {
+        if (!args.selectUntilMatch && !args.selectMatch) {
             // WHY: because we want the *selection* to be at the boundary, not the cursor,
             // and when moving forward the cursor is at the start of a search term while the
             // selection is one before the start of the search term
@@ -486,7 +504,7 @@ function adjustSearchPosition(
     } else {
         // offsetType === 'fartherBoundary'
         const dir = forward ? 1 : -1;
-        if (!args.selectUntilMatch) {
+        if (!args.selectUntilMatch && !args.selectMatch) {
             // WHY: because we want the *selection* to be at the boundary, not the cursor,
             // and when moving forward the cursor is at the start of a search term while the
             // selection is one before the start of the search term
@@ -495,11 +513,24 @@ function adjustSearchPosition(
         offset += offsetAdjust * dir;
     }
 
+    let newpos;
     if (offset !== 0) {
-        const newpos = wrappedTranslate(sel.active, doc, offset);
-        return new vscode.Selection(args.selectUntilMatch ? sel.anchor : newpos, newpos);
+        newpos = wrappedTranslate(match.active, doc, offset);
+    } else {
+        newpos = match.active;
     }
-    return sel;
+
+    if (args.selectUntilMatch) {
+        return new vscode.Selection(sel.anchor, newpos);
+    } else if (args.selectMatch) {
+        if (newpos.isAfter(match.start)) {
+            return new vscode.Selection(match.start, match.end);
+        } else {
+            return new vscode.Selection(match.end, match.start);
+        }
+    } else {
+        return new vscode.Selection(newpos, newpos);
+    }
 }
 
 function clearSearchDecorations(editor: vscode.TextEditor) {
