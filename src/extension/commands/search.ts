@@ -86,7 +86,7 @@ export const searchArgs = z.
             by: z.number(),
         })),
         register: z.string().default('default'),
-        skip: z.number().min(-1).optional().default(0),
+        skip: z.number().min(-1).default(0),
     }).
     strict().
     transform((data) => {
