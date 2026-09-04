@@ -49,7 +49,7 @@ run = ['tsc --noEmit --project tsconfig.json', 'tsc --noEmit --project src/webvi
 [tasks.build-rust]
 dir = 'src/rust/parsing'
 sources = ['src/**/*.rs', 'Cargo.toml']
-outputs = ['lib/*']
+outputs = ['../../../out/parsing_bg.wasm']
 run = [
     'wasm-pack build --target web --out-dir lib',
     'mkdir -p ../../../out',
@@ -96,6 +96,14 @@ main
 depends = ['check-types', 'lint', 'build-rust']
 sources = ['src/**/*.ts']
 run = 'node esbuild.mjs'
+
+[tasks.build_watch]
+depends = ['check-types', 'lint', 'build-rust', 'add_ignore_bindings']
+sources = ['src/**/*.ts']
+shell = 'nu -c'
+run = '''
+  node esbuild.mjs --watch
+'''
 
 [tasks.package]
 depends = ['check-types', 'lint', 'build-rust']
