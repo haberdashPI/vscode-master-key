@@ -6,7 +6,7 @@
         {
             "label": "install-debug-extensions",
             "type": "shell",
-            "command": "code --profile master-key-debug --install-extension tamasfe.even-better-toml --install-extension haberdashPI.selection-utilities",
+            "command": "code --profile master-key-debug --install-extension tamasfe.even-better-toml --install-extension haberdashPI.selection-utilities --install-extension romandecker.vscode-killring",
             "presentation": {
                 "reveal": "silent"
             }

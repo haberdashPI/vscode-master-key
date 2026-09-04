@@ -42,3 +42,6 @@ playwright/.cache/
 
 # AI
 .antigravitycli/
+
+# build step generated files
+package.backup.json
