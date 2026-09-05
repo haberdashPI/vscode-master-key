@@ -14,7 +14,7 @@
         {
             "label": "mise: watch build",
             "type": "shell",
-            "command": "mise watch build",
+            "command": "mise build_watch",
             "problemMatcher": [
                 {
                     "applyTo": "allDocuments",
@@ -22,17 +22,26 @@
                     "fileLocation": "relative",
                     "pattern": [
                         {
-                            "regexp": "^\\[build\\] [✘▲] \\[([A-Z]+)\\] (.+)",
+                            "regexp": "^\\[build_watch\\] [✘▲] \\[([A-Z]+)\\] (.+)",
                             "severity": 1,
                             "message": 2
                         },
                         {
-                            "regexp": "^\\[build\\] (?:\\t| {4})(?!\\s)([^:]+)(?::([0-9]+))?(?::([0-9]+))?:$",
+                            "regexp": "^\\[build_watch\\] (?:\\t| {4})(?!\\s)([^:]+)(?::([0-9]+))?(?::([0-9]+))?:$",
                             "file": 1,
                             "line": 2,
                             "column": 3
                         }
-                    ]
+                    ],
+                    "background": {
+                        "activeOnStart": true,
+                        "beginsPattern": {
+                            "regexp": "^\\[build_watch\\]\\s*\\[watch\\] build started"
+                        },
+                        "endsPattern": {
+                            "regexp": "^\\[build_watch\\]\\s*\\[watch\\] build finished"
+                        }
+                    }
                 },
                 {
                     "applyTo": "allDocuments",
@@ -52,21 +61,6 @@
                             "line": 2
                         }
                     ]
-                },
-                {
-                    "applyTo": "allDocuments",
-                    "base": "$esbuild",
-                    "source": "esbuild",
-                    "fileLocation": "relative",
-                    "background": {
-                        "activeOnStart": true,
-                        "beginsPattern": {
-                            "regexp": "^\\[Running:.*"
-                        },
-                        "endsPattern": {
-                            "regexp": "^\\[Command "
-                        }
-                    }
                 }
             ],
             "isBackground": true,
