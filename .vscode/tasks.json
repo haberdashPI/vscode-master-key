@@ -4,6 +4,15 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "install-debug-extensions",
+            "type": "shell",
+            "command": "code --profile master-key-debug --install-extension tamasfe.even-better-toml --install-extension haberdashPI.selection-utilities",
+            "presentation": {
+                "reveal": "silent"
+            }
+        },
+        {
+            "label": "mise: watch build",
             "type": "shell",
             "command": "mise watch build",
             "problemMatcher": [
@@ -40,6 +49,7 @@
                         {
                             "regexp": "^\\[lint\\]\\s(.*ts)\\s*$",
                             "file": 1,
+                            "line": 2
                         }
                     ]
                 },
@@ -57,18 +67,26 @@
                             "regexp": "^\\[Command "
                         }
                     }
-                },
+                }
             ],
             "isBackground": true,
-            "label": "npm: watch:esbuild",
             "presentation": {
                 "group": "watch",
                 "reveal": "never"
-            },
+            }
+        },
+        {
+            "label": "prepare-and-watch",
+            "dependsOn": [
+                "install-debug-extensions",
+                "mise: watch build"
+            ],
+            "dependsOrder": "sequence",
             "group": {
                 "kind": "build",
                 "isDefault": true
-            }
-        },
+            },
+            "problemMatcher": []
+        }
     ]
 }
