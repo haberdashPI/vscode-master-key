@@ -223,8 +223,8 @@
                 "command": "master-key.toggleSuggestions"
             },
             {
-                "key": "ctrl+k ctrl+shift+m",
-                "mac": "cmd+k cmd+shift+m",
+                "key": "ctrl+k tab",
+                "mac": "cmd+k tab",
                 "command": "master-key.toggleVisualDocModifiers"
             }
         ],
