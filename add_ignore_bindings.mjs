@@ -53,11 +53,23 @@ for (const mod of modifierCombos) {
 }
 
 // Inject into package.json
-fs.copyFileSync('package.json', 'package.backup.json');
 const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+const baseKeybindings = (pkg.contributes?.keybindings || []).filter(b => !b.generated);
+
+if (!fs.existsSync('package.backup.json')) {
+    const cleanPkg = {
+        ...pkg,
+        contributes: {
+            ...pkg.contributes,
+            keybindings: baseKeybindings,
+        },
+    };
+    fs.writeFileSync('package.backup.json', JSON.stringify(cleanPkg, null, 2) + '\n');
+}
+
 pkg.contributes.keybindings = [
-    ...pkg.contributes.keybindings.filter(b => !b.generated),
+    ...baseKeybindings,
     ...generatedBindings.map(b => ({ ...b, generated: true })),
 ];
 
-fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');

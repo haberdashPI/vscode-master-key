@@ -108,7 +108,6 @@ run = 'node esbuild.mjs'
 
 [tasks.build_watch]
 depends = ['check-types', 'lint', 'build-rust', 'add_ignore_bindings']
-sources = ['src/**/*.ts']
 shell = 'nu -c'
 run = '''
 # Define cleanup closure
