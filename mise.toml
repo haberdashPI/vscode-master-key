@@ -35,6 +35,7 @@ nu -c 'if not ($env.CI? | default false | into bool) {
     # these components are installed separately during CI
     pnpm install --frozen-lockfile
     pnpm exec playwright install chromium
+    mise install-debug-extensions
 }'
 '''
 
@@ -103,12 +104,20 @@ run = 'mv package.backup.json package.json'
 
 [tasks.build]
 depends = ['check-types', 'lint', 'build-rust']
-sources = ['src/**/*.ts']
+shell = 'nu -c'
 run = 'node esbuild.mjs'
 
-[tasks.build_watch]
+[tasks.install-debug-extensions]
+shell = 'nu -c'
+run = '''
+(code --profile master-key-debug
+    --install-extension tamasfe.even-better-toml
+    --install-extension haberdashPI.selection-utilities
+    --install-extension rockingskier.copy-copy-paste)
+'''
+
+[tasks.debug_watch]
 depends = ['check-types', 'lint', 'build-rust', 'add_ignore_bindings']
-sources = ['src/**/*.ts']
 shell = 'nu -c'
 run = '''
 # Define cleanup closure
