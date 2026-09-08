@@ -6,27 +6,40 @@ import * as polyfill from '@esbuild-plugins/node-globals-polyfill';
 const release = process.argv.includes('--release');
 const watch = process.argv.includes('--watch');
 
+let activeBuilds = 0;
+
 /**
- * Format esbuild output so that it can be parsed by the esbuild problem matcher
+ * Format esbuild output so that it can be parsed by the esbuild problem matcher.
+ * Coordinates across multiple contexts so that `[watch] build finished` is only
+ * emitted once all active builds have completed.
  *
- * @type {import('esbuild').Plugin}
+ * @param {string} name
+ * @type {(name?: string) => import('esbuild').Plugin}
  */
-const esbuildProblemMatcherPlugin = {
-    name: 'esbuild-problem-matcher',
+const createEsbuildProblemMatcherPlugin = (name = 'default') => ({
+    name: `esbuild-problem-matcher-${name}`,
 
     setup(build) {
         build.onStart(() => {
-            console.log('[watch] build started');
+            if (activeBuilds === 0) {
+                console.log('[watch] build started');
+            }
+            activeBuilds++;
         });
         build.onEnd((result) => {
             result.errors.forEach(({ text, location }) => {
                 console.error(`✘ [ERROR] ${text}`);
-                console.error(`    ${location.file}:${location.line}:${location.column}:`);
+                if (location) {
+                    console.error(`    ${location.file}:${location.line}:${location.column}:`);
+                }
             });
-            console.log('[watch] build finished');
+            activeBuilds = Math.max(0, activeBuilds - 1);
+            if (activeBuilds === 0) {
+                console.log('[watch] build finished');
+            }
         });
     },
-};
+});
 
 /**
  * Bundle all tests, including the test runner, into
@@ -94,7 +107,7 @@ async function main() {
                         webTestBundlePlugin,
                     ] :
                     []),
-            esbuildProblemMatcherPlugin,
+            createEsbuildProblemMatcherPlugin('extension'),
         ],
     });
 
@@ -112,7 +125,7 @@ async function main() {
         outdir: 'out/webview/keys',
         logLevel: 'silent',
         plugins: [
-            esbuildProblemMatcherPlugin,
+            createEsbuildProblemMatcherPlugin('webview'),
         ],
     });
 

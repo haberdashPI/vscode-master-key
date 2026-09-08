@@ -1,4 +1,5 @@
 {
+    "debug.javascript.enableNetworkView": false,
     "eslint.validate": [
         "javascript",
         "javascriptreact",
