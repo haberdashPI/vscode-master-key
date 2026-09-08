@@ -129,12 +129,24 @@ function commandChangesModeOrPrefix(command: ReifiedBinding) {
 // used to ensure orderly execution of commands within `master-key.do`
 export const commandMutex = new Mutex();
 
-function prependPrefix(prefix: string, suffix: string) {
+function prependPrefix(prefix: string, key: string) {
+    // `key` can be either the complete sequence of keys or a suffix thereof, depending on
+    // whether `[[bind]]` includes an explicit prefix or an implicit prefix (explicit
+    // prefixes are defined using the `prefix` field of `[[bind]]`). To ensure we have the
+    // complete key sequence, we determine the *entire* prefix from what is stored under
+    // `args.prefix` (this will always be the full prefix; this is produced near the end of
+    // `outputs_for_mode_and_prefix` in `bind.rs`).
+    const suffix = finalKeyInSequence(key);
     if (prefix.length > 0) {
         return prefix + ' ' + suffix;
     } else {
         return suffix;
     }
+}
+
+function finalKeyInSequence(key: string) {
+    const chords = key.split(' ');
+    return chords[chords.length - 1];
 }
 
 /**
