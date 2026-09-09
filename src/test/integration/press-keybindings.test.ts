@@ -123,6 +123,37 @@ test.describe('Basic keypresses', () => {
         });
     }
 
+    if (process.env.CI !== 'true') {
+        test('Displays key prefixes correctly for implicit and explicit prefixes',
+            async ({ workbox }) => {
+                const { editor, pos } = await setup(workbox, 'simpleMotions.toml');
+                const keys = workbox.locator('[id="haberdashPI.master-key.keys"]');
+
+                // implicit prefix: `g g` is a single binding whose own `key` field is
+                // itself multi-chord -- regression test for the leading chord getting
+                // doubled (e.g. showing "G, G, G" instead of "G, G") when the triggering
+                // chord is combined with the already-accumulated prefix.
+                await editor.press('g');
+                await expect(keys.getByLabel(/^Keys Typed: G$/)).toBeVisible();
+                await editor.press('g');
+                await expect(keys.getByLabel(/^Keys Typed: G, G$/)).toBeVisible();
+                await expect(pos).toHaveText('Ln 3, Col 1');
+                // let the delayed status bar clear finish before starting the next sequence
+                await workbox.waitForTimeout(600);
+
+                // explicit prefix: `d` sets the prefix via an explicit call to
+                // `master-key.prefix`, and a *separate* `w` binding (gated on
+                // `prefixes.anyOf = ["d", ...]`) continues it -- regression test for #166
+                // (the two bindings must still combine into a single displayed sequence,
+                // without also double-counting the `d`).
+                await editor.press('d');
+                await expect(keys.getByLabel(/^Keys Typed: D$/)).toBeVisible();
+                await editor.press('w');
+                await expect(keys.getByLabel(/^Keys Typed: D, W$/)).toBeVisible();
+            },
+        );
+    }
+
     test('Updates `capture` variable', async ({ workbox }) => {
         const { editor, pos } = await setup(workbox, 'simpleMotions.toml');
         await editor.press('t');
