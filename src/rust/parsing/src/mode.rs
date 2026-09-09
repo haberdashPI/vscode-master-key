@@ -119,6 +119,12 @@ pub struct ModeInput {
     #[serde(default)]
     whenNoBinding: Option<Spanned<WhenNoBindingInput>>,
 
+    /// @forBindingField mode
+    ///
+    /// - `displayName (default=name)`: How the mode is described to a user. This shows
+    ///   up in the status bar.
+    displayName: Option<String>,
+
     #[serde(flatten)]
     other_fields: HashMap<String, toml::Value>,
 }
@@ -127,6 +133,7 @@ impl Default for ModeInput {
     fn default() -> Self {
         return ModeInput {
             name: "default".to_string(),
+            displayName: Some("".to_string()),
             default: Some(true),
             highlight: None,
             cursorShape: None,
@@ -262,6 +269,7 @@ impl LeafValue for CursorShape {}
 #[wasm_bindgen(getter_with_clone)]
 pub struct Mode {
     pub name: String,
+    pub displayName: String,
     pub default: bool,
     pub highlight: ModeHighlight,
     pub cursorShape: CursorShape,
@@ -349,8 +357,11 @@ impl Mode {
             warnings.push(err.unwrap_err());
         }
 
+        let name: String = resolve!(input, name, scope)?;
+        let display_name: Option<String> = resolve!(input, displayName, scope)?;
         return Ok(Mode {
-            name: resolve!(input, name, scope)?,
+            name: name.clone(),
+            displayName: display_name.unwrap_or(name),
             default: resolve!(input, default, scope)?,
             highlight: resolve!(input, highlight, scope)?,
             cursorShape: resolve!(input, cursorShape, scope)?,
@@ -559,6 +570,7 @@ impl Modes {
             "capture".to_string(),
             Mode {
                 name: "capture".to_string(),
+                displayName: "capture".to_string(),
                 default: false,
                 highlight: ModeHighlight::NoHighlight,
                 cursorShape: CursorShape::Underline,
@@ -679,6 +691,7 @@ impl Default for Modes {
                 "default".to_string(),
                 Mode {
                     name: "default".to_string(),
+                    displayName: "".to_string(),
                     default: true,
                     highlight: ModeHighlight::default(),
                     cursorShape: CursorShape::default(),
