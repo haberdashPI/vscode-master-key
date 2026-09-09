@@ -15,7 +15,9 @@ function updateModeStatus() {
         const highlight = bindings.mode(mode)?.highlight || 'NoHighlight';
         // an indicator of whether `master-key.record === true`
         const rec = state.get<boolean>(RECORD) || false;
-        modeStatusBar.text = (rec ? 'rec: ' : '') + mode;
+        // the displayName of the mode
+        const displayName = bindings.mode(mode)?.displayName || '';
+        modeStatusBar.text = (rec ? 'rec: ' : '') + displayName;
         modeStatusBar.accessibilityInformation = {
             label: 'Keybinding Mode: ' + modeStatusBar.text,
         };

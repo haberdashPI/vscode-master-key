@@ -20,7 +20,7 @@
 # markdown output. All other comments will be ignored.
 
 [header]
-name = "Simple Vim"
+name = "Vim"
 version = "2.1.0"
 requiredExtensions = [
     "haberdashPI.vscode-select-by-indent",
