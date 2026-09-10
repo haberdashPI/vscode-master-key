@@ -7,6 +7,7 @@ import { runCommandsForMode } from './capture';
 import { onSetBindings } from '../keybindings/config';
 import { CursorShape, KeyFileResult } from '../../rust/parsing/lib/parsing';
 import { bindings } from '../keybindings/config';
+import { showExpressionErrors } from './do';
 
 export const MODE = 'mode';
 
@@ -36,7 +37,9 @@ async function setMode(args_: unknown): Promise<CommandResult> {
 }
 
 export function restoreModesCursorState() {
-    const shape = bindings.mode(currentResolvedMode)?.cursorShape || CursorShape.Line;
+    const modeResult = bindings.mode(currentResolvedMode)
+    showExpressionErrors(modeResult); 
+    const shape = modeResult.value?.cursorShape || CursorShape.Line;
     updateCursorAppearance(vscode.window.activeTextEditor, shape);
 }
 
@@ -59,8 +62,12 @@ export async function activate(_context: vscode.ExtensionContext) {
     onSetBindings(updateModes);
 
     vscode.window.onDidChangeActiveTextEditor((e) => {
-        const shape = bindings.mode(currentResolvedMode)?.cursorShape || CursorShape.Line;
-        updateCursorAppearance(e, shape);
+        const modeResult = bindings.mode(currentResolvedMode)
+        showExpressionErrors(modeResult);
+        if (modeResult.value) {
+            const shape = modeResult.value.cursorShape || CursorShape.Line;
+            updateCursorAppearance(e, shape);
+        }
     });
 
     const defaultMode = bindings.default_mode() || 'default';
@@ -75,14 +82,15 @@ export async function activate(_context: vscode.ExtensionContext) {
         // async that I don't understand???)
         // TODO: this might not be necessary now that we've changed how `state.ts` works
         const newMode = <string>state.get(MODE) || bindings.default_mode() || 'default';
-        const mode = bindings.mode(newMode);
-        if (_currentMode !== newMode) {
-            const shape = (mode?.cursorShape || CursorShape.Line);
-            updateCursorAppearance(vscode.window.activeTextEditor, shape);
-            if (mode) {
-                runCommandsForMode(mode);
-            }
-            currentResolvedMode = newMode;
+        const modeResult = bindings.mode(newMode)
+        showExpressionErrors(modeResult);
+            if (_currentMode !== newMode) {
+                const shape = (modeResult.value?.cursorShape || CursorShape.Line);
+                updateCursorAppearance(vscode.window.activeTextEditor, shape);
+                if (modeResult.value) {
+                    runCommandsForMode(modeResult.value);
+                }
+                currentResolvedMode = newMode;
         }
         return true;
     });

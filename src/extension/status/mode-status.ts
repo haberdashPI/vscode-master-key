@@ -5,18 +5,27 @@ import { MODE } from '../commands/mode';
 import { onSetBindings } from '../keybindings/config';
 import { bindings } from '../keybindings/config';
 import { ModeHighlight } from '../../rust/parsing/lib/parsing';
+import { showExpressionErrors } from '../commands/do';
 
 // revise the content of the status bar used to indicate what keybinding mode we're in
 function updateModeStatus() {
     if (modeStatusBar) {
         // the name of the mode
         const mode = <string>state.get(MODE) || bindings.default_mode();
-        // the coloring of the mode name
-        const highlight = bindings.mode(mode)?.highlight || 'NoHighlight';
+        const modeResult = bindings.mode(mode)
+        showExpressionErrors(modeResult);
+        const highlight = modeResult.value?.highlight || 'NoHighlight';
         // an indicator of whether `master-key.record === true`
-        const rec = state.get<boolean>(RECORD) || false;
         // the displayName of the mode
-        const displayName = bindings.mode(mode)?.displayName || '';
+        let displayName = modeResult.value?.displayName;
+        // legacy behavior when `displayName` is not defined
+        // (NOTE: default mode uses displayName == "" so this
+        // behavior only occurs for user defined mode that have
+        // not `displayName` field)
+        if (displayName === undefined) {
+            const rec = state.get<boolean>(RECORD) || false;
+            modeStatusBar.text = (rec ? 'rec: ' : '') + mode;
+        }
         modeStatusBar.text = (rec ? 'rec: ' : '') + displayName;
         modeStatusBar.accessibilityInformation = {
             label: 'Keybinding Mode: ' + modeStatusBar.text,

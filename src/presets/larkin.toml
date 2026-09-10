@@ -28,6 +28,10 @@ requiredExtensions = [
     "dnut.rewrap-revived",
 ]
 
+[[define.val]]
+select = false
+record = false
+
 [[mode]]
 name = "insert"
 whenNoBinding = "insertCharacters"
@@ -35,16 +39,19 @@ whenNoBinding = "insertCharacters"
 [[mode]]
 name = "normal"
 default = true
-highlight = "Highlight"
+highlight = '{{if !val.record { "Highlight" } else { "Alert" } }}'
 cursorShape = "Block"
+displayName = '''{{
+if (val.record) { "rec: " } else { "" } +
+"Normal" +
+if (val.select) { " (selecting)" } else { "" }
+}}'''
 
 [[mode]]
 name = "selectedit"
-highlight = "Highlight"
+highlight = '{{if !val.record { "Highlight" } else { "Alert" } }}'
 cursorShape = "BlockOutline"
-
-[[define.val]]
-select = false
+displayName = '''{{if (val.record) { "rec: " } else { "" } + "Edit Selections" }}'''
 
 [[kind]]
 name = "motion"
@@ -2215,9 +2222,10 @@ default = "{{bind.edit_action_history}}"
 doc.name = "record"
 doc.description = "Start/stop recording Master Key commands"
 key = "shift+q"
-when = "!master-key.record"
-command = "master-key.record"
-args.on = true
+when = "!master-key.val.record"
+command = "master-key.setValue"
+args.name = "record"
+args.value = true
 
 [[bind]]
 default = "{{bind.edit_action_history}}"
@@ -2227,12 +2235,13 @@ Start/stop recording key presses defined by Master Key pushing it to the
 top of the `history` stack once recording finishes."
 """
 key = "shift+q"
-when = "master-key.record"
+when = "master-key.val.record"
 command = "runCommands"
 
 [[bind.args.commands]]
-command = "master-key.record"
-args.on = false
+command = "master-key.setValue"
+args.name = "record"
+args.value = false
 
 [[bind.args.commands]]
 command = "master-key.pushHistoryToStack"
@@ -3283,8 +3292,9 @@ command = "selection-utilities.activeAtStart"
 
 [[mode]]
 name = "syminsert"
-highlight = "Highlight"
+highlight = '{{if !val.record { "Highlight" } else { "Alert" } }}'
 cursorShape = "BlockOutline"
+displayName = '''{{if (val.record) { "rec: " } else { "" } + "Symmetric Insert" }}'''
 
 [[mode.whenNoBinding.run]]
 command = "selection-utilities.insertAround"

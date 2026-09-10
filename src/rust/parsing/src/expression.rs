@@ -124,7 +124,7 @@ use crate::{
 /// - `key.captured`: The text currently captured by the most recent call to
 ///   [`master-key.captureKeys`](/commands/captureKeys).
 /// - `key.prefix`: The currently active [keybinding prefix](/commands/prefix)
-/// - `key.record`: a boolean flag used to indicate when keys are marked for recording
+/// - `key.record` **DEPRECATED**: a boolean flag used to indicate when keys are marked for recording
 /// - `history`: a queue containing a record of all previously run master key commands, up
 ///   to the number configured by Master Key's "Command History Maximum" (defaults to 1024).
 ///   See [master-key.replayFromHistory](/commands/replayFromHistory) for details.

@@ -175,7 +175,7 @@ use crate::error::{
 use crate::expression::value::{BareValue, Value};
 use crate::expression::{HistoryQueue, MacroStack, Scope};
 use crate::kind::Kind;
-use crate::mode::{Mode, ModeInput, Modes, WhenNoBinding};
+use crate::mode::{ReifiedMode, Mode, ModeInput, Modes, WhenNoBinding};
 use crate::{err, resolve, wrn};
 
 use lazy_static::lazy_static;
@@ -604,6 +604,12 @@ impl KeyFileResult {
     }
 }
 
+#[wasm_bindgen(getter_with_clone)]
+struct ModeResult {
+    pub value: Option<ReifiedMode>,
+    pub errors: Vec<String>,
+}
+
 // These lines are tested during integration tests with the typescript code
 #[wasm_bindgen]
 #[cfg_attr(coverage_nightly, coverage(off))]
@@ -706,19 +712,25 @@ impl KeyFileResult {
     }
 
     // get information about a given binding mode (e.g. mode.ts and mode-status.ts)
-    // TODO: use some kind of error format so we can report issues with expression evaluation
-    pub fn mode(&self, name: &str) -> Option<ReifiedMode> {
-        return match &self.file {
-            Some(KeyFile { mode, .. }) => {
-                let cur_mode = mode.get(name).map(Mode::clone);
-                return match ReifiedMode::new(cur_mode) {
-                    Ok(x) => Some(x)
-                    Err(x) => {
-
-                    }
+    pub fn mode(&mut self, name: &str) -> ModeResult {
+        if let Some(KeyFile { mode, .. }) = &self.file {
+            if let Some(cur_mode) = &mode.get(name).map(Mode::clone) {
+                return match ReifiedMode::new(cur_mode, &mut self.scope) {
+                    Ok(x) => ModeResult {
+                        value: Some(x),
+                        errors: vec![],
+                    },
+                    Err(x) => ModeResult {
+                        value: None,
+                        errors: x.report_strings(),
+                    },
                 }
             }
-            Option::None => None,
+        }
+
+        return ModeResult {
+            value: None,
+            errors: vec![],
         };
     }
     pub fn default_mode(&self) -> String {

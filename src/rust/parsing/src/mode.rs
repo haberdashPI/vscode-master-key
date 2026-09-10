@@ -16,6 +16,7 @@ use crate::error::{Context, ErrorContext, ParseError, Result, ResultVec, err};
 use crate::expression::{Scope, value::TypedValue};
 use crate::file::KeyFileResult;
 use crate::resolve;
+use crate::clone_resolve;
 use crate::util::{LeafValue, Resolving};
 use crate::{err, wrn};
 
@@ -121,8 +122,11 @@ pub struct ModeInput {
 
     /// @forBindingField mode
     ///
-    /// - `displayName (default=name)`: How the mode is described to a user. This shows
-    ///   up in the status bar.
+    /// - `displayName (default=legacy behavior)`: How the mode is described to a user. This shows
+    ///   up in the status bar. When there is no displayName, the legacy behavior
+    ///   (before `displayName` was implemented) is used. Normally this means
+    ///   the `displayName == name`, but if `key.record` is true the name
+    ///   is `rec: $name`.
     displayName: Option<Spanned<TypedValue<String>>>,
 
     #[serde(flatten)]
@@ -293,9 +297,10 @@ pub struct Mode {
     default: bool,
     highlight: TypedValue<ModeHighlight>,
     cursorShape: TypedValue<CursorShape>,
-    whenNoBinding: WhenNoBinding,
+    pub(crate) whenNoBinding: WhenNoBinding,
 }
 
+#[derive(Clone, Debug)]
 #[wasm_bindgen(getter_with_clone)]
 #[allow(non_snake_case)]
 pub struct ReifiedMode {
@@ -311,12 +316,12 @@ impl ReifiedMode {
     pub fn new(mode: &Mode, scope: &mut Scope) -> ResultVec<ReifiedMode> {
         return Ok(ReifiedMode {
             name: mode.name.clone(),
-            displayName: resolve!(mode, displayName, scope)?,
+            displayName: clone_resolve!(mode, displayName, scope)?,
             default: mode.default,
-            highlight: resolve!(mode, highlight, scope)?,
-            cursorShape: resolve!(mode, cursorShape, scope)?,
+            highlight: clone_resolve!(mode, highlight, scope)?,
+            cursorShape: clone_resolve!(mode, cursorShape, scope)?,
             whenNoBinding: mode.whenNoBinding.clone(),
-        })
+        });
     }
 }
 

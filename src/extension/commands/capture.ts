@@ -31,7 +31,7 @@ function clearTypeSubscription() {
 
 // for each key press run a sequence of commands associated with `mode`
 // (ala `mode.whenNoBinding.run`)
-export async function runCommandsForMode(mode: Mode) {
+export async function runCommandsForMode(mode: ReifiedMode) {
     if (mode.name !== 'capture') {
         clearTypeSubscription();
     }

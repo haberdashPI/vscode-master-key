@@ -248,6 +248,13 @@ macro_rules! resolve {
     };
 }
 
+#[macro_export]
+macro_rules! clone_resolve {
+    ($x:expr, $field:ident, $scope:expr) => {
+        crate::util::Resolving::resolve(($x).$field.clone(), stringify!($field), $scope)
+    };
+}
+
 /// `Resolving` objects implement `resolve` which removes book-keeping objects related to
 /// the parsing an object (e.g. toml::Span), and returns a more ergonomic object
 /// representation useful for downstream operations that don't care about these

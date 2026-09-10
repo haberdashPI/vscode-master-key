@@ -506,6 +506,19 @@ impl ErrorSet {
         result.dedup();
         return result;
     }
+
+    pub fn report_strings(&self) -> Vec<String> {
+        let mut result: Vec<_> = self.
+            errors.
+            iter().
+            map(|e| e.report_helper(None)).
+            filter(Option::is_some).
+            map(Option::unwrap).
+            map(|x| x.message).
+            collect();
+        result.dedup();
+        return result;
+    }
 }
 
 #[wasm_bindgen]
