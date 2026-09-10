@@ -4,7 +4,7 @@ import { validateInput, clean } from '../utils';
 import { commandArgs, CommandResult, WrappedCommandResult } from '../state';
 import { MODE } from './mode';
 import { state, onSet, recordedCommand } from '../state';
-import { Mode, WhenNoBindingHeader } from '../../rust/parsing/lib/parsing';
+import { ReifiedMode, WhenNoBindingHeader } from '../../rust/parsing/lib/parsing';
 
 import { bindings } from '../keybindings/config';
 import { maxHistory, showExpressionErrors, showExpressionMessages } from './do';
@@ -31,7 +31,7 @@ function clearTypeSubscription() {
 
 // for each key press run a sequence of commands associated with `mode`
 // (ala `mode.whenNoBinding.run`)
-export async function runCommandsForMode(mode: Mode) {
+export async function runCommandsForMode(mode: ReifiedMode) {
     if (mode.name !== 'capture') {
         clearTypeSubscription();
     }
