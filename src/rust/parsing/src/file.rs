@@ -706,9 +706,18 @@ impl KeyFileResult {
     }
 
     // get information about a given binding mode (e.g. mode.ts and mode-status.ts)
-    pub fn mode(&self, name: &str) -> Option<Mode> {
+    // TODO: use some kind of error format so we can report issues with expression evaluation
+    pub fn mode(&self, name: &str) -> Option<ReifiedMode> {
         return match &self.file {
-            Some(KeyFile { mode, .. }) => mode.get(name).map(Mode::clone),
+            Some(KeyFile { mode, .. }) => {
+                let cur_mode = mode.get(name).map(Mode::clone);
+                return match ReifiedMode::new(cur_mode) {
+                    Ok(x) => Some(x)
+                    Err(x) => {
+
+                    }
+                }
+            }
             Option::None => None,
         };
     }

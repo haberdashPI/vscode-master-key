@@ -13,7 +13,7 @@ use crate::bind::{
     Binding, BindingCodes, BindingOutput, ReifiedBinding, TEXT_FOCUS_CONDITION, UNKNOWN_RANGE,
 };
 use crate::error::{Context, ErrorContext, ParseError, Result, ResultVec, err};
-use crate::expression::Scope;
+use crate::expression::{Scope, value::TypedValue};
 use crate::file::KeyFileResult;
 use crate::resolve;
 use crate::util::{LeafValue, Resolving};
@@ -87,7 +87,7 @@ pub struct ModeInput {
     ///     - `NoHighlight` does not add coloring
     ///     - `Highlight` adds warning related colors (usually orange)
     ///     - `Alert` adds error related colors (usually red)
-    highlight: Option<ModeHighlight>,
+    highlight: Option<Spanned<TypedValue<ModeHighlight>>>,
     /// @forBindingField mode
     ///
     /// - `cursorShape`: The shape of the cursor when in this mode. One of the following:
@@ -97,7 +97,7 @@ pub struct ModeInput {
     ///   - `LineThin`
     ///   - `BlockOutline`
     ///   - `UnderlineThin`
-    cursorShape: Option<CursorShape>,
+    cursorShape: Option<Spanned<TypedValue<CursorShape>>>,
     /// @forBindingField mode
     ///
     /// - `whenNoBinding`: How to respond to keys when there is no binding for them in this
@@ -123,7 +123,7 @@ pub struct ModeInput {
     ///
     /// - `displayName (default=name)`: How the mode is described to a user. This shows
     ///   up in the status bar.
-    displayName: Option<String>,
+    displayName: Option<Spanned<TypedValue<String>>>,
 
     #[serde(flatten)]
     other_fields: HashMap<String, toml::Value>,
@@ -133,7 +133,10 @@ impl Default for ModeInput {
     fn default() -> Self {
         return ModeInput {
             name: "default".to_string(),
-            displayName: Some("".to_string()),
+            displayName: Some(Spanned::new(
+                UNKNOWN_RANGE,
+                TypedValue::Constant("".to_string()),
+            )),
             default: Some(true),
             highlight: None,
             cursorShape: None,
@@ -251,6 +254,15 @@ pub enum ModeHighlight {
 }
 impl LeafValue for ModeHighlight {}
 
+impl From<TypedValue<ModeHighlight>> for ModeHighlight {
+    fn from(value: TypedValue<ModeHighlight>) -> Self {
+        return match value {
+            TypedValue::Constant(x) => x,
+            TypedValue::Variable(value) => panic!("Unresolved variable value: {value:?}"),
+        };
+    }
+}
+
 #[wasm_bindgen]
 #[derive(Deserialize, Serialize, Clone, Debug, Default)]
 pub enum CursorShape {
@@ -264,10 +276,29 @@ pub enum CursorShape {
 }
 impl LeafValue for CursorShape {}
 
-#[derive(Clone, Debug, Serialize)]
+impl From<TypedValue<CursorShape>> for CursorShape {
+    fn from(value: TypedValue<CursorShape>) -> Self {
+        return match value {
+            TypedValue::Constant(x) => x,
+            TypedValue::Variable(value) => panic!("Unresolved variable value: {value:?}"),
+        };
+    }
+}
+
+#[derive(Serialize, Clone, Debug)]
 #[allow(non_snake_case)]
-#[wasm_bindgen(getter_with_clone)]
 pub struct Mode {
+    name: String,
+    displayName: Option<TypedValue<String>>,
+    default: bool,
+    highlight: TypedValue<ModeHighlight>,
+    cursorShape: TypedValue<CursorShape>,
+    whenNoBinding: WhenNoBinding,
+}
+
+#[wasm_bindgen(getter_with_clone)]
+#[allow(non_snake_case)]
+pub struct ReifiedMode {
     pub name: String,
     pub displayName: String,
     pub default: bool,
@@ -276,10 +307,23 @@ pub struct Mode {
     pub(crate) whenNoBinding: WhenNoBinding,
 }
 
+impl ReifiedMode {
+    pub fn new(mode: &Mode, scope: &mut Scope) -> ResultVec<ReifiedMode> {
+        return Ok(ReifiedMode {
+            name: mode.name.clone(),
+            displayName: resolve!(mode, displayName, scope)?,
+            default: mode.default,
+            highlight: resolve!(mode, highlight, scope)?,
+            cursorShape: resolve!(mode, cursorShape, scope)?,
+            whenNoBinding: mode.whenNoBinding.clone(),
+        })
+    }
+}
+
 // this is only run in the typescript code, so we ignore coverage
 #[wasm_bindgen]
 #[cfg_attr(coverage_nightly, coverage(off))]
-impl Mode {
+impl ReifiedMode {
     #[allow(non_snake_case)]
     pub fn whenNoBinding(&self) -> WhenNoBindingHeader {
         return match &self.whenNoBinding {
@@ -357,11 +401,9 @@ impl Mode {
             warnings.push(err.unwrap_err());
         }
 
-        let name: String = resolve!(input, name, scope)?;
-        let display_name: Option<String> = resolve!(input, displayName, scope)?;
         return Ok(Mode {
-            name: name.clone(),
-            displayName: display_name.unwrap_or(name),
+            name: resolve!(input, name, scope)?,
+            displayName: resolve!(input, displayName, scope)?,
             default: resolve!(input, default, scope)?,
             highlight: resolve!(input, highlight, scope)?,
             cursorShape: resolve!(input, cursorShape, scope)?,
@@ -391,7 +433,6 @@ impl Mode {
 }
 
 #[derive(Serialize, Clone, Debug)]
-#[wasm_bindgen(getter_with_clone)]
 pub struct Modes {
     pub(crate) map: HashMap<String, Mode>,
     pub default: String,
@@ -570,10 +611,10 @@ impl Modes {
             "capture".to_string(),
             Mode {
                 name: "capture".to_string(),
-                displayName: "capture".to_string(),
+                displayName: Some(TypedValue::Constant("".to_string())),
                 default: false,
-                highlight: ModeHighlight::NoHighlight,
-                cursorShape: CursorShape::Underline,
+                highlight: TypedValue::Constant(ModeHighlight::NoHighlight),
+                cursorShape: TypedValue::Constant(CursorShape::Underline),
                 whenNoBinding: WhenNoBinding::InsertCharacters,
             },
         );
@@ -691,10 +732,10 @@ impl Default for Modes {
                 "default".to_string(),
                 Mode {
                     name: "default".to_string(),
-                    displayName: "".to_string(),
+                    displayName: Some(TypedValue::Constant("".to_string())),
                     default: true,
-                    highlight: ModeHighlight::default(),
-                    cursorShape: CursorShape::default(),
+                    highlight: TypedValue::Constant(ModeHighlight::default()),
+                    cursorShape: TypedValue::Constant(CursorShape::default()),
                     whenNoBinding: WhenNoBinding::InsertCharacters,
                 },
             )]),
