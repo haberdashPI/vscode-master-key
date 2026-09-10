@@ -53,19 +53,29 @@ for (const mod of modifierCombos) {
 }
 
 // Inject into package.json
+
+// A previous task may have exited before its `ignore_bindings_cleanup` step ran,
+// leaving a backup behind. Restore it first so the backup written below always
+// reflects the pre-generation `package.json`.
+if (fs.existsSync('package.backup.json')) {
+    fs.renameSync('package.backup.json', 'package.json');
+}
+
 const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+// filter out any generated bindings that were committed by mistake, so that they
+// don't get restored by the cleanup step
 const baseKeybindings = (pkg.contributes?.keybindings || []).filter(b => !b.generated);
 
-if (!fs.existsSync('package.backup.json')) {
-    const cleanPkg = {
-        ...pkg,
-        contributes: {
-            ...pkg.contributes,
-            keybindings: baseKeybindings,
-        },
-    };
-    fs.writeFileSync('package.backup.json', JSON.stringify(cleanPkg, null, 2) + '\n');
-}
+const cleanPkg = {
+    ...pkg,
+    contributes: {
+        ...pkg.contributes,
+        keybindings: baseKeybindings,
+    },
+};
+// use the same indentation as `package.json` below, otherwise restoring the backup
+// reformats the entire file
+fs.writeFileSync('package.backup.json', JSON.stringify(cleanPkg, null, 4) + '\n');
 
 pkg.contributes.keybindings = [
     ...baseKeybindings,
