@@ -21,9 +21,9 @@ test.describe('Configuration Updates', () => {
         await expect(cursor.first()).toHaveClass(/cursor-line-style/);
 
         const statusBarMode = workbox.locator(
-            'div[aria-label="Keybinding Mode: default"]',
+            'div[aria-label="Keybinding Mode: normal"]',
         );
-        await expect(statusBarMode).toBeAttached();
+        await expect(statusBarMode).toHaveCount(0);
     });
 
     test('Can add and run bindings from `source`', async ({ workbox }) => {

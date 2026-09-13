@@ -26,7 +26,7 @@ function updateModeStatus() {
             const rec = state.get<boolean>(RECORD) || false;
             modeStatusBar.text = (rec ? 'rec: ' : '') + mode;
         } else {
-            modeStatusBar.text = displayName || "";
+            modeStatusBar.text = displayName || '';
         }
         if (modeStatusBar.text) {
             modeStatusBar.accessibilityInformation = {

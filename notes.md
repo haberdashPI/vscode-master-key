@@ -1,3 +1,9 @@
+Remaining issues with mode-expression evaluation
+- [X] figure out where/when we need to call parse_asts
+- [X] update documentation
+    - [X] remove places where expressions are described as being isolated to `[[bind]]`
+- [X] disallow expressions for `[[mode]]` in older file versions
+
 Remaining issues with Emacs preset
 
 - [X] if we hit a sequence like C-h x, where x is not a command defined in the binding set
