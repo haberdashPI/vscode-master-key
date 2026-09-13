@@ -503,7 +503,17 @@ impl ErrorSet {
             .filter(Option::is_some)
             .map(Option::unwrap)
             .collect();
-        result.dedup();
+        // the same message at the same location says nothing extra the second time around;
+        // these can show up when a single source location is validated more than once (e.g.
+        // a `[[define.bind]]` entry is expanded once for every binding that defaults to it)
+        let mut seen: Vec<ErrorReport> = Vec::with_capacity(result.len());
+        result.retain(|x| {
+            if seen.contains(x) {
+                return false;
+            }
+            seen.push(x.clone());
+            return true;
+        });
         return result;
     }
 

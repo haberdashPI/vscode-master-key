@@ -405,7 +405,7 @@ impl KeyFile {
 
             return Ok(Spanned::new(
                 span.clone(),
-                define.expand(x.into_inner()).with_range(&span)?,
+                define.expand(x.into_inner(), warnings).with_range(&span)?,
             ));
         });
 
@@ -4093,5 +4093,164 @@ pub(crate) mod tests {
         assert!(result.bind.len() > 50);
 
         assert!(FileDocSection::write_markdown(&result.docs, true).len() > 0);
+    }
+
+    // a shared preamble for the `args`-inheritance tests below
+    fn inherited_args_file(defines_and_binds: &str) -> KeyFileResult {
+        let data = format!(
+            r#"
+        #:master-keybindings
+
+        [header]
+        version = "2.0.0"
+
+        [[mode]]
+        name = "insert"
+        whenNoBinding = "insertCharacters"
+
+        [[mode]]
+        name = "normal"
+        default = true
+        {defines_and_binds}
+        "#
+        );
+        return parse_keybinding_data(data, None);
+    }
+
+    #[test]
+    fn warn_about_args_inherited_across_command_override() {
+        let result = inherited_args_file(
+            r#"
+        [[define.bind]]
+        id = "motion"
+        command = "cursorMove"
+        args.value = 1
+        args.select = false
+
+        [[bind]]
+        default = "{{bind.motion}}"
+        key = "a"
+        command = "selection-utilities.activePageMove"
+        args.dir = "down"
+        args.select = true
+        "#,
+        );
+
+        let report = result.errors.as_ref().unwrap();
+        assert_eq!(report.len(), 1, "Reports: {:?}", report);
+        assert_eq!(report[0].level, ErrorLevel::Warn);
+        assert!(
+            report[0]
+                .message
+                .contains("`command` set to `selection-utilities.activePageMove`"),
+            "Message: {}",
+            report[0].message
+        );
+        assert!(
+            report[0].message.contains("differs from the default"),
+            "Message: {}",
+            report[0].message
+        );
+        assert!(
+            report[0].message.contains("(`cursorMove`)"),
+            "Message: {}",
+            report[0].message
+        );
+        // the warning is advisory: `args` are still merged, as documented
+        let file = result.file.unwrap();
+        assert_eq!(
+            unwrap_table(&file.bind[0].commands[0].args),
+            HashMap::from([
+                ("dir".to_string(), Value::String("down".to_string())),
+                ("value".to_string(), Value::Integer(1)),
+                ("select".to_string(), Value::Boolean(true)),
+            ])
+        );
+    }
+
+    #[test]
+    fn no_args_warning_when_command_is_unchanged() {
+        let result = inherited_args_file(
+            r#"
+        [[define.bind]]
+        id = "motion"
+        command = "cursorMove"
+        args.value = 1
+
+        [[bind]]
+        default = "{{bind.motion}}"
+        key = "a"
+        args.to = "left"
+
+        [[bind]]
+        default = "{{bind.motion}}"
+        key = "b"
+        command = "cursorMove"
+        args.to = "right"
+        "#,
+        );
+
+        let report = result.errors.as_ref().unwrap();
+        assert_eq!(report.len(), 0, "Reports: {:?}", report);
+    }
+
+    #[test]
+    fn no_args_warning_when_inherited_args_are_overridden() {
+        let result = inherited_args_file(
+            r#"
+        [[define.bind]]
+        id = "motion"
+        command = "cursorMove"
+        args.value = 1
+
+        [[bind]]
+        default = "{{bind.motion}}"
+        key = "a"
+        command = "someOtherCommand"
+        args.value = 2
+        "#,
+        );
+
+        let report = result.errors.as_ref().unwrap();
+        assert_eq!(report.len(), 0, "Reports: {:?}", report);
+    }
+
+    #[test]
+    fn warn_once_per_define_about_inherited_args() {
+        // the warning is about the `[[define.bind]]` entry that overrides the command, so
+        // it is reported once, no matter how many bindings default to that entry
+        let result = inherited_args_file(
+            r#"
+        [[define.bind]]
+        id = "motion"
+        command = "cursorMove"
+        args.value = "{{key.count}}"
+
+        [[define.bind]]
+        id = "page_motion"
+        default = "{{bind.motion}}"
+        command = "selection-utilities.activePageMove"
+
+        [[bind]]
+        default = "{{bind.page_motion}}"
+        key = "a"
+        args.dir = "down"
+
+        [[bind]]
+        default = "{{bind.page_motion}}"
+        key = "b"
+        args.dir = "up"
+        "#,
+        );
+
+        let report = result.errors.as_ref().unwrap();
+        assert_eq!(report.len(), 1, "Reports: {:?}", report);
+        assert!(
+            report[0]
+                .message
+                .contains("`command` set to `selection-utilities.activePageMove`"),
+            "Message: {}",
+            report[0].message
+        );
     }
 }
