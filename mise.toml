@@ -100,7 +100,10 @@ run = 'node check_generated_bindings.mjs'
 run = 'node add_ignore_bindings.mjs'
 
 [tasks.ignore_bindings_cleanup]
-run = 'mv package.backup.json package.json'
+shell = 'nu -c'
+# tolerate a missing backup: the task this cleans up after may have failed before
+# `add_ignore_bindings` ran, or the backup may already have been restored
+run = 'if ("package.backup.json" | path exists) { mv -f package.backup.json package.json }'
 
 [tasks.build]
 depends = ['check-types', 'lint', 'build-rust']
@@ -118,21 +121,9 @@ run = '''
 
 [tasks.debug_watch]
 depends = ['check-types', 'lint', 'build-rust', 'add_ignore_bindings']
+depends_post = ['ignore_bindings_cleanup']
 shell = 'nu -c'
-run = '''
-# Define cleanup closure
-def do_cleanup [] {
-  mv package.backup.json package.json
-}
-
-# Run watch process and catch termination/interrupts
-try {
-  node esbuild.mjs --watch
-} catch {
-  # Triggers when Ctrl+C (SIGINT) or SIGTERM interrupts the child process
-  do_cleanup
-}
-'''
+run = 'node esbuild.mjs --watch'
 
 [tasks.package]
 depends = ['check-types', 'lint', 'build-rust', 'add_ignore_bindings']
