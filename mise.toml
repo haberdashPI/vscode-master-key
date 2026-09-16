@@ -22,12 +22,12 @@ watchexec = "2.3.2"
 [[tools.rust]]
 version = "1.90.0"
 targets = "wasm32-unknown-unknown"
-components = "llvm-tools-preview"
+components = "llvm-tools"
 
 [[tools.rust]]
 version = "nightly-2026-08-20"
 targets = "wasm32-unknown-unknown"
-components = "llvm-tools-preview"
+components = "llvm-tools"
 
 [hooks]
 postinstall = '''
@@ -50,7 +50,7 @@ run = ['tsc --noEmit --project tsconfig.json', 'tsc --noEmit --project src/webvi
 [tasks.build-rust]
 dir = 'src/rust/parsing'
 sources = ['src/**/*.rs', 'Cargo.toml']
-outputs = ['../../../out/parsing_bg.wasm']
+outputs = ['lib/*']
 run = [
     'wasm-pack build --target web --out-dir lib',
     'mkdir -p ../../../out',
