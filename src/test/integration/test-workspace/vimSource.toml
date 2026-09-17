@@ -2,7 +2,7 @@
 
 [header]
 version = "2.2.0"
-source = "Simple Vim"
+source = "Vim"
 
 [[bind]]
 key = "shift+k"

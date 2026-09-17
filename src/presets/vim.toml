@@ -2,7 +2,7 @@
 # author: David Little
 # license: MIT https://github.com/haberdashPI/vscode-master-key/blob/main/LICENSE.md
 
-## # Simple Vim Bindings
+## # Vim Bindings
 
 ## This Vim binding set serves as a starting place to learn Master Key. Note that the goal of
 ## Master Key is to create modern modal keybinding configurations, rather than achieving
@@ -20,8 +20,8 @@
 # markdown output. All other comments will be ignored.
 
 [header]
-name = "Simple Vim"
-version = "2.1.0"
+name = "Vim"
+version = "2.3.0"
 requiredExtensions = [
     "haberdashPI.vscode-select-by-indent",
     "haberdashPI.selection-utilities",
@@ -37,6 +37,9 @@ description = "These commands move the cursor and/or selections."
 name = "action"
 description = "Actions do something with the selected text (e.g. delete it)."
 
+[[define.val]]
+record = false
+
 [[kind]]
 name = "util"
 description = "Utility commands like help, mode switching, etc."
@@ -47,11 +50,15 @@ whenNoBinding = "insertCharacters"
 
 [[mode]]
 name = "normal"
+highlight = '{{if val.record { "Alert" } else { "Highlight" } }}'
+displayName = '{{ if val.record { "rec: normal" } else { "normal" } }}'
 default = true
 cursorShape = "Block"
 
 [[mode]]
 name = "visual"
+displayName = '{{ if val.record { "rec: visual" } else { "visual" } }}'
+highlight = '{{if val.record { "Alert" } else { "Highlight" } }}'
 cursorShape = "Block"
 
 ## ## Normal Mode
@@ -1034,6 +1041,45 @@ last_history_index(|i|
 
 [[bind.args.commands]]
 command = "master-key.enterNormal"
+
+[[bind]]
+key = "shift+q"
+doc.name = "record"
+doc.description = "Start/stop recording Master Key commands"
+when = "!master-key.val.record"
+command = "master-key.setValue"
+args.name = "record"
+args.value = true
+
+[[bind]]
+doc.name = "record"
+doc.description = """
+Start/stop recording key presses defined by Master Key pushing it to the
+top of the `history` stack once recording finishes."
+"""
+key = "shift+q"
+when = "master-key.val.record"
+command = "runCommands"
+
+[[bind.args.commands]]
+command = "master-key.setValue"
+args.name = "record"
+args.value = false
+
+[[bind.args.commands]]
+command = "master-key.pushHistoryToStack"
+args.range.from = '{{last_history_index(|i| history[i-1]?.doc?.name == "record")}}'
+args.range.to = '{{history.len()-1}}'
+
+[[bind]]
+doc.name = "replay"
+doc.description = """
+Replay the Master Key command sequence at the top of the `key.macro` stack. Specifying
+a count requests the Nth most recent item on this stack.
+"""
+key = "q q"
+command = "master-key.replayFromStack"
+args.index = "{{key.count}}"
 
 # =============================================================================
 ## ## Window Commands (Ctrl+w)

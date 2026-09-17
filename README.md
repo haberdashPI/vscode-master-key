@@ -13,11 +13,11 @@ Master Key is a tool for becoming a power-user of your [VSCode](https://code.vis
 - recording of keyboard input (a.k.a. keyboard macros)
 - a powerful TOML-based keybinding specification
 - several predefined keybinding sets:
-    - **Simple Vim**: a modest Vim binding set, focused on keybindings from [this cheatsheet](https://vim.rtorr.com/). A good place to get started with Master Key for user's comfortable with Vim.
-    - **Emacs**: a modest Emacs binding set, focused on core functionality. A good
+    - [**Vim**](https://haberdashpi.github.io/vscode-master-key/presets/vim.html): a modest Vim binding set, focused on keybindings from [this cheatsheet](https://vim.rtorr.com/). A good place to get started with Master Key for user's comfortable with Vim.
+    - [**Emacs**](https://haberdashpi.github.io/vscode-master-key/presets/emacs.html): a modest Emacs binding set, focused on core functionality. A good
       place to get started with Master Key for those comfortable with Emacs.
       Less comprehensive than Larkin.
-    - **Larkin**: @haberdashPI's daily driver, inspired by Kakoune/Helix. A large
+    - [**Larkin**](https://haberdashpi.github.io/vscode-master-key/presets/larkin.html): @haberdashPI's daily driver, inspired by Kakoune/Helix. A large
       binding set that shows off all of the available features.
 
 This curated snippet from Master Key's Larkin preset defines a VIM-like feature to update a count argument along with a downward motion that uses the count argument:
@@ -67,7 +67,7 @@ The easiest way to get started is to activate a built-in keybinding preset that 
 1. Install this extension
 2. On windows only: restart VSCode — there is an [active investigation to avoid this workaround](https://github.com/haberdashPI/vscode-master-key/issues/51).
 3. Run the command `Master Key: Activate Keybindings`
-4. Select one of the built-in binding sets (e.g. "Simple Vim")
+4. Select one of the built-in binding sets (e.g. "Vim")
 5. Review the binding set's documentation using `Master Key: Show Text Documentation`
 
 <!-- STOP_DOCS -->
@@ -181,7 +181,7 @@ command = "cursorMove"
 args.to = "down"
 ```
 
-### Parameteric Bindings
+### Parametric Bindings
 
 Express an entire series of bindings using the `foreach` field.
 
