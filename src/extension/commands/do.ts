@@ -297,7 +297,7 @@ export async function doCommandsCmd(args_: unknown): Promise<CommandResult> {
                         // document would be do to executed commands, which we are already
                         // recording
                         const mode: string = state.get(MODE) || bindings.default_mode();
-                        if (bindings.mode(mode)?.whenNoBinding() ==
+                        if (bindings.mode(mode)?.value?.whenNoBinding() ==
                             WhenNoBindingHeader.InsertCharacters) {
                             toRun.edit_document_id = id;
                         }

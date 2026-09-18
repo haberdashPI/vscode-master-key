@@ -175,7 +175,7 @@ use crate::error::{
 use crate::expression::value::{BareValue, Value};
 use crate::expression::{HistoryQueue, MacroStack, Scope};
 use crate::kind::Kind;
-use crate::mode::{Mode, ModeInput, Modes, WhenNoBinding};
+use crate::mode::{Mode, ModeInput, Modes, ReifiedMode, WhenNoBinding};
 use crate::{err, resolve, wrn};
 
 use lazy_static::lazy_static;
@@ -357,7 +357,7 @@ impl KeyFile {
         };
 
         // [[mode]]
-        let modes = match Modes::new(input.mode, source, &mut scope, warnings) {
+        let modes = match Modes::new(input.mode, source, &mut scope, warnings, version) {
             Err(mut es) => {
                 errors.append(&mut es.errors);
                 Modes::default()
@@ -604,6 +604,12 @@ impl KeyFileResult {
     }
 }
 
+#[wasm_bindgen(getter_with_clone)]
+pub struct ModeResult {
+    pub value: Option<ReifiedMode>,
+    pub errors: Vec<String>,
+}
+
 // These lines are tested during integration tests with the typescript code
 #[wasm_bindgen]
 #[cfg_attr(coverage_nightly, coverage(off))]
@@ -706,10 +712,25 @@ impl KeyFileResult {
     }
 
     // get information about a given binding mode (e.g. mode.ts and mode-status.ts)
-    pub fn mode(&self, name: &str) -> Option<Mode> {
-        return match &self.file {
-            Some(KeyFile { mode, .. }) => mode.get(name).map(Mode::clone),
-            Option::None => None,
+    pub fn mode(&mut self, name: &str) -> ModeResult {
+        if let Some(KeyFile { mode, .. }) = &self.file {
+            if let Some(cur_mode) = &mode.get(name).map(Mode::clone) {
+                return match ReifiedMode::new(cur_mode, &mut self.scope) {
+                    Ok(x) => ModeResult {
+                        value: Some(x),
+                        errors: vec![],
+                    },
+                    Err(x) => ModeResult {
+                        value: None,
+                        errors: x.report_strings(),
+                    },
+                };
+            }
+        }
+
+        return ModeResult {
+            value: None,
+            errors: vec![],
         };
     }
     pub fn default_mode(&self) -> String {
@@ -4053,5 +4074,24 @@ pub(crate) mod tests {
         //     "docs: {}",
         //     FileDocSection::write_markdown(&result.docs, true)
         // )
+    }
+
+    #[test]
+    fn emacs_test() {
+        // the default presets should be parseable (also a good "integration" test to ensure
+        // our parsing works at scale)
+        let data = std::fs::read("../../presets/emacs.toml").unwrap();
+
+        let result = parse_keybinding_data(data, None);
+
+        assert!(
+            result.errors.as_ref().map_or(true, |v| v.is_empty()),
+            "Errors: {:?}",
+            result.errors
+        );
+        let result = result.file.unwrap();
+        assert!(result.bind.len() > 50);
+
+        assert!(FileDocSection::write_markdown(&result.docs, true).len() > 0);
     }
 }

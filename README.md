@@ -14,6 +14,9 @@ Master Key is a tool for becoming a power-user of your [VSCode](https://code.vis
 - a powerful TOML-based keybinding specification
 - several predefined keybinding sets:
     - **Simple Vim**: a modest Vim binding set, focused on keybindings from [this cheatsheet](https://vim.rtorr.com/). A good place to get started with Master Key for user's comfortable with Vim.
+    - **Emacs**: a modest Emacs binding set, focused on core functionality. A good
+      place to get started with Master Key for those comfortable with Emacs.
+      Less comprehensive than Larkin.
     - **Larkin**: @haberdashPI's daily driver, inspired by Kakoune/Helix. A large
       binding set that shows off all of the available features.
 

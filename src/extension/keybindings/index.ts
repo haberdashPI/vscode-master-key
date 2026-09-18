@@ -452,7 +452,7 @@ export let checksumOfAllPresets = '';
 const bindingPresets = new Map<string, KeyFileData>();
 
 let extensionPresetsDir: vscode.Uri; // populated in `activate`
-const presetFiles = ['larkin.toml', 'vim.toml'];
+const presetFiles = ['larkin.toml', 'vim.toml', 'emacs.toml'];
 export async function loadPresets() {
     const release = await commandMutex.acquire();
     if (bindingPresets.size == 0) {

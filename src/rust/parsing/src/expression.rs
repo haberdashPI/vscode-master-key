@@ -27,9 +27,10 @@ use crate::{
 ///
 /// # Expressions
 ///
-/// You can use expressions in a number of places inside a [bind](/bindings/bind)
-/// definition. An expression is a snippet of code surrounded by double curly braces <code
-/// v-pre>{{like + this}}</code> that occurs within a TOML string.
+/// You can use expressions in a number of places inside [bind](/bindings/bind)
+/// [define](/bindings/define) and [mode](/bindings/bind). An expression is a snippet of
+/// code surrounded by double curly braces <code v-pre>{{like + this}}</code> that occurs
+/// within a TOML string.
 ///
 /// When the string is comprised entirely of a single expression, it can evaluate to any
 /// valid TOML object.
@@ -124,7 +125,7 @@ use crate::{
 /// - `key.captured`: The text currently captured by the most recent call to
 ///   [`master-key.captureKeys`](/commands/captureKeys).
 /// - `key.prefix`: The currently active [keybinding prefix](/commands/prefix)
-/// - `key.record`: a boolean flag used to indicate when keys are marked for recording
+/// - `key.record` **DEPRECATED**: a boolean flag used to indicate when keys are marked for recording
 /// - `history`: a queue containing a record of all previously run master key commands, up
 ///   to the number configured by Master Key's "Command History Maximum" (defaults to 1024).
 ///   See [master-key.replayFromHistory](/commands/replayFromHistory) for details.

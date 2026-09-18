@@ -230,7 +230,7 @@ pub struct BindingInput {
 /// - `master-key.captured`: The text currently captured by the most recent call to
 ///   [`master-key.captureKeys`](/commands/captureKeys).
 /// - `master-key.prefix`: The currently active [keybinding prefix](/commands/prefix)
-/// - `master-key.record`: a boolean flag used to indicate when keys are marked for
+/// - `master-key.record`: **DEPRECATED** a boolean flag used to indicate when keys are marked for
 ///   recording
 /// - `master-key.val.[name]`: the current value of a [defined
 ///   variable](/bindings/define#variable-definitions).
