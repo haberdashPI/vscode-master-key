@@ -15,7 +15,8 @@ export default defineConfig({
     base: '/vscode-master-key/',
     themeConfig: {
         search: { provider: 'local' },
-        logo: '../../logo.png',
+        // served from `docs/public/logo.png` (copied from the extension icon by `mise extract-docs`)
+        logo: '/logo.png',
         // https://vitepress.dev/reference/default-theme-config
         nav: [
             { text: 'User Guide', link: '/guide' },
@@ -30,6 +31,7 @@ export default defineConfig({
                 items: [
                     { text: 'Larkin', link: '/presets/larkin' },
                     { text: 'Vim', link: '/presets/vim' },
+                    { text: 'Emacs', link: '/presets/emacs' },
                 ]
             },
             {

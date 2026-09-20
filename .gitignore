@@ -6,6 +6,7 @@ docs/.vitepress/dist
 docs/.vitepress/commands.mjs
 docs/.vitepress/bindings.mjs
 docs/**/*.md
+docs/public
 
 # build output
 out
