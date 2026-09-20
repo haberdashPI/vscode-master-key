@@ -280,9 +280,13 @@ const recordArgs = z.
  * @command record
  * @order 150
  *
- * Turns a recording marker on or off. Note that all commands are always recorded,
- * regardless of this value. This flag is to make it easy to select past history, by looking
- * for `master-key.record` entries in the command history.
+ * **DEPRECATED**: this is command now redundant, as users can define their own record
+ * flag using `[[define]]`, `master-key.setValue` and `mode.displayName` to replicate the
+ * exact behavior of `master-key.record`.
+ *
+ * `master-key.record` Turns a recording marker on or off. Note that all commands are always
+ * recorded, regardless of this value. This flag is to make it easy to select past history,
+ * by looking for `master-key.record` entries in the command history.
  *
  * Furthermore, when record is on, Master Key will change the status bar `mode` to signal
  * that keys are being recorded.

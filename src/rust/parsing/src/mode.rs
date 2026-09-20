@@ -2,6 +2,7 @@
 use log::info;
 
 use rhai::{EvalAltResult, ImmutableString};
+use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use toml::Spanned;
@@ -12,8 +13,10 @@ use crate::bind::foreach::all_characters;
 use crate::bind::{
     Binding, BindingCodes, BindingOutput, ReifiedBinding, TEXT_FOCUS_CONDITION, UNKNOWN_RANGE,
 };
+use crate::clone_resolve;
 use crate::error::{Context, ErrorContext, ParseError, Result, ResultVec, err};
 use crate::expression::Scope;
+use crate::expression::value::{Expanding, Expression, TypedValue, Value};
 use crate::file::KeyFileResult;
 use crate::resolve;
 use crate::util::{LeafValue, Resolving};
@@ -64,8 +67,11 @@ use crate::{err, wrn};
 ///
 /// ## Fields
 ///
-/// The only required field for a mode is its name (marked with "❗") but there are a number
-/// of optional fields that impact the behavior of the mode.
+/// In the below field descriptions note that:
+///
+/// - ❗ denotes a required field.
+/// - ⚡ denotes that a field can include runtime [expressions](/expressions/index)
+///
 #[allow(non_snake_case)]
 #[derive(Deserialize, Clone, Debug)]
 pub struct ModeInput {
@@ -82,22 +88,22 @@ pub struct ModeInput {
     default: Option<bool>,
     /// @forBindingField mode
     ///
-    /// - `highlight`: Whether and how to highlight the name of this mode in the bottom left
+    /// - ⚡ `highlight`: Whether and how to highlight the name of this mode in the bottom left
     ///   corner of VSCode. Possible values are:
     ///     - `NoHighlight` does not add coloring
     ///     - `Highlight` adds warning related colors (usually orange)
     ///     - `Alert` adds error related colors (usually red)
-    highlight: Option<ModeHighlight>,
+    highlight: Option<Spanned<TypedValue<ModeHighlight>>>,
     /// @forBindingField mode
     ///
-    /// - `cursorShape`: The shape of the cursor when in this mode. One of the following:
+    /// - ⚡ `cursorShape`: The shape of the cursor when in this mode. One of the following:
     ///   - `Line`
     ///   - `Block`
     ///   - `Underline`
     ///   - `LineThin`
     ///   - `BlockOutline`
     ///   - `UnderlineThin`
-    cursorShape: Option<CursorShape>,
+    cursorShape: Option<Spanned<TypedValue<CursorShape>>>,
     /// @forBindingField mode
     ///
     /// - `whenNoBinding`: How to respond to keys when there is no binding for them in this
@@ -121,19 +127,62 @@ pub struct ModeInput {
 
     /// @forBindingField mode
     ///
-    /// - `displayName (default=name)`: How the mode is described to a user. This shows
-    ///   up in the status bar.
-    displayName: Option<String>,
+    /// - ⚡ `displayName (default=legacy behavior)`: How the mode is described to a user.
+    ///   This shows up in the status bar. When there is no displayName, the legacy behavior
+    ///   (before `displayName` was implemented) is used. Normally this means the
+    ///   `displayName == name`, but if `key.record` is true the name is `rec: $name`.
+    displayName: Option<Spanned<TypedValue<String>>>,
 
     #[serde(flatten)]
     other_fields: HashMap<String, toml::Value>,
+}
+
+impl Expanding for ModeInput {
+    fn is_constant(&self) -> bool {
+        return self.highlight.is_constant()
+            && self.cursorShape.is_constant()
+            && self.displayName.is_constant();
+    }
+
+    fn map_expressions<F>(self, f: &mut F) -> ResultVec<Self>
+    where
+        F: FnMut(Expression) -> Result<Value>,
+    {
+        let mut errors = Vec::new();
+        let result = ModeInput {
+            name: self.name,
+            default: self.default,
+            highlight: self.highlight.map_expressions(f).unwrap_or_else(|mut e| {
+                errors.append(&mut e.errors);
+                None
+            }),
+            cursorShape: self.cursorShape.map_expressions(f).unwrap_or_else(|mut e| {
+                errors.append(&mut e.errors);
+                None
+            }),
+            whenNoBinding: self.whenNoBinding,
+            displayName: self.displayName.map_expressions(f).unwrap_or_else(|mut e| {
+                errors.append(&mut e.errors);
+                None
+            }),
+            other_fields: self.other_fields,
+        };
+        if errors.len() > 0 {
+            return Err(errors.into());
+        } else {
+            return Ok(result);
+        }
+    }
 }
 
 impl Default for ModeInput {
     fn default() -> Self {
         return ModeInput {
             name: "default".to_string(),
-            displayName: Some("".to_string()),
+            displayName: Some(Spanned::new(
+                UNKNOWN_RANGE,
+                TypedValue::Constant("".to_string()),
+            )),
             default: Some(true),
             highlight: None,
             cursorShape: None,
@@ -251,6 +300,15 @@ pub enum ModeHighlight {
 }
 impl LeafValue for ModeHighlight {}
 
+impl From<TypedValue<ModeHighlight>> for ModeHighlight {
+    fn from(value: TypedValue<ModeHighlight>) -> Self {
+        return match value {
+            TypedValue::Constant(x) => x,
+            TypedValue::Variable(value) => panic!("Unresolved variable value: {value:?}"),
+        };
+    }
+}
+
 #[wasm_bindgen]
 #[derive(Deserialize, Serialize, Clone, Debug, Default)]
 pub enum CursorShape {
@@ -264,22 +322,57 @@ pub enum CursorShape {
 }
 impl LeafValue for CursorShape {}
 
-#[derive(Clone, Debug, Serialize)]
+impl From<TypedValue<CursorShape>> for CursorShape {
+    fn from(value: TypedValue<CursorShape>) -> Self {
+        return match value {
+            TypedValue::Constant(x) => x,
+            TypedValue::Variable(value) => panic!("Unresolved variable value: {value:?}"),
+        };
+    }
+}
+
+#[derive(Serialize, Clone, Debug)]
 #[allow(non_snake_case)]
-#[wasm_bindgen(getter_with_clone)]
 pub struct Mode {
+    name: String,
+    displayName: Option<TypedValue<String>>,
+    default: bool,
+    highlight: TypedValue<ModeHighlight>,
+    cursorShape: TypedValue<CursorShape>,
+    pub(crate) whenNoBinding: WhenNoBinding,
+}
+
+#[derive(Clone, Debug)]
+#[wasm_bindgen(getter_with_clone)]
+#[allow(non_snake_case)]
+pub struct ReifiedMode {
     pub name: String,
-    pub displayName: String,
+    pub displayName: Option<String>,
     pub default: bool,
     pub highlight: ModeHighlight,
     pub cursorShape: CursorShape,
     pub(crate) whenNoBinding: WhenNoBinding,
 }
 
+impl ReifiedMode {
+    pub fn new(mode: &Mode, scope: &mut Scope) -> ResultVec<ReifiedMode> {
+        // when there is no display name defined, we use the mode name
+        // as the display name
+        return Ok(ReifiedMode {
+            name: mode.name.clone(),
+            displayName: clone_resolve!(mode, displayName, scope)?,
+            default: mode.default,
+            highlight: clone_resolve!(mode, highlight, scope)?,
+            cursorShape: clone_resolve!(mode, cursorShape, scope)?,
+            whenNoBinding: mode.whenNoBinding.clone(),
+        });
+    }
+}
+
 // this is only run in the typescript code, so we ignore coverage
 #[wasm_bindgen]
 #[cfg_attr(coverage_nightly, coverage(off))]
-impl Mode {
+impl ReifiedMode {
     #[allow(non_snake_case)]
     pub fn whenNoBinding(&self) -> WhenNoBindingHeader {
         return match &self.whenNoBinding {
@@ -338,7 +431,10 @@ impl Mode {
         input: ModeInput,
         scope: &mut Scope,
         warnings: &mut Vec<ParseError>,
+        version: &Version,
     ) -> ResultVec<Self> {
+        scope.parse_asts(&input)?;
+
         if let Some(ref x) = input.whenNoBinding {
             let span = x.span().clone();
             if let WhenNoBindingInput::UseMode(mode) = x.as_ref() {
@@ -357,11 +453,43 @@ impl Mode {
             warnings.push(err.unwrap_err());
         }
 
-        let name: String = resolve!(input, name, scope)?;
-        let display_name: Option<String> = resolve!(input, displayName, scope)?;
+        if !VersionReq::parse("2.3").unwrap().matches(version) {
+            if let Some(name) = &input.displayName {
+                let span = name.span().clone();
+                Err(err!(
+                    "`displayName` is only defined in version 2.3. Bump `version` \
+                          to 2.3 or higher."
+                ))
+                .with_range(&span)?;
+            }
+            // NOTE: we don't need to check if `displayName` is an expression
+            // because it was introduced in the same tagged version as
+            // expression handling within `[[mode]]`.
+            if let Some(highlight) = &input.highlight {
+                let span = highlight.span().clone();
+                if let TypedValue::Variable(_) = highlight.as_ref() {
+                    Err(err!(
+                        "`highlight` only supports expressions in version 2.3. Bump \
+                            `version` to 2.3 or higher."
+                    ))
+                    .with_range(&span)?;
+                }
+            }
+            if let Some(shape) = &input.cursorShape {
+                let span = shape.span().clone();
+                if let TypedValue::Variable(_) = shape.as_ref() {
+                    Err(err!(
+                        "`cursorShape` only supports expressions in version 2.3. Bump \
+                            `version` to 2.3 or higher."
+                    ))
+                    .with_range(&span)?;
+                }
+            }
+        }
+
         return Ok(Mode {
-            name: name.clone(),
-            displayName: display_name.unwrap_or(name),
+            name: resolve!(input, name, scope)?,
+            displayName: resolve!(input, displayName, scope)?,
             default: resolve!(input, default, scope)?,
             highlight: resolve!(input, highlight, scope)?,
             cursorShape: resolve!(input, cursorShape, scope)?,
@@ -391,7 +519,6 @@ impl Mode {
 }
 
 #[derive(Serialize, Clone, Debug)]
-#[wasm_bindgen(getter_with_clone)]
 pub struct Modes {
     pub(crate) map: HashMap<String, Mode>,
     pub default: String,
@@ -403,6 +530,7 @@ impl Modes {
         source: Option<&crate::file::KeyFile>,
         scope: &mut Scope,
         warnings: &mut Vec<ParseError>,
+        version: &Version,
     ) -> ResultVec<Self> {
         // define the set of available modes and check that:
         // 1. there is one default mode,
@@ -462,7 +590,8 @@ impl Modes {
             let span = mode.span().clone();
             let mode_name = mode.as_ref().name.clone();
             let mut mode_warnings = Vec::new();
-            match Mode::new(mode.into_inner(), scope, &mut mode_warnings).with_range(&span) {
+            match Mode::new(mode.into_inner(), scope, &mut mode_warnings, version).with_range(&span)
+            {
                 Ok(x) => {
                     modes.insert(mode_name, x);
                 }
@@ -570,10 +699,10 @@ impl Modes {
             "capture".to_string(),
             Mode {
                 name: "capture".to_string(),
-                displayName: "capture".to_string(),
+                displayName: Some(TypedValue::Constant("".to_string())),
                 default: false,
-                highlight: ModeHighlight::NoHighlight,
-                cursorShape: CursorShape::Underline,
+                highlight: TypedValue::Constant(ModeHighlight::NoHighlight),
+                cursorShape: TypedValue::Constant(CursorShape::Underline),
                 whenNoBinding: WhenNoBinding::InsertCharacters,
             },
         );
@@ -691,10 +820,10 @@ impl Default for Modes {
                 "default".to_string(),
                 Mode {
                     name: "default".to_string(),
-                    displayName: "".to_string(),
+                    displayName: Some(TypedValue::Constant("".to_string())),
                     default: true,
-                    highlight: ModeHighlight::default(),
-                    cursorShape: CursorShape::default(),
+                    highlight: TypedValue::Constant(ModeHighlight::default()),
+                    cursorShape: TypedValue::Constant(CursorShape::default()),
                     whenNoBinding: WhenNoBinding::InsertCharacters,
                 },
             )]),
