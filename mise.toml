@@ -202,6 +202,12 @@ run = [
     'cp src/docs/index.md docs/',
 ]
 
+# has no sources/outputs so it always runs: the nav-bar logo is the extension icon at the
+# repo root, and vitepress only serves assets from `docs/public`
+[tasks.sync-docs-assets]
+shell = 'nu -c'
+run = ['mkdir -v docs/public', 'cp logo.png docs/public/']
+
 [tasks.extract-preset-docs]
 sources = ['../../presets/**/*.toml', 'src/**/*.rs']
 outputs = ['../../../docs/presets/*.md']
@@ -219,13 +225,13 @@ ls ../../presets/**/*.toml | each { |file|
 '''
 
 [tasks.dev-docs]
-depends = ['extract-docs', 'extract-preset-docs']
+depends = ['extract-docs', 'extract-preset-docs', 'sync-docs-assets']
 run = 'pnpm exec vitepress dev docs'
 
 [tasks.build-docs]
-sources = ['docs/**/*.md']
+sources = ['docs/**/*.md', 'logo.png']
 outputs = ['docs/.vitepress/dist/**/*']
-depends = ['extract-docs', 'extract-preset-docs']
+depends = ['extract-docs', 'extract-preset-docs', 'sync-docs-assets']
 run = 'pnpm exec vitepress build docs'
 
 [tasks.clean-docs]
