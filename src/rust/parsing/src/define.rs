@@ -14,8 +14,8 @@ use crate::bind::command::CommandInput;
 use crate::bind::validation::BindingReference;
 use crate::error::{Context, ErrorContext, ParseError, Result, ResultVec, err};
 use crate::expression::Scope;
-use crate::expression::value::{Expanding, Expression, Value};
-use crate::util::{Merging, Resolving};
+use crate::expression::value::{Expanding, Expression, TypedValue, Value};
+use crate::util::{Merging, Required, Resolving};
 use crate::{err, wrn};
 
 // DESIGN NOTE: the rust code follows a pattern across several TOML-defined top level
@@ -152,6 +152,12 @@ pub struct DefineInput {
     /// specify some arguments in the default `[[define.bind]]` and others in `[[bind]]`
     /// directly. The remaining fields are set to the default value when not specified
     /// (i.e. there is no deep merging for the other fields).
+    ///
+    /// Note that, because `args` are merged, a binding that overrides the `command` of its
+    /// default also inherits any arguments the default specified for *its* command. This is
+    /// seldom what you want, so a warning is issued when it happens. To resolve the
+    /// warning, use a default that does not set these arguments (defaults can be nested,
+    /// see the example below) or override the arguments in the binding itself.
     ///
     /// ### Additional Fields
     ///
@@ -410,7 +416,11 @@ impl Define {
     // - apply `default = {{bind.[id]}}`, merging the default values with the
     //   values in `binding`
     // - expand `{{command.[id]}}` within the command arguments
-    pub fn expand(&mut self, binding: BindingInput) -> ResultVec<BindingInput> {
+    pub fn expand(
+        &mut self,
+        binding: BindingInput,
+        warnings: &mut Vec<ParseError>,
+    ) -> ResultVec<BindingInput> {
         // resolve default values
         let binding = if let Some(ref default) = binding.default {
             let BindingReference(name) = default.as_ref();
@@ -422,11 +432,12 @@ impl Define {
             let mut default_value;
             if !occupied_entry.get().is_constant() {
                 default_value = occupied_entry.remove();
-                default_value = self.expand(default_value)?;
+                default_value = self.expand(default_value, warnings)?;
                 self.bind.insert(name.clone(), default_value.clone());
             } else {
                 default_value = occupied_entry.get().clone()
             }
+            check_inherited_args(&default_value, &binding, warnings);
             let result = default_value.without_id().merge(binding);
             result
         } else {
@@ -453,6 +464,81 @@ impl Define {
             return Ok(Value::Exp(exp));
         });
     }
+}
+
+// The `args` of a binding are merged recursively with the `args` of its `default` (see the
+// documentation of `[[define.bind]]` above). That is easy to miss when the binding also
+// overrides the `command` of its default: arguments written for the default's command are
+// merged into the arguments of a *different* command, where they are usually invalid.
+// Merging is the documented behavior, so it is left as-is, but we warn whenever a binding
+// overrides the `command` of its default and would still inherit some of its `args`, so
+// that the author can see what happened and pick a more appropriate default.
+fn check_inherited_args(
+    default_value: &BindingInput,
+    binding: &BindingInput,
+    warnings: &mut Vec<ParseError>,
+) {
+    let (Required::Value(default_command), Required::Value(new_command)) =
+        (default_value.command.as_ref(), binding.command.as_ref())
+    else {
+        // nothing is overridden unless both the default and the binding name a command
+        return;
+    };
+    if default_command == new_command {
+        return;
+    }
+    let Some(default_args) = &default_value.args else {
+        return;
+    };
+    let inherited = match binding.args.as_ref().map(|x| x.as_ref()) {
+        Option::None => inherits_args(default_args.as_ref()),
+        Some(new_args) => inherits_merged_args(default_args.as_ref(), new_args),
+    };
+    if !inherited {
+        return;
+    }
+    let err: Result<()> = Err(wrn!(
+        "The current binding has a `command` set to {} which differs from the \
+        default ({}). At least some of arguments for this default command are not \
+        overwritten here, which can lead to unexpected behavior. Consider \
+        using a different default that uses the same command.",
+        command_name(new_command),
+        command_name(default_command),
+    ))
+    .with_range(&binding.command.span());
+    warnings.push(err.unwrap_err());
+}
+
+// are there any default arguments?
+fn inherits_args(default_args: &Value) -> bool {
+    return match default_args {
+        Value::Table(kv, _) => !kv.is_empty(),
+        _ => true,
+    };
+}
+
+// after merging with the new commands arguments, do any default arguments survive?
+fn inherits_merged_args(default_args: &Value, new_args: &Value) -> bool {
+    return match (default_args, new_args) {
+        // tables are merged field by field, so the fields the binding does not set itself
+        // are taken from the default
+        (Value::Table(default_kv, _), Value::Table(new_kv, _)) => {
+            default_kv.keys().any(|k| !new_kv.contains_key(k))
+        }
+        // arrays are merged element-wise, so the default's elements can survive
+        (Value::Array(_), Value::Array(_)) => true,
+        // any other combination replaces the default's `args` outright
+        _ => false,
+    };
+}
+
+// a human readable name for a `command` field, which need not be a constant string
+fn command_name(command: &TypedValue<String>) -> String {
+    return match command {
+        TypedValue::Constant(name) => format!("`{name}`"),
+        TypedValue::Variable(Value::Exp(exp)) => format!("`{exp}`"),
+        TypedValue::Variable(_) => "a computed command".to_string(),
+    };
 }
 
 mod tests {
