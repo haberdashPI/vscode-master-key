@@ -128,7 +128,6 @@ run = 'node esbuild.mjs --watch'
 [tasks.package]
 depends = ['check-types', 'lint', 'build-rust', 'add_ignore_bindings']
 depends_post = ['ignore_bindings_cleanup']
-sources = ['src/**/*.ts']
 run = [
     'node esbuild.mjs --release',
     'node esbuild.mjs --web --release',

@@ -11,9 +11,9 @@ import * as fs from 'fs';
 
 const modifiers = ['ctrl', 'alt', 'shift'];
 const osModifiers = ['win', 'meta', 'cmd'];
-const characters = 'abcdefghijklmnopqrstuvwxyz0123456789`-=[];/'.split('');
+const characters = 'abcdefghijklmnopqrstuvwxyz0123456789`-=[];,./'.split('');
 const fkeys = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => `f${n}`);
-const charactersNeedingEscape = ['\\'];
+const charactersNeedingEscape = ['\\', '\''];
 const namedKeys = [
     'left', 'up', 'right', 'down', 'pageup', 'pagedown', 'end', 'home', 'tab',
     'enter', 'escape', 'space', 'backspace', 'delete', 'pausebreak', 'capslock', 'insert',
@@ -47,7 +47,9 @@ for (const mod of modifierCombos) {
         generatedBindings.push({
             key: `${mod}${k}`,
             command: 'master-key.ignore',
-            when: 'master-key.prefixCode',
+            // `capture` mode is excluded: we want to read any key the user
+            // types in this mode
+            when: 'master-key.prefixCode && master-key.mode != \'capture\'',
         });
     }
 }
