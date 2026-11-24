@@ -147,7 +147,15 @@ export async function captureKeys(onUpdate: UpdateFn): Promise<string> {
         }
     };
 
-    return returnValue;
+    // Ensure that any key presses that occur after key capture is set are
+    // in the right keybinding mode.
+    await state.contextsUpdated();
+    const captured = await returnValue;
+    // Ensure any key presses that occur after capture is exited are
+    // in the right keybinding mode
+    await state.contextsUpdated();
+
+    return captured;
 }
 
 const captureKeysArgs = z.object({

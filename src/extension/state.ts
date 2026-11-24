@@ -38,6 +38,8 @@ export class CommandState {
     // a queue of values to set. When bootstrapping the initial setup of keybinding state,
     // we need to wait before actually setting values until `resolve` is called
     private onSetQueued: Record<string, unknown[]> | undefined;
+    // the most recent `setContext` request (see `setContext` below)
+    private contextUpdate: Promise<void> = Promise.resolve();
 
     clear() {
         this.definedValues.clear();
@@ -132,17 +134,9 @@ export class CommandState {
             }
             if (!this.options[fullKey].private) {
                 if (namespace === 'val') {
-                    vscode.commands.executeCommand(
-                        'setContext',
-                        'master-key.val.' + key,
-                        val,
-                    );
+                    this.setContext('master-key.val.' + key, val);
                 } else if (namespace === 'key') {
-                    vscode.commands.executeCommand(
-                        'setContext',
-                        'master-key.' + key,
-                        val,
-                    );
+                    this.setContext('master-key.' + key, val);
                 } else {
                     throw Error(
                         'All public state must exist in the \`key\` or \`val\` ' +
@@ -153,6 +147,25 @@ export class CommandState {
             const listeners = this.setListeners[fullKey] || [];
             this.setListeners[fullKey] = listeners.filter(listener => listener(val));
         }
+    }
+
+    // `setContext` ensures that updates to the context values are updated in the
+    // correc order, by saving a `contextUpdate` promise that can be `await`ed
+    private setContext(name: string, value: unknown) {
+        this.contextUpdate = Promise.resolve(
+            vscode.commands.executeCommand('setContext', name, value),
+        ).then(
+            () => undefined,
+            // a failed context update is not something we can act on here; swallowing the
+            // error keeps it from surfacing as an unhandled rejection
+            () => undefined,
+        );
+    }
+
+    // This awaits on the set context, to ensure that downstream commands
+    // observe correct value.
+    async contextsUpdated() {
+        await this.contextUpdate;
     }
 
     // returns all transient values back to their default value (see IStateOptions)
